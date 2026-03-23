@@ -42,7 +42,15 @@
 - Wiederherstellungsanleitung: `openclaw-wiederherstellung.pdf` im Workspace
 - Push nach wichtigen Änderungen (manuell durch Bolla)
 
+## Telegram (eingerichtet 23.03.2026)
+- Bot: @bolla_mandel_bot
+- Bot Token: 8114115093:AAFvRoF_xnhshKM92bMdcwZ3DBCCe4KpwxQ
+- Chris Telegram ID: 8772213652
+- dmPolicy: pairing (bereits genehmigt)
+- Chris kann Bolla direkt über Telegram erreichen
+
 ## Technisches
 - Python 3.12 (WSL2), msal installiert (--user --break-system-packages)
 - pip installiert via get-pip.py
 - Edge: `/mnt/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe`
+- openclaw liegt unter: /home/bolla/.npm-global/bin/openclaw (PATH muss explizit gesetzt werden in VBS/Scripts)
