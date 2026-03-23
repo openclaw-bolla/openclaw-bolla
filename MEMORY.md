@@ -12,6 +12,13 @@
   - E-Mail: robinmandel@outlook.de
   - Studiert Medizin in Ulm, 10. Semester
 
+## Outlook Kontakte (verbunden 23.03.2026)
+- 145 Kontakte in ernstmandel@outlook.de
+- Zugang über Microsoft Graph (Contacts.Read)
+- Kann: Kontakte suchen, Geburtstage abfragen, Namen/Nummern nachschlagen
+- Bekannte Kontakte: Familie Mandel (Dominik, Florian, Katharina, Ann-Kristin), Ewaldss, Ebingers, Fuß, Meichsner...
+- Heute Geburtstag (23.03.): Herr Georg Ewald (Jg. 1963)
+
 ## E-Mail Setup (19.03.2026)
 - Konto: ernstmandel@outlook.de (privates Microsoft/Outlook-Konto)
 - Methode: Microsoft Graph API via OAuth (Device Flow)
