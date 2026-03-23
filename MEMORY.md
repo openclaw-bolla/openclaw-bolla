@@ -31,10 +31,14 @@
 - **WICHTIG: Ich darf KEINEN Token manuell in JSON-Dateien eintragen!**
 - Log: `/home/bolla/.openclaw/workspace/logs/token_watcher.log`
 
-## Autostart (eingerichtet 23.03.2026)
-- **Gateway:** `start_openclaw_gateway.vbs` im Windows-Startup-Ordner → startet automatisch bei Windows-Login
-- **Token Watcher:** VBS + Task Scheduler (s.o.)
+## Autostart (eingerichtet 23.03.2026, perfektioniert 23.03.2026 Abend)
+- **Gateway:** `start_openclaw_gateway.vbs` im Windows-Startup-Ordner
+- **WICHTIG:** VBS muss erst `wsl echo` ausführen (True = warten), dann 15 Sekunden schlafen, DANN Gateway starten — sonst ist WSL noch nicht bereit!
+- **PATH** muss hartcodiert sein: `/usr/local/bin:/usr/bin:/bin:/home/bolla/.npm-global/bin` — kein `$PATH` in VBS (wird von Windows leer interpretiert)
+- PowerShell läuft NICHT im Hintergrund — WSL startet unsichtbar direkt
+- **Token Watcher:** VBS + Task Scheduler stündlich als Wächter
 - Chris muss nach Neustart nichts mehr manuell starten
+- Bei Windows-Update-Neustart kann es minimal länger dauern (~20 Sek nach Login)
 
 ## GitHub Backup (eingerichtet 23.03.2026)
 - Repo: https://github.com/openclaw-bolla/openclaw-bolla (privat)
