@@ -162,10 +162,12 @@ def update_anthropic_token(new_token: str):
 def restart_gateway():
     """Startet den OpenClaw Gateway neu."""
     log.info("Starte OpenClaw Gateway neu...")
+    env = os.environ.copy()
+    env["PATH"] = env.get("PATH", "") + ":/home/bolla/.npm-global/bin"
     try:
         result = subprocess.run(
             ["openclaw", "gateway", "restart"],
-            capture_output=True, text=True, timeout=30
+            capture_output=True, text=True, timeout=30, env=env
         )
         if result.returncode == 0:
             log.info("Gateway erfolgreich neu gestartet.")
