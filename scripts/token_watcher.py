@@ -100,7 +100,11 @@ def find_token_emails(access_token: str) -> list[dict]:
     if r.status_code != 200:
         raise RuntimeError(f"Mail-Abfrage fehlgeschlagen: {r.status_code} {r.text}")
 
-    messages = r.json().get("value", [])
+    # Nach Datum sortieren — älteste zuerst, damit der neueste Token zuletzt gesetzt wird
+    messages = sorted(
+        r.json().get("value", []),
+        key=lambda m: m.get("receivedDateTime", ""),
+    )
     token_mails = []
 
     for msg in messages:
