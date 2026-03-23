@@ -238,9 +238,10 @@ def check_once():
 
 
 def main():
+    interval_min = CHECK_INTERVAL // 60
     log.info("=" * 60)
     log.info("Token Watcher gestartet")
-    log.info(f"Überprüfe alle {CHECK_INTERVAL // 3600} Stunden")
+    log.info(f"Überprüfe alle {interval_min} Minuten")
     log.info(f"Überwache E-Mails von: {SENDER_FILTER}")
     log.info("=" * 60)
 
@@ -250,7 +251,7 @@ def main():
         except Exception as e:
             log.error(f"Fehler beim Check: {e}", exc_info=True)
 
-        log.info(f"Nächste Prüfung in {CHECK_INTERVAL // 3600} Stunden.")
+        log.info(f"Nächste Prüfung in {interval_min} Minuten.")
         time.sleep(CHECK_INTERVAL)
 
 

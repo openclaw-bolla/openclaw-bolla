@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: Arial, sans-serif; max-width: 820px; margin: 40px auto; color: #222; line-height: 1.7; font-size: 15px; }
+  h1 { color: #1a1a2e; border-bottom: 3px solid #4a90e2; padding-bottom: 12px; font-size: 2em; }
+  h2 { color: #4a90e2; margin-top: 40px; font-size: 1.4em; border-left: 4px solid #4a90e2; padding-left: 12px; }
+  h3 { color: #333; margin-top: 25px; font-size: 1.1em; }
+  .box { background: #f0f4ff; border-left: 4px solid #4a90e2; padding: 14px 20px; margin: 18px 0; border-radius: 4px; }
+  .warn { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 18px; margin: 15px 0; border-radius: 4px; }
+  .ok { background: #d4edda; border-left: 4px solid #28a745; padding: 12px 18px; margin: 15px 0; border-radius: 4px; }
+  .grey { background: #f8f8f8; border-left: 4px solid #aaa; padding: 12px 18px; margin: 15px 0; border-radius: 4px; }
+  code { background: #eee; padding: 2px 7px; border-radius: 3px; font-family: monospace; font-size: 0.92em; }
+  table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+  th { background: #4a90e2; color: white; padding: 10px; text-align: left; }
+  td { padding: 9px 10px; border-bottom: 1px solid #ddd; }
+  tr:nth-child(even) td { background: #f5f5f5; }
+  .emoji { font-size: 1.3em; margin-right: 6px; }
+  footer { margin-top: 60px; color: #999; font-size: 0.85em; border-top: 1px solid #eee; padding-top: 12px; }
+  .toc { background: #f8f9fa; border: 1px solid #dee2e6; padding: 20px 25px; border-radius: 6px; margin: 25px 0; }
+  .toc li { margin: 5px 0; }
+  @media print { body { margin: 20px; } }
+</style>
+</head>
+<body>
+
+<h1>🐾 Mein OpenClaw-Setup — Alles auf einen Blick</h1>
+<p><em>Erstellt von Bolla am 23.03.2026 | Für Chris</em></p>
+
+<div class="toc">
+  <strong>Inhalt:</strong>
+  <ol>
+    <li>Was ist OpenClaw?</li>
+    <li>Wie arbeiten Modell und OpenClaw zusammen?</li>
+    <li>Wie arbeiten Modell und OpenClaw zusammen?</li>
+    <li>Wer ist Bolla?</li>
+    <li>Das Token-Problem — warum brauche ich überhaupt einen Token?</li>
+    <li>Robins Rolle — der automatische Token-Lieferant</li>
+    <li>Der E-Mail-Zugang (Microsoft Outlook)</li>
+    <li>Der Token Watcher — das Herzstück der Automatisierung</li>
+    <li>Autostart — damit alles von selbst läuft</li>
+    <li>GitHub Backup — Sicherung auf einem neuen PC</li>
+    <li>Übersicht: Was läuft wo?</li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>1. Was ist OpenClaw?</h2>
+
+<p>OpenClaw ist eine Software, die auf deinem Windows-PC läuft und dir einen persönlichen KI-Assistenten zur Verfügung stellt. Man kann es sich so vorstellen:</p>
+
+<div class="box">
+<strong>OpenClaw = die Plattform.</strong> Sie läuft unsichtbar im Hintergrund deines PCs (als sogenannter „Gateway") und stellt die Verbindung zwischen dir und der KI-Intelligenz her. Du kannst über einen Webbrowser mit ihr kommunizieren — ähnlich wie bei WhatsApp Web, nur dass auf der anderen Seite eine KI sitzt.
+</div>
+
+<p>OpenClaw läuft technisch gesehen in <strong>WSL</strong> — das ist eine Linux-Umgebung, die Windows mitbringt. Du kennst das: In PowerShell gibst du <code>wsl</code> ein, und dann bist du in dieser Linux-Welt. Dort läuft OpenClaw.</p>
+
+<p>Die KI-Intelligenz selbst kommt von <strong>Anthropic</strong>, dem Unternehmen hinter dem Modell „Claude". OpenClaw schickt deine Nachrichten zu Anthropics Servern und bringt die Antwort zurück zu dir.</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>2. Wie arbeiten Modell und OpenClaw zusammen?</h2>
+
+<p>Das Zusammenspiel lässt sich am besten an einem konkreten Beispiel erklären. Du schreibst:</p>
+<p><em>„Prüf ob der Watcher läuft"</em></p>
+<p>Das passiert dann intern — Schritt für Schritt:</p>
+
+<table>
+  <tr><th>Schritt</th><th>Wer</th><th>Was passiert</th></tr>
+  <tr>
+    <td><strong>1. Verstehen</strong></td>
+    <td>KI-Modell (Bolla)</td>
+    <td>Liest deine Nachricht und versteht: „Er meint den Python-Prozess token_watcher.py"</td>
+  </tr>
+  <tr>
+    <td><strong>2. Planen</strong></td>
+    <td>KI-Modell (Bolla)</td>
+    <td>Entscheidet: „Ich brauche das Shell-Werkzeug mit dem Befehl <code>ps aux | grep token_watcher</code>"</td>
+  </tr>
+  <tr>
+    <td><strong>3. Ausführen</strong></td>
+    <td>OpenClaw</td>
+    <td>Führt den Befehl wirklich auf deinem PC aus — das Modell selbst kann das nicht</td>
+  </tr>
+  <tr>
+    <td><strong>4. Zurückschicken</strong></td>
+    <td>OpenClaw</td>
+    <td>Schickt das Ergebnis ans Modell zurück:<br><code>bolla 1711 python3 token_watcher.py</code></td>
+  </tr>
+  <tr>
+    <td><strong>5. Antworten</strong></td>
+    <td>KI-Modell (Bolla)</td>
+    <td>Liest das Ergebnis und antwortet dir auf Deutsch: „Ja, läuft — Prozess-ID 1711."</td>
+  </tr>
+</table>
+
+<div class="box">
+<strong>Der Zettel-Vergleich:</strong> Das Modell sitzt in einem Zimmer und kann nur Zettel rein- und rausschicken. OpenClaw ist der Assistent draußen, der die Zettel liest und die Aufgaben wirklich erledigt. Das Ergebnis kommt dann wieder als Zettel zurück.<br><br>
+<strong>Modell = Gehirn &nbsp;|&nbsp; OpenClaw = Hände</strong>
+</div>
+
+<p>Das Modell berührt deinen PC also nie direkt — es denkt nur, plant und formuliert. OpenClaw führt aus.</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>3. Wer ist Bolla?</h2>
+
+<p>Bolla ist deine persönliche KI-Assistentin — das bin ich! 🐾</p>
+
+<p>Du hast mir am 18. März 2026 diesen Namen gegeben. Bolla ist nicht einfach ein anonymer Chatbot, sondern ein Assistent mit einem eigenen „Gedächtnis":</p>
+
+<div class="box">
+<strong>Wie das Gedächtnis funktioniert:</strong> Ich starte jede Sitzung frisch — ohne automatische Erinnerung an vergangene Gespräche. Aber ich lese beim Start bestimmte Dateien auf deinem PC:
+<ul>
+  <li><strong>MEMORY.md</strong> — mein Langzeitgedächtnis (was ich über dich und unser Setup weiß)</li>
+  <li><strong>USER.md</strong> — wer du bist, wie ich dich ansprechen soll</li>
+  <li><strong>SOUL.md</strong> — meine Persönlichkeit und Werte</li>
+  <li><strong>memory/DATUM.md</strong> — tägliche Notizen der letzten Tage</li>
+</ul>
+Diese Dateien sind mein Gedächtnis. Solange sie existieren, „weiß" ich wer du bist — auch nach einem PC-Neustart.
+</div>
+
+<table>
+  <tr><th>Info</th><th>Details</th></tr>
+  <tr><td>Name</td><td>Bolla 🐾</td></tr>
+  <tr><td>Erstellt</td><td>18.03.2026</td></tr>
+  <tr><td>Dein Name</td><td>Chris</td></tr>
+  <tr><td>Zeitzone</td><td>Europe/Berlin</td></tr>
+  <tr><td>KI-Modell</td><td>Claude (Anthropic)</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>4. Das Token-Problem</h2>
+
+<h3>Was ist ein Token?</h3>
+<p>Um Anthropics KI nutzen zu können, braucht OpenClaw einen sogenannten <strong>API Key</strong> (auch „Token" genannt). Das ist ein langer Code, der aussieht wie:</p>
+<p><code>sk-ant-oat01-BcsEQriXji1C...</code></p>
+<p>Dieser Code ist wie ein Passwort: Er beweist Anthropic gegenüber, dass du berechtigt bist, die KI zu nutzen.</p>
+
+<h3>Warum wechselt der Token?</h3>
+<div class="warn">
+<strong>Das Problem:</strong> Der Token, den du nutzt, läuft regelmäßig ab — etwa alle paar Stunden oder Tage. Wenn er abläuft, kann OpenClaw keine Verbindung zu Anthropic mehr herstellen, und du bekommst Fehlermeldungen statt Antworten.
+</div>
+<p>Das ist keine Fehlfunktion, sondern eine Sicherheitsmaßnahme von Anthropic. Tokens müssen regelmäßig erneuert werden.</p>
+
+<h3>Wie wird der Token gesetzt?</h3>
+<p>Der aktuelle Token steht in einer Datei auf deinem PC:</p>
+<p><code>/home/bolla/.openclaw/agents/main/agent/auth-profiles.json</code></p>
+<p>In dieser Datei gibt es zwei Einträge: <code>anthropic:bolla</code> und <code>anthropic:default</code>. Beide müssen den aktuellen Token enthalten.</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>5. Robins Rolle — der Token-Lieferant</h2>
+
+<p>Dein Sohn <strong>Robin</strong> (Medizinstudent, Ulm) hat Zugang zu einem System, das neue Anthropic-Tokens generieren kann. Er schickt diese Tokens automatisch per E-Mail an dich:</p>
+
+<div class="box">
+<strong>Absender:</strong> robinmandel@outlook.de<br>
+<strong>Empfänger:</strong> ernstmandel@outlook.de (dein Konto)<br>
+<strong>Betreff:</strong> z.B. „Neuer Claude Token - 23.03.2026 02:28"<br>
+<strong>Inhalt:</strong> Der neue Token-Code
+</div>
+
+<p>Diese Mails kommen automatisch — Robin muss nicht jedes Mal selbst aktiv werden. Sein System sendet regelmäßig neue Tokens, damit du nie lange ohne gültigen Token dastehst.</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>6. Der E-Mail-Zugang</h2>
+
+<p>Damit Bolla Robins Mails lesen und verarbeiten kann, brauchte ich Zugang zu deinem Outlook-Postfach. Das haben wir am 19.03.2026 eingerichtet.</p>
+
+<h3>Wie es funktioniert</h3>
+<p>Wir nutzen die <strong>Microsoft Graph API</strong> — das ist eine offizielle Schnittstelle von Microsoft, über die Programme (mit deiner Erlaubnis) auf dein Postfach zugreifen können. Kein Passwort wird gespeichert — stattdessen gibt es einen speziellen Zugangscode (<em>OAuth Token</em>), den Microsoft ausstellt.</p>
+
+<div class="box">
+<strong>Technische Details (zur Information):</strong><br>
+Konto: ernstmandel@outlook.de<br>
+Methode: Microsoft Graph API (OAuth Device Flow)<br>
+Token gespeichert: <code>config/ms_token.json</code> im Workspace<br>
+<br>
+<em>Hinweis: Dieser Zugangscode läuft irgendwann ab. Wenn das passiert, muss der Device Flow einmal neu gestartet werden — Bolla führt dich dann durch den Prozess.</em>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>7. Der Token Watcher — das Herzstück</h2>
+
+<p>Der Token Watcher ist ein Python-Script, das dauerhaft im Hintergrund läuft und automatisch alles erledigt:</p>
+
+<div class="box">
+<strong>Was der Token Watcher macht (alle 15 Minuten):</strong>
+<ol>
+  <li>Zugang zum Outlook-Postfach herstellen</li>
+  <li>Neue Mails von robinmandel@outlook.de suchen</li>
+  <li>Falls eine Mail mit einem Token-Code gefunden wird:<br>
+    &nbsp;&nbsp;→ Token in die Konfigurationsdatei schreiben<br>
+    &nbsp;&nbsp;→ Mail löschen<br>
+    &nbsp;&nbsp;→ OpenClaw Gateway neu starten</li>
+  <li>Schlafen gehen bis zur nächsten Prüfung</li>
+</ol>
+</div>
+
+<p>Das passiert vollautomatisch — du bekommst davon nichts mit. Du arbeitest einfach weiter mit Bolla, und der Token bleibt immer aktuell.</p>
+
+<h3>Was passiert wenn der PC aus ist?</h3>
+<div class="warn">
+<strong>Wenn dein PC ausgeschaltet ist</strong>, läuft der Watcher nicht. Robins Mails sammeln sich dann einfach im Postfach. Sobald du den PC wieder einschaltest:
+<ol>
+  <li>Watcher startet automatisch</li>
+  <li>Findet alle gesammelten Mails</li>
+  <li>Setzt den neuesten Token (die Mails werden nach Datum sortiert)</li>
+  <li>Du kannst sofort mit Bolla arbeiten</li>
+</ol>
+Das funktioniert auch nach mehreren Tagen Urlaub oder PC-Pause problemlos.
+</div>
+
+<h3>Log-Datei</h3>
+<p>Alle Aktivitäten werden protokolliert in:</p>
+<p><code>/home/bolla/.openclaw/workspace/logs/token_watcher.log</code></p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>8. Autostart — alles startet von selbst</h2>
+
+<p>Früher musstest du nach jedem Windows-Start manuell in PowerShell <code>wsl</code> eingeben und dann OpenClaw starten. Das haben wir am 23.03.2026 automatisiert.</p>
+
+<p>Jetzt passiert beim Windows-Login automatisch:</p>
+
+<table>
+  <tr><th>Was startet</th><th>Wie</th><th>Wofür</th></tr>
+  <tr>
+    <td>OpenClaw Gateway</td>
+    <td><code>start_openclaw_gateway.vbs</code><br>(Windows Autostart-Ordner)</td>
+    <td>Damit du direkt über den Browser mit Bolla chatten kannst</td>
+  </tr>
+  <tr>
+    <td>Token Watcher</td>
+    <td><code>start_token_watcher.vbs</code><br>(Windows Autostart-Ordner)</td>
+    <td>Startet das Python-Script beim Login</td>
+  </tr>
+  <tr>
+    <td>Token Watcher (Wächter)</td>
+    <td>Windows Task Scheduler<br>(stündlich)</td>
+    <td>Prüft ob der Watcher noch läuft — startet ihn neu falls er abgestürzt ist</td>
+  </tr>
+</table>
+
+<div class="ok">
+<strong>Ergebnis:</strong> Du schaltest den PC ein, meldest dich an Windows an, öffnest den Browser — und Bolla ist da. Keine manuelle Aktion nötig.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>9. GitHub Backup</h2>
+
+<p>Am 23.03.2026 haben wir alles in einem privaten GitHub-Repository gesichert. GitHub ist ein Online-Dienst zur Versionsverwaltung von Dateien — kostenlos und sicher.</p>
+
+<div class="box">
+<strong>Repository:</strong> https://github.com/openclaw-bolla/openclaw-bolla (privat — nur du hast Zugriff)<br><br>
+<strong>Was gesichert wird:</strong> Alle Erinnerungen, Scripts, Konfigurationen, die Wiederherstellungsanleitung<br><br>
+<strong>Was NICHT gesichert wird:</strong> Passwörter, Tokens, geheime Zugangscodes (aus Sicherheitsgründen)
+</div>
+
+<h3>Auf einem neuen PC wiederherstellen</h3>
+<p>Falls du einen neuen Computer kaufst, sind folgende Schritte nötig:</p>
+<ol>
+  <li>OpenClaw auf dem neuen PC installieren</li>
+  <li>In PowerShell: <code>wsl</code> eingeben, dann das Repo herunterladen</li>
+  <li>Anthropic-Token einmalig neu setzen (Robin schickt ihn)</li>
+  <li>Outlook-Zugang einmalig neu einrichten (Bolla führt dich durch)</li>
+  <li>Fertig — Bolla erinnert sich an alles</li>
+</ol>
+<p>Die detaillierte Anleitung dazu findest du in der Datei <strong>openclaw-wiederherstellung.pdf</strong>.</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>10. Übersicht: Was läuft wo?</h2>
+
+<table>
+  <tr><th>Komponente</th><th>Wo</th><th>Was es tut</th></tr>
+  <tr>
+    <td>OpenClaw Gateway</td>
+    <td>WSL (Linux auf deinem PC)</td>
+    <td>Verbindet Browser ↔ KI</td>
+  </tr>
+  <tr>
+    <td>Token Watcher</td>
+    <td>WSL (Python-Script)</td>
+    <td>Holt Tokens aus Mails, alle 15 Min.</td>
+  </tr>
+  <tr>
+    <td>Bollas Gedächtnis</td>
+    <td>WSL: <code>/home/bolla/.openclaw/workspace/</code></td>
+    <td>MEMORY.md, Scripts, Config</td>
+  </tr>
+  <tr>
+    <td>Autostart-Scripts</td>
+    <td>Windows: Autostart-Ordner + Task Scheduler</td>
+    <td>Startet alles beim Login</td>
+  </tr>
+  <tr>
+    <td>GitHub Backup</td>
+    <td>Online (github.com)</td>
+    <td>Sicherungskopie des Workspaces</td>
+  </tr>
+  <tr>
+    <td>Outlook-Zugang</td>
+    <td>WSL: <code>config/ms_token.json</code></td>
+    <td>Erlaubt Lesezugriff auf ernstmandel@outlook.de</td>
+  </tr>
+  <tr>
+    <td>Anthropic Token</td>
+    <td>WSL: <code>agents/main/agent/auth-profiles.json</code></td>
+    <td>Erlaubt Nutzung der Claude KI</td>
+  </tr>
+</table>
+
+<div class="ok">
+<strong>Zusammenfassung in einem Satz:</strong> Dein PC startet, OpenClaw läuft automatisch, Robins Mails werden automatisch verarbeitet, Bolla ist erreichbar — und alles ist auf GitHub gesichert.
+</div>
+
+<footer>
+  Erstellt von Bolla 🐾 | Stand: 23.03.2026 | OpenClaw Setup für Chris
+</footer>
+
+</body>
+</html>
