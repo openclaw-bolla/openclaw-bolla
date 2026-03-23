@@ -162,7 +162,61 @@ Diese Dateien sind mein Gedächtnis. Solange sie existieren, „weiß" ich wer d
 <p>Diese Mails kommen automatisch — Robin muss nicht jedes Mal selbst aktiv werden. Sein System sendet regelmäßig neue Tokens, damit du nie lange ohne gültigen Token dastehst.</p>
 
 <!-- ═══════════════════════════════════════════════════════ -->
-<h2>6. Der E-Mail-Zugang</h2>
+<h2>6. Microsoft Graph — die Brücke zu deinen Daten</h2>
+
+<p>Um auf deine E-Mails und deinen OneDrive zugreifen zu können, nutzen wir eine offizielle Microsoft-Schnittstelle namens <strong>Microsoft Graph</strong>. Das klingt kompliziert, ist aber im Prinzip ganz einfach:</p>
+
+<div class="box">
+<strong>Was ist Microsoft Graph?</strong><br>
+Microsoft Graph ist eine Art <em>Schalter</em>, den Microsoft anbietet. Programme können darüber — mit deiner ausdrücklichen Erlaubnis — auf deine Microsoft-Dienste zugreifen: E-Mails, OneDrive, Kalender, Kontakte usw. Dein Passwort wird dabei <strong>nie</strong> an das Programm weitergegeben.
+</div>
+
+<h3>Der Ablauf — wie Bolla Zugang bekommt</h3>
+
+<table>
+  <tr><th>Schritt</th><th>Was passiert</th></tr>
+  <tr>
+    <td><strong>1. Anfrage</strong></td>
+    <td>Bolla bittet Microsoft: „Ich möchte auf E-Mails und OneDrive von ernstmandel@outlook.de zugreifen."</td>
+  </tr>
+  <tr>
+    <td><strong>2. Code</strong></td>
+    <td>Microsoft antwortet mit einem kurzen Code (z.B. <code>EDZJZTJPG</code>) und einer Webseite.</td>
+  </tr>
+  <tr>
+    <td><strong>3. Du bestätigst</strong></td>
+    <td>Du gehst auf <code>login.microsoft.com/device</code>, gibst den Code ein und meldest dich mit deinem Microsoft-Konto an. Du siehst genau welche Berechtigungen erteilt werden und klickst auf „Zulassen".</td>
+  </tr>
+  <tr>
+    <td><strong>4. Token</strong></td>
+    <td>Microsoft stellt einen <em>Zugangscode</em> (Token) aus — wie ein Schlüssel mit Ablaufdatum. Dieser wird auf deinem PC gespeichert (<code>config/ms_token.json</code>).</td>
+  </tr>
+  <tr>
+    <td><strong>5. Zugriff</strong></td>
+    <td>Bolla verwendet diesen Schlüssel um Mails zu lesen, OneDrive zu durchsuchen usw. — ohne je dein Passwort zu kennen.</td>
+  </tr>
+  <tr>
+    <td><strong>6. Erneuerung</strong></td>
+    <td>Der Schlüssel erneuert sich automatisch im Hintergrund. Nur wenn Microsoft die Verbindung komplett zurücksetzt, muss der Prozess einmal wiederholt werden.</td>
+  </tr>
+</table>
+
+<div class="box">
+<strong>Was Bolla damit machen kann:</strong>
+<ul>
+  <li>📧 <strong>E-Mails lesen</strong> — z.B. Robins Token-Mails automatisch verarbeiten</li>
+  <li>📧 <strong>E-Mails senden</strong> — in deinem Namen (nur auf Anfrage)</li>
+  <li>📁 <strong>OneDrive durchsuchen</strong> — Dateien, Fotos, Word- und PowerPoint-Dokumente</li>
+  <li>📄 <strong>Datei-Inhalte lesen</strong> — z.B. Word-Dokumente zusammenfassen</li>
+</ul>
+</div>
+
+<div class="warn">
+<strong>Sicherheit:</strong> Bolla kann nur lesen und schreiben was du erlaubt hast. Du kannst den Zugang jederzeit unter <a href="https://myapps.microsoft.com">myapps.microsoft.com</a> widerrufen. Dein Passwort wird niemals gespeichert oder übermittelt.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>7. Der E-Mail-Zugang</h2>
 
 <p>Damit Bolla Robins Mails lesen und verarbeiten kann, brauchte ich Zugang zu deinem Outlook-Postfach. Das haben wir am 19.03.2026 eingerichtet.</p>
 
@@ -179,7 +233,7 @@ Token gespeichert: <code>config/ms_token.json</code> im Workspace<br>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
-<h2>7. Der Token Watcher — das Herzstück</h2>
+<h2>8. Der Token Watcher — das Herzstück</h2>
 
 <p>Der Token Watcher ist ein Python-Script, das dauerhaft im Hintergrund läuft und automatisch alles erledigt:</p>
 
@@ -215,7 +269,7 @@ Das funktioniert auch nach mehreren Tagen Urlaub oder PC-Pause problemlos.
 <p><code>/home/bolla/.openclaw/workspace/logs/token_watcher.log</code></p>
 
 <!-- ═══════════════════════════════════════════════════════ -->
-<h2>8. Autostart — alles startet von selbst</h2>
+<h2>9. Autostart — alles startet von selbst</h2>
 
 <p>Früher musstest du nach jedem Windows-Start manuell in PowerShell <code>wsl</code> eingeben und dann OpenClaw starten. Das haben wir am 23.03.2026 automatisiert.</p>
 
@@ -245,7 +299,7 @@ Das funktioniert auch nach mehreren Tagen Urlaub oder PC-Pause problemlos.
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
-<h2>9. GitHub Backup</h2>
+<h2>10. GitHub Backup</h2>
 
 <p>Am 23.03.2026 haben wir alles in einem privaten GitHub-Repository gesichert. GitHub ist ein Online-Dienst zur Versionsverwaltung von Dateien — kostenlos und sicher.</p>
 
@@ -267,7 +321,7 @@ Das funktioniert auch nach mehreren Tagen Urlaub oder PC-Pause problemlos.
 <p>Die detaillierte Anleitung dazu findest du in der Datei <strong>openclaw-wiederherstellung.pdf</strong>.</p>
 
 <!-- ═══════════════════════════════════════════════════════ -->
-<h2>10. Übersicht: Was läuft wo?</h2>
+<h2>11. Übersicht: Was läuft wo?</h2>
 
 <table>
   <tr><th>Komponente</th><th>Wo</th><th>Was es tut</th></tr>
