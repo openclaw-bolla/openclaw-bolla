@@ -21,13 +21,26 @@
 - Hinweis: Token läuft irgendwann ab → dann neuen Device Flow starten
 - Skripte: config/email.json enthält Kontodaten
 
-## Token Watcher (eingerichtet 22.03.2026)
+## Token Watcher (eingerichtet 22.03.2026, verbessert 23.03.2026)
 - Script: `/home/bolla/.openclaw/workspace/scripts/token_watcher.py`
-- Prüft stündlich Mails von robinmandel@outlook.de auf Anthropic-Token
-- Trägt Token in auth-profiles.json ein, startet Gateway neu, löscht Mail
-- Autostart via VBS: `C:\Users\ernst\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\start_token_watcher.vbs`
-- **WICHTIG: Ich darf KEINEN Token manuell in JSON-Dateien eintragen!** (war mal ein Problem)
+- Prüft alle **15 Minuten** Mails von robinmandel@outlook.de auf Anthropic-Token
+- Aktualisiert ALLE anthropic-Profile (bolla + default), sortiert Mails nach Datum (neuester Token gewinnt)
+- Startet Gateway neu, löscht Mail
+- Autostart via VBS: `start_token_watcher.vbs` im Windows-Startup-Ordner
+- Task Scheduler: `\OpenClaw\TokenWatcher` (bei Login) + `\OpenClaw\TokenWatcherHourly` (stündlich als Wächter)
+- **WICHTIG: Ich darf KEINEN Token manuell in JSON-Dateien eintragen!**
 - Log: `/home/bolla/.openclaw/workspace/logs/token_watcher.log`
+
+## Autostart (eingerichtet 23.03.2026)
+- **Gateway:** `start_openclaw_gateway.vbs` im Windows-Startup-Ordner → startet automatisch bei Windows-Login
+- **Token Watcher:** VBS + Task Scheduler (s.o.)
+- Chris muss nach Neustart nichts mehr manuell starten
+
+## GitHub Backup (eingerichtet 23.03.2026)
+- Repo: https://github.com/openclaw-bolla/openclaw-bolla (privat)
+- Enthält: Workspace, Scripts, Memory, Config (OHNE Secrets)
+- Wiederherstellungsanleitung: `openclaw-wiederherstellung.pdf` im Workspace
+- Push nach wichtigen Änderungen (manuell durch Bolla)
 
 ## Technisches
 - Python 3.12 (WSL2), msal installiert (--user --break-system-packages)
