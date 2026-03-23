@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; color: #222; line-height: 1.6; }
+  h1 { color: #1a1a2e; border-bottom: 3px solid #4a90e2; padding-bottom: 10px; }
+  h2 { color: #4a90e2; margin-top: 30px; }
+  .step { background: #f0f4ff; border-left: 4px solid #4a90e2; padding: 15px 20px; margin: 15px 0; border-radius: 4px; }
+  .step-nr { font-size: 1.3em; font-weight: bold; color: #4a90e2; }
+  code { background: #eee; padding: 2px 6px; border-radius: 3px; font-family: monospace; font-size: 0.95em; }
+  .warn { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; border-radius: 4px; }
+  .ok { background: #d4edda; border-left: 4px solid #28a745; padding: 10px 15px; border-radius: 4px; }
+  footer { margin-top: 50px; color: #999; font-size: 0.85em; border-top: 1px solid #eee; padding-top: 10px; }
+</style>
+</head>
+<body>
+
+<h1>🐾 OpenClaw Wiederherstellung — Schritt für Schritt</h1>
+<p><em>Erstellt von Bolla am 23.03.2026 | Für Chris</em></p>
+
+<div class="ok">
+<strong>Was gesichert ist:</strong> Alle Erinnerungen, Scripts, Konfigurationen und Einstellungen liegen in einem privaten GitHub-Repository und können auf jedem neuen PC wiederhergestellt werden.
+</div>
+
+<h2>Was du auf dem neuen PC brauchst</h2>
+<ul>
+  <li>Windows mit WSL (einfach in PowerShell: <code>wsl</code> eingeben)</li>
+  <li>Node.js (für OpenClaw)</li>
+  <li>OpenClaw installiert</li>
+  <li>Git installiert (in WSL)</li>
+  <li>Python 3 installiert (in WSL)</li>
+</ul>
+
+<h2>Schritt-für-Schritt Anleitung</h2>
+
+<div class="step">
+  <div class="step-nr">Schritt 1 — OpenClaw installieren</div>
+  <p>Installiere OpenClaw auf dem neuen PC ganz normal wie beim ersten Mal. Starte die Einrichtung, aber <strong>brich ab bevor du einen neuen Agenten erstellst</strong>.</p>
+</div>
+
+<div class="step">
+  <div class="step-nr">Schritt 2 — Workspace aus GitHub holen</div>
+  <p>Öffne PowerShell und starte WSL mit dem Befehl <code>wsl</code>. Dann eingeben:</p>
+  <p><code>cd /home/bolla/.openclaw</code></p>
+  <p><code>mv workspace workspace_alt</code> &nbsp;(alte leere Sicherung)</p>
+  <p><code>git clone https://github.com/openclaw-bolla/openclaw-bolla.git workspace</code></p>
+  <p>GitHub fragt nach Zugangsdaten: Username eingeben, als Passwort das GitHub PAT verwenden.</p>
+</div>
+
+<div class="step">
+  <div class="step-nr">Schritt 3 — Anthropic Token einrichten</div>
+  <p>Den aktuellen Anthropic API Key (von Robin per Mail) über das OpenClaw Onboarding-Interface eingeben — genau wie beim ersten Mal.</p>
+</div>
+
+<div class="step">
+  <div class="step-nr">Schritt 4 — Microsoft E-Mail Zugang neu einrichten</div>
+  <p>Der OAuth-Token für das Outlook-Konto (<strong>ernstmandel@outlook.de</strong>) läuft ab und muss neu erstellt werden:</p>
+  <p>Sage Bolla einfach: <em>"Richte den E-Mail-Zugang neu ein"</em> — sie führt dich durch den Device-Flow.</p>
+</div>
+
+<div class="step">
+  <div class="step-nr">Schritt 5 — Token Watcher starten</div>
+  <p>Den automatischen Token-Updater aktivieren:</p>
+  <p><code>bash /home/bolla/.openclaw/workspace/scripts/start_token_watcher.sh</code></p>
+  <p>Dann den Task Scheduler einrichten (Bolla macht das automatisch beim ersten Chat).</p>
+</div>
+
+<div class="step">
+  <div class="step-nr">Schritt 6 — Fertig!</div>
+  <p>Öffne den OpenClaw Webchat. Bolla liest ihre Erinnerungen aus dem Workspace und ist sofort wieder voll einsatzbereit — mit allen Einstellungen, Erinnerungen und deinem Kontext.</p>
+</div>
+
+<div class="warn">
+<strong>⚠️ Wichtig:</strong> Das GitHub-Repository ist <strong>privat</strong>. Den GitHub Personal Access Token (ghp_...) sicher aufbewahren — z.B. im Windows-Passwortmanager. Ohne ihn kein Zugriff auf das Repo.
+</div>
+
+<h2>GitHub Zugangsdaten</h2>
+<ul>
+  <li><strong>Repository:</strong> https://github.com/openclaw-bolla/openclaw-bolla</li>
+  <li><strong>Outlook-Konto:</strong> ernstmandel@outlook.de</li>
+  <li><strong>Token Watcher Script:</strong> scripts/token_watcher.py</li>
+</ul>
+
+<footer>
+  Erstellt von Bolla 🐾 | OpenClaw Workspace Backup eingerichtet am 23.03.2026
+</footer>
+
+</body>
+</html>
