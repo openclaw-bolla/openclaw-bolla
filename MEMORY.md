@@ -68,3 +68,20 @@
 - pip installiert via get-pip.py
 - Edge: `/mnt/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe`
 - openclaw liegt unter: /home/bolla/.npm-global/bin/openclaw (PATH muss explizit gesetzt werden in VBS/Scripts)
+
+## Google Kontakte Sync (eingerichtet 24.03.2026)
+- Google OAuth: chrismandel13@gmail.com verbunden
+- Client ID: 527008391551-96d1bmosa19oqm26e8hj59rd7j73sv47.apps.googleusercontent.com
+- Token gespeichert: config/google_token.json (nicht im Repo)
+- Script: scripts/outlook_gmail_sync.py
+- Sync erfolgreich: 145 Outlook → Gmail, 142 aktualisiert, 29 neu
+
+## Autostart (perfektioniert 24.03.2026)
+- Portabler Launcher: scripts/openclaw-launcher.sh (kein hardcoded Pfad mehr)
+- VBS ruft nur `~/.openclaw/workspace/scripts/openclaw-launcher.sh` auf
+- Bei Umzug: VBS einfach kopieren, Rest läuft automatisch
+- Fixes: WSL-Wartezeit + vollständiger openclaw-Pfad → Gateway startet zuverlässig
+
+## Android Companion App
+- Noch nicht öffentlich im Play Store (Stand 24.03.2026)
+- Wöchentlicher Check eingerichtet (Cron) → Info per Telegram wenn verfügbar
