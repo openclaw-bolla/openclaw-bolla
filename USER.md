@@ -5,6 +5,9 @@
 - **Timezone:** Europe/Berlin (GMT+1)
 - **Notes:** Erstkontakt 18.03.2026 via Webchat
 
+## Präferenzen
+- Wenn Chris einen Vornamen nennt → immer zuerst in Outlook-Kontakten nachschlagen (Microsoft Graph API)
+
 ## Context
 
 - Hat mir den Namen "Bolla" gegeben
