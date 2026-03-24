@@ -1,7 +1,10 @@
 # MEMORY.md - Langzeitgedächtnis
 
 ## Über Chris
-- Name: Chris
+- Name: Chris Mandel
+- Geburtsdatum: 21.12.1955 (70 Jahre alt)
+- E-Mail Outlook: ernstmandel@outlook.de
+- E-Mail Gmail: chrismandel13@gmail.com
 - Surface Laptop, Windows + WSL2
 - Timezone: Europe/Berlin
 - Doktorand an der Uni Ulm
