@@ -4,7 +4,7 @@ export PATH="$PATH:/home/bolla/.npm-global/bin"
 
 LOG=/home/bolla/.openclaw/workspace/logs/token_watcher.log
 
-if pgrep -f token_watcher.py > /dev/null; then
+if pgrep -f "python3.*token_watcher.py" > /dev/null; then
     echo "$(date): Token Watcher läuft bereits." >> "$LOG"
 else
     echo "$(date): Token Watcher wird gestartet..." >> "$LOG"
