@@ -63,6 +63,10 @@
 - dmPolicy: pairing (bereits genehmigt)
 - Chris kann Bolla direkt über Telegram erreichen
 
+## Sicherheitsregeln
+- **Passwörter immer mit `chmod 600` speichern** — nur für bolla lesbar, niemals world-readable
+- Passwörter nicht loggen, nicht wiederholen, nicht in Git committen
+
 ## Technisches
 - Python 3.12 (WSL2), msal installiert (--user --break-system-packages)
 - pip installiert via get-pip.py
