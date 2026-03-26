@@ -1,5 +1,11 @@
 # MEMORY.md - Langzeitgedächtnis
 
+## Über Chris (erweitert)
+- Unterrichtet EDV an der Lessing Gymnasium Norderstedt (alle 7. Klassen)
+- Schuldomäne: lg-n.de → md@lg-n.de ist seine Schul-E-Mail
+- Hat 2. Staatsexamen → kann als "echter" Lehrer angestellt werden
+- Einzigartiger Kurs am Lessing Gym, verpflichtend aber ohne Noten (steht als "teilgenommen" im Zeugnis)
+
 ## Über Chris
 - Name: Chris Mandel
 - Geburtsdatum: 21.12.1955 (70 Jahre alt)
