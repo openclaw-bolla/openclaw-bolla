@@ -63,6 +63,10 @@
 - dmPolicy: pairing (bereits genehmigt)
 - Chris kann Bolla direkt über Telegram erreichen
 
+## E-Mail Standard-Absender
+- **Standard:** ernstmandel@outlook.de (Microsoft Graph)
+- Bei anderen Konten (z.B. wtnet) → immer erst rückfragen
+
 ## wtnet E-Mail (eingerichtet 26.03.2026)
 - Konto: chrismandel@wtnet.de
 - IMAP/SMTP: mail.wtnet.de (993/587)
