@@ -1,10 +1,12 @@
 # MEMORY.md - Langzeitgedächtnis
 
-## Über Chris (erweitert)
-- Unterrichtet EDV an der Lessing Gymnasium Norderstedt (alle 7. Klassen)
+## Über Chris (Beruf & Schule)
+- Seit 4 Jahren Rentner, arbeitet als **Senior Expert** im Schuldienst des Landes Schleswig-Holstein
+- Unterrichtet EDV am Lessing Gymnasium Norderstedt (alle 7. Klassen)
 - Schuldomäne: lg-n.de → md@lg-n.de ist seine Schul-E-Mail
-- Hat 2. Staatsexamen → kann als "echter" Lehrer angestellt werden
+- Hat 2. Staatsexamen → daher offiziell als Lehrer anstellbar
 - Einzigartiger Kurs am Lessing Gym, verpflichtend aber ohne Noten (steht als "teilgenommen" im Zeugnis)
+- Berufliche Karriere war ausschließlich in IT-Unternehmen — nie zuvor im Schuldienst
 
 ## Über Chris
 - Name: Chris Mandel
