@@ -97,6 +97,17 @@
 - Bei Umzug: VBS einfach kopieren, Rest läuft automatisch
 - Fixes: WSL-Wartezeit + vollständiger openclaw-Pfad → Gateway startet zuverlässig
 
+## Session 26.03.2026 — Österreich (Hotel)
+- Chris war in Österreich, Hotel-WLAN → Autostart funktionierte nicht (kein Netz beim Boot)
+- **Fix:** Launcher wartet jetzt bis zu 120 Sek auf Netzwerk bevor Gateway startet
+- **Fix:** PATH im Launcher explizit gesetzt (war Grund für "openclaw not found")
+- **Neu:** Windows-Popup "Bolla 🐾 bereit!" erscheint automatisch wenn Gateway läuft (WScript.Popup, 5 Sek, kein Wegklicken)
+- **Neu:** Spam-Löschung `[*** SPAM ***]` in wtnet alle 15 Min (wtnet_watcher.py)
+- **Neu:** wtnet Konto `chrismandel@wtnet.de` eingerichtet (IMAP/SMTP, Spam-Watcher)
+- 16 Spam-Mails sofort gelöscht
+- wtnet-Passwort war kurz in Git-History → bereinigt via git filter-repo + force-push
+- E-Mail Standard-Absender: ernstmandel@outlook.de — bei anderen Konten rückfragen
+
 ## Android Companion App
 - Noch nicht öffentlich im Play Store (Stand 24.03.2026)
 - Wöchentlicher Check eingerichtet (Cron) → Info per Telegram wenn verfügbar
