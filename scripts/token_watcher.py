@@ -136,36 +136,42 @@ def delete_email(access_token: str, message_id: str):
 
 
 def delete_spam_emails(access_token: str):
-    """Löscht alle E-Mails mit [*** SPAM ***] im Betreff."""
+    """Löscht alle E-Mails mit [*** SPAM ***] im Betreff (lokales Filtern)."""
     headers = {"Authorization": f"Bearer {access_token}"}
-    # Graph API: nach Betreff filtern
+    deleted = 0
+
+    # Alle Mails seitenweise holen und lokal filtern
     url = (
         "https://graph.microsoft.com/v1.0/me/messages"
-        "?$filter=contains(subject,'[*** SPAM ***]')"
-        "&$select=id,subject,receivedDateTime"
+        "?$select=id,subject,receivedDateTime"
         "&$top=50"
     )
-    r = requests.get(url, headers=headers)
-    if r.status_code != 200:
-        log.warning(f"Spam-Abfrage fehlgeschlagen: {r.status_code} {r.text}")
-        return
+    while url:
+        r = requests.get(url, headers=headers)
+        if r.status_code != 200:
+            log.warning(f"Spam-Abfrage fehlgeschlagen: {r.status_code} {r.text}")
+            break
+        data = r.json()
+        for mail in data.get("value", []):
+            subject = mail.get("subject") or ""
+            if "[*** SPAM ***]" in subject or "[*** SPAM**]" in subject or "*** SPAM ***" in subject:
+                mail_id = mail["id"]
+                r2 = requests.delete(
+                    f"https://graph.microsoft.com/v1.0/me/messages/{mail_id}",
+                    headers=headers
+                )
+                if r2.status_code == 204:
+                    log.info(f"🗑️  Spam gelöscht: '{subject[:60]}'")
+                    deleted += 1
+                else:
+                    log.warning(f"Spam löschen fehlgeschlagen ({r2.status_code}): '{subject[:60]}'")
+        # Nächste Seite
+        url = data.get("@odata.nextLink")
 
-    mails = r.json().get("value", [])
-    if not mails:
-        return
-
-    log.info(f"🗑️  {len(mails)} Spam-Mail(s) gefunden, lösche...")
-    for mail in mails:
-        subject = mail.get("subject", "")[:60]
-        mail_id = mail["id"]
-        r2 = requests.delete(
-            f"https://graph.microsoft.com/v1.0/me/messages/{mail_id}",
-            headers=headers
-        )
-        if r2.status_code == 204:
-            log.info(f"Spam gelöscht: '{subject}'")
-        else:
-            log.warning(f"Spam löschen fehlgeschlagen ({r2.status_code}): '{subject}'")
+    if deleted:
+        log.info(f"✅ {deleted} Spam-Mail(s) gelöscht.")
+    else:
+        log.info("Kein Spam gefunden.")
 
 
 # ── Token Update ───────────────────────────────────────────────────────────────
