@@ -15,13 +15,8 @@ notify_windows() {
     local message="$2"
     # PowerShell Toast Notification via Windows
     /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -Command "
-        Add-Type -AssemblyName System.Windows.Forms
-        \$notify = New-Object System.Windows.Forms.NotifyIcon
-        \$notify.Icon = [System.Drawing.SystemIcons]::Information
-        \$notify.Visible = \$true
-        \$notify.ShowBalloonTip(5000, '$title', '$message', [System.Windows.Forms.ToolTipIcon]::Info)
-        Start-Sleep -Milliseconds 6000
-        \$notify.Dispose()
+        \$wsh = New-Object -ComObject WScript.Shell
+        \$wsh.Popup('$message', 5, '$title', 64)
     " >> "$LOG" 2>&1
 }
 
