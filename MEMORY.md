@@ -13,13 +13,12 @@
 - E-Mail Gmail: chrismandel13@gmail.com
 - Surface Laptop, Windows + WSL2
 - Timezone: Europe/Berlin
-- Doktorand an der Uni Ulm
 - Erstkontakt: 18.03.2026
 
 ## Familie
 - **Robin Mandel** — Sohn von Chris
   - E-Mail: robinmandel@outlook.de
-  - Studiert Medizin in Ulm, 10. Semester
+  - Studiert Medizin in Ulm, 10. Semester → macht Doktorarbeit an der Uni Ulm
 
 ## Outlook Kontakte (verbunden 23.03.2026)
 - 145 Kontakte in ernstmandel@outlook.de
