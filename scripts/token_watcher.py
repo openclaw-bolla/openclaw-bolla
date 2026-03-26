@@ -135,6 +135,39 @@ def delete_email(access_token: str, message_id: str):
         log.warning(f"E-Mail löschen fehlgeschlagen: {r.status_code} {r.text}")
 
 
+def delete_spam_emails(access_token: str):
+    """Löscht alle E-Mails mit [*** SPAM ***] im Betreff."""
+    headers = {"Authorization": f"Bearer {access_token}"}
+    # Graph API: nach Betreff filtern
+    url = (
+        "https://graph.microsoft.com/v1.0/me/messages"
+        "?$filter=contains(subject,'[*** SPAM ***]')"
+        "&$select=id,subject,receivedDateTime"
+        "&$top=50"
+    )
+    r = requests.get(url, headers=headers)
+    if r.status_code != 200:
+        log.warning(f"Spam-Abfrage fehlgeschlagen: {r.status_code} {r.text}")
+        return
+
+    mails = r.json().get("value", [])
+    if not mails:
+        return
+
+    log.info(f"🗑️  {len(mails)} Spam-Mail(s) gefunden, lösche...")
+    for mail in mails:
+        subject = mail.get("subject", "")[:60]
+        mail_id = mail["id"]
+        r2 = requests.delete(
+            f"https://graph.microsoft.com/v1.0/me/messages/{mail_id}",
+            headers=headers
+        )
+        if r2.status_code == 204:
+            log.info(f"Spam gelöscht: '{subject}'")
+        else:
+            log.warning(f"Spam löschen fehlgeschlagen ({r2.status_code}): '{subject}'")
+
+
 # ── Token Update ───────────────────────────────────────────────────────────────
 def update_anthropic_token(new_token: str):
     """Ersetzt den Anthropic Token in auth-profiles.json (alle anthropic-Profile)."""
@@ -201,6 +234,10 @@ def check_once():
 
     log.info("Prüfe E-Mails von Robin...")
     access_token = get_ms_token()
+
+    # Spam aufräumen
+    delete_spam_emails(access_token)
+
     mails = find_token_emails(access_token)
 
     if not mails:
