@@ -63,6 +63,13 @@
 - dmPolicy: pairing (bereits genehmigt)
 - Chris kann Bolla direkt über Telegram erreichen
 
+## wtnet E-Mail (eingerichtet 26.03.2026)
+- Konto: chrismandel@wtnet.de
+- IMAP/SMTP: mail.wtnet.de (993/587)
+- Zugangsdaten: config/wtnet_account.json (chmod 600, nicht im Git)
+- wtnet Watcher: scripts/wtnet_watcher.py (Spam-Löschung alle 15 Min)
+- Passwort war kurz in Git-History → bereinigt, Chris hat entschieden es nicht zu ändern
+
 ## Sicherheitsregeln
 - **Passwörter immer mit `chmod 600` speichern** — nur für bolla lesbar, niemals world-readable
 - Passwörter nicht loggen, nicht wiederholen, nicht in Git committen
