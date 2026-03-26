@@ -6,6 +6,7 @@
 - Schuldomäne: lg-n.de → md@lg-n.de ist seine Schul-E-Mail
 - Hat 2. Staatsexamen → daher offiziell als Lehrer anstellbar
 - Einzigartiger Kurs am Lessing Gym, verpflichtend aber ohne Noten (steht als "teilgenommen" im Zeugnis)
+- **Schwerpunkt: PowerPoint** — Chris braucht demnächst Unterstützung dabei
 - Berufliche Karriere war ausschließlich in IT-Unternehmen — nie zuvor im Schuldienst
 
 ## Über Chris
