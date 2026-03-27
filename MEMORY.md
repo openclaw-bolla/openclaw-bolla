@@ -119,3 +119,20 @@
 ## Android Companion App
 - Noch nicht öffentlich im Play Store (Stand 24.03.2026)
 - Wöchentlicher Check eingerichtet (Cron) → Info per Telegram wenn verfügbar
+
+## Telegram Gruppe "Robin Papa jarvis" (27.03.2026)
+- Gruppe mit Robin und Jarvis (Robins KI-Assistent)
+- Jarvis Bot: @RobinMandels_Jarvis_bot
+- Bolla ist Mitglied + Admin der Gruppe
+- groupPolicy auf "open" gesetzt, Privacy Mode disabled
+- Problem: Gateway empfängt noch keine Gruppen-Nachrichten trotz korrekter Config → noch in Arbeit
+
+## Outlook Kontakte — Schreibrechte (24.03.2026)
+- Token wurde auf Contacts.ReadWrite erweitert (Device Flow)
+- Geburtstag von Chris in Outlook korrigiert: 1965 → 1955
+
+## Todos für Chris (offen)
+- Outlook → Gmail Kontakte sync (inkl. Bilder) — wenn zuhause am PC
+- OpenClaw Companion App auf Handy einrichten
+- Andalusien 2008 Ordner nach Orangenbaum-Fotos durchsuchen
+- Telegram Gruppe: Gruppen-Empfang für Bolla reparieren
