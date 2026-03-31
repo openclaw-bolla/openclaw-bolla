@@ -57,6 +57,15 @@ if [ -f "$WATCHER" ]; then
     bash "$WATCHER" >> "$LOG" 2>&1
 fi
 
+# ── Outlook Spam Watcher starten (falls nicht läuft) ──────────────────────────
+if ! pgrep -f "outlook_spam_watcher.py" > /dev/null; then
+    echo "$(date): Starte Outlook Spam Watcher..." >> "$LOG"
+    nohup python3 "$HOME/.openclaw/workspace/scripts/outlook_spam_watcher.py" >> "$LOG" 2>&1 &
+    echo "$(date): Outlook Spam Watcher gestartet (PID $!)." >> "$LOG"
+else
+    echo "$(date): Outlook Spam Watcher läuft bereits." >> "$LOG"
+fi
+
 # ── Popup ──────────────────────────────────────────────────────────────────────
 notify_windows "Bolla 🐾 bereit!" "Gateway läuft. Dashboard kann geöffnet werden."
 echo "$(date): Fertig." >> "$LOG"
