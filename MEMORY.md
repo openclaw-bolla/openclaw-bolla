@@ -22,6 +22,7 @@
 - **Robin Mandel** — Sohn von Chris
   - E-Mail: robinmandel@outlook.de
   - Studiert Medizin in Ulm, 10. Semester → macht Doktorarbeit an der Uni Ulm
+  - **Famulatur Tansania:** 01.08. – 08.09.2026 (Flüge über Istanbul, Reservierung RGXQU8)
 
 ## Outlook Kontakte (verbunden 23.03.2026)
 - 145 Kontakte in ernstmandel@outlook.de
@@ -66,10 +67,11 @@
 
 ## Telegram (eingerichtet 23.03.2026)
 - Bot: @bolla_mandel_bot
-- Bot Token: 8114115093:AAFvRoF_xnhshKM92bMdcwZ3DBCCe4KpwxQ
+- Bot Token: 8701645455:AAEdJmkMIxGyYMKmNKYVYmwvtB9c6auYIEc  ← AKTUELL (korrigiert 28.03.2026)
 - Chris Telegram ID: 8772213652
 - dmPolicy: pairing (bereits genehmigt)
 - Chris kann Bolla direkt über Telegram erreichen
+- Gruppe "Robin, Papa & Jarvis & Bolla": Chat-ID -5107085680
 
 ## E-Mail Standard-Absender
 - **Standard:** ernstmandel@outlook.de (Microsoft Graph)
@@ -85,6 +87,11 @@
 ## Sicherheitsregeln
 - **Passwörter immer mit `chmod 600` speichern** — nur für bolla lesbar, niemals world-readable
 - Passwörter nicht loggen, nicht wiederholen, nicht in Git committen
+- **VOR massiven Eingriffen in Outlook/OneDrive: immer Backup anlegen!**
+  - Alle betroffenen Daten als JSON exportieren
+  - Ablage: `/home/bolla/.openclaw/workspace/backups/`
+  - Dateiname mit Timestamp: z.B. `calendar-backup-2026-03-28T16-00.json`
+  - Erst nach Backup mit dem Eingriff beginnen
 
 ## Technisches
 - Python 3.12 (WSL2), msal installiert (--user --break-system-packages)
@@ -130,6 +137,15 @@
 ## Outlook Kontakte — Schreibrechte (24.03.2026)
 - Token wurde auf Contacts.ReadWrite erweitert (Device Flow)
 - Geburtstag von Chris in Outlook korrigiert: 1965 → 1955
+
+## Schule / Kalender (eingerichtet 02.04.2026)
+- **100 Kalendereinträge** für 7a, 7b, 7c (je I + II) in Outlook
+- Kategorien: Lessing I (preset4) / Lessing II (preset21)
+- 16 Themen pro Kurs (Basics → PowerPoint → RECAP)
+- Titel-Format: `7a I - Thema`
+- Rollback-Dateien in `backups/7a|7b|7c-created-events.json`
+- Dateipfad Kurse: `D:\OneDrive\Dokumente\Office\7. Klassen\`
+- 7a: Mi 12:30–14:05, 7b: Di 12:30–14:05, 7c: Di 7:50–9:25
 
 ## Todos für Chris (offen)
 - Outlook → Gmail Kontakte sync (inkl. Bilder) — wenn zuhause am PC
