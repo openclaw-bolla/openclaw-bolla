@@ -19,10 +19,23 @@
 - Erstkontakt: 18.03.2026
 
 ## Familie
+- **Chris Mandel** + **Renate Mandel** (Ehefrau)
 - **Robin Mandel** — Sohn von Chris
   - E-Mail: robinmandel@outlook.de
   - Studiert Medizin in Ulm, 10. Semester → macht Doktorarbeit an der Uni Ulm
   - **Famulatur Tansania:** 01.08. – 08.09.2026 (Flüge über Istanbul, Reservierung RGXQU8)
+  - KI-Assistent: Jarvis (@RobinMandels_Jarvis_bot)
+- **Stephanie Garschagen** (geb. Mandel) — Tochter von Chris
+  - E-Mail: stephanie.garschagen@gmail.com
+  - Ehemann: **Daniel Garschagen** (daniel.garschagen@web.de / googlemail.com)
+  - Kinder:
+    - **Emma Garschagen**
+    - **Mia Garschagen**
+    - **Anton Garschagen** (Zwilling)
+    - **Marie Sara Garschagen** (Zwilling)
+- **Matthias Mandel** — (Verwandter, Vater von Dominik)
+  - **Dominik Mandel** — Neffe von Chris, Sohn von Matthias
+- **Weitere Mandels in Kontakten:** Harald, Hubert, Jonas, Lisa, Maren, Amelie, Bettina, Ann-Kristin, Florian, Katharina
 
 ## Outlook Kontakte (verbunden 23.03.2026)
 - 145 Kontakte in ernstmandel@outlook.de
