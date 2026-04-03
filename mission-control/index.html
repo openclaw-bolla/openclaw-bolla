@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mission Control — Chris</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-dark: #0f1923;
+      --bg-sidebar: #152232;
+      --bg-card: #1a2d42;
+      --bg-card-hover: #213a52;
+      --accent: #4fc3f7;
+      --accent-dim: #2196f3;
+      --text: #e0e6ed;
+      --text-dim: #8899aa;
+      --text-bright: #ffffff;
+      --border: #253a50;
+      --success: #66bb6a;
+      --warning: #ffa726;
+      --danger: #ef5350;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      min-width: 240px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .sidebar-header {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 1px;
+    }
+
+    .sidebar-header .subtitle {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 12px 0;
+      overflow-y: auto;
+    }
+
+    .nav-section {
+      padding: 8px 20px 4px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      margin-top: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+      font-size: 14px;
+    }
+
+    .nav-item:hover {
+      background: rgba(79, 195, 247, 0.08);
+      color: var(--text-bright);
+    }
+
+    .nav-item.active {
+      background: rgba(79, 195, 247, 0.12);
+      border-left-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .nav-item .icon {
+      font-size: 18px;
+      width: 24px;
+      text-align: center;
+    }
+
+    .nav-item .badge {
+      margin-left: auto;
+      background: var(--accent-dim);
+      color: white;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Main Content */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .topbar {
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .topbar h2 {
+      font-size: 20px;
+      font-weight: 500;
+      color: var(--text-bright);
+    }
+
+    .topbar .clock {
+      font-size: 14px;
+      color: var(--text-dim);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .content {
+      flex: 1;
+      padding: 24px 28px;
+      overflow-y: auto;
+    }
+
+    /* Cards Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: all 0.2s;
+    }
+
+    .card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent-dim);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .card-icon {
+      font-size: 20px;
+    }
+
+    .card-body {
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .card-body .big-number {
+      font-size: 36px;
+      font-weight: 300;
+      color: var(--text-bright);
+      margin-bottom: 4px;
+    }
+
+    .card-body .label {
+      color: var(--text-dim);
+      font-size: 12px;
+    }
+
+    /* Event list */
+    .event-list {
+      list-style: none;
+    }
+
+    .event-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .event-item:last-child {
+      border-bottom: none;
+    }
+
+    .event-time {
+      font-size: 12px;
+      color: var(--accent);
+      min-width: 50px;
+      font-weight: 600;
+      padding-top: 2px;
+    }
+
+    .event-title {
+      font-size: 14px;
+      color: var(--text-bright);
+    }
+
+    .event-meta {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .event-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    .dot-lessing1 { background: #4fc3f7; }
+    .dot-lessing2 { background: #ab47bc; }
+    .dot-termin { background: #ef5350; }
+    .dot-default { background: #78909c; }
+
+    /* Mail list */
+    .mail-item {
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .mail-item:last-child {
+      border-bottom: none;
+    }
+
+    .mail-from {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-bright);
+    }
+
+    .mail-subject {
+      font-size: 13px;
+      color: var(--text);
+      margin-top: 2px;
+    }
+
+    .mail-date {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    /* Weather */
+    .weather-main {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .weather-temp {
+      font-size: 42px;
+      font-weight: 300;
+      color: var(--text-bright);
+    }
+
+    .weather-desc {
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+
+    .weather-icon {
+      font-size: 48px;
+    }
+
+    .weather-details {
+      display: flex;
+      gap: 24px;
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    /* Loading */
+    .loading {
+      color: var(--text-dim);
+      font-style: italic;
+      font-size: 13px;
+    }
+
+    /* Page sections (hidden by default) */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* Schule page */
+    .klassen-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .klasse-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .klasse-card h3 {
+      font-size: 16px;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .next-lesson {
+      background: rgba(79, 195, 247, 0.1);
+      border: 1px solid rgba(79, 195, 247, 0.2);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+
+    .next-lesson .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>MISSION CONTROL</h1>
+      <div class="subtitle">Chris Mandel</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">Übersicht</div>
+      <div class="nav-item active" data-page="dashboard">
+        <span class="icon">📊</span>
+        <span>Dashboard</span>
+      </div>
+
+      <div class="nav-section">Arbeit</div>
+      <div class="nav-item" data-page="schule">
+        <span class="icon">🏫</span>
+        <span>Schule</span>
+      </div>
+      <div class="nav-item" data-page="kalender">
+        <span class="icon">📅</span>
+        <span>Kalender</span>
+      </div>
+      <div class="nav-item" data-page="email">
+        <span class="icon">📧</span>
+        <span>E-Mail</span>
+        <span class="badge" id="mail-badge" style="display:none">0</span>
+      </div>
+
+      <div class="nav-section">Info</div>
+      <div class="nav-item" data-page="wetter">
+        <span class="icon">🌤️</span>
+        <span>Wetter</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="status-dot" id="bolla-status"></div>
+      <span>Bolla 🐾 online</span>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <h2 id="page-title">Dashboard</h2>
+      <div class="clock" id="clock"></div>
+    </div>
+
+    <div class="content">
+
+      <!-- Dashboard Page -->
+      <div class="page active" id="page-dashboard">
+        <div class="cards-grid">
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Nächste Termine</span>
+              <span class="card-icon">📅</span>
+            </div>
+            <div class="card-body">
+              <ul class="event-list" id="upcoming-events">
+                <li class="loading">Lade Termine...</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">E-Mail</span>
+              <span class="card-icon">📧</span>
+            </div>
+            <div class="card-body">
+              <div class="big-number" id="mail-count">—</div>
+              <div class="label">ungelesene Nachrichten</div>
+              <div id="recent-mails" style="margin-top: 12px;"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Wetter Norderstedt</span>
+              <span class="card-icon">🌤️</span>
+            </div>
+            <div class="card-body" id="weather-card">
+              <div class="loading">Lade Wetter...</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Schule — Nächste Stunde</span>
+              <span class="card-icon">🏫</span>
+            </div>
+            <div class="card-body" id="next-class-card">
+              <div class="loading">Lade...</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Schule Page -->
+      <div class="page" id="page-schule">
+        <div class="klassen-grid" id="schule-content">
+          <div class="loading">Lade Schulplan...</div>
+        </div>
+      </div>
+
+      <!-- Kalender Page -->
+      <div class="page" id="page-kalender">
+        <div id="kalender-content">
+          <div class="loading">Lade Kalender...</div>
+        </div>
+      </div>
+
+      <!-- Email Page -->
+      <div class="page" id="page-email">
+        <div id="email-content">
+          <div class="loading">Lade E-Mails...</div>
+        </div>
+      </div>
+
+      <!-- Wetter Page -->
+      <div class="page" id="page-wetter">
+        <div id="wetter-content">
+          <div class="loading">Lade Wetter...</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // === Navigation ===
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        item.classList.add('active');
+        const page = item.dataset.page;
+        document.getElementById('page-' + page).classList.add('active');
+        document.getElementById('page-title').textContent =
+          item.querySelector('span:nth-child(2)').textContent;
+      });
+    });
+
+    // === Clock ===
+    function updateClock() {
+      const now = new Date();
+      const opts = { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+                     hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      document.getElementById('clock').textContent =
+        now.toLocaleDateString('de-DE', opts);
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // === Weather (wttr.in) ===
+    async function loadWeather() {
+      try {
+        const r = await fetch('https://wttr.in/Norderstedt?format=j1');
+        const d = await r.json();
+        const cur = d.current_condition[0];
+        const temp = cur.temp_C;
+        const desc = cur.lang_de && cur.lang_de[0] ? cur.lang_de[0].value : cur.weatherDesc[0].value;
+        const humidity = cur.humidity;
+        const wind = cur.windspeedKmph;
+        const feelsLike = cur.FeelsLikeC;
+
+        const icons = {
+          'Sunny': '☀️', 'Clear': '🌙', 'Partly cloudy': '⛅',
+          'Cloudy': '☁️', 'Overcast': '☁️', 'Mist': '🌫️',
+          'Fog': '🌫️', 'Light rain': '🌦️', 'Rain': '🌧️',
+          'Heavy rain': '🌧️', 'Snow': '❄️', 'Thunderstorm': '⛈️'
+        };
+        const icon = icons[cur.weatherDesc[0].value] || '🌤️';
+
+        document.getElementById('weather-card').innerHTML = `
+          <div class="weather-main">
+            <span class="weather-icon">${icon}</span>
+            <div>
+              <div class="weather-temp">${temp}°C</div>
+              <div class="weather-desc">${desc}</div>
+            </div>
+          </div>
+          <div class="weather-details">
+            <span>Gefühlt ${feelsLike}°C</span>
+            <span>💧 ${humidity}%</span>
+            <span>💨 ${wind} km/h</span>
+          </div>
+        `;
+
+        // Full weather page
+        const forecast = d.weather.slice(0, 3);
+        let wHtml = `<div class="cards-grid">`;
+        wHtml += `<div class="card"><div class="card-header"><span class="card-title">Aktuell</span></div>
+          <div class="card-body">
+            <div class="weather-main">
+              <span class="weather-icon">${icon}</span>
+              <div><div class="weather-temp">${temp}°C</div><div class="weather-desc">${desc}</div></div>
+            </div>
+            <div class="weather-details">
+              <span>Gefühlt ${feelsLike}°C</span><span>💧 ${humidity}%</span><span>💨 ${wind} km/h</span>
+            </div>
+          </div></div>`;
+        forecast.forEach(day => {
+          const date = new Date(day.date).toLocaleDateString('de-DE', {weekday:'long', day:'2-digit', month:'2-digit'});
+          wHtml += `<div class="card"><div class="card-header"><span class="card-title">${date}</span></div>
+            <div class="card-body">
+              <div style="font-size:24px;color:var(--text-bright)">${day.mintempC}° – ${day.maxtempC}°C</div>
+              <div class="weather-desc" style="margin-top:4px">${day.hourly[4].lang_de?.[0]?.value || day.hourly[4].weatherDesc[0].value}</div>
+              <div class="weather-details" style="margin-top:8px">
+                <span>☀️ ${day.astronomy[0].sunrise}</span><span>🌙 ${day.astronomy[0].sunset}</span>
+              </div>
+            </div></div>`;
+        });
+        wHtml += `</div>`;
+        document.getElementById('wetter-content').innerHTML = wHtml;
+      } catch(e) {
+        document.getElementById('weather-card').innerHTML = '<span class="loading">Wetter nicht verfügbar</span>';
+      }
+    }
+    loadWeather();
+
+    // === Placeholder for API data (will be filled by Bolla's backend) ===
+    // For now, show static demo data
+
+    // Upcoming events placeholder
+    document.getElementById('upcoming-events').innerHTML = `
+      <li class="event-item">
+        <div class="event-dot dot-default"></div>
+        <div><div class="event-title" style="color:var(--text-dim);font-style:italic">
+          API-Anbindung wird eingerichtet...
+        </div></div>
+      </li>
+    `;
+
+    // Mail placeholder
+    document.getElementById('mail-count').textContent = '—';
+
+    // Next class placeholder
+    document.getElementById('next-class-card').innerHTML = `
+      <div style="color:var(--text-dim);font-style:italic">API-Anbindung wird eingerichtet...</div>
+    `;
+
+    // Schule overview
+    const klassen = [
+      { name: '7a I', day: 'Mittwoch', time: '12:30 – 14:05', color: 'dot-lessing1' },
+      { name: '7a II', day: 'Mittwoch', time: '12:30 – 14:05', color: 'dot-lessing2' },
+      { name: '7b I', day: 'Dienstag', time: '12:30 – 14:05', color: 'dot-lessing1' },
+      { name: '7b II', day: 'Dienstag', time: '12:30 – 14:05', color: 'dot-lessing2' },
+      { name: '7c I', day: 'Dienstag', time: '07:50 – 09:25', color: 'dot-lessing1' },
+      { name: '7c II', day: 'Dienstag', time: '07:50 – 09:25', color: 'dot-lessing2' },
+    ];
+
+    let schuleHtml = '';
+    klassen.forEach(k => {
+      schuleHtml += `
+        <div class="klasse-card">
+          <h3><span class="event-dot ${k.color}" style="display:inline-block;vertical-align:middle;margin-right:8px"></span>${k.name}</h3>
+          <div style="color:var(--text-dim)">${k.day}, ${k.time}</div>
+          <div class="next-lesson">
+            <div class="label">Nächste Stunde</div>
+            <div style="color:var(--text-dim);font-style:italic;font-size:13px">Wird geladen...</div>
+          </div>
+        </div>
+      `;
+    });
+    document.getElementById('schule-content').innerHTML = schuleHtml;
+  </script>
+</body>
+</html>

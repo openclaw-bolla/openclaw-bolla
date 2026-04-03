@@ -250,35 +250,49 @@ def check_once():
         log.info("Keine E-Mails mit Anthropic Token gefunden.")
         return
 
-    for mail in mails:
-        mail_id = mail["id"]
-        if mail_id in processed_ids:
-            log.info(f"Mail bereits verarbeitet, überspringe.")
-            continue
+    # Mails sind nach Datum sortiert (älteste zuerst) → letzte Mail ist die neueste
+    new_mails = [m for m in mails if m["id"] not in processed_ids]
+    prev_kept_id = state.get("kept_mail_id")  # Fallback-Mail aus letztem Durchlauf
 
-        subject = mail.get("subject", "(kein Betreff)")
-        tokens = mail["_extracted_tokens"]
-        new_token = tokens[0]  # Ersten gefundenen Token nehmen
+    if not new_mails:
+        log.info("Keine neuen Token-Mails.")
+        return
 
-        log.info(f"Token gefunden in Mail: '{subject}'")
-        log.info(f"Neuer Token: {new_token[:25]}...")
+    # Neueste Mail ist die letzte in der Liste
+    newest_mail = new_mails[-1]
+    subject = newest_mail.get("subject", "(kein Betreff)")
+    tokens = newest_mail["_extracted_tokens"]
+    new_token = tokens[0]
 
-        # Token aktualisieren
-        update_anthropic_token(new_token)
+    log.info(f"Token gefunden in Mail: '{subject}'")
+    log.info(f"Neuer Token: {new_token[:25]}...")
 
-        # Mail löschen
-        delete_email(access_token, mail_id)
+    # Token aktualisieren
+    update_anthropic_token(new_token)
 
-        # Gateway neu starten
-        restart_gateway()
+    # Gateway neu starten
+    restart_gateway()
 
-        # Als verarbeitet markieren
-        processed_ids.add(mail_id)
-        log.info("✅ Token erfolgreich aktualisiert!")
+    # Jetzt die VORHERIGE Fallback-Mail löschen (die neue bleibt als Fallback)
+    if prev_kept_id:
+        log.info(f"Lösche vorherige Fallback-Mail {prev_kept_id[:20]}...")
+        delete_email(access_token, prev_kept_id)
 
-    # State speichern (max 100 IDs behalten)
+    # Alle anderen neuen Mails löschen (nur die neueste behalten)
+    for mail in new_mails[:-1]:
+        log.info(f"Lösche ältere Token-Mail: '{mail.get('subject', '')[:40]}'")
+        delete_email(access_token, mail["id"])
+
+    # Als verarbeitet markieren
+    for mail in new_mails:
+        processed_ids.add(mail["id"])
+
+    log.info(f"✅ Token aktualisiert! Neueste Mail bleibt als Fallback.")
+
+    # State speichern
     state["last_check"] = int(time.time())
     state["processed_mail_ids"] = list(processed_ids)[-100:]
+    state["kept_mail_id"] = newest_mail["id"]  # Fallback-Mail merken
     save_state(state)
 
 

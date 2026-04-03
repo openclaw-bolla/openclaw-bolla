@@ -151,4 +151,4 @@
 - Outlook → Gmail Kontakte sync (inkl. Bilder) — wenn zuhause am PC
 - OpenClaw Companion App auf Handy einrichten
 - Andalusien 2008 Ordner nach Orangenbaum-Fotos durchsuchen
-- Telegram Gruppe: Gruppen-Empfang für Bolla reparieren
+- ~~Telegram Gruppe: Gruppen-Empfang für Bolla reparieren~~ → geht in Telegram nicht (02.04.2026)
