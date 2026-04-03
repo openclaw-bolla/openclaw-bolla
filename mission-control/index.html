@@ -424,6 +424,10 @@
         <span class="icon">🌤️</span>
         <span>Wetter</span>
       </div>
+      <div class="nav-item" data-page="graph">
+        <span class="icon">🧠</span>
+        <span>Bolla's Brain</span>
+      </div>
     </nav>
 
     <div class="sidebar-footer">
@@ -518,6 +522,11 @@
         <div id="wetter-content">
           <div class="loading">Lade Wetter...</div>
         </div>
+      </div>
+
+      <!-- Graph Page -->
+      <div class="page" id="page-graph">
+        <div id="graph-container" style="width:100%;height:calc(100vh - 80px);"></div>
       </div>
 
     </div>
@@ -635,6 +644,231 @@
     document.getElementById('next-class-card').innerHTML = `
       <div style="color:var(--text-dim);font-style:italic">API-Anbindung wird eingerichtet...</div>
     `;
+
+    // === Brain Graph (D3.js force-directed) ===
+    async function loadGraph() {
+      // Define Bolla's knowledge nodes and links from workspace files
+      const nodes = [
+        { id: 'HOME', group: 'core', label: '🐾 HOME', size: 20 },
+        { id: 'MEMORY', group: 'memory', label: '🧠 MEMORY', size: 18 },
+        { id: 'SOUL', group: 'soul', label: '💜 SOUL', size: 14 },
+        { id: 'USER', group: 'core', label: '👤 USER', size: 14 },
+        { id: 'IDENTITY', group: 'core', label: '🐾 IDENTITY', size: 12 },
+        { id: 'AGENTS', group: 'core', label: '⚙️ AGENTS', size: 10 },
+        { id: 'TOOLS', group: 'core', label: '🔧 TOOLS', size: 10 },
+        { id: 'HEARTBEAT', group: 'core', label: '💓 HEARTBEAT', size: 8 },
+        { id: '2026-04-03', group: 'daily', label: '📝 03.04.', size: 12 },
+        { id: '2026-04-02', group: 'daily', label: '📝 02.04.', size: 12 },
+        { id: '2026-04-02-standby', group: 'daily', label: '📝 02.04. Standby', size: 8 },
+        { id: '2026-03-24', group: 'daily', label: '📝 24.03.', size: 10 },
+        { id: '2026-03-23', group: 'daily', label: '📝 23.03.', size: 10 },
+        { id: '2026-03-22', group: 'daily', label: '📝 22.03.', size: 10 },
+        // Topics
+        { id: 'Familie', group: 'topic', label: '👨‍👩‍👧‍👦 Familie', size: 14 },
+        { id: 'Schule', group: 'topic', label: '🏫 Schule', size: 14 },
+        { id: 'Email', group: 'topic', label: '📧 E-Mail', size: 12 },
+        { id: 'Kontakte', group: 'topic', label: '📇 Kontakte', size: 12 },
+        { id: 'Telegram', group: 'topic', label: '💬 Telegram', size: 10 },
+        { id: 'Autostart', group: 'topic', label: '🚀 Autostart', size: 10 },
+        { id: 'TokenWatcher', group: 'topic', label: '🔑 Token', size: 10 },
+        { id: 'GitHub', group: 'topic', label: '📦 GitHub', size: 8 },
+      ];
+
+      const links = [
+        // HOME links
+        { source: 'HOME', target: 'MEMORY' },
+        { source: 'HOME', target: 'SOUL' },
+        { source: 'HOME', target: 'USER' },
+        { source: 'HOME', target: 'IDENTITY' },
+        { source: 'HOME', target: 'AGENTS' },
+        { source: 'HOME', target: 'TOOLS' },
+        { source: 'HOME', target: 'HEARTBEAT' },
+        // MEMORY links to topics
+        { source: 'MEMORY', target: 'Familie' },
+        { source: 'MEMORY', target: 'Schule' },
+        { source: 'MEMORY', target: 'Email' },
+        { source: 'MEMORY', target: 'Kontakte' },
+        { source: 'MEMORY', target: 'Telegram' },
+        { source: 'MEMORY', target: 'Autostart' },
+        { source: 'MEMORY', target: 'TokenWatcher' },
+        { source: 'MEMORY', target: 'GitHub' },
+        // Daily notes link to MEMORY
+        { source: 'MEMORY', target: '2026-04-03' },
+        { source: 'MEMORY', target: '2026-04-02' },
+        { source: 'MEMORY', target: '2026-04-02-standby' },
+        { source: 'MEMORY', target: '2026-03-24' },
+        { source: 'MEMORY', target: '2026-03-23' },
+        { source: 'MEMORY', target: '2026-03-22' },
+        // Topic cross-links
+        { source: '2026-04-03', target: 'Kontakte' },
+        { source: '2026-04-03', target: 'Familie' },
+        { source: '2026-04-02', target: 'Schule' },
+        { source: '2026-03-23', target: 'Telegram' },
+        { source: '2026-03-22', target: 'TokenWatcher' },
+        { source: 'USER', target: 'Familie' },
+        { source: 'Schule', target: 'USER' },
+      ];
+
+      const colors = {
+        core: '#4fc3f7',
+        memory: '#ff9800',
+        soul: '#e040fb',
+        daily: '#4fc3f7',
+        topic: '#66bb6a',
+      };
+
+      const container = document.getElementById('graph-container');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      // Simple canvas-based force graph
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      container.innerHTML = '';
+      container.appendChild(canvas);
+      const ctx = canvas.getContext('2d');
+
+      // Physics simulation
+      const nodeMap = {};
+      nodes.forEach(n => {
+        n.x = width/2 + (Math.random() - 0.5) * 300;
+        n.y = height/2 + (Math.random() - 0.5) * 300;
+        n.vx = 0;
+        n.vy = 0;
+        nodeMap[n.id] = n;
+      });
+
+      function simulate() {
+        // Center gravity
+        nodes.forEach(n => {
+          n.vx += (width/2 - n.x) * 0.001;
+          n.vy += (height/2 - n.y) * 0.001;
+        });
+
+        // Repulsion
+        for (let i = 0; i < nodes.length; i++) {
+          for (let j = i+1; j < nodes.length; j++) {
+            const dx = nodes[j].x - nodes[i].x;
+            const dy = nodes[j].y - nodes[i].y;
+            const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+            const force = 800 / (dist * dist);
+            nodes[i].vx -= dx/dist * force;
+            nodes[i].vy -= dy/dist * force;
+            nodes[j].vx += dx/dist * force;
+            nodes[j].vy += dy/dist * force;
+          }
+        }
+
+        // Attraction (links)
+        links.forEach(l => {
+          const s = nodeMap[l.source] || nodeMap[l.source.id];
+          const t = nodeMap[l.target] || nodeMap[l.target.id];
+          if (!s || !t) return;
+          const dx = t.x - s.x;
+          const dy = t.y - s.y;
+          const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+          const force = (dist - 120) * 0.005;
+          s.vx += dx/dist * force;
+          s.vy += dy/dist * force;
+          t.vx -= dx/dist * force;
+          t.vy -= dy/dist * force;
+        });
+
+        // Damping + update
+        nodes.forEach(n => {
+          n.vx *= 0.9;
+          n.vy *= 0.9;
+          n.x += n.vx;
+          n.y += n.vy;
+          // Bounds
+          n.x = Math.max(40, Math.min(width-40, n.x));
+          n.y = Math.max(40, Math.min(height-40, n.y));
+        });
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, width, height);
+
+        // Links
+        ctx.strokeStyle = 'rgba(79, 195, 247, 0.15)';
+        ctx.lineWidth = 1;
+        links.forEach(l => {
+          const s = nodeMap[l.source] || nodeMap[l.source.id];
+          const t = nodeMap[l.target] || nodeMap[l.target.id];
+          if (!s || !t) return;
+          ctx.beginPath();
+          ctx.moveTo(s.x, s.y);
+          ctx.lineTo(t.x, t.y);
+          ctx.stroke();
+        });
+
+        // Nodes
+        nodes.forEach(n => {
+          // Glow
+          ctx.shadowColor = colors[n.group] || '#4fc3f7';
+          ctx.shadowBlur = 15;
+          ctx.fillStyle = colors[n.group] || '#4fc3f7';
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.size/2 + 3, 0, Math.PI*2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          // Inner
+          ctx.fillStyle = '#0f1923';
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.size/2, 0, Math.PI*2);
+          ctx.fill();
+
+          // Bright center
+          ctx.fillStyle = colors[n.group] || '#4fc3f7';
+          ctx.globalAlpha = 0.8;
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.size/2 - 1, 0, Math.PI*2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+
+          // Label
+          ctx.fillStyle = '#e0e6ed';
+          ctx.font = `${Math.max(10, n.size * 0.7)}px 'Segoe UI', sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.fillText(n.label, n.x, n.y + n.size/2 + 16);
+        });
+      }
+
+      function tick() {
+        simulate();
+        draw();
+        requestAnimationFrame(tick);
+      }
+      tick();
+
+      // Drag support
+      let dragNode = null;
+      canvas.addEventListener('mousedown', e => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        dragNode = nodes.find(n => Math.hypot(n.x-mx, n.y-my) < n.size);
+      });
+      canvas.addEventListener('mousemove', e => {
+        if (!dragNode) return;
+        const rect = canvas.getBoundingClientRect();
+        dragNode.x = e.clientX - rect.left;
+        dragNode.y = e.clientY - rect.top;
+        dragNode.vx = 0;
+        dragNode.vy = 0;
+      });
+      canvas.addEventListener('mouseup', () => dragNode = null);
+    }
+
+    // Load graph when page shown
+    const graphObserver = new MutationObserver(() => {
+      if (document.getElementById('page-graph').classList.contains('active')) {
+        loadGraph();
+      }
+    });
+    document.querySelectorAll('.page').forEach(p => graphObserver.observe(p, { attributes: true }));
 
     // Schule overview
     const klassen = [
