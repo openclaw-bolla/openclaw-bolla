@@ -30,7 +30,7 @@ html, body {
   width: 100%; height: 100vh;
   overflow: hidden;
   font-family: 'Segoe UI', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 18px;
   color: var(--text);
   background:
     linear-gradient(rgba(10,16,26,0.72), rgba(10,16,26,0.72)),
@@ -46,8 +46,8 @@ html, body {
 
 /* ===== SIDEBAR ===== */
 #sidebar {
-  width: 220px;
-  min-width: 220px;
+  width: 200px;
+  min-width: 200px;
   height: 100vh;
   background: var(--sidebar);
   backdrop-filter: blur(12px);
@@ -63,7 +63,7 @@ html, body {
 }
 
 #sidebar-header h1 {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--accent);
   letter-spacing: 1px;
@@ -210,7 +210,7 @@ html, body {
   backdrop-filter: blur(10px);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 16px;
+  padding: 18px;
   transition: background 0.2s;
 }
 
@@ -224,9 +224,9 @@ html, body {
 }
 
 .card-title {
-  font-size: 11px;
+  font-size: 16px;
   font-weight: 600;
-  color: var(--dim);
+  color: var(--bright);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -241,9 +241,9 @@ html, body {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 6px 0;
+  padding: 7px 0;
   border-bottom: 1px solid rgba(255,255,255,0.04);
-  font-size: 12px;
+  font-size: 13px;
 }
 .event-item:last-child { border-bottom: none; }
 .event-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
@@ -449,7 +449,7 @@ html, body {
 <div id="lightbox" onclick="lbClose()">
   <button id="lb-close" onclick="lbClose()">✕</button>
   <button id="lb-prev" onclick="event.stopPropagation();lbNav(-1)">‹</button>
-  <img id="lb-img" src="" onclick="event.stopPropagation()">
+  <img id="lb-img" src="" onclick="lbClose()">
   <button id="lb-next" onclick="event.stopPropagation();lbNav(1)">›</button>
   <div id="lb-caption"></div>
 </div>
@@ -502,7 +502,7 @@ function renderDashboardEvents() {
   let h = '';
   _events.slice(0,6).forEach(ev => {
     const dot = ev.category?.includes('Lessing I') ? 'dot-b1' : ev.category?.includes('Lessing II') ? 'dot-b2' : ev.category ? 'dot-ev' : 'dot-def';
-    h += `<li class="event-item"><div class="event-dot ${dot}"></div><div class="event-time">${ev.weekday} ${ev.time}</div><div><div class="event-title">${ev.title}</div><div class="event-meta">${ev.date}</div></div></li>`;
+    h += `<li class="event-item"><div class="event-dot ${dot}"></div><div class="event-time" style="font-size:14px">${ev.weekday} ${ev.time}</div><div><div class="event-title" style="font-size:15px">${ev.title}</div><div class="event-meta">${ev.date}</div></div></li>`;
   });
   document.getElementById('upcoming-events').innerHTML = h;
 }
@@ -670,9 +670,9 @@ function loadSchule() {
   });
   let h = '';
   klassen.forEach(k => {
-    const nxt = k.next ? `<div style="font-weight:500;color:var(--bright)">${k.next.title.replace(k.key+' - ','')}</div><div style="color:var(--accent);font-size:12px;margin-top:3px">${k.next.weekday}, ${k.next.date} · ${k.next.time}</div>` : `<div style="color:var(--dim);font-style:italic;font-size:12px">Kein Termin bald</div>`;
+    const nxt = k.next ? `<div style="font-weight:500;color:var(--bright);font-size:15px">${k.next.title.replace(k.key+' - ','')}</div><div style="color:var(--accent);font-size:14px;margin-top:3px">${k.next.weekday}, ${k.next.date} · ${k.next.time}</div>` : `<div style="color:var(--dim);font-style:italic;font-size:12px">Kein Termin bald</div>`;
     h += `<div class="card"><div class="card-head"><span class="card-title"><span class="event-dot ${k.dot}" style="display:inline-block;margin-right:6px;vertical-align:middle"></span>${k.name}</span></div>
-      <div style="color:var(--dim);font-size:12px">${k.day}, ${k.time}</div>
+      <div style="color:var(--bright);font-size:14px">${k.day}, ${k.time}</div>
       <div class="klasse-next"><div class="klasse-next-label">Nächste Stunde</div>${nxt}</div></div>`;
   });
   document.getElementById('schule-content').innerHTML = h;
