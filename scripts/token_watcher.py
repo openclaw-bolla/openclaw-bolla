@@ -135,66 +135,109 @@ def delete_email(access_token: str, message_id: str):
         log.warning(f"E-Mail löschen fehlgeschlagen: {r.status_code} {r.text}")
 
 
-def delete_spam_emails(access_token: str):
-    """Löscht alle E-Mails mit [*** SPAM ***] im Betreff (lokales Filtern)."""
+def is_spam_subject(subject: str) -> bool:
+    """Prüft ob ein Betreff ein Spam-Muster enthält."""
+    s = subject.upper()
+    return (
+        "*** SPAM" in s or
+        "**SPAM" in s or
+        "[SPAM]" in s or
+        "SPAM ***" in s
+    )
+
+
+def delete_spam_in_folder(access_token: str, folder_id: str, folder_name: str) -> int:
+    """Löscht Spam-Mails in einem bestimmten Ordner."""
     headers = {"Authorization": f"Bearer {access_token}"}
     deleted = 0
-
-    # Alle Mails seitenweise holen und lokal filtern
     url = (
-        "https://graph.microsoft.com/v1.0/me/messages"
-        "?$select=id,subject,receivedDateTime"
-        "&$top=50"
+        f"https://graph.microsoft.com/v1.0/me/mailFolders/{folder_id}/messages"
+        "?$select=id,subject&$top=50"
     )
     while url:
         r = requests.get(url, headers=headers)
         if r.status_code != 200:
-            log.warning(f"Spam-Abfrage fehlgeschlagen: {r.status_code} {r.text}")
             break
         data = r.json()
         for mail in data.get("value", []):
             subject = mail.get("subject") or ""
-            if "[*** SPAM ***]" in subject or "[*** SPAM**]" in subject or "*** SPAM ***" in subject:
-                mail_id = mail["id"]
+            if is_spam_subject(subject):
                 r2 = requests.delete(
-                    f"https://graph.microsoft.com/v1.0/me/messages/{mail_id}",
+                    f"https://graph.microsoft.com/v1.0/me/messages/{mail['id']}",
                     headers=headers
                 )
                 if r2.status_code == 204:
-                    log.info(f"🗑️  Spam gelöscht: '{subject[:60]}'")
+                    log.info(f"🗑️  [{folder_name}] Spam gelöscht: '{subject[:60]}'")
                     deleted += 1
                 else:
                     log.warning(f"Spam löschen fehlgeschlagen ({r2.status_code}): '{subject[:60]}'")
-        # Nächste Seite
         url = data.get("@odata.nextLink")
+    return deleted
 
-    if deleted:
-        log.info(f"✅ {deleted} Spam-Mail(s) gelöscht.")
+
+def delete_spam_emails(access_token: str):
+    """Löscht alle Spam-Mails in Inbox + allen Unterordnern."""
+    headers = {"Authorization": f"Bearer {access_token}"}
+    total_deleted = 0
+
+    # Alle Mail-Ordner holen
+    r = requests.get(
+        "https://graph.microsoft.com/v1.0/me/mailFolders?$top=50",
+        headers=headers
+    )
+    if r.status_code != 200:
+        log.warning(f"Ordner-Abfrage fehlgeschlagen: {r.status_code}")
+        return
+
+    folders = r.json().get("value", [])
+    
+    # Relevante Ordner durchsuchen (Inbox + Junk + alle benutzerdefinierten)
+    skip_folders = {"Deleted Items", "Gesendete Elemente", "Sent Items",
+                    "Drafts", "Entwürfe", "Outbox", "Scheduled"}
+    
+    for folder in folders:
+        fname = folder.get("displayName", "")
+        if fname in skip_folders:
+            continue
+        fid = folder["id"]
+        deleted = delete_spam_in_folder(access_token, fid, fname)
+        total_deleted += deleted
+
+    if total_deleted:
+        log.info(f"✅ {total_deleted} Spam-Mail(s) gelöscht.")
     else:
         log.info("Kein Spam gefunden.")
 
 
 # ── Token Update ───────────────────────────────────────────────────────────────
-def update_anthropic_token(new_token: str):
-    """Ersetzt den Anthropic Token in auth-profiles.json (alle anthropic-Profile)."""
+def update_anthropic_token(new_token: str) -> bool:
+    """Ersetzt den Anthropic Token in auth-profiles.json (alle anthropic-Profile).
+    Gibt True zurück wenn der Token neu/geändert ist, False wenn er identisch war."""
     with open(AUTH_PROFILES) as f:
         profiles = json.load(f)
 
     updated = []
+    changed = False
     for profile_name, profile in profiles.get("profiles", {}).items():
         if profile.get("provider") == "anthropic":
-            old = profile.get("token", "")[:20] + "..."
+            old_token = profile.get("token", "")
+            if old_token == new_token:
+                log.info(f"{profile_name}: Token unverändert, kein Neustart nötig.")
+                continue
             profile["token"] = new_token
-            updated.append(f"{profile_name} (war: {old})")
+            updated.append(f"{profile_name} (war: {old_token[:20]}...)")
+            changed = True
 
-    with open(AUTH_PROFILES, "w") as f:
-        json.dump(profiles, f, indent=2)
+    if changed:
+        with open(AUTH_PROFILES, "w") as f:
+            json.dump(profiles, f, indent=2)
+        for info in updated:
+            log.info(f"Anthropic Token aktualisiert: {info} → Neu: {new_token[:20]}...")
+    
+    if not updated and not changed:
+        log.info("Token bereits aktuell — kein Gateway-Neustart.")
 
-    for info in updated:
-        log.info(f"Anthropic Token aktualisiert: {info} → Neu: {new_token[:20]}...")
-
-    if not updated:
-        log.warning("Kein anthropic-Profil in auth-profiles.json gefunden!")
+    return changed
 
 
 # ── Gateway Neustart ───────────────────────────────────────────────────────────
@@ -267,11 +310,13 @@ def check_once():
     log.info(f"Token gefunden in Mail: '{subject}'")
     log.info(f"Neuer Token: {new_token[:25]}...")
 
-    # Token aktualisieren
-    update_anthropic_token(new_token)
+    # Token aktualisieren — nur neu starten wenn sich was geändert hat
+    token_changed = update_anthropic_token(new_token)
 
-    # Gateway neu starten
-    restart_gateway()
+    if token_changed:
+        restart_gateway()
+    else:
+        log.info("Token unverändert — Gateway-Neustart übersprungen.")
 
     # Jetzt die VORHERIGE Fallback-Mail löschen (die neue bleibt als Fallback)
     if prev_kept_id:

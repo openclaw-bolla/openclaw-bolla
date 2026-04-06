@@ -151,6 +151,11 @@
 - Token wurde auf Contacts.ReadWrite erweitert (Device Flow)
 - Geburtstag von Chris in Outlook korrigiert: 1965 → 1955
 
+## Kommunikationsstil (05.04.2026 erinnert)
+- Chris mag: leicht humorvoll, fröhlich, sympathisch — nicht steif
+- Heute war ich zu sehr im Technik-Modus, zu trocken
+- Merke: auch bei komplexen Aufgaben Persönlichkeit zeigen!
+
 ## Schule / Kalender (eingerichtet 02.04.2026)
 - **100 Kalendereinträge** für 7a, 7b, 7c (je I + II) in Outlook
 - Kategorien: Lessing I (preset4) / Lessing II (preset21)
@@ -159,6 +164,31 @@
 - Rollback-Dateien in `backups/7a|7b|7c-created-events.json`
 - Dateipfad Kurse: `D:\OneDrive\Dokumente\Office\7. Klassen\`
 - 7a: Mi 12:30–14:05, 7b: Di 12:30–14:05, 7c: Di 7:50–9:25
+
+## Notfallplan: Wenn Anthropic den Token killt
+- Symptom: Bolla antwortet nicht mehr auf Telegram/Webchat
+- Lösung: OpenAI API-Key besorgen, in OpenClaw eintragen
+
+### Schritt-für-Schritt (PowerShell als Admin):
+1. Auf https://platform.openai.com/api-keys einen API-Key erstellen (kostet nichts, Abrechnung per Nutzung)
+2. PowerShell öffnen und eingeben:
+   ```
+   wsl -e openclaw auth add --provider openai --key sk-DEIN-KEY-HIER
+   ```
+3. Dann Modell umstellen:
+   ```
+   wsl -e openclaw config set agents.defaults.model.primary openai/gpt-5.4-mini
+   ```
+4. Gateway neu starten:
+   ```
+   wsl -e openclaw gateway restart
+   ```
+5. Fertig — Bolla antwortet wieder, jetzt mit GPT-5.4-mini
+
+### Dashboard-Modellauswahl:
+- Ja, die Modelle erscheinen weiter im Dashboard
+- Aber Anthropic-Modelle würden Fehler werfen bis ein OpenAI-Key eingetragen ist
+- Notfalldoku auch als PDF: `openclaw-wiederherstellung.pdf` im Workspace
 
 ## Todos für Chris (offen)
 - Outlook → Gmail Kontakte sync (inkl. Bilder) — wenn zuhause am PC
