@@ -52,12 +52,20 @@ def get_token():
             return None
 
 def graph_get(path):
-    import urllib.request
+    import urllib.request, urllib.parse
     token = get_token()
     if not token:
         return None
+    # URL-Teile splitten und Query-Parameter korrekt encodieren
+    if '?' in path:
+        base, query = path.split('?', 1)
+        # Query-Parameter einzeln URL-encodieren (Leerzeichen → %20)
+        encoded_query = urllib.parse.quote(query, safe='=&$,/')
+        full_url = f"https://graph.microsoft.com/v1.0{base}?{encoded_query}"
+    else:
+        full_url = f"https://graph.microsoft.com/v1.0{path}"
     req = urllib.request.Request(
-        f"https://graph.microsoft.com/v1.0{path}",
+        full_url,
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     )
     try:
@@ -483,16 +491,38 @@ def get_token_usage():
     }
 
 
+def bolla_chat(message, session_id=None):
+    """Sendet eine Nachricht an Claude Code (Bolla) via CLI."""
+    import subprocess
+    cmd = ["claude", "-p", "--output-format", "json"]
+    if session_id:
+        cmd.extend(["--resume", session_id])
+    cmd.append(message)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, cwd=os.path.expanduser("~"))
+        if result.returncode != 0:
+            return {"error": result.stderr.strip() or "Claude Code Fehler"}
+        data = json.loads(result.stdout)
+        return {"result": data.get("result", ""), "session_id": data.get("session_id", "")}
+    except subprocess.TimeoutExpired:
+        return {"error": "Timeout — Bolla hat zu lange gebraucht (>2min)"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass  # silent
 
-    def do_GET(self):
-        self.send_response(200)
+    def _cors_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "*")
         self.send_header("Content-Type", "application/json; charset=utf-8")
+
+    def do_GET(self):
+        self.send_response(200)
+        self._cors_headers()
         self.end_headers()
         
         try:
@@ -526,10 +556,38 @@ class Handler(BaseHTTPRequestHandler):
             print(f"Error: {tb}")
             self.wfile.write(json.dumps({"error": str(e)}).encode())
 
+    def do_POST(self):
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(length)) if length else {}
+        except:
+            body = {}
+
+        self.send_response(200)
+        self._cors_headers()
+        self.end_headers()
+
+        try:
+            if self.path == "/api/bolla/chat":
+                msg = body.get("message", "").strip()
+                if not msg:
+                    self.wfile.write(json.dumps({"error": "Keine Nachricht"}).encode())
+                    return
+                sid = body.get("session_id")
+                data = bolla_chat(msg, sid)
+                self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
+            else:
+                self.wfile.write(json.dumps({"error": "not found"}).encode())
+        except Exception as e:
+            tb = traceback.format_exc()
+            print(f"POST Error: {tb}")
+            self.wfile.write(json.dumps({"error": str(e)}).encode())
+
     def do_OPTIONS(self):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "*")
         self.end_headers()
 
 
