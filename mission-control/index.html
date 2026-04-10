@@ -780,12 +780,13 @@ async function loadSystem() {
         </div>
       </div>
       <div class="card">
-        <div class="card-head"><span class="card-title">⚡ Gateway</span></div>
-        <div style="font-size:22px;color:${gwColor};margin-bottom:8px">${sys.gateway==='active'?'🟢 Läuft':'🔴 Gestoppt'}</div>
+        <div class="card-head"><span class="card-title">🐾 Bolla</span></div>
+        <div style="font-size:22px;color:var(--success);margin-bottom:8px">🟢 Claude Code</div>
         <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px">
           <div style="font-size:11px;color:var(--dim)">Modell</div>
-          <div style="font-size:13px;color:var(--accent);margin-top:2px">${tok.model||'unbekannt'}</div>
+          <div style="font-size:13px;color:var(--accent);margin-top:2px">${tok.model||'Claude Opus 4.6'}</div>
         </div>
+        ${tok.note ? `<div style="font-size:11px;color:var(--success);margin-top:6px">✨ ${tok.note}</div>` : ''}
       </div>
       <div class="card">
         <div class="card-head"><span class="card-title">📦 GitHub</span></div>
@@ -797,16 +798,11 @@ async function loadSystem() {
         </div>
       </div>
       <div class="card">
-        <div class="card-head"><span class="card-title">🧠 Token-Verbrauch</span></div>
-        <div style="font-size:11px;color:var(--dim)" title="Tokens aus Zwischenspeicher — fast kostenlos!">Cache-Hit ℹ️</div>
-        <div style="font-size:32px;font-weight:300;color:var(--success)">${tok.cache_pct||0}%</div>
-        ${bar(tok.cache_pct||0,'var(--success)')}
-        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;margin-top:10px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-            <span style="font-size:12px;color:var(--dim)" title="Sonnet: 3$/Mio Input, 15$/Mio Output">Gesch. Kosten ℹ️</span>
-            <span style="font-size:16px;font-weight:600;color:var(--bright)">~${(tok.est_cost_eur||0).toFixed(2)} €</span>
-          </div>
-          <div style="font-size:11px;color:var(--dim)">↑ ${(tok.input_tokens||0).toLocaleString()} · ↓ ${(tok.output_tokens||0).toLocaleString()} · 🗄️ ${(tok.cache_read||0).toLocaleString()}</div>
+        <div class="card-head"><span class="card-title">💳 Abo</span></div>
+        <div style="font-size:28px;font-weight:300;color:var(--success);margin-bottom:8px">Max Plan</div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px">
+          <div style="font-size:12px;color:var(--bright)">Unbegrenzte Nutzung</div>
+          <div style="font-size:11px;color:var(--dim);margin-top:4px">Keine Token-Limits, keine Extra-Kosten</div>
         </div>
       </div>`;
   } catch(e) { document.getElementById('system-content').innerHTML='<div class="loading">System-Daten nicht verfügbar</div>'; }
@@ -827,12 +823,12 @@ function initBrain() {
     {id:'SOUL',group:'soul',label:'💜 SOUL',size:14},{id:'USER',group:'core',label:'👤 USER',size:14},
     {id:'Familie',group:'topic',label:'👨‍👩‍👧 Familie',size:14},{id:'Schule',group:'topic',label:'🏫 Schule',size:14},
     {id:'Email',group:'topic',label:'📧 E-Mail',size:12},{id:'Telegram',group:'topic',label:'💬 Telegram',size:10},
-    {id:'GitHub',group:'topic',label:'📦 GitHub',size:10},{id:'Token',group:'topic',label:'🔑 Token',size:10},
+    {id:'GitHub',group:'topic',label:'📦 GitHub',size:10},{id:'ClaudeCode',group:'topic',label:'🤖 Claude Code',size:10},
     {id:'Robin',group:'topic',label:'👨‍⚕️ Robin',size:12},{id:'Fotos',group:'topic',label:'📸 OneDrive',size:10},
   ];
   const links = [{s:'HOME',t:'MEMORY'},{s:'HOME',t:'SOUL'},{s:'HOME',t:'USER'},{s:'MEMORY',t:'Familie'},
     {s:'MEMORY',t:'Schule'},{s:'MEMORY',t:'Email'},{s:'MEMORY',t:'Telegram'},{s:'MEMORY',t:'GitHub'},
-    {s:'MEMORY',t:'Token'},{s:'MEMORY',t:'Robin'},{s:'MEMORY',t:'Fotos'},{s:'USER',t:'Familie'},{s:'USER',t:'Robin'}];
+    {s:'MEMORY',t:'ClaudeCode'},{s:'MEMORY',t:'Robin'},{s:'MEMORY',t:'Fotos'},{s:'USER',t:'Familie'},{s:'USER',t:'Robin'}];
   const colors = {core:'#4fc3f7',memory:'#ff9800',soul:'#e040fb',topic:'#66bb6a'};
   const W = canvas.width, H = canvas.height;
   nodes.forEach(n => { n.x=W/2+(Math.random()-.5)*300; n.y=H/2+(Math.random()-.5)*300; n.vx=0; n.vy=0; });

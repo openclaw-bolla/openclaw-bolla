@@ -16,14 +16,40 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 WORKSPACE = os.path.expanduser("~/.openclaw/workspace")
 TOKEN_FILE = os.path.join(WORKSPACE, "config/ms_token.json")
 
+CLIENT_ID = "9e5f94bc-e8a4-4e73-b8be-63364c29d753"
+
 def get_token():
+    """Gibt einen gültigen MS Graph Access Token zurück (refresht bei Bedarf)."""
     try:
         with open(TOKEN_FILE) as f:
             token_data = json.load(f)
-        return token_data.get("access_token")
+
+        # Immer refreshen — Access Tokens laufen schnell ab
+        import urllib.request, urllib.parse
+        data = urllib.parse.urlencode({
+            "client_id": CLIENT_ID,
+            "grant_type": "refresh_token",
+            "refresh_token": token_data["refresh_token"],
+            "scope": "https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Calendars.Read https://graph.microsoft.com/Contacts.Read offline_access"
+        }).encode()
+        req = urllib.request.Request(
+            "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            data=data, method="POST",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            new_token = json.loads(r.read())
+        with open(TOKEN_FILE, "w") as f:
+            json.dump(new_token, f, indent=2)
+        return new_token["access_token"]
     except Exception as e:
         print(f"Token error: {e}")
-        return None
+        # Fallback: alten Token versuchen
+        try:
+            with open(TOKEN_FILE) as f:
+                return json.load(f).get("access_token")
+        except:
+            return None
 
 def graph_get(path):
     import urllib.request
@@ -402,13 +428,8 @@ def get_sysinfo():
     m = int((secs % 3600) // 60)
     uptime = f"{h}h {m}m" if h > 0 else f"{m}m"
 
-    # Gateway status
-    try:
-        r = subprocess.run(['systemctl', '--user', 'is-active', 'openclaw-gateway'],
-                          capture_output=True, text=True, timeout=3)
-        gw_status = r.stdout.strip()
-    except:
-        gw_status = 'unknown'
+    # Claude Code Status (ersetzt OpenClaw Gateway)
+    gw_status = 'claude-code'
 
     # Git status
     git_info = {"commit": "unbekannt", "branch": "main", "dirty": 0, "last_push": ""}
@@ -450,52 +471,16 @@ def get_sysinfo():
 
 
 def get_token_usage():
-    """Liest Token-Verbrauch aus den OpenClaw Session-Daten."""
-    try:
-        sessions_file = os.path.expanduser("~/.openclaw/agents/main/sessions/sessions.json")
-        with open(sessions_file) as f:
-            sessions_map = json.load(f)
-        
-        total_input = 0
-        total_output = 0
-        total_cache_read = 0
-        model = "claude-sonnet-4-6"
-        
-        # sessions.json ist ein Dict mit session-key → session-object
-        for key, s in sessions_map.items():
-            if not isinstance(s, dict):
-                continue
-            total_input += s.get("inputTokens", 0)
-            total_output += s.get("outputTokens", 0)
-            total_cache_read += s.get("cacheRead", 0)
-            if s.get("model"):
-                model = s["model"]
-        
-        # Kosten schätzen (Sonnet: $3/1M input, $15/1M output, cache $0.30/1M)
-        cost_input = total_input * 3 / 1_000_000
-        cost_output = total_output * 15 / 1_000_000
-        cost_cache = total_cache_read * 0.30 / 1_000_000
-        total_cost = cost_input + cost_output + cost_cache
-        
-        # Aktuelles Modell aus Config lesen (nicht aus alten Sessions)
-        try:
-            cfg_file = os.path.expanduser("~/.openclaw/openclaw.json")
-            with open(cfg_file) as f:
-                cfg = json.load(f)
-            model = cfg.get("agents",{}).get("defaults",{}).get("model",{}).get("primary", model)
-        except:
-            pass
-
-        return {
-            "model": model.replace("anthropic/", ""),
-            "input_tokens": total_input,
-            "output_tokens": total_output,
-            "cache_read": total_cache_read,
-            "est_cost_eur": round(total_cost * 0.92, 2),
-            "cache_pct": int(total_cache_read / max(total_input + total_cache_read, 1) * 100)
-        }
-    except Exception as e:
-        return {"error": str(e)}
+    """Zeigt Claude Code Info (Max Plan — keine Kosten)."""
+    return {
+        "model": "Claude Opus 4.6 (Max Plan)",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "est_cost_eur": 0,
+        "cache_pct": 100,
+        "note": "Max Plan — unbegrenzt"
+    }
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -505,6 +490,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "*")
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.end_headers()
         
@@ -548,6 +535,6 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     port = 18790
-    server = HTTPServer(("127.0.0.1", port), Handler)
+    server = HTTPServer(("0.0.0.0", port), Handler)
     print(f"Mission Control API läuft auf http://127.0.0.1:{port}")
     server.serve_forever()
