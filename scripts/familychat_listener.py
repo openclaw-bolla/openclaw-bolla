@@ -16,7 +16,7 @@ API_URL = "https://family-chat-uqq1.onrender.com/api/messages"
 SENDER = "bolla"
 POLL_INTERVAL = 3  # Sekunden zwischen Polls
 
-LOG_FILE = os.path.expanduser("~/.openclaw/workspace/logs/familychat.log")
+LOG_FILE = os.path.expanduser("~/workspace/logs/familychat.log")
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 
 logging.basicConfig(

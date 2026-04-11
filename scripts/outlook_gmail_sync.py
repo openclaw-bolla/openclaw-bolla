@@ -9,7 +9,7 @@ Bidirektionaler Outlook ↔ Gmail Kontakt-Sync (inkl. Fotos)
 import json, requests, time, base64, sys
 from pathlib import Path
 
-WORKSPACE = Path("/home/bolla/.openclaw/workspace")
+WORKSPACE = Path("/home/bolla/workspace")
 MS_TOKEN_FILE = WORKSPACE / "config/ms_token.json"
 GOOGLE_TOKEN_FILE = WORKSPACE / "config/google_token.json"
 GOOGLE_CLIENT_FILE = WORKSPACE / "config/google_client.json"

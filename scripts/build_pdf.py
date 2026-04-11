@@ -8,7 +8,7 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
 from reportlab.lib.enums import TA_LEFT, TA_CENTER
 
-OUTPUT = "/home/bolla/.openclaw/workspace/openclaw-wiederherstellung.pdf"
+OUTPUT = "/home/bolla/workspace/openclaw-wiederherstellung.pdf"
 
 doc = SimpleDocTemplate(
     OUTPUT,
@@ -62,7 +62,7 @@ data = [
     ["Telegram Bot", "@bolla_mandel_bot"],
     ["WSL-User", "bolla"],
     ["Windows-User", "ernst"],
-    ["Workspace", "/home/bolla/.openclaw/workspace/"],
+    ["Workspace", "/home/bolla/workspace/"],
     ["GitHub Backup", "https://github.com/openclaw-bolla/openclaw-bolla (privat)"],
 ]
 t = Table(data, colWidths=[5*cm, 10.5*cm])
@@ -109,17 +109,17 @@ story.append(SP(6))
 
 story.append(H2("Ablauf des Gateway-Starts"))
 story.append(B("VBS weckt WSL auf (wsl echo) und wartet 15 Sekunden"))
-story.append(B("bash-Script /home/bolla/.openclaw/workspace/scripts/openclaw-launcher.sh wird aufgerufen"))
+story.append(B("bash-Script /home/bolla/workspace/scripts/openclaw-launcher.sh wird aufgerufen"))
 story.append(B("Launcher wartet bis zu 120 Sekunden auf Netzwerk (testet login.microsoftonline.com)"))
 story.append(B("openclaw gateway start wird ausgeführt"))
 story.append(B("Windows-Popup erscheint: 'Bolla 🐾 bereit!' (verschwindet nach 5 Sek)"))
 story.append(SP(4))
-story.append(W("Die VBS verwendet ABSOLUTEN Pfad: /home/bolla/.openclaw/workspace/scripts/openclaw-launcher.sh"))
+story.append(W("Die VBS verwendet ABSOLUTEN Pfad: /home/bolla/workspace/scripts/openclaw-launcher.sh"))
 story.append(Note("Grund: 'wsl -e bash' expandiert keine ~ – daher muss der vollständige Pfad angegeben werden."))
 story.append(SP(4))
 
 story.append(H2("Log-Datei prüfen (bei Problemen)"))
-story.append(C("/home/bolla/.openclaw/workspace/logs/gateway_autostart.log"))
+story.append(C("/home/bolla/workspace/logs/gateway_autostart.log"))
 story.append(SP(4))
 
 story.append(H2("Gateway manuell starten (falls Autostart fehlschlug)"))
@@ -131,7 +131,7 @@ story.append(SP(10))
 story.append(H1("Token Watcher – Automatische API-Key-Erneuerung"))
 story.append(N("Der Token Watcher überwacht das E-Mail-Postfach auf neue Anthropic API-Tokens und aktualisiert OpenClaw automatisch."))
 story.append(SP(4))
-story.append(B("Script: /home/bolla/.openclaw/workspace/scripts/token_watcher.py"))
+story.append(B("Script: /home/bolla/workspace/scripts/token_watcher.py"))
 story.append(B("Prüft alle 15 Minuten Mails von robinmandel@outlook.de"))
 story.append(B("Erkennt Anthropic-Tokens, aktualisiert ALLE Profile (bolla + default)"))
 story.append(B("Startet Gateway neu, löscht die Token-Mail danach"))
@@ -145,7 +145,7 @@ story.append(SP(4))
 story.append(H2("Task Scheduler (Wächter-Job)"))
 story.append(B("Aufgabe: \\OpenClaw\\TokenWatcher (startet bei Login)"))
 story.append(B("Aufgabe: \\OpenClaw\\TokenWatcherHourly (stündlich, prüft ob Watcher läuft)"))
-story.append(B("Log: /home/bolla/.openclaw/workspace/logs/token_watcher.log"))
+story.append(B("Log: /home/bolla/workspace/logs/token_watcher.log"))
 story.append(SP(10))
 
 # ── E-Mail ────────────────────────────────────────────────────────────────────
@@ -167,8 +167,8 @@ t3.setStyle(TableStyle([
 ]))
 story.append(t3)
 story.append(SP(4))
-story.append(Note("Microsoft Graph Token: ~/.openclaw/workspace/config/ms_token.json (läuft irgendwann ab → neuen Device Flow starten)"))
-story.append(Note("wtnet Zugangsdaten: ~/.openclaw/workspace/config/wtnet_account.json (chmod 600, NICHT im Git-Repo)"))
+story.append(Note("Microsoft Graph Token: ~/workspace/config/ms_token.json (läuft irgendwann ab → neuen Device Flow starten)"))
+story.append(Note("wtnet Zugangsdaten: ~/workspace/config/wtnet_account.json (chmod 600, NICHT im Git-Repo)"))
 story.append(SP(4))
 story.append(N("Standard-Absender ist immer ernstmandel@outlook.de. Bei wtnet-Konto zuerst nachfragen."))
 story.append(SP(10))
@@ -194,9 +194,9 @@ story.append(SP(4))
 
 story.append(H2("Schritt 4 – Secrets wiederherstellen (NICHT im Git-Repo!)"))
 story.append(Note("Diese Dateien sind NICHT im GitHub-Backup. Sie müssen manuell übertragen werden:"))
-story.append(B("~/.openclaw/workspace/config/ms_token.json  (Microsoft Graph Token)"))
-story.append(B("~/.openclaw/workspace/config/wtnet_account.json  (wtnet Passwort)"))
-story.append(B("~/.openclaw/workspace/config/google_token.json  (Google OAuth Token)"))
+story.append(B("~/workspace/config/ms_token.json  (Microsoft Graph Token)"))
+story.append(B("~/workspace/config/wtnet_account.json  (wtnet Passwort)"))
+story.append(B("~/workspace/config/google_token.json  (Google OAuth Token)"))
 story.append(B("~/.openclaw/openclaw.json  (OpenClaw Config mit API-Key)"))
 story.append(SP(4))
 story.append(Note("Alternativ: Neuen Anthropic-Token per Mail schicken, wtnet-Passwort neu einrichten, Google OAuth neu durchlaufen."))
@@ -211,7 +211,7 @@ story.append(W("Absoluten Pfad in start_openclaw_gateway.vbs anpassen!"))
 story.append(SP(4))
 story.append(N("Die VBS liegt im Workspace: scripts/start_openclaw_gateway.vbs"))
 story.append(N("Zeile die angepasst werden muss:"))
-story.append(C('oShell.Run "wsl -e bash /home/NEUER-WSL-USER/.openclaw/workspace/scripts/openclaw-launcher.sh", 0, False'))
+story.append(C('oShell.Run "wsl -e bash /home/NEUER-WSL-USER/workspace/scripts/openclaw-launcher.sh", 0, False'))
 story.append(SP(4))
 story.append(N("Dann beide VBS-Dateien in den Windows Startup-Ordner kopieren:"))
 story.append(C("C:\\Users\\WINDOWS-USER\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\"))
@@ -219,7 +219,7 @@ story.append(SP(4))
 
 story.append(H2("Schritt 7 – Task Scheduler für Token Watcher einrichten"))
 story.append(N("PowerShell als Administrator:"))
-story.append(C("wsl -e bash /home/NEUER-WSL-USER/.openclaw/workspace/scripts/start_token_watcher.sh"))
+story.append(C("wsl -e bash /home/NEUER-WSL-USER/workspace/scripts/start_token_watcher.sh"))
 story.append(Note("Details: scripts/register_token_watcher.ps1 im Workspace"))
 story.append(SP(4))
 
@@ -232,7 +232,7 @@ story.append(SP(10))
 story.append(H1("Troubleshooting"))
 
 story.append(H2("Dashboard nicht erreichbar nach Neustart"))
-story.append(B("Log prüfen: /home/bolla/.openclaw/workspace/logs/gateway_autostart.log"))
+story.append(B("Log prüfen: /home/bolla/workspace/logs/gateway_autostart.log"))
 story.append(B("Log enthält Timestamps? → Launcher hat gestartet"))
 story.append(B("Log leer oder nur 'command not found'? → VBS-Problem (Pfad prüfen!)"))
 story.append(B("Manuell starten: WSL öffnen → openclaw gateway start"))
@@ -244,7 +244,7 @@ story.append(B("Watcher prüft alle 15 Min – oder manuell: python3 token_watch
 story.append(SP(4))
 
 story.append(H2("Microsoft Graph Token abgelaufen"))
-story.append(B("In WSL: python3 ~/.openclaw/workspace/scripts/google_auth.py  (oder neu: Device Flow)"))
+story.append(B("In WSL: python3 ~/workspace/scripts/google_auth.py  (oder neu: Device Flow)"))
 story.append(Note("Genauere Anleitung wird von Bolla geführt – einfach fragen"))
 story.append(SP(4))
 
@@ -258,17 +258,17 @@ story.append(SP(10))
 story.append(H1("Wichtige Dateipfade auf einen Blick"))
 data4 = [
     ["Datei/Ordner", "Pfad"],
-    ["Workspace", "/home/bolla/.openclaw/workspace/"],
+    ["Workspace", "/home/bolla/workspace/"],
     ["OpenClaw Config", "/home/bolla/.openclaw/openclaw.json"],
-    ["Gateway-Launcher", "/home/bolla/.openclaw/workspace/scripts/openclaw-launcher.sh"],
+    ["Gateway-Launcher", "/home/bolla/workspace/scripts/openclaw-launcher.sh"],
     ["Gateway-VBS", "...\\Startup\\start_openclaw_gateway.vbs"],
     ["Token-Watcher VBS", "...\\Startup\\start_token_watcher.vbs"],
-    ["Token-Watcher Script", "/home/bolla/.openclaw/workspace/scripts/token_watcher.py"],
-    ["wtnet-Watcher", "/home/bolla/.openclaw/workspace/scripts/wtnet_watcher.py"],
-    ["MS Graph Token", "/home/bolla/.openclaw/workspace/config/ms_token.json"],
-    ["wtnet Konto", "/home/bolla/.openclaw/workspace/config/wtnet_account.json"],
-    ["Gateway Log", "/home/bolla/.openclaw/workspace/logs/gateway_autostart.log"],
-    ["Token Watcher Log", "/home/bolla/.openclaw/workspace/logs/token_watcher.log"],
+    ["Token-Watcher Script", "/home/bolla/workspace/scripts/token_watcher.py"],
+    ["wtnet-Watcher", "/home/bolla/workspace/scripts/wtnet_watcher.py"],
+    ["MS Graph Token", "/home/bolla/workspace/config/ms_token.json"],
+    ["wtnet Konto", "/home/bolla/workspace/config/wtnet_account.json"],
+    ["Gateway Log", "/home/bolla/workspace/logs/gateway_autostart.log"],
+    ["Token Watcher Log", "/home/bolla/workspace/logs/token_watcher.log"],
     ["GitHub Backup", "https://github.com/openclaw-bolla/openclaw-bolla"],
 ]
 t4 = Table(data4, colWidths=[5*cm, 10.5*cm])

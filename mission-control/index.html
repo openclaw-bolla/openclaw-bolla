@@ -349,6 +349,9 @@ html, body {
       <div class="nav-item" data-page="robin"><span class="icon">🌍</span><span>Robin</span></div>
       <div class="nav-item" data-page="geburtstage"><span class="icon">🎂</span><span>Geburtstage</span></div>
 
+      <div class="nav-section">KI</div>
+      <div class="nav-item" data-page="localserver"><span class="icon">🖧</span><span>Local Server</span></div>
+
       <div class="nav-section">Info</div>
       <div class="nav-item" data-page="wetter"><span class="icon">🌤️</span><span>Wetter</span></div>
       <div class="nav-item" data-page="system"><span class="icon">🖥️</span><span>System Info</span></div>
@@ -459,12 +462,50 @@ html, body {
                 <div style="font-size:13px">Schreib mir was — ich bin da.</div>
               </div>
             </div>
+            <div id="bolla-img-preview" style="display:none;margin-top:8px;padding:8px;background:var(--card);border:1px solid var(--border);border-radius:8px;position:relative">
+              <img id="bolla-img-thumb" style="max-height:120px;max-width:100%;border-radius:4px">
+              <button onclick="bollaRemoveImg()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:12px;line-height:22px;text-align:center">✕</button>
+            </div>
             <div style="display:flex;gap:8px;margin-top:10px;flex-shrink:0">
-              <input id="bolla-input" placeholder="Nachricht an Bolla..." style="flex:1;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-size:14px;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();bollaSend()}">
+              <label style="padding:12px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;display:flex;align-items:center;color:var(--dim);font-size:16px" title="Bild anhängen (oder Strg+V)">
+                📎<input type="file" accept="image/*" onchange="bollaFileSelect(event)" style="display:none">
+              </label>
+              <input id="bolla-input" placeholder="Nachricht an Bolla... (Strg+V für Screenshot)" style="flex:1;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-size:14px;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();bollaSend()}">
               <button onclick="bollaSend()" id="bolla-send-btn" style="padding:12px 24px;background:var(--accent2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:opacity 0.2s">Senden</button>
             </div>
             <div style="font-size:11px;color:var(--dim);margin-top:6px;text-align:center">
               Lite-Chat via API — für Dateizugriff, Tools & volle Power: <a href="https://claude.ai/code/new" target="_blank" style="color:var(--accent)">Vollversion öffnen ↗</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOCAL SERVER -->
+      <div class="page" id="page-localserver">
+        <div style="display:flex;height:calc(100vh - 92px);gap:0">
+          <div style="flex:1;display:flex;flex-direction:column;padding:16px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-shrink:0">
+              <span style="font-size:28px">🖧</span>
+              <div style="flex:1">
+                <div style="font-size:20px;font-weight:300;color:var(--bright)">Local Server</div>
+                <div id="lms-model" style="font-size:11px;color:var(--dim)">LM Studio · Verbinde...</div>
+              </div>
+              <div id="lms-status" style="font-size:11px;color:var(--dim)">⏳ Prüfe...</div>
+              <button onclick="lmsNewChat()" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;font-size:12px" title="Neuer Chat">🗑️ Neu</button>
+            </div>
+            <div id="lms-chat" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;overflow-y:auto;font-size:14px;line-height:1.7;color:var(--text)">
+              <div style="color:var(--dim);text-align:center;padding:40px 20px">
+                <div style="font-size:48px;margin-bottom:12px">🖧</div>
+                <div style="font-size:16px;color:var(--bright);margin-bottom:4px">Local Server</div>
+                <div style="font-size:13px">Chat mit dem lokal geladenen Modell in LM Studio.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-shrink:0">
+              <input id="lms-input" placeholder="Nachricht an Local Server..." style="flex:1;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-size:14px;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();lmsSend()}">
+              <button onclick="lmsSend()" id="lms-send-btn" style="padding:12px 24px;background:#66bb6a;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:opacity 0.2s">Senden</button>
+            </div>
+            <div style="font-size:11px;color:var(--dim);margin-top:6px;text-align:center">
+              Lokales Modell via LM Studio · <span id="lms-endpoint">192.168.178.29:1234</span>
             </div>
           </div>
         </div>
@@ -915,12 +956,51 @@ setInterval(loadWeather, 30*60*1000);
 setInterval(loadSystem, 30*1000);
 
 // === BOLLA CHAT ===
-const API = 'http://127.0.0.1:18790';
 let bollaSessionId = null;
 let bollaBusy = false;
+let bollaImageB64 = null;
+
+// Paste-Handler: Strg+V für Screenshots
+document.addEventListener('paste', function(e) {
+  // Nur wenn Bolla-Seite aktiv
+  if (!document.getElementById('page-bolla')?.classList.contains('active')) return;
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      e.preventDefault();
+      const file = item.getAsFile();
+      bollaLoadImage(file);
+      break;
+    }
+  }
+});
+
+function bollaLoadImage(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    bollaImageB64 = dataUrl.split(',')[1]; // base64 ohne prefix
+    document.getElementById('bolla-img-thumb').src = dataUrl;
+    document.getElementById('bolla-img-preview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function bollaFileSelect(e) {
+  const file = e.target.files?.[0];
+  if (file) bollaLoadImage(file);
+}
+
+function bollaRemoveImg() {
+  bollaImageB64 = null;
+  document.getElementById('bolla-img-preview').style.display = 'none';
+  document.getElementById('bolla-img-thumb').src = '';
+}
 
 function bollaNewChat() {
   bollaSessionId = null;
+  bollaRemoveImg();
   const chat = document.getElementById('bolla-chat');
   chat.innerHTML = '<div style="color:var(--dim);text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:12px">🐾</div><div style="font-size:16px;color:var(--bright);margin-bottom:4px">Hey Chris!</div><div style="font-size:13px">Schreib mir was — ich bin da.</div></div>';
   document.getElementById('bolla-status').innerHTML = '🟢 Bereit';
@@ -943,7 +1023,7 @@ async function bollaSend() {
   if (bollaBusy) return;
   const input = document.getElementById('bolla-input');
   const text = input.value.trim();
-  if (!text) return;
+  if (!text && !bollaImageB64) return;
 
   const chat = document.getElementById('bolla-chat');
   const status = document.getElementById('bolla-status');
@@ -952,9 +1032,17 @@ async function bollaSend() {
   // Willkommen entfernen beim ersten Senden
   if (!bollaSessionId) chat.innerHTML = '';
 
-  // User-Nachricht anzeigen
-  chat.innerHTML += `<div style="margin:12px 0;padding:10px 14px;background:rgba(33,150,243,0.1);border-radius:8px;border-left:3px solid var(--accent2)"><span style="color:var(--accent);font-weight:600;font-size:12px">CHRIS</span><div style="margin-top:4px">${escHtml(text)}</div></div>`;
+  // User-Nachricht anzeigen (mit Bild-Preview wenn vorhanden)
+  let msgHtml = '';
+  if (bollaImageB64) {
+    msgHtml += `<img src="data:image/png;base64,${bollaImageB64}" style="max-height:150px;max-width:100%;border-radius:6px;margin-bottom:6px;display:block">`;
+  }
+  if (text) msgHtml += escHtml(text);
+  chat.innerHTML += `<div style="margin:12px 0;padding:10px 14px;background:rgba(33,150,243,0.1);border-radius:8px;border-left:3px solid var(--accent2)"><span style="color:var(--accent);font-weight:600;font-size:12px">CHRIS</span><div style="margin-top:4px">${msgHtml}</div></div>`;
+
+  const sendImage = bollaImageB64;
   input.value = '';
+  bollaRemoveImg();
   chat.scrollTop = chat.scrollHeight;
 
   // Loading
@@ -970,8 +1058,9 @@ async function bollaSend() {
   chat.scrollTop = chat.scrollHeight;
 
   try {
-    const body = {message: text};
+    const body = {message: text || ''};
     if (bollaSessionId) body.session_id = bollaSessionId;
+    if (sendImage) body.image = sendImage;
 
     const resp = await fetch(API + '/api/bolla/chat', {
       method: 'POST',
@@ -1001,6 +1090,109 @@ async function bollaSend() {
   chat.scrollTop = chat.scrollHeight;
   input.focus();
 }
+
+// === LOCAL SERVER (LM Studio) ===
+const LMS_URL = 'http://192.168.178.29:1234';
+let lmsMessages = [];
+let lmsBusy = false;
+
+function lmsNewChat() {
+  lmsMessages = [];
+  const chat = document.getElementById('lms-chat');
+  chat.innerHTML = '<div style="color:var(--dim);text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:12px">🖧</div><div style="font-size:16px;color:var(--bright);margin-bottom:4px">Local Server</div><div style="font-size:13px">Chat mit dem lokal geladenen Modell in LM Studio.</div></div>';
+  document.getElementById('lms-status').innerHTML = '🟢 Bereit';
+  document.getElementById('lms-status').style.color = 'var(--success)';
+}
+
+async function lmsCheckStatus() {
+  try {
+    const resp = await fetch(LMS_URL + '/v1/models', {signal: AbortSignal.timeout(3000)});
+    const data = await resp.json();
+    const models = data.data || [];
+    if (models.length > 0) {
+      const name = models[0].id || 'Unbekannt';
+      document.getElementById('lms-model').textContent = 'LM Studio · ' + name;
+      document.getElementById('lms-status').innerHTML = '🟢 Online';
+      document.getElementById('lms-status').style.color = 'var(--success)';
+    } else {
+      document.getElementById('lms-model').textContent = 'LM Studio · Kein Modell geladen';
+      document.getElementById('lms-status').innerHTML = '🟡 Kein Modell';
+      document.getElementById('lms-status').style.color = 'var(--warning)';
+    }
+  } catch(e) {
+    document.getElementById('lms-model').textContent = 'LM Studio · Nicht erreichbar';
+    document.getElementById('lms-status').innerHTML = '🔴 Offline';
+    document.getElementById('lms-status').style.color = 'var(--danger)';
+  }
+}
+
+async function lmsSend() {
+  if (lmsBusy) return;
+  const input = document.getElementById('lms-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const chat = document.getElementById('lms-chat');
+  const status = document.getElementById('lms-status');
+  const btn = document.getElementById('lms-send-btn');
+
+  if (lmsMessages.length === 0) chat.innerHTML = '';
+
+  lmsMessages.push({role: 'user', content: text});
+
+  chat.innerHTML += `<div style="margin:12px 0;padding:10px 14px;background:rgba(33,150,243,0.1);border-radius:8px;border-left:3px solid var(--accent2)"><span style="color:var(--accent);font-weight:600;font-size:12px">CHRIS</span><div style="margin-top:4px">${escHtml(text)}</div></div>`;
+  input.value = '';
+  chat.scrollTop = chat.scrollHeight;
+
+  lmsBusy = true;
+  btn.style.opacity = '0.5';
+  status.innerHTML = '🟡 Generiert...';
+  status.style.color = 'var(--warning)';
+
+  const loadingDiv = document.createElement('div');
+  loadingDiv.style.cssText = 'margin:12px 0;padding:10px 14px;color:var(--dim);font-style:italic';
+  loadingDiv.innerHTML = '🖧 Generiert...';
+  chat.appendChild(loadingDiv);
+  chat.scrollTop = chat.scrollHeight;
+
+  try {
+    const resp = await fetch(LMS_URL + '/v1/chat/completions', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        messages: lmsMessages,
+        temperature: 0.7,
+        max_tokens: 2048,
+        stream: false
+      })
+    });
+    const data = await resp.json();
+    loadingDiv.remove();
+
+    if (data.error) {
+      chat.innerHTML += `<div style="margin:12px 0;padding:10px 14px;color:#e57373">Fehler: ${escHtml(data.error.message || JSON.stringify(data.error))}</div>`;
+    } else {
+      const reply = data.choices?.[0]?.message?.content || '(keine Antwort)';
+      lmsMessages.push({role: 'assistant', content: reply});
+      const modelName = data.model || 'Local';
+      chat.innerHTML += `<div style="margin:12px 0;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid #66bb6a"><span style="color:#66bb6a;font-weight:600;font-size:12px">🖧 ${escHtml(modelName).toUpperCase()}</span><div style="margin-top:4px">${renderMarkdown(reply)}</div></div>`;
+    }
+  } catch(e) {
+    loadingDiv.remove();
+    chat.innerHTML += `<div style="margin:12px 0;padding:10px 14px;color:#e57373">Verbindungsfehler — läuft LM Studio? (${escHtml(e.message)})</div>`;
+  }
+
+  lmsBusy = false;
+  btn.style.opacity = '1';
+  status.innerHTML = '🟢 Bereit';
+  status.style.color = 'var(--success)';
+  chat.scrollTop = chat.scrollHeight;
+  input.focus();
+}
+
+// Status beim Laden prüfen + alle 30 Sek
+lmsCheckStatus();
+setInterval(lmsCheckStatus, 30000);
 </script>
 </body>
 </html>

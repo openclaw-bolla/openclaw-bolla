@@ -3,8 +3,8 @@
 import json, requests, time
 from pathlib import Path
 
-CONFIG = Path("/home/bolla/.openclaw/workspace/config/google_client.json")
-TOKEN_FILE = Path("/home/bolla/.openclaw/workspace/config/google_token.json")
+CONFIG = Path("/home/bolla/workspace/config/google_client.json")
+TOKEN_FILE = Path("/home/bolla/workspace/config/google_token.json")
 
 with open(CONFIG) as f:
     creds = json.load(f)

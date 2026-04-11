@@ -2,7 +2,7 @@
 # Sync Bolla's workspace to Obsidian Vault on Windows
 # Kopiert nur .md Dateien + .obsidian Config
 
-SRC="/home/bolla/.openclaw/workspace"
+SRC="/home/bolla/workspace"
 DST="/mnt/c/Bolla/Vault"
 
 mkdir -p "$DST/memory" "$DST/mission-control"

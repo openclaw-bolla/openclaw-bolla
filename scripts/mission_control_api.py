@@ -13,7 +13,7 @@ from datetime import datetime, timezone, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-WORKSPACE = os.path.expanduser("~/.openclaw/workspace")
+WORKSPACE = os.path.expanduser("~/workspace")
 TOKEN_FILE = os.path.join(WORKSPACE, "config/ms_token.json")
 
 CLIENT_ID = "9e5f94bc-e8a4-4e73-b8be-63364c29d753"
@@ -491,15 +491,29 @@ def get_token_usage():
     }
 
 
-def bolla_chat(message, session_id=None):
+def bolla_chat(message, session_id=None, image_b64=None):
     """Sendet eine Nachricht an Claude Code (Bolla) via CLI."""
-    import subprocess
+    import subprocess, tempfile, base64
     cmd = ["claude", "-p", "--output-format", "json"]
     if session_id:
         cmd.extend(["--resume", session_id])
+
+    # Bild als temporäre Datei speichern und im Prompt referenzieren
+    tmp_path = None
+    if image_b64:
+        try:
+            img_data = base64.b64decode(image_b64)
+            tmp = tempfile.NamedTemporaryFile(suffix=".png", prefix="bolla_img_", delete=False)
+            tmp.write(img_data)
+            tmp.close()
+            tmp_path = tmp.name
+            message = f"Schau dir das Bild an: {tmp_path}\n\n{message}" if message else f"Beschreibe was du in diesem Bild siehst: {tmp_path}"
+        except Exception as e:
+            print(f"Bild-Fehler: {e}")
+
     cmd.append(message)
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, cwd=os.path.expanduser("~"))
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, cwd=os.path.expanduser("~/workspace"))
         if result.returncode != 0:
             return {"error": result.stderr.strip() or "Claude Code Fehler"}
         data = json.loads(result.stdout)
@@ -508,6 +522,12 @@ def bolla_chat(message, session_id=None):
         return {"error": "Timeout — Bolla hat zu lange gebraucht (>2min)"}
     except Exception as e:
         return {"error": str(e)}
+    finally:
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except:
+                pass
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -574,7 +594,8 @@ class Handler(BaseHTTPRequestHandler):
                     self.wfile.write(json.dumps({"error": "Keine Nachricht"}).encode())
                     return
                 sid = body.get("session_id")
-                data = bolla_chat(msg, sid)
+                img = body.get("image")  # base64-encoded PNG
+                data = bolla_chat(msg, sid, image_b64=img)
                 self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
             else:
                 self.wfile.write(json.dumps({"error": "not found"}).encode())

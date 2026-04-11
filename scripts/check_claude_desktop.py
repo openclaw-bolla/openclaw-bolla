@@ -13,7 +13,7 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
-WORKSPACE = Path("/home/bolla/.openclaw/workspace")
+WORKSPACE = Path("/home/bolla/workspace")
 TOKEN_FILE = WORKSPACE / "config/ms_token.json"
 STATE_FILE = WORKSPACE / "config/claude_desktop_check.json"
 LOG_FILE = WORKSPACE / "logs/claude_desktop_check.log"

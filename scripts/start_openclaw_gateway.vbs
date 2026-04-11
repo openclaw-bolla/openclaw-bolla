@@ -4,4 +4,4 @@ oShell.Run "wsl -e bash -c ""echo wsl-ready""", 0, True
 ' 45 Sekunden warten damit WSL vollständig initialisiert ist (erhöht von 15s für träge Boots)
 WScript.Sleep 45000
 ' Portabler Launcher starten — absoluter Pfad statt ~ (wird von bash nicht expandiert!)
-oShell.Run "wsl -e bash /home/bolla/.openclaw/workspace/scripts/openclaw-launcher.sh", 0, False
+oShell.Run "wsl -e bash /home/bolla/workspace/scripts/openclaw-launcher.sh", 0, False

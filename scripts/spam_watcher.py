@@ -15,7 +15,7 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
-WORKSPACE = Path("/home/bolla/.openclaw/workspace")
+WORKSPACE = Path("/home/bolla/workspace")
 MS_TOKEN_FILE = WORKSPACE / "config/ms_token.json"
 WTNET_CONFIG = WORKSPACE / "config/wtnet_account.json"
 LOG_FILE = WORKSPACE / "logs/spam_watcher.log"

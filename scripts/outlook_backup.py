@@ -2,7 +2,7 @@
 """
 Outlook Backup - ernstmandel@outlook.de
 - Sichert Kalender (alle), Kontakte (inkl. Fotos) als JSON + Bilder
-- Ablage: /home/bolla/.openclaw/workspace/backups/
+- Ablage: /home/bolla/workspace/backups/
 - Wird wöchentlich per Cron oder manuell aufgerufen
 """
 
@@ -15,7 +15,7 @@ import urllib.error
 from datetime import datetime
 from pathlib import Path
 
-WORKSPACE = Path("/home/bolla/.openclaw/workspace")
+WORKSPACE = Path("/home/bolla/workspace")
 TOKEN_FILE = WORKSPACE / "config/ms_token.json"
 BACKUP_DIR = WORKSPACE / "backups"
 LOG_FILE = WORKSPACE / "logs/outlook_backup.log"

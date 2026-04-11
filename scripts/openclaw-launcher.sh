@@ -5,7 +5,7 @@
 # Dieser Launcher wartet nur bis das Gateway erreichbar ist und zeigt ein Popup.
 # v4: Kein doppelter Gateway-Start mehr — systemd macht das allein.
 
-LOG="$HOME/.openclaw/workspace/logs/gateway_autostart.log"
+LOG="$HOME/workspace/logs/gateway_autostart.log"
 mkdir -p "$(dirname "$LOG")"
 
 echo "$(date): Launcher gestartet, User=$(whoami), HOME=$HOME" >> "$LOG"
@@ -52,18 +52,18 @@ done
 echo "$(date): Gateway erreichbar nach ${WAIT}s." >> "$LOG"
 
 # ── Token Watcher starten (falls nicht läuft) ─────────────────────────────────
-WATCHER="$HOME/.openclaw/workspace/scripts/start_token_watcher.sh"
+WATCHER="$HOME/workspace/scripts/start_token_watcher.sh"
 if [ -f "$WATCHER" ]; then
     bash "$WATCHER" >> "$LOG" 2>&1
 fi
 
-# ── Outlook Spam Watcher starten (falls nicht läuft) ──────────────────────────
-if ! pgrep -f "outlook_spam_watcher.py" > /dev/null; then
-    echo "$(date): Starte Outlook Spam Watcher..." >> "$LOG"
-    nohup python3 "$HOME/.openclaw/workspace/scripts/outlook_spam_watcher.py" >> "$LOG" 2>&1 &
-    echo "$(date): Outlook Spam Watcher gestartet (PID $!)." >> "$LOG"
+# ── Spam Watcher starten (falls nicht läuft) ─────────────────────────────────
+if ! pgrep -f "spam_watcher.py" > /dev/null; then
+    echo "$(date): Starte Spam Watcher..." >> "$LOG"
+    nohup python3 "$HOME/workspace/scripts/spam_watcher.py" >> "$LOG" 2>&1 &
+    echo "$(date): Spam Watcher gestartet (PID $!)." >> "$LOG"
 else
-    echo "$(date): Outlook Spam Watcher läuft bereits." >> "$LOG"
+    echo "$(date): Spam Watcher läuft bereits." >> "$LOG"
 fi
 
 # ── Popup ──────────────────────────────────────────────────────────────────────
