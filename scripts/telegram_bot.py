@@ -20,6 +20,7 @@ BOT_TOKEN = _cfg["bot_token"]
 GROUP_CHAT_ID = _cfg["group_chat_id"]
 CHRIS_ID = _cfg["chris_id"]
 BOT_ID = _cfg["bot_id"]
+BOT_USERNAME = "bolla_mandel_bot"
 
 LOG_FILE = os.path.expanduser("~/workspace/logs/telegram_bot.log")
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
@@ -86,19 +87,15 @@ def should_respond(msg):
     """Prüft ob Bolla auf diese Nachricht reagieren soll."""
     text = msg.get("text", "").lower()
 
-    # In der Familiengruppe: immer antworten
-    if msg.get("chat", {}).get("id") == GROUP_CHAT_ID:
-        return True
-
     # Direktnachrichten: immer antworten
     if msg.get("chat", {}).get("type") == "private":
         return True
 
-    # Andere Gruppen: nur bei Erwähnung oder Antwort
+    # Gruppen (inkl. Familiengruppe): nur bei Erwähnung oder Antwort auf Bolla
     reply = msg.get("reply_to_message", {})
     if reply.get("from", {}).get("id") == BOT_ID:
         return True
-    if "bolla" in text:
+    if "bolla" in text or f"@{BOT_USERNAME}" in msg.get("text", ""):
         return True
 
     return False
@@ -106,7 +103,6 @@ def should_respond(msg):
 
 def main():
     log.info("Bolla Telegram Bot gestartet 🐾")
-    send_message(GROUP_CHAT_ID, "Bolla ist wieder da! 🐾")
 
     offset = None
     while True:
