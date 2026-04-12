@@ -445,15 +445,34 @@ html, body {
         <div style="display:flex;height:calc(100vh - 92px);gap:0">
           <!-- Chat -->
           <div style="flex:1;display:flex;flex-direction:column;padding:16px">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-shrink:0">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-shrink:0;flex-wrap:wrap">
               <span style="font-size:28px">🐾</span>
-              <div style="flex:1">
+              <div style="flex:1;min-width:180px">
                 <div style="font-size:20px;font-weight:300;color:var(--bright)">Bolla</div>
-                <div style="font-size:11px;color:var(--dim)">Claude Opus 4.6 · Max Plan</div>
+                <div style="font-size:11px;color:var(--dim)">Claude Opus 4.6 · Max Plan · Live-Tools</div>
               </div>
               <div id="bolla-status" style="font-size:11px;color:var(--success)">🟢 Bereit</div>
               <button onclick="bollaNewChat()" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;font-size:12px" title="Neuer Chat">🗑️ Neu</button>
               <a href="https://claude.ai/code/new" target="_blank" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--accent);cursor:pointer;font-size:12px;text-decoration:none" title="Vollversion im Browser">↗ Vollversion</a>
+            </div>
+            <!-- Voice Controls -->
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-shrink:0;flex-wrap:wrap;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px">
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim);cursor:pointer" title="Sprachausgabe an/aus">
+                <input type="checkbox" id="voice-toggle" style="accent-color:var(--accent)">🔊 Stimme
+              </label>
+              <button id="voice-stop-btn" onclick="voiceStop()" style="padding:4px 10px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;font-size:11px;display:none" title="Sprache stoppen">⏹ Stopp</button>
+              <select id="voice-select" style="padding:5px 8px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--bright);font-size:12px;min-width:220px;max-width:280px">
+                <option>Lade Stimmen...</option>
+              </select>
+              <span style="font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px">🔈
+                <input type="range" id="voice-volume" min="0" max="100" value="80" style="width:80px;accent-color:var(--accent)" oninput="document.getElementById('voice-vol-val').textContent=this.value+'%'">
+                <span id="voice-vol-val" style="width:34px">80%</span>
+              </span>
+              <span style="font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px">⏩
+                <input type="range" id="voice-rate" min="-30" max="50" value="0" style="width:80px;accent-color:var(--accent)" oninput="document.getElementById('voice-rate-val').textContent=(this.value>=0?'+':'')+this.value+'%'">
+                <span id="voice-rate-val" style="width:40px">+0%</span>
+              </span>
+              <button onclick="voiceTest()" style="padding:4px 10px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;font-size:11px" title="Test-Satz sprechen">🧪 Test</button>
             </div>
             <div id="bolla-chat" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;overflow-y:auto;font-size:14px;line-height:1.7;color:var(--text)">
               <div style="color:var(--dim);text-align:center;padding:40px 20px">
@@ -470,7 +489,8 @@ html, body {
               <label style="padding:12px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;display:flex;align-items:center;color:var(--dim);font-size:16px" title="Bild anhängen (oder Strg+V)">
                 📎<input type="file" accept="image/*" onchange="bollaFileSelect(event)" style="display:none">
               </label>
-              <input id="bolla-input" placeholder="Nachricht an Bolla... (Strg+V für Screenshot)" style="flex:1;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-size:14px;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();bollaSend()}">
+              <button id="bolla-mic-btn" onclick="micToggle()" style="padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:16px;color:var(--dim)" title="Mit Bolla sprechen (Web Speech, de-DE)">🎤</button>
+              <input id="bolla-input" placeholder="Nachricht an Bolla... (Strg+V für Screenshot · 🎤 für Spracheingabe)" style="flex:1;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-size:14px;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();bollaSend()}">
               <button onclick="bollaSend()" id="bolla-send-btn" style="padding:12px 24px;background:var(--accent2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:opacity 0.2s">Senden</button>
             </div>
             <div style="font-size:11px;color:var(--dim);margin-top:6px;text-align:center">
@@ -944,16 +964,30 @@ function _lbShow() { const p=(window._lbPhotos||[])[_lbIdx]; document.getElement
 function _lbKey(e) { if(e.key==='Escape')lbClose(); if(e.key==='ArrowRight')lbNav(1); if(e.key==='ArrowLeft')lbNav(-1); }
 
 // ===== INIT =====
-loadCalendarData();
-loadEmailData();
-loadWeather();
-loadPhoto();
-loadJoke();
-loadSystem();
+// Initial load mit Retry falls API nach Boot noch nicht ready
+async function initialLoad(attempt=0) {
+  try {
+    const r = await fetch(API + '/api/status', {signal: AbortSignal.timeout(2000)});
+    if (!r.ok) throw 0;
+    loadCalendarData();
+    loadEmailData();
+    loadWeather();
+    loadPhoto();
+    loadJoke();
+    loadSystem();
+    loadBirthdays();
+    loadRobin();
+    loadSchule();
+  } catch(e) {
+    if (attempt < 30) setTimeout(()=>initialLoad(attempt+1), 2000);
+  }
+}
+initialLoad();
 
 setInterval(()=>{loadCalendarData();loadEmailData();}, 5*60*1000);
 setInterval(loadWeather, 30*60*1000);
 setInterval(loadSystem, 30*1000);
+setInterval(()=>{loadBirthdays();loadRobin();loadSchule();loadPhoto();}, 10*60*1000);
 
 // === BOLLA CHAT ===
 let bollaSessionId = null;
@@ -1019,6 +1053,74 @@ function renderMarkdown(text) {
   return html;
 }
 
+// ============ BOLLA STREAMING + TOOL-CALL RENDERING ============
+
+function toolIcon(name) {
+  const map = {Bash:'💻',Read:'📖',Write:'✏️',Edit:'✂️',Glob:'🔎',Grep:'🔍',WebFetch:'🌐',WebSearch:'🌐',TodoWrite:'📋',Task:'🤖'};
+  return map[name] || '🔧';
+}
+function toolSummary(name, input) {
+  if (!input) return name;
+  try {
+    if (name === 'Bash') return input.command || input.description || '';
+    if (name === 'Read' || name === 'Edit' || name === 'Write') return input.file_path || '';
+    if (name === 'Glob') return input.pattern || '';
+    if (name === 'Grep') return (input.pattern || '') + (input.path ? '  ·  ' + input.path : '');
+    if (name === 'WebFetch') return input.url || '';
+    if (name === 'WebSearch') return input.query || '';
+    return JSON.stringify(input).slice(0, 120);
+  } catch(e) { return ''; }
+}
+
+function appendToolCard(chat, ev) {
+  const name = ev.name || 'Tool';
+  const id = ev.id || 'tool-' + Date.now() + Math.random().toString(36).slice(2,8);
+  const summary = escHtml(toolSummary(name, ev.input));
+  const raw = escHtml(JSON.stringify(ev.input, null, 2));
+  const card = document.createElement('div');
+  card.className = 'bolla-tool-card';
+  card.dataset.toolId = id;
+  card.style.cssText = 'margin:8px 0;padding:8px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;font-size:12px';
+  card.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+      <span style="font-size:14px">${toolIcon(name)}</span>
+      <span style="color:var(--accent);font-weight:600">${escHtml(name)}</span>
+      <span style="color:var(--dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace">${summary}</span>
+      <span class="bolla-tool-status" style="color:var(--warning);font-size:11px">⏳</span>
+    </div>
+    <div style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+      <div style="color:var(--dim);font-size:10px;margin-bottom:4px">INPUT</div>
+      <pre style="background:rgba(0,0,0,0.3);padding:8px;border-radius:4px;overflow-x:auto;margin:0;font-size:11px">${raw}</pre>
+      <div class="bolla-tool-result-slot"></div>
+    </div>`;
+  chat.appendChild(card);
+  return card;
+}
+
+function updateToolCardResult(chat, toolUseId, resultText, isError) {
+  const card = chat.querySelector(`.bolla-tool-card[data-tool-id="${CSS.escape(toolUseId)}"]`);
+  if (!card) return;
+  const statusEl = card.querySelector('.bolla-tool-status');
+  if (statusEl) {
+    statusEl.textContent = isError ? '❌' : '✓';
+    statusEl.style.color = isError ? 'var(--danger)' : 'var(--success)';
+  }
+  const slot = card.querySelector('.bolla-tool-result-slot');
+  if (slot) {
+    const txt = typeof resultText === 'string' ? resultText : JSON.stringify(resultText);
+    const truncated = txt.length > 4000 ? txt.slice(0, 4000) + '\n... [gekürzt]' : txt;
+    slot.innerHTML = `<div style="color:var(--dim);font-size:10px;margin:8px 0 4px">OUTPUT</div>
+      <pre style="background:rgba(0,0,0,0.3);padding:8px;border-radius:4px;overflow-x:auto;margin:0;font-size:11px;max-height:300px;color:${isError?'#e57373':'var(--text)'}">${escHtml(truncated)}</pre>`;
+  }
+}
+
+function appendBollaText(chat, text) {
+  const div = document.createElement('div');
+  div.style.cssText = 'margin:12px 0;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid var(--success)';
+  div.innerHTML = `<span style="color:var(--success);font-weight:600;font-size:12px">🐾 BOLLA</span><div style="margin-top:4px">${renderMarkdown(text)}</div>`;
+  chat.appendChild(div);
+}
+
 async function bollaSend() {
   if (bollaBusy) return;
   const input = document.getElementById('bolla-input');
@@ -1029,33 +1131,28 @@ async function bollaSend() {
   const status = document.getElementById('bolla-status');
   const btn = document.getElementById('bolla-send-btn');
 
-  // Willkommen entfernen beim ersten Senden
   if (!bollaSessionId) chat.innerHTML = '';
 
-  // User-Nachricht anzeigen (mit Bild-Preview wenn vorhanden)
   let msgHtml = '';
-  if (bollaImageB64) {
-    msgHtml += `<img src="data:image/png;base64,${bollaImageB64}" style="max-height:150px;max-width:100%;border-radius:6px;margin-bottom:6px;display:block">`;
-  }
+  if (bollaImageB64) msgHtml += `<img src="data:image/png;base64,${bollaImageB64}" style="max-height:150px;max-width:100%;border-radius:6px;margin-bottom:6px;display:block">`;
   if (text) msgHtml += escHtml(text);
-  chat.innerHTML += `<div style="margin:12px 0;padding:10px 14px;background:rgba(33,150,243,0.1);border-radius:8px;border-left:3px solid var(--accent2)"><span style="color:var(--accent);font-weight:600;font-size:12px">CHRIS</span><div style="margin-top:4px">${msgHtml}</div></div>`;
+  const userDiv = document.createElement('div');
+  userDiv.style.cssText = 'margin:12px 0;padding:10px 14px;background:rgba(33,150,243,0.1);border-radius:8px;border-left:3px solid var(--accent2)';
+  userDiv.innerHTML = `<span style="color:var(--accent);font-weight:600;font-size:12px">CHRIS</span><div style="margin-top:4px">${msgHtml}</div>`;
+  chat.appendChild(userDiv);
 
   const sendImage = bollaImageB64;
   input.value = '';
   bollaRemoveImg();
   chat.scrollTop = chat.scrollHeight;
 
-  // Loading
   bollaBusy = true;
   btn.style.opacity = '0.5';
-  status.innerHTML = '🟡 Denkt nach...';
-  status.style.color = 'var(--warn,#ffa726)';
+  status.innerHTML = '🟡 Arbeitet...';
+  status.style.color = 'var(--warning)';
 
-  const loadingDiv = document.createElement('div');
-  loadingDiv.style.cssText = 'margin:12px 0;padding:10px 14px;color:var(--dim);font-style:italic';
-  loadingDiv.innerHTML = '🐾 Bolla tippt...';
-  chat.appendChild(loadingDiv);
-  chat.scrollTop = chat.scrollHeight;
+  let finalText = '';
+  let errored = false;
 
   try {
     const body = {message: text || ''};
@@ -1067,20 +1164,61 @@ async function bollaSend() {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(body)
     });
-    const data = await resp.json();
 
-    loadingDiv.remove();
+    if (!resp.ok || !resp.body) {
+      throw new Error('HTTP ' + resp.status);
+    }
 
-    if (data.error) {
-      chat.innerHTML += `<div style="margin:12px 0;padding:10px 14px;color:#e57373">Fehler: ${escHtml(data.error)}</div>`;
-    } else {
-      bollaSessionId = data.session_id || bollaSessionId;
-      const reply = data.result || '(keine Antwort)';
-      chat.innerHTML += `<div style="margin:12px 0;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid var(--success)"><span style="color:var(--success);font-weight:600;font-size:12px">🐾 BOLLA</span><div style="margin-top:4px">${renderMarkdown(reply)}</div></div>`;
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream: true});
+      let nl;
+      while ((nl = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, nl).trim();
+        buffer = buffer.slice(nl + 1);
+        if (!line) continue;
+        let ev;
+        try { ev = JSON.parse(line); } catch(e) { continue; }
+
+        if (ev.type === 'system' && ev.session_id) {
+          bollaSessionId = ev.session_id;
+        } else if (ev.type === 'assistant' && ev.message) {
+          const contents = ev.message.content || [];
+          for (const c of contents) {
+            if (c.type === 'text' && c.text) {
+              appendBollaText(chat, c.text);
+            } else if (c.type === 'tool_use') {
+              appendToolCard(chat, c);
+            }
+          }
+        } else if (ev.type === 'user' && ev.message) {
+          const contents = ev.message.content || [];
+          for (const c of contents) {
+            if (c.type === 'tool_result') {
+              let rtxt = c.content;
+              if (Array.isArray(rtxt)) rtxt = rtxt.map(p => p.text || '').join('\n');
+              updateToolCardResult(chat, c.tool_use_id, rtxt || '', !!c.is_error);
+            }
+          }
+        } else if (ev.type === 'result') {
+          if (ev.result) finalText = ev.result;
+          if (ev.session_id) bollaSessionId = ev.session_id;
+          if (ev.subtype && ev.subtype !== 'success') errored = true;
+        } else if (ev.type === 'error') {
+          chat.innerHTML += `<div style="margin:12px 0;padding:10px 14px;color:#e57373">Fehler: ${escHtml(ev.error || '')}</div>`;
+          errored = true;
+        }
+        chat.scrollTop = chat.scrollHeight;
+      }
     }
   } catch(e) {
-    loadingDiv.remove();
-    chat.innerHTML += `<div style="margin:12px 0;padding:10px 14px;color:#e57373">Verbindungsfehler — läuft die API? (${escHtml(e.message)})</div>`;
+    chat.innerHTML += `<div style="margin:12px 0;padding:10px 14px;color:#e57373">Verbindungsfehler: ${escHtml(e.message)}</div>`;
+    errored = true;
   }
 
   bollaBusy = false;
@@ -1089,7 +1227,179 @@ async function bollaSend() {
   status.style.color = 'var(--success)';
   chat.scrollTop = chat.scrollHeight;
   input.focus();
+
+  if (!errored && finalText && document.getElementById('voice-toggle')?.checked) {
+    voiceSpeak(finalText);
+  }
 }
+
+// ============ AZURE VOICE (TTS) ============
+let currentAudio = null;
+let voicesLoaded = false;
+
+async function voiceLoadList() {
+  if (voicesLoaded) return;
+  const sel = document.getElementById('voice-select');
+  try {
+    const r = await fetch(API + '/api/bolla/voices');
+    const data = await r.json();
+    if (data.error) {
+      sel.innerHTML = `<option>⚠ ${data.error.slice(0,60)}</option>`;
+      return;
+    }
+    const voices = data.voices || [];
+    const deflt = data.default;
+    sel.innerHTML = voices.map(v => {
+      const flag = v.locale.startsWith('de-') ? '🇩🇪' : '🇺🇸';
+      const g = v.gender === 'Female' ? '♀' : '♂';
+      return `<option value="${escHtml(v.name)}"${v.name===deflt?' selected':''}>${flag} ${g} ${escHtml(v.display)} (${escHtml(v.locale)})</option>`;
+    }).join('');
+    voicesLoaded = true;
+  } catch(e) {
+    sel.innerHTML = `<option>⚠ ${escHtml(e.message)}</option>`;
+  }
+}
+
+function voiceStop() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.src = '';
+    currentAudio = null;
+  }
+  document.getElementById('voice-stop-btn').style.display = 'none';
+}
+
+async function voiceSpeak(text) {
+  voiceStop();
+  // Markdown/Code entfernen für natürlichere Aussprache
+  const clean = text
+    .replace(/```[\s\S]*?```/g, ' Codeblock. ')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/[#>*_~]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!clean) return;
+  const voice = document.getElementById('voice-select').value;
+  const rate = parseInt(document.getElementById('voice-rate').value, 10) || 0;
+  const volume = parseInt(document.getElementById('voice-volume').value, 10) / 100;
+  try {
+    const r = await fetch(API + '/api/bolla/tts', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text: clean, voice, rate})
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(()=>({error:'HTTP '+r.status}));
+      console.warn('TTS-Fehler:', err.error);
+      return;
+    }
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    currentAudio = new Audio(url);
+    currentAudio.volume = volume;
+    currentAudio.onended = () => { URL.revokeObjectURL(url); document.getElementById('voice-stop-btn').style.display='none'; currentAudio=null; };
+    currentAudio.onerror = currentAudio.onended;
+    document.getElementById('voice-stop-btn').style.display = 'inline-block';
+    currentAudio.play().catch(e => console.warn('Audio play blockiert:', e));
+  } catch(e) {
+    console.warn('TTS:', e);
+  }
+}
+
+function voiceTest() {
+  voiceSpeak('Hallo Chris! Ich bin Bolla. So klingt diese Stimme. 🐾');
+}
+
+// ESC stoppt Sprachausgabe (auch wenn Input-Feld fokussiert ist, solange Bolla-Seite aktiv)
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!document.getElementById('page-bolla')?.classList.contains('active')) return;
+  if (currentAudio) {
+    voiceStop();
+    e.preventDefault();
+  }
+});
+
+// ============ MIC / SPEECH-TO-TEXT (Web Speech API) ============
+let micRec = null;
+let micActive = false;
+
+function micInit() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const r = new SR();
+  r.lang = 'de-DE';
+  r.continuous = true;
+  r.interimResults = true;
+  return r;
+}
+
+function micToggle() {
+  const btn = document.getElementById('bolla-mic-btn');
+  const input = document.getElementById('bolla-input');
+
+  if (micActive) {
+    try { micRec && micRec.stop(); } catch(e) {}
+    return;
+  }
+
+  if (!micRec) micRec = micInit();
+  if (!micRec) {
+    alert('Dein Browser unterstützt keine Web Speech API. Nutze Chrome oder Edge.');
+    return;
+  }
+
+  // Laufende TTS stoppen — sonst hört das Mikro Bolla zu
+  voiceStop();
+
+  let finalText = input.value ? input.value + ' ' : '';
+  let interimText = '';
+
+  micRec.onstart = () => {
+    micActive = true;
+    btn.textContent = '🔴';
+    btn.style.background = 'var(--danger)';
+    btn.style.color = 'white';
+    btn.title = 'Stopp';
+  };
+
+  micRec.onresult = (ev) => {
+    interimText = '';
+    for (let i = ev.resultIndex; i < ev.results.length; i++) {
+      const res = ev.results[i];
+      if (res.isFinal) finalText += res[0].transcript + ' ';
+      else interimText += res[0].transcript;
+    }
+    input.value = (finalText + interimText).replace(/\s+/g, ' ').trim();
+  };
+
+  micRec.onerror = (e) => { console.warn('mic error', e.error); };
+
+  micRec.onend = () => {
+    micActive = false;
+    btn.textContent = '🎤';
+    btn.style.background = 'var(--card)';
+    btn.style.color = 'var(--dim)';
+    btn.title = 'Mit Bolla sprechen (Web Speech, de-DE)';
+    // Auto-Send wenn Voice-Mode an und Text da
+    const txt = input.value.trim();
+    if (txt && document.getElementById('voice-toggle')?.checked) {
+      setTimeout(() => bollaSend(), 200);
+    }
+  };
+
+  try { micRec.start(); } catch(e) { console.warn(e); }
+}
+
+// Stimmenliste beim ersten Öffnen der Bolla-Seite laden
+document.querySelectorAll('.nav-item').forEach(el => {
+  if (el.dataset.page === 'bolla') {
+    el.addEventListener('click', voiceLoadList, {once: false});
+  }
+});
+// Wenn Bolla-Seite beim Start aktiv ist, gleich laden
+setTimeout(() => { if (document.getElementById('page-bolla')?.classList.contains('active')) voiceLoadList(); }, 500);
 
 // === LOCAL SERVER (LM Studio) ===
 const LMS_URL = 'http://192.168.178.29:1234';

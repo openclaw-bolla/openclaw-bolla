@@ -15,6 +15,19 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 WORKSPACE = os.path.expanduser("~/workspace")
 TOKEN_FILE = os.path.join(WORKSPACE, "config/ms_token.json")
+AZURE_SPEECH_FILE = os.path.join(WORKSPACE, "config/azure_speech.json")
+
+
+def azure_speech_config():
+    """Lädt Azure Speech Config. None wenn nicht konfiguriert."""
+    try:
+        with open(AZURE_SPEECH_FILE) as f:
+            cfg = json.load(f)
+        if not cfg.get("key") or cfg["key"].startswith("REPLACE_"):
+            return None
+        return cfg
+    except Exception:
+        return None
 
 CLIENT_ID = "9e5f94bc-e8a4-4e73-b8be-63364c29d753"
 
@@ -123,8 +136,8 @@ def get_calendar():
 def get_emails_outlook():
     """Holt ungelesene Mails von ernstmandel@outlook.de via Graph API."""
     data = graph_get(
-        "/me/messages?$filter=isRead eq false"
-        "&$orderby=receivedDateTime desc"
+        "/me/messages?$filter=isRead%20eq%20false"
+        "&$orderby=receivedDateTime%20desc"
         "&$top=10"
         "&$select=subject,from,receivedDateTime,isRead,bodyPreview"
     )
@@ -491,14 +504,14 @@ def get_token_usage():
     }
 
 
-def bolla_chat(message, session_id=None, image_b64=None):
-    """Sendet eine Nachricht an Claude Code (Bolla) via CLI."""
-    import subprocess, tempfile, base64
-    cmd = ["claude", "-p", "--output-format", "json"]
+def bolla_chat_stream(message, session_id=None, image_b64=None):
+    """Streamt Claude-Code-Events als Generator. Jeder yield ist ein JSON-Objekt."""
+    import subprocess, tempfile, base64, shutil
+    claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
+    cmd = [claude_bin, "-p", "--output-format", "stream-json", "--verbose"]
     if session_id:
         cmd.extend(["--resume", session_id])
 
-    # Bild als temporäre Datei speichern und im Prompt referenzieren
     tmp_path = None
     if image_b64:
         try:
@@ -512,22 +525,103 @@ def bolla_chat(message, session_id=None, image_b64=None):
             print(f"Bild-Fehler: {e}")
 
     cmd.append(message)
+    proc = None
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, cwd=os.path.expanduser("~/workspace"))
-        if result.returncode != 0:
-            return {"error": result.stderr.strip() or "Claude Code Fehler"}
-        data = json.loads(result.stdout)
-        return {"result": data.get("result", ""), "session_id": data.get("session_id", "")}
-    except subprocess.TimeoutExpired:
-        return {"error": "Timeout — Bolla hat zu lange gebraucht (>2min)"}
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            cwd=os.path.expanduser("~/workspace"),
+        )
+        for line in proc.stdout:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                yield json.loads(line)
+            except json.JSONDecodeError:
+                yield {"type": "raw", "text": line}
+        proc.wait(timeout=5)
+        if proc.returncode != 0:
+            err = proc.stderr.read() if proc.stderr else ""
+            yield {"type": "error", "error": err.strip() or f"Exit {proc.returncode}"}
     except Exception as e:
-        return {"error": str(e)}
+        yield {"type": "error", "error": str(e)}
     finally:
+        if proc and proc.poll() is None:
+            proc.kill()
         if tmp_path:
             try:
                 os.unlink(tmp_path)
             except:
                 pass
+
+
+def azure_list_voices():
+    """Holt die Stimmen-Liste von Azure."""
+    cfg = azure_speech_config()
+    if not cfg:
+        return {"error": "Azure Speech nicht konfiguriert. Key in config/azure_speech.json eintragen."}
+    import urllib.request
+    url = f"https://{cfg['region']}.tts.speech.microsoft.com/cognitiveservices/voices/list"
+    req = urllib.request.Request(url, headers={"Ocp-Apim-Subscription-Key": cfg["key"]})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            voices = json.loads(r.read())
+        # Filtern: nur DE + EN, neural, kompakte Form
+        filtered = [
+            {
+                "name": v["ShortName"],
+                "display": v.get("LocalName", v["ShortName"]),
+                "locale": v["Locale"],
+                "gender": v["Gender"],
+                "styles": v.get("StyleList", []),
+            }
+            for v in voices
+            if v.get("VoiceType") == "Neural" and (v["Locale"].startswith("de-") or v["Locale"].startswith("en-"))
+        ]
+        filtered.sort(key=lambda x: (not x["locale"].startswith("de-"), x["locale"], x["name"]))
+        return {"voices": filtered, "default": cfg.get("default_voice", "de-DE-SeraphinaMultilingualNeural")}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def azure_tts(text, voice, rate_percent=0):
+    """Synthetisiert Text → MP3-Bytes. Gibt (bytes, error) zurück."""
+    cfg = azure_speech_config()
+    if not cfg:
+        return None, "Azure Speech nicht konfiguriert"
+    import urllib.request
+    # SSML escapen
+    def esc(s):
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    rate_sign = "+" if rate_percent >= 0 else ""
+    locale = "-".join(voice.split("-")[:2]) if "-" in voice else "de-DE"
+    ssml = (
+        f"<speak version='1.0' xml:lang='{locale}'>"
+        f"<voice name='{voice}'>"
+        f"<prosody rate='{rate_sign}{int(rate_percent)}%'>{esc(text)}</prosody>"
+        f"</voice></speak>"
+    )
+    url = f"https://{cfg['region']}.tts.speech.microsoft.com/cognitiveservices/v1"
+    req = urllib.request.Request(
+        url,
+        data=ssml.encode("utf-8"),
+        headers={
+            "Ocp-Apim-Subscription-Key": cfg["key"],
+            "Content-Type": "application/ssml+xml",
+            "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
+            "User-Agent": "bolla-mission-control",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return r.read(), None
+    except Exception as e:
+        return None, str(e)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -540,69 +634,118 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "*")
         self.send_header("Content-Type", "application/json; charset=utf-8")
 
-    def do_GET(self):
-        self.send_response(200)
+    def _send_json(self, data, status=200):
+        self.send_response(status)
         self._cors_headers()
         self.end_headers()
-        
+        self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
+
+    def do_GET(self):
         try:
-            if self.path == "/api/calendar":
-                data = get_calendar()
-                self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
-            elif self.path == "/api/email":
-                data = get_emails()
-                self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
-            elif self.path == "/api/photo":
-                data = get_photo_of_day()
-                self.wfile.write(json.dumps(data or {}, ensure_ascii=False).encode())
-            elif self.path == "/api/birthdays":
-                data = get_birthdays()
-                self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
-            elif self.path == "/api/robin":
-                data = get_robin_info()
-                self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
-            elif self.path == "/api/sysinfo":
-                data = get_sysinfo()
-                self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
-            elif self.path == "/api/tokenusage":
-                data = get_token_usage()
-                self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
-            elif self.path == "/api/status":
-                self.wfile.write(json.dumps({"ok": True, "ts": datetime.now().isoformat()}).encode())
+            if self.path == "/api/bolla/voices":
+                self._send_json(azure_list_voices())
+                return
+
+            simple = {
+                "/api/calendar": get_calendar,
+                "/api/email": get_emails,
+                "/api/photo": lambda: get_photo_of_day() or {},
+                "/api/birthdays": get_birthdays,
+                "/api/robin": get_robin_info,
+                "/api/sysinfo": get_sysinfo,
+                "/api/tokenusage": get_token_usage,
+                "/api/status": lambda: {"ok": True, "ts": datetime.now().isoformat()},
+            }
+            if self.path in simple:
+                self._send_json(simple[self.path]())
             else:
-                self.wfile.write(json.dumps({"error": "not found"}).encode())
+                self._send_json({"error": "not found"}, status=404)
         except Exception as e:
             tb = traceback.format_exc()
-            print(f"Error: {tb}")
-            self.wfile.write(json.dumps({"error": str(e)}).encode())
+            print(f"GET Error: {tb}")
+            try:
+                self._send_json({"error": str(e)}, status=500)
+            except Exception:
+                pass
 
     def do_POST(self):
         try:
             length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(length)) if length else {}
-        except:
+        except Exception:
             body = {}
-
-        self.send_response(200)
-        self._cors_headers()
-        self.end_headers()
 
         try:
             if self.path == "/api/bolla/chat":
-                msg = body.get("message", "").strip()
-                if not msg:
-                    self.wfile.write(json.dumps({"error": "Keine Nachricht"}).encode())
-                    return
-                sid = body.get("session_id")
-                img = body.get("image")  # base64-encoded PNG
-                data = bolla_chat(msg, sid, image_b64=img)
-                self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
+                self._handle_bolla_stream(body)
+            elif self.path == "/api/bolla/tts":
+                self._handle_tts(body)
             else:
-                self.wfile.write(json.dumps({"error": "not found"}).encode())
+                self._send_json({"error": "not found"}, status=404)
         except Exception as e:
             tb = traceback.format_exc()
             print(f"POST Error: {tb}")
-            self.wfile.write(json.dumps({"error": str(e)}).encode())
+            try:
+                self._send_json({"error": str(e)}, status=500)
+            except Exception:
+                pass
+
+    def _handle_bolla_stream(self, body):
+        msg = body.get("message", "").strip()
+        if not msg and not body.get("image"):
+            self._send_json({"error": "Keine Nachricht"}, status=400)
+            return
+        sid = body.get("session_id")
+        img = body.get("image")
+
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Content-Type", "application/x-ndjson; charset=utf-8")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("X-Accel-Buffering", "no")
+        self.end_headers()
+
+        try:
+            for event in bolla_chat_stream(msg, sid, image_b64=img):
+                line = json.dumps(event, ensure_ascii=False) + "\n"
+                self.wfile.write(line.encode("utf-8"))
+                self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        except Exception as e:
+            try:
+                err = json.dumps({"type": "error", "error": str(e)}) + "\n"
+                self.wfile.write(err.encode())
+                self.wfile.flush()
+            except Exception:
+                pass
+
+    def _handle_tts(self, body):
+        text = (body.get("text") or "").strip()
+        if not text:
+            self._send_json({"error": "Kein Text"}, status=400)
+            return
+        voice = body.get("voice") or "de-DE-SeraphinaMultilingualNeural"
+        try:
+            rate = int(body.get("rate", 0))
+        except (TypeError, ValueError):
+            rate = 0
+        rate = max(-50, min(100, rate))
+
+        # Text kürzen zur Sicherheit (Azure-Limit ist hoch, aber 2000 reicht für Sprachausgabe)
+        if len(text) > 2000:
+            text = text[:2000] + "..."
+
+        audio, err = azure_tts(text, voice, rate)
+        if err or not audio:
+            self._send_json({"error": err or "TTS fehlgeschlagen"}, status=500)
+            return
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Content-Type", "audio/mpeg")
+        self.send_header("Content-Length", str(len(audio)))
+        self.end_headers()
+        self.wfile.write(audio)
 
     def do_OPTIONS(self):
         self.send_response(204)
