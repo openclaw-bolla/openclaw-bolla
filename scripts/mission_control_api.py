@@ -8,7 +8,7 @@ import json
 import os
 import sys
 import traceback
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from datetime import datetime, timezone, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -664,7 +664,7 @@ class Handler(BaseHTTPRequestHandler):
         if body_bytes is not None:
             req.add_header("Content-Type", "application/json")
         try:
-            with urllib.request.urlopen(req, timeout=120) as r:
+            with urllib.request.urlopen(req, timeout=5) as r:
                 data = r.read()
                 self.send_response(r.status)
                 ct = r.headers.get("Content-Type", "application/json")
@@ -826,6 +826,6 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     port = 18790
-    server = HTTPServer(("0.0.0.0", port), Handler)
+    server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
     print(f"Mission Control API läuft auf http://127.0.0.1:{port}")
     server.serve_forever()
