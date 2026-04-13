@@ -31,6 +31,23 @@ def azure_speech_config():
 
 CLIENT_ID = "9e5f94bc-e8a4-4e73-b8be-63364c29d753"
 
+_lms_host_cache = None
+def lms_base_url():
+    """Findet LM Studio auf dem Windows-Host (WSL2-Default-Gateway), Port 1234."""
+    global _lms_host_cache
+    if _lms_host_cache is None:
+        try:
+            with open("/proc/net/route") as f:
+                for line in f.readlines()[1:]:
+                    parts = line.split()
+                    if parts[1] == "00000000":
+                        ip = ".".join(str(int(parts[2][i:i+2], 16)) for i in (6, 4, 2, 0))
+                        _lms_host_cache = ip
+                        break
+        except Exception:
+            _lms_host_cache = "172.20.96.1"
+    return f"http://{_lms_host_cache}:1234"
+
 def get_token():
     """Gibt einen gültigen MS Graph Access Token zurück (refresht bei Bedarf)."""
     try:
@@ -640,8 +657,43 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
 
+    def _proxy_lms(self, method, body_bytes=None):
+        import urllib.request, urllib.error
+        target = lms_base_url() + self.path[len("/api/lms"):]
+        req = urllib.request.Request(target, data=body_bytes, method=method)
+        if body_bytes is not None:
+            req.add_header("Content-Type", "application/json")
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                data = r.read()
+                self.send_response(r.status)
+                ct = r.headers.get("Content-Type", "application/json")
+                self.send_header("Content-Type", ct)
+                self._cors_headers()
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+        except urllib.error.URLError as e:
+            self._send_json({"error": f"LM Studio nicht erreichbar: {e}"}, status=502)
+
     def do_GET(self):
         try:
+            if self.path.startswith("/api/lms/"):
+                self._proxy_lms("GET")
+                return
+
+            if self.path in ("/", "/index.html"):
+                html_path = os.path.expanduser("~/workspace/mission-control/index.html")
+                with open(html_path, "rb") as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
             if self.path == "/api/bolla/voices":
                 self._send_json(azure_list_voices())
                 return
@@ -671,7 +723,24 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
             length = int(self.headers.get("Content-Length", 0))
-            body = json.loads(self.rfile.read(length)) if length else {}
+            raw = self.rfile.read(length) if length else b""
+        except Exception:
+            raw = b""
+
+        if self.path.startswith("/api/lms/"):
+            try:
+                self._proxy_lms("POST", raw)
+            except Exception as e:
+                tb = traceback.format_exc()
+                print(f"LMS proxy error: {tb}")
+                try:
+                    self._send_json({"error": str(e)}, status=500)
+                except Exception:
+                    pass
+            return
+
+        try:
+            body = json.loads(raw) if raw else {}
         except Exception:
             body = {}
 
