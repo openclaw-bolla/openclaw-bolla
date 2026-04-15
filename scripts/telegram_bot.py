@@ -65,7 +65,8 @@ def send_message(chat_id, text, reply_to=None):
 def ask_claude(message, sender_name):
     """Fragt Claude Code und gibt die Antwort zurück."""
     prompt = f"[Telegram-Nachricht von {sender_name}]: {message}"
-    cmd = ["claude", "-p", "--output-format", "json", prompt]
+    claude_bin = os.path.expanduser("~/.local/bin/claude")
+    cmd = [claude_bin, "-p", "--output-format", "json", prompt]
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=120,
