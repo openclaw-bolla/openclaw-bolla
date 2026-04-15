@@ -4,9 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mission Control — Chris</title>
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
 <style>
 /* ===== RESET ===== */
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ===== BOLLA THINKING DOTS ===== */
+.bolla-dots span {
+  display: inline-block;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--success);
+  animation: bollaBounce 1.4s infinite ease-in-out;
+}
+.bolla-dots span:nth-child(2) { animation-delay: 0.2s; }
+.bolla-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bollaBounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-6px); opacity: 1; }
+}
 
 /* ===== VARIABLEN ===== */
 :root {
@@ -338,7 +354,7 @@ html, body {
     <nav id="sidebar-nav">
       <div class="nav-section">Übersicht</div>
       <div class="nav-item active" data-page="dashboard"><span class="icon">📊</span><span>Dashboard</span></div>
-      <div class="nav-item" data-page="bolla"><span class="icon">🐾</span><span>Bolla</span></div>
+      <div class="nav-item" data-page="bolla"><span class="icon"><img src="/api/bolla/avatar" style="width:18px;height:18px;border-radius:50%;vertical-align:middle"></span><span>Bolla</span></div>
 
       <div class="nav-section">Arbeit</div>
       <div class="nav-item" data-page="schule"><span class="icon">🏫</span><span>Schule</span></div>
@@ -357,9 +373,15 @@ html, body {
       <div class="nav-item" data-page="system"><span class="icon">🖥️</span><span>System Info</span></div>
       <div class="nav-item" data-page="brain"><span class="icon">🧠</span><span>Bolla's Brain</span></div>
     </nav>
-    <div id="sidebar-footer">
-      <div class="dot"></div>
-      <span>Bolla 🐾 online</span>
+    <div id="sidebar-footer" style="flex-direction:column;align-items:stretch;gap:6px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="dot"></div>
+        <span>Bolla 🐾 online</span>
+      </div>
+      <div id="sidebar-tokens" style="font-size:11px;color:var(--dim);line-height:1.4">
+        <div>Tokens heute</div>
+        <div style="color:var(--accent);margin-top:2px">↓ — &nbsp;·&nbsp; ↑ —</div>
+      </div>
     </div>
   </div>
 
@@ -441,12 +463,12 @@ html, body {
       </div>
 
       <!-- BOLLA -->
-      <div class="page" id="page-bolla">
-        <div style="display:flex;height:calc(100vh - 92px);gap:0">
+      <div class="page" id="page-bolla" style="padding:0;overflow:hidden">
+        <div style="display:flex;height:100%;gap:0">
           <!-- Chat -->
-          <div style="flex:1;display:flex;flex-direction:column;padding:16px">
+          <div style="flex:1;display:flex;flex-direction:column;padding:16px;min-width:0">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-shrink:0;flex-wrap:wrap">
-              <span style="font-size:28px">🐾</span>
+              <img src="/api/bolla/avatar" style="width:48px;height:48px;border-radius:50%;object-fit:cover">
               <div style="flex:1;min-width:180px">
                 <div style="font-size:20px;font-weight:300;color:var(--bright)">Bolla</div>
                 <div style="font-size:11px;color:var(--dim)">Claude Opus 4.6 · Max Plan · Live-Tools</div>
@@ -476,7 +498,7 @@ html, body {
             </div>
             <div id="bolla-chat" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;overflow-y:auto;font-size:14px;line-height:1.7;color:var(--text)">
               <div style="color:var(--dim);text-align:center;padding:40px 20px">
-                <div style="font-size:48px;margin-bottom:12px">🐾</div>
+                <img src="/api/bolla/avatar" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:12px">
                 <div style="font-size:16px;color:var(--bright);margin-bottom:4px">Hey Chris!</div>
                 <div style="font-size:13px">Schreib mir was — ich bin da.</div>
               </div>
@@ -489,6 +511,7 @@ html, body {
               <label style="padding:12px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;display:flex;align-items:center;color:var(--dim);font-size:16px" title="Bild anhängen (oder Strg+V)">
                 📎<input type="file" accept="image/*" onchange="bollaFileSelect(event)" style="display:none">
               </label>
+              <button id="bolla-cam-btn" onclick="camToggle()" style="padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:16px;color:var(--dim)" title="Webcam-Foto an Bolla senden">📷</button>
               <button id="bolla-mic-btn" onclick="micToggle()" style="padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:16px;color:var(--dim)" title="Mit Bolla sprechen (Web Speech, de-DE)">🎤</button>
               <input id="bolla-input" placeholder="Nachricht an Bolla... (Strg+V für Screenshot · 🎤 für Spracheingabe)" style="flex:1;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-size:14px;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();bollaSend()}">
               <button onclick="bollaSend()" id="bolla-send-btn" style="padding:12px 24px;background:var(--accent2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:opacity 0.2s">Senden</button>
@@ -848,6 +871,13 @@ async function loadRobin() {
 }
 
 // ===== SYSTEM =====
+function fmtTok(n) {
+  n = n || 0;
+  if (n >= 1e9) return (n/1e9).toFixed(2)+'B';
+  if (n >= 1e6) return (n/1e6).toFixed(2)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1)+'k';
+  return String(n);
+}
 async function loadSystem() {
   try {
     const [sysR, tokR] = await Promise.all([fetch(API+'/api/sysinfo'), fetch(API+'/api/tokenusage')]);
@@ -860,6 +890,10 @@ async function loadSystem() {
     function bar(pct, color) {
       return `<div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div><div class="bar-label">${pct}%</div>`;
     }
+    const today = tok.today || {input:0,output:0,cache_read:0,cache_creation:0};
+    const total = tok.total || {input:0,output:0,cache_read:0,cache_creation:0};
+    const sb = document.getElementById('sidebar-tokens');
+    if (sb) sb.innerHTML = `<div>Tokens heute</div><div style="color:var(--accent);margin-top:2px">↓ ${fmtTok(today.input+today.cache_read+today.cache_creation)} &nbsp;·&nbsp; ↑ ${fmtTok(today.output)}</div>`;
     document.getElementById('system-content').innerHTML = `
       <div class="card">
         <div class="card-head"><span class="card-title">💻 Rechner</span></div>
@@ -894,11 +928,22 @@ async function loadSystem() {
       </div>
       <div class="card">
         <div class="card-head"><span class="card-title">💳 Abo</span></div>
-        <div style="font-size:28px;font-weight:300;color:var(--success);margin-bottom:8px">Max Plan</div>
-        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px">
-          <div style="font-size:12px;color:var(--bright)">Unbegrenzte Nutzung</div>
-          <div style="font-size:11px;color:var(--dim);margin-top:4px">Keine Token-Limits, keine Extra-Kosten</div>
+        <div style="font-size:24px;font-weight:300;color:var(--success);margin-bottom:8px">Max Plan</div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;margin-bottom:8px">
+          <div style="font-size:11px;color:var(--dim);margin-bottom:4px">Heute</div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--bright)"><span>↓ Input</span><span>${today.input.toLocaleString('de-DE')}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--bright)"><span>↑ Output</span><span>${today.output.toLocaleString('de-DE')}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-top:2px"><span>♻ Cache-Read</span><span>${today.cache_read.toLocaleString('de-DE')}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--dim)"><span>＋ Cache-Write</span><span>${today.cache_creation.toLocaleString('de-DE')}</span></div>
         </div>
+        <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px">
+          <div style="font-size:11px;color:var(--dim);margin-bottom:4px">Gesamt</div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--bright)"><span>↓ Input</span><span>${fmtTok(total.input)}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--bright)"><span>↑ Output</span><span>${fmtTok(total.output)}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-top:2px"><span>♻ Cache-Read</span><span>${fmtTok(total.cache_read)}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--dim)"><span>＋ Cache-Write</span><span>${fmtTok(total.cache_creation)}</span></div>
+        </div>
+        <div style="font-size:11px;color:var(--success);margin-top:8px">✨ ${tok.note||'Max Plan — keine Kosten'}</div>
       </div>`;
   } catch(e) { document.getElementById('system-content').innerHTML='<div class="loading">System-Daten nicht verfügbar</div>'; }
 }
@@ -914,43 +959,112 @@ function initBrain() {
   container.appendChild(canvas);
   const ctx = canvas.getContext('2d');
   const nodes = [
-    {id:'HOME',group:'core',label:'🐾 HOME',size:20},{id:'MEMORY',group:'memory',label:'🧠 MEMORY',size:18},
-    {id:'SOUL',group:'soul',label:'💜 SOUL',size:14},{id:'USER',group:'core',label:'👤 USER',size:14},
-    {id:'Familie',group:'topic',label:'👨‍👩‍👧 Familie',size:14},{id:'Schule',group:'topic',label:'🏫 Schule',size:14},
-    {id:'Email',group:'topic',label:'📧 E-Mail',size:12},{id:'Telegram',group:'topic',label:'💬 Telegram',size:10},
-    {id:'GitHub',group:'topic',label:'📦 GitHub',size:10},{id:'ClaudeCode',group:'topic',label:'🤖 Claude Code',size:10},
-    {id:'Robin',group:'topic',label:'👨‍⚕️ Robin',size:12},{id:'Fotos',group:'topic',label:'📸 OneDrive',size:10},
+    // Core
+    {id:'BOLLA',group:'core',label:'🐾 Bolla',size:26},
+    {id:'CHRIS',group:'core',label:'👤 Chris',size:20},
+    {id:'MEMORY',group:'memory',label:'🧠 Memory',size:16},
+    {id:'SOUL',group:'soul',label:'💜 Soul',size:14},
+    // Familie
+    {id:'FAMILIE',group:'family',label:'👨‍👩‍👧 Familie',size:16},
+    {id:'RENATE',group:'family',label:'💑 Renate',size:11},
+    {id:'ROBIN',group:'family',label:'👨‍⚕️ Robin',size:13},
+    {id:'STEPHANIE',group:'family',label:'👩 Stephanie',size:11},
+    {id:'ENKEL',group:'family',label:'👧👦 Enkel',size:10},
+    // Infra — Kommunikation
+    {id:'MC',group:'infra',label:'🖥️ Mission Control',size:16},
+    {id:'TELEGRAM',group:'infra',label:'💬 Telegram Bot',size:14},
+    {id:'TUNNEL',group:'infra',label:'☁️ Cloudflare Tunnel',size:11},
+    {id:'AZURE',group:'infra',label:'🔊 Azure Speech',size:10},
+    // Infra — Geräte
+    {id:'DUO',group:'device',label:'📱 Surface Duo 2',size:12},
+    {id:'SURFACE',group:'device',label:'💻 Surface Laptop',size:11},
+    {id:'HUAWEI',group:'device',label:'📱 Huawei P20',size:9},
+    // Infra — Backup & Code
+    {id:'GITHUB',group:'infra',label:'📦 GitHub',size:10},
+    {id:'ONEDRIVE',group:'infra',label:'💾 OneDrive',size:10},
+    {id:'OBSIDIAN',group:'infra',label:'📓 Obsidian Vault',size:10},
+    // APIs & Services
+    {id:'OUTLOOK',group:'service',label:'📧 Outlook',size:12},
+    {id:'GMAIL',group:'service',label:'📧 Gmail',size:9},
+    {id:'WTNET',group:'service',label:'📧 wtnet',size:9},
+    {id:'GRAPH',group:'service',label:'🔗 MS Graph API',size:9},
+    {id:'KALENDER',group:'service',label:'📅 Kalender',size:11},
+    {id:'WETTER',group:'service',label:'🌤️ Wetter',size:10},
+    {id:'FOTOS',group:'service',label:'📸 Reisefotos',size:10},
+    {id:'LMS',group:'service',label:'🧪 LM Studio',size:10},
+    // Themen
+    {id:'SCHULE',group:'topic',label:'🏫 Lessing Gymnasium',size:13},
+    {id:'WP',group:'topic',label:'🌐 chrismandel.de',size:10},
+    {id:'GEBURTSTAGE',group:'topic',label:'🎂 Geburtstage',size:9},
+    {id:'SPAM',group:'topic',label:'🛡️ Spam Watcher',size:9},
+    {id:'CRON',group:'topic',label:'⏰ Cron Jobs',size:9},
   ];
-  const links = [{s:'HOME',t:'MEMORY'},{s:'HOME',t:'SOUL'},{s:'HOME',t:'USER'},{s:'MEMORY',t:'Familie'},
-    {s:'MEMORY',t:'Schule'},{s:'MEMORY',t:'Email'},{s:'MEMORY',t:'Telegram'},{s:'MEMORY',t:'GitHub'},
-    {s:'MEMORY',t:'ClaudeCode'},{s:'MEMORY',t:'Robin'},{s:'MEMORY',t:'Fotos'},{s:'USER',t:'Familie'},{s:'USER',t:'Robin'}];
-  const colors = {core:'#4fc3f7',memory:'#ff9800',soul:'#e040fb',topic:'#66bb6a'};
+  const links = [
+    // Core-Verbindungen
+    {s:'BOLLA',t:'CHRIS'},{s:'BOLLA',t:'MEMORY'},{s:'BOLLA',t:'SOUL'},
+    {s:'BOLLA',t:'MC'},{s:'BOLLA',t:'TELEGRAM'},
+    {s:'CHRIS',t:'FAMILIE'},{s:'CHRIS',t:'DUO'},{s:'CHRIS',t:'SURFACE'},{s:'CHRIS',t:'SCHULE'},
+    // Familie
+    {s:'FAMILIE',t:'RENATE'},{s:'FAMILIE',t:'ROBIN'},{s:'FAMILIE',t:'STEPHANIE'},
+    {s:'STEPHANIE',t:'ENKEL'},{s:'ROBIN',t:'TELEGRAM'},
+    // Mission Control
+    {s:'MC',t:'TUNNEL'},{s:'MC',t:'OUTLOOK'},{s:'MC',t:'WETTER'},{s:'MC',t:'KALENDER'},
+    {s:'MC',t:'FOTOS'},{s:'MC',t:'AZURE'},{s:'MC',t:'LMS'},{s:'MC',t:'GEBURTSTAGE'},
+    // Telegram & Geräte
+    {s:'TELEGRAM',t:'DUO'},{s:'TELEGRAM',t:'FAMILIE'},
+    {s:'DUO',t:'HUAWEI'},
+    // E-Mail
+    {s:'OUTLOOK',t:'GRAPH'},{s:'OUTLOOK',t:'GMAIL'},{s:'OUTLOOK',t:'WTNET'},
+    {s:'OUTLOOK',t:'KALENDER'},{s:'OUTLOOK',t:'GEBURTSTAGE'},
+    {s:'WTNET',t:'SPAM'},
+    // Backup & Memory
+    {s:'MEMORY',t:'GITHUB'},{s:'MEMORY',t:'ONEDRIVE'},{s:'MEMORY',t:'OBSIDIAN'},
+    {s:'MEMORY',t:'FAMILIE'},{s:'MEMORY',t:'SCHULE'},
+    // Tunnel-Verbindungen
+    {s:'TUNNEL',t:'WP'},{s:'TUNNEL',t:'LMS'},
+    // Automatisierung
+    {s:'CRON',t:'SPAM'},{s:'CRON',t:'OBSIDIAN'},{s:'CRON',t:'TELEGRAM'},
+    {s:'CRON',t:'MC'},{s:'CRON',t:'TUNNEL'},
+  ];
+  const colors = {core:'#4fc3f7',memory:'#ff9800',soul:'#e040fb',family:'#ef5350',infra:'#42a5f5',device:'#26c6da',service:'#ab47bc',topic:'#66bb6a'};
   const W = canvas.width, H = canvas.height;
-  nodes.forEach(n => { n.x=W/2+(Math.random()-.5)*300; n.y=H/2+(Math.random()-.5)*300; n.vx=0; n.vy=0; });
+  nodes.forEach(n => { n.x=W/2+(Math.random()-.5)*W*0.7; n.y=H/2+(Math.random()-.5)*H*0.7; n.vx=0; n.vy=0; });
   const nm = {}; nodes.forEach(n => nm[n.id]=n);
   function tick() {
     nodes.forEach(n => { n.vx+=(W/2-n.x)*0.001; n.vy+=(H/2-n.y)*0.001; });
     for (let i=0;i<nodes.length;i++) for (let j=i+1;j<nodes.length;j++) {
-      const dx=nodes[j].x-nodes[i].x, dy=nodes[j].y-nodes[i].y, d=Math.sqrt(dx*dx+dy*dy)||1, f=800/(d*d);
+      const dx=nodes[j].x-nodes[i].x, dy=nodes[j].y-nodes[i].y, d=Math.sqrt(dx*dx+dy*dy)||1, f=1500/(d*d);
       nodes[i].vx-=dx/d*f; nodes[i].vy-=dy/d*f; nodes[j].vx+=dx/d*f; nodes[j].vy+=dy/d*f;
     }
-    links.forEach(l => { const s=nm[l.s],t=nm[l.t]; if(!s||!t)return; const dx=t.x-s.x,dy=t.y-s.y,d=Math.sqrt(dx*dx+dy*dy)||1,f=(d-120)*0.005; s.vx+=dx/d*f; s.vy+=dy/d*f; t.vx-=dx/d*f; t.vy-=dy/d*f; });
-    nodes.forEach(n => { n.vx*=0.9; n.vy*=0.9; n.x=Math.max(40,Math.min(W-40,n.x+n.vx)); n.y=Math.max(40,Math.min(H-40,n.y+n.vy)); });
+    links.forEach(l => { const s=nm[l.s],t=nm[l.t]; if(!s||!t)return; const dx=t.x-s.x,dy=t.y-s.y,d=Math.sqrt(dx*dx+dy*dy)||1,f=(d-150)*0.004; s.vx+=dx/d*f; s.vy+=dy/d*f; t.vx-=dx/d*f; t.vy-=dy/d*f; });
+    nodes.forEach(n => { n.vx*=0.9; n.vy*=0.9; n.x=Math.max(50,Math.min(W-50,n.x+n.vx)); n.y=Math.max(50,Math.min(H-50,n.y+n.vy)); });
     ctx.clearRect(0,0,W,H);
-    ctx.strokeStyle='rgba(79,195,247,0.15)'; ctx.lineWidth=1;
+    ctx.strokeStyle='rgba(79,195,247,0.2)'; ctx.lineWidth=1.5;
     links.forEach(l => { const s=nm[l.s],t=nm[l.t]; if(!s||!t)return; ctx.beginPath(); ctx.moveTo(s.x,s.y); ctx.lineTo(t.x,t.y); ctx.stroke(); });
     nodes.forEach(n => {
       const c=colors[n.group]||'#4fc3f7';
-      ctx.shadowColor=c; ctx.shadowBlur=15; ctx.fillStyle=c; ctx.beginPath(); ctx.arc(n.x,n.y,n.size/2+3,0,Math.PI*2); ctx.fill();
+      const fontSize = Math.max(11, n.size*0.65);
+      const labelY = n.y + n.size/2 + 18;
+      ctx.font=`${fontSize}px Segoe UI`;
+      const textW = ctx.measureText(n.label).width;
+      ctx.fillStyle='rgba(10,22,40,0.75)';
+      const rx=n.x-textW/2-6, ry=labelY-fontSize+1, rw=textW+12, rh=fontSize+6, rad=4;
+      ctx.beginPath();
+      ctx.moveTo(rx+rad,ry); ctx.lineTo(rx+rw-rad,ry); ctx.quadraticCurveTo(rx+rw,ry,rx+rw,ry+rad);
+      ctx.lineTo(rx+rw,ry+rh-rad); ctx.quadraticCurveTo(rx+rw,ry+rh,rx+rw-rad,ry+rh);
+      ctx.lineTo(rx+rad,ry+rh); ctx.quadraticCurveTo(rx,ry+rh,rx,ry+rh-rad);
+      ctx.lineTo(rx,ry+rad); ctx.quadraticCurveTo(rx,ry,rx+rad,ry);
+      ctx.closePath(); ctx.fill();
+      ctx.shadowColor=c; ctx.shadowBlur=18; ctx.fillStyle=c; ctx.beginPath(); ctx.arc(n.x,n.y,n.size/2+3,0,Math.PI*2); ctx.fill();
       ctx.shadowBlur=0; ctx.fillStyle='#0a1628'; ctx.beginPath(); ctx.arc(n.x,n.y,n.size/2,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle=c; ctx.globalAlpha=0.8; ctx.beginPath(); ctx.arc(n.x,n.y,n.size/2-1,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
-      ctx.fillStyle='#e0e6ed'; ctx.font=`${Math.max(10,n.size*0.7)}px Segoe UI`; ctx.textAlign='center'; ctx.fillText(n.label,n.x,n.y+n.size/2+16);
+      ctx.fillStyle=c; ctx.globalAlpha=0.85; ctx.beginPath(); ctx.arc(n.x,n.y,n.size/2-1,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
+      ctx.fillStyle='#e8ecf2'; ctx.font=`${fontSize}px Segoe UI`; ctx.textAlign='center'; ctx.fillText(n.label,n.x,labelY);
     });
     requestAnimationFrame(tick);
   }
   tick();
   let drag=null;
-  canvas.addEventListener('mousedown',e=>{const r=canvas.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;drag=nodes.find(n=>Math.hypot(n.x-mx,n.y-my)<n.size);});
+  canvas.addEventListener('mousedown',e=>{const r=canvas.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;drag=nodes.find(n=>Math.hypot(n.x-mx,n.y-my)<n.size+10);});
   canvas.addEventListener('mousemove',e=>{if(!drag)return;const r=canvas.getBoundingClientRect();drag.x=e.clientX-r.left;drag.y=e.clientY-r.top;drag.vx=drag.vy=0;});
   canvas.addEventListener('mouseup',()=>drag=null);
 }
@@ -989,6 +1103,38 @@ setInterval(loadWeather, 30*60*1000);
 setInterval(loadSystem, 30*1000);
 setInterval(()=>{loadBirthdays();loadRobin();loadSchule();loadPhoto();}, 10*60*1000);
 
+// === CHAT PERSISTENCE ===
+function saveBollaChat() {
+  const chat = document.getElementById('bolla-chat');
+  try {
+    localStorage.setItem('bolla-chat-html', chat.innerHTML);
+    localStorage.setItem('bolla-session-id', bollaSessionId || '');
+  } catch(e) {}
+}
+function loadBollaChat() {
+  const html = localStorage.getItem('bolla-chat-html');
+  const sid = localStorage.getItem('bolla-session-id');
+  if (html) {
+    document.getElementById('bolla-chat').innerHTML = html;
+    bollaSessionId = sid || null;
+  }
+}
+function saveLmsChat() {
+  const chat = document.getElementById('lms-chat');
+  try {
+    localStorage.setItem('lms-chat-html', chat.innerHTML);
+    localStorage.setItem('lms-messages', JSON.stringify(lmsMessages));
+  } catch(e) {}
+}
+function loadLmsChat() {
+  const html = localStorage.getItem('lms-chat-html');
+  const msgs = localStorage.getItem('lms-messages');
+  if (html) {
+    document.getElementById('lms-chat').innerHTML = html;
+    try { lmsMessages = JSON.parse(msgs) || []; } catch(e) { lmsMessages = []; }
+  }
+}
+
 // === BOLLA CHAT ===
 let bollaSessionId = null;
 let bollaBusy = false;
@@ -1026,6 +1172,85 @@ function bollaFileSelect(e) {
   if (file) bollaLoadImage(file);
 }
 
+let camStream = null;
+let camVideo = null;
+
+function camToggle() {
+  const btn = document.getElementById('bolla-cam-btn');
+  const preview = document.getElementById('bolla-img-preview');
+
+  if (camStream) {
+    camStop();
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } })
+    .then(stream => {
+      camStream = stream;
+      btn.style.background = 'var(--success)';
+      btn.style.color = '#fff';
+
+      camVideo = document.createElement('video');
+      camVideo.srcObject = stream;
+      camVideo.autoplay = true;
+      camVideo.playsInline = true;
+      camVideo.style.cssText = 'max-height:200px;max-width:100%;border-radius:4px;display:block';
+
+      preview.innerHTML = '';
+      preview.style.display = 'block';
+      preview.appendChild(camVideo);
+
+      const btnBar = document.createElement('div');
+      btnBar.style.cssText = 'display:flex;gap:8px;margin-top:8px';
+
+      const snapBtn = document.createElement('button');
+      snapBtn.textContent = '📸 Foto aufnehmen';
+      snapBtn.style.cssText = 'padding:6px 14px;background:var(--success);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600';
+      snapBtn.onclick = camSnap;
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = '✕ Abbrechen';
+      cancelBtn.style.cssText = 'padding:6px 14px;background:var(--card);color:var(--dim);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px';
+      cancelBtn.onclick = camStop;
+
+      btnBar.appendChild(snapBtn);
+      btnBar.appendChild(cancelBtn);
+      preview.appendChild(btnBar);
+    })
+    .catch(err => {
+      alert('Kamera-Zugriff fehlgeschlagen: ' + err.message);
+    });
+}
+
+function camSnap() {
+  if (!camVideo) return;
+  const canvas = document.createElement('canvas');
+  canvas.width = camVideo.videoWidth;
+  canvas.height = camVideo.videoHeight;
+  canvas.getContext('2d').drawImage(camVideo, 0, 0);
+  const dataUrl = canvas.toDataURL('image/png');
+  bollaImageB64 = dataUrl.split(',')[1];
+
+  camStream.getTracks().forEach(t => t.stop());
+  camStream = null;
+  camVideo = null;
+
+  const preview = document.getElementById('bolla-img-preview');
+  preview.innerHTML = `<img id="bolla-img-thumb" src="${dataUrl}" style="max-height:120px;max-width:100%;border-radius:4px"><button onclick="bollaRemoveImg()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:12px;line-height:22px;text-align:center">✕</button>`;
+  document.getElementById('bolla-cam-btn').style.background = 'var(--card)';
+  document.getElementById('bolla-cam-btn').style.color = 'var(--dim)';
+}
+
+function camStop() {
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+  camVideo = null;
+  const preview = document.getElementById('bolla-img-preview');
+  preview.style.display = 'none';
+  preview.innerHTML = `<img id="bolla-img-thumb" style="max-height:120px;max-width:100%;border-radius:4px"><button onclick="bollaRemoveImg()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:12px;line-height:22px;text-align:center">✕</button>`;
+  document.getElementById('bolla-cam-btn').style.background = 'var(--card)';
+  document.getElementById('bolla-cam-btn').style.color = 'var(--dim)';
+}
+
 function bollaRemoveImg() {
   bollaImageB64 = null;
   document.getElementById('bolla-img-preview').style.display = 'none';
@@ -1039,6 +1264,7 @@ function bollaNewChat() {
   chat.innerHTML = '<div style="color:var(--dim);text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:12px">🐾</div><div style="font-size:16px;color:var(--bright);margin-bottom:4px">Hey Chris!</div><div style="font-size:13px">Schreib mir was — ich bin da.</div></div>';
   document.getElementById('bolla-status').innerHTML = '🟢 Bereit';
   document.getElementById('bolla-status').style.color = 'var(--success)';
+  saveBollaChat();
 }
 
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -1117,14 +1343,21 @@ function updateToolCardResult(chat, toolUseId, resultText, isError) {
 function appendBollaText(chat, text) {
   const div = document.createElement('div');
   div.style.cssText = 'margin:12px 0;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid var(--success)';
-  div.innerHTML = `<span style="color:var(--success);font-weight:600;font-size:12px">🐾 BOLLA</span><div style="margin-top:4px">${renderMarkdown(text)}</div>`;
+  div.innerHTML = `<span style="display:flex;align-items:center;gap:6px"><img src="/api/bolla/avatar" style="width:20px;height:20px;border-radius:50%"><span style="color:var(--success);font-weight:600;font-size:12px">BOLLA</span></span><div style="margin-top:4px">${renderMarkdown(text)}</div>`;
   chat.appendChild(div);
+}
+
+const voiceFixMap = {Paula:'Bolla', paula:'Bolla'};
+function voiceFix(s) {
+  for (const [wrong, right] of Object.entries(voiceFixMap))
+    s = s.replace(new RegExp('\\b' + wrong + '\\b', 'gi'), right);
+  return s;
 }
 
 async function bollaSend() {
   if (bollaBusy) return;
   const input = document.getElementById('bolla-input');
-  const text = input.value.trim();
+  const text = voiceFix(input.value.trim());
   if (!text && !bollaImageB64) return;
 
   const chat = document.getElementById('bolla-chat');
@@ -1150,6 +1383,13 @@ async function bollaSend() {
   btn.style.opacity = '0.5';
   status.innerHTML = '🟡 Arbeitet...';
   status.style.color = 'var(--warning)';
+
+  const thinkDiv = document.createElement('div');
+  thinkDiv.id = 'bolla-thinking';
+  thinkDiv.style.cssText = 'margin:12px 0;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid var(--success);display:flex;align-items:center;gap:8px';
+  thinkDiv.innerHTML = `<img src="/api/bolla/avatar" style="width:20px;height:20px;border-radius:50%"><span style="color:var(--success);font-size:12px;font-weight:600">BOLLA</span><span class="bolla-dots"><span>.</span><span>.</span><span>.</span></span>`;
+  chat.appendChild(thinkDiv);
+  chat.scrollTop = chat.scrollHeight;
 
   let finalText = '';
   let errored = false;
@@ -1188,6 +1428,7 @@ async function bollaSend() {
         if (ev.type === 'system' && ev.session_id) {
           bollaSessionId = ev.session_id;
         } else if (ev.type === 'assistant' && ev.message) {
+          const t = document.getElementById('bolla-thinking'); if (t) t.remove();
           const contents = ev.message.content || [];
           for (const c of contents) {
             if (c.type === 'text' && c.text) {
@@ -1221,12 +1462,16 @@ async function bollaSend() {
     errored = true;
   }
 
+  const thinkEl = document.getElementById('bolla-thinking');
+  if (thinkEl) thinkEl.remove();
+
   bollaBusy = false;
   btn.style.opacity = '1';
   status.innerHTML = '🟢 Bereit';
   status.style.color = 'var(--success)';
   chat.scrollTop = chat.scrollHeight;
   input.focus();
+  saveBollaChat();
 
   if (!errored && finalText && document.getElementById('voice-toggle')?.checked) {
     voiceSpeak(finalText);
@@ -1417,6 +1662,7 @@ function lmsNewChat() {
   chat.innerHTML = '<div style="color:var(--dim);text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:12px">🖧</div><div style="font-size:16px;color:var(--bright);margin-bottom:4px">Local Server</div><div style="font-size:13px">Chat mit dem lokal geladenen Modell in LM Studio.</div></div>';
   document.getElementById('lms-status').innerHTML = '🟢 Bereit';
   document.getElementById('lms-status').style.color = 'var(--success)';
+  saveLmsChat();
 }
 
 async function lmsCheckStatus() {
@@ -1503,7 +1749,12 @@ async function lmsSend() {
   status.style.color = 'var(--success)';
   chat.scrollTop = chat.scrollHeight;
   input.focus();
+  saveLmsChat();
 }
+
+// Chat-Verläufe aus localStorage laden
+loadBollaChat();
+loadLmsChat();
 
 // Status beim Laden prüfen + alle 30 Sek
 lmsCheckStatus();
