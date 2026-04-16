@@ -508,17 +508,140 @@ def get_sysinfo():
     }
 
 
+_token_cache = {"ts": 0, "data": None}
+_halfday_cache = {"ts": 0, "data": None}
+
+def get_token_halfdays(days=7):
+    import time as _t
+    if _halfday_cache["data"] and _t.time() - _halfday_cache["ts"] < 120:
+        return _halfday_cache["data"]
+
+    try:
+        import zoneinfo
+        tz = zoneinfo.ZoneInfo("Europe/Berlin")
+    except Exception:
+        tz = timezone.utc
+
+    now_local = datetime.now(timezone.utc).astimezone(tz)
+    cutoff = now_local - timedelta(days=days)
+    buckets = {}
+    proj_dir = "/home/bolla/.claude/projects"
+    try:
+        for root, _dirs, files in os.walk(proj_dir):
+            for fn in files:
+                if not fn.endswith(".jsonl"):
+                    continue
+                try:
+                    with open(os.path.join(root, fn), encoding="utf-8", errors="ignore") as f:
+                        for line in f:
+                            try:
+                                d = json.loads(line)
+                            except Exception:
+                                continue
+                            msg = d.get("message")
+                            if not isinstance(msg, dict):
+                                continue
+                            u = msg.get("usage")
+                            if not isinstance(u, dict):
+                                continue
+                            ts = d.get("timestamp", "")
+                            if not isinstance(ts, str):
+                                continue
+                            try:
+                                dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                            except Exception:
+                                continue
+                            local = dt.astimezone(tz)
+                            if local < cutoff:
+                                continue
+                            date_str = local.strftime("%Y-%m-%d")
+                            half = "AM" if local.hour < 12 else "PM"
+                            key = (date_str, half)
+                            b = buckets.setdefault(key, {"input":0,"output":0,"cache_read":0,"cache_creation":0})
+                            b["input"] += u.get("input_tokens", 0) or 0
+                            b["output"] += u.get("output_tokens", 0) or 0
+                            b["cache_read"] += u.get("cache_read_input_tokens", 0) or 0
+                            b["cache_creation"] += u.get("cache_creation_input_tokens", 0) or 0
+                except Exception:
+                    continue
+    except Exception as e:
+        print(f"halfday error: {e}")
+
+    result = []
+    for i in range(days - 1, -1, -1):
+        day = now_local - timedelta(days=i)
+        date_str = day.strftime("%Y-%m-%d")
+        weekday = ["Mo","Di","Mi","Do","Fr","Sa","So"][day.weekday()]
+        for half in ["AM", "PM"]:
+            b = buckets.get((date_str, half), {"input":0,"output":0,"cache_read":0,"cache_creation":0})
+            result.append({
+                "date": date_str,
+                "weekday": weekday,
+                "label": f"{weekday} {day.strftime('%d.%m.')}",
+                "half": half,
+                "input": b["input"],
+                "output": b["output"],
+                "cache_read": b["cache_read"],
+                "cache_creation": b["cache_creation"],
+                "total_in": b["input"] + b["cache_read"] + b["cache_creation"],
+                "total_out": b["output"]
+            })
+    data = {"halfdays": result, "days": days}
+    _halfday_cache["data"] = data
+    _halfday_cache["ts"] = _t.time()
+    return data
+
+
 def get_token_usage():
-    """Zeigt Claude Code Info (Max Plan — keine Kosten)."""
-    return {
-        "model": "Claude Opus 4.6 (Max Plan)",
-        "input_tokens": 0,
-        "output_tokens": 0,
-        "cache_read": 0,
-        "est_cost_eur": 0,
-        "cache_pct": 100,
-        "note": "Max Plan — unbegrenzt"
+    """Summiert Claude-Code Token-Verbrauch aus den Session-JSONL-Dateien."""
+    import time as _t
+    if _token_cache["data"] and _t.time() - _token_cache["ts"] < 60:
+        return _token_cache["data"]
+
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    t_in = t_out = t_cr = t_ce = 0
+    a_in = a_out = a_cr = a_ce = 0
+    proj_dir = "/home/bolla/.claude/projects"
+    try:
+        for root, _dirs, files in os.walk(proj_dir):
+            for fn in files:
+                if not fn.endswith(".jsonl"):
+                    continue
+                try:
+                    with open(os.path.join(root, fn), encoding="utf-8", errors="ignore") as f:
+                        for line in f:
+                            try:
+                                d = json.loads(line)
+                            except Exception:
+                                continue
+                            msg = d.get("message")
+                            if not isinstance(msg, dict):
+                                continue
+                            u = msg.get("usage")
+                            if not isinstance(u, dict):
+                                continue
+                            inp = u.get("input_tokens", 0) or 0
+                            out = u.get("output_tokens", 0) or 0
+                            cr = u.get("cache_read_input_tokens", 0) or 0
+                            ce = u.get("cache_creation_input_tokens", 0) or 0
+                            a_in += inp; a_out += out; a_cr += cr; a_ce += ce
+                            ts = d.get("timestamp", "")
+                            if isinstance(ts, str) and ts.startswith(today):
+                                t_in += inp; t_out += out; t_cr += cr; t_ce += ce
+                except Exception:
+                    continue
+    except Exception as e:
+        print(f"tokenusage error: {e}")
+
+    data = {
+        "model": "Claude Sonnet 4.6 (Max Plan)",
+        "today": {"input": t_in, "output": t_out, "cache_read": t_cr, "cache_creation": t_ce},
+        "total": {"input": a_in, "output": a_out, "cache_read": a_cr, "cache_creation": a_ce},
+        "note": "Max Plan — keine Kosten"
     }
+    _token_cache["ts"] = _t.time()
+    _token_cache["data"] = data
+    return data
 
 
 def bolla_chat_stream(message, session_id=None, image_b64=None):
@@ -641,6 +764,112 @@ def azure_tts(text, voice, rate_percent=0):
         return None, str(e)
 
 
+# ============ ADB / SURFACE ============
+def _adb_run(args, timeout=15):
+    import subprocess
+    try:
+        r = subprocess.run(["adb"] + list(args), capture_output=True, timeout=timeout)
+        return r.returncode, r.stdout, r.stderr.decode("utf-8", "replace").strip()
+    except subprocess.TimeoutExpired:
+        return -1, b"", "Timeout — Gerät nicht erreichbar?"
+    except FileNotFoundError:
+        return -2, b"", "adb nicht installiert"
+
+def adb_devices():
+    rc, out, err = _adb_run(["devices"], timeout=5)
+    if rc < 0:
+        return {"devices": [], "error": err}
+    devices = []
+    for line in out.decode("utf-8", "replace").splitlines()[1:]:
+        parts = line.strip().split()
+        if len(parts) >= 2:
+            devices.append({"id": parts[0], "state": parts[1]})
+    return {"devices": devices, "error": None if rc == 0 else (err or "Fehler")}
+
+def adb_packages(filter_str="", kind="all"):
+    args = ["shell", "pm", "list", "packages"]
+    if kind == "user":
+        args.append("-3")
+    elif kind == "system":
+        args.append("-s")
+    rc, out, err = _adb_run(args, timeout=15)
+    if rc != 0:
+        return {"packages": [], "error": err or "adb-Fehler"}
+    pkgs = []
+    f = (filter_str or "").lower().strip()
+    for line in out.decode("utf-8", "replace").splitlines():
+        line = line.strip()
+        if line.startswith("package:"):
+            name = line[8:]
+            if not f or f in name.lower():
+                pkgs.append(name)
+    pkgs.sort()
+    return {"packages": pkgs, "count": len(pkgs), "error": None}
+
+def adb_connect(host):
+    host = (host or "").strip()
+    if not host or " " in host or "\n" in host:
+        return {"ok": False, "error": "Ungültige Adresse"}
+    rc, out, err = _adb_run(["connect", host], timeout=10)
+    msg = (out.decode("utf-8", "replace") + " " + err).strip()
+    ok = rc == 0 and ("connected" in msg.lower() or "already" in msg.lower())
+    return {"ok": ok, "message": msg, "error": None if ok else (msg or "Verbindung fehlgeschlagen")}
+
+def adb_disconnect(host=""):
+    args = ["disconnect"]
+    if host:
+        args.append(host)
+    rc, out, err = _adb_run(args, timeout=5)
+    return {"ok": rc == 0, "message": (out.decode("utf-8","replace") + " " + err).strip()}
+
+def adb_screenshot():
+    rc, png, err = _adb_run(["exec-out", "screencap", "-p"], timeout=15)
+    if rc != 0 or not png:
+        return None, err or "Screenshot fehlgeschlagen"
+    return png, None
+
+def adb_push(filename, remote_dir, data_bytes):
+    import tempfile
+    filename = (filename or "").strip()
+    remote_dir = (remote_dir or "").strip()
+    if not filename or "/" in filename or "\\" in filename or "\0" in filename:
+        return {"ok": False, "error": "Ungültiger Dateiname"}
+    if not remote_dir or "\n" in remote_dir or "\0" in remote_dir:
+        return {"ok": False, "error": "Ungültiger Zielpfad"}
+    if not data_bytes:
+        return {"ok": False, "error": "Keine Daten"}
+    with tempfile.NamedTemporaryFile(delete=False, suffix="_" + filename) as tf:
+        tf.write(data_bytes)
+        local = tf.name
+    try:
+        remote = remote_dir.rstrip("/") + "/" + filename
+        rc, out, err = _adb_run(["push", local, remote], timeout=300)
+        if rc != 0:
+            return {"ok": False, "error": err or "Push fehlgeschlagen"}
+        return {"ok": True, "message": f"→ {remote} ({len(data_bytes)} Bytes)", "bytes": len(data_bytes)}
+    finally:
+        try: os.unlink(local)
+        except Exception: pass
+
+def adb_pull(remote):
+    import tempfile
+    remote = (remote or "").strip()
+    if not remote or "\0" in remote or "\n" in remote:
+        return None, "Ungültiger Pfad"
+    with tempfile.NamedTemporaryFile(delete=False) as tf:
+        local = tf.name
+    try:
+        rc, _, err = _adb_run(["pull", remote, local], timeout=120)
+        if rc != 0:
+            return None, err or "Pull fehlgeschlagen"
+        with open(local, "rb") as f:
+            data = f.read()
+        return data, None
+    finally:
+        try: os.unlink(local)
+        except Exception: pass
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass  # silent
@@ -694,8 +923,43 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(body)
                 return
 
+            if self.path == "/favicon.ico":
+                ico_path = os.path.expanduser("~/workspace/mission-control/favicon.ico")
+                with open(ico_path, "rb") as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/x-icon")
+                self.send_header("Cache-Control", "max-age=86400")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
+            if self.path == "/api/bolla/avatar":
+                avatar_path = os.path.expanduser("~/workspace/bolla_avatar.png")
+                with open(avatar_path, "rb") as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Disposition", 'attachment; filename="bolla_avatar.png"')
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
             if self.path == "/api/bolla/voices":
                 self._send_json(azure_list_voices())
+                return
+
+            if self.path == "/api/adb/devices":
+                self._send_json(adb_devices())
+                return
+
+            if self.path.startswith("/api/adb/packages"):
+                import urllib.parse as _up
+                qs = _up.urlparse(self.path).query
+                params = dict(_up.parse_qsl(qs))
+                self._send_json(adb_packages(params.get("filter", ""), params.get("kind", "all")))
                 return
 
             simple = {
@@ -706,6 +970,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/robin": get_robin_info,
                 "/api/sysinfo": get_sysinfo,
                 "/api/tokenusage": get_token_usage,
+                "/api/tokenusage/history": get_token_halfdays,
                 "/api/status": lambda: {"ok": True, "ts": datetime.now().isoformat()},
             }
             if self.path in simple:
@@ -749,6 +1014,43 @@ class Handler(BaseHTTPRequestHandler):
                 self._handle_bolla_stream(body)
             elif self.path == "/api/bolla/tts":
                 self._handle_tts(body)
+            elif self.path == "/api/adb/connect":
+                self._send_json(adb_connect(body.get("host", "")))
+            elif self.path == "/api/adb/disconnect":
+                self._send_json(adb_disconnect(body.get("host", "")))
+            elif self.path == "/api/adb/screenshot":
+                png, err = adb_screenshot()
+                if err or not png:
+                    self._send_json({"error": err or "Screenshot fehlgeschlagen"}, status=500)
+                    return
+                self.send_response(200)
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(png)))
+                self.end_headers()
+                self.wfile.write(png)
+            elif self.path == "/api/adb/push":
+                import base64
+                try:
+                    data = base64.b64decode(body.get("data_b64", ""))
+                except Exception:
+                    self._send_json({"ok": False, "error": "Ungültige Datei-Daten"}, status=400)
+                    return
+                self._send_json(adb_push(body.get("filename", ""), body.get("remote_dir", "/sdcard/"), data))
+            elif self.path == "/api/adb/pull":
+                remote = body.get("remote", "")
+                data, err = adb_pull(remote)
+                if err or data is None:
+                    self._send_json({"error": err or "Pull fehlgeschlagen"}, status=500)
+                    return
+                fname = os.path.basename(remote) or "download"
+                self.send_response(200)
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Content-Type", "application/octet-stream")
+                self.send_header("Content-Disposition", f'attachment; filename="{fname}"')
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
             else:
                 self._send_json({"error": "not found"}, status=404)
         except Exception as e:

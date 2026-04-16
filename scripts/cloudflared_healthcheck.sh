@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Healthcheck für cloudflared-Tunnel "bolla-mc".
-# Prüft ob der Prozess läuft UND ob die Edge-Verbindung antwortet.
-# Startet bei Bedarf neu. Läuft alle 2 Minuten per Cron.
+# Prüft: Prozess, Metrics (ha_connections), Edge-URL, Max-Uptime.
+# Läuft alle 2 Minuten per Cron.
 set -u
 
 LOG=/home/bolla/workspace/logs/cloudflared_health.log
@@ -9,6 +9,10 @@ TUNNEL=bolla-mc
 URL=https://bolla.chrismandel.de
 CFD=/home/bolla/.local/bin/cloudflared
 RUNLOG=/home/bolla/workspace/logs/cloudflared.log
+METRICS=http://127.0.0.1:20241/metrics
+MAX_UPTIME_SEC=21600  # 6 Stunden
+FAIL_FLAG=/tmp/cloudflared_health_fail
+PID_START_FILE=/tmp/cloudflared_start_ts
 
 ts() { date '+%Y-%m-%d %H:%M:%S'; }
 log() { echo "[$(ts)] $*" >> "$LOG"; }
@@ -19,6 +23,8 @@ restart() {
   sleep 3
   nohup "$CFD" tunnel run "$TUNNEL" >> "$RUNLOG" 2>&1 &
   log "neu gestartet, PID $!"
+  date +%s > "$PID_START_FILE"
+  rm -f "$FAIL_FLAG"
 }
 
 # 1) Prozess da?
@@ -27,11 +33,38 @@ if ! pgrep -f "cloudflared tunnel run $TUNNEL" >/dev/null; then
   exit 0
 fi
 
-# 2) Edge erreichbar? (302 zur Access-Login-Seite ist OK)
-# Wir restarten nur, wenn 2 Checks in Folge fehlschlagen — sonst werfen wir
-# aktive User-Sessions raus, nur weil ein einzelner Check zufällig timeoute.
-FAIL_FLAG=/tmp/cloudflared_health_fail
-code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$URL" || echo "000")
+# 2) Proaktiver Restart nach 6h (QUIC-Connections werden in WSL stale)
+if [ -f "$PID_START_FILE" ]; then
+  started=$(cat "$PID_START_FILE")
+else
+  # Fallback: Prozess-Startzeit aus /proc
+  pid=$(pgrep -f "cloudflared tunnel run $TUNNEL" | head -1)
+  if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then
+    started=$(stat -c %Y "/proc/$pid" 2>/dev/null || echo 0)
+  else
+    started=$(date +%s)
+  fi
+  echo "$started" > "$PID_START_FILE"
+fi
+now=$(date +%s)
+age=$(( now - started ))
+if [ "$age" -ge "$MAX_UPTIME_SEC" ]; then
+  restart "Proaktiver Restart nach $(( age / 3600 ))h (Max: $(( MAX_UPTIME_SEC / 3600 ))h)"
+  exit 0
+fi
+
+# 3) Metrics: ha_connections muss >= 1 sein
+ha=$(curl -s --max-time 5 "$METRICS" 2>/dev/null \
+  | grep '^cloudflared_tunnel_ha_connections ' \
+  | awk '{print int($2)}')
+if [ -n "$ha" ] && [ "$ha" -lt 1 ]; then
+  restart "ha_connections=$ha (keine aktiven Tunnel-Verbindungen)"
+  exit 0
+fi
+
+# 4) Edge erreichbar? (302 = Access-Login ist OK)
+#    2 Fehler in Folge nötig, um Flapping zu vermeiden.
+code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$URL" 2>/dev/null || echo "000")
 case "$code" in
   2*|3*)
     rm -f "$FAIL_FLAG"
@@ -40,7 +73,6 @@ case "$code" in
     if [ -f "$FAIL_FLAG" ]; then
       log "HTTP $code von $URL — zweiter Fehler in Folge"
       restart "Edge antwortet nicht ($code, 2× in Folge)"
-      rm -f "$FAIL_FLAG"
     else
       log "HTTP $code von $URL — erster Fehler, warte auf nächsten Check"
       touch "$FAIL_FLAG"

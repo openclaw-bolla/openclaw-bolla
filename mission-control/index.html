@@ -251,6 +251,31 @@ html, body {
 
 .loading { color: var(--dim); font-style: italic; font-size: 12px; }
 
+.adb-btn {
+  padding: 6px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--bright);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.adb-btn:hover:not(:disabled) { background: var(--card2); border-color: var(--accent); }
+.adb-btn:disabled { opacity: 0.5; cursor: wait; }
+.adb-input {
+  padding: 6px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--bright);
+  font-size: 12px;
+  outline: none;
+}
+.adb-input:focus { border-color: var(--accent); }
+.adb-result:empty { display: none; }
+.adb-result .adb-cmd:hover { background: var(--card2) !important; }
+
 /* ===== EVENT LIST ===== */
 .event-list { list-style: none; }
 .event-item {
@@ -367,6 +392,7 @@ html, body {
 
       <div class="nav-section">KI</div>
       <div class="nav-item" data-page="localserver"><span class="icon">🖧</span><span>Local Server</span></div>
+      <div class="nav-item" data-page="surface"><span class="icon">📱</span><span>Surface</span></div>
 
       <div class="nav-section">Info</div>
       <div class="nav-item" data-page="wetter"><span class="icon">🌤️</span><span>Wetter</span></div>
@@ -471,7 +497,7 @@ html, body {
               <img src="/api/bolla/avatar" style="width:48px;height:48px;border-radius:50%;object-fit:cover">
               <div style="flex:1;min-width:180px">
                 <div style="font-size:20px;font-weight:300;color:var(--bright)">Bolla</div>
-                <div style="font-size:11px;color:var(--dim)">Claude Opus 4.6 · Max Plan · Live-Tools</div>
+                <div style="font-size:11px;color:var(--dim)">Claude Sonnet 4.6 · Max Plan · Live-Tools</div>
               </div>
               <div id="bolla-status" style="font-size:11px;color:var(--success)">🟢 Bereit</div>
               <button onclick="bollaNewChat()" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;font-size:12px" title="Neuer Chat">🗑️ Neu</button>
@@ -551,6 +577,20 @@ html, body {
               Lokales Modell via LM Studio · <span id="lms-endpoint">—</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- SURFACE / ADB -->
+      <div class="page" id="page-surface">
+        <div style="padding:16px">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <span style="font-size:28px">📱</span>
+            <div style="flex:1">
+              <div style="font-size:20px;font-weight:300;color:var(--bright)">Surface · ADB-Befehle</div>
+              <div style="font-size:11px;color:var(--dim)">Android Debug Bridge · Klick auf einen Befehl kopiert ihn in die Zwischenablage</div>
+            </div>
+          </div>
+          <div class="grid" id="adb-grid"></div>
         </div>
       </div>
 
@@ -878,11 +918,46 @@ function fmtTok(n) {
   if (n >= 1e3) return (n/1e3).toFixed(1)+'k';
   return String(n);
 }
+function renderHalfdays(hist) {
+  if (!hist || !hist.halfdays) return '';
+  const rows = hist.halfdays;
+  const maxTotal = Math.max(1, ...rows.map(r => r.total_in + r.total_out));
+  let html = `
+    <div style="margin-top:4px">
+      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Aktivität 7 Tage (halbtageweise)</div>
+      <div style="display:flex;flex-direction:column;gap:3px">
+  `;
+  let lastDate = '';
+  for (const r of rows) {
+    const sum = r.total_in + r.total_out;
+    const pct = maxTotal > 0 ? (sum / maxTotal) * 100 : 0;
+    const dim = sum === 0 ? 'color:var(--dim);opacity:0.5' : 'color:var(--bright)';
+    const label = r.half === 'AM' ? 'VM' : 'NM';
+    const dateLabel = r.date !== lastDate ? r.label : '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    lastDate = r.date;
+    html += `
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;${dim}">
+        <span style="width:60px;font-family:ui-monospace,Consolas,monospace">${dateLabel}</span>
+        <span style="width:22px;color:var(--dim);font-size:10px">${label}</span>
+        <div style="flex:1;background:rgba(255,255,255,0.04);border-radius:3px;height:14px;position:relative;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--accent),#66bb6a);opacity:0.6"></div>
+        </div>
+        <span style="width:60px;text-align:right;font-family:ui-monospace,Consolas,monospace;font-size:10px">
+          ↓${fmtTok(r.total_in)} ↑${fmtTok(r.total_out)}
+        </span>
+      </div>
+    `;
+  }
+  html += `</div></div>`;
+  return html;
+}
+
 async function loadSystem() {
   try {
-    const [sysR, tokR] = await Promise.all([fetch(API+'/api/sysinfo'), fetch(API+'/api/tokenusage')]);
+    const [sysR, tokR, histR] = await Promise.all([fetch(API+'/api/sysinfo'), fetch(API+'/api/tokenusage'), fetch(API+'/api/tokenusage/history')]);
     const sys = await sysR.json();
     const tok = await tokR.json();
+    const hist = await histR.json();
     const gwColor = sys.gateway==='active' ? 'var(--success)' : 'var(--danger)';
     const dirty = sys.git.dirty > 0
       ? `<span style="background:var(--warning);color:#000;font-size:11px;padding:2px 8px;border-radius:8px">${sys.git.dirty} uncommitted</span>`
@@ -913,9 +988,10 @@ async function loadSystem() {
         <div style="font-size:22px;color:var(--success);margin-bottom:8px">🟢 Claude Code</div>
         <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px">
           <div style="font-size:11px;color:var(--dim)">Modell</div>
-          <div style="font-size:13px;color:var(--accent);margin-top:2px">${tok.model||'Claude Opus 4.6'}</div>
+          <div style="font-size:13px;color:var(--accent);margin-top:2px">${tok.model||'Claude Sonnet 4.6'}</div>
         </div>
-        ${tok.note ? `<div style="font-size:11px;color:var(--success);margin-top:6px">✨ ${tok.note}</div>` : ''}
+        ${tok.note ? `<div style="font-size:11px;color:var(--success);margin-top:6px;margin-bottom:10px">✨ ${tok.note}</div>` : ''}
+        ${renderHalfdays(hist)}
       </div>
       <div class="card">
         <div class="card-head"><span class="card-title">📦 GitHub</span></div>
@@ -1522,6 +1598,7 @@ async function voiceSpeak(text) {
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\*\*(.+?)\*\*/g, '$1')
     .replace(/[#>*_~]/g, '')
+    .replace(/\p{Extended_Pictographic}[\u{FE0F}\u{200D}]?/gu, '')
     .replace(/\s+/g, ' ')
     .trim();
   if (!clean) return;
@@ -1645,6 +1722,309 @@ document.querySelectorAll('.nav-item').forEach(el => {
 });
 // Wenn Bolla-Seite beim Start aktiv ist, gleich laden
 setTimeout(() => { if (document.getElementById('page-bolla')?.classList.contains('active')) voiceLoadList(); }, 500);
+
+// ============ SURFACE / ADB ============
+const ADB_GROUPS = [
+  {id:'conn', icon:'🔌', title:'Verbindung', cmds:[
+    {c:'adb devices', d:'Verbundene Geräte auflisten'},
+    {c:'adb tcpip 5555', d:'WLAN-Debugging aktivieren (USB angeschlossen)'},
+    {c:'adb connect 192.168.x.x:5555', d:'Per WLAN verbinden (IP anpassen)'},
+    {c:'adb disconnect', d:'Verbindung trennen'},
+    {c:'adb kill-server', d:'ADB-Server stoppen'},
+    {c:'adb start-server', d:'ADB-Server starten'}
+  ]},
+  {id:'apps', icon:'📲', title:'Apps', cmds:[
+    {c:'adb install app.apk', d:'App installieren'},
+    {c:'adb install -r app.apk', d:'App neu installieren (behält Daten)'},
+    {c:'adb uninstall com.example.app', d:'App entfernen'},
+    {c:'adb shell pm list packages', d:'Alle installierten Pakete'},
+    {c:'adb shell pm clear com.example.app', d:'Cache und Daten der App löschen'}
+  ]},
+  {id:'screen', icon:'🖼️', title:'Screen & Aufnahme', cmds:[
+    {c:'adb shell screencap -p /sdcard/shot.png', d:'Screenshot auf Gerät speichern'},
+    {c:'adb pull /sdcard/shot.png', d:'Screenshot auf PC holen'},
+    {c:'adb shell screenrecord /sdcard/rec.mp4', d:'Bildschirm aufnehmen (Strg+C zum Stoppen)'},
+    {c:'adb shell wm size', d:'Display-Auflösung anzeigen'}
+  ]},
+  {id:'files', icon:'🗂️', title:'Dateien', cmds:[
+    {c:'adb push datei.txt /sdcard/', d:'Datei aufs Gerät kopieren'},
+    {c:'adb pull /sdcard/datei.txt', d:'Datei vom Gerät holen'},
+    {c:'adb shell ls /sdcard/', d:'Verzeichnis anzeigen'}
+  ]},
+  {icon:'🪵', title:'Logs & Info', cmds:[
+    {c:'adb logcat', d:'Live-Log anzeigen'},
+    {c:'adb logcat -c', d:'Log leeren'},
+    {c:'adb shell getprop ro.product.model', d:'Gerätemodell anzeigen'},
+    {c:'adb shell getprop ro.build.version.release', d:'Android-Version'},
+    {c:'adb bugreport bugreport.zip', d:'Vollständigen Bugreport erzeugen'}
+  ]},
+  {icon:'⚡', title:'Power & Reboot', cmds:[
+    {c:'adb reboot', d:'Normaler Neustart'},
+    {c:'adb reboot recovery', d:'In Recovery-Modus booten'},
+    {c:'adb reboot bootloader', d:'In Bootloader/Fastboot booten'},
+    {c:'adb shell input keyevent 26', d:'Power-Taste drücken (Display an/aus)'}
+  ]},
+  {icon:'🐚', title:'Shell & Input', cmds:[
+    {c:'adb shell', d:'Interaktive Shell öffnen'},
+    {c:'adb shell input text "Hallo"', d:'Text auf Gerät eingeben'},
+    {c:'adb shell input tap 500 1000', d:'Tap an Position X=500 Y=1000'},
+    {c:'adb shell input swipe 100 1000 900 1000', d:'Swipe von links nach rechts'},
+    {c:'adb shell input keyevent 4', d:'Zurück-Taste'}
+  ]}
+];
+
+function adbEsc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+const ADB_ACTIONS = {
+  conn: `
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <input class="adb-input" data-role="connect-ip" placeholder="192.168.178.20" style="flex:2;min-width:140px">
+      <input class="adb-input" data-role="connect-port" placeholder="Port" style="flex:1;min-width:70px;max-width:90px">
+      <button class="adb-btn" data-act="connect">🔗 Verbinden</button>
+      <button class="adb-btn" data-act="disconnect" title="Alle Verbindungen trennen">✂ Trennen</button>
+    </div>
+    <button class="adb-btn" data-act="devices" style="align-self:flex-start">📡 Geräte prüfen</button>
+    <div class="adb-result" data-for="devices"></div>
+  `,
+  apps: `
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <input class="adb-input" data-role="apps-filter" placeholder="Filter (z.B. google)" style="flex:1;min-width:140px">
+      <select class="adb-input" data-role="apps-kind" style="max-width:130px">
+        <option value="all">Alle</option>
+        <option value="user" selected>Nur User</option>
+        <option value="system">Nur System</option>
+      </select>
+      <button class="adb-btn" data-act="apps">📲 Laden</button>
+    </div>
+    <div class="adb-result" data-for="apps"></div>
+  `,
+  screen: `
+    <button class="adb-btn" data-act="screenshot">📸 Screenshot machen</button>
+    <div class="adb-result" data-for="screenshot"></div>
+  `,
+  files: `
+    <div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600">⬇ Surface → Laptop</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <input class="adb-input" data-role="pull-path" placeholder="/sdcard/DCIM/Camera/..." style="flex:1;min-width:200px">
+      <button class="adb-btn" data-act="pull">⬇ Pullen</button>
+    </div>
+    <div class="adb-result" data-for="pull"></div>
+
+    <div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:6px">⬆ Laptop → Surface</div>
+    <input type="file" class="adb-input" data-role="push-file" style="width:100%">
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <input class="adb-input" data-role="push-dir" placeholder="/sdcard/Download/" value="/sdcard/Download/" style="flex:1;min-width:180px">
+      <button class="adb-btn" data-act="push">⬆ Pushen</button>
+    </div>
+    <div class="adb-result" data-for="push"></div>
+  `
+};
+
+function adbRender() {
+  const grid = document.getElementById('adb-grid');
+  if (!grid || grid.dataset.rendered === '1') return;
+  grid.innerHTML = ADB_GROUPS.map(g => `
+    <div class="card" data-group="${g.id}">
+      <div class="card-head">
+        <span class="card-title">${g.title}</span>
+        <span class="card-icon">${g.icon}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${g.cmds.map(x => `
+          <div class="adb-cmd" data-cmd="${adbEsc(x.c)}" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;cursor:pointer;transition:all 0.15s" title="Klick zum Kopieren">
+            <div style="font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--accent);word-break:break-all">${adbEsc(x.c)}</div>
+            <div style="font-size:11px;color:var(--dim);margin-top:3px">${adbEsc(x.d)}</div>
+          </div>
+        `).join('')}
+      </div>
+      ${ADB_ACTIONS[g.id] ? `<div class="adb-action-block" style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--border);display:flex;flex-direction:column;gap:8px">${ADB_ACTIONS[g.id]}</div>` : ''}
+    </div>
+  `).join('');
+  grid.querySelectorAll('.adb-cmd').forEach(el => {
+    el.addEventListener('click', () => adbCopy(el, el.dataset.cmd));
+  });
+  grid.querySelectorAll('.adb-btn').forEach(btn => {
+    btn.addEventListener('click', () => adbAction(btn.dataset.act, btn));
+  });
+  // Letzte IP + Port vorausfüllen
+  const ipInput = grid.querySelector('[data-role="connect-ip"]');
+  const portInput = grid.querySelector('[data-role="connect-port"]');
+  if (ipInput) ipInput.value = localStorage.getItem('adb-last-ip') || '192.168.178.20';
+  if (portInput) portInput.value = localStorage.getItem('adb-last-port') || '';
+  grid.dataset.rendered = '1';
+}
+
+async function adbCopy(el, text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    const orig = el.style.borderColor;
+    el.style.borderColor = '#66bb6a';
+    el.style.background = 'rgba(102,187,106,0.08)';
+    const hint = document.createElement('div');
+    hint.textContent = '✓ Kopiert';
+    hint.style.cssText = 'font-size:11px;color:#66bb6a;margin-top:4px;font-weight:600';
+    el.appendChild(hint);
+    setTimeout(() => {
+      el.style.borderColor = orig;
+      el.style.background = '';
+      hint.remove();
+    }, 1200);
+  } catch(e) {
+    console.warn('Clipboard:', e);
+    alert('Kopieren fehlgeschlagen — bitte manuell markieren.');
+  }
+}
+
+async function adbAction(act, btn) {
+  const card = btn.closest('.card');
+  const resultKey = {devices:'devices', apps:'apps', screenshot:'screenshot', pull:'pull', push:'push', connect:'devices', disconnect:'devices'}[act];
+  const out = card.querySelector(`.adb-result[data-for="${resultKey}"]`);
+  const showMsg = (html) => { if (out) out.innerHTML = html; };
+  btn.disabled = true;
+  const origLabel = btn.textContent;
+  btn.textContent = '⏳ Läuft...';
+  try {
+    if (act === 'connect') {
+      const ipEl = card.querySelector('[data-role="connect-ip"]');
+      const portEl = card.querySelector('[data-role="connect-port"]');
+      const ip = ipEl ? ipEl.value.trim() : '';
+      const port = portEl ? portEl.value.trim() : '';
+      const host = port ? `${ip}:${port}` : ip;
+      if (!ip) {
+        showMsg(`<div style="color:#e57373;font-size:12px;padding:8px">⚠ Bitte IP-Adresse eingeben.</div>`);
+      } else {
+        localStorage.setItem('adb-last-ip', ip);
+        if (port) localStorage.setItem('adb-last-port', port);
+        const r = await fetch(API + '/api/adb/connect', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({host})
+        });
+        const d = await r.json();
+        const color = d.ok ? '#66bb6a' : '#e57373';
+        showMsg(`<div style="color:${color};font-size:12px;padding:8px;background:${d.ok?'rgba(102,187,106,0.08)':'rgba(229,115,115,0.08)'};border-radius:6px">${d.ok?'✓':'⚠'} ${adbEsc(d.message || d.error || '')}</div>`);
+        if (d.ok) setTimeout(() => adbAction('devices', card.querySelector('[data-act="devices"]')), 300);
+      }
+    } else if (act === 'disconnect') {
+      const r = await fetch(API + '/api/adb/disconnect', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'
+      });
+      const d = await r.json();
+      out.innerHTML = `<div style="color:var(--dim);font-size:12px;padding:8px">${adbEsc(d.message || 'Getrennt')}</div>`;
+    } else if (act === 'devices') {
+      const r = await fetch(API + '/api/adb/devices');
+      const d = await r.json();
+      if (d.error && (!d.devices || !d.devices.length)) {
+        out.innerHTML = `<div style="color:#e57373;font-size:12px;padding:8px">⚠ ${adbEsc(d.error)}</div>`;
+      } else if (!d.devices || !d.devices.length) {
+        out.innerHTML = `<div style="color:var(--dim);font-size:12px;padding:8px">Keine Geräte verbunden.</div>`;
+      } else {
+        out.innerHTML = d.devices.map(dev => {
+          const ok = dev.state === 'device';
+          const color = ok ? '#66bb6a' : '#e57373';
+          return `<div style="display:flex;justify-content:space-between;font-family:ui-monospace,Consolas,monospace;font-size:12px;padding:6px 10px;background:var(--bg);border-radius:6px;margin-top:4px"><span>${adbEsc(dev.id)}</span><span style="color:${color}">${adbEsc(dev.state)}</span></div>`;
+        }).join('');
+      }
+    } else if (act === 'apps') {
+      const filter = card.querySelector('[data-role="apps-filter"]').value;
+      const kind = card.querySelector('[data-role="apps-kind"]').value;
+      const qs = new URLSearchParams({filter, kind}).toString();
+      const r = await fetch(API + '/api/adb/packages?' + qs);
+      const d = await r.json();
+      if (d.error) {
+        out.innerHTML = `<div style="color:#e57373;font-size:12px;padding:8px">⚠ ${adbEsc(d.error)}</div>`;
+      } else if (!d.packages.length) {
+        out.innerHTML = `<div style="color:var(--dim);font-size:12px;padding:8px">Keine Treffer.</div>`;
+      } else {
+        out.innerHTML = `
+          <div style="font-size:11px;color:var(--dim);margin-bottom:4px">${d.count} Paket(e)</div>
+          <div style="max-height:240px;overflow-y:auto;background:var(--bg);border-radius:6px;padding:6px">
+            ${d.packages.map(p => `<div class="adb-cmd" data-cmd="${adbEsc(p)}" style="font-family:ui-monospace,Consolas,monospace;font-size:11px;padding:4px 8px;cursor:pointer;border-radius:4px" title="Klick kopiert Paketname">${adbEsc(p)}</div>`).join('')}
+          </div>
+        `;
+        out.querySelectorAll('.adb-cmd').forEach(el => {
+          el.addEventListener('click', () => adbCopy(el, el.dataset.cmd));
+        });
+      }
+    } else if (act === 'screenshot') {
+      const r = await fetch(API + '/api/adb/screenshot', {method:'POST'});
+      if (!r.ok) {
+        const err = await r.json().catch(()=>({error:'HTTP '+r.status}));
+        out.innerHTML = `<div style="color:#e57373;font-size:12px;padding:8px">⚠ ${adbEsc(err.error)}</div>`;
+      } else {
+        const blob = await r.blob();
+        const url = URL.createObjectURL(blob);
+        const ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+        out.innerHTML = `
+          <div style="font-size:11px;color:var(--dim);margin-bottom:6px">Aufgenommen ${new Date().toLocaleTimeString('de-DE')}</div>
+          <img src="${url}" style="max-width:100%;border-radius:6px;border:1px solid var(--border);display:block">
+          <a href="${url}" download="surface-${ts}.png" style="display:inline-block;margin-top:6px;padding:4px 10px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:12px;text-decoration:none">⬇ Download</a>
+        `;
+      }
+    } else if (act === 'push') {
+      const fileInput = card.querySelector('[data-role="push-file"]');
+      const remoteDir = card.querySelector('[data-role="push-dir"]').value.trim() || '/sdcard/Download/';
+      if (!fileInput.files || !fileInput.files.length) {
+        out.innerHTML = `<div style="color:#e57373;font-size:12px;padding:8px">⚠ Bitte Datei auswählen.</div>`;
+      } else {
+        const file = fileInput.files[0];
+        out.innerHTML = `<div style="color:var(--dim);font-size:12px;padding:8px">⏳ Lade ${adbEsc(file.name)} (${(file.size/1024).toFixed(1)} KB)...</div>`;
+        const b64 = await new Promise((res, rej) => {
+          const fr = new FileReader();
+          fr.onload = () => res(fr.result.split(',')[1]);
+          fr.onerror = rej;
+          fr.readAsDataURL(file);
+        });
+        const r = await fetch(API + '/api/adb/push', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({filename: file.name, remote_dir: remoteDir, data_b64: b64})
+        });
+        const d = await r.json();
+        const color = d.ok ? '#66bb6a' : '#e57373';
+        const bg = d.ok ? 'rgba(102,187,106,0.08)' : 'rgba(229,115,115,0.08)';
+        out.innerHTML = `<div style="color:${color};font-size:12px;padding:8px;background:${bg};border-radius:6px">${d.ok?'✓':'⚠'} ${adbEsc(d.message || d.error || '')}</div>`;
+        if (d.ok) fileInput.value = '';
+      }
+    } else if (act === 'pull') {
+      const path = card.querySelector('[data-role="pull-path"]').value.trim();
+      if (!path) {
+        out.innerHTML = `<div style="color:#e57373;font-size:12px;padding:8px">⚠ Bitte Pfad angeben.</div>`;
+      } else {
+        const r = await fetch(API + '/api/adb/pull', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({remote: path})
+        });
+        if (!r.ok) {
+          const err = await r.json().catch(()=>({error:'HTTP '+r.status}));
+          out.innerHTML = `<div style="color:#e57373;font-size:12px;padding:8px">⚠ ${adbEsc(err.error)}</div>`;
+        } else {
+          const blob = await r.blob();
+          const url = URL.createObjectURL(blob);
+          const fname = path.split('/').pop() || 'download';
+          const sizeKb = (blob.size / 1024).toFixed(1);
+          out.innerHTML = `
+            <div style="font-size:12px;color:#66bb6a;padding:8px;background:rgba(102,187,106,0.08);border-radius:6px">
+              ✓ ${adbEsc(fname)} — ${sizeKb} KB
+              <a href="${url}" download="${adbEsc(fname)}" style="margin-left:8px;color:var(--accent);text-decoration:none">⬇ Speichern</a>
+            </div>
+          `;
+        }
+      }
+    }
+  } catch(e) {
+    showMsg(`<div style="color:#e57373;font-size:12px;padding:8px">⚠ ${adbEsc(e.message || e)}</div>`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = origLabel;
+  }
+}
+
+// Beim ersten Klick auf Surface rendern
+document.querySelectorAll('.nav-item').forEach(el => {
+  if (el.dataset.page === 'surface') el.addEventListener('click', adbRender);
+});
+setTimeout(() => { if (document.getElementById('page-surface')?.classList.contains('active')) adbRender(); }, 500);
 
 // === LOCAL SERVER (LM Studio) ===
 // Geht immer über den eigenen Server-Proxy (/api/lms) — kein CORS, gleiche Origin
