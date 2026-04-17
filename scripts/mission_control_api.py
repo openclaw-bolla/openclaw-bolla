@@ -601,6 +601,8 @@ def get_token_usage():
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     t_in = t_out = t_cr = t_ce = 0
     a_in = a_out = a_cr = a_ce = 0
+    latest_ts = ""
+    latest_model = ""
     proj_dir = "/home/bolla/.claude/projects"
     try:
         for root, _dirs, files in os.walk(proj_dir):
@@ -617,6 +619,11 @@ def get_token_usage():
                             msg = d.get("message")
                             if not isinstance(msg, dict):
                                 continue
+                            ts = d.get("timestamp", "")
+                            mdl = msg.get("model")
+                            if isinstance(mdl, str) and mdl and isinstance(ts, str) and ts > latest_ts:
+                                latest_ts = ts
+                                latest_model = mdl
                             u = msg.get("usage")
                             if not isinstance(u, dict):
                                 continue
@@ -625,7 +632,6 @@ def get_token_usage():
                             cr = u.get("cache_read_input_tokens", 0) or 0
                             ce = u.get("cache_creation_input_tokens", 0) or 0
                             a_in += inp; a_out += out; a_cr += cr; a_ce += ce
-                            ts = d.get("timestamp", "")
                             if isinstance(ts, str) and ts.startswith(today):
                                 t_in += inp; t_out += out; t_cr += cr; t_ce += ce
                 except Exception:
@@ -633,8 +639,16 @@ def get_token_usage():
     except Exception as e:
         print(f"tokenusage error: {e}")
 
+    def _pretty(m):
+        if not m:
+            return "Claude"
+        p = m.split("-")
+        if len(p) >= 4 and p[0] == "claude":
+            return f"Claude {p[1].capitalize()} {p[2]}.{p[3]}"
+        return m
+
     data = {
-        "model": "Claude Sonnet 4.6 (Max Plan)",
+        "model": f"{_pretty(latest_model)} (Max Plan)",
         "today": {"input": t_in, "output": t_out, "cache_read": t_cr, "cache_creation": t_ce},
         "total": {"input": a_in, "output": a_out, "cache_read": a_cr, "cache_creation": a_ce},
         "note": "Max Plan — keine Kosten"
@@ -851,6 +865,102 @@ def adb_push(filename, remote_dir, data_bytes):
         try: os.unlink(local)
         except Exception: pass
 
+def adb_ls(path="/storage/emulated/0"):
+    import shlex
+    path = (path or "/storage/emulated/0").strip() or "/"
+    if any(c in path for c in "\n\r\0"):
+        return {"error": "Ungültiger Pfad"}
+    rc, out, err = _adb_run(["shell", f"ls -laL {shlex.quote(path)} 2>/dev/null || ls -la {shlex.quote(path)}"], timeout=15)
+    if rc != 0:
+        return {"error": err or "Pfad nicht lesbar"}
+    entries = []
+    for line in out.decode("utf-8", "replace").splitlines():
+        line = line.rstrip()
+        if not line or line.startswith("total "):
+            continue
+        parts = line.split(None, 7)
+        if len(parts) < 8:
+            continue
+        perms = parts[0]
+        raw_name = parts[7]
+        # Broken symlinks (l?????????) haben nur 7 Felder vor dem Namen statt 8
+        if raw_name.startswith("-> ") and len(parts) > 6:
+            name = parts[6]
+        else:
+            name = raw_name.split(" -> ", 1)[0]
+        if name in (".", "..", ""):
+            continue
+        # Unleserliche Einträge überspringen
+        if perms.startswith("?") or "?" in perms[:10] and perms.count("?") > 3:
+            continue
+        if perms.startswith("d"):
+            kind = "dir"
+        elif perms.startswith("l"):
+            kind = "link"
+        else:
+            kind = "file"
+        try:
+            size = int(parts[4])
+        except Exception:
+            size = 0
+        entries.append({"name": name, "type": kind, "size": size})
+    entries.sort(key=lambda e: (e["type"] == "file", e["name"].lower()))
+    normalized = path.rstrip("/") or "/"
+    if normalized == "/":
+        parent = None
+    else:
+        parent = "/".join(normalized.split("/")[:-1]) or "/"
+    return {"path": normalized, "parent": parent, "entries": entries, "error": None}
+
+def adb_info(kind="device"):
+    kind = (kind or "device").strip().lower()
+    if kind == "device":
+        rc, out, err = _adb_run([
+            "shell", "sh", "-c",
+            "echo MODEL=$(getprop ro.product.model); "
+            "echo MANUFACTURER=$(getprop ro.product.manufacturer); "
+            "echo ANDROID=$(getprop ro.build.version.release); "
+            "echo SDK=$(getprop ro.build.version.sdk); "
+            "echo SIZE=$(wm size 2>/dev/null | grep -oE '[0-9]+x[0-9]+' | head -1)"
+        ], timeout=10)
+        if rc != 0:
+            return {"error": err or "adb-Fehler"}
+        props = {}
+        for line in out.decode("utf-8", "replace").splitlines():
+            if "=" in line:
+                k, v = line.split("=", 1)
+                props[k.strip()] = v.strip()
+        return {"kind": "device", "props": props, "error": None}
+    if kind == "battery":
+        rc, out, err = _adb_run(["shell", "dumpsys", "battery"], timeout=10)
+        if rc != 0:
+            return {"error": err or "adb-Fehler"}
+        props = {}
+        for line in out.decode("utf-8", "replace").splitlines():
+            line = line.strip()
+            if ":" in line:
+                k, v = line.split(":", 1)
+                props[k.strip().replace(" ", "_")] = v.strip()
+        status_map = {"1":"Unbekannt","2":"Lädt","3":"Entlädt","4":"Nicht lädt","5":"Voll"}
+        if "status" in props:
+            props["status_text"] = status_map.get(props["status"], props["status"])
+        return {"kind": "battery", "props": props, "error": None}
+    if kind == "foreground":
+        rc, out, err = _adb_run(["shell", "dumpsys", "activity", "activities"], timeout=10)
+        if rc != 0:
+            return {"error": err or "adb-Fehler"}
+        import re
+        text = out.decode("utf-8", "replace")
+        for pattern in (r'mResumedActivity[^\n]*\{[^}]*\s+(\S+)/(\S+)', r'topResumedActivity[^\n]*\{[^}]*\s+(\S+)/(\S+)'):
+            m = re.search(pattern, text)
+            if m:
+                pkg, act = m.group(1), m.group(2)
+                if act.startswith("."):
+                    act = pkg + act
+                return {"kind": "foreground", "package": pkg, "activity": act, "error": None}
+        return {"error": "Keine aktive App erkennbar"}
+    return {"error": f"Unbekannter Info-Typ: {kind}"}
+
 def adb_pull(remote):
     import tempfile
     remote = (remote or "").strip()
@@ -960,6 +1070,20 @@ class Handler(BaseHTTPRequestHandler):
                 qs = _up.urlparse(self.path).query
                 params = dict(_up.parse_qsl(qs))
                 self._send_json(adb_packages(params.get("filter", ""), params.get("kind", "all")))
+                return
+
+            if self.path.startswith("/api/adb/info"):
+                import urllib.parse as _up
+                qs = _up.urlparse(self.path).query
+                params = dict(_up.parse_qsl(qs))
+                self._send_json(adb_info(params.get("kind", "device")))
+                return
+
+            if self.path.startswith("/api/adb/ls"):
+                import urllib.parse as _up
+                qs = _up.urlparse(self.path).query
+                params = dict(_up.parse_qsl(qs))
+                self._send_json(adb_ls(params.get("path", "/storage/emulated/0")))
                 return
 
             simple = {
