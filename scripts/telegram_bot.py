@@ -109,10 +109,29 @@ def adb_command(cmd_args, timeout=15):
 def handle_adb_command(text_lower, chat_id, msg_id):
     """Verarbeitet ADB-Befehle. Gibt True zurück wenn ein Befehl erkannt wurde."""
 
+    ADB_KEYWORDS = {"screenshot", "bildschirm", "screen", "apps", "app-liste",
+                    "appliste", "app liste", "speicher", "storage", "speicherplatz",
+                    "akku", "batterie", "battery", "handy", "duo", "handy hilfe",
+                    "adb hilfe", "adb help", "adb disconnect", "adb trennen"}
+
+    is_adb = text_lower in ADB_KEYWORDS or text_lower.startswith("adb connect ")
+    if not is_adb:
+        return False
+
+    # adb connect braucht keine bestehende Verbindung
+    if text_lower.startswith("adb connect "):
+        addr = text_lower.replace("adb connect ", "").strip()
+        output, ok = adb_command(["connect", addr], timeout=10)
+        if ok and "connected" in output.lower():
+            send_message(chat_id, f"✅ Verbunden mit {addr}! 📱", reply_to=msg_id)
+        else:
+            send_message(chat_id, f"❌ Verbindung zu {addr} fehlgeschlagen.\n{output}", reply_to=msg_id)
+        return True
+
+    # Für alle anderen ADB-Befehle: Verbindung prüfen
     if not adb_connected():
         send_message(chat_id,
             "📱 Keine ADB-Verbindung zum Surface Duo 2!\n\n"
-            "Ich brauche die aktuelle WLAN-Debugging-Adresse.\n"
             "Schau auf dem Duo unter:\n"
             "Einstellungen → Entwickleroptionen → WLAN-Debugging\n\n"
             "Schick mir: `adb connect IP:PORT`", reply_to=msg_id)
@@ -212,16 +231,6 @@ def handle_adb_command(text_lower, chat_id, msg_id):
             send_message(chat_id, msg, reply_to=msg_id)
         else:
             send_message(chat_id, "Akku-Info nicht verfügbar 😕", reply_to=msg_id)
-        return True
-
-    # ADB connect mit neuer Adresse
-    if text_lower.startswith("adb connect "):
-        addr = text_lower.replace("adb connect ", "").strip()
-        output, ok = adb_command(["connect", addr], timeout=10)
-        if ok and "connected" in output.lower():
-            send_message(chat_id, f"✅ Verbunden mit {addr}! 📱", reply_to=msg_id)
-        else:
-            send_message(chat_id, f"❌ Verbindung zu {addr} fehlgeschlagen.\n{output}", reply_to=msg_id)
         return True
 
     # ADB disconnect
