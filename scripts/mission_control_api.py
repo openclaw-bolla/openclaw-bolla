@@ -29,6 +29,73 @@ def azure_speech_config():
     except Exception:
         return None
 
+GEMINI_API_FILE = os.path.join(WORKSPACE, "config/gemini_api.json")
+
+
+def gemini_api_key():
+    try:
+        with open(GEMINI_API_FILE) as f:
+            cfg = json.load(f)
+        key = cfg.get("api_key", "")
+        if not key or key.startswith("REPLACE_"):
+            return None
+        return key
+    except Exception:
+        return None
+
+
+BILDGEN_LIMIT = 100
+_bildgen_counter = {"date": "", "count": 0}
+
+def bildgen_check_limit():
+    today = datetime.now().strftime("%Y-%m-%d")
+    if _bildgen_counter["date"] != today:
+        _bildgen_counter["date"] = today
+        _bildgen_counter["count"] = 0
+    if _bildgen_counter["count"] >= BILDGEN_LIMIT:
+        return False, f"Tageslimit von {BILDGEN_LIMIT} Bildern erreicht. Morgen wieder möglich."
+    return True, None
+
+def bildgen_generate(prompt, model="gemini-2.5-flash-image", aspect_ratio="1:1",
+                     input_image_b64=None, input_mime_type="image/png"):
+    import urllib.request, urllib.error, base64
+    key = gemini_api_key()
+    if not key:
+        return None, "Kein Gemini API-Key konfiguriert. Bitte in config/gemini_api.json eintragen."
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    parts = []
+    if input_image_b64:
+        parts.append({"inlineData": {"mimeType": input_mime_type, "data": input_image_b64}})
+    parts.append({"text": prompt})
+    gen_cfg = {"responseModalities": ["TEXT", "IMAGE"]}
+    if not input_image_b64:
+        gen_cfg["imageConfig"] = {"aspectRatio": aspect_ratio}
+    payload = json.dumps({
+        "contents": [{"parts": parts}],
+        "generationConfig": gen_cfg
+    }).encode()
+    req = urllib.request.Request(url, data=payload,
+                                  headers={"x-goog-api-key": key, "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        msg = e.read().decode("utf-8", errors="replace")
+        try:
+            msg = json.loads(msg).get("error", {}).get("message", msg)
+        except Exception:
+            pass
+        return None, f"API-Fehler: {msg}"
+    except Exception as e:
+        return None, str(e)
+    for part in data.get("candidates", [{}])[0].get("content", {}).get("parts", []):
+        if "inlineData" in part:
+            img_b64 = part["inlineData"]["data"]
+            mime = part["inlineData"].get("mimeType", "image/png")
+            return img_b64, mime
+    return None, "Kein Bild in der API-Antwort erhalten."
+
+
 CLIENT_ID = "9e5f94bc-e8a4-4e73-b8be-63364c29d753"
 
 _lms_host_cache = None
@@ -438,9 +505,17 @@ def get_robin_info():
     }
 
 
+def get_redesigns_meta():
+    meta_path = os.path.expanduser("~/workspace/mission-control/redesign-meta.json")
+    if not os.path.exists(meta_path):
+        return {"date": None, "design1": None, "design2": None}
+    with open(meta_path, encoding="utf-8") as f:
+        return json.load(f)
+
+
 def get_sysinfo():
     import subprocess, shutil
-    
+
     # RAM
     with open('/proc/meminfo') as f:
         mem = {}
@@ -1035,13 +1110,17 @@ class Handler(BaseHTTPRequestHandler):
 
             # ===== MOBILE / PWA (MC Chris) =====
             MOBILE_STATIC = {
-                "/m":                     ("mobile.html",            "text/html; charset=utf-8", "no-store"),
-                "/mobile.html":           ("mobile.html",            "text/html; charset=utf-8", "no-store"),
-                "/manifest.webmanifest":  ("manifest.webmanifest",   "application/manifest+json", "max-age=3600"),
-                "/sw.js":                 ("sw.js",                  "application/javascript", "no-store"),
-                "/mc-icon-192.png":       ("mc-icon-192.png",        "image/png", "max-age=604800"),
-                "/mc-icon-512.png":       ("mc-icon-512.png",        "image/png", "max-age=604800"),
-                "/mc-apple-touch.png":    ("mc-apple-touch.png",     "image/png", "max-age=604800"),
+                "/m":                        ("mobile.html",            "text/html; charset=utf-8", "no-store"),
+                "/mobile.html":              ("mobile.html",            "text/html; charset=utf-8", "no-store"),
+                "/manifest.webmanifest":     ("manifest.webmanifest",   "application/manifest+json", "max-age=3600"),
+                "/sw.js":                    ("sw.js",                  "application/javascript", "no-store"),
+                "/mc-icon-192.png":          ("mc-icon-192.png",        "image/png", "max-age=604800"),
+                "/mc-icon-512.png":          ("mc-icon-512.png",        "image/png", "max-age=604800"),
+                "/mc-apple-touch.png":       ("mc-apple-touch.png",     "image/png", "max-age=604800"),
+                "/redesign-aurora.html":     ("redesign-aurora.html",   "text/html; charset=utf-8", "no-store"),
+                "/redesign-cyber.html":      ("redesign-cyber.html",    "text/html; charset=utf-8", "no-store"),
+                "/redesign-1.html":          ("redesign-1.html",        "text/html; charset=utf-8", "no-store"),
+                "/redesign-2.html":          ("redesign-2.html",        "text/html; charset=utf-8", "no-store"),
             }
             if self.path in MOBILE_STATIC:
                 fname, ctype, cache = MOBILE_STATIC[self.path]
@@ -1119,6 +1198,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/tokenusage": get_token_usage,
                 "/api/tokenusage/history": get_token_halfdays,
                 "/api/status": lambda: {"ok": True, "ts": datetime.now().isoformat()},
+                "/api/redesigns-meta": get_redesigns_meta,
             }
             if self.path in simple:
                 self._send_json(simple[self.path]())
@@ -1198,6 +1278,26 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
                 self.wfile.write(data)
+            elif self.path == "/api/bildgen":
+                prompt = body.get("prompt", "").strip()
+                if not prompt:
+                    self._send_json({"error": "Kein Prompt angegeben"}, status=400)
+                    return
+                ok, limit_err = bildgen_check_limit()
+                if not ok:
+                    self._send_json({"error": limit_err}, status=429)
+                    return
+                model = body.get("model", "gemini-2.5-flash-image")
+                aspect = body.get("aspect_ratio", "1:1")
+                in_img  = body.get("input_image_b64")
+                in_mime = body.get("input_mime_type", "image/png")
+                img_b64, mime_or_err = bildgen_generate(prompt, model, aspect, in_img, in_mime)
+                if img_b64 is None:
+                    self._send_json({"error": mime_or_err}, status=500)
+                else:
+                    _bildgen_counter["count"] += 1
+                    remaining = BILDGEN_LIMIT - _bildgen_counter["count"]
+                    self._send_json({"image_b64": img_b64, "mime_type": mime_or_err, "remaining": remaining})
             else:
                 self._send_json({"error": "not found"}, status=404)
         except Exception as e:

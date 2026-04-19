@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redesign: Aurora — Mission Control</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #f0f4ff;
+  --sidebar-bg: #ffffff;
+  --card-bg: #ffffff;
+  --text: #1e293b;
+  --dim: #64748b;
+  --border: #e2e8f0;
+  --accent: #6366f1;
+  --accent2: #8b5cf6;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --topbar-bg: #ffffff;
+}
+html, body {
+  height: 100vh; overflow: hidden;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+}
+#app { display: flex; height: 100vh; }
+
+/* SIDEBAR */
+#sidebar {
+  width: 220px; min-width: 220px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  box-shadow: 2px 0 12px rgba(99,102,241,0.06);
+}
+#sidebar-header {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+#sidebar-header h1 {
+  font-size: 15px; font-weight: 800;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  letter-spacing: 0.5px;
+}
+#sidebar-header .sub { font-size: 11px; color: var(--dim); margin-top: 2px; }
+#sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 10px; }
+.nav-section {
+  padding: 14px 10px 6px;
+  font-size: 10px; text-transform: uppercase;
+  letter-spacing: 2px; color: #94a3b8;
+  font-weight: 600;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; cursor: pointer;
+  border-radius: 8px; font-size: 13px;
+  color: var(--dim); font-weight: 500;
+  transition: all 0.15s;
+  margin-bottom: 2px;
+}
+.nav-item:hover { background: rgba(99,102,241,0.08); color: var(--accent); }
+.nav-item.active { background: rgba(99,102,241,0.12); color: var(--accent); font-weight: 600; }
+.nav-item .icon { font-size: 16px; width: 22px; text-align: center; }
+#sidebar-footer {
+  padding: 16px 20px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--dim);
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+
+/* MAIN */
+#main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#topbar {
+  height: 56px; min-height: 56px;
+  padding: 0 28px;
+  background: var(--topbar-bg);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+#topbar h2 { font-size: 20px; font-weight: 700; color: var(--text); }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.topbar-badge {
+  padding: 6px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+}
+#pages { flex: 1; min-height: 0; overflow-y: auto; padding: 24px 28px; }
+
+/* CARDS */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.stat-card {
+  background: var(--card-bg); border-radius: 12px;
+  padding: 18px 20px; border: 1px solid var(--border);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+}
+.stat-card .label { font-size: 12px; color: var(--dim); font-weight: 500; margin-bottom: 8px; }
+.stat-card .value { font-size: 28px; font-weight: 800; color: var(--text); }
+.stat-card .icon { font-size: 24px; margin-bottom: 6px; }
+.stat-card.green { border-top: 3px solid #10b981; }
+.stat-card.blue { border-top: 3px solid #6366f1; }
+.stat-card.yellow { border-top: 3px solid #f59e0b; }
+.stat-card.red { border-top: 3px solid #ef4444; }
+
+.section-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+.content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 20px; }
+.card {
+  background: var(--card-bg); border-radius: 12px;
+  padding: 20px; border: 1px solid var(--border);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+}
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.card-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.card-action { font-size: 12px; color: var(--accent); cursor: pointer; font-weight: 500; }
+
+.pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.pill-green { background: rgba(16,185,129,0.12); color: #10b981; }
+.pill-blue { background: rgba(99,102,241,0.12); color: #6366f1; }
+.pill-yellow { background: rgba(245,158,11,0.12); color: #d97706; }
+
+.list-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.list-item:last-child { border-bottom: none; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.avatar.indigo { background: rgba(99,102,241,0.12); }
+.avatar.green { background: rgba(16,185,129,0.12); }
+.avatar.yellow { background: rgba(245,158,11,0.12); }
+
+.bolla-card {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-radius: 12px; padding: 20px; color: white;
+  margin-bottom: 16px;
+}
+.bolla-card .bolla-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.bolla-card .bolla-sub { font-size: 12px; opacity: 0.8; }
+.bolla-input {
+  margin-top: 14px; display: flex; gap: 8px;
+}
+.bolla-input input {
+  flex: 1; padding: 8px 14px; border-radius: 8px;
+  border: none; background: rgba(255,255,255,0.2);
+  color: white; font-size: 13px;
+}
+.bolla-input input::placeholder { color: rgba(255,255,255,0.6); }
+.bolla-input button {
+  padding: 8px 16px; background: white; color: #6366f1;
+  border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 13px;
+}
+
+.weather-card {
+  background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+  border-radius: 12px; padding: 20px; color: white; text-align: center;
+}
+.weather-temp { font-size: 48px; font-weight: 800; line-height: 1; }
+.weather-desc { font-size: 14px; opacity: 0.9; margin-top: 4px; }
+.weather-details { display: flex; justify-content: center; gap: 20px; margin-top: 12px; font-size: 12px; opacity: 0.8; }
+
+.label-note { font-size: 11px; color: #94a3b8; text-align: center; padding: 20px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <h1>MISSION CONTROL</h1>
+      <div class="sub">Chris Mandel</div>
+    </div>
+    <nav id="sidebar-nav">
+      <div class="nav-section">Übersicht</div>
+      <div class="nav-item active"><span class="icon">📊</span><span>Dashboard</span></div>
+      <div class="nav-item"><span class="icon">🐾</span><span>Bolla</span></div>
+      <div class="nav-section">Arbeit</div>
+      <div class="nav-item"><span class="icon">🏫</span><span>Schule</span></div>
+      <div class="nav-item"><span class="icon">📅</span><span>Kalender</span></div>
+      <div class="nav-item"><span class="icon">📧</span><span>E-Mail</span></div>
+      <div class="nav-section">Familie</div>
+      <div class="nav-item"><span class="icon">🌍</span><span>Robin</span></div>
+      <div class="nav-item"><span class="icon">🎂</span><span>Geburtstage</span></div>
+      <div class="nav-section">KI</div>
+      <div class="nav-item"><span class="icon">🖧</span><span>Local Server</span></div>
+      <div class="nav-section">Info</div>
+      <div class="nav-item"><span class="icon">🌤️</span><span>Wetter</span></div>
+      <div class="nav-item"><span class="icon">🖥️</span><span>System Info</span></div>
+      <div class="nav-item"><span class="icon">🧠</span><span>Bolla's Brain</span></div>
+      <div class="nav-item"><span class="icon">🎨</span><span>Redesigns</span></div>
+    </nav>
+    <div id="sidebar-footer">
+      <div class="dot"></div>
+      <span>Bolla 🐾 online</span>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="topbar">
+      <h2>Dashboard</h2>
+      <div class="topbar-right">
+        <span style="font-size:13px;color:var(--dim)">So, 19. April 2026 · 14:32</span>
+        <span class="topbar-badge">🐾 Bolla aktiv</span>
+      </div>
+    </div>
+    <div id="pages">
+
+      <!-- Stats -->
+      <div class="stat-grid">
+        <div class="stat-card green">
+          <div class="icon">📧</div>
+          <div class="label">Ungelesene Mails</div>
+          <div class="value">3</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="icon">📅</div>
+          <div class="label">Termine heute</div>
+          <div class="value">2</div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="icon">🎂</div>
+          <div class="label">Geburtstage bald</div>
+          <div class="value">1</div>
+        </div>
+        <div class="stat-card red">
+          <div class="icon">🌤️</div>
+          <div class="label">Temperatur</div>
+          <div class="value">18°</div>
+        </div>
+      </div>
+
+      <!-- Bolla Chat -->
+      <div class="bolla-card">
+        <div class="bolla-title">Bolla 🐾</div>
+        <div class="bolla-sub">Dein persönlicher KI-Assistent · Sonnet 4.6</div>
+        <div style="margin-top:10px;font-size:13px;opacity:0.9">Guten Morgen! Heute stehen 2 Termine an. Soll ich was vorbereiten?</div>
+        <div class="bolla-input">
+          <input type="text" placeholder="Schreib Bolla etwas...">
+          <button>Senden</button>
+        </div>
+      </div>
+
+      <!-- Content Grid -->
+      <div class="content-grid">
+        <div>
+          <div class="section-title">Letzte Aktivitäten</div>
+          <div class="card">
+            <div class="list-item">
+              <div class="avatar indigo">📧</div>
+              <div style="flex:1">
+                <div style="font-weight:600">Neue Mail von Thomas</div>
+                <div style="font-size:12px;color:var(--dim)">Betreff: Unterrichtsplanung KW 17</div>
+              </div>
+              <span class="pill pill-blue">Neu</span>
+            </div>
+            <div class="list-item">
+              <div class="avatar green">📅</div>
+              <div style="flex:1">
+                <div style="font-weight:600">Termin: Konferenz 15:00</div>
+                <div style="font-size:12px;color:var(--dim)">In 2h 28min</div>
+              </div>
+              <span class="pill pill-green">Heute</span>
+            </div>
+            <div class="list-item">
+              <div class="avatar yellow">🎂</div>
+              <div style="flex:1">
+                <div style="font-weight:600">Geburtstag: Mama übermorgen</div>
+                <div style="font-size:12px;color:var(--dim)">21. April</div>
+              </div>
+              <span class="pill pill-yellow">Bald</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="section-title">Wetter</div>
+          <div class="weather-card">
+            <div class="weather-temp">18°</div>
+            <div class="weather-desc">☁️ Teilweise bewölkt</div>
+            <div class="weather-details">
+              <span>💧 62%</span>
+              <span>💨 12 km/h</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="label-note">✨ Aurora-Redesign-Konzept — statischer Mockup · Kein echtes Backend</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

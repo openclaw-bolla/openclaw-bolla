@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redesign: Cyber Night — Mission Control</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #050508;
+  --sidebar-bg: #08090f;
+  --card-bg: #0d0f1a;
+  --text: #e2e8f0;
+  --dim: #64748b;
+  --border: rgba(0,255,136,0.12);
+  --border2: rgba(0,212,255,0.12);
+  --accent: #00ff88;
+  --accent2: #00d4ff;
+  --purple: #a855f7;
+  --success: #00ff88;
+  --warning: #fbbf24;
+  --danger: #ff4444;
+  --topbar-bg: #08090f;
+}
+html, body {
+  height: 100vh; overflow: hidden;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+}
+#app { display: flex; height: 100vh; }
+
+/* SIDEBAR */
+#sidebar {
+  width: 200px; min-width: 200px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: relative;
+}
+#sidebar::after {
+  content: ''; position: absolute; top: 0; right: 0;
+  width: 1px; height: 100%;
+  background: linear-gradient(to bottom, transparent, var(--accent), transparent);
+  opacity: 0.4;
+}
+#sidebar-header {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--border);
+}
+#sidebar-header h1 {
+  font-size: 13px; font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 3px;
+  text-shadow: 0 0 12px rgba(0,255,136,0.6);
+}
+#sidebar-header .sub {
+  font-size: 10px; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 2px; margin-top: 3px;
+}
+#sidebar-nav { flex: 1; overflow-y: auto; padding: 8px 0; }
+.nav-section {
+  padding: 12px 14px 4px;
+  font-size: 9px; text-transform: uppercase;
+  letter-spacing: 3px; color: rgba(0,255,136,0.3);
+}
+.nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px; cursor: pointer;
+  border-left: 2px solid transparent;
+  font-size: 12px; color: var(--dim);
+  transition: all 0.15s;
+}
+.nav-item:hover {
+  background: rgba(0,255,136,0.04);
+  color: var(--accent);
+  border-left-color: rgba(0,255,136,0.4);
+  text-shadow: 0 0 8px rgba(0,255,136,0.4);
+}
+.nav-item.active {
+  background: rgba(0,255,136,0.06);
+  border-left-color: var(--accent);
+  color: var(--accent);
+  text-shadow: 0 0 10px rgba(0,255,136,0.5);
+}
+.nav-item .icon { font-size: 14px; width: 18px; text-align: center; }
+#sidebar-footer {
+  padding: 12px 16px; border-top: 1px solid var(--border);
+  font-size: 11px; color: var(--dim);
+}
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); display: inline-block; margin-right: 6px; box-shadow: 0 0 6px var(--accent); }
+
+/* MAIN */
+#main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#topbar {
+  height: 48px; min-height: 48px;
+  padding: 0 20px;
+  background: var(--topbar-bg);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+#topbar h2 {
+  font-size: 13px; font-weight: 700;
+  color: var(--accent); letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 0 12px rgba(0,255,136,0.5);
+}
+.topbar-right { display: flex; align-items: center; gap: 16px; font-size: 11px; color: var(--dim); }
+.topbar-tag {
+  padding: 3px 10px; border-radius: 2px;
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  border: 1px solid var(--accent);
+  color: var(--accent); text-transform: uppercase;
+  text-shadow: 0 0 6px rgba(0,255,136,0.4);
+}
+#pages { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 20px; }
+
+/* GRID */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+.stat-card {
+  background: var(--card-bg); border-radius: 4px;
+  padding: 14px 16px; border: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+}
+.stat-card.green::before { background: linear-gradient(90deg, transparent, var(--accent), transparent); }
+.stat-card.cyan::before { background: linear-gradient(90deg, transparent, var(--accent2), transparent); }
+.stat-card.purple::before { background: linear-gradient(90deg, transparent, var(--purple), transparent); }
+.stat-card.orange::before { background: linear-gradient(90deg, transparent, var(--warning), transparent); }
+.stat-card .label { font-size: 9px; text-transform: uppercase; letter-spacing: 2px; color: var(--dim); margin-bottom: 8px; }
+.stat-card .value { font-size: 32px; font-weight: 700; line-height: 1; }
+.stat-card.green .value { color: var(--accent); text-shadow: 0 0 16px rgba(0,255,136,0.5); }
+.stat-card.cyan .value { color: var(--accent2); text-shadow: 0 0 16px rgba(0,212,255,0.5); }
+.stat-card.purple .value { color: var(--purple); text-shadow: 0 0 16px rgba(168,85,247,0.5); }
+.stat-card.orange .value { color: var(--warning); text-shadow: 0 0 16px rgba(251,191,36,0.5); }
+
+.section-title {
+  font-size: 10px; text-transform: uppercase;
+  letter-spacing: 2px; color: var(--dim);
+  margin-bottom: 10px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.content-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; margin-bottom: 16px; }
+.card {
+  background: var(--card-bg); border-radius: 4px;
+  padding: 16px; border: 1px solid var(--border);
+}
+
+.list-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 12px;
+}
+.list-item:last-child { border-bottom: none; }
+.list-marker { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.list-marker.green { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.list-marker.cyan { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+.list-marker.yellow { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
+.list-label { flex: 1; }
+.list-meta { font-size: 11px; color: var(--dim); }
+.tag {
+  padding: 2px 8px; font-size: 9px;
+  border-radius: 2px; font-weight: 600;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.tag-green { border: 1px solid rgba(0,255,136,0.4); color: var(--accent); }
+.tag-cyan { border: 1px solid rgba(0,212,255,0.4); color: var(--accent2); }
+.tag-yellow { border: 1px solid rgba(251,191,36,0.4); color: var(--warning); }
+
+/* Bolla terminal */
+.bolla-terminal {
+  background: #030304; border-radius: 4px;
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.terminal-titlebar {
+  background: #0a0b10; padding: 8px 14px;
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.terminal-dots { display: flex; gap: 5px; }
+.terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+.terminal-dot.r { background: #ff5f56; }
+.terminal-dot.y { background: #ffbd2e; }
+.terminal-dot.g { background: #27c93f; }
+.terminal-title { flex: 1; text-align: center; font-size: 11px; color: var(--dim); }
+.terminal-body { padding: 14px 16px; font-size: 12px; line-height: 1.8; }
+.t-prompt { color: var(--accent); }
+.t-cmd { color: var(--text); }
+.t-out { color: var(--dim); }
+.t-out.hi { color: var(--accent2); }
+.t-cursor {
+  display: inline-block; width: 8px; height: 14px;
+  background: var(--accent); vertical-align: text-bottom;
+  animation: blink 1s infinite;
+}
+@keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+.terminal-input-row {
+  padding: 10px 16px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+  background: #060608;
+}
+.terminal-input-row span { color: var(--accent); }
+.terminal-input-row input {
+  flex: 1; background: transparent; border: none;
+  color: var(--text); font-family: inherit; font-size: 12px; outline: none;
+}
+.terminal-send {
+  padding: 4px 12px; background: transparent;
+  border: 1px solid var(--accent); color: var(--accent);
+  border-radius: 2px; cursor: pointer; font-family: inherit; font-size: 11px;
+  letter-spacing: 1px; text-transform: uppercase;
+  text-shadow: 0 0 6px rgba(0,255,136,0.4);
+}
+
+/* System status */
+.sys-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 11px;
+}
+.sys-row:last-child { border: none; }
+.sys-key { color: var(--dim); letter-spacing: 1px; }
+.sys-val { color: var(--accent2); font-weight: 600; }
+.bar-outer { height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; width: 80px; }
+.bar-inner { height: 100%; border-radius: 2px; }
+.bar-green { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.bar-cyan { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+.bar-purple { background: var(--purple); box-shadow: 0 0 6px var(--purple); }
+
+.label-note { font-size: 10px; color: rgba(0,255,136,0.3); text-align: center; padding: 16px; letter-spacing: 1px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <h1>MISSION CONTROL</h1>
+      <div class="sub">Chris Mandel</div>
+    </div>
+    <nav id="sidebar-nav">
+      <div class="nav-section">// Übersicht</div>
+      <div class="nav-item active"><span class="icon">▸</span><span>Dashboard</span></div>
+      <div class="nav-item"><span class="icon">◈</span><span>Bolla</span></div>
+      <div class="nav-section">// Arbeit</div>
+      <div class="nav-item"><span class="icon">◈</span><span>Schule</span></div>
+      <div class="nav-item"><span class="icon">◈</span><span>Kalender</span></div>
+      <div class="nav-item"><span class="icon">◈</span><span>E-Mail</span></div>
+      <div class="nav-section">// Familie</div>
+      <div class="nav-item"><span class="icon">◈</span><span>Robin</span></div>
+      <div class="nav-item"><span class="icon">◈</span><span>Geburtstage</span></div>
+      <div class="nav-section">// KI</div>
+      <div class="nav-item"><span class="icon">◈</span><span>Local Server</span></div>
+      <div class="nav-section">// Info</div>
+      <div class="nav-item"><span class="icon">◈</span><span>Wetter</span></div>
+      <div class="nav-item"><span class="icon">◈</span><span>System Info</span></div>
+      <div class="nav-item"><span class="icon">◈</span><span>Bolla's Brain</span></div>
+      <div class="nav-item"><span class="icon">◈</span><span>Redesigns</span></div>
+    </nav>
+    <div id="sidebar-footer">
+      <span class="dot"></span><span>BOLLA ONLINE</span>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="topbar">
+      <h2>// Dashboard</h2>
+      <div class="topbar-right">
+        <span>SUN 2026-04-19 · 14:32:07</span>
+        <span class="topbar-tag">● Online</span>
+      </div>
+    </div>
+    <div id="pages">
+
+      <!-- Stats -->
+      <div class="stat-grid">
+        <div class="stat-card green">
+          <div class="label">// Mails ungelesen</div>
+          <div class="value">03</div>
+        </div>
+        <div class="stat-card cyan">
+          <div class="label">// Termine heute</div>
+          <div class="value">02</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="label">// Geburtstage bald</div>
+          <div class="value">01</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="label">// Temperatur °C</div>
+          <div class="value">18</div>
+        </div>
+      </div>
+
+      <!-- Bolla Terminal -->
+      <div class="bolla-terminal">
+        <div class="terminal-titlebar">
+          <div class="terminal-dots">
+            <div class="terminal-dot r"></div>
+            <div class="terminal-dot y"></div>
+            <div class="terminal-dot g"></div>
+          </div>
+          <div class="terminal-title">bolla@mission-control ~ claude-sonnet-4-6</div>
+        </div>
+        <div class="terminal-body">
+          <div><span class="t-prompt">bolla@mc:~$ </span><span class="t-cmd">status</span></div>
+          <div class="t-out hi">▸ Guten Morgen! Alles im grünen Bereich.</div>
+          <div class="t-out">  · 2 Termine heute · 3 ungelesene Mails · Mama Geburtstag übermorgen</div>
+          <div style="margin-top:6px"><span class="t-prompt">bolla@mc:~$ </span><span class="t-cursor"></span></div>
+        </div>
+        <div class="terminal-input-row">
+          <span>›</span>
+          <input type="text" placeholder="Befehl eingeben...">
+          <button class="terminal-send">Enter</button>
+        </div>
+      </div>
+
+      <!-- Content Grid -->
+      <div class="content-grid">
+        <div>
+          <div class="section-title">// Letzte Aktivitäten</div>
+          <div class="card">
+            <div class="list-item">
+              <div class="list-marker green"></div>
+              <div class="list-label">
+                <div>Mail: Thomas — Unterrichtsplanung KW 17</div>
+                <div class="list-meta">vor 23 min · ernstmandel@outlook.de</div>
+              </div>
+              <span class="tag tag-cyan">NEU</span>
+            </div>
+            <div class="list-item">
+              <div class="list-marker cyan"></div>
+              <div class="list-label">
+                <div>Termin: Konferenz 15:00</div>
+                <div class="list-meta">in 2h 28min · Schulaula</div>
+              </div>
+              <span class="tag tag-green">HEUTE</span>
+            </div>
+            <div class="list-item">
+              <div class="list-marker yellow"></div>
+              <div class="list-label">
+                <div>Geburtstag: Mama</div>
+                <div class="list-meta">21. April — in 2 Tagen</div>
+              </div>
+              <span class="tag tag-yellow">BALD</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="section-title">// System Status</div>
+          <div class="card">
+            <div class="sys-row">
+              <span class="sys-key">CPU</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="bar-outer"><div class="bar-inner bar-green" style="width:42%"></div></div>
+                <span class="sys-val">42%</span>
+              </div>
+            </div>
+            <div class="sys-row">
+              <span class="sys-key">RAM</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="bar-outer"><div class="bar-inner bar-cyan" style="width:61%"></div></div>
+                <span class="sys-val">61%</span>
+              </div>
+            </div>
+            <div class="sys-row">
+              <span class="sys-key">DISK</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="bar-outer"><div class="bar-inner bar-purple" style="width:28%"></div></div>
+                <span class="sys-val">28%</span>
+              </div>
+            </div>
+            <div class="sys-row">
+              <span class="sys-key">TEMP</span>
+              <span class="sys-val">18°C ☁</span>
+            </div>
+            <div class="sys-row">
+              <span class="sys-key">UPTIME</span>
+              <span class="sys-val">3d 14h 22m</span>
+            </div>
+            <div class="sys-row">
+              <span class="sys-key">BOLLA</span>
+              <span class="sys-val" style="color:var(--accent)">● ONLINE</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="label-note">⚡ Cyber Night — Redesign Konzept · Statischer Mockup · Kein echtes Backend</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
