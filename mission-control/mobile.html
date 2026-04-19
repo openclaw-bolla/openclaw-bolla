@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#007aff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MC Chris">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/mc-apple-touch.png">
+<link rel="icon" href="/mc-icon-192.png">
+<title>MC Chris</title>
+<style>
+  :root {
+    --bg: #f2f2f7;
+    --card: #ffffff;
+    --text: #1c1c1e;
+    --text2: #6c6c70;
+    --text3: #8e8e93;
+    --sep: rgba(60,60,67,0.12);
+    --accent: #007aff;
+    --accent2: #2196f3;
+    --green: #34c759;
+    --orange: #ff9500;
+    --red: #ff3b30;
+    --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    position: sticky; top: 0; z-index: 10;
+    padding: 12px 16px 10px;
+    padding-top: calc(12px + env(safe-area-inset-top));
+    background: rgba(242,242,247,0.92);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 0.5px solid var(--sep);
+  }
+  .header h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .header .sub {
+    margin-top: 2px;
+    font-size: 13px;
+    color: var(--text3);
+  }
+
+  /* CONTENT */
+  .page { display: none; padding: 12px 16px 20px; }
+  .page.active { display: block; }
+
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow);
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .card .left { flex-shrink: 0; }
+  .card .right { flex: 1; min-width: 0; }
+  .card .title { font-weight: 600; font-size: 16px; line-height: 1.3; }
+  .card .meta { font-size: 13px; color: var(--text2); margin-top: 3px; line-height: 1.35; }
+  .card .extra { font-size: 12px; color: var(--text3); margin-top: 4px; }
+  .card-dot {
+    width: 40px; height: 40px; border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    background: #eef2f7;
+  }
+  .card-dot.blue { background: rgba(0,122,255,0.12); color: var(--accent); }
+  .card-dot.green { background: rgba(52,199,89,0.15); color: var(--green); }
+  .card-dot.orange { background: rgba(255,149,0,0.15); color: var(--orange); }
+  .card-dot.pink { background: rgba(255,45,85,0.15); color: #ff2d55; }
+
+  /* EMAIL-STYLE */
+  .mail .from { font-weight: 600; font-size: 15px; color: var(--text); }
+  .mail .subj { font-size: 14px; color: var(--text); margin-top: 2px; font-weight: 500; }
+  .mail .prev { font-size: 13px; color: var(--text3); margin-top: 2px; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .mail .date { font-size: 12px; color: var(--text3); text-align: right; white-space: nowrap; margin-left: 8px; }
+  .mail { display: flex; justify-content: space-between; align-items: flex-start; }
+  .mail .body { flex: 1; min-width: 0; }
+  .badge {
+    display: inline-block; padding: 1px 6px; border-radius: 4px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.3px;
+    background: rgba(0,122,255,0.12); color: var(--accent);
+    margin-right: 6px; vertical-align: 1px;
+  }
+  .badge.gmail { background: rgba(234,67,53,0.12); color: #ea4335; }
+
+  /* WETTER */
+  .wx-now {
+    background: linear-gradient(135deg, #4a90e2, #357abd);
+    color: #fff;
+    border-radius: 18px;
+    padding: 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 16px rgba(74,144,226,0.3);
+  }
+  .wx-now .temp { font-size: 56px; font-weight: 200; line-height: 1; letter-spacing: -2px; }
+  .wx-now .desc { font-size: 17px; margin-top: 4px; opacity: 0.95; }
+  .wx-now .loc { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+  .wx-now .extra { font-size: 13px; margin-top: 12px; opacity: 0.9; display: flex; gap: 16px; }
+  .wx-day { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 0.5px solid var(--sep); }
+  .wx-day:last-child { border-bottom: none; }
+  .wx-day .name { font-weight: 500; width: 50px; }
+  .wx-day .icon { font-size: 22px; flex: 1; text-align: center; }
+  .wx-day .t { text-align: right; font-variant-numeric: tabular-nums; }
+  .wx-day .tmax { font-weight: 600; }
+  .wx-day .tmin { color: var(--text3); margin-left: 8px; }
+
+  /* LOADING */
+  .loading { text-align: center; padding: 30px; color: var(--text3); font-size: 14px; }
+  .empty { text-align: center; padding: 40px 20px; color: var(--text3); }
+  .empty .big { font-size: 44px; margin-bottom: 8px; }
+
+  /* BOTTOM NAV */
+  .tabbar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-top: 0.5px solid var(--sep);
+    display: flex;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabbtn {
+    flex: 1;
+    padding: 8px 4px 6px;
+    text-align: center;
+    color: var(--text3);
+    font-size: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.15s;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+  }
+  .tabbtn .ic { font-size: 22px; display: block; margin-bottom: 2px; }
+  .tabbtn.active { color: var(--accent); }
+  .tabbtn:active { opacity: 0.5; }
+
+  /* REFRESH HINT */
+  .refresh-hint {
+    text-align: center;
+    padding: 10px;
+    font-size: 12px;
+    color: var(--text3);
+  }
+  .refresh-hint a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1 id="page-title">Kalender</h1>
+  <div class="sub" id="page-sub"></div>
+</div>
+
+<!-- KALENDER -->
+<div class="page active" id="p-cal">
+  <div id="cal-list"><div class="loading">Lade Termine…</div></div>
+</div>
+
+<!-- MAILS -->
+<div class="page" id="p-mail">
+  <div id="mail-list"><div class="loading">Lade Mails…</div></div>
+</div>
+
+<!-- WETTER -->
+<div class="page" id="p-wx">
+  <div id="wx-content"><div class="loading">Lade Wetter…</div></div>
+</div>
+
+<!-- GEBURTSTAGE -->
+<div class="page" id="p-bd">
+  <div id="bd-list"><div class="loading">Lade Geburtstage…</div></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="tabbar">
+  <button class="tabbtn active" data-tab="cal"><span class="ic">📅</span>Kalender</button>
+  <button class="tabbtn" data-tab="mail"><span class="ic">📧</span>Mails</button>
+  <button class="tabbtn" data-tab="wx"><span class="ic">🌤️</span>Wetter</button>
+  <button class="tabbtn" data-tab="bd"><span class="ic">🎂</span>Geburtstage</button>
+</nav>
+
+<script>
+// ===== TAB SWITCH =====
+const pageTitle = document.getElementById('page-title');
+const pageSub = document.getElementById('page-sub');
+const TITLES = {
+  cal: ['Kalender', 'Kommende Termine'],
+  mail: ['Mails', 'Ungelesen in deinen Postfächern'],
+  wx: ['Wetter', 'Norderstedt'],
+  bd: ['Geburtstage', 'Nächste Anlässe']
+};
+
+document.querySelectorAll('.tabbtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('p-' + tab).classList.add('active');
+    const [title, sub] = TITLES[tab];
+    pageTitle.textContent = title;
+    pageSub.textContent = sub;
+    loadTab(tab);
+    window.scrollTo(0, 0);
+  });
+});
+
+// ===== DATA LOAD =====
+const loaded = {};
+async function loadTab(tab) {
+  if (loaded[tab]) return;
+  loaded[tab] = true;
+  if (tab === 'cal') await loadCalendar();
+  else if (tab === 'mail') await loadMails();
+  else if (tab === 'wx') await loadWeather();
+  else if (tab === 'bd') await loadBirthdays();
+}
+
+async function loadCalendar() {
+  const el = document.getElementById('cal-list');
+  try {
+    const r = await fetch('/api/calendar');
+    const data = await r.json();
+    if (!data || !data.length) {
+      el.innerHTML = '<div class="empty"><div class="big">📅</div>Keine kommenden Termine</div>';
+      return;
+    }
+    el.innerHTML = data.map(ev => `
+      <div class="card">
+        <div class="left"><div class="card-dot blue">${ev.weekday || '📅'}</div></div>
+        <div class="right">
+          <div class="title">${esc(ev.title)}</div>
+          <div class="meta">${esc(ev.date)} ${esc(ev.time)}${ev.location ? ' · ' + esc(ev.location) : ''}</div>
+          ${ev.category ? `<div class="extra">${esc(ev.category)}</div>` : ''}
+        </div>
+      </div>`).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="empty">⚠️ ${e.message}</div>`;
+  }
+}
+
+async function loadMails() {
+  const el = document.getElementById('mail-list');
+  try {
+    const r = await fetch('/api/email');
+    const data = await r.json();
+    pageSub.textContent = `${data.count || 0} ungelesen`;
+    if (!data.messages || !data.messages.length) {
+      el.innerHTML = '<div class="empty"><div class="big">📭</div>Keine ungelesenen Mails</div>';
+      return;
+    }
+    el.innerHTML = data.messages.map(m => {
+      const badgeClass = (m.account || '').toLowerCase() === 'gmail' ? 'badge gmail' : 'badge';
+      return `<div class="card">
+        <div style="flex:1;min-width:0">
+          <div class="mail">
+            <div class="body">
+              <div class="from">${esc(m.from)}</div>
+              <div class="subj"><span class="${badgeClass}">${esc(m.account)}</span>${esc(m.subject)}</div>
+              <div class="prev">${esc(m.preview || '')}</div>
+            </div>
+            <div class="date">${esc(m.date)}</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="empty">⚠️ ${e.message}</div>`;
+  }
+}
+
+const WX_ICONS = {
+  0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
+  45: '🌫️', 48: '🌫️',
+  51: '🌦️', 53: '🌦️', 55: '🌦️',
+  61: '🌧️', 63: '🌧️', 65: '🌧️',
+  71: '🌨️', 73: '🌨️', 75: '❄️', 77: '❄️',
+  80: '🌦️', 81: '🌧️', 82: '⛈️',
+  85: '🌨️', 86: '🌨️',
+  95: '⛈️', 96: '⛈️', 99: '⛈️'
+};
+const WX_DESC = {
+  0: 'Klar', 1: 'Heiter', 2: 'Teilweise bewölkt', 3: 'Bewölkt',
+  45: 'Nebel', 48: 'Reifnebel',
+  51: 'Leichter Nieselregen', 53: 'Nieselregen', 55: 'Starker Nieselregen',
+  61: 'Leichter Regen', 63: 'Regen', 65: 'Starker Regen',
+  71: 'Leichter Schneefall', 73: 'Schneefall', 75: 'Starker Schneefall',
+  77: 'Graupel',
+  80: 'Leichte Schauer', 81: 'Schauer', 82: 'Starke Schauer',
+  85: 'Schneeschauer', 86: 'Starke Schneeschauer',
+  95: 'Gewitter', 96: 'Gewitter mit Hagel', 99: 'Starkes Gewitter'
+};
+
+async function loadWeather() {
+  const el = document.getElementById('wx-content');
+  try {
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=53.69&longitude=9.98&current=temperature_2m,weather_code,apparent_temperature,wind_speed_10m,relative_humidity_2m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Europe/Berlin&forecast_days=5');
+    const d = await r.json();
+    const cur = d.current;
+    const days = d.daily;
+    const curIcon = WX_ICONS[cur.weather_code] || '🌤️';
+    const curDesc = WX_DESC[cur.weather_code] || '';
+    const daysHtml = days.time.slice(1).map((day, i) => {
+      const idx = i + 1;
+      const dt = new Date(day);
+      const name = dt.toLocaleDateString('de-DE', { weekday: 'short' });
+      const code = days.weather_code[idx];
+      return `<div class="wx-day">
+        <div class="name">${name}</div>
+        <div class="icon">${WX_ICONS[code] || '🌤️'}</div>
+        <div class="t"><span class="tmax">${Math.round(days.temperature_2m_max[idx])}°</span><span class="tmin">${Math.round(days.temperature_2m_min[idx])}°</span></div>
+      </div>`;
+    }).join('');
+    el.innerHTML = `
+      <div class="wx-now">
+        <div class="loc">Norderstedt · jetzt</div>
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <div class="temp">${Math.round(cur.temperature_2m)}°</div>
+          <div style="margin-top:10px;font-size:40px">${curIcon}</div>
+        </div>
+        <div class="desc">${curDesc}</div>
+        <div class="extra">
+          <span>Gefühlt ${Math.round(cur.apparent_temperature)}°</span>
+          <span>Wind ${Math.round(cur.wind_speed_10m)} km/h</span>
+          <span>LF ${cur.relative_humidity_2m}%</span>
+        </div>
+      </div>
+      <div class="card" style="flex-direction:column">
+        <div style="font-weight:600;margin-bottom:4px">Nächste Tage</div>
+        ${daysHtml}
+      </div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="empty">⚠️ ${e.message}</div>`;
+  }
+}
+
+async function loadBirthdays() {
+  const el = document.getElementById('bd-list');
+  try {
+    const r = await fetch('/api/birthdays');
+    const data = await r.json();
+    if (!data || !data.length) {
+      el.innerHTML = '<div class="empty"><div class="big">🎂</div>Keine Geburtstage hinterlegt</div>';
+      return;
+    }
+    el.innerHTML = data.map(b => {
+      const daysTxt = b.today ? 'HEUTE' : b.days === 1 ? 'morgen' : `in ${b.days} Tagen`;
+      const ageTxt = b.age ? ` · wird ${b.age}` : '';
+      const dotClass = b.today ? 'pink' : b.days <= 7 ? 'orange' : 'green';
+      return `<div class="card">
+        <div class="left"><div class="card-dot ${dotClass}">🎂</div></div>
+        <div class="right">
+          <div class="title">${esc(b.name)}</div>
+          <div class="meta">${esc(b.date)} · ${daysTxt}${ageTxt}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="empty">⚠️ ${e.message}</div>`;
+  }
+}
+
+function esc(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Initial load
+pageTitle.textContent = TITLES.cal[0];
+pageSub.textContent = TITLES.cal[1];
+loadTab('cal');
+
+// SW Register
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>

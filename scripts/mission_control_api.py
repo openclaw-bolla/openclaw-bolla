@@ -1003,7 +1003,7 @@ class Handler(BaseHTTPRequestHandler):
         if body_bytes is not None:
             req.add_header("Content-Type", "application/json")
         try:
-            with urllib.request.urlopen(req, timeout=5) as r:
+            with urllib.request.urlopen(req, timeout=300) as r:
                 data = r.read()
                 self.send_response(r.status)
                 ct = r.headers.get("Content-Type", "application/json")
@@ -1028,6 +1028,29 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Cache-Control", "no-store")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
+            # ===== MOBILE / PWA (MC Chris) =====
+            MOBILE_STATIC = {
+                "/m":                     ("mobile.html",            "text/html; charset=utf-8", "no-store"),
+                "/mobile.html":           ("mobile.html",            "text/html; charset=utf-8", "no-store"),
+                "/manifest.webmanifest":  ("manifest.webmanifest",   "application/manifest+json", "max-age=3600"),
+                "/sw.js":                 ("sw.js",                  "application/javascript", "no-store"),
+                "/mc-icon-192.png":       ("mc-icon-192.png",        "image/png", "max-age=604800"),
+                "/mc-icon-512.png":       ("mc-icon-512.png",        "image/png", "max-age=604800"),
+                "/mc-apple-touch.png":    ("mc-apple-touch.png",     "image/png", "max-age=604800"),
+            }
+            if self.path in MOBILE_STATIC:
+                fname, ctype, cache = MOBILE_STATIC[self.path]
+                fpath = os.path.expanduser(f"~/workspace/mission-control/{fname}")
+                with open(fpath, "rb") as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", ctype)
+                self.send_header("Cache-Control", cache)
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)

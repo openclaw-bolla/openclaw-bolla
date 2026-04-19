@@ -556,10 +556,10 @@ html, body {
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-shrink:0">
               <span style="font-size:28px">🖧</span>
               <div style="flex:1">
-                <div style="font-size:20px;font-weight:300;color:var(--bright)">Local Server</div>
-                <div id="lms-model" style="font-size:11px;color:var(--dim)">LM Studio · Verbinde...</div>
+                <div style="font-size:20px;font-weight:600;color:#0c1420">Local Server</div>
+                <div id="lms-model" style="font-size:11px;color:#3a5068">LM Studio · Verbinde...</div>
               </div>
-              <div id="lms-status" style="font-size:11px;color:var(--dim)">⏳ Prüfe...</div>
+              <div id="lms-status" style="font-size:11px;color:#3a5068">⏳ Prüfe...</div>
               <button onclick="lmsNewChat()" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;font-size:12px" title="Neuer Chat">🗑️ Neu</button>
             </div>
             <div id="lms-chat" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;overflow-y:auto;font-size:14px;line-height:1.7;color:var(--text)">
@@ -573,7 +573,7 @@ html, body {
               <input id="lms-input" placeholder="Nachricht an Local Server..." style="flex:1;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-size:14px;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();lmsSend()}">
               <button onclick="lmsSend()" id="lms-send-btn" style="padding:12px 24px;background:#66bb6a;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:opacity 0.2s">Senden</button>
             </div>
-            <div style="font-size:11px;color:var(--dim);margin-top:6px;text-align:center">
+            <div style="font-size:11px;color:#3a5068;margin-top:6px;text-align:center">
               Lokales Modell via LM Studio · <span id="lms-endpoint">—</span>
             </div>
           </div>
@@ -1580,11 +1580,14 @@ async function voiceLoadList() {
     }
     const voices = data.voices || [];
     const deflt = data.default;
+    const saved = localStorage.getItem('bolla-voice-selected');
+    const preferred = (saved && voices.some(v => v.name === saved)) ? saved : deflt;
     sel.innerHTML = voices.map(v => {
       const flag = v.locale.startsWith('de-') ? '🇩🇪' : '🇺🇸';
       const g = v.gender === 'Female' ? '♀' : '♂';
-      return `<option value="${escHtml(v.name)}"${v.name===deflt?' selected':''}>${flag} ${g} ${escHtml(v.display)} (${escHtml(v.locale)})</option>`;
+      return `<option value="${escHtml(v.name)}"${v.name===preferred?' selected':''}>${flag} ${g} ${escHtml(v.display)} (${escHtml(v.locale)})</option>`;
     }).join('');
+    sel.onchange = () => localStorage.setItem('bolla-voice-selected', sel.value);
     voicesLoaded = true;
   } catch(e) {
     sel.innerHTML = `<option>⚠ ${escHtml(e.message)}</option>`;
@@ -1607,6 +1610,10 @@ async function voiceSpeak(text) {
     .replace(/```[\s\S]*?```/g, ' Codeblock. ')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/\bwww\.\S+/gi, '')
+    .replace(/\b[\w.-]+@[\w.-]+\.\w+\b/gi, '')
     .replace(/[#>*_~]/g, '')
     .replace(/\p{Extended_Pictographic}[\u{FE0F}\u{200D}]?/gu, '')
     .replace(/\s+/g, ' ')
