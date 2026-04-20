@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission Control — Terminal Green</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&display=swap');
+  body {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    background: #0a0f0a;
+    color: #00ff41;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+  /* Scanlines overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 220px;
+    background: #050905;
+    border-right: 1px solid #00ff4133;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .sidebar-logo {
+    padding: 20px 18px 16px;
+    border-bottom: 1px solid #00ff4122;
+    font-size: 11px;
+    color: #00ff41aa;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .sidebar-logo span { color: #00ff41; font-size: 14px; font-weight: 700; display: block; margin-bottom: 2px; }
+  .nav { flex: 1; padding: 12px 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 18px;
+    font-size: 11px;
+    color: #00ff4177;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+  .nav-item:hover { color: #00ff41; background: #00ff4108; border-left-color: #00ff4144; }
+  .nav-item.active { color: #00ff41; background: #00ff4112; border-left-color: #00ff41; }
+  .nav-item .icon { font-size: 13px; width: 16px; text-align: center; }
+  .nav-section {
+    font-size: 9px; color: #00ff4133; letter-spacing: 3px;
+    padding: 14px 18px 4px; text-transform: uppercase;
+  }
+  .sidebar-footer {
+    padding: 12px 18px;
+    border-top: 1px solid #00ff4122;
+    font-size: 9px;
+    color: #00ff4144;
+    letter-spacing: 1px;
+  }
+  .blink { animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* TOPBAR */
+  .topbar {
+    background: #050905;
+    border-bottom: 1px solid #00ff4133;
+    padding: 0 24px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-title { font-size: 13px; font-weight: 700; color: #00ff41; letter-spacing: 2px; text-transform: uppercase; }
+  .topbar-path { font-size: 10px; color: #00ff4155; }
+  .topbar-right { display: flex; align-items: center; gap: 20px; }
+  .topbar-time { font-size: 18px; font-weight: 600; color: #00ff41; letter-spacing: 2px; }
+  .topbar-date { font-size: 9px; color: #00ff4166; letter-spacing: 1px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #00ff41; box-shadow: 0 0 8px #00ff41; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.85)} }
+
+  /* CONTENT */
+  .content {
+    flex: 1; overflow-y: auto; padding: 20px 24px; display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto auto 1fr;
+    gap: 16px;
+    align-content: start;
+  }
+  .content::-webkit-scrollbar { width: 4px; }
+  .content::-webkit-scrollbar-track { background: transparent; }
+  .content::-webkit-scrollbar-thumb { background: #00ff4133; }
+
+  /* CARDS */
+  .card {
+    background: #0d130d;
+    border: 1px solid #00ff4122;
+    border-radius: 3px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #00ff4144, transparent);
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .card-title { font-size: 9px; color: #00ff4188; letter-spacing: 3px; text-transform: uppercase; }
+  .card-badge {
+    font-size: 8px; padding: 2px 6px;
+    border: 1px solid #00ff4133; color: #00ff4177;
+    border-radius: 2px; letter-spacing: 1px;
+  }
+  .card-badge.ok { border-color: #00ff4166; color: #00ff41aa; }
+  .card-badge.warn { border-color: #ffaa0066; color: #ffaa00aa; }
+
+  /* STAT CARDS */
+  .stat-value { font-size: 32px; font-weight: 700; color: #00ff41; line-height: 1; margin-bottom: 4px; }
+  .stat-label { font-size: 9px; color: #00ff4166; letter-spacing: 2px; }
+  .stat-bar { height: 3px; background: #00ff4111; border-radius: 2px; margin-top: 12px; overflow: hidden; }
+  .stat-bar-fill { height: 100%; background: #00ff41; border-radius: 2px; transition: width 0.8s; }
+
+  /* BOLLA CHAT */
+  .chat-area { display: flex; flex-direction: column; gap: 10px; }
+  .chat-msg { font-size: 11px; line-height: 1.6; }
+  .chat-msg.bolla { color: #00ff41cc; }
+  .chat-msg.bolla::before { content: 'bolla> '; color: #00ff4166; }
+  .chat-msg.user { color: #00cc3399; }
+  .chat-msg.user::before { content: 'chris> '; color: #00cc3366; }
+  .chat-input {
+    display: flex; align-items: center; gap: 8px; margin-top: 12px;
+    border-top: 1px solid #00ff4122; padding-top: 10px;
+  }
+  .chat-prompt { font-size: 11px; color: #00ff4166; }
+  .chat-cursor { display: inline-block; width: 8px; height: 13px; background: #00ff41; }
+
+  /* ACTIVITY */
+  .activity-list { display: flex; flex-direction: column; gap: 8px; }
+  .activity-item { display: flex; gap: 10px; font-size: 10px; }
+  .activity-time { color: #00ff4144; min-width: 45px; }
+  .activity-text { color: #00ff4199; }
+  .activity-tag {
+    margin-left: auto; font-size: 8px; padding: 1px 6px;
+    border: 1px solid; border-radius: 2px; letter-spacing: 1px; white-space: nowrap;
+  }
+  .tag-system { border-color: #00ff4144; color: #00ff4177; }
+  .tag-bolla  { border-color: #4fc3f744; color: #4fc3f777; }
+  .tag-user   { border-color: #aa00ff44; color: #aa00ff77; }
+
+  /* WEATHER */
+  .weather-main { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+  .weather-temp { font-size: 40px; font-weight: 700; color: #00ff41; }
+  .weather-info { font-size: 10px; color: #00ff4166; line-height: 1.8; }
+  .weather-row { display: flex; gap: 16px; }
+  .weather-item { flex: 1; text-align: center; }
+  .weather-item-val { font-size: 14px; font-weight: 600; color: #00ff41bb; }
+  .weather-item-lbl { font-size: 8px; color: #00ff4144; letter-spacing: 2px; margin-top: 2px; }
+
+  /* SYSTEM */
+  .sys-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .sys-item { }
+  .sys-label { font-size: 8px; color: #00ff4155; letter-spacing: 1px; margin-bottom: 4px; }
+  .sys-val { font-size: 12px; color: #00ff41cc; font-weight: 600; }
+  .sys-bar { height: 2px; background: #00ff4111; border-radius: 1px; margin-top: 4px; }
+  .sys-bar-fill { height: 100%; background: #00ff41; border-radius: 1px; }
+  .sys-bar-fill.warn { background: #ffaa00; }
+
+  /* WIDE CARD */
+  .col-span-2 { grid-column: span 2; }
+  .col-span-3 { grid-column: span 3; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <span>MISSION CONTROL</span>
+    v3.7.2 · bolla@home
+  </div>
+  <div class="nav">
+    <div class="nav-section">// navigation</div>
+    <div class="nav-item active"><span class="icon">⬛</span> Dashboard</div>
+    <div class="nav-item"><span class="icon">◈</span> Bolla</div>
+    <div class="nav-item"><span class="icon">◉</span> Schule</div>
+    <div class="nav-item"><span class="icon">◎</span> Kalender</div>
+    <div class="nav-item"><span class="icon">◈</span> E-Mail</div>
+    <div class="nav-section">// family</div>
+    <div class="nav-item"><span class="icon">◉</span> Robin</div>
+    <div class="nav-item"><span class="icon">◎</span> Geburtstage</div>
+    <div class="nav-section">// system</div>
+    <div class="nav-item"><span class="icon">◈</span> Local Server</div>
+    <div class="nav-item"><span class="icon">◉</span> Wetter</div>
+    <div class="nav-item"><span class="icon">◎</span> System Info</div>
+  </div>
+  <div class="sidebar-footer">
+    SYS_OK · ALL_MODULES_ACTIVE<br>
+    UPTIME: 12d 4h 33m<span class="blink">_</span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="status-dot"></div>
+      <div>
+        <div class="topbar-title">Dashboard</div>
+        <div class="topbar-path">root/home/chris/dashboard<span class="blink">_</span></div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div>
+        <div class="topbar-time">14:27:09</div>
+        <div class="topbar-date">MO 20.04.2026 · CET+1</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- STAT 1 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">// ungelesene mails</div>
+        <div class="card-badge warn">PENDING</div>
+      </div>
+      <div class="stat-value">7</div>
+      <div class="stat-label">NEUE NACHRICHTEN</div>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width:35%"></div></div>
+    </div>
+
+    <!-- STAT 2 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">// kalender heute</div>
+        <div class="card-badge ok">SYNC</div>
+      </div>
+      <div class="stat-value">3</div>
+      <div class="stat-label">TERMINE / HEUTE</div>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width:60%"></div></div>
+    </div>
+
+    <!-- STAT 3 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">// system load</div>
+        <div class="card-badge ok">NOMINAL</div>
+      </div>
+      <div class="stat-value">12<span style="font-size:14px;color:#00ff4166">%</span></div>
+      <div class="stat-label">CPU AUSLASTUNG</div>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width:12%"></div></div>
+    </div>
+
+    <!-- BOLLA CHAT -->
+    <div class="card col-span-2">
+      <div class="card-header">
+        <div class="card-title">// bolla — ki-assistent</div>
+        <div class="card-badge ok">ONLINE</div>
+      </div>
+      <div class="chat-area">
+        <div class="chat-msg user">guten morgen bolla, was gibt's neues?</div>
+        <div class="chat-msg bolla">Guten Morgen! 7 ungelesene Mails, davon 2 wichtig. Robin hat heute Fußball um 16:00. Wetter: 14°C, leicht bewölkt. Alles nominal.</div>
+        <div class="chat-msg user">kannst du die wichtigen mails kurz zusammenfassen?</div>
+        <div class="chat-msg bolla">Klar. (1) Schule: Elternabend Do 23.04. um 19:00 Uhr. (2) DKB: Kontoauszug März verfügbar. Rest ist Newsletter.</div>
+      </div>
+      <div class="chat-input">
+        <span class="chat-prompt">chris@bolla:~$</span>
+        <span class="chat-cursor"></span>
+      </div>
+    </div>
+
+    <!-- WEATHER -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">// wetter · münchen</div>
+        <div class="card-badge ok">LIVE</div>
+      </div>
+      <div class="weather-main">
+        <div class="weather-temp">14°</div>
+        <div class="weather-info">
+          leicht bewölkt<br>
+          gefühlt 11°C<br>
+          München, DE
+        </div>
+      </div>
+      <div class="weather-row">
+        <div class="weather-item">
+          <div class="weather-item-val">72%</div>
+          <div class="weather-item-lbl">LUFTF</div>
+        </div>
+        <div class="weather-item">
+          <div class="weather-item-val">18km/h</div>
+          <div class="weather-item-lbl">WIND</div>
+        </div>
+        <div class="weather-item">
+          <div class="weather-item-val">20:32</div>
+          <div class="weather-item-lbl">SUNSET</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTIVITY -->
+    <div class="card col-span-2">
+      <div class="card-header">
+        <div class="card-title">// aktivitäten · heute</div>
+      </div>
+      <div class="activity-list">
+        <div class="activity-item">
+          <span class="activity-time">14:22</span>
+          <span class="activity-text">Mission Control geöffnet</span>
+          <span class="activity-tag tag-system">SYSTEM</span>
+        </div>
+        <div class="activity-item">
+          <span class="activity-time">13:58</span>
+          <span class="activity-text">Bolla: Renten-Dokument erstellt und gespeichert</span>
+          <span class="activity-tag tag-bolla">BOLLA</span>
+        </div>
+        <div class="activity-item">
+          <span class="activity-time">12:34</span>
+          <span class="activity-text">E-Mail empfangen: DKB Kontoauszug März</span>
+          <span class="activity-tag tag-user">MAIL</span>
+        </div>
+        <div class="activity-item">
+          <span class="activity-time">10:07</span>
+          <span class="activity-text">Cloudflare Tunnel: reconnect nach kurzer Unterbrechung</span>
+          <span class="activity-tag tag-system">TUNNEL</span>
+        </div>
+        <div class="activity-item">
+          <span class="activity-time">07:23</span>
+          <span class="activity-text">System gestartet — alle Services aktiv</span>
+          <span class="activity-tag tag-system">BOOT</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SYSTEM INFO -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">// system info</div>
+        <div class="card-badge ok">HEALTHY</div>
+      </div>
+      <div class="sys-grid">
+        <div class="sys-item">
+          <div class="sys-label">RAM</div>
+          <div class="sys-val">3.2 / 8 GB</div>
+          <div class="sys-bar"><div class="sys-bar-fill" style="width:40%"></div></div>
+        </div>
+        <div class="sys-item">
+          <div class="sys-label">DISK C:</div>
+          <div class="sys-val">284 / 476 GB</div>
+          <div class="sys-bar"><div class="sys-bar-fill warn" style="width:60%"></div></div>
+        </div>
+        <div class="sys-item">
+          <div class="sys-label">ONEDRIVE</div>
+          <div class="sys-val">SYNC OK</div>
+          <div class="sys-bar"><div class="sys-bar-fill" style="width:100%"></div></div>
+        </div>
+        <div class="sys-item">
+          <div class="sys-label">TUNNEL</div>
+          <div class="sys-val">AKTIV</div>
+          <div class="sys-bar"><div class="sys-bar-fill" style="width:100%"></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

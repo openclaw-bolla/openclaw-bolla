@@ -200,12 +200,17 @@
   <div id="bd-list"><div class="loading">Lade Geburtstage…</div></div>
 </div>
 
+<div class="page" id="p-robin">
+  <div id="robin-timeline"><div class="loading">Lade…</div></div>
+</div>
+
 <!-- BOTTOM NAV -->
 <nav class="tabbar">
   <button class="tabbtn active" data-tab="cal"><span class="ic">📅</span>Kalender</button>
   <button class="tabbtn" data-tab="mail"><span class="ic">📧</span>Mails</button>
   <button class="tabbtn" data-tab="wx"><span class="ic">🌤️</span>Wetter</button>
   <button class="tabbtn" data-tab="bd"><span class="ic">🎂</span>Geburtstage</button>
+  <button class="tabbtn" data-tab="robin"><span class="ic">🩺</span>Robin</button>
 </nav>
 
 <script>
@@ -216,7 +221,8 @@ const TITLES = {
   cal: ['Kalender', 'Kommende Termine'],
   mail: ['Mails', 'Ungelesen in deinen Postfächern'],
   wx: ['Wetter', 'Norderstedt'],
-  bd: ['Geburtstage', 'Nächste Anlässe']
+  bd: ['Geburtstage', 'Nächste Anlässe'],
+  robin: ['Robin', 'Medizinstudium Uni Ulm']
 };
 
 document.querySelectorAll('.tabbtn').forEach(btn => {
@@ -242,6 +248,7 @@ async function loadTab(tab) {
   else if (tab === 'mail') await loadMails();
   else if (tab === 'wx') await loadWeather();
   else if (tab === 'bd') await loadBirthdays();
+  else if (tab === 'robin') loadRobinTimeline();
 }
 
 async function loadCalendar() {
@@ -391,6 +398,45 @@ async function loadBirthdays() {
 function esc(s) {
   if (s === null || s === undefined) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function loadRobinTimeline() {
+  const steps = [
+    {year:'WS 2021/22', label:'FS 1–2 · Vorklinik', detail:'Biochemie, Anatomie, Physiologie, Biologie, Chemie', done:true},
+    {year:'WS 2022/23', label:'FS 3–4 · Vorklinik', detail:'Pathophysiologie, Pharmakologie, Abschluss Vorklinik', done:true},
+    {year:'SS 2023',    label:'M1 · Physikum ✓', detail:'1. Staatsexamen — Vorklinischer Abschnitt', done:true, exam:true},
+    {year:'WS 2023/24', label:'FS 5–6 · Klinik', detail:'Klinische Propädeutik, Innere Medizin, Chirurgie', done:true},
+    {year:'WS 2024/25', label:'FS 7 · Klinik', detail:'Neurologie, Psychiatrie, Pädiatrie, Kardiologie', done:true},
+    {year:'SS 2025',    label:'Forschungssemester', detail:'Experimentelle Medizin · Doktorarbeit: Neutrophile Granulozyten / TRAKI', done:true, special:true},
+    {year:'WS 2025/26', label:'FS 8 · Blockpraktikum', detail:'Alle klinischen Fächer: Innere, Chirurgie, Gynäkologie, Pädiatrie, Psychiatrie u.a.', done:true},
+    {year:'SS 2026',    label:'FS 9 ← JETZT', detail:'Fortsetzung klinische Ausbildung', current:true},
+    {year:'WS 2026/27', label:'FS 10 · Klinik Abschluss', detail:'Abschluss klinischer Abschnitt, M2-Vorbereitung', done:false},
+    {year:'Frühjahr 2027', label:'M2 · 2. Staatsexamen', detail:'Hammerexamen — 320 Fragen über 3 Tage', done:false, exam:true},
+    {year:'SS 2027 – 2028', label:'PJ · Praktisches Jahr', detail:'Innere Medizin · Chirurgie · Wahlfach', done:false},
+    {year:'Herbst 2028', label:'M3 · Approbation 🎉', detail:'3. Staatsexamen — Arzt!', done:false, exam:true},
+  ];
+  const el = document.getElementById('robin-timeline');
+  el.innerHTML = `
+    <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:var(--shadow)">
+      <div style="font-size:13px;color:#8e8e93;margin-bottom:16px">Uni Ulm · Regelstudienzeit</div>
+      ${steps.map((s, i, arr) => {
+        const color = s.exam ? '#ff9500' : s.special ? '#7c3aed' : s.current ? '#007aff' : s.done ? '#34c759' : '#c7c7cc';
+        const isLast = i === arr.length - 1;
+        return `<div style="display:flex;gap:12px">
+          <div style="display:flex;flex-direction:column;align-items:center;width:18px;flex-shrink:0">
+            <div style="width:${s.current?'16px':'12px'};height:${s.current?'16px':'12px'};border-radius:50%;background:${color};${s.current?'box-shadow:0 0 0 3px rgba(0,122,255,0.25)':''}margin-top:2px;flex-shrink:0"></div>
+            ${!isLast ? `<div style="width:2px;flex:1;background:#e5e5ea;margin:3px 0;min-height:16px"></div>` : ''}
+          </div>
+          <div style="padding-bottom:${isLast?'0':'14px'};flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px">
+              <span style="font-size:14px;font-weight:${s.current||s.exam?'600':'400'};color:${s.done||s.current||s.exam||s.special?'#1c1c1e':'#8e8e93'}">${s.label}</span>
+              <span style="font-size:11px;color:${color};white-space:nowrap;flex-shrink:0">${s.year}</span>
+            </div>
+            <div style="font-size:12px;color:#8e8e93;margin-top:2px;line-height:1.4">${s.detail}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
 // Initial load

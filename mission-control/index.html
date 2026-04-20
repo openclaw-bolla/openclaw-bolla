@@ -26,18 +26,18 @@
 
 /* ===== VARIABLEN ===== */
 :root {
-  --accent: #4fc3f7;
-  --accent2: #2196f3;
-  --text: #e0e6ed;
-  --dim: #b8c5d4;
+  --accent: #ff6699;
+  --accent2: #7c3aed;
+  --text: #e0d6ed;
+  --dim: #c4b8d4;
   --bright: #ffffff;
-  --border: #253a50;
-  --card: rgba(26, 45, 66, 0.88);
-  --card2: rgba(33, 58, 82, 0.92);
-  --sidebar: rgba(21, 34, 50, 0.95);
-  --topbar: rgba(12, 20, 32, 0.85);
-  --success: #66bb6a;
-  --warning: #ffa726;
+  --border: #3d1f4e;
+  --card: rgba(30, 10, 45, 0.88);
+  --card2: rgba(45, 15, 65, 0.92);
+  --sidebar: rgba(15, 6, 24, 0.95);
+  --topbar: rgba(10, 4, 18, 0.85);
+  --success: #22c55e;
+  --warning: #f59e0b;
   --danger: #ef5350;
 }
 
@@ -49,7 +49,7 @@ html, body {
   font-size: 18px;
   color: var(--text);
   background:
-    linear-gradient(rgba(245,248,252,0.38), rgba(245,248,252,0.38)),
+    linear-gradient(rgba(15,6,24,0.55), rgba(30,10,50,0.50)),
     url('https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?w=1920&q=90&fm=jpg&sat=-100')
     center center / cover no-repeat;
 }
@@ -65,7 +65,7 @@ html, body {
   width: 200px;
   min-width: 200px;
   height: 100vh;
-  background: linear-gradient(to right, rgba(21,34,50,0.95) 0%, rgba(21,34,50,0.85) 60%, rgba(21,34,50,0.55) 100%);
+  background: linear-gradient(to right, rgba(15,6,24,0.97) 0%, rgba(15,6,24,0.88) 60%, rgba(15,6,24,0.60) 100%);
   backdrop-filter: blur(12px);
   border-right: 1px solid var(--border);
   display: flex;
@@ -119,8 +119,8 @@ html, body {
   transition: all 0.15s;
 }
 
-.nav-item:hover { background: rgba(79,195,247,0.08); color: var(--bright); }
-.nav-item.active { background: rgba(79,195,247,0.12); border-left-color: var(--accent); color: var(--accent); }
+.nav-item:hover { background: rgba(255,102,153,0.08); color: var(--bright); }
+.nav-item.active { background: rgba(255,102,153,0.15); border-left-color: var(--accent); color: var(--accent); }
 .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
 .nav-item .badge {
   margin-left: auto;
@@ -282,11 +282,12 @@ html, body {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 7px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  padding: 7px 10px;
+  border-radius: 6px;
+  margin-bottom: 5px;
   font-size: 13px;
 }
-.event-item:last-child { border-bottom: none; }
+.event-item:last-child { margin-bottom: 0; }
 .event-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
 .dot-b1 { background: var(--accent); }
 .dot-b2 { background: #ab47bc; }
@@ -503,7 +504,7 @@ html, body {
               </div>
               <div id="bolla-status" style="font-size:11px;color:var(--success)">🟢 Bereit</div>
               <button onclick="bollaNewChat()" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;font-size:12px" title="Neuer Chat">🗑️ Neu</button>
-              <a href="https://claude.ai/code/new" target="_blank" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--accent);cursor:pointer;font-size:12px;text-decoration:none" title="Vollversion im Browser">↗ Vollversion</a>
+              <a href="https://claude.ai" target="_blank" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--accent);cursor:pointer;font-size:12px;text-decoration:none" title="Vollversion im Browser">↗ Vollversion</a>
             </div>
             <!-- Voice Controls -->
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-shrink:0;flex-wrap:wrap;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px">
@@ -545,7 +546,7 @@ html, body {
               <button onclick="bollaSend()" id="bolla-send-btn" style="padding:12px 24px;background:var(--accent2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:opacity 0.2s">Senden</button>
             </div>
             <div style="font-size:11px;color:var(--dim);margin-top:6px;text-align:center">
-              Lite-Chat via API — für Dateizugriff, Tools & volle Power: <a href="https://claude.ai/code/new" target="_blank" style="color:var(--accent)">Vollversion öffnen ↗</a>
+              Lite-Chat via API — für Dateizugriff, Tools & volle Power: <a href="https://claude.ai" target="_blank" style="color:var(--accent)">Vollversion öffnen ↗</a>
             </div>
           </div>
         </div>
@@ -559,7 +560,7 @@ html, body {
               <span style="font-size:28px">🖧</span>
               <div style="flex:1">
                 <div style="font-size:20px;font-weight:600;color:#0c1420">Local Server</div>
-                <div id="lms-model" style="font-size:11px;color:#3a5068">LM Studio · Verbinde...</div>
+                <div id="lms-model" style="font-size:11px;color:var(--bright);font-weight:600">LM Studio · Verbinde...</div>
               </div>
               <div id="lms-status" style="font-size:11px;color:#3a5068">⏳ Prüfe...</div>
               <button onclick="lmsNewChat()" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;font-size:12px" title="Neuer Chat">🗑️ Neu</button>
@@ -887,8 +888,11 @@ function renderDashboardEvents() {
   if (!_events.length) { document.getElementById('upcoming-events').innerHTML = '<li class="loading">Keine Termine</li>'; return; }
   let h = '';
   _events.slice(0,6).forEach(ev => {
-    const dot = ev.category?.includes('Lessing I') ? 'dot-b1' : ev.category?.includes('Lessing II') ? 'dot-b2' : ev.category ? 'dot-ev' : 'dot-def';
-    h += `<li class="event-item"><div class="event-dot ${dot}"></div><div class="event-time" style="font-size:14px">${ev.weekday} ${ev.time}</div><div><div class="event-title" style="font-size:15px">${ev.title}</div><div class="event-meta">${ev.date}</div></div></li>`;
+    const rgb = ev.color || '120,144,156';
+    h += `<li class="event-item" style="background:rgba(${rgb},0.18);border:1px solid rgba(${rgb},0.55)">` +
+         `<div class="event-dot" style="background:rgb(${rgb})"></div>` +
+         `<div class="event-time" style="font-size:14px">${ev.weekday} ${ev.time}</div>` +
+         `<div><div class="event-title" style="font-size:15px">${ev.title}</div><div class="event-meta">${ev.date}</div></div></li>`;
   });
   document.getElementById('upcoming-events').innerHTML = h;
 }
@@ -912,8 +916,11 @@ function loadCalendar() {
   Object.entries(grouped).forEach(([day, evs]) => {
     h += `<div class="card"><div class="card-head"><span class="card-title">${day}</span></div>`;
     evs.forEach(ev => {
-      const dot = ev.category?.includes('Lessing I') ? 'dot-b1' : ev.category?.includes('Lessing II') ? 'dot-b2' : 'dot-ev';
-      h += `<div class="event-item"><div class="event-dot ${dot}"></div><div class="event-time">${ev.time}</div><div><div class="event-title">${ev.title}</div></div></div>`;
+      const rgb = ev.color || '120,144,156';
+      h += `<div class="event-item" style="background:rgba(${rgb},0.18);border:1px solid rgba(${rgb},0.55)">` +
+           `<div class="event-dot" style="background:rgb(${rgb})"></div>` +
+           `<div class="event-time">${ev.time}</div>` +
+           `<div><div class="event-title">${ev.title}</div></div></div>`;
     });
     h += '</div>';
   });
@@ -942,13 +949,59 @@ async function loadEmailData() {
 function loadEmailFull() {
   const d = window._emails;
   if (!d) { document.getElementById('email-content').innerHTML = '<div class="loading">Lade...</div>'; return; }
-  if (!d.messages.length) { document.getElementById('email-content').innerHTML = '<div class="card"><div class="card-head"><span class="card-title">Keine ungelesenen Mails</span></div></div>'; return; }
-  let h = '';
-  d.messages.forEach(m => {
-    const c = m.account === 'wtnet' ? '#ce93d8' : 'var(--accent)';
-    const cb = m.account === 'wtnet' ? 'rgba(171,71,188,0.2)' : 'rgba(79,195,247,0.15)';
-    h += `<div class="card"><div class="card-head"><span class="card-title">${m.from}</span><span style="font-size:10px;background:${cb};color:${c};padding:2px 7px;border-radius:8px">${m.account}</span></div><div style="font-weight:600;color:var(--bright);margin-bottom:4px">${m.subject}</div><div style="font-size:11px;color:var(--dim)">${m.date}</div></div>`;
-  });
+
+  const todayCount = (d.recent || []).filter(m => m.is_today).length;
+
+  // Box 1: Ungelesene Mails
+  let unreadItems = '';
+  if (d.count > 0) {
+    d.messages.forEach(m => {
+      const badge = m.account === 'wtnet'
+        ? `<span style="font-size:10px;background:rgba(171,71,188,0.3);color:#ce93d8;padding:1px 5px;border-radius:8px;margin-left:4px">wtnet</span>` : '';
+      unreadItems += `<div class="mail-item"><span style="font-weight:600;color:var(--bright)">${m.from}</span>${badge}<div style="font-size:12px;color:var(--bright);margin-top:2px">${m.subject}</div><div style="font-size:11px;color:var(--dim)">${m.date}</div></div>`;
+    });
+  } else {
+    unreadItems = `<div style="font-size:12px;color:var(--dim);padding:6px 0">Keine ungelesenen Mails</div>`;
+  }
+
+  let h = `<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-start">
+    <div class="card" style="flex:2;min-width:180px">
+      <div class="card-head"><span class="card-title">📬 Ungelesen</span></div>
+      ${unreadItems}
+    </div>
+    <div class="card" style="margin-left:auto;min-width:160px">
+      <div class="card-head"><span class="card-title">📊 Übersicht</span></div>
+      <div style="font-size:13px;line-height:2">
+        <div>📧 <span style="color:var(--bright);font-weight:600">${d.count}</span> <span style="color:var(--dim)">Ungelesen</span></div>
+        <div>📥 <span style="color:var(--bright);font-weight:600">${todayCount}</span> <span style="color:var(--dim)">Heute empfangen</span></div>
+        <div>📤 <span style="color:var(--bright);font-weight:600">${(d.sent||[]).length}</span> <span style="color:var(--dim)">Zuletzt gesendet</span></div>
+      </div>
+    </div>
+  </div>`;
+
+  h += `<div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">📥 Zuletzt empfangen</span></div>`;
+  if ((d.recent||[]).length) {
+    d.recent.forEach(m => {
+      const badge = m.account === 'wtnet'
+        ? `<span style="font-size:10px;background:rgba(171,71,188,0.3);color:#ce93d8;padding:1px 6px;border-radius:8px;margin-left:5px">wtnet</span>` : '';
+      const unread = !m.isRead ? `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:5px;vertical-align:middle"></span>` : '';
+      h += `<div class="mail-item">${unread}<span style="font-weight:600;color:var(--bright)">${m.from}</span>${badge}<div style="color:var(--bright);font-size:12px;margin-top:2px">${m.subject}</div><div style="font-size:11px;color:var(--dim)">${m.date}</div></div>`;
+    });
+  } else {
+    h += `<div style="font-size:12px;color:var(--dim);padding:6px 0">Keine Mails</div>`;
+  }
+  h += `</div>`;
+
+  h += `<div class="card"><div class="card-head"><span class="card-title">📤 Zuletzt gesendet</span></div>`;
+  if ((d.sent||[]).length) {
+    d.sent.forEach(m => {
+      h += `<div class="mail-item"><span style="font-weight:600;color:var(--bright)">An: ${m.to}</span><div style="color:var(--bright);font-size:12px;margin-top:2px">${m.subject}</div><div style="font-size:11px;color:var(--dim)">${m.date}</div></div>`;
+    });
+  } else {
+    h += `<div style="font-size:12px;color:var(--dim);padding:6px 0">Keine gesendeten Mails</div>`;
+  }
+  h += `</div>`;
+
   document.getElementById('email-content').innerHTML = h;
 }
 
@@ -1022,13 +1075,15 @@ async function loadPhoto() {
 // ===== WITZ =====
 async function loadJoke() {
   try {
-    const r = await fetch('https://v2.jokeapi.dev/joke/Any?lang=de&blacklistFlags=nsfw,racist,sexist,explicit&type=twopart');
+    const r = await fetch('https://v2.jokeapi.dev/joke/Any');
     const d = await r.json();
-    if (d.setup) {
+    if (d.type === 'twopart') {
       document.getElementById('joke-card').innerHTML = `
         <div style="font-size:12px;color:var(--bright);line-height:1.5;margin-bottom:10px">${d.setup}</div>
         <details><summary style="font-size:11px;color:var(--accent);cursor:pointer;list-style:none">👉 Auflösung</summary>
         <div style="font-size:12px;color:var(--warning);margin-top:6px;line-height:1.5">${d.delivery}</div></details>`;
+    } else if (d.type === 'single') {
+      document.getElementById('joke-card').innerHTML = `<div style="font-size:12px;color:var(--bright);line-height:1.5">${d.joke}</div>`;
     }
   } catch(e) {
     document.getElementById('joke-card').innerHTML = '<div style="font-size:12px;color:var(--dim)">Warum können Geister schlecht lügen?<br><br>Weil man durch sie hindurchsehen kann. 👻</div>';
@@ -1056,8 +1111,9 @@ function loadSchule() {
   });
   let h = '';
   klassen.forEach(k => {
+    const rgb = k.next?.color || '120,144,156';
     const nxt = k.next ? `<div style="font-weight:500;color:var(--bright);font-size:15px">${k.next.title.replace(k.key+' - ','')}</div><div style="color:var(--accent);font-size:14px;margin-top:3px">${k.next.weekday}, ${k.next.date} · ${k.next.time}</div>` : `<div style="color:var(--dim);font-style:italic;font-size:12px">Kein Termin bald</div>`;
-    h += `<div class="card"><div class="card-head"><span class="card-title"><span class="event-dot ${k.dot}" style="display:inline-block;margin-right:6px;vertical-align:middle"></span>${k.name}</span></div>
+    h += `<div class="card" style="border-color:rgba(${rgb},0.55)"><div class="card-head"><span class="card-title"><span class="event-dot" style="display:inline-block;margin-right:6px;vertical-align:middle;background:rgb(${rgb})"></span>${k.name}</span></div>
       <div style="color:var(--bright);font-size:14px">${k.day}, ${k.time}</div>
       <div class="klasse-next"><div class="klasse-next-label">Nächste Stunde</div>${nxt}</div></div>`;
   });
@@ -1104,7 +1160,7 @@ async function loadRobin() {
     let h = `
       <div class="card full">
         <div class="card-head"><span class="card-title">${locIcon} Standort</span><span style="color:var(--accent);font-size:12px">${robin.location}</span></div>
-        <div id="${mapId}" style="width:100%;height:280px;border-radius:8px;overflow:hidden"></div>
+        <div id="${mapId}" style="width:100%;height:520px;border-radius:8px;overflow:hidden"></div>
       </div>
       <div class="card">
         <div class="card-head"><span class="card-title">👨‍⚕️ Robin Mandel</span><span class="card-icon">❤️</span></div>
@@ -1119,22 +1175,96 @@ async function loadRobin() {
       <div class="card">
         <div class="card-head"><span class="card-title">📅 Kommende Events</span></div>
         <ul class="event-list">
-          <li class="event-item"><div class="event-dot dot-ev"></div><div class="event-time">01.08.</div><div><div class="event-title">Abflug Tansania</div><div class="event-meta">via Istanbul · RGXQU8</div></div></li>
-          <li class="event-item"><div class="event-dot dot-b1"></div><div class="event-time">08.09.</div><div><div class="event-title">Rückkehr</div><div class="event-meta">38 Tage Famulatur</div></div></li>
+          ${[
+            {date:'2026-06-11', label:'11.06.', title:'Medimeisterschaften', meta:'Obermehler, Thüringen', rgb:'30,136,229'},
+            {date:'2026-07-19', label:'19.07.', title:'Semesterferien Sommer', meta:'bis 11.10. · 85 Tage frei', rgb:'67,160,71', range:'2026-10-11'},
+            {date:'2026-08-01', label:'01.08.', title:'Abflug Tansania', meta:'via Istanbul · RGXQU8', rgb:'239,83,80'},
+            {date:'2026-09-08', label:'08.09.', title:'Rückkehr', meta:'38 Tage Famulatur', rgb:'67,160,71'},
+            {date:'2026-12-24', label:'24.12.', title:'Weihnachtsferien', meta:'bis 05.01. · 13 Tage frei', rgb:'30,136,229', range:'2027-01-05'},
+          ].map(ev => {
+            const today = new Date(new Date().toDateString());
+            const start = new Date(ev.date);
+            const end = ev.range ? new Date(ev.range) : null;
+            let badge, rgb = ev.rgb;
+            if (end && today >= start && today <= end) {
+              badge = `🎉 Läuft · noch ${Math.ceil((end-today)/86400000)} Tage`;
+              rgb = '67,160,71';
+            } else {
+              const days = Math.ceil((start - today) / 86400000);
+              badge = days <= 0 ? 'Vorbei' : days === 1 ? 'Morgen!' : `in ${days} Tagen`;
+              if (days <= 0) rgb = '120,144,156';
+            }
+            return `<li class="event-item" style="background:rgba(${rgb},0.18);border:1px solid rgba(${rgb},0.55)">
+              <div class="event-dot" style="background:rgb(${rgb})"></div>
+              <div class="event-time" style="min-width:44px">${ev.label}</div>
+              <div style="flex:1"><div class="event-title">${ev.title}</div><div class="event-meta">${ev.meta}</div></div>
+              <div style="font-size:11px;color:rgb(${rgb});white-space:nowrap">${badge}</div>
+            </li>`;
+          }).join('')}
         </ul>
+      </div>
+      <div class="card" style="grid-column:span 2">
+        <div class="card-head"><span class="card-title">🩺 Studienverlauf Medizin</span><span style="font-size:11px;color:var(--dim)">Uni Ulm · Regelstudienzeit</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px">
+          ${[
+            {year:'WS 2021/22', label:'FS 1–2 · Vorklinik', detail:'Biochemie, Anatomie, Physiologie, Biologie, Chemie', done:true},
+            {year:'WS 2022/23', label:'FS 3–4 · Vorklinik', detail:'Pathophysiologie, Pharmakologie Grundlagen, Abschluss Vorklinik', done:true},
+            {year:'SS 2023',    label:'M1 · Physikum', detail:'1. Staatsexamen — Vorklinischer Abschnitt bestanden', done:true, exam:true},
+            {year:'WS 2023/24', label:'FS 5–6 · Klinik', detail:'Klinische Propädeutik, Innere Medizin, Chirurgie Einführung', done:true},
+            {year:'WS 2024/25', label:'FS 7 · Klinik', detail:'Neurologie, Psychiatrie, Pädiatrie, Kardiologie', done:true},
+            {year:'SS 2025',    label:'Forschungssemester', detail:'Experimentelle Medizin · Doktorarbeit: Neutrophile Granulozyten / TRAKI / Kardiochirurgie', done:true, special:true},
+            {year:'WS 2025/26', label:'FS 8 · Blockpraktikum', detail:'Alle klinischen Fächer: Innere, Chirurgie, Gynäkologie, Pädiatrie, Psychiatrie, Dermatologie, HNO, Augenheilkunde, Orthopädie u.a.', done:true},
+            {year:'SS 2026',    label:'FS 9 ◀ JETZT', detail:'Fortsetzung klinische Ausbildung · Blockpraktika & Kurse', current:true},
+            {year:'WS 2026/27', label:'FS 10 · Klinik Abschluss', detail:'Abschluss klinischer Abschnitt, Prüfungsvorbereitung M2', done:false},
+            {year:'Frühjahr 2027', label:'M2 · 2. Staatsexamen', detail:'Hammerexamen — schriftlich, 320 Fragen über 3 Tage', done:false, exam:true},
+            {year:'SS 2027 – SS 2028', label:'PJ · Praktisches Jahr', detail:'3 × 16 Wochen: Innere Medizin · Chirurgie · Wahlfach', done:false},
+            {year:'Herbst 2028', label:'M3 · 3. Staatsexamen', detail:'Mündlich-praktische Prüfung · Approbation als Arzt 🎉', done:false, exam:true},
+          ].map((s,i,arr) => {
+            const color = s.exam ? '#f57c00' : s.special ? '#7c3aed' : s.current ? 'var(--accent)' : s.done ? '67,160,71' : '120,144,156';
+            const dot = s.exam ? '#f57c00' : s.special ? '#7c3aed' : s.current ? 'var(--accent)' : s.done ? 'rgb(67,160,71)' : 'rgba(120,144,156,0.4)';
+            const textColor = s.done || s.current || s.exam || s.special ? 'var(--bright)' : 'var(--dim)';
+            const isLast = i === arr.length - 1;
+            return `<div style="display:flex;gap:12px;align-items:stretch">
+              <div style="display:flex;flex-direction:column;align-items:center;width:20px;flex-shrink:0">
+                <div style="width:14px;height:14px;border-radius:50%;background:${dot};border:2px solid ${s.current ? 'var(--accent)' : 'transparent'};margin-top:3px;flex-shrink:0"></div>
+                ${!isLast ? `<div style="width:2px;flex:1;background:rgba(255,255,255,0.08);margin:3px 0"></div>` : ''}
+              </div>
+              <div style="padding-bottom:${isLast?'0':'14px'};flex:1">
+                <div style="display:flex;gap:8px;align-items:baseline">
+                  <span style="font-size:11px;color:${dot};font-weight:600;white-space:nowrap">${s.year}</span>
+                  <span style="font-size:13px;font-weight:${s.exam||s.current?'600':'400'};color:${textColor}">${s.label}</span>
+                </div>
+                <div style="font-size:11px;color:var(--dim);margin-top:2px">${s.detail}</div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
       </div>`;
     document.getElementById('robin-content').innerHTML = h;
     // Karte laden
     if (!document.getElementById('leaflet-css')) {
       const l = document.createElement('link'); l.id='leaflet-css'; l.rel='stylesheet'; l.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(l);
     }
-    const loadMap = () => {
-      const map = L.map(mapId,{zoomControl:true}).setView([robin.lat,robin.lng], robin.location==='Tansania'?5:12);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO',maxZoom:18}).addTo(map);
-      const icon = L.divIcon({html:'<div style="font-size:28px">📍</div>',iconSize:[32,32],iconAnchor:[16,32],className:''});
-      L.marker([robin.lat,robin.lng],{icon}).addTo(map).bindPopup(`<b>Robin</b><br>${robin.location_detail}`).openPopup();
+    const initMap = () => {
+      const el = document.getElementById(mapId);
+      if (!el) { setTimeout(initMap, 100); return; }
+      const isDE = robin.location !== 'Tansania';
+      const map = L.map(mapId,{zoomControl:true}).setView([robin.lat,robin.lng], isDE?13:5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
+      const mkr = (emoji, color) => L.divIcon({
+        html:`<div style="background:${color};border:3px solid white;border-radius:50% 50% 50% 0;width:36px;height:36px;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);font-size:17px;line-height:1">${emoji}</span></div>`,
+        iconSize:[36,36], iconAnchor:[18,36], className:''
+      });
+      L.marker([robin.lat,robin.lng],{icon:mkr('👤','#e53935')}).addTo(map).bindPopup(`<b>Robin</b><br>${robin.location_detail}`).openPopup();
+      L.marker([48.4221, 9.9524],{icon:mkr('🎓','#7c3aed')}).addTo(map).bindPopup('<b>Uni Ulm – Med. Fakultät</b><br>Albert-Einstein-Allee, 89081 Ulm');
+      L.marker([48.3993, 9.9892],{icon:mkr('🏠','#1565c0')}).addTo(map).bindPopup('<b>Robin – WG</b><br>Walfischgasse 5, 89073 Ulm');
+      L.marker([51.269, 10.5981],{icon:mkr('⚕️','#00897b')}).addTo(map).bindPopup('<b>Medimeisterschaften 2026</b><br>11.–14. Juni · Obermehler, Thüringen');
+      L.marker([-6.8161, 39.2804],{icon:mkr('✈️','#f57c00')}).addTo(map).bindPopup('<b>Famulatur Tansania</b><br>01.08. – 08.09.2026 · Dar es Salaam');
+      if (isDE) {
+        map.fitBounds([[48.3993,9.9524],[48.4221,9.9892]], {padding:[30,30]});
+      }
     };
-    if (!window.L) { const s=document.createElement('script'); s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; s.onload=loadMap; document.head.appendChild(s); } else setTimeout(loadMap,100);
+    if (!window.L) { const s=document.createElement('script'); s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; s.onload=()=>setTimeout(initMap,100); document.head.appendChild(s); } else setTimeout(initMap,100);
   } catch(e) {}
 }
 
@@ -2556,7 +2686,7 @@ async function lmsSend() {
       const reply = data.choices?.[0]?.message?.content || '(keine Antwort)';
       lmsMessages.push({role: 'assistant', content: reply});
       const modelName = data.model || 'Local';
-      chat.innerHTML += `<div style="margin:12px 0;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid #66bb6a"><span style="color:#66bb6a;font-weight:600;font-size:12px">🖧 ${escHtml(modelName).toUpperCase()}</span><div style="margin-top:4px">${renderMarkdown(reply)}</div></div>`;
+      chat.innerHTML += `<div style="margin:12px 0;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid #66bb6a"><span style="color:#66bb6a;font-weight:600;font-size:12px">🖧 ${escHtml(modelName).toUpperCase()}</span><div style="margin-top:4px;color:var(--bright);font-weight:500">${renderMarkdown(reply)}</div></div>`;
     }
   } catch(e) {
     loadingDiv.remove();

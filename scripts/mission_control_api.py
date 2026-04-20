@@ -172,12 +172,54 @@ def graph_get(path):
         print(f"Graph error {path}: {e}")
         return None
 
+PRESET_COLORS = {
+    "preset0":  "229,57,53",    # Rot
+    "preset1":  "230,81,0",     # Orange
+    "preset2":  "121,85,72",    # Braun
+    "preset3":  "249,168,37",   # Gelb
+    "preset4":  "67,160,71",    # Grün
+    "preset5":  "0,172,193",    # Türkis
+    "preset6":  "142,155,0",    # Olive
+    "preset7":  "30,136,229",   # Blau
+    "preset8":  "94,53,177",    # Lila
+    "preset9":  "194,24,91",    # Cranberry/Pink
+    "preset10": "84,110,122",   # Stahl
+    "preset11": "55,71,79",     # Dunkelstahl
+    "preset12": "117,117,117",  # Grau
+    "preset13": "66,66,66",     # Dunkelgrau
+    "preset14": "33,33,33",     # Schwarz
+    "preset15": "183,28,28",    # Dunkelrot
+    "preset16": "191,54,12",    # Dunkelorange
+    "preset17": "78,52,46",     # Dunkelbraun
+    "preset18": "245,127,23",   # Dunkelgelb
+    "preset19": "27,94,32",     # Dunkelgrün
+    "preset20": "0,96,100",     # Dunkeltürkis
+    "preset21": "130,119,23",   # Dunkelolive
+    "preset22": "13,71,161",    # Dunkelblau
+    "preset23": "74,20,140",    # Dunkellila
+    "preset24": "136,14,79",    # Dunkelcranberry
+    "none":     "120,144,156",  # Fallback Grau
+}
+
+def get_category_colors():
+    data = graph_get("/me/outlook/masterCategories")
+    if not data:
+        return {}
+    result = {}
+    for cat in data.get("value", []):
+        name = cat.get("displayName", "")
+        preset = cat.get("color", "none")
+        result[name] = PRESET_COLORS.get(preset, PRESET_COLORS["none"])
+    return result
+
 def get_calendar():
     now = datetime.now(timezone.utc)
     end = now + timedelta(days=30)
     start_str = now.strftime("%Y-%m-%dT%H:%M:%SZ")
     end_str = end.strftime("%Y-%m-%dT%H:%M:%SZ")
-    
+
+    cat_colors = get_category_colors()
+
     data = graph_get(
         f"/me/calendarView?startDateTime={start_str}&endDateTime={end_str}"
         f"&$orderby=start/dateTime&$top=20"
@@ -185,14 +227,13 @@ def get_calendar():
     )
     if not data:
         return []
-    
+
     events = []
     for ev in data.get("value", []):
         start_raw = ev.get("start", {}).get("dateTime", "")
         try:
             import zoneinfo
             berlin = zoneinfo.ZoneInfo("Europe/Berlin")
-            # Outlook liefert immer UTC (timeZone='UTC'), kein 'Z' am Ende
             dt_utc = datetime.fromisoformat(start_raw).replace(tzinfo=timezone.utc)
             dt_local = dt_utc.astimezone(berlin)
             date_str = dt_local.strftime("%d.%m.")
@@ -202,26 +243,58 @@ def get_calendar():
             date_str = start_raw[:10]
             time_str = ""
             weekday = ""
-        
+
         cats = ev.get("categories", [])
         cat = cats[0] if cats else ""
-        
+        rgb = cat_colors.get(cat, PRESET_COLORS["none"])
+
         events.append({
             "title": ev.get("subject", ""),
             "date": date_str,
             "time": time_str,
             "weekday": weekday,
             "category": cat,
+            "color": rgb,
             "location": ev.get("location", {}).get("displayName", "")
         })
-    
+
     return events
+
+SPAM_SUBJECT = ["newsletter", "unsubscribe", "abbestellen", "rabatt", "sonderangebot",
+                "gutschein", "gewinnspiel", "angebot des tages", "% off", "% rabatt",
+                "jetzt kaufen", "nur heute", "limited offer", "act now"]
+SPAM_SENDER  = ["newsletter", "noreply", "no-reply", "donotreply", "mailer-daemon",
+                "marketing@", "notification@", "bounce@", "alerts@", "info@newsletter"]
+
+def _is_spam(subject, from_email):
+    s = subject.lower()
+    e = from_email.lower()
+    return any(k in s for k in SPAM_SUBJECT) or any(k in e for k in SPAM_SENDER)
+
+def _parse_graph_mail(m, account="Outlook"):
+    received = m.get("receivedDateTime", "")
+    try:
+        dt = datetime.fromisoformat(received.replace("Z", "+00:00"))
+        dt_local = dt.astimezone(timezone(timedelta(hours=2)))
+        date_str = dt_local.strftime("%d.%m. %H:%M")
+        is_today = dt_local.date() == datetime.now(timezone(timedelta(hours=2))).date()
+    except:
+        date_str = received[:16]
+        is_today = False
+    return {
+        "account": account,
+        "from": m.get("from", {}).get("emailAddress", {}).get("name", "Unbekannt"),
+        "from_email": m.get("from", {}).get("emailAddress", {}).get("address", ""),
+        "subject": m.get("subject", "(kein Betreff)"),
+        "date": date_str,
+        "is_today": is_today,
+        "preview": m.get("bodyPreview", "")[:100]
+    }
 
 def get_emails_outlook():
     """Holt ungelesene Mails von ernstmandel@outlook.de via Graph API."""
     data = graph_get(
-        "/me/messages?$filter=isRead%20eq%20false"
-        "&$orderby=receivedDateTime%20desc"
+        "/me/mailFolders/inbox/messages?$filter=isRead%20eq%20false"
         "&$top=10"
         "&$select=subject,from,receivedDateTime,isRead,bodyPreview"
     )
@@ -229,20 +302,53 @@ def get_emails_outlook():
         return []
     msgs = []
     for m in data.get("value", []):
-        received = m.get("receivedDateTime", "")
+        entry = _parse_graph_mail(m)
+        if not _is_spam(entry["subject"], entry["from_email"]):
+            msgs.append(entry)
+    return msgs
+
+def get_emails_recent_outlook():
+    """Holt die letzten 5 empfangenen Mails (unabhängig vom Lesestatus), Spam gefiltert."""
+    data = graph_get(
+        "/me/mailFolders/inbox/messages"
+        "?$top=15"
+        "&$select=subject,from,receivedDateTime,isRead,bodyPreview"
+    )
+    if not data:
+        return []
+    msgs = []
+    for m in data.get("value", []):
+        entry = _parse_graph_mail(m)
+        if not _is_spam(entry["subject"], entry["from_email"]):
+            msgs.append(entry)
+        if len(msgs) >= 5:
+            break
+    return msgs
+
+def get_emails_sent_outlook():
+    """Holt die letzten 5 gesendeten Mails."""
+    data = graph_get(
+        "/me/mailFolders/sentitems/messages"
+        "?$top=5"
+        "&$select=subject,toRecipients,sentDateTime,bodyPreview"
+    )
+    if not data:
+        return []
+    msgs = []
+    for m in data.get("value", []):
+        sent = m.get("sentDateTime", "")
         try:
-            dt = datetime.fromisoformat(received.replace("Z", "+00:00"))
+            dt = datetime.fromisoformat(sent.replace("Z", "+00:00"))
             dt_local = dt.astimezone(timezone(timedelta(hours=2)))
             date_str = dt_local.strftime("%d.%m. %H:%M")
         except:
-            date_str = received[:16]
+            date_str = sent[:16]
+        recipients = m.get("toRecipients", [])
+        to_name = recipients[0].get("emailAddress", {}).get("name", "Unbekannt") if recipients else "Unbekannt"
         msgs.append({
-            "account": "Outlook",
-            "from": m.get("from", {}).get("emailAddress", {}).get("name", "Unbekannt"),
-            "from_email": m.get("from", {}).get("emailAddress", {}).get("address", ""),
+            "to": to_name,
             "subject": m.get("subject", "(kein Betreff)"),
             "date": date_str,
-            "preview": m.get("bodyPreview", "")[:100]
         })
     return msgs
 
@@ -325,15 +431,22 @@ def get_emails_wtnet():
 
 def get_emails():
     """Kombiniert Outlook + wtnet Mails."""
-    outlook = get_emails_outlook()
-    wtnet   = get_emails_wtnet()
+    outlook  = get_emails_outlook()
+    wtnet    = get_emails_wtnet()
+    recent   = get_emails_recent_outlook()
+    sent     = get_emails_sent_outlook()
 
     all_msgs = outlook + wtnet
-    # Nach Datum sortieren wäre ideal, aber Datumsformat ist schon formatiert — Reihenfolge reicht
-    return {"count": len(all_msgs), "messages": all_msgs, "accounts": [
-        {"name": "Outlook", "count": len(outlook)},
-        {"name": "wtnet",   "count": len(wtnet)}
-    ]}
+    return {
+        "count": len(all_msgs),
+        "messages": all_msgs,
+        "recent": recent,
+        "sent": sent,
+        "accounts": [
+            {"name": "Outlook", "count": len(outlook)},
+            {"name": "wtnet",   "count": len(wtnet)}
+        ]
+    }
 
 
 def get_birthdays():

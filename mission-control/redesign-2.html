@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission Control — Glassmorphism Sunset</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'SF Pro Display', 'Segoe UI', sans-serif;
+    background: #0f0618;
+    min-height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, #ff006622 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 80%, #7c3aed44 0%, transparent 50%),
+      radial-gradient(ellipse 50% 40% at 60% 30%, #f59e0b22 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 230px;
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+  .sidebar-logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .logo-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, #ff0066, #f59e0b);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; margin-bottom: 10px;
+    box-shadow: 0 4px 20px rgba(255,0,102,0.4);
+  }
+  .logo-name { font-size: 15px; font-weight: 700; color: #fff; }
+  .logo-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+
+  .nav { flex: 1; padding: 12px 10px; }
+  .nav-label {
+    font-size: 9px; color: rgba(255,255,255,0.25); letter-spacing: 2px;
+    text-transform: uppercase; padding: 10px 10px 4px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 10px;
+    font-size: 12px; color: rgba(255,255,255,0.45);
+    cursor: pointer; transition: all 0.2s; margin-bottom: 1px;
+  }
+  .nav-item:hover {
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.75);
+  }
+  .nav-item.active {
+    background: linear-gradient(135deg, rgba(255,0,102,0.2), rgba(245,158,11,0.15));
+    color: #fff;
+    box-shadow: inset 0 0 0 1px rgba(255,0,102,0.25);
+  }
+  .nav-item .icon { font-size: 14px; }
+  .sidebar-user {
+    margin: 10px;
+    padding: 12px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.07);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .user-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed, #ff0066);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  .user-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8); }
+  .user-status { font-size: 10px; color: rgba(255,255,255,0.35); display: flex; align-items: center; gap: 4px; }
+  .dot-green { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; z-index: 10; overflow: hidden; }
+
+  /* TOPBAR */
+  .topbar {
+    background: rgba(255,255,255,0.03);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    padding: 0 28px;
+    height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .topbar-title { font-size: 18px; font-weight: 700; color: #fff; }
+  .topbar-right { display: flex; align-items: center; gap: 20px; }
+  .topbar-time {
+    font-size: 20px; font-weight: 300; color: #fff;
+    background: linear-gradient(90deg, #ff0066, #f59e0b);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .topbar-tag {
+    padding: 5px 12px; border-radius: 20px;
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+    font-size: 11px; color: rgba(255,255,255,0.5);
+  }
+
+  /* CONTENT */
+  .content {
+    flex: 1; overflow-y: auto; padding: 20px 24px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    align-content: start;
+  }
+  .content::-webkit-scrollbar { width: 4px; }
+  .content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+  /* GLASS CARD */
+  .card {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 18px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+  .card-glow {
+    position: absolute; top: -40px; right: -40px;
+    width: 100px; height: 100px; border-radius: 50%;
+    filter: blur(30px); opacity: 0.3;
+    pointer-events: none;
+  }
+
+  .card-title { font-size: 11px; color: rgba(255,255,255,0.35); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .badge {
+    font-size: 10px; padding: 3px 8px; border-radius: 20px;
+    background: rgba(34,197,94,0.15); color: #22c55e;
+    border: 1px solid rgba(34,197,94,0.25);
+  }
+  .badge.warn { background: rgba(245,158,11,0.15); color: #f59e0b; border-color: rgba(245,158,11,0.25); }
+
+  /* STAT */
+  .stat-num {
+    font-size: 42px; font-weight: 800; line-height: 1;
+    background: linear-gradient(135deg, #fff, rgba(255,255,255,0.6));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .stat-num.accent {
+    background: linear-gradient(135deg, #ff0066, #f59e0b);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .stat-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 4px; }
+  .progress {
+    height: 4px; background: rgba(255,255,255,0.08); border-radius: 4px;
+    margin-top: 14px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, #ff0066, #f59e0b);
+  }
+
+  /* BOLLA */
+  .bolla-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .bolla-avatar {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: linear-gradient(135deg, #7c3aed, #ff0066);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+  }
+  .bolla-name { font-size: 14px; font-weight: 700; color: #fff; }
+  .bolla-status { font-size: 11px; color: rgba(255,255,255,0.4); }
+  .msg-list { display: flex; flex-direction: column; gap: 10px; }
+  .msg { padding: 10px 14px; border-radius: 12px; font-size: 12px; line-height: 1.5; }
+  .msg.bolla-msg {
+    background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(255,0,102,0.1));
+    border: 1px solid rgba(124,58,237,0.25);
+    color: rgba(255,255,255,0.85);
+    border-radius: 12px 12px 12px 3px;
+  }
+  .msg.user-msg {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.6);
+    align-self: flex-end;
+    border-radius: 12px 12px 3px 12px;
+  }
+
+  /* WEATHER */
+  .weather-big { font-size: 52px; font-weight: 800; color: #fff; line-height: 1; }
+  .weather-cond { font-size: 13px; color: rgba(255,255,255,0.5); margin: 4px 0 16px; }
+  .weather-row { display: flex; gap: 0; }
+  .weather-col { flex: 1; text-align: center; padding: 8px 0; }
+  .weather-col:not(:last-child) { border-right: 1px solid rgba(255,255,255,0.08); }
+  .weather-val { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.8); }
+  .weather-lbl { font-size: 9px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+  /* ACTIVITY */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .tl-item { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .tl-item:last-child { border-bottom: none; }
+  .tl-dot {
+    width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0;
+  }
+  .tl-dot.pink { background: #ff0066; box-shadow: 0 0 6px #ff006677; }
+  .tl-dot.purple { background: #7c3aed; box-shadow: 0 0 6px #7c3aed77; }
+  .tl-dot.amber { background: #f59e0b; box-shadow: 0 0 6px #f59e0b77; }
+  .tl-dot.gray { background: rgba(255,255,255,0.2); }
+  .tl-time { font-size: 10px; color: rgba(255,255,255,0.3); white-space: nowrap; width: 42px; }
+  .tl-text { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.4; }
+
+  /* SYSTEM */
+  .sys-list { display: flex; flex-direction: column; gap: 12px; }
+  .sys-row { }
+  .sys-top { display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .sys-label { font-size: 11px; color: rgba(255,255,255,0.45); }
+  .sys-val { font-size: 11px; color: rgba(255,255,255,0.7); font-weight: 500; }
+  .sys-bar { height: 5px; background: rgba(255,255,255,0.07); border-radius: 5px; overflow: hidden; }
+  .sys-fill { height: 100%; border-radius: 5px; }
+  .fill-pink { background: linear-gradient(90deg, #ff0066, #f59e0b); }
+  .fill-purple { background: linear-gradient(90deg, #7c3aed, #ff0066); }
+  .fill-amber { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+
+  .col-2 { grid-column: span 2; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">🚀</div>
+    <div class="logo-name">Mission Control</div>
+    <div class="logo-sub">Persönliches Dashboard</div>
+  </div>
+  <div class="nav">
+    <div class="nav-label">Übersicht</div>
+    <div class="nav-item active"><span class="icon">📊</span> Dashboard</div>
+    <div class="nav-item"><span class="icon">🤖</span> Bolla</div>
+    <div class="nav-label">Inhalte</div>
+    <div class="nav-item"><span class="icon">🎓</span> Schule</div>
+    <div class="nav-item"><span class="icon">📅</span> Kalender</div>
+    <div class="nav-item"><span class="icon">✉️</span> E-Mail</div>
+    <div class="nav-label">Familie</div>
+    <div class="nav-item"><span class="icon">👦</span> Robin</div>
+    <div class="nav-item"><span class="icon">🎂</span> Geburtstage</div>
+    <div class="nav-label">System</div>
+    <div class="nav-item"><span class="icon">🖥️</span> Local Server</div>
+    <div class="nav-item"><span class="icon">🌤️</span> Wetter</div>
+    <div class="nav-item"><span class="icon">⚙️</span> System Info</div>
+  </div>
+  <div class="sidebar-user">
+    <div class="user-avatar">C</div>
+    <div>
+      <div class="user-name">Chris Mandel</div>
+      <div class="user-status"><div class="dot-green"></div> Online</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">Dashboard</div>
+    <div class="topbar-right">
+      <div class="topbar-tag">Mo, 20. April 2026</div>
+      <div class="topbar-time">14:27</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- STAT 1 -->
+    <div class="card">
+      <div class="card-glow" style="background:#ff0066"></div>
+      <div class="card-header">
+        <div class="card-title">Neue Mails</div>
+        <div class="badge warn">7 offen</div>
+      </div>
+      <div class="stat-num accent">7</div>
+      <div class="stat-sub">2 davon wichtig</div>
+      <div class="progress"><div class="progress-fill" style="width:35%"></div></div>
+    </div>
+
+    <!-- STAT 2 -->
+    <div class="card">
+      <div class="card-glow" style="background:#7c3aed"></div>
+      <div class="card-header">
+        <div class="card-title">Termine Heute</div>
+        <div class="badge">sync ✓</div>
+      </div>
+      <div class="stat-num">3</div>
+      <div class="stat-sub">nächster: 16:00 Fußball</div>
+      <div class="progress"><div class="progress-fill" style="width:60%"></div></div>
+    </div>
+
+    <!-- WEATHER -->
+    <div class="card">
+      <div class="card-glow" style="background:#f59e0b"></div>
+      <div class="card-title">Wetter · München</div>
+      <div class="weather-big">14°</div>
+      <div class="weather-cond">Leicht bewölkt · fühlt sich an wie 11°</div>
+      <div class="weather-row">
+        <div class="weather-col">
+          <div class="weather-val">72%</div>
+          <div class="weather-lbl">Luftf.</div>
+        </div>
+        <div class="weather-col">
+          <div class="weather-val">18</div>
+          <div class="weather-lbl">km/h</div>
+        </div>
+        <div class="weather-col">
+          <div class="weather-val">20:32</div>
+          <div class="weather-lbl">Sunset</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOLLA -->
+    <div class="card col-2">
+      <div class="card-glow" style="background:#7c3aed;width:120px;height:120px"></div>
+      <div class="bolla-header">
+        <div class="bolla-avatar">🐾</div>
+        <div>
+          <div class="bolla-name">Bolla</div>
+          <div class="bolla-status">KI-Assistent · online</div>
+        </div>
+        <div class="badge" style="margin-left:auto">aktiv</div>
+      </div>
+      <div class="msg-list">
+        <div class="msg user-msg">Guten Morgen Bolla, was gibt's?</div>
+        <div class="msg bolla-msg">Morgen! 7 Mails (2 wichtig), Robin hat heute Fußball um 16:00, Wetter 14°C bewölkt. Soll ich die Mails zusammenfassen?</div>
+        <div class="msg user-msg">Ja bitte!</div>
+        <div class="msg bolla-msg">Schule: Elternabend Do 23.04. 19:00 Uhr. DKB: Kontoauszug März. Rest ist Newsletter — kann ich löschen.</div>
+      </div>
+    </div>
+
+    <!-- ACTIVITY -->
+    <div class="card col-2">
+      <div class="card-title">Aktivitäten · heute</div>
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot pink"></div>
+          <div class="tl-time">14:22</div>
+          <div class="tl-text">Mission Control geöffnet</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot purple"></div>
+          <div class="tl-time">13:58</div>
+          <div class="tl-text">Bolla: Renten-Dokument als Word erstellt</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot amber"></div>
+          <div class="tl-time">12:34</div>
+          <div class="tl-text">Mail empfangen: DKB Kontoauszug März</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot gray"></div>
+          <div class="tl-time">10:07</div>
+          <div class="tl-text">Cloudflare Tunnel: reconnect nach Unterbrechung</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot pink"></div>
+          <div class="tl-time">07:23</div>
+          <div class="tl-text">System gestartet — alle Services aktiv</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SYSTEM -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">System</div>
+        <div class="badge">healthy</div>
+      </div>
+      <div class="sys-list">
+        <div class="sys-row">
+          <div class="sys-top"><span class="sys-label">RAM</span><span class="sys-val">3.2 / 8 GB</span></div>
+          <div class="sys-bar"><div class="sys-fill fill-pink" style="width:40%"></div></div>
+        </div>
+        <div class="sys-row">
+          <div class="sys-top"><span class="sys-label">Disk C:</span><span class="sys-val">284 / 476 GB</span></div>
+          <div class="sys-bar"><div class="sys-fill fill-amber" style="width:60%"></div></div>
+        </div>
+        <div class="sys-row">
+          <div class="sys-top"><span class="sys-label">OneDrive</span><span class="sys-val">Synced</span></div>
+          <div class="sys-bar"><div class="sys-fill fill-purple" style="width:100%"></div></div>
+        </div>
+        <div class="sys-row">
+          <div class="sys-top"><span class="sys-label">Tunnel</span><span class="sys-val">Aktiv</span></div>
+          <div class="sys-bar"><div class="sys-fill fill-pink" style="width:100%"></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
