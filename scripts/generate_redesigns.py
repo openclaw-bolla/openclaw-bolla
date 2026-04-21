@@ -35,7 +35,7 @@ def run_claude(prompt: str) -> str:
     claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
     result = subprocess.run(
         [claude_bin, "-p", "--output-format", "json", prompt],
-        capture_output=True, text=True, timeout=180,
+        capture_output=True, text=True, timeout=600,
         cwd=os.path.expanduser("~/workspace"),
     )
     if result.returncode != 0:

@@ -875,7 +875,7 @@ def bolla_chat_stream(message, session_id=None, image_b64=None):
             stderr=subprocess.PIPE,
             text=True,
             bufsize=1,
-            cwd=os.path.expanduser("~/workspace"),
+            cwd=os.path.expanduser("~"),
         )
         for line in proc.stdout:
             line = line.strip()
@@ -1411,6 +1411,70 @@ class Handler(BaseHTTPRequestHandler):
                     _bildgen_counter["count"] += 1
                     remaining = BILDGEN_LIMIT - _bildgen_counter["count"]
                     self._send_json({"image_b64": img_b64, "mime_type": mime_or_err, "remaining": remaining})
+            elif self.path == "/api/suno/generate":
+                name = body.get("name", "").strip()
+                klasse = body.get("klasse", "").strip()
+                alter = body.get("alter", "").strip()
+                geburtstag = body.get("geburtstag", "").strip()
+                sprache = body.get("sprache", "de")
+                hit = body.get("hit", "").strip()
+                feedback = body.get("feedback", "").strip()
+                if not name:
+                    self._send_json({"error": "Name fehlt"}, status=400)
+                    return
+                lang_inst = "auf Deutsch" if sprache == "de" else "in English. If the name sounds German and might be mispronounced by an English TTS, add a phonetic spelling in parentheses next to the first occurrence, e.g. 'Max (pronounced: Mucks)'"
+                hit_inst = f"Orientiere dich am Stil und der Struktur des Songs '{hit}'." if hit else ""
+                feedback_inst = f"Verbessere folgendes gegenüber der letzten Version: {feedback}" if feedback else ""
+                prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Geburtstagssong {lang_inst}.
+
+Schüler/in: {name}
+Klasse: {klasse}
+Alter: {alter}
+Geburtstag: {geburtstag}
+{hit_inst}
+{feedback_inst}
+
+Pflichtinhalte im Liedtext:
+- Name des Schülers / der Schülerin mehrfach nennen
+- Lessing-Gymnasium erwähnen
+- Computerkurs bei Herrn Mandel erwähnen
+
+Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Outro]
+
+Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
+{{
+  "title": "kreativer Songtitel mit passenden Emojis",
+  "lyrics": "vollständiger Liedtext mit Struktur-Tags",
+  "style": "Suno style prompt auf Englisch, professionell, 15-25 Wörter, mit Tempo, Instrumente, Stimmung, Genre"
+}}"""
+                import subprocess, shutil
+                claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
+                result = subprocess.run(
+                    [claude_bin, "-p", "--output-format", "json", prompt],
+                    capture_output=True, text=True, timeout=120,
+                    cwd=os.path.expanduser("~")
+                )
+                if result.returncode != 0:
+                    self._send_json({"error": result.stderr[:200]}, status=500)
+                    return
+                raw = json.loads(result.stdout).get("result", "")
+                raw = raw.strip()
+                if raw.startswith("```"):
+                    raw = "\n".join(raw.split("\n")[1:])
+                if raw.endswith("```"):
+                    raw = raw.rsplit("```", 1)[0]
+                song_data = json.loads(raw.strip())
+                if sprache == "de":
+                    parts = ["Happy Birthday", name]
+                    if alter: parts.append(alter)
+                    if geburtstag:
+                        gb = geburtstag.strip().rstrip(".")
+                        segments = [s for s in gb.split(".") if s]
+                        if len(segments) == 2:
+                            gb = gb.rstrip(".") + ".26"
+                        parts.append(gb)
+                    song_data["title"] = " ".join(parts)
+                self._send_json(song_data)
             else:
                 self._send_json({"error": "not found"}, status=404)
         except Exception as e:

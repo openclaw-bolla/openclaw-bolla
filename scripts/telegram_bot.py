@@ -262,7 +262,7 @@ def ask_claude(message, sender_name):
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=120,
-            cwd=os.path.expanduser("~/workspace")
+            cwd=os.path.expanduser("~")
         )
         if result.returncode != 0:
             log.error(f"Claude Fehler: {result.stderr[:200]}")

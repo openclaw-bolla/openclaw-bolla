@@ -396,6 +396,7 @@ html, body {
       <div class="nav-item" data-page="surface"><span class="icon">📱</span><span>Surface Duo</span></div>
       <div class="nav-item" data-page="redesigns"><span class="icon">🎨</span><span>Redesigns</span></div>
       <div class="nav-item" data-page="bildgen"><span class="icon">🍌</span><span>BildGen</span></div>
+      <div class="nav-item" data-page="suno"><span class="icon">🎵</span><span>Suno Songs</span></div>
 
       <div class="nav-section">Info</div>
       <div class="nav-item" data-page="wetter"><span class="icon">🌤️</span><span>Wetter</span></div>
@@ -711,6 +712,132 @@ html, body {
         </div>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- SUNO -->
+<div class="page" id="page-suno" style="padding:24px;overflow-y:auto;height:calc(100vh - 92px);box-sizing:border-box">
+  <div style="max-width:700px;margin:0 auto">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px">
+      <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#ff6699);
+                  display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;
+                  box-shadow:0 4px 16px rgba(124,58,237,0.4)">🎵</div>
+      <div>
+        <div style="font-size:22px;font-weight:700;color:var(--bright)">Suno Songs</div>
+        <div style="font-size:12px;color:var(--dim);margin-top:2px">Geburtstagssongs für Schülerinnen und Schüler</div>
+      </div>
+    </div>
+
+    <!-- Eingaben -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Name *</label>
+        <input id="suno-name" type="text" placeholder="z.B. Maximilian"
+          style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
+                 color:var(--text);padding:10px 12px;font-size:14px;outline:none;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Klasse</label>
+        <input id="suno-klasse" type="text" placeholder="z.B. 7b"
+          style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
+                 color:var(--text);padding:10px 12px;font-size:14px;outline:none;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Alter</label>
+        <input id="suno-alter" type="text" placeholder="z.B. 13"
+          style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
+                 color:var(--text);padding:10px 12px;font-size:14px;outline:none;font-family:inherit">
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Geburtstag</label>
+        <input id="suno-geburtstag" type="text" placeholder="z.B. 21.04."
+          style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
+                 color:var(--text);padding:10px 12px;font-size:14px;outline:none;font-family:inherit">
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Orientierung an einem Hit (optional)</label>
+      <input id="suno-hit" type="text" placeholder="z.B. Blinding Lights von The Weeknd"
+        style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
+               color:var(--text);padding:10px 12px;font-size:14px;outline:none;font-family:inherit">
+    </div>
+
+    <!-- Sprache + Button -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+      <div style="display:flex;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <button id="suno-lang-de" onclick="sunoSetLang('de')"
+          style="padding:9px 20px;border:none;cursor:pointer;font-size:13px;font-weight:600;
+                 background:var(--accent);color:white;transition:all .2s">🇩🇪 Deutsch</button>
+        <button id="suno-lang-en" onclick="sunoSetLang('en')"
+          style="padding:9px 20px;border:none;cursor:pointer;font-size:13px;font-weight:600;
+                 background:transparent;color:var(--dim);transition:all .2s">🇬🇧 English</button>
+      </div>
+      <button id="suno-btn" onclick="sunoGenerate()"
+        style="background:linear-gradient(135deg,#7c3aed,#ff6699);border:none;border-radius:8px;color:white;
+               font-weight:700;font-size:14px;padding:10px 28px;cursor:pointer;
+               box-shadow:0 2px 12px rgba(124,58,237,0.4);transition:opacity .2s">
+        ✨ Generieren
+      </button>
+      <span id="suno-status" style="font-size:12px;color:var(--dim)"></span>
+    </div>
+
+    <!-- Output Boxen -->
+    <div id="suno-output" style="display:none;flex-direction:column;gap:16px">
+
+      <!-- Titel -->
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:13px;font-weight:700;color:var(--bright)">🏷️ Titel</span>
+          <button onclick="sunoCopy('suno-title-text')"
+            style="background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);
+                   padding:4px 12px;cursor:pointer;font-size:12px;transition:all .2s"
+            onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">📋 Kopieren</button>
+        </div>
+        <div id="suno-title-text" style="font-size:18px;font-weight:700;color:var(--bright)"></div>
+      </div>
+
+      <!-- Lyrics -->
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:13px;font-weight:700;color:var(--bright)">🎤 Lyrics</span>
+          <button onclick="sunoCopy('suno-lyrics-text')"
+            style="background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);
+                   padding:4px 12px;cursor:pointer;font-size:12px;transition:all .2s"
+            onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">📋 Kopieren</button>
+        </div>
+        <pre id="suno-lyrics-text" style="margin:0;white-space:pre-wrap;font-family:inherit;font-size:13px;
+             line-height:1.7;color:var(--text)"></pre>
+      </div>
+
+      <!-- Style Prompt -->
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:13px;font-weight:700;color:var(--bright)">🎛️ Style Prompt</span>
+          <button onclick="sunoCopy('suno-style-text')"
+            style="background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);
+                   padding:4px 12px;cursor:pointer;font-size:12px;transition:all .2s"
+            onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">📋 Kopieren</button>
+        </div>
+        <div id="suno-style-text" style="font-size:13px;color:var(--accent);font-style:italic;line-height:1.6"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px">
+        <div style="font-size:13px;font-weight:700;color:var(--bright);margin-bottom:10px">🔄 Verbessern</div>
+        <div style="display:flex;gap:10px">
+          <input id="suno-feedback" type="text" placeholder="Was soll verbessert werden? z.B. mehr Humor, anderes Tempo..."
+            style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:8px;
+                   color:var(--text);padding:9px 12px;font-size:13px;outline:none;font-family:inherit">
+          <button onclick="sunoRefresh()"
+            style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);
+                   padding:9px 16px;cursor:pointer;font-size:13px;white-space:nowrap;transition:all .2s"
+            onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+            🔄 Neu generieren
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -2772,6 +2899,61 @@ async function loadRedesigns() {
     document.getElementById('redesigns-grid').innerHTML =
       `<div style="color:var(--dim);font-size:13px;padding:40px;text-align:center;grid-column:1/-1">Fehler beim Laden: ${escHtml(e.message)}</div>`;
   }
+}
+
+// ===== SUNO =====
+let sunoLang = 'de';
+function sunoSetLang(lang) {
+  sunoLang = lang;
+  document.getElementById('suno-lang-de').style.background = lang === 'de' ? 'var(--accent)' : 'transparent';
+  document.getElementById('suno-lang-de').style.color = lang === 'de' ? 'white' : 'var(--dim)';
+  document.getElementById('suno-lang-en').style.background = lang === 'en' ? 'var(--accent)' : 'transparent';
+  document.getElementById('suno-lang-en').style.color = lang === 'en' ? 'white' : 'var(--dim)';
+}
+async function sunoGenerate(feedback = '') {
+  const name = document.getElementById('suno-name').value.trim();
+  if (!name) { alert('Bitte Name eingeben'); return; }
+  const btn = document.getElementById('suno-btn');
+  const status = document.getElementById('suno-status');
+  btn.disabled = true; btn.style.opacity = '0.5';
+  status.textContent = '⏳ Generiere Song…';
+  try {
+    const res = await fetch(API + '/api/suno/generate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        name, sprache: sunoLang,
+        klasse: document.getElementById('suno-klasse').value.trim(),
+        alter: document.getElementById('suno-alter').value.trim(),
+        geburtstag: document.getElementById('suno-geburtstag').value.trim(),
+        hit: document.getElementById('suno-hit').value.trim(),
+        feedback
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    document.getElementById('suno-title-text').textContent = data.title || '';
+    document.getElementById('suno-lyrics-text').textContent = data.lyrics || '';
+    document.getElementById('suno-style-text').textContent = data.style || '';
+    document.getElementById('suno-output').style.display = 'flex';
+    document.getElementById('suno-feedback').value = '';
+    status.textContent = '✅ Fertig!';
+  } catch(e) {
+    status.textContent = '❌ Fehler: ' + e.message;
+  } finally {
+    btn.disabled = false; btn.style.opacity = '1';
+  }
+}
+function sunoRefresh() {
+  const feedback = document.getElementById('suno-feedback').value.trim();
+  sunoGenerate(feedback);
+}
+function sunoCopy(id) {
+  const el = document.getElementById(id);
+  navigator.clipboard.writeText(el.textContent || el.innerText).then(() => {
+    const btns = document.querySelectorAll(`[onclick="sunoCopy('${id}')"]`);
+    btns.forEach(b => { const old = b.textContent; b.textContent = '✅ Kopiert!'; setTimeout(() => b.textContent = old, 2000); });
+  });
 }
 </script>
 </body>
