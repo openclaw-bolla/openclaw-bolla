@@ -1550,14 +1550,17 @@ class Handler(BaseHTTPRequestHandler):
                 if not name:
                     self._send_json({"error": "Name fehlt"}, status=400)
                     return
-                lang_inst = ("in English. IMPORTANT: Before writing the lyrics, analyze the name and find the single best "
-                             "English phonetic spelling that makes an English AI singer pronounce it exactly like a German "
-                             "speaker would. Rules: (1) Use hyphenated syllables if the name has multiple syllables "
-                             "(e.g. 'Jette' → 'Yet-teh', 'Jan' → 'Yahn', 'Jens' → 'Yens', 'Grete' → 'Greh-teh', "
-                             "'Heinz' → 'Hynts'). (2) Every syllable must be pronounceable by an English singer. "
-                             "(3) Use 'eh' for short German e, 'ah' for long German a, 'oo' for German u, 'y' for German j. "
-                             "(4) Replace EVERY occurrence of the name in the lyrics with this phonetic spelling. "
-                             "(5) Do NOT use parenthetical hints or footnotes — only the phonetic spelling in the text.")
+                if sprache == "de":
+                    lang_inst = "auf Deutsch"
+                else:
+                    lang_inst = ("in English. IMPORTANT: Before writing the lyrics, analyze the name and find the single best "
+                                 "English phonetic spelling that makes an English AI singer pronounce it exactly like a German "
+                                 "speaker would. Rules: (1) Use hyphenated syllables if the name has multiple syllables "
+                                 "(e.g. 'Jette' → 'Yet-teh', 'Jan' → 'Yahn', 'Jens' → 'Yens', 'Grete' → 'Greh-teh', "
+                                 "'Heinz' → 'Hynts'). (2) Every syllable must be pronounceable by an English singer. "
+                                 "(3) Use 'eh' for short German e, 'ah' for long German a, 'oo' for German u, 'y' for German j. "
+                                 "(4) Replace EVERY occurrence of the name in the lyrics with this phonetic spelling. "
+                                 "(5) Do NOT use parenthetical hints or footnotes — only the phonetic spelling in the text.")
                 hit_inst = f"Orientiere dich am Stil und der Struktur des Songs '{hit}'." if hit else ""
                 feedback_inst = f"Verbessere folgendes gegenüber der letzten Version: {feedback}" if feedback else ""
                 prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Geburtstagssong {lang_inst}.
@@ -1580,7 +1583,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
 {{
   "title": "kreativer Songtitel mit passenden Emojis — verwende im Titel immer die ORIGINAL-Schreibweise des Namens, nicht die phonetische",
   "lyrics": "vollständiger Liedtext mit Struktur-Tags",
-  "style": "Suno style prompt auf Englisch, professionell, 15-25 Wörter, mit Tempo, Instrumente, Stimmung, Genre — NUR Musik beschreiben, KEINE Namen oder Phonetik"
+  "style": "Suno style prompt auf Englisch, professionell, 15-25 Wörter, mit Tempo, Instrumente, Stimmung, Genre"
 }}"""
                 import subprocess, shutil
                 claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
@@ -1599,6 +1602,8 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 if raw.endswith("```"):
                     raw = raw.rsplit("```", 1)[0]
                 song_data = json.loads(raw.strip())
+                if sprache == "de" and "style" in song_data:
+                    song_data["style"] = song_data["style"].rstrip(", ") + ", german lyrics"
                 if sprache != "de" and name and "title" in song_data:
                     # Ensure original name spelling in title (not phonetic)
                     import re as _re
