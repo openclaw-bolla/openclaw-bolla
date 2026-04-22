@@ -193,6 +193,8 @@ html, body {
 }
 
 .page.active { display: block; }
+#page-suno { overflow: hidden; }
+#page-suno.active { display: flex; }
 
 /* ===== CARDS ===== */
 .grid {
@@ -393,7 +395,7 @@ html, body {
 
       <div class="nav-section">KI</div>
       <div class="nav-item" data-page="localserver"><span class="icon">🖧</span><span>Local Server</span></div>
-      <div class="nav-item" data-page="surface"><span class="icon">📱</span><span>Surface Duo</span></div>
+      <div class="nav-item" data-page="surface"><span class="icon">💻</span><span>Surfaces</span></div>
       <div class="nav-item" data-page="redesigns"><span class="icon">🎨</span><span>Redesigns</span></div>
       <div class="nav-item" data-page="bildgen"><span class="icon">🍌</span><span>BildGen</span></div>
       <div class="nav-item" data-page="suno"><span class="icon">🎵</span><span>Suno Songs</span></div>
@@ -587,14 +589,97 @@ html, body {
       <!-- SURFACE / ADB -->
       <div class="page" id="page-surface">
         <div style="padding:16px">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-            <span style="font-size:28px">📱</span>
-            <div style="flex:1">
-              <div style="font-size:20px;font-weight:300;color:var(--bright)">Surface Duo · ADB-Befehle</div>
-              <div style="font-size:11px;color:var(--dim)">Android Debug Bridge · Klick auf einen Befehl kopiert ihn in die Zwischenablage</div>
+
+          <!-- ══ SURFACE STUDIO ══ -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+            <span style="font-size:20px">🖥️</span>
+            <span style="font-size:14px;font-weight:700;color:var(--bright);text-transform:uppercase;letter-spacing:1.5px">Surface Studio</span>
+          </div>
+          <div class="grid-2" style="margin-bottom:28px">
+            <!-- Studio Health -->
+            <div class="card" id="studio-health-card">
+              <div class="card-head"><span class="card-title">Health</span><span class="card-icon">🖥️</span></div>
+              <div id="studio-health-body"><div class="loading">Lade...</div></div>
+            </div>
+            <!-- Studio Funktionen -->
+            <div class="card">
+              <div class="card-head"><span class="card-title">Funktionen</span><span class="card-icon">🛠️</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <button class="adb-btn" onclick="loadStudioHealth()" style="width:fit-content">🔄 Health neu laden</button>
+                <button class="adb-btn" onclick="surfaceAction('studio','restart_cloudflared')" style="width:fit-content">☁️ Cloudflared neu starten</button>
+                <button class="adb-btn" onclick="surfaceAction('studio','git_push')" style="width:fit-content">📤 Git Push (Workspace)</button>
+                <div id="studio-action-result" style="font-size:12px;color:var(--accent);margin-top:4px"></div>
+              </div>
             </div>
           </div>
-          <div class="grid" id="adb-grid"></div>
+
+          <!-- ══ SURFACE BOOK ══ -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+            <span style="font-size:20px">💻</span>
+            <span style="font-size:14px;font-weight:700;color:var(--bright);text-transform:uppercase;letter-spacing:1.5px">Surface Book</span>
+            <span id="book-online-badge" style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--card2);color:var(--dim);margin-left:4px">●  prüfe...</span>
+          </div>
+          <div class="grid-2" style="margin-bottom:28px">
+            <!-- Book Health -->
+            <div class="card" id="book-health-card">
+              <div class="card-head"><span class="card-title">Health</span><span class="card-icon">💻</span></div>
+              <div id="book-health-body"><div class="loading">Lade...</div></div>
+            </div>
+            <!-- Book Funktionen -->
+            <div class="card">
+              <div class="card-head"><span class="card-title">Funktionen</span><span class="card-icon">🛠️</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <button class="adb-btn" onclick="surfaceAction('book','check')" style="width:fit-content">🔄 Health neu laden</button>
+                <button class="adb-btn" onclick="surfaceAction('book','restart_tunnel')" style="width:fit-content">🔁 SSH-Tunnel neu starten</button>
+                <button class="adb-btn" onclick="if(confirm('Surface Book wirklich neu starten?'))surfaceAction('book','reboot')" style="width:fit-content;color:#f87171">⚡ Neu starten</button>
+                <div id="book-action-result" style="font-size:12px;color:var(--accent);margin-top:4px"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ══ SURFACE DUO ══ -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+            <span style="font-size:20px">📱</span>
+            <span style="font-size:14px;font-weight:700;color:var(--bright);text-transform:uppercase;letter-spacing:1.5px">Surface Duo</span>
+          </div>
+          <div class="grid-2">
+            <!-- Duo Health -->
+            <div class="card" id="duo-health-card">
+              <div class="card-head"><span class="card-title">Health</span><span class="card-icon">📱</span></div>
+              <div id="duo-health-body"><div class="loading">Lade...</div></div>
+            </div>
+            <!-- Duo Funktionen -->
+            <div class="card">
+              <div class="card-head"><span class="card-title">Funktionen</span><span class="card-icon">🛠️</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600">ADB Verbindung</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                  <input class="adb-input" data-role="connect-ip" placeholder="192.168.178.xx" style="flex:2;min-width:120px">
+                  <input class="adb-input" data-role="connect-port" placeholder="Port" style="flex:1;min-width:60px;max-width:80px">
+                  <button class="adb-btn" data-act="connect">🔗 Verbinden</button>
+                  <button class="adb-btn" data-act="disconnect">✂ Trennen</button>
+                </div>
+                <button class="adb-btn" data-act="devices" style="width:fit-content">📡 Verbundene Geräte</button>
+                <div class="adb-result" data-for="devices"></div>
+                <div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:4px">Screenshot</div>
+                <button class="adb-btn" data-act="screenshot" style="width:fit-content">📸 Screenshot machen</button>
+                <div class="adb-result" data-for="screenshot"></div>
+                <div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:4px">Dateien</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <input class="adb-input" data-role="pull-path" placeholder="/storage/emulated/0/..." style="flex:1;min-width:160px">
+                  <button class="adb-btn" data-act="pull">⬇ Pullen</button>
+                </div>
+                <div class="adb-result" data-for="pull"></div>
+                <input type="file" class="adb-input" data-role="push-file" style="width:100%;margin-top:2px">
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <input class="adb-input" data-role="push-dir" placeholder="/storage/emulated/0/Download/" value="/storage/emulated/0/Download/" style="flex:1;min-width:140px">
+                  <button class="adb-btn" data-act="push">⬆ Pushen</button>
+                </div>
+                <div class="adb-result" data-for="push"></div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -712,135 +797,145 @@ html, body {
         </div>
       </div>
 
-    </div>
-  </div>
-</div>
+      <!-- SUNO -->
+      <div class="page" id="page-suno">
 
-<!-- SUNO -->
-<div class="page" id="page-suno" style="padding:24px;overflow-y:auto;height:calc(100vh - 92px);box-sizing:border-box">
-  <div style="max-width:700px;margin:0 auto">
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px">
-      <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#ff6699);
-                  display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;
-                  box-shadow:0 4px 16px rgba(124,58,237,0.4)">🎵</div>
+  <!-- LINKE SPALTE -->
+  <div style="width:45%;min-width:320px;height:100%;overflow-y:auto;padding-right:24px;box-sizing:border-box;border-right:1px solid var(--border)">
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+      <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#ff6699);
+                  display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🎵</div>
       <div>
-        <div style="font-size:22px;font-weight:700;color:var(--bright)">Suno Songs</div>
-        <div style="font-size:12px;color:var(--dim);margin-top:2px">Geburtstagssongs für Schülerinnen und Schüler</div>
+        <div style="font-size:18px;font-weight:700;color:var(--bright)">Suno Songs</div>
+        <div style="font-size:11px;color:var(--dim)">Geburtstagssongs für Schüler</div>
       </div>
     </div>
 
     <!-- Eingaben -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
       <div>
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Name *</label>
+        <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:3px">Name *</label>
         <input id="suno-name" type="text" placeholder="z.B. Maximilian"
           style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
-                 color:var(--text);padding:10px 12px;font-size:14px;outline:none;font-family:inherit">
+                 color:var(--text);padding:8px 10px;font-size:13px;outline:none;font-family:inherit">
       </div>
       <div>
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Klasse</label>
+        <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:3px">Klasse</label>
         <input id="suno-klasse" type="text" placeholder="z.B. 7b"
           style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
-                 color:var(--text);padding:10px 12px;font-size:14px;outline:none;font-family:inherit">
+                 color:var(--text);padding:8px 10px;font-size:13px;outline:none;font-family:inherit">
       </div>
       <div>
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Alter</label>
+        <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:3px">Alter</label>
         <input id="suno-alter" type="text" placeholder="z.B. 13"
           style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
-                 color:var(--text);padding:10px 12px;font-size:14px;outline:none;font-family:inherit">
+                 color:var(--text);padding:8px 10px;font-size:13px;outline:none;font-family:inherit">
       </div>
       <div>
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Geburtstag</label>
+        <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:3px">Geburtstag</label>
         <input id="suno-geburtstag" type="text" placeholder="z.B. 21.04."
           style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
-                 color:var(--text);padding:10px 12px;font-size:14px;outline:none;font-family:inherit">
+                 color:var(--text);padding:8px 10px;font-size:13px;outline:none;font-family:inherit">
       </div>
     </div>
-
-    <div style="margin-bottom:12px">
-      <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Orientierung an einem Hit (optional)</label>
+    <div style="margin-bottom:10px">
+      <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:3px">Hit-Orientierung (optional)</label>
       <input id="suno-hit" type="text" placeholder="z.B. Blinding Lights von The Weeknd"
         style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
-               color:var(--text);padding:10px 12px;font-size:14px;outline:none;font-family:inherit">
+               color:var(--text);padding:8px 10px;font-size:13px;outline:none;font-family:inherit">
     </div>
 
     <!-- Sprache + Button -->
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
       <div style="display:flex;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden">
         <button id="suno-lang-de" onclick="sunoSetLang('de')"
-          style="padding:9px 20px;border:none;cursor:pointer;font-size:13px;font-weight:600;
+          style="padding:7px 14px;border:none;cursor:pointer;font-size:12px;font-weight:600;
                  background:var(--accent);color:white;transition:all .2s">🇩🇪 Deutsch</button>
         <button id="suno-lang-en" onclick="sunoSetLang('en')"
-          style="padding:9px 20px;border:none;cursor:pointer;font-size:13px;font-weight:600;
+          style="padding:7px 14px;border:none;cursor:pointer;font-size:12px;font-weight:600;
                  background:transparent;color:var(--dim);transition:all .2s">🇬🇧 English</button>
       </div>
       <button id="suno-btn" onclick="sunoGenerate()"
         style="background:linear-gradient(135deg,#7c3aed,#ff6699);border:none;border-radius:8px;color:white;
-               font-weight:700;font-size:14px;padding:10px 28px;cursor:pointer;
+               font-weight:700;font-size:13px;padding:8px 20px;cursor:pointer;
                box-shadow:0 2px 12px rgba(124,58,237,0.4);transition:opacity .2s">
         ✨ Generieren
       </button>
       <span id="suno-status" style="font-size:12px;color:var(--dim)"></span>
     </div>
 
-    <!-- Output Boxen -->
-    <div id="suno-output" style="display:none;flex-direction:column;gap:16px">
-
-      <!-- Titel -->
-      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span style="font-size:13px;font-weight:700;color:var(--bright)">🏷️ Titel</span>
+    <!-- Ergebnis: Titel + Style + Feedback -->
+    <div id="suno-output-left" style="display:none;flex-direction:column;gap:10px">
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:700;color:var(--bright)">🏷️ Titel</span>
           <button onclick="sunoCopy('suno-title-text')"
             style="background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);
-                   padding:4px 12px;cursor:pointer;font-size:12px;transition:all .2s"
-            onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">📋 Kopieren</button>
+                   padding:3px 10px;cursor:pointer;font-size:11px"
+            onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">📋</button>
         </div>
-        <div id="suno-title-text" style="font-size:18px;font-weight:700;color:var(--bright)"></div>
+        <div id="suno-title-text" style="font-size:16px;font-weight:700;color:var(--bright)"></div>
       </div>
-
-      <!-- Lyrics -->
-      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span style="font-size:13px;font-weight:700;color:var(--bright)">🎤 Lyrics</span>
-          <button onclick="sunoCopy('suno-lyrics-text')"
-            style="background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);
-                   padding:4px 12px;cursor:pointer;font-size:12px;transition:all .2s"
-            onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">📋 Kopieren</button>
-        </div>
-        <pre id="suno-lyrics-text" style="margin:0;white-space:pre-wrap;font-family:inherit;font-size:13px;
-             line-height:1.7;color:var(--text)"></pre>
-      </div>
-
-      <!-- Style Prompt -->
-      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span style="font-size:13px;font-weight:700;color:var(--bright)">🎛️ Style Prompt</span>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:700;color:var(--bright)">🎛️ Style Prompt</span>
           <button onclick="sunoCopy('suno-style-text')"
             style="background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);
-                   padding:4px 12px;cursor:pointer;font-size:12px;transition:all .2s"
-            onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">📋 Kopieren</button>
+                   padding:3px 10px;cursor:pointer;font-size:11px"
+            onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">📋</button>
         </div>
         <div id="suno-style-text" style="font-size:13px;color:var(--accent);font-style:italic;line-height:1.6"></div>
       </div>
-
-      <!-- Feedback -->
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px">
-        <div style="font-size:13px;font-weight:700;color:var(--bright);margin-bottom:10px">🔄 Verbessern</div>
-        <div style="display:flex;gap:10px">
-          <input id="suno-feedback" type="text" placeholder="Was soll verbessert werden? z.B. mehr Humor, anderes Tempo..."
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--bright);margin-bottom:8px">🔄 Verbessern</div>
+        <div style="display:flex;gap:8px">
+          <input id="suno-feedback" type="text" placeholder="Was soll verbessert werden?"
             style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:8px;
-                   color:var(--text);padding:9px 12px;font-size:13px;outline:none;font-family:inherit">
+                   color:var(--text);padding:8px 10px;font-size:12px;outline:none;font-family:inherit">
           <button onclick="sunoRefresh()"
             style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);
-                   padding:9px 16px;cursor:pointer;font-size:13px;white-space:nowrap;transition:all .2s"
+                   padding:8px 12px;cursor:pointer;font-size:12px;white-space:nowrap"
             onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
-            🔄 Neu generieren
+            🔄 Neu
           </button>
         </div>
       </div>
     </div>
   </div>
-</div>
+
+  <!-- RECHTE SPALTE: Lyrics -->
+  <div style="flex:1;height:100%;overflow-y:auto;padding-left:20px;box-sizing:border-box">
+
+    <!-- Platzhalter (vor Generierung) -->
+    <div id="suno-lyrics-placeholder" style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:var(--dim)">
+      <div style="font-size:48px">🎵</div>
+      <div style="font-size:14px">Lyrics erscheinen hier nach der Generierung</div>
+    </div>
+
+    <!-- Lyrics (nach Generierung) -->
+    <div id="suno-output-right" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span style="font-size:14px;font-weight:700;color:var(--bright)">🎤 Lyrics</span>
+        <button onclick="sunoCopy('suno-lyrics-text')"
+          style="background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);
+                 padding:4px 14px;cursor:pointer;font-size:12px"
+          onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">📋 Kopieren</button>
+      </div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px">
+        <pre id="suno-lyrics-text" style="margin:0;white-space:pre-wrap;font-family:inherit;font-size:13px;
+             line-height:1.9;color:var(--text)"></pre>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="suno-output" style="display:none"></div>
+      </div><!-- end page-suno -->
+
+    </div><!-- end pages -->
+  </div><!-- end main -->
+</div><!-- end app -->
 
 <!-- DESIGN PREVIEW OVERLAY -->
 <div id="design-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.92);flex-direction:column">
@@ -900,7 +995,9 @@ function bildgenFileChanged(input) {
     _bildgenInputB64 = dataUrl.split(',')[1];
     document.getElementById('bildgen-upload-img').src = dataUrl;
     document.getElementById('bildgen-upload-preview').style.display = 'block';
-    document.getElementById('bildgen-aspect').parentElement.style.opacity = '0.4';
+    const asp = document.getElementById('bildgen-aspect');
+    asp.style.opacity = '0.4';
+    asp.style.pointerEvents = 'none';
   };
   reader.readAsDataURL(file);
 }
@@ -910,7 +1007,9 @@ function bildgenClearUpload() {
   _bildgenInputMime = null;
   document.getElementById('bildgen-file').value = '';
   document.getElementById('bildgen-upload-preview').style.display = 'none';
-  document.getElementById('bildgen-aspect').parentElement.style.opacity = '1';
+  const asp = document.getElementById('bildgen-aspect');
+  asp.style.opacity = '1';
+  asp.style.pointerEvents = '';
 }
 
 async function bildgenGenerate() {
@@ -2334,45 +2433,123 @@ const ADB_ACTIONS = {
 };
 
 function adbRender() {
-  const grid = document.getElementById('adb-grid');
-  if (!grid || grid.dataset.rendered === '1') return;
-  grid.innerHTML = ADB_GROUPS.map(g => `
-    <div class="card" data-group="${g.id}">
-      <div class="card-head">
-        <span class="card-title">${g.title}</span>
-        <span class="card-icon">${g.icon}</span>
-      </div>
-      ${ADB_ACTIONS[g.id] ? `<div class="adb-action-block" style="display:flex;flex-direction:column;gap:8px">${ADB_ACTIONS[g.id]}</div>` : ''}
-      <div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:14px;padding-top:10px;border-top:1px dashed var(--border)">Weitere Befehle</div>
-      <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
-        ${g.cmds.map(x => `
-          <div class="adb-cmd" data-cmd="${adbEsc(x.c)}" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;cursor:pointer;transition:all 0.15s" title="Klick zum Kopieren">
-            <div style="font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--accent);word-break:break-all">${adbEsc(x.c)}</div>
-            <div style="font-size:11px;color:var(--dim);margin-top:3px">${adbEsc(x.d)}</div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
-  grid.querySelectorAll('.adb-cmd').forEach(el => {
-    el.addEventListener('click', () => adbCopy(el, el.dataset.cmd));
-  });
-  grid.querySelectorAll('.adb-btn').forEach(btn => {
+  const page = document.getElementById('page-surface');
+  if (!page || page.dataset.adbReady === '1') return;
+  // Wire up ADB buttons in the Duo functions card
+  page.querySelectorAll('.adb-btn[data-act]').forEach(btn => {
     btn.addEventListener('click', () => adbAction(btn.dataset.act, btn));
   });
-  // Letzte IP + Port vorausfüllen
-  const ipInput = grid.querySelector('[data-role="connect-ip"]');
-  const portInput = grid.querySelector('[data-role="connect-port"]');
+  // Pre-fill last IP + Port
+  const ipInput = page.querySelector('[data-role="connect-ip"]');
+  const portInput = page.querySelector('[data-role="connect-port"]');
   if (ipInput) ipInput.value = localStorage.getItem('adb-last-ip') || '192.168.178.20';
   if (portInput) portInput.value = localStorage.getItem('adb-last-port') || '';
-  // Live-Filter für Apps
-  const appsFilterInput = grid.querySelector('[data-role="apps-filter"]');
-  if (appsFilterInput) {
-    appsFilterInput.addEventListener('input', () => {
-      applyAppsFilter(appsFilterInput.closest('.card'));
-    });
+  page.dataset.adbReady = '1';
+  // Load health data
+  loadDuoHealth();
+  loadBookHealth();
+  loadStudioHealth();
+}
+
+function surfaceBar(pct, color) {
+  const c = pct > 85 ? '#f87171' : pct > 60 ? '#fbbf24' : color || '#4ade80';
+  return `<div style="background:var(--border);border-radius:4px;height:6px;margin-top:4px">
+    <div style="background:${c};width:${pct}%;height:6px;border-radius:4px;transition:width .4s"></div></div>`;
+}
+
+function surfaceRow(label, val, bar) {
+  return `<div style="margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;font-size:13px">
+      <span style="color:var(--dim)">${label}</span>
+      <span style="color:var(--bright);font-weight:600">${val}</span>
+    </div>${bar || ''}</div>`;
+}
+
+async function loadDuoHealth() {
+  const el = document.getElementById('duo-health-body');
+  try {
+    const r = await fetch(API + '/api/adb/devices', {signal: AbortSignal.timeout(4000)});
+    const d = await r.json();
+    const devs = Array.isArray(d.devices) ? d.devices : [];
+    const online = devs.length > 0;
+    el.innerHTML = surfaceRow('Status',
+      online ? `<span style="color:#4ade80">● Verbunden</span>` : `<span style="color:var(--dim)">● Nicht verbunden</span>`) +
+      (online ? surfaceRow('Gerät', devs[0] || '–') : '') +
+      `<div style="font-size:11px;color:var(--dim);margin-top:8px">ADB via WLAN · ${devs.length} Gerät(e)</div>`;
+  } catch {
+    el.innerHTML = `<div style="color:var(--dim);font-size:13px">ADB nicht erreichbar</div>`;
   }
-  grid.dataset.rendered = '1';
+}
+
+async function loadBookHealth() {
+  const el = document.getElementById('book-health-body');
+  const badge = document.getElementById('book-online-badge');
+  try {
+    const r = await fetch(API + '/api/surfaces/book', {signal: AbortSignal.timeout(15000)});
+    const d = await r.json();
+    if (!d.online) {
+      badge.textContent = '● Offline';
+      badge.style.cssText = 'font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(248,113,113,0.15);color:#f87171;margin-left:4px';
+      el.innerHTML = `<div style="color:#f87171;font-size:13px">● Tunnel nicht erreichbar</div>`;
+      return;
+    }
+    badge.textContent = '● Online';
+    badge.style.cssText = 'font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(74,222,128,0.15);color:#4ade80;margin-left:4px';
+    const ramPct = Math.round(d.ramUsed / d.ramTotal * 100);
+    const diskPct = Math.round((d.diskTotal - d.diskFree) / d.diskTotal * 100);
+    const bat1 = d.bat1 <= 0 ? `<span style="color:#f87171">DEFEKT</span>` : `${d.bat1} mWh`;
+    const bat2 = d.bat2 < 0 ? '–' : `${d.bat2}% ${d.bat2Charging ? '⚡' : ''}`;
+    el.innerHTML =
+      surfaceRow('Uptime', d.uptime) +
+      surfaceRow('RAM', `${Math.round(d.ramUsed/1024)} / ${Math.round(d.ramTotal/1024)} GB`, surfaceBar(ramPct)) +
+      surfaceRow('Disk C:', `${d.diskFree} GB frei / ${d.diskTotal} GB`, surfaceBar(diskPct)) +
+      surfaceRow('Akku 1 (Tablet)', bat1) +
+      surfaceRow('Akku 2 (Base)', bat2, d.bat2 >= 0 ? surfaceBar(d.bat2, '#4ade80') : '');
+  } catch(e) {
+    badge.textContent = '● Fehler';
+    el.innerHTML = `<div style="color:#f87171;font-size:13px">Fehler: ${e.message}</div>`;
+  }
+}
+
+async function loadStudioHealth() {
+  const el = document.getElementById('studio-health-body');
+  try {
+    const r = await fetch(API + '/api/surfaces/studio', {signal: AbortSignal.timeout(6000)});
+    const d = await r.json();
+    const ramPct = Math.round(d.ramUsed / d.ramTotal * 100);
+    const diskPct = Math.round((d.diskTotal - d.diskFree) / d.diskTotal * 100);
+    const svc = (ok, name) => `<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+      <span style="color:var(--dim)">${name}</span>
+      <span style="${ok ? 'color:#4ade80' : 'color:#f87171'}">${ok ? '● läuft' : '● gestoppt'}</span></div>`;
+    el.innerHTML =
+      surfaceRow('Uptime', d.uptime) +
+      surfaceRow('RAM', `${Math.round(d.ramUsed/1024)} / ${Math.round(d.ramTotal/1024)} GB`, surfaceBar(ramPct)) +
+      surfaceRow('Disk C:', `${d.diskFree} GB frei / ${d.diskTotal} GB`, surfaceBar(diskPct)) +
+      `<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">` +
+      svc(d.mcServer, 'MC Server') +
+      svc(d.cloudflared, 'Cloudflared') +
+      svc(d.telegramBot, 'Telegram Bot') +
+      `</div>`;
+  } catch(e) {
+    el.innerHTML = `<div style="color:#f87171;font-size:13px">Fehler: ${e.message}</div>`;
+  }
+}
+
+async function surfaceAction(device, action) {
+  const resEl = document.getElementById(device + '-action-result');
+  if (resEl) resEl.textContent = '⏳ ...';
+  try {
+    const r = await fetch(API + '/api/surfaces/' + device + '/action', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({action})
+    });
+    const d = await r.json();
+    if (action === 'check') { loadBookHealth(); return; }
+    if (resEl) resEl.textContent = d.msg || d.error || 'OK';
+  } catch(e) {
+    if (resEl) resEl.textContent = '⚠ ' + e.message;
+  }
 }
 
 async function adbBrowseLoad(browser, path) {
@@ -2508,7 +2685,7 @@ async function adbAction(act, btn) {
         const d = await r.json();
         const color = d.ok ? '#66bb6a' : '#e57373';
         showMsg(`<div style="color:${color};font-size:12px;padding:8px;background:${d.ok?'rgba(102,187,106,0.08)':'rgba(229,115,115,0.08)'};border-radius:6px">${d.ok?'✓':'⚠'} ${adbEsc(d.message || d.error || '')}</div>`);
-        if (d.ok) setTimeout(() => adbAction('devices', card.querySelector('[data-act="devices"]')), 300);
+        if (d.ok) { setTimeout(() => adbAction('devices', card.querySelector('[data-act="devices"]')), 300); setTimeout(loadDuoHealth, 1000); }
       }
     } else if (act === 'disconnect') {
       const r = await fetch(API + '/api/adb/disconnect', {
@@ -2719,7 +2896,7 @@ async function adbAction(act, btn) {
 
 // Beim ersten Klick auf Surface rendern
 document.querySelectorAll('.nav-item').forEach(el => {
-  if (el.dataset.page === 'surface') el.addEventListener('click', adbRender);
+  if (el.dataset.page === 'surface') el.addEventListener('click', () => { adbRender(); });
 });
 setTimeout(() => { if (document.getElementById('page-surface')?.classList.contains('active')) adbRender(); }, 500);
 
@@ -2935,7 +3112,9 @@ async function sunoGenerate(feedback = '') {
     document.getElementById('suno-title-text').textContent = data.title || '';
     document.getElementById('suno-lyrics-text').textContent = data.lyrics || '';
     document.getElementById('suno-style-text').textContent = data.style || '';
-    document.getElementById('suno-output').style.display = 'flex';
+    document.getElementById('suno-output-left').style.display = 'flex';
+    document.getElementById('suno-output-right').style.display = 'block';
+    document.getElementById('suno-lyrics-placeholder').style.display = 'none';
     document.getElementById('suno-feedback').value = '';
     status.textContent = '✅ Fertig!';
   } catch(e) {

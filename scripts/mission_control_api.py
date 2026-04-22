@@ -696,6 +696,128 @@ def get_sysinfo():
     }
 
 
+def get_book_health():
+    import subprocess, base64, json as _json
+    ps = (
+        "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
+        "$cpu=(Get-WmiObject Win32_Processor).LoadPercentage;"
+        "$os=Get-WmiObject Win32_OperatingSystem;"
+        "$rT=[math]::Round($os.TotalVisibleMemorySize/1KB,0);"
+        "$rF=[math]::Round($os.FreePhysicalMemory/1KB,0);"
+        "$dk=Get-WmiObject Win32_LogicalDisk -Filter \"DeviceID='C:'\";"
+        "$dT=[math]::Round($dk.Size/1GB,0);"
+        "$dF=[math]::Round($dk.FreeSpace/1GB,0);"
+        "$bs=Get-WmiObject -Namespace root/wmi -Class BatteryStatus;"
+        "$b1=$bs|?{$_.InstanceName -like '*1_0'};"
+        "$b2=$bs|?{$_.InstanceName -like '*2_0'};"
+        "$fc=(Get-WmiObject -Namespace root/wmi -Class BatteryFullChargedCapacity|?{$_.InstanceName -like '*2_0'}).FullChargedCapacity;"
+        "$up=(Get-Date)-(Get-CimInstance Win32_OperatingSystem).LastBootUpTime;"
+        "@{cpu=$cpu;ramUsed=($rT-$rF);ramTotal=$rT;diskTotal=$dT;diskFree=$dF;"
+        "bat1=if($b1){$b1.RemainingCapacity}else{-1};"
+        "bat2=if($b2 -and $fc -gt 0){[math]::Round($b2.RemainingCapacity/$fc*100,0)}else{-1};"
+        "bat2Charging=if($b2){[bool]$b2.Charging}else{$false};"
+        "uptime=\"$([math]::Floor($up.TotalHours))h $($up.Minutes)m\"}|ConvertTo-Json"
+    )
+    enc = base64.b64encode(ps.encode('utf-16-le')).decode()
+    try:
+        r = subprocess.run(
+            ['ssh', '-p', '2222', '-i', '/home/bolla/.ssh/id_ed25519',
+             '-o', 'ConnectTimeout=5', '-o', 'StrictHostKeyChecking=no',
+             'ernst@localhost', f'powershell -EncodedCommand {enc}'],
+            capture_output=True, timeout=12
+        )
+        stdout = r.stdout.decode('utf-8', errors='replace') if r.stdout else ''
+        if r.returncode == 0 and stdout.strip():
+            d = _json.loads(stdout)
+            d['online'] = True
+            return d
+    except Exception:
+        pass
+    return {'online': False}
+
+
+def get_studio_health():
+    import subprocess, time as _t
+    with open('/proc/meminfo') as f:
+        mem = {k.strip(): int(v.strip().split()[0])
+               for line in f for k, v in [line.split(':', 1)]}
+    ram_total = mem['MemTotal'] // 1024
+    ram_used = ram_total - mem['MemAvailable'] // 1024
+    disk = os.statvfs('/mnt/c')
+    disk_total = disk.f_blocks * disk.f_frsize // (1024**3)
+    disk_free = disk.f_bavail * disk.f_frsize // (1024**3)
+    with open('/proc/uptime') as f:
+        secs = float(f.read().split()[0])
+    uptime = f"{int(secs//3600)}h {int((secs%3600)//60)}m"
+    def svc(name):
+        return bool(subprocess.run(['pgrep', '-f', name],
+                                   capture_output=True).returncode == 0)
+    return {
+        'online': True,
+        'ramUsed': ram_used, 'ramTotal': ram_total,
+        'diskTotal': disk_total, 'diskFree': disk_free,
+        'uptime': uptime,
+        'mcServer': svc('mission_control_api'),
+        'cloudflared': svc('cloudflared'),
+        'telegramBot': svc('telegram_bot'),
+    }
+
+
+def do_book_action(action):
+    import subprocess, base64
+    if action == 'check':
+        return get_book_health()
+    if action == 'reboot':
+        ps = 'Restart-Computer -Force'
+        enc = base64.b64encode(ps.encode('utf-16-le')).decode()
+        subprocess.run(
+            ['ssh', '-p', '2222', '-i', '/home/bolla/.ssh/id_ed25519',
+             '-o', 'ConnectTimeout=5', '-o', 'StrictHostKeyChecking=no',
+             'ernst@localhost', f'powershell -EncodedCommand {enc}'],
+            timeout=10
+        )
+        return {'ok': True, 'msg': 'Neustart gesendet'}
+    if action == 'restart_tunnel':
+        ps = ('Stop-Process -Name ssh -Force -ErrorAction SilentlyContinue;'
+              'Start-Sleep 2;'
+              'Start-Process powershell -ArgumentList "-WindowStyle Hidden -File C:\\\\Users\\\\ernst\\\\surface_book_tunnel.ps1" -WindowStyle Hidden')
+        enc = base64.b64encode(ps.encode('utf-16-le')).decode()
+        subprocess.run(
+            ['ssh', '-p', '2222', '-i', '/home/bolla/.ssh/id_ed25519',
+             '-o', 'ConnectTimeout=5', '-o', 'StrictHostKeyChecking=no',
+             'ernst@localhost', f'powershell -EncodedCommand {enc}'],
+            timeout=10
+        )
+        return {'ok': True, 'msg': 'Tunnel-Neustart gesendet'}
+    return {'error': 'Unbekannte Aktion'}
+
+
+def do_studio_action(action):
+    import subprocess
+    if action == 'restart_mc':
+        subprocess.Popen(['pkill', '-f', 'mission_control_api'])
+        return {'ok': True, 'msg': 'MC-Server wird neu gestartet...'}
+    if action == 'restart_cloudflared':
+        subprocess.run(['pkill', '-f', 'cloudflared'], capture_output=True)
+        subprocess.Popen(['/home/bolla/.local/bin/cloudflared', 'tunnel', 'run', 'bolla-mc'])
+        return {'ok': True, 'msg': 'Cloudflared neu gestartet'}
+    if action == 'git_push':
+        r = subprocess.run(
+            ['git', '-C', WORKSPACE, 'add', '-A'],
+            capture_output=True, text=True, timeout=15
+        )
+        r2 = subprocess.run(
+            ['git', '-C', WORKSPACE, 'commit', '-m', 'auto: MC git push'],
+            capture_output=True, text=True, timeout=15
+        )
+        r3 = subprocess.run(
+            ['git', '-C', WORKSPACE, 'push'],
+            capture_output=True, text=True, timeout=30
+        )
+        return {'ok': r3.returncode == 0, 'msg': r3.stdout.strip() or r3.stderr.strip() or 'Push abgeschlossen'}
+    return {'error': 'Unbekannte Aktion'}
+
+
 _token_cache = {"ts": 0, "data": None}
 _halfday_cache = {"ts": 0, "data": None}
 
@@ -1308,6 +1430,8 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/birthdays": get_birthdays,
                 "/api/robin": get_robin_info,
                 "/api/sysinfo": get_sysinfo,
+                "/api/surfaces/book": get_book_health,
+                "/api/surfaces/studio": get_studio_health,
                 "/api/tokenusage": get_token_usage,
                 "/api/tokenusage/history": get_token_halfdays,
                 "/api/status": lambda: {"ok": True, "ts": datetime.now().isoformat()},
@@ -1354,6 +1478,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._handle_bolla_stream(body)
             elif self.path == "/api/bolla/tts":
                 self._handle_tts(body)
+            elif self.path == "/api/surfaces/book/action":
+                self._send_json(do_book_action(body.get("action", "")))
+            elif self.path == "/api/surfaces/studio/action":
+                self._send_json(do_studio_action(body.get("action", "")))
             elif self.path == "/api/adb/connect":
                 self._send_json(adb_connect(body.get("host", "")))
             elif self.path == "/api/adb/disconnect":
@@ -1422,7 +1550,14 @@ class Handler(BaseHTTPRequestHandler):
                 if not name:
                     self._send_json({"error": "Name fehlt"}, status=400)
                     return
-                lang_inst = "auf Deutsch" if sprache == "de" else "in English. If the name sounds German and might be mispronounced by an English TTS, add a phonetic spelling in parentheses next to the first occurrence, e.g. 'Max (pronounced: Mucks)'"
+                lang_inst = ("in English. IMPORTANT: Before writing the lyrics, analyze the name and find the single best "
+                             "English phonetic spelling that makes an English AI singer pronounce it exactly like a German "
+                             "speaker would. Rules: (1) Use hyphenated syllables if the name has multiple syllables "
+                             "(e.g. 'Jette' → 'Yet-teh', 'Jan' → 'Yahn', 'Jens' → 'Yens', 'Grete' → 'Greh-teh', "
+                             "'Heinz' → 'Hynts'). (2) Every syllable must be pronounceable by an English singer. "
+                             "(3) Use 'eh' for short German e, 'ah' for long German a, 'oo' for German u, 'y' for German j. "
+                             "(4) Replace EVERY occurrence of the name in the lyrics with this phonetic spelling. "
+                             "(5) Do NOT use parenthetical hints or footnotes — only the phonetic spelling in the text.")
                 hit_inst = f"Orientiere dich am Stil und der Struktur des Songs '{hit}'." if hit else ""
                 feedback_inst = f"Verbessere folgendes gegenüber der letzten Version: {feedback}" if feedback else ""
                 prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Geburtstagssong {lang_inst}.
@@ -1443,9 +1578,9 @@ Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Outro]
 
 Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
 {{
-  "title": "kreativer Songtitel mit passenden Emojis",
+  "title": "kreativer Songtitel mit passenden Emojis — verwende im Titel immer die ORIGINAL-Schreibweise des Namens, nicht die phonetische",
   "lyrics": "vollständiger Liedtext mit Struktur-Tags",
-  "style": "Suno style prompt auf Englisch, professionell, 15-25 Wörter, mit Tempo, Instrumente, Stimmung, Genre"
+  "style": "Suno style prompt auf Englisch, professionell, 15-25 Wörter, mit Tempo, Instrumente, Stimmung, Genre — NUR Musik beschreiben, KEINE Namen oder Phonetik"
 }}"""
                 import subprocess, shutil
                 claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
@@ -1464,6 +1599,11 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 if raw.endswith("```"):
                     raw = raw.rsplit("```", 1)[0]
                 song_data = json.loads(raw.strip())
+                if sprache != "de" and name and "title" in song_data:
+                    # Ensure original name spelling in title (not phonetic)
+                    import re as _re
+                    phonetic = _re.sub(r'[^a-zA-Z]', '', name.lower())
+                    song_data["title"] = name + " — " + song_data["title"] if name.lower() not in song_data["title"].lower() else song_data["title"]
                 if sprache == "de":
                     parts = ["Happy Birthday", name]
                     if alter: parts.append(alter)
