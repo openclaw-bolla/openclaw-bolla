@@ -1546,7 +1546,10 @@ class Handler(BaseHTTPRequestHandler):
                 geburtstag = body.get("geburtstag", "").strip()
                 sprache = body.get("sprache", "de")
                 hit = body.get("hit", "").strip()
+                kontext = body.get("kontext", "").strip()
                 feedback = body.get("feedback", "").strip()
+                SCHOOL_KONTEXT = "Geburtstagssong für Schüler · Computerkurs Herrn Mandel · Lessing-Gymnasium"
+                is_school = not kontext or kontext == SCHOOL_KONTEXT
                 if not name:
                     self._send_json({"error": "Name fehlt"}, status=400)
                     return
@@ -1563,7 +1566,8 @@ class Handler(BaseHTTPRequestHandler):
                                  "(5) Do NOT use parenthetical hints or footnotes — only the phonetic spelling in the text.")
                 hit_inst = f"Orientiere dich am Stil und der Struktur des Songs '{hit}'." if hit else ""
                 feedback_inst = f"Verbessere folgendes gegenüber der letzten Version: {feedback}" if feedback else ""
-                prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Geburtstagssong {lang_inst}.
+                if is_school:
+                    prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Geburtstagssong {lang_inst}.
 
 Schüler/in: {name}
 Klasse: {klasse}
@@ -1576,6 +1580,24 @@ Pflichtinhalte im Liedtext:
 - Name des Schülers / der Schülerin mehrfach nennen
 - Lessing-Gymnasium erwähnen
 - Computerkurs bei Herrn Mandel erwähnen
+
+Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Outro]
+
+Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
+{{
+  "title": "kreativer Songtitel mit passenden Emojis — verwende im Titel immer die ORIGINAL-Schreibweise des Namens, nicht die phonetische",
+  "lyrics": "vollständiger Liedtext mit Struktur-Tags",
+  "style": "Suno style prompt auf Englisch, professionell, 15-25 Wörter, mit Tempo, Instrumente, Stimmung, Genre"
+}}"""
+                else:
+                    prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Song {lang_inst}.
+
+Person: {name}
+Anlass / Kontext: {kontext}
+{hit_inst}
+{feedback_inst}
+
+Pflichtinhalt: Den Namen der Person mehrfach im Liedtext nennen.
 
 Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Outro]
 
