@@ -736,6 +736,44 @@ def get_book_health():
     return {'online': False}
 
 
+def get_pro_health():
+    import subprocess, base64, json as _json
+    ps = (
+        "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
+        "$cpu=(Get-WmiObject Win32_Processor).LoadPercentage;"
+        "$os=Get-WmiObject Win32_OperatingSystem;"
+        "$rT=[math]::Round($os.TotalVisibleMemorySize/1KB,0);"
+        "$rF=[math]::Round($os.FreePhysicalMemory/1KB,0);"
+        "$dk=Get-WmiObject Win32_LogicalDisk -Filter \"DeviceID='C:'\";"
+        "$dT=[math]::Round($dk.Size/1GB,0);"
+        "$dF=[math]::Round($dk.FreeSpace/1GB,0);"
+        "$bs=Get-WmiObject -Namespace root/wmi -Class BatteryStatus;"
+        "$b1=$bs|?{$_.InstanceName -like '*1_0'};"
+        "$fc=(Get-WmiObject -Namespace root/wmi -Class BatteryFullChargedCapacity|?{$_.InstanceName -like '*1_0'}).FullChargedCapacity;"
+        "$up=(Get-Date)-(Get-CimInstance Win32_OperatingSystem).LastBootUpTime;"
+        "@{cpu=$cpu;ramUsed=($rT-$rF);ramTotal=$rT;diskTotal=$dT;diskFree=$dF;"
+        "bat1=if($b1 -and $fc -gt 0){[math]::Round($b1.RemainingCapacity/$fc*100,0)}else{-1};"
+        "bat1Charging=if($b1){[bool]$b1.Charging}else{$false};"
+        "uptime=\"$([math]::Floor($up.TotalHours))h $($up.Minutes)m\"}|ConvertTo-Json"
+    )
+    enc = base64.b64encode(ps.encode('utf-16-le')).decode()
+    try:
+        r = subprocess.run(
+            ['ssh', '-p', '2223', '-i', '/home/bolla/.ssh/id_ed25519',
+             '-o', 'ConnectTimeout=5', '-o', 'StrictHostKeyChecking=no',
+             'renat@localhost', f'powershell -EncodedCommand {enc}'],
+            capture_output=True, timeout=12
+        )
+        stdout = r.stdout.decode('utf-8', errors='replace') if r.stdout else ''
+        if r.returncode == 0 and stdout.strip():
+            d = _json.loads(stdout)
+            d['online'] = True
+            return d
+    except Exception:
+        pass
+    return {'online': False}
+
+
 def get_studio_health():
     import subprocess, time as _t
     with open('/proc/meminfo') as f:
@@ -786,6 +824,35 @@ def do_book_action(action):
             ['ssh', '-p', '2222', '-i', '/home/bolla/.ssh/id_ed25519',
              '-o', 'ConnectTimeout=5', '-o', 'StrictHostKeyChecking=no',
              'ernst@localhost', f'powershell -EncodedCommand {enc}'],
+            timeout=10
+        )
+        return {'ok': True, 'msg': 'Tunnel-Neustart gesendet'}
+    return {'error': 'Unbekannte Aktion'}
+
+
+def do_pro_action(action):
+    import subprocess, base64
+    if action == 'check':
+        return get_pro_health()
+    if action == 'reboot':
+        ps = 'Restart-Computer -Force'
+        enc = base64.b64encode(ps.encode('utf-16-le')).decode()
+        subprocess.run(
+            ['ssh', '-p', '2223', '-i', '/home/bolla/.ssh/id_ed25519',
+             '-o', 'ConnectTimeout=5', '-o', 'StrictHostKeyChecking=no',
+             'renat@localhost', f'powershell -EncodedCommand {enc}'],
+            timeout=10
+        )
+        return {'ok': True, 'msg': 'Neustart gesendet'}
+    if action == 'restart_tunnel':
+        ps = ('Stop-Process -Name ssh -Force -ErrorAction SilentlyContinue;'
+              'Start-Sleep 2;'
+              'Start-Process powershell -ArgumentList "-WindowStyle Hidden -File C:\\\\Users\\\\renat\\\\surface_pro_tunnel.ps1" -WindowStyle Hidden')
+        enc = base64.b64encode(ps.encode('utf-16-le')).decode()
+        subprocess.run(
+            ['ssh', '-p', '2223', '-i', '/home/bolla/.ssh/id_ed25519',
+             '-o', 'ConnectTimeout=5', '-o', 'StrictHostKeyChecking=no',
+             'renat@localhost', f'powershell -EncodedCommand {enc}'],
             timeout=10
         )
         return {'ok': True, 'msg': 'Tunnel-Neustart gesendet'}
@@ -1370,6 +1437,18 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(body)
                 return
 
+            if self.path == "/setup-pro.ps1":
+                ps1_path = os.path.expanduser("~/workspace/mission-control/setup-pro.ps1")
+                with open(ps1_path, "rb") as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
             if self.path == "/favicon.ico":
                 ico_path = os.path.expanduser("~/workspace/mission-control/favicon.ico")
                 with open(ico_path, "rb") as f:
@@ -1431,6 +1510,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/robin": get_robin_info,
                 "/api/sysinfo": get_sysinfo,
                 "/api/surfaces/book": get_book_health,
+                "/api/surfaces/pro": get_pro_health,
                 "/api/surfaces/studio": get_studio_health,
                 "/api/tokenusage": get_token_usage,
                 "/api/tokenusage/history": get_token_halfdays,
@@ -1480,6 +1560,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._handle_tts(body)
             elif self.path == "/api/surfaces/book/action":
                 self._send_json(do_book_action(body.get("action", "")))
+            elif self.path == "/api/surfaces/pro/action":
+                self._send_json(do_pro_action(body.get("action", "")))
             elif self.path == "/api/surfaces/studio/action":
                 self._send_json(do_studio_action(body.get("action", "")))
             elif self.path == "/api/adb/connect":

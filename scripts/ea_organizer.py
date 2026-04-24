@@ -10,13 +10,13 @@ from PIL import Image
 
 SOURCE     = Path("/mnt/d/OneDrive/Bilder/Eigene Aufnahmen")
 BACKUP     = Path("/mnt/d/OneDrive/Bilder/Eigene Aufnahmen_Backup")
-PROGRESS   = Path("/tmp/ea_progress.json")
-GEMINI_CFG = Path("/home/bolla/workspace/config/gemini_api.json")
-MODEL      = "gemini-3-flash-preview"
+PROGRESS   = Path("/home/bolla/workspace/logs/ea_progress.json")
+GEMINI_CFG = Path("/home/bolla/workspace/config/gemini_api_free.json")
+MODEL      = "gemini-2.0-flash"
 IMG_EXTS   = {'.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG'}
 VID_EXTS   = {'.mp4', '.MP4'}
 MAX_IMG_PX = 1600   # Resize auf max. diese Breite/Höhe vor dem Senden
-DELAY      = 3.5    # Sekunden zwischen API-Calls
+DELAY      = 4.0    # Sekunden zwischen API-Calls (15 RPM Free Tier)
 
 FOLDERS = [
     "Familie", "Robin", "Robin BeReal", "Renate",
@@ -90,19 +90,22 @@ def img_to_b64(path: Path) -> tuple[str, str]:
         return base64.b64encode(raw).decode(), "image/jpeg"
 
 def video_thumbnail_b64(path: Path) -> tuple[str, str] | None:
-    """Extrahiert ersten Frame via Pillow (kein ffmpeg nötig)"""
-    # Versuche PIL VideoImagePlugin (selten verfügbar)
-    # Fallback: sende schwarzes Platzhalterbild mit Dateinamen-Info
+    """Extrahiert ersten Frame via ffmpeg"""
+    import subprocess, tempfile
     try:
-        img = Image.new("RGB", (400, 300), color=(20, 20, 40))
-        from PIL import ImageDraw
-        draw = ImageDraw.Draw(img)
-        draw.text((20, 130), f"VIDEO: {path.name[:40]}", fill=(200, 200, 200))
-        buf = io.BytesIO()
-        img.save(buf, format="JPEG")
-        return base64.b64encode(buf.getvalue()).decode(), "image/jpeg"
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+            tmp_path = tmp.name
+        result = subprocess.run(
+            ["ffmpeg", "-y", "-i", str(path), "-vframes", "1", "-q:v", "2", tmp_path],
+            capture_output=True, timeout=30
+        )
+        if result.returncode == 0 and Path(tmp_path).exists():
+            b64, mime = img_to_b64(Path(tmp_path))
+            Path(tmp_path).unlink(missing_ok=True)
+            return b64, mime
     except Exception:
-        return None
+        pass
+    return None
 
 def remove_duplicates():
     print("\n── Duplikate entfernen ──")

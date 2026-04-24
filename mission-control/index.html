@@ -637,6 +637,30 @@ html, body {
             </div>
           </div>
 
+          <!-- ══ SURFACE PRO ══ -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+            <span style="font-size:20px">💻</span>
+            <span style="font-size:14px;font-weight:700;color:var(--bright);text-transform:uppercase;letter-spacing:1.5px">Surface Pro</span>
+            <span id="pro-online-badge" style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--card2);color:var(--dim);margin-left:4px">●  prüfe...</span>
+          </div>
+          <div class="grid-2" style="margin-bottom:28px">
+            <!-- Pro Health -->
+            <div class="card" id="pro-health-card">
+              <div class="card-head"><span class="card-title">Health</span><span class="card-icon">💻</span></div>
+              <div id="pro-health-body"><div class="loading">Lade...</div></div>
+            </div>
+            <!-- Pro Funktionen -->
+            <div class="card">
+              <div class="card-head"><span class="card-title">Funktionen</span><span class="card-icon">🛠️</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <button class="adb-btn" onclick="surfaceAction('pro','check')" style="width:fit-content">🔄 Health neu laden</button>
+                <button class="adb-btn" onclick="surfaceAction('pro','restart_tunnel')" style="width:fit-content">🔁 SSH-Tunnel neu starten</button>
+                <button class="adb-btn" onclick="if(confirm('Surface Pro wirklich neu starten?'))surfaceAction('pro','reboot')" style="width:fit-content;color:#f87171">⚡ Neu starten</button>
+                <div id="pro-action-result" style="font-size:12px;color:var(--accent);margin-top:4px"></div>
+              </div>
+            </div>
+          </div>
+
           <!-- ══ SURFACE DUO ══ -->
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">
             <span style="font-size:20px">📱</span>
@@ -1664,6 +1688,7 @@ function initBrain() {
     // Infra — Geräte
     {id:'DUO',group:'device',label:'📱 Surface Duo 2',size:12},
     {id:'SURFACE',group:'device',label:'💻 Surface Laptop',size:11},
+    {id:'PRO',group:'device',label:'💻 Surface Pro (Reni)',size:10},
     {id:'HUAWEI',group:'device',label:'📱 Huawei P20',size:9},
     // Infra — Backup & Code
     {id:'GITHUB',group:'infra',label:'📦 GitHub',size:10},
@@ -1690,6 +1715,7 @@ function initBrain() {
     {s:'BOLLA',t:'CHRIS'},{s:'BOLLA',t:'MEMORY'},{s:'BOLLA',t:'SOUL'},
     {s:'BOLLA',t:'MC'},{s:'BOLLA',t:'TELEGRAM'},
     {s:'CHRIS',t:'FAMILIE'},{s:'CHRIS',t:'DUO'},{s:'CHRIS',t:'SURFACE'},{s:'CHRIS',t:'SCHULE'},
+    {s:'FAMILIE',t:'PRO'},{s:'PRO',t:'TUNNEL'},
     // Familie
     {s:'FAMILIE',t:'RENATE'},{s:'FAMILIE',t:'ROBIN'},{s:'FAMILIE',t:'STEPHANIE'},
     {s:'STEPHANIE',t:'ENKEL'},{s:'ROBIN',t:'TELEGRAM'},
@@ -2465,6 +2491,7 @@ function adbRender() {
   // Load health data
   loadDuoHealth();
   loadBookHealth();
+  loadProHealth();
   loadStudioHealth();
 }
 
@@ -2528,6 +2555,34 @@ async function loadBookHealth() {
   }
 }
 
+async function loadProHealth() {
+  const el = document.getElementById('pro-health-body');
+  const badge = document.getElementById('pro-online-badge');
+  try {
+    const r = await fetch(API + '/api/surfaces/pro', {signal: AbortSignal.timeout(15000)});
+    const d = await r.json();
+    if (!d.online) {
+      badge.textContent = '● Offline';
+      badge.style.cssText = 'font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(248,113,113,0.15);color:#f87171;margin-left:4px';
+      el.innerHTML = `<div style="color:#f87171;font-size:13px">● Tunnel nicht erreichbar</div>`;
+      return;
+    }
+    badge.textContent = '● Online';
+    badge.style.cssText = 'font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(74,222,128,0.15);color:#4ade80;margin-left:4px';
+    const ramPct = Math.round(d.ramUsed / d.ramTotal * 100);
+    const diskPct = Math.round((d.diskTotal - d.diskFree) / d.diskTotal * 100);
+    const bat1 = d.bat1 < 0 ? '–' : `${d.bat1}% ${d.bat1Charging ? '⚡' : ''}`;
+    el.innerHTML =
+      surfaceRow('Uptime', d.uptime) +
+      surfaceRow('RAM', `${Math.round(d.ramUsed/1024)} / ${Math.round(d.ramTotal/1024)} GB`, surfaceBar(ramPct)) +
+      surfaceRow('Disk C:', `${d.diskFree} GB frei / ${d.diskTotal} GB`, surfaceBar(diskPct)) +
+      surfaceRow('Akku', bat1, d.bat1 >= 0 ? surfaceBar(d.bat1, '#4ade80') : '');
+  } catch(e) {
+    badge.textContent = '● Fehler';
+    el.innerHTML = `<div style="color:#f87171;font-size:13px">Fehler: ${e.message}</div>`;
+  }
+}
+
 async function loadStudioHealth() {
   const el = document.getElementById('studio-health-body');
   try {
@@ -2562,7 +2617,10 @@ async function surfaceAction(device, action) {
       body: JSON.stringify({action})
     });
     const d = await r.json();
-    if (action === 'check') { loadBookHealth(); return; }
+    if (action === 'check') {
+      if (device === 'pro') { loadProHealth(); } else { loadBookHealth(); }
+      return;
+    }
     if (resEl) resEl.textContent = d.msg || d.error || 'OK';
   } catch(e) {
     if (resEl) resEl.textContent = '⚠ ' + e.message;
