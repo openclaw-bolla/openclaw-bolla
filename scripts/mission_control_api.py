@@ -1548,6 +1548,7 @@ class Handler(BaseHTTPRequestHandler):
                 hit = body.get("hit", "").strip()
                 kontext = body.get("kontext", "").strip()
                 feedback = body.get("feedback", "").strip()
+                prev_lyrics = body.get("prev_lyrics", "").strip()
                 SCHOOL_KONTEXT = "Geburtstagssong für Schüler · Computerkurs Herrn Mandel · Lessing-Gymnasium"
                 is_school = not kontext or kontext == SCHOOL_KONTEXT
                 if not name:
@@ -1565,21 +1566,57 @@ class Handler(BaseHTTPRequestHandler):
                                  "(4) Replace EVERY occurrence of the name in the lyrics with this phonetic spelling. "
                                  "(5) Do NOT use parenthetical hints or footnotes — only the phonetic spelling in the text.")
                 hit_inst = f"Orientiere dich am Stil und der Struktur des Songs '{hit}'." if hit else ""
-                feedback_inst = f"Verbessere folgendes gegenüber der letzten Version: {feedback}" if feedback else ""
+                if feedback and prev_lyrics:
+                    feedback_inst = f"Hier ist der vorherige Liedtext:\n\n{prev_lyrics}\n\nBitte diesen Liedtext gezielt verbessern: {feedback}\nStruktur und gute Passagen beibehalten, nur verbessern was nötig ist."
+                elif feedback:
+                    feedback_inst = f"Bitte beim Schreiben beachten: {feedback}"
+                else:
+                    feedback_inst = ""
+
+                def gb_kontext(gb_str):
+                    """Berechnet zeitlichen Abstand zum Geburtstag und gibt klaren Kontext-Hinweis zurück."""
+                    if not gb_str:
+                        return ""
+                    from datetime import date as _date
+                    today = _date.today()
+                    seg = [s.strip() for s in gb_str.strip().rstrip(".").split(".") if s.strip()]
+                    try:
+                        day, month = int(seg[0]), int(seg[1])
+                        if len(seg) >= 3:
+                            y = int(seg[2]); year = 2000 + y if y < 100 else y
+                        else:
+                            year = today.year
+                        bd = _date(year, month, day)
+                        delta = (bd - today).days
+                        ds = f"{day:02d}.{month:02d}.{year}"
+                        if delta == 0:
+                            return f"Geburtstag: heute ({ds})"
+                        elif 1 <= delta <= 7:
+                            return f"Geburtstag: in {delta} Tagen ({ds}) — noch nicht heute"
+                        elif delta > 7:
+                            return f"Geburtstag: am {ds} (in {delta} Tagen) — noch nicht heute"
+                        elif -7 <= delta < 0:
+                            return f"Geburtstag: vor {-delta} Tagen ({ds})"
+                        else:
+                            return f"Geburtstag: {ds} (schon vorbei)"
+                    except Exception:
+                        return f"Geburtstag: {gb_str}"
+
+                lehrer = "Mister Mandel" if sprache != "de" else "Herrn Mandel"
                 if is_school:
                     prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Geburtstagssong {lang_inst}.
 
 Schüler/in: {name}
 Klasse: {klasse}
 Alter: {alter}
-Geburtstag: {geburtstag}
+{gb_kontext(geburtstag)}
 {hit_inst}
 {feedback_inst}
 
 Pflichtinhalte im Liedtext:
 - Name des Schülers / der Schülerin mehrfach nennen
 - Lessing-Gymnasium erwähnen
-- Computerkurs bei Herrn Mandel erwähnen
+- Computerkurs bei {lehrer} erwähnen
 
 Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Outro]
 

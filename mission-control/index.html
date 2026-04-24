@@ -722,7 +722,7 @@ html, body {
                 </span>
                 <span style="font-size:11px;color:var(--dim);font-weight:400">by Google</span>
               </div>
-              <div style="font-size:12px;color:var(--dim);margin-top:2px">KI-Bildgenerierung · bis zu 100 Bilder/Tag kostenlos</div>
+              <div style="font-size:12px;color:var(--dim);margin-top:2px">KI-Bildgenerierung · Gemini API (kostenpflichtig, sehr günstig)</div>
             </div>
           </div>
 
@@ -764,7 +764,7 @@ html, body {
               </select>
               <select id="bildgen-model" style="background:#1a2a3a;border:1px solid #253a50;
                 border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px;outline:none">
-                <option value="gemini-2.5-flash-image">Nano Banana (kostenlos)</option>
+                <option value="gemini-2.5-flash-image">Nano Banana</option>
                 <option value="gemini-3.1-flash-image-preview">Nano Banana 2 (schnell)</option>
               </select>
               <button id="bildgen-btn" onclick="bildgenGenerate()"
@@ -1406,8 +1406,8 @@ async function loadRobin() {
           ${[
             {date:'2026-06-11', label:'11.06.', title:'Medimeisterschaften', meta:'Obermehler, Thüringen', rgb:'30,136,229'},
             {date:'2026-07-19', label:'19.07.', title:'Semesterferien Sommer', meta:'bis 11.10. · 85 Tage frei', rgb:'67,160,71', range:'2026-10-11'},
-            {date:'2026-08-01', label:'01.08.', title:'Abflug Tansania', meta:'via Istanbul · RGXQU8', rgb:'239,83,80'},
-            {date:'2026-09-08', label:'08.09.', title:'Rückkehr', meta:'38 Tage Famulatur', rgb:'67,160,71'},
+            {date:'2026-08-01', label:'01.08.', title:'Abflug Tansania', meta:'STR → IST → JRO · RGXQU8', rgb:'239,83,80'},
+            {date:'2026-09-08', label:'08.09.', title:'Rückkehr', meta:'JRO → IST → STR · 38 Tage', rgb:'67,160,71'},
             {date:'2026-12-24', label:'24.12.', title:'Weihnachtsferien', meta:'bis 05.01. · 13 Tage frei', rgb:'30,136,229', range:'2027-01-05'},
           ].map(ev => {
             const today = new Date(new Date().toDateString());
@@ -1430,6 +1430,19 @@ async function loadRobin() {
             </li>`;
           }).join('')}
         </ul>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">🇹🇿 Tansania Aug–Sep 2026</span></div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;margin-bottom:8px">
+          <div style="font-size:11px;color:var(--dim)">Famulatur</div>
+          <div style="font-size:13px;color:var(--bright);margin-top:2px">KCMC – Kilimanjaro Christian Medical Centre, Moshi</div>
+          <div style="font-size:12px;color:var(--accent);margin-top:3px">✉️ internationalstudents@kcmcu.ac.tz</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;margin-bottom:8px">
+          <div style="font-size:11px;color:var(--dim)">Geplante Aktivitäten</div>
+          <div style="font-size:12px;color:var(--bright);margin-top:4px">🏔️ Kilimanjaro-Expedition</div>
+          <div style="font-size:12px;color:var(--bright);margin-top:4px">🦁 Safari (Nordtansania / Serengeti)</div>
+        </div>
       </div>
       <div class="card" style="grid-column:span 2">
         <div class="card-head"><span class="card-title">🩺 Studienverlauf Medizin</span><span style="font-size:11px;color:var(--dim)">Uni Ulm · Regelstudienzeit</span></div>
@@ -1487,7 +1500,9 @@ async function loadRobin() {
       L.marker([48.4221, 9.9524],{icon:mkr('🎓','#7c3aed')}).addTo(map).bindPopup('<b>Uni Ulm – Med. Fakultät</b><br>Albert-Einstein-Allee, 89081 Ulm');
       L.marker([48.3993, 9.9892],{icon:mkr('🏠','#1565c0')}).addTo(map).bindPopup('<b>Robin – WG</b><br>Walfischgasse 5, 89073 Ulm');
       L.marker([51.269, 10.5981],{icon:mkr('⚕️','#00897b')}).addTo(map).bindPopup('<b>Medimeisterschaften 2026</b><br>11.–14. Juni · Obermehler, Thüringen');
-      L.marker([-6.8161, 39.2804],{icon:mkr('✈️','#f57c00')}).addTo(map).bindPopup('<b>Famulatur Tansania</b><br>01.08. – 08.09.2026 · Dar es Salaam');
+      L.marker([-3.3490, 37.3430],{icon:mkr('🏥','#f57c00')}).addTo(map).bindPopup('<b>KCMC – Famulatur</b><br>Kilimanjaro Christian Medical Centre<br>01.08. – 08.09.2026 · Moshi<br>✉️ internationalstudents@kcmcu.ac.tz');
+      L.marker([-3.0674, 37.3556],{icon:mkr('🏔️','#546e7a')}).addTo(map).bindPopup('<b>Kilimanjaro – Uhuru Peak</b><br>5.895 m · Expedition geplant');
+      L.marker([-2.3333, 34.8333],{icon:mkr('🦁','#6d4c41')}).addTo(map).bindPopup('<b>Serengeti / Safari</b><br>Safari geplant · Nordtansania');
       if (isDE) {
         map.fitBounds([[48.3993,9.9524],[48.4221,9.9892]], {padding:[30,30]});
       }
@@ -3083,6 +3098,7 @@ async function loadRedesigns() {
 // ===== SUNO =====
 const SUNO_DEFAULT_KONTEXT = 'Geburtstagssong für Schüler · Computerkurs Herrn Mandel · Lessing-Gymnasium';
 let sunoLang = 'de';
+let sunoLastLyrics = '';
 function sunoKontextChanged() {
   const val = document.getElementById('suno-kontext').value.trim();
   const isDefault = val === SUNO_DEFAULT_KONTEXT;
@@ -3095,10 +3111,11 @@ function sunoSetLang(lang) {
   document.getElementById('suno-lang-en').style.background = lang === 'en' ? 'var(--accent)' : 'transparent';
   document.getElementById('suno-lang-en').style.color = lang === 'en' ? 'white' : 'var(--dim)';
 }
-async function sunoGenerate(feedback = '') {
+async function sunoGenerate(feedback = '', prevLyrics = '') {
   const name = document.getElementById('suno-name').value.trim();
   if (!name) { alert('Bitte Name eingeben'); return; }
   const kontext = document.getElementById('suno-kontext').value.trim();
+  const kontextFinal = sunoLang === 'en' ? kontext.replace('Herrn Mandel', 'Mister Mandel') : kontext;
   const isDefault = kontext === SUNO_DEFAULT_KONTEXT;
   const btn = document.getElementById('suno-btn');
   const status = document.getElementById('suno-status');
@@ -3109,7 +3126,7 @@ async function sunoGenerate(feedback = '') {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
-        name, sprache: sunoLang, kontext,
+        name, sprache: sunoLang, kontext: kontextFinal, prev_lyrics: prevLyrics,
         klasse: isDefault ? document.getElementById('suno-klasse').value.trim() : '',
         alter: isDefault ? document.getElementById('suno-alter').value.trim() : '',
         geburtstag: isDefault ? document.getElementById('suno-geburtstag').value.trim() : '',
@@ -3120,7 +3137,8 @@ async function sunoGenerate(feedback = '') {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     document.getElementById('suno-title-text').textContent = data.title || '';
-    document.getElementById('suno-lyrics-text').textContent = data.lyrics || '';
+    sunoLastLyrics = data.lyrics || '';
+    document.getElementById('suno-lyrics-text').textContent = sunoLastLyrics;
     document.getElementById('suno-style-text').textContent = data.style || '';
     document.getElementById('suno-lyrics-placeholder').style.display = 'none';
     document.getElementById('suno-result-grid').style.display = 'grid';
@@ -3134,7 +3152,15 @@ async function sunoGenerate(feedback = '') {
 }
 function sunoRefresh() {
   const feedback = document.getElementById('suno-feedback').value.trim();
-  sunoGenerate(feedback);
+  const btn = document.querySelector('[onclick="sunoRefresh()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Läuft…'; }
+  sunoGenerate(feedback, sunoLastLyrics).finally(() => {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '✅ Fertig!';
+      setTimeout(() => btn.textContent = '🔄 Neu', 3000);
+    }
+  });
 }
 function sunoCopy(id) {
   const el = document.getElementById(id);
