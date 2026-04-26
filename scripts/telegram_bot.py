@@ -6,8 +6,10 @@ Reagiert auf Erwähnungen von "bolla" oder direkte Antworten auf Bolla-Nachricht
 ADB-Befehle für Surface Duo 2 Steuerung.
 """
 
+import base64
 import json
 import logging
+import mimetypes
 import os
 import subprocess
 import requests
@@ -77,6 +79,58 @@ def send_photo(chat_id, photo_path, caption=None, reply_to=None):
     except Exception as e:
         log.error(f"sendPhoto Fehler: {e}")
         return None
+
+
+def get_file_url(file_id):
+    """Holt den Download-Link für eine Telegram-Datei."""
+    try:
+        r = requests.get(f"{API}/getFile", params={"file_id": file_id}, timeout=10)
+        data = r.json()
+        if data.get("ok"):
+            return f"https://api.telegram.org/file/bot{BOT_TOKEN}/{data['result']['file_path']}"
+    except Exception as e:
+        log.error(f"getFile Fehler: {e}")
+    return None
+
+
+def download_telegram_file(file_id, suffix=""):
+    """Lädt eine Telegram-Datei herunter. Gibt lokalen Pfad zurück oder None."""
+    url = get_file_url(file_id)
+    if not url:
+        return None
+    try:
+        r = requests.get(url, timeout=60)
+        r.raise_for_status()
+        ext = suffix or os.path.splitext(url.split("?")[0])[-1] or ".bin"
+        with tempfile.NamedTemporaryFile(suffix=ext, prefix="bolla_tg_", delete=False) as tmp:
+            tmp.write(r.content)
+            return tmp.name
+    except Exception as e:
+        log.error(f"Download Fehler: {e}")
+    return None
+
+
+def extract_media(msg):
+    """Gibt (file_id, suffix, label) zurück oder None."""
+    if "photo" in msg:
+        photo = msg["photo"][-1]  # größtes verfügbares Foto
+        return photo["file_id"], ".jpg", "Foto"
+    if "document" in msg:
+        doc = msg["document"]
+        mime = doc.get("mime_type", "")
+        suffix = mimetypes.guess_extension(mime) or ".bin"
+        if not suffix.startswith("."):
+            suffix = "." + suffix
+        return doc["file_id"], suffix, f"Dokument ({doc.get('file_name', 'unbekannt')})"
+    if "sticker" in msg:
+        return msg["sticker"]["file_id"], ".webp", "Sticker"
+    if "video" in msg:
+        return msg["video"]["file_id"], ".mp4", "Video"
+    if "voice" in msg:
+        return msg["voice"]["file_id"], ".ogg", "Sprachnachricht"
+    if "audio" in msg:
+        return msg["audio"]["file_id"], ".mp3", "Audio"
+    return None
 
 
 def adb_connected():
@@ -254,9 +308,13 @@ def handle_adb_command(text_lower, chat_id, msg_id):
     return False
 
 
-def ask_claude(message, sender_name):
+def ask_claude(message, sender_name, file_path=None, media_label=None):
     """Fragt Claude Code und gibt die Antwort zurück."""
-    prompt = f"[Telegram-Nachricht von {sender_name}]: {message}"
+    if file_path and media_label:
+        prompt = (f"[Telegram-Nachricht von {sender_name}]: {message or '(kein Text)'}\n\n"
+                  f"[Angehängtes {media_label}: {file_path} — bitte lesen und analysieren/beschreiben]")
+    else:
+        prompt = f"[Telegram-Nachricht von {sender_name}]: {message}"
     claude_bin = os.path.expanduser("~/.local/bin/claude")
     cmd = [claude_bin, "-p", "--output-format", "json", prompt]
     try:
@@ -278,7 +336,7 @@ def ask_claude(message, sender_name):
 
 def should_respond(msg):
     """Prüft ob Bolla auf diese Nachricht reagieren soll."""
-    text = msg.get("text", "").lower()
+    text = (msg.get("text", "") or msg.get("caption", "")).lower()
 
     # Direktnachrichten: immer antworten
     if msg.get("chat", {}).get("type") == "private":
@@ -320,34 +378,57 @@ def main():
         for update in updates:
             offset = update["update_id"] + 1
             msg = update.get("message")
-            if not msg or not msg.get("text"):
+            if not msg:
                 continue
 
             sender = msg.get("from", {})
             sender_name = sender.get("first_name", "Jemand")
             sender_id = sender.get("id", 0)
-            text = msg["text"]
+            text = msg.get("text") or msg.get("caption") or ""
             chat_id = msg["chat"]["id"]
             msg_id = msg["message_id"]
+            media = extract_media(msg)
 
             # Eigene Nachrichten ignorieren
             if sender_id == BOT_ID:
                 continue
 
-            log.info(f"[{sender_name}]: {text[:100]}")
+            # Nachrichten ohne Text und ohne Medien überspringen
+            if not text and not media:
+                continue
+
+            log.info(f"[{sender_name}]: {text[:100]}" + (f" [{media[2]}]" if media else ""))
 
             if should_respond(msg):
-                log.info(f"Antworte auf: {text[:80]}")
+                log.info(f"Antworte auf: {text[:80]}" + (f" [{media[2]}]" if media else ""))
 
-                # ADB-Befehle zuerst prüfen (nur von Chris)
-                if sender_id == int(CHRIS_ID) and handle_adb_command(text.strip().lower(), chat_id, msg_id):
+                # ADB-Befehle zuerst prüfen (nur von Chris, nur bei reinem Text)
+                if not media and sender_id == int(CHRIS_ID) and handle_adb_command(text.strip().lower(), chat_id, msg_id):
                     continue
 
                 # "Tippt..." Indikator
                 requests.post(f"{API}/sendChatAction",
                               json={"chat_id": chat_id, "action": "typing"})
 
-                reply = ask_claude(text, sender_name)
+                local_path = None
+                media_label = None
+                if media:
+                    file_id, suffix, media_label = media
+                    log.info(f"Lade {media_label} herunter...")
+                    local_path = download_telegram_file(file_id, suffix)
+                    if not local_path:
+                        send_message(chat_id, "Konnte die Datei nicht herunterladen 😕", reply_to=msg_id)
+                        continue
+
+                try:
+                    reply = ask_claude(text, sender_name, local_path, media_label)
+                finally:
+                    if local_path:
+                        try:
+                            os.unlink(local_path)
+                        except OSError:
+                            pass
+
                 if reply:
                     send_message(chat_id, reply, reply_to=msg_id)
                 else:

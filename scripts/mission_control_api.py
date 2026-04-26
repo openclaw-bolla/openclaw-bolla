@@ -262,44 +262,56 @@ def get_calendar():
 
 SPAM_SUBJECT = ["newsletter", "unsubscribe", "abbestellen", "rabatt", "sonderangebot",
                 "gutschein", "gewinnspiel", "angebot des tages", "% off", "% rabatt",
-                "jetzt kaufen", "nur heute", "limited offer", "act now"]
+                "jetzt kaufen", "nur heute", "limited offer", "act now",
+                "*** spam", "[spam]", "critical notice", "cloud storage plan",
+                "your account", "verify your", "suspended", "unusual activity"]
 SPAM_SENDER  = ["newsletter", "noreply", "no-reply", "donotreply", "mailer-daemon",
                 "marketing@", "notification@", "bounce@", "alerts@", "info@newsletter"]
 
 def _is_spam(subject, from_email):
+    import re
     s = subject.lower()
-    e = from_email.lower()
-    return any(k in s for k in SPAM_SUBJECT) or any(k in e for k in SPAM_SENDER)
+    e = (from_email or "").lower()
+    # Leet-speak Normalisierung (0→o, 1→l, 3→e)
+    s_norm = s.translate(str.maketrans("013", "ole"))
+    return (any(k in s for k in SPAM_SUBJECT)
+            or any(k in s_norm for k in SPAM_SUBJECT)
+            or any(k in e for k in SPAM_SENDER)
+            or not e  # kein Absender = Spam
+            )
 
 def _parse_graph_mail(m, account="Outlook"):
     received = m.get("receivedDateTime", "")
     try:
         dt = datetime.fromisoformat(received.replace("Z", "+00:00"))
         dt_local = dt.astimezone(timezone(timedelta(hours=2)))
-        date_str = dt_local.strftime("%d.%m. %H:%M")
-        is_today = dt_local.date() == datetime.now(timezone(timedelta(hours=2))).date()
-    except:
-        date_str = received[:16]
-        is_today = False
+        now_local = datetime.now(timezone(timedelta(hours=2)))
+        delta = (now_local.date() - dt_local.date()).days
+        if delta == 0:   date_str = "Heute " + dt_local.strftime("%H:%M")
+        elif delta == 1: date_str = "Gestern " + dt_local.strftime("%H:%M")
+        elif delta < 7:  date_str = dt_local.strftime("%a %H:%M")
+        else:            date_str = dt_local.strftime("%d.%m.")
+        is_today = delta == 0
+    except Exception:
+        date_str = received[:16]; is_today = False
     return {
+        "id": m.get("id", ""),
         "account": account,
         "from": m.get("from", {}).get("emailAddress", {}).get("name", "Unbekannt"),
         "from_email": m.get("from", {}).get("emailAddress", {}).get("address", ""),
         "subject": m.get("subject", "(kein Betreff)"),
         "date": date_str,
         "is_today": is_today,
-        "preview": m.get("bodyPreview", "")[:100]
+        "isRead": m.get("isRead", True),
+        "preview": m.get("bodyPreview", "")[:400]
     }
 
 def get_emails_outlook():
-    """Holt ungelesene Mails von ernstmandel@outlook.de via Graph API."""
     data = graph_get(
         "/me/mailFolders/inbox/messages?$filter=isRead%20eq%20false"
-        "&$top=10"
-        "&$select=subject,from,receivedDateTime,isRead,bodyPreview"
+        "&$top=10&$select=id,subject,from,receivedDateTime,isRead,bodyPreview"
     )
-    if not data:
-        return []
+    if not data: return []
     msgs = []
     for m in data.get("value", []):
         entry = _parse_graph_mail(m)
@@ -308,21 +320,17 @@ def get_emails_outlook():
     return msgs
 
 def get_emails_recent_outlook():
-    """Holt die letzten 5 empfangenen Mails (unabhängig vom Lesestatus), Spam gefiltert."""
     data = graph_get(
-        "/me/mailFolders/inbox/messages"
-        "?$top=15"
-        "&$select=subject,from,receivedDateTime,isRead,bodyPreview"
+        "/me/mailFolders/inbox/messages?$top=15"
+        "&$select=id,subject,from,receivedDateTime,isRead,bodyPreview"
     )
-    if not data:
-        return []
+    if not data: return []
     msgs = []
     for m in data.get("value", []):
         entry = _parse_graph_mail(m)
         if not _is_spam(entry["subject"], entry["from_email"]):
             msgs.append(entry)
-        if len(msgs) >= 5:
-            break
+        if len(msgs) >= 6: break
     return msgs
 
 def get_emails_sent_outlook():
@@ -429,18 +437,208 @@ def get_emails_wtnet():
         return []
 
 
+def get_emails_recent_wtnet():
+    """Holt die letzten Mails von wtnet (gelesen + ungelesen)."""
+    import imaplib, email as email_lib
+    from email.header import decode_header
+    try:
+        wtnet_cfg = os.path.join(WORKSPACE, "config/wtnet_account.json")
+        with open(wtnet_cfg) as f:
+            cfg = json.load(f)
+        mail = imaplib.IMAP4_SSL(cfg["imap_host"], cfg["imap_port"])
+        mail.login(cfg["email"], cfg["password"])
+        mail.select("INBOX", readonly=True)
+        _, msg_ids = mail.search(None, "ALL")
+        ids = msg_ids[0].split()
+        msgs = []
+        for mid in reversed(ids[-10:]):
+            _, data = mail.fetch(mid, "(RFC822 FLAGS)")
+            raw_data = data[0]
+            flags = data[0][0] if isinstance(data[0], tuple) else b""
+            raw = raw_data[1] if isinstance(raw_data, tuple) else None
+            if not raw:
+                continue
+            msg = email_lib.message_from_bytes(raw)
+            subj_raw = msg.get("Subject", "(kein Betreff)")
+            subj_parts = decode_header(subj_raw)
+            subj = "".join(p.decode(enc or "utf-8", errors="replace") if isinstance(p, bytes) else p for p, enc in subj_parts)
+            from_raw = msg.get("From", "Unbekannt")
+            from_parts = decode_header(from_raw)
+            from_str = "".join(p.decode(enc or "utf-8", errors="replace") if isinstance(p, bytes) else p for p, enc in from_parts)
+            from_name = from_str.split("<")[0].strip().strip('"')
+            date_raw = msg.get("Date", "")
+            try:
+                from email.utils import parsedate_to_datetime
+                dt = parsedate_to_datetime(date_raw).astimezone(timezone(timedelta(hours=2)))
+                date_str = dt.strftime("%d.%m. %H:%M")
+                is_today = dt.date() == datetime.now().date()
+            except Exception:
+                date_str, is_today = date_raw[:16], False
+            is_read = b"\\Seen" in (flags if isinstance(flags, bytes) else b"")
+            if "*** SPAM" in subj.upper() or "[SPAM]" in subj.upper():
+                continue
+            msgs.append({"account": "wtnet", "from": from_name or "Unbekannt",
+                         "subject": subj, "date": date_str, "is_today": is_today,
+                         "isRead": is_read, "preview": ""})
+        mail.logout()
+        return msgs
+    except Exception as e:
+        print(f"wtnet recent Fehler: {e}")
+        return []
+
+
+def mail_command(data):
+    """Führt einen Sprachbefehl auf eine oder mehrere Mails aus."""
+    import subprocess, smtplib, re
+    from email.mime.text import MIMEText
+    instruction = (data.get("instruction") or "").strip()
+    instr_low   = instruction.lower()
+
+    # Normalisierung: mails-Array (neu) oder einzelne mail (Fallback)
+    mails = data.get("mails") or []
+    if not mails and data.get("mail"):
+        mails = [data["mail"]]
+    if not mails:
+        return {"type":"error","text":"Keine Mail ausgewählt."}
+    mail = mails[0]  # Erste Mail für Einzeloperationen
+
+    def _mail_block(m, idx=None):
+        prefix = f"Mail {idx}: " if idx is not None else ""
+        return (f"{prefix}Von: {m.get('from','')} <{m.get('from_email','')}>\n"
+                f"Betreff: {m.get('subject','')}\nDatum: {m.get('date','')}\n"
+                f"Inhalt: {m.get('preview','')}")
+
+    # ── Löschen ────────────────────────────────────────────────────────────────
+    if any(w in instr_low for w in ["lösch", "loesch", "delete", "entfern", "wegmach"]):
+        deleted, errors = [], []
+        ol_token = None
+        wtnet_cfg = None
+        for m in mails:
+            mid, account = m.get("id",""), m.get("account","")
+            if account == "Outlook" and mid:
+                try:
+                    if ol_token is None:
+                        ol_token = get_token()
+                    req = urllib.request.Request(
+                        f"https://graph.microsoft.com/v1.0/me/messages/{mid}",
+                        method="DELETE", headers={"Authorization": f"Bearer {ol_token}"})
+                    urllib.request.urlopen(req, timeout=10)
+                    deleted.append(m.get('from','?'))
+                except Exception as e:
+                    errors.append(str(e))
+            elif account == "wtnet" and mid:
+                try:
+                    import imaplib
+                    if wtnet_cfg is None:
+                        wtnet_cfg = json.loads(Path(os.path.join(WORKSPACE,"config/wtnet_account.json")).read_text())
+                    with imaplib.IMAP4_SSL(wtnet_cfg["imap_host"], wtnet_cfg["imap_port"]) as imap:
+                        imap.login(wtnet_cfg["email"], wtnet_cfg["password"])
+                        imap.select("INBOX")
+                        imap.uid("store", mid.encode(), "+FLAGS", "\\Deleted")
+                        imap.expunge()
+                    deleted.append(m.get('from','?'))
+                except Exception as e:
+                    errors.append(str(e))
+            else:
+                errors.append(f"Kein Konto/ID für: {m.get('subject','?')}")
+        parts = []
+        if deleted:
+            parts.append(f"✓ {len(deleted)} Mail(s) gelöscht: {', '.join(deleted)}")
+        if errors:
+            parts.append("⚠ Fehler: " + "; ".join(errors))
+        return {"type":"deleted","text":"\n".join(parts) or "Nichts gelöscht."}
+
+    # ── Antworten / Entwurf ────────────────────────────────────────────────────
+    if any(w in instr_low for w in ["antwort","reply","schreib","verfass","sende","formulier"]):
+        if len(mails) > 1:
+            return {"type":"error","text":"Antworten geht nur für eine einzelne Mail — bitte nur eine auswählen."}
+        prompt = f"""Du bist Bolla, Chris Mandels persönlicher KI-Assistent.
+Verfasse eine E-Mail-Antwort gemäß der Anweisung.
+
+Original-Mail:
+Von: {mail.get('from','')} <{mail.get('from_email','')}>
+Betreff: {mail.get('subject','')}
+Inhalt: {mail.get('preview','')}
+
+Anweisung: {instruction}
+
+Schreibe NUR den E-Mail-Text (kein JSON, keine Erklärung).
+Beginne direkt mit der Anrede. Unterschreibe als Chris Mandel."""
+        try:
+            r = subprocess.run(["claude","-p",prompt], capture_output=True, text=True, timeout=60)
+            return {"type":"draft","text":r.stdout.strip(),
+                    "draft_to": mail.get("from_email",""),
+                    "draft_subject": "Re: " + mail.get("subject",""),
+                    "draft_account": mail.get("account","Outlook")}
+        except Exception as e:
+            return {"type":"error","text":str(e)}
+
+    # ── Senden (vorbereiteter Entwurf) ─────────────────────────────────────────
+    if data.get("action") == "send":
+        to      = data.get("draft_to","")
+        subject = data.get("draft_subject","")
+        text    = data.get("draft_text","")
+        account = data.get("draft_account","Outlook")
+        if account == "wtnet":
+            try:
+                cfg = json.loads(Path(os.path.join(WORKSPACE,"config/wtnet_account.json")).read_text())
+                msg = MIMEText(text, "plain", "utf-8")
+                msg["Subject"], msg["From"], msg["To"] = subject, cfg["email"], to
+                with smtplib.SMTP(cfg["smtp_host"], cfg["smtp_port"]) as s:
+                    s.starttls(); s.login(cfg["email"], cfg["password"]); s.send_message(msg)
+                return {"type":"sent","text":f"✓ Gesendet an {to}"}
+            except Exception as e:
+                return {"type":"error","text":str(e)}
+        else:
+            try:
+                token = get_token()
+                body = {"message":{"subject":subject,
+                    "body":{"contentType":"Text","content":text},
+                    "toRecipients":[{"emailAddress":{"address":to}}]},
+                    "saveToSentItems":True}
+                req = urllib.request.Request(
+                    "https://graph.microsoft.com/v1.0/me/sendMail",
+                    data=json.dumps(body).encode(), method="POST",
+                    headers={"Authorization":f"Bearer {token}","Content-Type":"application/json"})
+                urllib.request.urlopen(req, timeout=15)
+                return {"type":"sent","text":f"✓ Gesendet an {to}"}
+            except Exception as e:
+                return {"type":"error","text":str(e)}
+
+    # ── Analyse / Prüfen (Standard) ────────────────────────────────────────────
+    if len(mails) == 1:
+        mail_context = _mail_block(mail)
+    else:
+        mail_context = "\n\n".join(_mail_block(m, i+1) for i, m in enumerate(mails))
+
+    prompt = f"""Du bist Bolla, Chris Mandels KI-Assistent. Antworte kurz und direkt auf Deutsch.
+
+{"E-Mail" if len(mails)==1 else f"{len(mails)} E-Mails"}:
+{mail_context}
+
+Aufgabe: {instruction or 'Fasse diese Mail(s) kurz zusammen.'}"""
+    try:
+        r = subprocess.run(["claude","-p",prompt], capture_output=True, text=True, timeout=60)
+        return {"type":"analysis","text":r.stdout.strip()}
+    except Exception as e:
+        return {"type":"error","text":str(e)}
+
+
 def get_emails():
     """Kombiniert Outlook + wtnet Mails."""
-    outlook  = get_emails_outlook()
-    wtnet    = get_emails_wtnet()
-    recent   = get_emails_recent_outlook()
-    sent     = get_emails_sent_outlook()
+    outlook       = get_emails_outlook()
+    wtnet         = get_emails_wtnet()
+    recent_ol     = get_emails_recent_outlook()
+    recent_wt     = get_emails_recent_wtnet()
+    sent          = get_emails_sent_outlook()
 
     all_msgs = outlook + wtnet
+    # Recent: Outlook + wtnet zusammen, nach Datum sortiert (neueste zuerst)
+    recent_all = recent_ol + recent_wt
     return {
         "count": len(all_msgs),
         "messages": all_msgs,
-        "recent": recent,
+        "recent": recent_all,
         "sent": sent,
         "accounts": [
             {"name": "Outlook", "count": len(outlook)},
@@ -559,6 +757,130 @@ def get_photo_of_day():
         return None
 
 
+def get_recipe_of_day():
+    """Generiert täglich ein deutsches Rezept via Claude + Bild via Gemini. Tages-Cache."""
+    import subprocess
+    from datetime import date
+
+    today = date.today().isoformat()
+    cache_file = os.path.join(WORKSPACE, f"cache/recipe_{today}.json")
+
+    if os.path.exists(cache_file):
+        with open(cache_file) as f:
+            return json.load(f)
+
+    prompt = (
+        f"Heute ist {today}. Generiere ein leckeres deutsches Tagesrezept (auch internationale Gerichte "
+        "sind willkommen). Antworte NUR als reines JSON ohne Markdown:\n"
+        '{"titel":"Rezeptname","beschreibung":"1 Satz was das Gericht ist","'
+        'zutaten":["2 Eier","100g Mehl"],"anweisungen":["Schritt 1","Schritt 2"],'
+        '"bildprompt":"food photography prompt auf Englisch, appetitlich, weißer Hintergrund"}'
+    )
+    try:
+        result = subprocess.run(
+            ["claude", "-p", prompt],
+            capture_output=True, text=True, timeout=60
+        )
+        text = result.stdout.strip()
+        if "```" in text:
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+        data = json.loads(text.strip())
+    except Exception as e:
+        print(f"Rezept Claude-Fehler: {e}")
+        return {"titel": "Pasta al Pomodoro", "beschreibung": "Klassische Tomatensauce mit frischem Basilikum.",
+                "zutaten": ["400g Spaghetti", "800g Tomaten", "3 Knoblauchzehen", "Basilikum", "Olivenöl", "Salz"],
+                "anweisungen": ["Spaghetti al dente kochen.", "Knoblauch in Öl anschwitzen.", "Tomaten dazugeben, 15 Min köcheln.", "Mit Basilikum und Salz abschmecken.", "Mit Pasta servieren."],
+                "bildprompt": "spaghetti pomodoro, food photography, white background, appetizing"}
+
+    bild_b64 = None
+    try:
+        bildprompt = data.get("bildprompt", f"appetizing {data.get('titel','food')} dish, food photography")
+        img_b64, err = bildgen_generate(bildprompt, aspect_ratio="4:3")
+        if img_b64:
+            bild_b64 = img_b64
+    except Exception as e:
+        print(f"Rezept Bild-Fehler: {e}")
+
+    data["bild"] = bild_b64
+
+    try:
+        with open(cache_file, "w") as f:
+            json.dump(data, f, ensure_ascii=False)
+    except Exception as e:
+        print(f"Rezept Cache-Fehler: {e}")
+
+    return data
+
+
+REZEPTE_DIR = "/mnt/d/OneDrive/Dokumente/Rezepte-Cocktails"
+
+def save_recipe_docx(data):
+    """Speichert Rezept als Word-Datei in den Rezepte-Ordner. Gibt Pfad oder Fehler zurück."""
+    import base64, re, io
+    from docx import Document
+    from docx.shared import Pt, RGBColor, Inches
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+    titel = data.get("titel", "Rezept").strip()
+    fname = re.sub(r'[\\/:*?"<>|]', '', titel).strip() + ".docx"
+    path = os.path.join(REZEPTE_DIR, fname)
+
+    doc = Document()
+    style = doc.styles["Normal"]
+    style.font.name = "Calibri"
+    style.font.size = Pt(11)
+
+    # Titel
+    t = doc.add_heading(titel, level=1)
+    t.runs[0].font.color.rgb = RGBColor(0xC0, 0x39, 0x2B)
+
+    # Bild
+    bild_b64 = data.get("bild")
+    if bild_b64:
+        try:
+            img_bytes = base64.b64decode(bild_b64)
+            doc.add_picture(io.BytesIO(img_bytes), width=Inches(4))
+            doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        except Exception:
+            pass
+
+    # Beschreibung
+    if data.get("beschreibung"):
+        p = doc.add_paragraph(data["beschreibung"])
+        p.runs[0].italic = True
+        p.runs[0].font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+
+    doc.add_paragraph()
+
+    # Zutaten
+    h = doc.add_heading("Zutaten", level=2)
+    h.runs[0].font.color.rgb = RGBColor(0xC0, 0x39, 0x2B)
+    for z in data.get("zutaten", []):
+        p = doc.add_paragraph(style="List Bullet")
+        p.add_run(z)
+
+    doc.add_paragraph()
+
+    # Zubereitung
+    h = doc.add_heading("Zubereitung", level=2)
+    h.runs[0].font.color.rgb = RGBColor(0xC0, 0x39, 0x2B)
+    for i, s in enumerate(data.get("anweisungen", []), 1):
+        p = doc.add_paragraph(style="List Number")
+        p.add_run(s)
+
+    # Datum
+    doc.add_paragraph()
+    p = doc.add_paragraph(f"Gespeichert am {datetime.now().strftime('%d.%m.%Y')}")
+    p.runs[0].font.size = Pt(9)
+    p.runs[0].font.color.rgb = RGBColor(0x99, 0x99, 0x99)
+
+    os.makedirs(REZEPTE_DIR, exist_ok=True)
+    doc.save(path)
+    return fname
+
+
 def get_robin_info():
     """Robin-Panel: Standort, Reise-Info, letzte Nachrichten."""
     from datetime import datetime
@@ -627,7 +949,7 @@ def get_redesigns_meta():
 
 
 def get_sysinfo():
-    import subprocess, shutil
+    import subprocess, shutil, socket
 
     # RAM
     with open('/proc/meminfo') as f:
@@ -640,12 +962,34 @@ def get_sysinfo():
     ram_used = ram_total - ram_free
     ram_pct = int(ram_used / ram_total * 100)
 
+    # Swap
+    swap_total = mem.get('SwapTotal', 0) // 1024
+    swap_used = (mem.get('SwapTotal', 0) - mem.get('SwapFree', 0)) // 1024
+    swap_pct = int(swap_used / swap_total * 100) if swap_total > 0 else 0
+
+    # CPU Load + Kerne
+    with open('/proc/loadavg') as f:
+        load_parts = f.read().split()
+    load1, load5, load15 = load_parts[0], load_parts[1], load_parts[2]
+    cpu_count = os.cpu_count() or 1
+    cpu_pct = min(100, int(float(load1) / cpu_count * 100))
+
     # Disk C:
     disk = os.statvfs('/mnt/c')
     disk_total = disk.f_blocks * disk.f_frsize // (1024**3)
     disk_free = disk.f_bavail * disk.f_frsize // (1024**3)
     disk_used = disk_total - disk_free
     disk_pct = int(disk_used / disk_total * 100)
+
+    # Disk D: (OneDrive)
+    disk_d = {"total_gb": 0, "free_gb": 0, "pct": 0}
+    try:
+        dd = os.statvfs('/mnt/d')
+        dt = dd.f_blocks * dd.f_frsize // (1024**3)
+        df = dd.f_bavail * dd.f_frsize // (1024**3)
+        disk_d = {"total_gb": dt, "free_gb": df, "pct": int((dt - df) / dt * 100) if dt > 0 else 0}
+    except Exception:
+        pass
 
     # Uptime
     with open('/proc/uptime') as f:
@@ -654,29 +998,66 @@ def get_sysinfo():
     m = int((secs % 3600) // 60)
     uptime = f"{h}h {m}m" if h > 0 else f"{m}m"
 
-    # Claude Code Status (ersetzt OpenClaw Gateway)
-    gw_status = 'claude-code'
+    # IP-Adresse (WSL)
+    try:
+        ip = subprocess.run(['hostname', '-I'], capture_output=True, text=True, timeout=3).stdout.strip().split()[0]
+    except Exception:
+        ip = '—'
+
+    # Kernel
+    try:
+        kernel = subprocess.run(['uname', '-r'], capture_output=True, text=True, timeout=3).stdout.strip()
+    except Exception:
+        kernel = '—'
+
+    # Prozesse
+    try:
+        ps_out = subprocess.run(['ps', 'ax', '--no-headers'], capture_output=True, text=True, timeout=3)
+        proc_count = len(ps_out.stdout.strip().splitlines())
+    except Exception:
+        proc_count = 0
 
     # Git status
-    git_info = {"commit": "unbekannt", "branch": "main", "dirty": 0, "last_push": ""}
+    git_info = {"commit": "unbekannt", "branch": "main", "dirty": 0, "commits_today": 0, "recent": []}
     try:
-        log = subprocess.run(
-            ['git', '-C', WORKSPACE, 'log', '--oneline', '-1', '--format=%h|%s|%cr'],
+        branch = subprocess.run(
+            ['git', '-C', WORKSPACE, 'rev-parse', '--abbrev-ref', 'HEAD'],
             capture_output=True, text=True, timeout=5
         )
-        if log.returncode == 0 and log.stdout.strip():
-            parts = log.stdout.strip().split('|')
-            git_info["commit"] = parts[0] if len(parts) > 0 else ''
-            git_info["message"] = parts[1] if len(parts) > 1 else ''
-            git_info["age"] = parts[2] if len(parts) > 2 else ''
-        
+        if branch.returncode == 0:
+            git_info["branch"] = branch.stdout.strip()
+
+        log3 = subprocess.run(
+            ['git', '-C', WORKSPACE, 'log', '--oneline', '-5', '--format=%h|%s|%cr'],
+            capture_output=True, text=True, timeout=5
+        )
+        if log3.returncode == 0 and log3.stdout.strip():
+            lines = log3.stdout.strip().splitlines()
+            recent = []
+            for line in lines:
+                parts = line.split('|')
+                recent.append({
+                    "commit": parts[0] if len(parts) > 0 else '',
+                    "message": parts[1] if len(parts) > 1 else '',
+                    "age": parts[2] if len(parts) > 2 else ''
+                })
+            git_info["recent"] = recent
+            git_info["commit"] = recent[0]["commit"] if recent else ''
+            git_info["message"] = recent[0]["message"] if recent else ''
+            git_info["age"] = recent[0]["age"] if recent else ''
+
+        today_log = subprocess.run(
+            ['git', '-C', WORKSPACE, 'log', '--since=midnight', '--oneline'],
+            capture_output=True, text=True, timeout=5
+        )
+        git_info["commits_today"] = len([l for l in today_log.stdout.strip().splitlines() if l.strip()])
+
         status = subprocess.run(
             ['git', '-C', WORKSPACE, 'status', '--short'],
             capture_output=True, text=True, timeout=5
         )
         git_info["dirty"] = len([l for l in status.stdout.strip().splitlines() if l.strip()])
-        
-        # Remote URL
+
         remote = subprocess.run(
             ['git', '-C', WORKSPACE, 'remote', 'get-url', 'origin'],
             capture_output=True, text=True, timeout=5
@@ -689,9 +1070,15 @@ def get_sysinfo():
 
     return {
         "ram": {"used_mb": ram_used, "total_mb": ram_total, "pct": ram_pct},
+        "swap": {"used_mb": swap_used, "total_mb": swap_total, "pct": swap_pct},
+        "cpu": {"load1": load1, "load5": load5, "load15": load15, "cores": cpu_count, "pct": cpu_pct},
         "disk": {"used_gb": disk_used, "total_gb": disk_total, "pct": disk_pct, "free_gb": disk_free},
+        "disk_d": disk_d,
         "uptime": uptime,
-        "gateway": gw_status,
+        "ip": ip,
+        "kernel": kernel,
+        "procs": proc_count,
+        "gateway": 'claude-code',
         "git": git_info
     }
 
@@ -939,31 +1326,55 @@ def get_token_halfdays(days=7):
                             b["output"] += u.get("output_tokens", 0) or 0
                             b["cache_read"] += u.get("cache_read_input_tokens", 0) or 0
                             b["cache_creation"] += u.get("cache_creation_input_tokens", 0) or 0
+                            # Modell-Zählung
+                            mdl = msg.get("model", "") or ""
+                            if "opus" in mdl.lower():
+                                b["opus_calls"] = b.get("opus_calls", 0) + 1
+                                b["opus_out"] = b.get("opus_out", 0) + (u.get("output_tokens", 0) or 0)
+                            elif "sonnet" in mdl.lower():
+                                b["sonnet_calls"] = b.get("sonnet_calls", 0) + 1
                 except Exception:
                     continue
     except Exception as e:
         print(f"halfday error: {e}")
 
     result = []
+    total_opus_calls = total_sonnet_calls = total_opus_out = total_out_7d = 0
     for i in range(days - 1, -1, -1):
         day = now_local - timedelta(days=i)
         date_str = day.strftime("%Y-%m-%d")
         weekday = ["Mo","Di","Mi","Do","Fr","Sa","So"][day.weekday()]
         for half in ["AM", "PM"]:
             b = buckets.get((date_str, half), {"input":0,"output":0,"cache_read":0,"cache_creation":0})
+            total_opus_calls += b.get("opus_calls", 0)
+            total_sonnet_calls += b.get("sonnet_calls", 0)
+            total_opus_out += b.get("opus_out", 0)
+            total_out_7d += b.get("output", 0)
             result.append({
                 "date": date_str,
                 "weekday": weekday,
                 "label": f"{weekday} {day.strftime('%d.%m.')}",
                 "half": half,
-                "input": b["input"],
-                "output": b["output"],
-                "cache_read": b["cache_read"],
-                "cache_creation": b["cache_creation"],
-                "total_in": b["input"] + b["cache_read"] + b["cache_creation"],
-                "total_out": b["output"]
+                "input": b.get("input", 0),
+                "output": b.get("output", 0),
+                "cache_read": b.get("cache_read", 0),
+                "cache_creation": b.get("cache_creation", 0),
+                "total_in": b.get("input", 0) + b.get("cache_read", 0) + b.get("cache_creation", 0),
+                "total_out": b.get("output", 0),
+                "opus_calls": b.get("opus_calls", 0),
+                "sonnet_calls": b.get("sonnet_calls", 0),
             })
-    data = {"halfdays": result, "days": days}
+    avg_out_per_day = total_out_7d // max(days, 1)
+    data = {
+        "halfdays": result,
+        "days": days,
+        "models": {
+            "opus_calls_7d": total_opus_calls,
+            "sonnet_calls_7d": total_sonnet_calls,
+            "opus_out_7d": total_opus_out,
+            "avg_out_per_day": avg_out_per_day,
+        }
+    }
     _halfday_cache["data"] = data
     _halfday_cache["ts"] = _t.time()
     return data
@@ -1506,6 +1917,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/calendar": get_calendar,
                 "/api/email": get_emails,
                 "/api/photo": lambda: get_photo_of_day() or {},
+                "/api/recipe": get_recipe_of_day,
                 "/api/birthdays": get_birthdays,
                 "/api/robin": get_robin_info,
                 "/api/sysinfo": get_sysinfo,
@@ -1554,10 +1966,18 @@ class Handler(BaseHTTPRequestHandler):
             body = {}
 
         try:
-            if self.path == "/api/bolla/chat":
+            if self.path == "/api/recipe/save":
+                try:
+                    fname = save_recipe_docx(body)
+                    self._send_json({"ok": True, "datei": fname})
+                except Exception as e:
+                    self._send_json({"ok": False, "error": str(e)}, status=500)
+            elif self.path == "/api/bolla/chat":
                 self._handle_bolla_stream(body)
             elif self.path == "/api/bolla/tts":
                 self._handle_tts(body)
+            elif self.path == "/api/mail-command":
+                self._send_json(mail_command(body))
             elif self.path == "/api/surfaces/book/action":
                 self._send_json(do_book_action(body.get("action", "")))
             elif self.path == "/api/surfaces/pro/action":

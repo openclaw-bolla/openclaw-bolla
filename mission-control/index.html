@@ -207,6 +207,7 @@ html, body {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
+  align-items: start;
 }
 
 .grid-2 {
@@ -233,6 +234,12 @@ html, body {
 }
 
 .card:hover { background: var(--card2); }
+
+.grid-4 > .card {
+  max-height: 220px;
+  overflow: hidden;
+  padding: 10px 14px;
+}
 
 .card-head {
   display: flex;
@@ -300,11 +307,80 @@ html, body {
 .event-meta { color: var(--dim); font-size: 13px; }
 
 /* ===== MAIL ===== */
-.mail-item { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 14px; }
-.mail-item:last-child { border-bottom: none; }
-.mail-from { font-weight: 600; color: var(--bright); }
-.mail-subject { color: var(--text); margin-top: 1px; }
-.mail-date { color: var(--dim); font-size: 13px; margin-top: 1px; }
+.mail-row { display:flex; align-items:stretch; gap:0; border-bottom:1px solid rgba(255,255,255,0.05); cursor:default; transition:background .15s; }
+.mail-row:last-child { border-bottom:none; }
+.mail-row:hover { background:rgba(255,255,255,0.03); border-radius:6px; }
+.mail-acct-bar { width:3px; border-radius:2px; flex-shrink:0; margin:6px 10px 6px 0; }
+.mail-acct-bar.outlook { background:#4fc3f7; }
+.mail-acct-bar.wtnet   { background:#ce93d8; }
+.mail-body { flex:1; padding:8px 0; min-width:0; }
+.mail-top  { display:flex; align-items:baseline; gap:6px; }
+.mail-from { font-weight:600; color:var(--bright); font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:55%; }
+.mail-date { color:var(--dim); font-size:11px; margin-left:auto; white-space:nowrap; flex-shrink:0; }
+.mail-subject { color:var(--text); font-size:13px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mail-subject.unread { color:var(--bright); font-weight:500; }
+.mail-unread-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); flex-shrink:0; margin-top:5px; }
+.mail-section-head { font-size:11px; font-weight:600; letter-spacing:.08em; color:var(--dim); text-transform:uppercase; padding:14px 0 6px; }
+.mail-acct-chip { display:inline-flex; align-items:center; gap:4px; font-size:12px; padding:3px 10px; border-radius:20px; font-weight:600; }
+.mail-acct-chip.outlook { background:rgba(79,195,247,0.12); color:#4fc3f7; }
+.mail-acct-chip.wtnet   { background:rgba(206,147,216,0.15); color:#ce93d8; }
+.mail-preview { font-size:11px; color:var(--dim); margin-top:1px; display:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mail-row.selected { background:rgba(124,58,237,0.18); border-radius:6px; outline:1px solid rgba(124,58,237,0.45); }
+.mail-row.selected .mail-preview { display:block; }
+
+/* ── Befehlsleiste (fixed unten) ── */
+#mail-cmd-bar {
+  position:fixed; bottom:0; left:200px; right:0; z-index:50;
+  background:#120c22;
+  border-top:1px solid rgba(255,255,255,0.12);
+  padding:10px 20px 12px;
+  display:none;
+}
+#mail-cmd-bar .cmd-row { display:flex; gap:8px; align-items:center; }
+#mail-cmd-selected { font-size:12px; color:#a78bfa; font-weight:600; white-space:nowrap; max-width:160px; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; }
+#mail-cmd-input {
+  flex:1; background:#1e1535; border:1px solid rgba(255,255,255,0.28);
+  border-radius:8px; padding:9px 14px; color:#fff; font-size:13px; outline:none;
+}
+#mail-cmd-input::placeholder { color:rgba(255,255,255,0.4); }
+#mail-cmd-input:focus { background:#261c42; border-color:#a78bfa; }
+#mail-cmd-btn {
+  background:#4fc3f7; color:#000; border:none; border-radius:8px;
+  padding:9px 18px; font-size:14px; font-weight:700; cursor:pointer; flex-shrink:0;
+}
+#mail-cmd-btn:disabled { opacity:.35; cursor:not-allowed; }
+
+/* ── Antwort-Panel (slide-up) ── */
+#mail-result-panel {
+  position:fixed; bottom:68px; left:50%; z-index:60;
+  width:min(640px, calc(100vw - 40px));
+  transform:translateX(-50%) translateY(calc(100% + 80px));
+  background:#1a1030; border:1px solid rgba(255,255,255,0.12); border-top:2px solid #4fc3f7;
+  border-radius:14px;
+  max-height:50vh; display:flex; flex-direction:column;
+  box-shadow:0 8px 32px rgba(0,0,0,0.6);
+  transition:transform .26s cubic-bezier(.4,0,.2,1), opacity .26s;
+  opacity:0;
+}
+#mail-result-panel.open { transform:translateX(-50%) translateY(0); opacity:1; }
+#mail-result-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 18px 8px; border-bottom:1px solid rgba(255,255,255,0.08); flex-shrink:0;
+}
+#mail-result-title { font-size:13px; font-weight:600; color:#a78bfa; }
+#mail-result-close {
+  background:rgba(255,255,255,0.08); border:none; color:#fff; border-radius:50%;
+  width:26px; height:26px; cursor:pointer; font-size:14px; line-height:26px; text-align:center;
+}
+#mail-result-close:hover { background:rgba(255,255,255,0.18); }
+#mail-result-body {
+  padding:14px 18px 18px; overflow-y:auto; flex:1;
+  font-size:13px; color:#e0d7f5; line-height:1.7; white-space:pre-wrap;
+}
+#mail-result-body strong, #mail-result-body b { color:#fff; }
+#mail-result-actions { padding:0 18px 14px; display:flex; gap:8px; flex-shrink:0; }
+.result-btn-send { background:#66bb6a; color:#000; border:none; border-radius:7px; padding:7px 16px; cursor:pointer; font-size:13px; font-weight:600; }
+.result-btn-discard { background:rgba(255,255,255,0.1); color:#ccc; border:none; border-radius:7px; padding:7px 16px; cursor:pointer; font-size:13px; }
 
 /* ===== KLASSEN ===== */
 .klasse-next {
@@ -456,6 +532,10 @@ html, body {
             <div class="card-head"><span class="card-title">😄 Witz des Tages</span><span class="card-icon">🤣</span></div>
             <div id="joke-card"><div class="loading">Lade...</div></div>
           </div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <div class="card-head"><span class="card-title">🍽️ Rezept des Tages</span><button onclick="downloadRecipe()" title="Rezept herunterladen" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:14px;padding:4px 10px;cursor:pointer;margin-left:auto">⬇ Speichern</button><span class="card-icon" style="margin-left:10px">👨‍🍳</span></div>
+          <div id="recipe-card"><div class="loading">Lade...</div></div>
         </div>
       </div>
 
@@ -993,6 +1073,8 @@ document.querySelectorAll('.nav-item').forEach(item => {
     const page = item.dataset.page;
     document.getElementById('page-' + page).classList.add('active');
     document.getElementById('page-title').textContent = item.querySelector('span:nth-child(2)').textContent;
+    const cmdBar = document.getElementById('mail-cmd-bar');
+    if (page !== 'email') { if (cmdBar) cmdBar.style.display='none'; closeMailResult(); _selectedMails=[]; }
     if (page === 'brain') initBrain();
     if (page === 'bolla') loadBollaModel();
     if (page === 'system') loadSystem();
@@ -1186,76 +1268,188 @@ async function loadEmailData() {
     const d = await r.json();
     document.getElementById('mail-count').textContent = d.count;
     if (d.count > 0) { document.getElementById('mail-badge').style.display='inline'; document.getElementById('mail-badge').textContent=d.count; }
-    let h = '';
-    d.messages.slice(0,3).forEach(m => {
-      const badge = m.account === 'wtnet'
-        ? `<span style="font-size:10px;background:rgba(171,71,188,0.3);color:#ce93d8;padding:1px 6px;border-radius:8px;margin-left:5px">wtnet</span>`
-        : `<span style="font-size:10px;background:rgba(79,195,247,0.2);color:var(--accent);padding:1px 6px;border-radius:8px;margin-left:5px">Outlook</span>`;
-      h += `<div class="mail-item"><div class="mail-from">${m.from}${badge}</div><div class="mail-subject">${m.subject}</div><div class="mail-date">${m.date}</div></div>`;
-    });
+    const preview = [...(d.messages||[]), ...(d.recent||[])].slice(0,3);
+    let h = preview.map(m => mailRow(m, true)).join('');
+    if (!h) h = `<div style="font-size:12px;color:var(--dim);padding:4px 0">Keine neuen Mails</div>`;
     document.getElementById('recent-mails').innerHTML = h;
     window._emails = d;
   } catch(e) {}
+}
+
+function mailRow(m, showDot) {
+  const acct   = m.account === 'wtnet' ? 'wtnet' : 'outlook';
+  const dot    = showDot && !m.isRead ? `<div class="mail-unread-dot"></div>` : `<div style="width:6px;flex-shrink:0"></div>`;
+  const subCls = !m.isRead ? 'mail-subject unread' : 'mail-subject';
+  const safe   = s => (s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  const data   = `data-mail='${JSON.stringify({id:m.id||'',account:m.account||'Outlook',from:m.from||m.to||'',from_email:m.from_email||'',subject:m.subject||'',preview:m.preview||'',date:m.date||''})}'`;
+  return `<div class="mail-row" ${data} onclick="selectMail(this)">
+    <div class="mail-acct-bar ${acct}"></div>
+    ${dot}
+    <div class="mail-body">
+      <div class="mail-top">
+        <span class="mail-from">${m.from || m.to || '—'}</span>
+        <span class="mail-date">${m.date}</span>
+      </div>
+      <div class="${subCls}">${m.subject}</div>
+      <div class="mail-preview">${m.preview ? m.preview.substring(0,80)+'…' : ''}</div>
+    </div>
+  </div>`;
 }
 
 function loadEmailFull() {
   const d = window._emails;
   if (!d) { document.getElementById('email-content').innerHTML = '<div class="loading">Lade...</div>'; return; }
 
-  const todayCount = (d.recent || []).filter(m => m.is_today).length;
+  // Konto-Chips im Header
+  const accounts = d.accounts || [];
+  const chips = accounts.map(a => {
+    const cls = a.name.toLowerCase() === 'wtnet' ? 'wtnet' : 'outlook';
+    const label = cls === 'wtnet' ? 'wtnet.de' : 'Outlook';
+    const unread = a.count > 0 ? `<span style="background:rgba(255,255,255,0.15);border-radius:10px;padding:0 5px;margin-left:4px">${a.count}</span>` : '';
+    return `<span class="mail-acct-chip ${cls}">● ${label}${unread}</span>`;
+  }).join('');
 
-  // Box 1: Ungelesene Mails
-  let unreadItems = '';
-  if (d.count > 0) {
-    d.messages.forEach(m => {
-      const badge = m.account === 'wtnet'
-        ? `<span style="font-size:10px;background:rgba(171,71,188,0.3);color:#ce93d8;padding:1px 5px;border-radius:8px;margin-left:4px">wtnet</span>` : '';
-      unreadItems += `<div class="mail-item"><span style="font-weight:600;color:var(--bright)">${m.from}</span>${badge}<div style="font-size:12px;color:var(--bright);margin-top:2px">${m.subject}</div><div style="font-size:11px;color:var(--dim)">${m.date}</div></div>`;
-    });
-  } else {
-    unreadItems = `<div style="font-size:12px;color:var(--dim);padding:6px 0">Keine ungelesenen Mails</div>`;
-  }
+  // Eingehend: ungelesene zuerst, dann gelesene recent
+  const unread = d.messages || [];
+  const recentIds = new Set(unread.map(m => m.subject + m.date));
+  const recentOnly = (d.recent || []).filter(m => !recentIds.has(m.subject + m.date));
+  const allInbox = [...unread, ...recentOnly];
 
-  let h = `<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-start">
-    <div class="card" style="flex:2;min-width:180px">
-      <div class="card-head"><span class="card-title">📬 Ungelesen</span></div>
-      ${unreadItems}
+  let inboxRows = allInbox.length
+    ? allInbox.map(m => mailRow(m, true)).join('')
+    : `<div style="font-size:13px;color:var(--dim);padding:10px 0">Keine Mails</div>`;
+
+  let sentRows = (d.sent||[]).length
+    ? d.sent.map(m => mailRow(m, false)).join('')
+    : `<div style="font-size:13px;color:var(--dim);padding:10px 0">Keine gesendeten Mails</div>`;
+
+  const h = `<div style="grid-column:1/-1;padding-bottom:72px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">${chips}</div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head"><span class="card-title">📥 Posteingang</span></div>
+      ${inboxRows}
     </div>
-    <div class="card" style="margin-left:auto;min-width:160px">
-      <div class="card-head"><span class="card-title">📊 Übersicht</span></div>
-      <div style="font-size:13px;line-height:2">
-        <div>📧 <span style="color:var(--bright);font-weight:600">${d.count}</span> <span style="color:var(--dim)">Ungelesen</span></div>
-        <div>📥 <span style="color:var(--bright);font-weight:600">${todayCount}</span> <span style="color:var(--dim)">Heute empfangen</span></div>
-        <div>📤 <span style="color:var(--bright);font-weight:600">${(d.sent||[]).length}</span> <span style="color:var(--dim)">Zuletzt gesendet</span></div>
-      </div>
-    </div>
+    <div class="mail-section-head">📤 Gesendet</div>
+    <div class="card">${sentRows}</div>
   </div>`;
-
-  h += `<div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">📥 Zuletzt empfangen</span></div>`;
-  if ((d.recent||[]).length) {
-    d.recent.forEach(m => {
-      const badge = m.account === 'wtnet'
-        ? `<span style="font-size:10px;background:rgba(171,71,188,0.3);color:#ce93d8;padding:1px 6px;border-radius:8px;margin-left:5px">wtnet</span>` : '';
-      const unread = !m.isRead ? `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:5px;vertical-align:middle"></span>` : '';
-      h += `<div class="mail-item">${unread}<span style="font-weight:600;color:var(--bright)">${m.from}</span>${badge}<div style="color:var(--bright);font-size:12px;margin-top:2px">${m.subject}</div><div style="font-size:11px;color:var(--dim)">${m.date}</div></div>`;
-    });
-  } else {
-    h += `<div style="font-size:12px;color:var(--dim);padding:6px 0">Keine Mails</div>`;
-  }
-  h += `</div>`;
-
-  h += `<div class="card"><div class="card-head"><span class="card-title">📤 Zuletzt gesendet</span></div>`;
-  if ((d.sent||[]).length) {
-    d.sent.forEach(m => {
-      h += `<div class="mail-item"><span style="font-weight:600;color:var(--bright)">An: ${m.to}</span><div style="color:var(--bright);font-size:12px;margin-top:2px">${m.subject}</div><div style="font-size:11px;color:var(--dim)">${m.date}</div></div>`;
-    });
-  } else {
-    h += `<div style="font-size:12px;color:var(--dim);padding:6px 0">Keine gesendeten Mails</div>`;
-  }
-  h += `</div>`;
 
   document.getElementById('email-content').innerHTML = h;
 }
+
+// ===== MAIL KOMMANDO =====
+let _selectedMails = [];
+
+function _updateCmdBar() {
+  const bar = document.getElementById('mail-cmd-bar');
+  const sel = document.getElementById('mail-cmd-selected');
+  const inp = document.getElementById('mail-cmd-input');
+  const btn = document.getElementById('mail-cmd-btn');
+  if (!_selectedMails.length) {
+    if (bar) bar.style.display = 'none';
+    return;
+  }
+  if (bar) bar.style.display = 'block';
+  if (sel) sel.textContent = _selectedMails.length === 1
+    ? '📧 ' + (_selectedMails[0].from || '').slice(0, 36)
+    : `📧 ${_selectedMails.length} Mails`;
+  if (inp) inp.disabled = false;
+  if (btn) btn.disabled = false;
+}
+
+function selectMail(el) {
+  let mail;
+  try { mail = JSON.parse(el.getAttribute('data-mail')); } catch(e) { return; }
+  if (el.classList.contains('selected')) {
+    el.classList.remove('selected');
+    _selectedMails = _selectedMails.filter(m => m.id !== mail.id || m.subject !== mail.subject);
+  } else {
+    el.classList.add('selected');
+    _selectedMails.push(mail);
+  }
+  closeMailResult();
+  _updateCmdBar();
+}
+
+function clearMailSelection() {
+  document.querySelectorAll('.mail-row.selected').forEach(r => r.classList.remove('selected'));
+  _selectedMails = [];
+  closeMailResult();
+  const bar = document.getElementById('mail-cmd-bar');
+  if (bar) bar.style.display = 'none';
+}
+
+function _showResultPanel(title, html, accentColor) {
+  const panel   = document.getElementById('mail-result-panel');
+  const titleEl = document.getElementById('mail-result-title');
+  const body    = document.getElementById('mail-result-body');
+  const acts    = document.getElementById('mail-result-actions');
+  if (titleEl) titleEl.textContent = title;
+  if (body)    body.innerHTML = html;
+  if (acts)    acts.innerHTML = '';
+  if (panel)   { panel.style.borderTopColor = accentColor || '#4fc3f7'; panel.classList.add('open'); }
+}
+
+function closeMailResult() {
+  const panel = document.getElementById('mail-result-panel');
+  if (panel) panel.classList.remove('open');
+}
+
+async function sendMailCommand() {
+  if (!_selectedMails.length) return;
+  const inp  = document.getElementById('mail-cmd-input');
+  const btn  = document.getElementById('mail-cmd-btn');
+  const instruction = inp.value.trim();
+  if (!instruction) return;
+  inp.disabled = true; btn.disabled = true; btn.textContent = '…';
+  _showResultPanel('Bolla arbeitet…', '⏳ Bolla arbeitet…', 'var(--accent)');
+  try {
+    const r = await fetch(API+'/api/mail-command', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({instruction, mails:_selectedMails})
+    });
+    const d = await r.json();
+    const acts = document.getElementById('mail-result-actions');
+    if (d.type==='deleted') {
+      _showResultPanel('Gelöscht ✓', d.text, '#66bb6a');
+      inp.value=''; setTimeout(()=>loadEmailFull(),1500);
+    } else if (d.type==='draft') {
+      const safeText = d.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const dStr = encodeURIComponent(JSON.stringify(d));
+      _showResultPanel('Entwurf', `<div style="font-size:11px;color:var(--dim);margin-bottom:8px">📝 An: ${d.draft_to}</div><div style="white-space:pre-wrap">${safeText}</div>`, '#ffa726');
+      if (acts) acts.innerHTML =
+        `<button onclick="sendDraft(decodeURIComponent('${dStr}'))" style="background:#66bb6a;color:#000;border:none;border-radius:6px;padding:7px 18px;cursor:pointer;font-size:12px;font-weight:600">✉ Senden</button>`
+        +`<button onclick="closeMailResult()" style="background:rgba(255,255,255,0.1);color:var(--text);border:none;border-radius:6px;padding:7px 18px;cursor:pointer;font-size:12px">✕ Verwerfen</button>`;
+      inp.value='';
+    } else if (d.type==='sent') {
+      _showResultPanel('Gesendet ✓', d.text, '#66bb6a'); inp.value='';
+    } else if (d.type==='error') {
+      _showResultPanel('Fehler', '⚠ '+d.text, '#ef5350');
+    } else {
+      _showResultPanel('Ergebnis', (d.text||'(keine Antwort)').replace(/\n/g,'<br>'), '#a78bfa');
+    }
+  } catch(e) {
+    _showResultPanel('Fehler', '⚠ '+e.message, '#ef5350');
+  }
+  inp.disabled=false; btn.disabled=false; btn.textContent='→';
+}
+
+async function sendDraft(dStr) {
+  const body = document.getElementById('mail-result-body');
+  if (body) body.innerHTML = '⏳ Sende…';
+  try {
+    const d=JSON.parse(dStr);
+    const r=await fetch(API+'/api/mail-command',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'send',draft_to:d.draft_to,
+        draft_subject:d.draft_subject,draft_text:d.text,draft_account:d.draft_account})});
+    const res=await r.json();
+    _showResultPanel('Gesendet ✓', res.text||'✓ Gesendet', '#66bb6a');
+  } catch(e){ _showResultPanel('Fehler','⚠ '+e.message,'#ef5350'); }
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&document.activeElement?.id==='mail-cmd-input') sendMailCommand();
+});
 
 // ===== WETTER =====
 const WMO_ICONS = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'❄️',73:'❄️',75:'❄️',80:'🌦️',81:'🌧️',82:'🌧️',95:'⛈️'};
@@ -1263,7 +1457,7 @@ const WMO_DESC = {0:'Klar',1:'Überwiegend klar',2:'Teils bewölkt',3:'Bedeckt',
 
 async function loadWeather() {
   try {
-    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=53.69&longitude=9.98&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m,apparent_temperature&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=Europe/Berlin&forecast_days=4');
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=53.69&longitude=9.98&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m,apparent_temperature&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=Europe/Berlin&forecast_days=8');
     const d = await r.json();
     window._weather = d;
     const c = d.current;
@@ -1293,7 +1487,7 @@ function loadWeatherFull() {
     </div>
     <div style="font-size:12px;color:var(--dim);margin-top:8px">Gefühlt ${Math.round(c.apparent_temperature)}°C · 💧${c.relative_humidity_2m}% · 💨${Math.round(c.wind_speed_10m)} km/h</div>
   </div>`;
-  d.daily.time.slice(0,4).forEach((date,i) => {
+  d.daily.time.slice(0,8).forEach((date,i) => {
     const day = new Date(date).toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit'});
     h += `<div class="card">
       <div class="card-head"><span class="card-title">${day}</span></div>
@@ -1331,14 +1525,76 @@ async function loadJoke() {
     const d = await r.json();
     if (d.type === 'twopart') {
       document.getElementById('joke-card').innerHTML = `
-        <div style="font-size:12px;color:var(--bright);line-height:1.5;margin-bottom:10px">${d.setup}</div>
-        <details><summary style="font-size:11px;color:var(--accent);cursor:pointer;list-style:none">👉 Auflösung</summary>
-        <div style="font-size:12px;color:var(--warning);margin-top:6px;line-height:1.5">${d.delivery}</div></details>`;
+        <div style="font-size:15px;color:var(--bright);line-height:1.6;margin-bottom:10px">${d.setup}</div>
+        <details><summary style="font-size:14px;color:var(--accent);cursor:pointer;list-style:none">👉 Auflösung</summary>
+        <div style="font-size:15px;color:var(--warning);margin-top:6px;line-height:1.6">${d.delivery}</div></details>`;
     } else if (d.type === 'single') {
-      document.getElementById('joke-card').innerHTML = `<div style="font-size:12px;color:var(--bright);line-height:1.5">${d.joke}</div>`;
+      document.getElementById('joke-card').innerHTML = `<div style="font-size:15px;color:var(--bright);line-height:1.6">${d.joke}</div>`;
     }
   } catch(e) {
-    document.getElementById('joke-card').innerHTML = '<div style="font-size:12px;color:var(--dim)">Warum können Geister schlecht lügen?<br><br>Weil man durch sie hindurchsehen kann. 👻</div>';
+    document.getElementById('joke-card').innerHTML = '<div style="font-size:15px;color:var(--dim)">Warum können Geister schlecht lügen?<br><br>Weil man durch sie hindurchsehen kann. 👻</div>';
+  }
+}
+
+// ===== REZEPT =====
+async function loadRecipe() {
+  try {
+    const r = await fetch(API + '/api/recipe');
+    const d = await r.json();
+    if (!d.titel) return;
+    _recipeData = d;
+    const zutaten = (d.zutaten || []).map(z => `<li style="margin-bottom:3px">${z}</li>`).join('');
+    const schritte = (d.anweisungen || []).map((s,i) => `<div style="display:flex;gap:8px;margin-bottom:6px"><span style="color:var(--accent);font-weight:700;min-width:18px">${i+1}.</span><span>${s}</span></div>`).join('');
+    const bildHTML = d.bild
+      ? `<img src="data:image/png;base64,${d.bild}" style="width:calc(100% - 16px);height:auto;object-fit:contain;border-radius:8px;display:block;margin:0 8px 8px">`
+      : '';
+    document.getElementById('recipe-card').innerHTML = `
+      <div style="font-size:16px;font-weight:700;color:var(--bright);margin-bottom:10px">${d.titel}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;align-items:start">
+        <div style="grid-column:1/3;text-align:center">
+          ${bildHTML}
+          <div style="font-size:14px;color:var(--dim);line-height:1.6;font-style:italic;text-align:left">${d.beschreibung||''}</div>
+        </div>
+        <div>
+          <div style="font-size:13px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Zutaten</div>
+          <ul style="font-size:14px;color:var(--text);line-height:1.7;list-style:disc;padding-left:18px">${zutaten}</ul>
+        </div>
+        <div>
+          <div style="font-size:13px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Zubereitung</div>
+          <div style="font-size:14px;color:var(--text);line-height:1.7">${schritte}</div>
+        </div>
+      </div>`;
+  } catch(e) {
+    document.getElementById('recipe-card').innerHTML = '<div style="font-size:12px;color:var(--dim)">Rezept konnte nicht geladen werden.</div>';
+  }
+}
+
+// ===== REZEPT SPEICHERN =====
+let _recipeData = null;
+async function downloadRecipe() {
+  const d = _recipeData;
+  if (!d || !d.titel) return;
+  const btn = document.querySelector('[onclick="downloadRecipe()"]');
+  const orig = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = '⏳ Speichern…'; btn.disabled = true; }
+  try {
+    const r = await fetch(API + '/api/recipe/save', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(d)
+    });
+    const res = await r.json();
+    if (res.ok) {
+      if (btn) { btn.textContent = '✅ Gespeichert'; btn.style.color = 'var(--success)'; }
+      setTimeout(() => { if (btn) { btn.textContent = orig; btn.style.color = ''; btn.disabled = false; }}, 2500);
+    } else {
+      if (btn) { btn.textContent = '❌ Fehler'; btn.style.color = 'var(--danger)'; }
+      setTimeout(() => { if (btn) { btn.textContent = orig; btn.style.color = ''; btn.disabled = false; }}, 3000);
+      console.error('Rezept speichern:', res.error);
+    }
+  } catch(e) {
+    if (btn) { btn.textContent = '❌ Fehler'; btn.style.color = 'var(--danger)'; }
+    setTimeout(() => { if (btn) { btn.textContent = orig; btn.style.color = ''; btn.disabled = false; }}, 3000);
   }
 }
 
@@ -1430,7 +1686,7 @@ async function loadRobin() {
           ${[
             {date:'2026-06-11', label:'11.06.', title:'Medimeisterschaften', meta:'Obermehler, Thüringen', rgb:'30,136,229'},
             {date:'2026-07-19', label:'19.07.', title:'Semesterferien Sommer', meta:'bis 11.10. · 85 Tage frei', rgb:'67,160,71', range:'2026-10-11'},
-            {date:'2026-08-01', label:'01.08.', title:'Abflug Tansania', meta:'STR → IST → JRO · RGXQU8', rgb:'239,83,80'},
+            {date:'2026-07-31', label:'31.07.', title:'Abflug Tansania', meta:'STR → IST → JRO · RGXQU8', rgb:'239,83,80'},
             {date:'2026-09-08', label:'08.09.', title:'Rückkehr', meta:'JRO → IST → STR · 38 Tage', rgb:'67,160,71'},
             {date:'2026-12-24', label:'24.12.', title:'Weihnachtsferien', meta:'bis 05.01. · 13 Tage frei', rgb:'30,136,229', range:'2027-01-05'},
           ].map(ev => {
@@ -1524,7 +1780,7 @@ async function loadRobin() {
       L.marker([48.4221, 9.9524],{icon:mkr('🎓','#7c3aed')}).addTo(map).bindPopup('<b>Uni Ulm – Med. Fakultät</b><br>Albert-Einstein-Allee, 89081 Ulm');
       L.marker([48.3993, 9.9892],{icon:mkr('🏠','#1565c0')}).addTo(map).bindPopup('<b>Robin – WG</b><br>Walfischgasse 5, 89073 Ulm');
       L.marker([51.269, 10.5981],{icon:mkr('⚕️','#00897b')}).addTo(map).bindPopup('<b>Medimeisterschaften 2026</b><br>11.–14. Juni · Obermehler, Thüringen');
-      L.marker([-3.3490, 37.3430],{icon:mkr('🏥','#f57c00')}).addTo(map).bindPopup('<b>KCMC – Famulatur</b><br>Kilimanjaro Christian Medical Centre<br>01.08. – 08.09.2026 · Moshi<br>✉️ internationalstudents@kcmcu.ac.tz');
+      L.marker([-3.3490, 37.3430],{icon:mkr('🏥','#f57c00')}).addTo(map).bindPopup('<b>KCMC – Famulatur</b><br>Kilimanjaro Christian Medical Centre<br>31.07. – 08.09.2026 · Moshi<br>✉️ internationalstudents@kcmcu.ac.tz');
       L.marker([-3.0674, 37.3556],{icon:mkr('🏔️','#546e7a')}).addTo(map).bindPopup('<b>Kilimanjaro – Uhuru Peak</b><br>5.895 m · Expedition geplant');
       L.marker([-2.3333, 34.8333],{icon:mkr('🦁','#6d4c41')}).addTo(map).bindPopup('<b>Serengeti / Safari</b><br>Safari geplant · Nordtansania');
       if (isDE) {
@@ -1603,37 +1859,90 @@ async function loadSystem() {
     const total = tok.total || {input:0,output:0,cache_read:0,cache_creation:0};
     const sb = document.getElementById('sidebar-tokens');
     if (sb) sb.innerHTML = `<div>Tokens heute</div><div style="color:var(--accent);margin-top:2px">↓ ${fmtTok(today.input+today.cache_read+today.cache_creation)} &nbsp;·&nbsp; ↑ ${fmtTok(today.output)}</div>`;
+    // Pro-Plan Einschätzung (Output-Tokens Proxy)
+    const models = hist.models || {};
+    const opusCalls7d = models.opus_calls_7d || 0;
+    const sonnetCalls7d = models.sonnet_calls_7d || 0;
+    const avgOutPerDay = models.avg_out_per_day || 0;
+    // Claude Code Pro: ~40k Output-Tokens/Tag geschätzte Grenze bei normaler Nutzung
+    // Max 5x: deutlich mehr Opus-Nutzung erlaubt
+    const PRO_LIMIT_OUT = 40000;
+    const proFit = avgOutPerDay < PRO_LIMIT_OUT && opusCalls7d < 20;
+    const proColor = proFit ? 'var(--success)' : 'var(--warning)';
+    const proText = proFit
+      ? `✅ Pro würde wohl reichen — Ø ${fmtTok(avgOutPerDay)}/Tag Output, ${opusCalls7d} Opus-Anfragen/7d`
+      : `⚠️ Pro evtl. zu knapp — Ø ${fmtTok(avgOutPerDay)}/Tag Output, ${opusCalls7d} Opus-Anfragen/7d`;
+
+    const recentCommits = (sys.git.recent || []).map((c,i) => `
+      <div style="display:flex;gap:8px;align-items:baseline;padding:5px 0;${i>0?'border-top:1px solid rgba(255,255,255,0.04)':''}">
+        <code style="background:rgba(79,195,247,0.12);color:var(--accent);padding:1px 5px;border-radius:3px;font-size:10px;flex-shrink:0">${c.commit}</code>
+        <span style="font-size:12px;color:var(--bright);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.message}</span>
+        <span style="font-size:10px;color:var(--dim);flex-shrink:0">${c.age}</span>
+      </div>`).join('');
+
     document.getElementById('system-content').innerHTML = `
       <div class="card">
         <div class="card-head"><span class="card-title">💻 Rechner</span></div>
-        <div style="font-size:11px;color:var(--dim)">Uptime: <span style="color:var(--bright)">${sys.uptime}</span></div>
-        <div style="margin-top:10px">
+        <div style="display:flex;gap:16px;font-size:11px;color:var(--dim);margin-bottom:10px;flex-wrap:wrap">
+          <span>⏱ Uptime: <span style="color:var(--bright)">${sys.uptime}</span></span>
+          <span>🌐 IP: <span style="color:var(--bright)">${sys.ip||'—'}</span></span>
+          <span>⚙️ ${sys.cpu?.cores||'?'} Kerne</span>
+          <span>🔄 ${sys.procs||'?'} Prozesse</span>
+        </div>
+        <div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--dim)">CPU Load (1/5/15 min)</span><span style="color:var(--bright)">${sys.cpu?.load1} / ${sys.cpu?.load5} / ${sys.cpu?.load15}</span></div>
+          ${bar(sys.cpu?.pct||0, (sys.cpu?.pct||0)>80?'var(--danger)':'var(--accent)')}
+        </div>
+        <div style="margin-bottom:8px">
           <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--dim)">RAM</span><span style="color:var(--bright)">${sys.ram.used_mb.toLocaleString()} / ${sys.ram.total_mb.toLocaleString()} MB</span></div>
           ${bar(sys.ram.pct, sys.ram.pct>80?'var(--danger)':'var(--accent)')}
         </div>
-        <div style="margin-top:8px">
+        ${sys.swap?.total_mb > 0 ? `<div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--dim)">Swap</span><span style="color:var(--bright)">${sys.swap.used_mb.toLocaleString()} / ${sys.swap.total_mb.toLocaleString()} MB</span></div>
+          ${bar(sys.swap.pct, sys.swap.pct>60?'var(--warning)':'var(--success)')}
+        </div>` : ''}
+        <div style="margin-bottom:8px">
           <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--dim)">Disk C:</span><span style="color:var(--bright)">${sys.disk.used_gb} / ${sys.disk.total_gb} GB</span></div>
           ${bar(sys.disk.pct, sys.disk.pct>85?'var(--danger)':'var(--success)')}
-          <div style="font-size:11px;color:var(--success)">${sys.disk.free_gb} GB frei</div>
+          <div style="font-size:11px;color:var(--dim)">${sys.disk.free_gb} GB frei</div>
         </div>
+        ${sys.disk_d?.total_gb > 0 ? `<div>
+          <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--dim)">Disk D: (OneDrive)</span><span style="color:var(--bright)">${sys.disk_d.free_gb} GB frei von ${sys.disk_d.total_gb} GB</span></div>
+          ${bar(sys.disk_d.pct, sys.disk_d.pct>85?'var(--danger)':'var(--success)')}
+        </div>` : ''}
+        <div style="font-size:10px;color:var(--dim);margin-top:8px;font-family:monospace">${sys.kernel||''}</div>
       </div>
       <div class="card">
         <div class="card-head"><span class="card-title">🐾 Bolla</span></div>
         <div style="font-size:22px;color:var(--success);margin-bottom:8px">🟢 Claude Code</div>
-        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px">
-          <div style="font-size:11px;color:var(--dim)">Modell</div>
-          <div style="font-size:13px;color:var(--accent);margin-top:2px">${tok.model||'Claude Opus 4.7'}</div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;margin-bottom:8px">
+          <div style="font-size:11px;color:var(--dim);margin-bottom:4px">Aktuelles Modell</div>
+          <div style="font-size:13px;color:var(--accent)">${tok.model||'Claude Opus 4.7'}</div>
         </div>
-        ${tok.note ? `<div style="font-size:11px;color:var(--success);margin-top:6px;margin-bottom:10px">✨ ${tok.note}</div>` : ''}
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;margin-bottom:8px">
+          <div style="font-size:11px;color:var(--dim);margin-bottom:6px">Modell-Mix (7 Tage)</div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--bright);margin-bottom:3px"><span>🔴 Opus-Anfragen</span><span style="color:${opusCalls7d>50?'var(--warning)':'var(--bright)'}">${opusCalls7d}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--bright);margin-bottom:3px"><span>🔵 Sonnet-Anfragen</span><span>${sonnetCalls7d}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-top:4px;border-top:1px solid rgba(255,255,255,0.06);padding-top:4px"><span>Ø Output/Tag</span><span>${fmtTok(avgOutPerDay)} Tokens</span></div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px;margin-bottom:8px">
+          <div style="font-size:11px;color:var(--dim);margin-bottom:6px">Max Plan vs. Pro Plan (ab Mai)</div>
+          <div style="font-size:11px;color:${proColor};line-height:1.5">${proText}</div>
+          <div style="font-size:10px;color:var(--dim);margin-top:6px;line-height:1.4">Pro: ~$20/Mo · Sonnet unbegrenzt · Opus eingeschränkt<br>Max: ~$100/Mo · Opus voll · kein Limit</div>
+        </div>
         ${renderHalfdays(hist)}
       </div>
       <div class="card">
         <div class="card-head"><span class="card-title">📦 GitHub</span></div>
-        <div style="margin-bottom:10px">${dirty}</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+          ${dirty}
+          <span style="font-size:11px;color:var(--dim)">Branch: <code style="color:var(--accent)">${sys.git.branch||'main'}</code></span>
+          ${sys.git.commits_today > 0 ? `<span style="background:rgba(34,197,94,0.15);color:var(--success);font-size:11px;padding:2px 8px;border-radius:8px">${sys.git.commits_today} Commit${sys.git.commits_today>1?'s':''} heute</span>` : ''}
+          <span style="font-size:11px;color:var(--dim)">${sys.git.repo||''}</span>
+        </div>
         <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px">
-          <div style="font-size:11px;color:var(--dim)">Letzter Commit</div>
-          <div style="font-size:13px;color:var(--bright);margin-top:3px">${sys.git.message||'—'}</div>
-          <div style="font-size:11px;color:var(--dim);margin-top:4px"><code style="background:rgba(79,195,247,0.15);color:var(--accent);padding:1px 5px;border-radius:3px">${sys.git.commit}</code> · ${sys.git.age||''}</div>
+          <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Letzte 5 Commits</div>
+          ${recentCommits || '<div style="font-size:12px;color:var(--dim)">Keine Commits</div>'}
         </div>
       </div>
       <div class="card">
@@ -1800,6 +2109,7 @@ async function initialLoad(attempt=0) {
     loadWeather();
     loadPhoto();
     loadJoke();
+    loadRecipe();
     loadSystem();
     loadBirthdays();
     loadRobin();
@@ -3230,5 +3540,25 @@ function sunoCopy(id) {
 // Kontext-Feld beim Laden vorbelegen
 document.getElementById('suno-kontext').value = SUNO_DEFAULT_KONTEXT;
 </script>
+
+<!-- ── Mail Befehlsleiste (fixed) ── -->
+<div id="mail-cmd-bar">
+  <div class="cmd-row">
+    <span id="mail-cmd-selected">📧</span>
+    <button id="mail-cmd-clear" onclick="clearMailSelection()" title="Auswahl aufheben" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:14px;cursor:pointer;padding:0 2px;flex-shrink:0">✕</button>
+    <input id="mail-cmd-input" type="text" placeholder="Anweisung… prüfe · lösche · antworte dass…" autocomplete="off">
+    <button id="mail-cmd-btn" onclick="sendMailCommand()">→</button>
+  </div>
+</div>
+
+<!-- ── Antwort-Panel (slide-up) ── -->
+<div id="mail-result-panel">
+  <div id="mail-result-header">
+    <span id="mail-result-title">Ergebnis</span>
+    <button id="mail-result-close" onclick="closeMailResult()">✕</button>
+  </div>
+  <div id="mail-result-body"></div>
+  <div id="mail-result-actions"></div>
+</div>
 </body>
 </html>
