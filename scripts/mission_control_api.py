@@ -21,7 +21,8 @@ WORKSPACE = os.path.expanduser("~/workspace")
 TOKEN_FILE = os.path.join(WORKSPACE, "config/ms_token.json")
 AZURE_SPEECH_FILE = os.path.join(WORKSPACE, "config/azure_speech.json")
 CLIPBOARD_FILE = os.path.join(WORKSPACE, "config/clipboard.json")
-IMMO_BOOKMARKS_FILE = Path(os.path.join(WORKSPACE, "config/immo_bookmarks.json"))
+IMMO_BOOKMARKS_FILE  = Path(os.path.join(WORKSPACE, "config/immo_bookmarks.json"))
+IMMO_CRITERIA_FILE   = Path(os.path.join(WORKSPACE, "config/immo_criteria.json"))
 
 
 def get_clipboard():
@@ -680,6 +681,45 @@ def summarize_immo_news(title, summary_text):
         return {"error": "Timeout — Claude hat zu lange gebraucht."}
     except Exception as e:
         return {"error": str(e)}
+
+_IMMO_CRITERIA_DEFAULT = {
+    "lage": [
+        "Ort mit Gesundheitszentrum / Fitness + Sauna",
+        "Großraum München West (Ammersee / Starnberg) – nicht München",
+        "Einkaufsmöglichkeiten / Bäcker",
+    ],
+    "objekt": [
+        "Penthouse inkl. Terrasse Südlage",
+        "Neubau – oder günstig + Renovierung",
+        "ca. 100 qm",
+        "4 Zimmer (3,5)",
+        "Max. 3-stöckig – keine Nachbar-Einsicht auf Terrasse",
+        "Fußbodenheizung – Wärmepumpe / Fernwärme",
+        "Terrasse: Südlage, Grill, Markise",
+        "Parkett / Fliesen",
+        "Bad: Dusche ebenerdig, Badewanne",
+        "Keller / Abstellkammer",
+        "Tiefgarage mit Ladestation",
+        "Kein Straßenlärm / keine Autobahnnähe",
+    ],
+    "optional": [
+        "Kaminofen (Einbau)",
+        "Elektrische Rollläden",
+        "Home-Steuerung Elektrik",
+    ],
+}
+
+def get_immo_criteria():
+    if IMMO_CRITERIA_FILE.exists():
+        return json.loads(IMMO_CRITERIA_FILE.read_text())
+    return _IMMO_CRITERIA_DEFAULT
+
+def save_immo_criteria(data):
+    allowed = {"lage", "objekt", "optional"}
+    clean = {k: [str(x) for x in v] for k, v in data.items() if k in allowed and isinstance(v, list)}
+    IMMO_CRITERIA_FILE.write_text(json.dumps(clean, ensure_ascii=False, indent=2))
+    return {"ok": True}
+
 
 def get_immo_bookmarks():
     if IMMO_BOOKMARKS_FILE.exists():
@@ -2238,6 +2278,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/makler": get_makler,
                 "/api/immo-news": get_immo_news,
                 "/api/immo-bookmarks": get_immo_bookmarks,
+                "/api/immo-criteria":  get_immo_criteria,
             }
             if self.path in simple:
                 self._send_json(simple[self.path]())
@@ -2298,6 +2339,8 @@ class Handler(BaseHTTPRequestHandler):
                     self._send_json(newsletter_search(term))
                 else:
                     self._send_json({"error":"Begriff fehlt"}, status=400)
+            elif self.path == "/api/immo-criteria":
+                self._send_json(save_immo_criteria(body))
             elif self.path == "/api/immo-bookmarks":
                 self._send_json(save_immo_bookmark(body))
             elif self.path == "/api/immo-bookmarks/delete":

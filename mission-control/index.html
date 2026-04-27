@@ -937,8 +937,8 @@ html, body {
           <!-- Immobilien-Layout: Projektkarte | Makler | News -->
           <div style="display:grid;grid-template-columns:300px 1fr 290px;gap:16px;align-items:start">
 
-            <!-- ── Linke Spalte: Projektkarte ── -->
-            <div>
+            <!-- ── Linke Spalte: Projektkarte + Kriterien ── -->
+            <div style="display:flex;flex-direction:column;gap:12px">
 
             <!-- ── Projektkarte ── -->
             <div style="background:#0f1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden">
@@ -973,6 +973,18 @@ html, body {
                 <div id="immo-stats" style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);font-size:11px;color:var(--dim)">
                   <div class="bolla-dots"><span>.</span><span>.</span><span>.</span></div>
                 </div>
+              </div>
+            </div>
+
+            <!-- ── Kriterien-Box ── -->
+            <div style="background:#0f1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden">
+              <div style="background:linear-gradient(135deg,#1a2040,#3730a3);padding:12px 16px 10px">
+                <div style="font-size:18px;margin-bottom:2px">📋</div>
+                <div style="font-size:13px;font-weight:700;color:#fff">Unsere Kriterien</div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:1px">Ziehen zum Priorisieren</div>
+              </div>
+              <div id="immo-criteria-body" style="padding:10px 12px 12px">
+                <div class="bolla-dots"><span>.</span><span>.</span><span>.</span></div>
               </div>
             </div>
 
@@ -4161,9 +4173,93 @@ function _maklerRenderList(data) {
   list.innerHTML = html || `<div style="padding:20px;color:var(--dim);font-size:13px;text-align:center">Keine Einträge für diesen Filter</div>`;
 }
 
+let _immoCriteria = {};
+let _criteriaGroups = ['lage','objekt','optional'];
+let _criteriaDragSrc = null;
+
+async function loadImmoCriteria() {
+  try {
+    const r = await fetch(API + '/api/immo-criteria');
+    _immoCriteria = await r.json();
+  } catch(e) { _immoCriteria = {}; }
+  renderImmoCriteria();
+}
+
+function renderImmoCriteria() {
+  const body = document.getElementById('immo-criteria-body');
+  if (!body) return;
+  const groupLabel = {lage:'📍 Lage', objekt:'🏠 Objekt', optional:'✨ Optional'};
+  const groupColor = {lage:'#60a5fa', objekt:'#a78bfa', optional:'#34d399'};
+  body.innerHTML = _criteriaGroups.map(grp => {
+    const items = (_immoCriteria[grp] || []);
+    return `<div style="margin-bottom:12px">
+      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:${groupColor[grp]};margin-bottom:5px">${groupLabel[grp]}</div>
+      <div id="criteria-group-${grp}" class="criteria-group" data-group="${grp}"
+        style="display:flex;flex-direction:column;gap:2px;min-height:24px"
+        ondragover="criteriaDragOver(event)" ondrop="criteriaDrop(event,'${grp}')">
+        ${items.map((item,i) => `<div draggable="true" data-group="${grp}" data-idx="${i}"
+          class="criteria-item"
+          ondragstart="criteriaDragStart(event,'${grp}',${i})"
+          ondragend="criteriaDragEnd(event)"
+          style="display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:7px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);cursor:grab;transition:background .1s"
+          onmouseenter="this.style.background='rgba(255,255,255,0.08)'" onmouseleave="this.style.background='rgba(255,255,255,0.04)'">
+          <span style="color:var(--dim);font-size:11px;flex-shrink:0;cursor:grab">⠿</span>
+          <span style="font-size:11px;color:#e2e8f0;line-height:1.4">${escHtml(item)}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function criteriaDragStart(e, grp, idx) {
+  _criteriaDragSrc = {grp, idx};
+  e.dataTransfer.effectAllowed = 'move';
+  e.target.style.opacity = '0.4';
+}
+
+function criteriaDragEnd(e) {
+  e.target.style.opacity = '';
+  document.querySelectorAll('.criteria-item').forEach(el => el.style.background = 'rgba(255,255,255,0.04)');
+  document.querySelectorAll('.criteria-group').forEach(el => el.style.outline = '');
+}
+
+function criteriaDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const item = e.target.closest('.criteria-item');
+  if (item) item.style.background = 'rgba(99,102,241,0.2)';
+}
+
+async function criteriaDrop(e, targetGrp) {
+  e.preventDefault();
+  if (!_criteriaDragSrc) return;
+  const {grp: srcGrp, idx: srcIdx} = _criteriaDragSrc;
+  _criteriaDragSrc = null;
+
+  const targetItem = e.target.closest('.criteria-item');
+  const targetIdx = targetItem ? parseInt(targetItem.dataset.idx) : (_immoCriteria[targetGrp]||[]).length;
+
+  const srcItems = [...(_immoCriteria[srcGrp] || [])];
+  const [moved] = srcItems.splice(srcIdx, 1);
+
+  if (srcGrp === targetGrp) {
+    const insertAt = targetIdx > srcIdx ? targetIdx - 1 : targetIdx;
+    srcItems.splice(insertAt, 0, moved);
+    _immoCriteria[srcGrp] = srcItems;
+  } else {
+    _immoCriteria[srcGrp] = srcItems;
+    const tgtItems = [...(_immoCriteria[targetGrp] || [])];
+    tgtItems.splice(targetIdx, 0, moved);
+    _immoCriteria[targetGrp] = tgtItems;
+  }
+  renderImmoCriteria();
+  await fetch(API + '/api/immo-criteria', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(_immoCriteria)});
+}
+
 async function loadProjekte() {
   loadImmoNews();
   loadImmoBookmarks();
+  loadImmoCriteria();
   try {
     const r = await fetch(API + '/api/makler', {signal: AbortSignal.timeout(20000)});
     const data = await r.json();

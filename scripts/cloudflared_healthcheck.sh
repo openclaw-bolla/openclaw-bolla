@@ -13,17 +13,27 @@ METRICS=http://127.0.0.1:20241/metrics
 MAX_UPTIME_SEC=21600  # 6 Stunden
 FAIL_FLAG=/tmp/cloudflared_health_fail
 PID_START_FILE=/tmp/cloudflared_start_ts
+RESTART_LOCK=/tmp/cloudflared_restarting
 
 ts() { date '+%Y-%m-%d %H:%M:%S'; }
 log() { echo "[$(ts)] $*" >> "$LOG"; }
 
 restart() {
+  # Nicht neu starten wenn letzter Restart weniger als 90 Sek her
+  if [ -f "$RESTART_LOCK" ]; then
+    lock_age=$(( $(date +%s) - $(cat "$RESTART_LOCK") ))
+    if [ "$lock_age" -lt 90 ]; then
+      log "Restart übersprungen (letzter vor ${lock_age}s, Cooldown 90s)"
+      return
+    fi
+  fi
   log "RESTART: $1"
   pkill -f "cloudflared tunnel run $TUNNEL" 2>/dev/null
-  sleep 3
+  sleep 5
   nohup "$CFD" tunnel run "$TUNNEL" >> "$RUNLOG" 2>&1 &
   log "neu gestartet, PID $!"
   date +%s > "$PID_START_FILE"
+  date +%s > "$RESTART_LOCK"
   rm -f "$FAIL_FLAG"
 }
 
