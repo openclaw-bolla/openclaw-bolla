@@ -7,7 +7,11 @@ Liefert Kalender, E-Mail und andere Daten an Mission Control (localhost:18790)
 import json
 import os
 import sys
+import subprocess
 import traceback
+import urllib.request
+import urllib.parse
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from datetime import datetime, timezone, timedelta
 
@@ -16,6 +20,22 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 WORKSPACE = os.path.expanduser("~/workspace")
 TOKEN_FILE = os.path.join(WORKSPACE, "config/ms_token.json")
 AZURE_SPEECH_FILE = os.path.join(WORKSPACE, "config/azure_speech.json")
+CLIPBOARD_FILE = os.path.join(WORKSPACE, "config/clipboard.json")
+IMMO_BOOKMARKS_FILE = Path(os.path.join(WORKSPACE, "config/immo_bookmarks.json"))
+
+
+def get_clipboard():
+    try:
+        with open(CLIPBOARD_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {"text": "", "ts": ""}
+
+def save_clipboard(text):
+    data = {"text": text, "ts": datetime.now().isoformat()}
+    with open(CLIPBOARD_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+    return data
 
 
 def azure_speech_config():
@@ -448,11 +468,11 @@ def get_emails_recent_wtnet():
         mail = imaplib.IMAP4_SSL(cfg["imap_host"], cfg["imap_port"])
         mail.login(cfg["email"], cfg["password"])
         mail.select("INBOX", readonly=True)
-        _, msg_ids = mail.search(None, "ALL")
-        ids = msg_ids[0].split()
+        _, uid_data = mail.uid("search", None, "ALL")
+        ids = uid_data[0].split()
         msgs = []
-        for mid in reversed(ids[-10:]):
-            _, data = mail.fetch(mid, "(RFC822 FLAGS)")
+        for uid in reversed(ids[-10:]):
+            _, data = mail.uid("fetch", uid, "(RFC822 FLAGS)")
             raw_data = data[0]
             flags = data[0][0] if isinstance(data[0], tuple) else b""
             raw = raw_data[1] if isinstance(raw_data, tuple) else None
@@ -477,7 +497,8 @@ def get_emails_recent_wtnet():
             is_read = b"\\Seen" in (flags if isinstance(flags, bytes) else b"")
             if "*** SPAM" in subj.upper() or "[SPAM]" in subj.upper():
                 continue
-            msgs.append({"account": "wtnet", "from": from_name or "Unbekannt",
+            msgs.append({"account": "wtnet", "id": uid.decode(),
+                         "from": from_name or "Unbekannt",
                          "subject": subj, "date": date_str, "is_today": is_today,
                          "isRead": is_read, "preview": ""})
         mail.logout()
@@ -487,10 +508,271 @@ def get_emails_recent_wtnet():
         return []
 
 
+NEWSLETTER_WATCHLIST = Path(os.path.join(WORKSPACE, "config/newsletter_watchlist.json"))
+NEWSLETTER_RESULTS   = Path(os.path.join(WORKSPACE, "cache/newsletter_results.json"))
+
+MAKLER_FILE = Path(os.path.join(WORKSPACE, "data/makler_status.json"))
+
+def get_makler():
+    if not MAKLER_FILE.exists():
+        return {"regionen": [], "statuses": {}}
+    data = json.loads(MAKLER_FILE.read_text())
+    # Emails von Maklern aus Outlook prüfen (letzten 30 Tage)
+    emails = []
+    try:
+        all_emails = [m["email"] for r in data["regionen"]
+                      for m in r["makler"] if m.get("email")]
+        from mission_control_api import get_token as _gt
+        token = _gt()
+        import urllib.request as _ur
+        req = _ur.Request(
+            "https://graph.microsoft.com/v1.0/me/messages"
+            "?$filter=receivedDateTime ge " +
+            (datetime.utcnow() - timedelta(days=30)).strftime("%Y-%m-%dT00:00:00Z") +
+            "&$select=id,subject,from,receivedDateTime,isRead"
+            "&$top=50&$orderby=receivedDateTime desc",
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        with _ur.urlopen(req, timeout=15) as r:
+            msgs = json.loads(r.read()).get("value", [])
+        for m in msgs:
+            addr = m.get("from", {}).get("emailAddress", {}).get("address", "").lower()
+            if any(addr == e.lower() or addr.split("@")[-1] in e.lower()
+                   for e in all_emails if e):
+                emails.append({
+                    "id":       m["id"],
+                    "subject":  m.get("subject", ""),
+                    "from":     addr,
+                    "date":     m.get("receivedDateTime", "")[:10],
+                    "isRead":   m.get("isRead", True),
+                })
+    except Exception as e:
+        emails = []
+    data["inbox"] = emails
+    return data
+
+def makler_set_status(makler_id, status, notiz=""):
+    data = json.loads(MAKLER_FILE.read_text()) if MAKLER_FILE.exists() else {"regionen": [], "statuses": {}}
+    data.setdefault("statuses", {})[makler_id] = {
+        "status": status,
+        "notiz":  notiz,
+        "datum":  datetime.now().strftime("%d.%m.%Y"),
+    }
+    MAKLER_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+    return {"ok": True}
+
+
+IMMO_NEWS_CACHE = Path(os.path.join(WORKSPACE, "cache/immo_news.json"))
+IMMO_FEEDS = [
+    {"url": "https://rss.sueddeutsche.de/rss/Wirtschaft",                  "source": "Süddeutsche",  "filter": True},
+    {"url": "https://www.handelsblatt.com/contentexport/feed/schlagzeilen", "source": "Handelsblatt", "filter": True},
+    {"url": "https://www.faz.net/rss/aktuell/wirtschaft/",                  "source": "FAZ",          "filter": True},
+    {"url": "https://www.n-tv.de/wirtschaft/rss",                           "source": "n-tv",         "filter": True},
+    {"url": "https://www.spiegel.de/wirtschaft/index.rss",                  "source": "Spiegel",      "filter": True},
+    {"url": "https://newsfeed.zeit.de/wirtschaft/index",                    "source": "Zeit",         "filter": True},
+]
+_IMMO_KW = [
+    "immobilien", "immobilienmarkt", "immobilienpreis", "immobilienkauf",
+    "wohnungsmarkt", "wohnungsnot", "wohnraum", "wohnungskauf",
+    "eigenheim", "eigentumsquote", "grundstück", "neubau",
+    "baufinanzierung", "bauzinsen", "baukredit", "hypothek",
+    "miete", "mieten", "mietpreise", "mietrecht",
+    "makler", "kaufpreis", "kaufnebenkosten",
+    "haus kaufen", "wohnung kaufen", "häuser", "neubauwohnungen",
+    "immobilienfonds", "wohnimmobilien",
+    "bayern", "münchen", "ammersee", "starnberg", "landsberg", "weilheim",
+    "oberbayern", "fünf-seen", "fürstenfeldbruck",
+]
+
+def get_immo_news(force=False):
+    import xml.etree.ElementTree as ET, re as _re
+    # Cache prüfen (3h TTL)
+    if not force and IMMO_NEWS_CACHE.exists():
+        try:
+            cached = json.loads(IMMO_NEWS_CACHE.read_text())
+            age = (datetime.now() - datetime.fromisoformat(cached.get("fetched_at","2000-01-01"))).total_seconds()
+            if age < 10800:
+                return cached
+        except Exception:
+            pass
+
+    results = []
+    for feed in IMMO_FEEDS:
+        try:
+            req = urllib.request.Request(feed["url"],
+                  headers={"User-Agent": "Mozilla/5.0 (Bolla-MC/1.0)"})
+            with urllib.request.urlopen(req, timeout=10) as r:
+                raw = r.read().decode("utf-8", errors="replace")
+            root = ET.fromstring(raw)
+            _ch = root.find("channel"); channel = _ch if _ch is not None else root
+            count = 0
+            for item in channel.findall("item"):
+                title   = (item.findtext("title")        or "").strip()
+                desc_r  = (item.findtext("description")  or "").strip()
+                link    = (item.findtext("link")         or "").strip()
+                pubdate = (item.findtext("pubDate")      or "")[:22].strip()
+                # HTML aus Beschreibung entfernen
+                desc = _re.sub(r"<[^>]+>", " ", desc_r)
+                desc = _re.sub(r"&[a-z]+;|&#\d+;", " ", desc)
+                desc = _re.sub(r"\s+", " ", desc).strip()[:220]
+                # Keyword-Filter
+                combined = (title + " " + desc).lower()
+                if feed.get("filter") and not any(kw in combined for kw in _IMMO_KW):
+                    continue
+                if not title or not link:
+                    continue
+                results.append({
+                    "title":   title[:130],
+                    "summary": desc,
+                    "url":     link,
+                    "source":  feed["source"],
+                    "date":    pubdate,
+                })
+                count += 1
+                if count >= 4:
+                    break
+        except Exception as e:
+            print(f"Immo-News Feed-Fehler ({feed['source']}): {e}")
+
+    # Duplikate per URL raus, max 10 Artikel
+    seen, deduped = set(), []
+    for r in results:
+        if r["url"] not in seen:
+            seen.add(r["url"])
+            deduped.append(r)
+        if len(deduped) >= 10:
+            break
+
+    out = {"fetched_at": datetime.now().isoformat(), "news": deduped}
+    IMMO_NEWS_CACHE.write_text(json.dumps(out, ensure_ascii=False, indent=2))
+    return out
+
+_SUMMARY_KEYWORDS = [
+    "immobilien", "preis", "preis", "kaufpreis", "miete", "mieten", "zinsen", "bauzins",
+    "baufinanzierung", "kredit", "hypothek", "rendite", "neubau", "grundstück",
+    "eigenheim", "wohnungsmarkt", "wohnungsnot", "eigentumsquote",
+    "markt", "angebot", "nachfrage", "leerstand", "förderung", "förderprogramm",
+    "münchen", "bayern", "ammersee", "starnberg", "landsberg", "weilheim",
+    "makler", "notarkosten", "grunderwerbsteuer",
+]
+
+def summarize_immo_news(title, summary_text):
+    prompt = (
+        "Du bist Bolla, Chris Mandels KI-Assistent. Chris hat einen Immobilienmarkt-Artikel angeklickt.\n"
+        "Schreib eine kurze, prägnante Zusammenfassung auf Deutsch (3–5 Sätze, kein Bullshit).\n"
+        "Hebe WICHTIGE Begriffe mit <mark>…</mark> hervor — Zahlen, Preise, Zinssätze, Orte, Trends.\n"
+        "Antworte NUR mit dem HTML-Fließtext (keine Überschrift, kein <html>, kein <body>).\n\n"
+        f"Titel: {title}\n"
+        f"Teaser: {summary_text or '(kein Teaser)'}\n"
+    )
+    try:
+        r = subprocess.run(["claude", "-p", prompt], capture_output=True, text=True, timeout=45)
+        raw = (r.stdout or "").strip()
+        if not raw:
+            return {"error": "Keine Antwort von Claude."}
+        # Paragraphen in <p> wickeln wenn kein HTML vorhanden
+        if "<p>" not in raw and "<mark>" not in raw:
+            raw = "<p>" + raw.replace("\n\n", "</p><p>") + "</p>"
+        elif "<p>" not in raw:
+            raw = "<p>" + raw + "</p>"
+        return {"html": raw}
+    except subprocess.TimeoutExpired:
+        return {"error": "Timeout — Claude hat zu lange gebraucht."}
+    except Exception as e:
+        return {"error": str(e)}
+
+def get_immo_bookmarks():
+    if IMMO_BOOKMARKS_FILE.exists():
+        return json.loads(IMMO_BOOKMARKS_FILE.read_text())
+    return []
+
+def save_immo_bookmark(data):
+    bookmarks = get_immo_bookmarks()
+    bid = str(int(datetime.now().timestamp() * 1000))
+    entry = {
+        "id":           bid,
+        "title":        data.get("title", "").strip()[:200],
+        "source":       data.get("source", "").strip(),
+        "url":          data.get("url", "").strip(),
+        "date":         data.get("date", "").strip(),
+        "saved_at":     datetime.now().isoformat(),
+        "category":     data.get("category", "Sonstiges").strip(),
+        "summary_html": data.get("summary_html", "").strip(),
+        "notiz":        data.get("notiz", "").strip(),
+    }
+    bookmarks.append(entry)
+    IMMO_BOOKMARKS_FILE.write_text(json.dumps(bookmarks, ensure_ascii=False, indent=2))
+    return {"ok": True, "id": bid}
+
+def delete_immo_bookmark(bid):
+    bookmarks = get_immo_bookmarks()
+    bookmarks = [b for b in bookmarks if b.get("id") != bid]
+    IMMO_BOOKMARKS_FILE.write_text(json.dumps(bookmarks, ensure_ascii=False, indent=2))
+    return {"ok": True}
+
+def update_immo_bookmark(bid, data):
+    bookmarks = get_immo_bookmarks()
+    for b in bookmarks:
+        if b.get("id") == bid:
+            if "notiz" in data:
+                b["notiz"] = data["notiz"].strip()
+            if "category" in data:
+                b["category"] = data["category"].strip()
+            break
+    IMMO_BOOKMARKS_FILE.write_text(json.dumps(bookmarks, ensure_ascii=False, indent=2))
+    return {"ok": True}
+
+
+def get_newsletter():
+    """Gibt Watchlist + letzte Scan-Ergebnisse zurück."""
+    watchlist = json.loads(NEWSLETTER_WATCHLIST.read_text()) if NEWSLETTER_WATCHLIST.exists() else []
+    results   = json.loads(NEWSLETTER_RESULTS.read_text())   if NEWSLETTER_RESULTS.exists()   else {"scanned_at": None, "results": []}
+    return {"watchlist": watchlist, "scanned_at": results.get("scanned_at"), "results": results.get("results", [])}
+
+def newsletter_watchlist_update(data):
+    """Fügt einen Begriff hinzu oder entfernt ihn."""
+    watchlist = json.loads(NEWSLETTER_WATCHLIST.read_text()) if NEWSLETTER_WATCHLIST.exists() else []
+    if "add" in data:
+        term = data["add"].strip().lower()
+        if term and term not in watchlist:
+            watchlist.append(term)
+    if "remove" in data:
+        watchlist = [w for w in watchlist if w != data["remove"]]
+    NEWSLETTER_WATCHLIST.write_text(json.dumps(watchlist, ensure_ascii=False))
+    return {"watchlist": watchlist}
+
+def newsletter_scan_now():
+    """Startet den Newsletter-Scanner sofort im Hintergrund."""
+    _p = subprocess.Popen(["python3", os.path.join(WORKSPACE,"scripts/newsletter_scanner.py")],
+              stdout=open(os.path.join(WORKSPACE,"logs/newsletter_scanner.log"),"a"),
+              stderr=subprocess.STDOUT)
+    return {"ok": True, "text": "Scan gestartet — dauert ca. 30–60 Sek."}
+
+def newsletter_search(term):
+    """Sofortsuche: scannt aktuelle Newsletter nach einem Begriff, speichert nichts."""
+    import sys as _sys
+    _sys.path.insert(0, os.path.join(WORKSPACE, "scripts"))
+    from newsletter_scanner import fetch_outlook_newsletters, fetch_wtnet_newsletters, analyse_mail
+    mails = fetch_outlook_newsletters() + fetch_wtnet_newsletters()
+    results = []
+    for mail in mails:
+        hits = analyse_mail(mail, [term])
+        for h in hits:
+            results.append({
+                "store": mail["store"]["name"], "color": mail["store"]["color"],
+                "text_color": mail["store"].get("text","#fff"),
+                "artikel": h.get("artikel",""), "preis": h.get("preis",""),
+                "gueltig_von": h.get("gueltig_von",""), "gueltig_bis": h.get("gueltig_bis",""),
+                "hinweis": h.get("hinweis",""), "mail_date": mail["date"], "subject": mail["subject"],
+            })
+    return {"results": results, "term": term, "mails_checked": len(mails)}
+
+
 def mail_command(data):
     """Führt einen Sprachbefehl auf eine oder mehrere Mails aus."""
-    import subprocess, smtplib, re
+    import subprocess, smtplib, re, urllib.request
     from email.mime.text import MIMEText
+    from pathlib import Path
     instruction = (data.get("instruction") or "").strip()
     instr_low   = instruction.lower()
 
@@ -1087,19 +1369,23 @@ def get_book_health():
     import subprocess, base64, json as _json
     ps = (
         "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
-        "$cpu=(Get-WmiObject Win32_Processor).LoadPercentage;"
+        "$p=(Get-WmiObject Win32_Processor);"
         "$os=Get-WmiObject Win32_OperatingSystem;"
+        "$cs=Get-WmiObject Win32_ComputerSystem;"
         "$rT=[math]::Round($os.TotalVisibleMemorySize/1KB,0);"
         "$rF=[math]::Round($os.FreePhysicalMemory/1KB,0);"
+        "$rP=[math]::Round($cs.TotalPhysicalMemory/1GB,0);"
         "$dk=Get-WmiObject Win32_LogicalDisk -Filter \"DeviceID='C:'\";"
         "$dT=[math]::Round($dk.Size/1GB,0);"
         "$dF=[math]::Round($dk.FreeSpace/1GB,0);"
+        "$gpus=(Get-WmiObject Win32_VideoController).Name -join ', ';"
         "$bs=Get-WmiObject -Namespace root/wmi -Class BatteryStatus;"
         "$b1=$bs|?{$_.InstanceName -like '*1_0'};"
         "$b2=$bs|?{$_.InstanceName -like '*2_0'};"
         "$fc=(Get-WmiObject -Namespace root/wmi -Class BatteryFullChargedCapacity|?{$_.InstanceName -like '*2_0'}).FullChargedCapacity;"
         "$up=(Get-Date)-(Get-CimInstance Win32_OperatingSystem).LastBootUpTime;"
-        "@{cpu=$cpu;ramUsed=($rT-$rF);ramTotal=$rT;diskTotal=$dT;diskFree=$dF;"
+        "@{cpu=$p.LoadPercentage;cpuName=$p.Name;ramUsed=($rT-$rF);ramTotal=$rT;ramPhys=$rP;"
+        "diskTotal=$dT;diskFree=$dF;gpu=$gpus;winVer=$os.Caption;model=$cs.Model;"
         "bat1=if($b1){$b1.RemainingCapacity}else{-1};"
         "bat2=if($b2 -and $fc -gt 0){[math]::Round($b2.RemainingCapacity/$fc*100,0)}else{-1};"
         "bat2Charging=if($b2){[bool]$b2.Charging}else{$false};"
@@ -1127,18 +1413,22 @@ def get_pro_health():
     import subprocess, base64, json as _json
     ps = (
         "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
-        "$cpu=(Get-WmiObject Win32_Processor).LoadPercentage;"
+        "$p=(Get-WmiObject Win32_Processor);"
         "$os=Get-WmiObject Win32_OperatingSystem;"
+        "$cs=Get-WmiObject Win32_ComputerSystem;"
         "$rT=[math]::Round($os.TotalVisibleMemorySize/1KB,0);"
         "$rF=[math]::Round($os.FreePhysicalMemory/1KB,0);"
+        "$rP=[math]::Round($cs.TotalPhysicalMemory/1GB,0);"
         "$dk=Get-WmiObject Win32_LogicalDisk -Filter \"DeviceID='C:'\";"
         "$dT=[math]::Round($dk.Size/1GB,0);"
         "$dF=[math]::Round($dk.FreeSpace/1GB,0);"
+        "$gpus=(Get-WmiObject Win32_VideoController).Name -join ', ';"
         "$bs=Get-WmiObject -Namespace root/wmi -Class BatteryStatus;"
         "$b1=$bs|?{$_.InstanceName -like '*1_0'};"
         "$fc=(Get-WmiObject -Namespace root/wmi -Class BatteryFullChargedCapacity|?{$_.InstanceName -like '*1_0'}).FullChargedCapacity;"
         "$up=(Get-Date)-(Get-CimInstance Win32_OperatingSystem).LastBootUpTime;"
-        "@{cpu=$cpu;ramUsed=($rT-$rF);ramTotal=$rT;diskTotal=$dT;diskFree=$dF;"
+        "@{cpu=$p.LoadPercentage;cpuName=$p.Name;ramUsed=($rT-$rF);ramTotal=$rT;ramPhys=$rP;"
+        "diskTotal=$dT;diskFree=$dF;gpu=$gpus;winVer=$os.Caption;model=$cs.Model;"
         "bat1=if($b1 -and $fc -gt 0){[math]::Round($b1.RemainingCapacity/$fc*100,0)}else{-1};"
         "bat1Charging=if($b1){[bool]$b1.Charging}else{$false};"
         "uptime=\"$([math]::Floor($up.TotalHours))h $($up.Minutes)m\"}|ConvertTo-Json"
@@ -1162,30 +1452,45 @@ def get_pro_health():
 
 
 def get_studio_health():
-    import subprocess, time as _t
-    with open('/proc/meminfo') as f:
-        mem = {k.strip(): int(v.strip().split()[0])
-               for line in f for k, v in [line.split(':', 1)]}
-    ram_total = mem['MemTotal'] // 1024
-    ram_used = ram_total - mem['MemAvailable'] // 1024
-    disk = os.statvfs('/mnt/c')
-    disk_total = disk.f_blocks * disk.f_frsize // (1024**3)
-    disk_free = disk.f_bavail * disk.f_frsize // (1024**3)
-    with open('/proc/uptime') as f:
-        secs = float(f.read().split()[0])
-    uptime = f"{int(secs//3600)}h {int((secs%3600)//60)}m"
+    import subprocess, base64, json as _json
+    result = {'online': True}
+    # Echte Windows-Hardware via powershell.exe (WSL2 → Windows direkt)
+    ps = (
+        "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
+        "$p=(Get-WmiObject Win32_Processor);"
+        "$os=Get-WmiObject Win32_OperatingSystem;"
+        "$cs=Get-WmiObject Win32_ComputerSystem;"
+        "$rT=[math]::Round($os.TotalVisibleMemorySize/1KB,0);"
+        "$rF=[math]::Round($os.FreePhysicalMemory/1KB,0);"
+        "$rP=[math]::Round($cs.TotalPhysicalMemory/1GB,0);"
+        "$dk=Get-WmiObject Win32_LogicalDisk -Filter \"DeviceID='C:'\";"
+        "$dT=[math]::Round($dk.Size/1GB,0);"
+        "$dF=[math]::Round($dk.FreeSpace/1GB,0);"
+        "$gpus=(Get-WmiObject Win32_VideoController).Name -join ', ';"
+        "$up=(Get-Date)-(Get-CimInstance Win32_OperatingSystem).LastBootUpTime;"
+        "@{cpu=$p.LoadPercentage;cpuName=$p.Name;ramUsed=($rT-$rF);ramTotal=$rT;ramPhys=$rP;"
+        "diskTotal=$dT;diskFree=$dF;gpu=$gpus;winVer=$os.Caption;model=$cs.Model;"
+        "uptime=\"$([math]::Floor($up.TotalHours))h $($up.Minutes)m\"}|ConvertTo-Json"
+    )
+    enc = base64.b64encode(ps.encode('utf-16-le')).decode()
+    try:
+        r = subprocess.run(
+            ['powershell.exe', '-EncodedCommand', enc],
+            capture_output=True, timeout=15
+        )
+        stdout = r.stdout.decode('utf-8', errors='replace') if r.stdout else ''
+        if r.returncode == 0 and stdout.strip():
+            result.update(_json.loads(stdout))
+    except Exception as e:
+        result['hwError'] = str(e)
+    # Dienste-Status aus WSL2 (laufen in Linux)
     def svc(name):
         return bool(subprocess.run(['pgrep', '-f', name],
                                    capture_output=True).returncode == 0)
-    return {
-        'online': True,
-        'ramUsed': ram_used, 'ramTotal': ram_total,
-        'diskTotal': disk_total, 'diskFree': disk_free,
-        'uptime': uptime,
-        'mcServer': svc('mission_control_api'),
-        'cloudflared': svc('cloudflared'),
-        'telegramBot': svc('telegram_bot'),
-    }
+    result['mcServer']    = svc('mission_control_api')
+    result['cloudflared'] = svc('cloudflared')
+    result['telegramBot'] = svc('telegram_bot')
+    return result
 
 
 def do_book_action(action):
@@ -1928,6 +2233,11 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/tokenusage/history": get_token_halfdays,
                 "/api/status": lambda: {"ok": True, "ts": datetime.now().isoformat()},
                 "/api/redesigns-meta": get_redesigns_meta,
+                "/api/clipboard": get_clipboard,
+                "/api/newsletter": get_newsletter,
+                "/api/makler": get_makler,
+                "/api/immo-news": get_immo_news,
+                "/api/immo-bookmarks": get_immo_bookmarks,
             }
             if self.path in simple:
                 self._send_json(simple[self.path]())
@@ -1978,6 +2288,47 @@ class Handler(BaseHTTPRequestHandler):
                 self._handle_tts(body)
             elif self.path == "/api/mail-command":
                 self._send_json(mail_command(body))
+            elif self.path == "/api/newsletter/watchlist":
+                self._send_json(newsletter_watchlist_update(body))
+            elif self.path == "/api/newsletter/scan":
+                self._send_json(newsletter_scan_now())
+            elif self.path == "/api/newsletter/search":
+                term = body.get("term","").strip()
+                if term:
+                    self._send_json(newsletter_search(term))
+                else:
+                    self._send_json({"error":"Begriff fehlt"}, status=400)
+            elif self.path == "/api/immo-bookmarks":
+                self._send_json(save_immo_bookmark(body))
+            elif self.path == "/api/immo-bookmarks/delete":
+                bid = body.get("id", "").strip()
+                if bid:
+                    self._send_json(delete_immo_bookmark(bid))
+                else:
+                    self._send_json({"error": "id fehlt"}, status=400)
+            elif self.path == "/api/immo-bookmarks/update":
+                bid = body.get("id", "").strip()
+                if bid:
+                    self._send_json(update_immo_bookmark(bid, body))
+                else:
+                    self._send_json({"error": "id fehlt"}, status=400)
+            elif self.path == "/api/immo-news/refresh":
+                self._send_json(get_immo_news(force=True))
+            elif self.path == "/api/immo-news/summarize":
+                t = body.get("title","").strip()
+                s = body.get("summary","").strip()
+                if t:
+                    self._send_json(summarize_immo_news(t, s))
+                else:
+                    self._send_json({"error":"title fehlt"}, status=400)
+            elif self.path == "/api/makler/status":
+                mid    = body.get("id","").strip()
+                status = body.get("status","").strip()
+                notiz  = body.get("notiz","").strip()
+                if mid and status:
+                    self._send_json(makler_set_status(mid, status, notiz))
+                else:
+                    self._send_json({"error":"id und status erforderlich"}, status=400)
             elif self.path == "/api/surfaces/book/action":
                 self._send_json(do_book_action(body.get("action", "")))
             elif self.path == "/api/surfaces/pro/action":
@@ -2041,6 +2392,9 @@ class Handler(BaseHTTPRequestHandler):
                     _bildgen_counter["count"] += 1
                     remaining = BILDGEN_LIMIT - _bildgen_counter["count"]
                     self._send_json({"image_b64": img_b64, "mime_type": mime_or_err, "remaining": remaining})
+            elif self.path == "/api/clipboard":
+                text = body.get("text", "")
+                self._send_json(save_clipboard(text))
             elif self.path == "/api/suno/generate":
                 name = body.get("name", "").strip()
                 klasse = body.get("klasse", "").strip()

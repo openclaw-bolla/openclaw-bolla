@@ -115,13 +115,13 @@ html, body {
   padding: 9px 18px;
   cursor: pointer;
   border-left: 3px solid transparent;
-  font-size: 16px;
+  font-size: 13px;
   transition: all 0.15s;
 }
 
 .nav-item:hover { background: rgba(255,102,153,0.08); color: var(--bright); }
 .nav-item.active { background: rgba(255,102,153,0.15); border-left-color: var(--accent); color: var(--accent); }
-.nav-item .icon { font-size: 19px; width: 20px; text-align: center; }
+.nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
 .nav-item .badge {
   margin-left: auto;
   background: var(--accent2);
@@ -131,6 +131,47 @@ html, body {
   border-radius: 8px;
   font-weight: 600;
 }
+.nav-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 8px 15px;
+  cursor: pointer;
+  border-left: 3px solid rgba(96,165,250,0.35);
+  font-size: 13px;
+  color: var(--text);
+  background: rgba(37,99,235,0.08);
+  transition: all 0.15s;
+  user-select: none;
+  margin: 2px 6px;
+  border-radius: 8px;
+}
+.nav-group-header:hover { background: rgba(37,99,235,0.16); border-left-color: rgba(96,165,250,0.7); }
+.nav-group-header .icon { font-size: 15px; width: 20px; text-align: center; }
+.nav-group-chevron {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(96,165,250,0.6);
+  transition: transform 0.2s;
+  display: inline-block;
+}
+.nav-group-count {
+  font-size: 10px;
+  background: rgba(37,99,235,0.25);
+  color: #93c5fd;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.nav-group-header.open {
+  background: rgba(37,99,235,0.14);
+  border-left-color: rgba(96,165,250,0.8);
+  color: #e0f2fe;
+}
+.nav-group-header.open .nav-group-chevron { transform: rotate(90deg); color: #60a5fa; }
+.nav-subitem { padding-left: 40px !important; font-size: 12px !important; }
+.nav-group-items { overflow: hidden; }
 
 #sidebar-footer {
   padding: 14px 18px;
@@ -333,10 +374,17 @@ html, body {
   position:fixed; bottom:0; left:200px; right:0; z-index:50;
   background:#120c22;
   border-top:1px solid rgba(255,255,255,0.12);
-  padding:10px 20px 12px;
+  padding:8px 20px 10px;
   display:none;
 }
 #mail-cmd-bar .cmd-row { display:flex; gap:8px; align-items:center; }
+.mail-quick-btn {
+  background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.15);
+  color:#e0d6ed; border-radius:20px; padding:5px 12px; font-size:12px;
+  cursor:pointer; white-space:nowrap; flex-shrink:0; transition:background .15s;
+}
+.mail-quick-btn:hover { background:rgba(255,255,255,0.14); }
+.mail-quick-btn.danger:hover { background:rgba(239,83,80,0.25); border-color:#ef5350; color:#ef9a9a; }
 #mail-cmd-selected { font-size:12px; color:#a78bfa; font-weight:600; white-space:nowrap; max-width:160px; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; }
 #mail-cmd-input {
   flex:1; background:#1e1535; border:1px solid rgba(255,255,255,0.28);
@@ -381,6 +429,48 @@ html, body {
 #mail-result-actions { padding:0 18px 14px; display:flex; gap:8px; flex-shrink:0; }
 .result-btn-send { background:#66bb6a; color:#000; border:none; border-radius:7px; padding:7px 16px; cursor:pointer; font-size:13px; font-weight:600; }
 .result-btn-discard { background:rgba(255,255,255,0.1); color:#ccc; border:none; border-radius:7px; padding:7px 16px; cursor:pointer; font-size:13px; }
+
+/* ── News-Zusammenfassung Panel (slide-up) ── */
+#news-summary-panel {
+  position:fixed; top:64px; right:20px; z-index:65;
+  width:480px;
+  transform:translateY(-12px);
+  background:#081c29; border:1px solid rgba(14,116,144,0.4); border-top:2px solid #0e7490;
+  border-radius:14px;
+  max-height:calc(100vh - 90px); display:flex; flex-direction:column;
+  box-shadow:0 8px 40px rgba(0,0,0,0.75);
+  transition:transform .22s cubic-bezier(.4,0,.2,1), opacity .22s;
+  opacity:0; pointer-events:none;
+}
+#news-summary-panel.open { transform:translateY(0); opacity:1; pointer-events:auto; }
+#news-summary-body { padding:14px 18px 18px; overflow-y:auto; flex:1; font-size:13px; color:#cffafe; line-height:1.75; }
+#news-summary-body mark { background:rgba(14,116,144,0.35); color:#67e8f9; border-radius:3px; padding:0 3px; font-weight:600; }
+#news-summary-body p { margin-bottom:8px; }
+#news-summary-body ul { padding-left:18px; margin-bottom:8px; }
+#news-summary-body li { margin-bottom:4px; }
+
+/* ── Newsletter Panel ── */
+#nl-panel .card { margin-bottom:10px; }
+.nl-chip {
+  display:inline-flex; align-items:center; gap:5px;
+  background:rgba(255,255,255,0.09); border:1px solid rgba(255,255,255,0.15);
+  border-radius:20px; padding:4px 10px; font-size:12px; color:#e0d6ed; margin:3px 2px;
+}
+.nl-chip-x { background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:13px;padding:0 0 0 2px;line-height:1; }
+.nl-chip-x:hover { color:#ef9a9a; }
+.nl-add-row { display:flex;gap:6px;margin-bottom:8px; }
+.nl-add-input { flex:1;background:#1e1535;border:1px solid rgba(255,255,255,0.22);border-radius:8px;padding:6px 10px;color:#fff;font-size:12px;outline:none; }
+.nl-add-input:focus { border-color:#a78bfa; }
+.nl-add-btn { background:#a78bfa;color:#000;border:none;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer; }
+.nl-hit {
+  border-radius:8px; padding:8px 10px; margin-bottom:6px; font-size:12px;
+}
+.nl-hit-store { font-size:11px; font-weight:700; letter-spacing:.04em; margin-bottom:3px; }
+.nl-hit-item { font-size:13px; font-weight:600; color:#fff; }
+.nl-hit-meta { font-size:11px; opacity:.75; margin-top:2px; }
+.nl-scan-btn { width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);color:#e0d6ed;border-radius:8px;padding:7px;font-size:12px;cursor:pointer;margin-top:4px; }
+.nl-scan-btn:hover { background:rgba(255,255,255,0.13); }
+.nl-empty { font-size:12px;color:var(--dim);padding:8px 0;text-align:center; }
 
 /* ===== KLASSEN ===== */
 .klasse-next {
@@ -464,6 +554,21 @@ html, body {
       <div class="nav-item" data-page="schule"><span class="icon">🏫</span><span>Schule</span></div>
       <div class="nav-item" data-page="kalender"><span class="icon">📅</span><span>Kalender</span></div>
       <div class="nav-item" data-page="email"><span class="icon">📧</span><span>E-Mail</span><span class="badge" id="mail-badge" style="display:none">0</span></div>
+      <div class="nav-item" data-page="clipboard"><span class="icon">📋</span><span>Clipboard</span></div>
+
+      <!-- ── Projekte-Gruppe (ausklappbar) ── -->
+      <div id="nav-group-projekte">
+        <div class="nav-group-header" id="nav-group-header-projekte" onclick="toggleNavGroup('projekte')">
+          <span class="icon">🗂️</span>
+          <span>Projekte</span>
+          <span class="nav-group-count">2</span>
+          <span class="nav-group-chevron" id="nav-chevron-projekte">▶</span>
+        </div>
+        <div class="nav-group-items" id="nav-group-items-projekte">
+          <div class="nav-item nav-subitem" data-page="projekte"><span class="icon">🏡</span><span>Immobilienkauf Bayern</span></div>
+          <div class="nav-item nav-subitem" data-page="urlaub"><span class="icon">✈️</span><span>Urlaubsplanung 2026</span></div>
+        </div>
+      </div>
 
       <div class="nav-section">Familie</div>
       <div class="nav-item" data-page="robin"><span class="icon">🌍</span><span>Robin</span></div>
@@ -562,6 +667,35 @@ html, body {
       <!-- GEBURTSTAGE -->
       <div class="page" id="page-geburtstage">
         <div class="grid" id="geburtstage-content"><div class="loading">Lade...</div></div>
+      </div>
+
+      <!-- CLIPBOARD -->
+      <div class="page" id="page-clipboard">
+        <div style="max-width:700px;margin:0 auto;padding:16px">
+          <div class="card" style="padding:20px">
+            <h3 style="margin:0 0 12px;color:var(--bright)">📋 Geräte-Clipboard</h3>
+            <p style="font-size:13px;color:var(--dim);margin:0 0 16px">Text hier ablegen und auf jedem Gerät abrufen.</p>
+            <textarea id="clipboard-text" rows="10"
+              style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:14px;font-family:inherit;resize:vertical;line-height:1.6"
+              placeholder="Text hier eingeben..."></textarea>
+            <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
+              <button id="clipboard-save-btn" onclick="clipboardSave()"
+                style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:9px 22px;font-size:14px;cursor:pointer;font-weight:600">
+                Speichern
+              </button>
+              <button onclick="clipboardCopy()"
+                style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:9px 18px;font-size:14px;cursor:pointer">
+                Kopieren
+              </button>
+              <button onclick="clipboardClear()"
+                style="background:var(--card);color:var(--dim);border:1px solid var(--border);border-radius:6px;padding:9px 18px;font-size:14px;cursor:pointer">
+                Leeren
+              </button>
+              <span id="clipboard-status" style="font-size:12px;color:var(--dim);margin-left:8px"></span>
+            </div>
+            <div id="clipboard-ts" style="font-size:11px;color:var(--dim);margin-top:10px"></div>
+          </div>
+        </div>
       </div>
 
       <!-- WETTER -->
@@ -788,6 +922,161 @@ html, body {
       </div>
 
       <!-- BRAIN -->
+      <!-- PROJEKTE -->
+      <div class="page" id="page-projekte">
+        <div style="max-width:1200px;margin:0 auto">
+
+          <!-- Header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+            <div>
+              <h2 style="font-size:20px;font-weight:700;color:var(--text);margin:0 0 4px">🗂️ Projekte</h2>
+              <div style="font-size:12px;color:var(--dim)">Laufende &amp; geplante Vorhaben</div>
+            </div>
+          </div>
+
+          <!-- Immobilien-Layout: Projektkarte | Makler | News -->
+          <div style="display:grid;grid-template-columns:300px 1fr 290px;gap:16px;align-items:start">
+
+            <!-- ── Linke Spalte: Projektkarte ── -->
+            <div>
+
+            <!-- ── Projektkarte ── -->
+            <div style="background:#0f1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden">
+              <div style="background:linear-gradient(135deg,#1a3a6b,#2563eb);padding:16px 18px 12px;position:relative">
+                <div style="position:absolute;top:10px;right:12px;background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:#4ade80;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px">IN BEARBEITUNG</div>
+                <div style="font-size:22px;margin-bottom:4px">🏡</div>
+                <div style="font-size:15px;font-weight:700;color:#fff">Immobilienkauf Bayern</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px">Gestartet 27.04.2026 · Kauf Herbst 2027–2030</div>
+              </div>
+              <div style="padding:14px 16px">
+                <div style="margin-bottom:12px">
+                  <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-bottom:4px">
+                    <span>Jetzt</span><span>H'27</span><span>H'28</span><span>H'29</span><span>H'30</span>
+                  </div>
+                  <div style="position:relative;height:5px;background:rgba(255,255,255,0.08);border-radius:3px">
+                    <div style="position:absolute;left:25%;top:-2px;width:2px;height:9px;background:#fbbf24;border-radius:1px"></div>
+                    <div style="position:absolute;right:0;top:-2px;width:2px;height:9px;background:#34d399;border-radius:1px"></div>
+                  </div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px">
+                  <span style="background:rgba(37,99,235,0.15);border:1px solid rgba(37,99,235,0.3);color:#93c5fd;font-size:9px;padding:2px 7px;border-radius:10px">📍 Bayern</span>
+                  <span style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.25);color:#fcd34d;font-size:9px;padding:2px 7px;border-radius:10px">⏱ 3 Jahre</span>
+                  <span style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.25);color:#6ee7b7;font-size:9px;padding:2px 7px;border-radius:10px">🏠 Eigennutzung</span>
+                </div>
+                <div style="font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Nächste Schritte</div>
+                <div style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--dim)">
+                  <div style="display:flex;gap:6px"><span style="opacity:.4">○</span><span>Budget &amp; Finanzierungsrahmen</span></div>
+                  <div style="display:flex;gap:6px"><span style="opacity:.4">○</span><span>Wunschregion eingrenzen</span></div>
+                  <div style="display:flex;gap:6px"><span style="opacity:.4">○</span><span>Marktrecherche ab Herbst 2026</span></div>
+                </div>
+                <!-- Makler-Statistik -->
+                <div id="immo-stats" style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);font-size:11px;color:var(--dim)">
+                  <div class="bolla-dots"><span>.</span><span>.</span><span>.</span></div>
+                </div>
+              </div>
+            </div>
+
+            </div><!-- Ende linke Spalte -->
+
+            <!-- ── Makler-Tracker ── -->
+            <div style="background:#0f1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden">
+              <!-- Gradient-Header analog zur Projektkarte -->
+              <div style="background:linear-gradient(135deg,#1a3a6b,#2563eb);padding:16px 18px 14px;position:relative">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                  <div>
+                    <div style="font-size:22px;margin-bottom:4px">🏘️</div>
+                    <div style="font-size:15px;font-weight:700;color:#fff">Makler-Tracker</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px">32 Makler · Ammersee · Starnberg · Landsberg · Weilheim · FFB · Gilching</div>
+                  </div>
+                  <div id="makler-mail-badge" style="display:none"></div>
+                </div>
+              </div>
+              <!-- Filter -->
+              <div style="padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;gap:5px;flex-wrap:wrap;background:rgba(15,26,46,0.8)" id="makler-filter-bar">
+                <button onclick="maklerFilter('alle')" data-f="alle" class="mkf active" style="font-size:10px;padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;cursor:pointer">Alle (32)</button>
+                <button onclick="maklerFilter('neu')" data-f="neu" class="mkf" style="font-size:10px;padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--dim);cursor:pointer">Neu</button>
+                <button onclick="maklerFilter('email_gesendet')" data-f="email_gesendet" class="mkf" style="font-size:10px;padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--dim);cursor:pointer">E-Mail gesendet</button>
+                <button onclick="maklerFilter('feedback_erhalten')" data-f="feedback_erhalten" class="mkf" style="font-size:10px;padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--dim);cursor:pointer">Feedback</button>
+                <button onclick="maklerFilter('termin')" data-f="termin" class="mkf" style="font-size:10px;padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--dim);cursor:pointer">Termin</button>
+              </div>
+              <!-- Liste -->
+              <div id="makler-list" style="max-height:calc(100vh - 310px);overflow-y:auto;padding:8px 0;background:#0f1a2e">
+                <div style="padding:20px;color:var(--dim);font-size:13px;text-align:center">
+                  <div class="bolla-dots"><span>.</span><span>.</span><span>.</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Rechte Spalte: Immo-News Bayern + Gespeicherte Tipps ── -->
+            <div style="display:flex;flex-direction:column;gap:12px">
+
+              <div style="background:#0f1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden">
+                <div style="background:linear-gradient(135deg,#0c2a3a,#0e7490);padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between">
+                  <div>
+                    <div style="font-size:18px;margin-bottom:3px">📰</div>
+                    <div style="font-size:13px;font-weight:700;color:#fff">Immobilienmarkt Bayern</div>
+                    <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:1px">Aktuelle News · klick = Bolla-Zusammenfassung</div>
+                  </div>
+                  <button onclick="loadImmoNews(true)" id="immo-news-refresh"
+                    style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:10px;padding:4px 10px;border-radius:8px;cursor:pointer">
+                    🔄
+                  </button>
+                </div>
+                <div id="immo-news-body" style="padding:4px 0">
+                  <div style="padding:16px;color:var(--dim);font-size:12px;text-align:center">
+                    <div class="bolla-dots"><span>.</span><span>.</span><span>.</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── Gespeicherte Tipps ── -->
+              <div style="background:#0f1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden">
+                <div style="background:linear-gradient(135deg,#0c1a3a,#1d4ed8);padding:12px 16px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+                  <div>
+                    <div style="font-size:18px;margin-bottom:2px">📌</div>
+                    <div style="font-size:13px;font-weight:700;color:#fff">Gespeicherte Tipps</div>
+                    <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:1px"><span id="immo-bookmarks-count">–</span> · für später</div>
+                  </div>
+                  <select id="immo-bookmarks-filter" onchange="renderImmoBookmarks()"
+                    style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.2);color:#e0f2fe;font-size:10px;padding:3px 8px;border-radius:8px;outline:none">
+                    <option>Alle</option>
+                    <option>Ausflüge</option>
+                    <option>Radwege</option>
+                    <option>Restaurants</option>
+                    <option>Regionen</option>
+                    <option>Sonstiges</option>
+                  </select>
+                </div>
+                <div id="immo-bookmarks-list" style="padding:6px 0">
+                  <div style="color:var(--dim);font-size:12px;padding:16px;opacity:.5;text-align:center">Wird geladen …</div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- URLAUB 2026 -->
+      <div class="page" id="page-urlaub">
+        <div style="max-width:800px;margin:0 auto">
+          <div style="background:#0f1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden">
+            <div style="background:linear-gradient(135deg,#1a3d2b,#059669);padding:20px 22px 16px">
+              <div style="font-size:28px;margin-bottom:6px">✈️</div>
+              <div style="font-size:17px;font-weight:700;color:#fff">Urlaubsplanung 2026</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px">Noch kein Ziel geplant</div>
+            </div>
+            <div style="padding:28px 24px;text-align:center;color:var(--dim)">
+              <div style="font-size:36px;margin-bottom:12px;opacity:.3">🗺️</div>
+              <div style="font-size:14px;margin-bottom:6px">Noch kein Urlaub geplant</div>
+              <div style="font-size:12px;opacity:.6">Hier kommt der Reiseplan rein — Ziel, Zeitraum, Budget, Aktivitäten.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="page" id="page-brain">
         <div id="brain-container" style="width:100%;height:calc(100vh - 92px)"></div>
       </div>
@@ -805,6 +1094,21 @@ html, body {
             </div>
           </div>
           <p id="redesigns-note" style="color:var(--dim);font-size:11px;margin-top:20px;text-align:center"></p>
+
+          <!-- ── Chris & Bolla Projektideen ── -->
+          <div style="margin-top:36px">
+            <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">💡 Chris &amp; Bolla — Projektideen</div>
+            <div style="font-size:12px;color:var(--dim);margin-bottom:16px">Klick für Details + fertigen Prompt</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="bolla-projects-grid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Projekt-Modal ── -->
+      <div id="proj-modal" onclick="if(event.target===this)closeProjModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center">
+        <div style="background:#1a1030;border:1px solid rgba(255,255,255,0.15);border-radius:18px;max-width:620px;width:90%;padding:28px;position:relative;max-height:90vh;overflow-y:auto">
+          <button onclick="closeProjModal()" style="position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.08);border:none;color:#fff;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px">✕</button>
+          <div id="proj-modal-body"></div>
         </div>
       </div>
 
@@ -1065,28 +1369,79 @@ html, body {
 const API = '';  // same-origin: lokal via 127.0.0.1:18790, remote via bolla.chrismandel.de
 
 // ===== NAVIGATION =====
+function showPage(page) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const item = document.querySelector(`.nav-item[data-page="${page}"]`);
+  if (item) item.classList.add('active');
+  const pageEl = document.getElementById('page-' + page);
+  if (pageEl) pageEl.classList.add('active');
+  if (item) document.getElementById('page-title').textContent = item.querySelector('span:nth-child(2)')?.textContent || '';
+  const cmdBar = document.getElementById('mail-cmd-bar');
+  if (page !== 'email') { if (cmdBar) cmdBar.style.display='none'; closeMailResult(); _selectedMails=[]; }
+  if (page === 'brain')      initBrain();
+  if (page === 'bolla')      loadBollaModel();
+  if (page === 'system')     loadSystem();
+  if (page === 'robin')      loadRobin();
+  if (page === 'geburtstage')loadBirthdays();
+  if (page === 'wetter')     loadWeatherFull();
+  if (page === 'kalender')   loadCalendar();
+  if (page === 'email')      loadEmailFull();
+  if (page === 'schule')     loadSchule();
+  if (page === 'redesigns')  loadRedesigns();
+  if (page === 'clipboard')  loadClipboard();
+  if (page === 'projekte')   loadProjekte();
+  // Wenn es ein Unter-Tab einer Gruppe ist → Gruppe aufklappen
+  const groups = ['projekte'];
+  for (const g of groups) {
+    const groupItems = document.getElementById('nav-group-items-' + g);
+    if (groupItems && groupItems.querySelector(`[data-page="${page}"]`)) {
+      _openNavGroup(g);
+    }
+  }
+}
+
 document.querySelectorAll('.nav-item').forEach(item => {
-  item.addEventListener('click', () => {
-    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    item.classList.add('active');
-    const page = item.dataset.page;
-    document.getElementById('page-' + page).classList.add('active');
-    document.getElementById('page-title').textContent = item.querySelector('span:nth-child(2)').textContent;
-    const cmdBar = document.getElementById('mail-cmd-bar');
-    if (page !== 'email') { if (cmdBar) cmdBar.style.display='none'; closeMailResult(); _selectedMails=[]; }
-    if (page === 'brain') initBrain();
-    if (page === 'bolla') loadBollaModel();
-    if (page === 'system') loadSystem();
-    if (page === 'robin') loadRobin();
-    if (page === 'geburtstage') loadBirthdays();
-    if (page === 'wetter') loadWeatherFull();
-    if (page === 'kalender') loadCalendar();
-    if (page === 'email') loadEmailFull();
-    if (page === 'schule') loadSchule();
-    if (page === 'redesigns') loadRedesigns();
-  });
+  item.addEventListener('click', () => showPage(item.dataset.page));
 });
+
+// ── Nav-Gruppen ──
+function _openNavGroup(name) {
+  const items  = document.getElementById('nav-group-items-' + name);
+  const header = document.getElementById('nav-group-header-' + name);
+  if (!items) return;
+  items.style.display = 'block';
+  if (header) header.classList.add('open');
+  localStorage.setItem('nav-group-' + name, '1');
+}
+function _closeNavGroup(name) {
+  const items  = document.getElementById('nav-group-items-' + name);
+  const header = document.getElementById('nav-group-header-' + name);
+  if (!items) return;
+  items.style.display = 'none';
+  if (header) header.classList.remove('open');
+  localStorage.setItem('nav-group-' + name, '0');
+}
+function toggleNavGroup(name) {
+  const items = document.getElementById('nav-group-items-' + name);
+  if (!items) return;
+  if (items.style.display === 'none' || items.style.display === '') {
+    _openNavGroup(name);
+  } else {
+    _closeNavGroup(name);
+  }
+}
+// State aus localStorage wiederherstellen
+(function() {
+  ['projekte'].forEach(name => {
+    const saved = localStorage.getItem('nav-group-' + name);
+    if (saved === '1') _openNavGroup(name);
+    else {
+      const items = document.getElementById('nav-group-items-' + name);
+      if (items) items.style.display = 'none';
+    }
+  });
+})();
 
 // ===== BILDGEN =====
 let _bildgenLastBlob = null;
@@ -1323,17 +1678,148 @@ function loadEmailFull() {
     ? d.sent.map(m => mailRow(m, false)).join('')
     : `<div style="font-size:13px;color:var(--dim);padding:10px 0">Keine gesendeten Mails</div>`;
 
-  const h = `<div style="grid-column:1/-1;padding-bottom:72px">
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">${chips}</div>
-    <div class="card" style="margin-bottom:14px">
-      <div class="card-head"><span class="card-title">📥 Posteingang</span></div>
-      ${inboxRows}
+  const h = `<div style="grid-column:1/-1;padding-bottom:72px;display:flex;gap:14px;align-items:flex-start">
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">${chips}</div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head"><span class="card-title">📥 Posteingang</span></div>
+        ${inboxRows}
+      </div>
+      <div class="mail-section-head">📤 Gesendet</div>
+      <div class="card">${sentRows}</div>
     </div>
-    <div class="mail-section-head">📤 Gesendet</div>
-    <div class="card">${sentRows}</div>
+    <div id="nl-panel" style="width:300px;flex-shrink:0"></div>
   </div>`;
 
   document.getElementById('email-content').innerHTML = h;
+  loadNewsletterPanel();
+}
+
+// ===== NEWSLETTER PANEL =====
+const NL_OFFER_PAGES = {
+  "Penny":     "https://www.penny.de/angebote",
+  "Aldi Nord": "https://www.aldi-nord.de/angebote-der-woche.html",
+  "Lidl":      "https://www.lidl.de/angebote",
+};
+function nlStoreLink(store, artikel) {
+  const base = NL_OFFER_PAGES[store];
+  if (!base) return '';
+  const url = base + '#:~:text=' + encodeURIComponent(artikel);
+  return `<a href="${url}" target="_blank" rel="noopener" style="font-size:11px;color:#a78bfa;text-decoration:none;margin-top:4px;display:inline-block">↗ ${store}-Angebote</a>`;
+}
+function nlHitHtml(h) {
+  const bg = h.color||'#333', sc = bg==='#FFD100'?'#b8a000':bg;
+  const valid = h.gueltig_von&&h.gueltig_bis?`${h.gueltig_von} – ${h.gueltig_bis}`:(h.gueltig_von||h.gueltig_bis||'');
+  const preis = h.preis ? ` · ${h.preis}` : '';
+  return `<div class="nl-hit" style="background:${bg}22;border:1px solid ${bg}55">
+    <div class="nl-hit-store" style="color:${sc}">${h.store}</div>
+    <div class="nl-hit-item">${h.artikel}</div>
+    <div class="nl-hit-meta">${valid}${preis}${h.hinweis?' · '+h.hinweis:''}</div>
+    ${nlStoreLink(h.store, h.artikel)}
+  </div>`;
+}
+
+let _nlData = {watchlist:[], scanned_at:null, results:[]};
+
+async function loadNewsletterPanel() {
+  const el = document.getElementById('nl-panel');
+  if (!el) return;
+  try {
+    const r = await fetch(API+'/api/newsletter');
+    _nlData = await r.json();
+  } catch(e) { _nlData = {watchlist:[], scanned_at:null, results:[]}; }
+  renderNewsletterPanel();
+}
+
+function renderNewsletterPanel() {
+  const el = document.getElementById('nl-panel');
+  if (!el) return;
+  const {watchlist, scanned_at, results} = _nlData;
+
+  const chips = watchlist.map(w =>
+    `<span class="nl-chip">${w}<button class="nl-chip-x" onclick="nlRemove('${w}')">×</button></span>`
+  ).join('');
+
+  const hitsHtml = (hits, emptyText) => hits.length
+    ? hits.map(nlHitHtml).join('')
+    : `<div class="nl-empty">${emptyText}</div>`;
+
+  const watchInfo = scanned_at ? `<div style="font-size:10px;color:var(--dim);margin-top:6px">Letzter Cron: ${scanned_at}</div>` : '';
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-head"><span class="card-title">📰 Newsletter-Suche</span></div>
+      <div class="nl-add-row">
+        <input class="nl-add-input" id="nl-input" placeholder="Begriff suchen…" onkeydown="if(event.key==='Enter')nlSearch()" oninput="document.getElementById('nl-clear').style.display=this.value?'block':'none'">
+        <button id="nl-clear" onclick="document.getElementById('nl-input').value='';this.style.display='none';document.getElementById('nl-search-results').innerHTML=''" style="display:none;background:none;border:none;color:rgba(255,255,255,0.4);font-size:16px;cursor:pointer;padding:0 2px;flex-shrink:0">✕</button>
+        <button class="nl-add-btn" onclick="nlSearch()" title="Jetzt suchen" style="background:#4fc3f7">🔍</button>
+        <button class="nl-add-btn" onclick="nlSaveToWatch()" title="Zur Watchlist hinzufügen">+</button>
+      </div>
+      <div id="nl-search-results" style="min-height:20px"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-title">📌 Watchlist <span style="font-size:10px;font-weight:400;color:var(--dim)">(wöchentlich)</span></span></div>
+      <div style="margin-bottom:6px">${chips || '<span style="font-size:12px;color:var(--dim)">Noch keine Begriffe</span>'}</div>
+      ${hitsHtml(results, 'Nächster Scan: Montag 07:00')}
+      ${watchInfo}
+    </div>`;
+}
+
+async function nlSearch() {
+  const inp = document.getElementById('nl-input');
+  const term = inp?.value.trim();
+  if (!term) return;
+  const res = document.getElementById('nl-search-results');
+  if (res) res.innerHTML = '<div class="nl-empty">⏳ Suche läuft…</div>';
+  try {
+    const r = await fetch(API+'/api/newsletter/search', {method:'POST',
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify({term})});
+    const d = await r.json();
+    if (!res) return;
+    if (d.error) { res.innerHTML = `<div class="nl-empty">⚠ ${d.error}</div>`; return; }
+    const hits = d.results || [];
+    if (!hits.length) {
+      res.innerHTML = `<div class="nl-empty">Nichts gefunden in ${d.mails_checked||0} Newsletter(n).</div>`;
+    } else {
+      res.innerHTML = hits.map(nlHitHtml).join('');
+    }
+  } catch(e) {
+    if (res) res.innerHTML = `<div class="nl-empty">⚠ ${e.message}</div>`;
+  }
+}
+
+async function nlSaveToWatch() {
+  const inp = document.getElementById('nl-input');
+  if (!inp || !inp.value.trim()) return;
+  const term = inp.value.trim().toLowerCase();
+  inp.value = '';
+  await fetch(API+'/api/newsletter/watchlist', {method:'POST',
+    headers:{'Content-Type':'application/json'}, body:JSON.stringify({add: term})});
+  _nlData.watchlist = [...new Set([..._nlData.watchlist, term])];
+  renderNewsletterPanel();
+}
+
+async function nlRemove(term) {
+  await fetch(API+'/api/newsletter/watchlist', {method:'POST',
+    headers:{'Content-Type':'application/json'}, body:JSON.stringify({remove: term})});
+  _nlData.watchlist = _nlData.watchlist.filter(w => w !== term);
+  renderNewsletterPanel();
+}
+
+async function nlScanNow() {
+  const btn = document.querySelector('.nl-scan-btn');
+  if (btn) { btn.textContent = '⏳ Scan läuft…'; btn.disabled = true; }
+  try {
+    const r = await fetch(API+'/api/newsletter/scan', {method:'POST',
+      headers:{'Content-Type':'application/json'}, body:'{}'});
+    const d = await r.json();
+    if (btn) btn.textContent = d.text || '✓ Gestartet';
+    setTimeout(async () => {
+      await loadNewsletterPanel();
+    }, 60000);
+  } catch(e) {
+    if (btn) { btn.textContent = '⚠ Fehler'; btn.disabled = false; }
+  }
 }
 
 // ===== MAIL KOMMANDO =====
@@ -1394,11 +1880,17 @@ function closeMailResult() {
   if (panel) panel.classList.remove('open');
 }
 
+function runQuickCmd(cmd) {
+  const inp = document.getElementById('mail-cmd-input');
+  if (inp) inp.value = cmd;
+  sendMailCommand();
+}
+
 async function sendMailCommand() {
   if (!_selectedMails.length) return;
   const inp  = document.getElementById('mail-cmd-input');
   const btn  = document.getElementById('mail-cmd-btn');
-  const instruction = inp.value.trim();
+  const instruction = (inp.value.trim()) || '';
   if (!instruction) return;
   inp.disabled = true; btn.disabled = true; btn.textContent = '…';
   _showResultPanel('Bolla arbeitet…', '⏳ Bolla arbeitet…', 'var(--accent)');
@@ -1410,8 +1902,12 @@ async function sendMailCommand() {
     const d = await r.json();
     const acts = document.getElementById('mail-result-actions');
     if (d.type==='deleted') {
+      document.querySelectorAll('.mail-row.selected').forEach(r => {
+        r.style.transition='opacity .25s'; r.style.opacity='0';
+        setTimeout(()=>r.remove(), 250);
+      });
+      _selectedMails=[]; _updateCmdBar(); inp.value='';
       _showResultPanel('Gelöscht ✓', d.text, '#66bb6a');
-      inp.value=''; setTimeout(()=>loadEmailFull(),1500);
     } else if (d.type==='draft') {
       const safeText = d.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       const dStr = encodeURIComponent(JSON.stringify(d));
@@ -2088,6 +2584,49 @@ function initBrain() {
   canvas.addEventListener('mousedown',e=>{const r=canvas.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;drag=nodes.find(n=>Math.hypot(n.x-mx,n.y-my)<n.size+10);});
   canvas.addEventListener('mousemove',e=>{if(!drag)return;const r=canvas.getBoundingClientRect();drag.x=e.clientX-r.left;drag.y=e.clientY-r.top;drag.vx=drag.vy=0;});
   canvas.addEventListener('mouseup',()=>drag=null);
+}
+
+// ===== CLIPBOARD =====
+async function loadClipboard() {
+  try {
+    const d = await fetch('/api/clipboard').then(r => r.json());
+    document.getElementById('clipboard-text').value = d.text || '';
+    document.getElementById('clipboard-ts').textContent = d.ts ? 'Zuletzt gespeichert: ' + new Date(d.ts).toLocaleString('de-DE') : '';
+    document.getElementById('clipboard-status').textContent = '';
+  } catch(e) {
+    document.getElementById('clipboard-status').textContent = 'Fehler beim Laden';
+  }
+}
+async function clipboardSave() {
+  const text = document.getElementById('clipboard-text').value;
+  const btn = document.getElementById('clipboard-save-btn');
+  const status = document.getElementById('clipboard-status');
+  btn.disabled = true;
+  try {
+    const d = await fetch('/api/clipboard', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text})}).then(r => r.json());
+    document.getElementById('clipboard-ts').textContent = d.ts ? 'Zuletzt gespeichert: ' + new Date(d.ts).toLocaleString('de-DE') : '';
+    status.style.color = 'var(--success)';
+    status.textContent = '✓ Gespeichert';
+    setTimeout(() => { status.textContent = ''; }, 2000);
+  } catch(e) {
+    status.style.color = 'var(--accent)';
+    status.textContent = 'Fehler beim Speichern';
+  }
+  btn.disabled = false;
+}
+function clipboardCopy() {
+  const text = document.getElementById('clipboard-text').value;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const status = document.getElementById('clipboard-status');
+    status.style.color = 'var(--success)';
+    status.textContent = '✓ Kopiert';
+    setTimeout(() => { status.textContent = ''; }, 2000);
+  });
+}
+function clipboardClear() {
+  document.getElementById('clipboard-text').value = '';
+  document.getElementById('clipboard-status').textContent = '';
 }
 
 // ===== LIGHTBOX =====
@@ -2853,9 +3392,18 @@ async function loadBookHealth() {
     const diskPct = Math.round((d.diskTotal - d.diskFree) / d.diskTotal * 100);
     const bat1 = d.bat1 <= 0 ? `<span style="color:#f87171">DEFEKT</span>` : `${d.bat1} mWh`;
     const bat2 = d.bat2 < 0 ? '–' : `${d.bat2}% ${d.bat2Charging ? '⚡' : ''}`;
+    const cpuName = (d.cpuName||'–').replace(/\(R\)/gi,'').replace(/\(TM\)/gi,'').replace(/ CPU @.*/,'').trim();
+    const gpuName = (d.gpu||'–').replace(/Intel\(R\) /gi,'Intel ');
     el.innerHTML =
+      surfaceRow('Modell',   d.model  || '–') +
+      surfaceRow('Windows',  d.winVer || '–') +
+      surfaceRow('CPU',      cpuName) +
+      surfaceRow('GPU',      gpuName) +
+      surfaceRow('RAM (Spec)', `${d.ramPhys || Math.round(d.ramTotal/1024)} GB`) +
+      `<div style="margin:10px 0 10px;border-top:1px dashed var(--border)"></div>` +
+      surfaceRow('CPU Last', `${d.cpu||0} %`, surfaceBar(d.cpu||0, '#60a5fa')) +
       surfaceRow('Uptime', d.uptime) +
-      surfaceRow('RAM', `${Math.round(d.ramUsed/1024)} / ${Math.round(d.ramTotal/1024)} GB`, surfaceBar(ramPct)) +
+      surfaceRow('RAM aktuell', `${Math.round(d.ramUsed/1024)} / ${Math.round(d.ramTotal/1024)} GB`, surfaceBar(ramPct)) +
       surfaceRow('Disk C:', `${d.diskFree} GB frei / ${d.diskTotal} GB`, surfaceBar(diskPct)) +
       surfaceRow('Akku 1 (Tablet)', bat1) +
       surfaceRow('Akku 2 (Base)', bat2, d.bat2 >= 0 ? surfaceBar(d.bat2, '#4ade80') : '');
@@ -2882,9 +3430,18 @@ async function loadProHealth() {
     const ramPct = Math.round(d.ramUsed / d.ramTotal * 100);
     const diskPct = Math.round((d.diskTotal - d.diskFree) / d.diskTotal * 100);
     const bat1 = d.bat1 < 0 ? '–' : `${d.bat1}% ${d.bat1Charging ? '⚡' : ''}`;
+    const cpuName = (d.cpuName||'–').replace(/\(R\)/gi,'').replace(/\(TM\)/gi,'').replace(/ CPU @.*/,'').trim();
+    const gpuName = (d.gpu||'–').replace(/Intel\(R\) /gi,'Intel ');
     el.innerHTML =
+      surfaceRow('Modell',   d.model  || '–') +
+      surfaceRow('Windows',  d.winVer || '–') +
+      surfaceRow('CPU',      cpuName) +
+      surfaceRow('GPU',      gpuName) +
+      surfaceRow('RAM (Spec)', `${d.ramPhys || Math.round(d.ramTotal/1024)} GB`) +
+      `<div style="margin:10px 0 10px;border-top:1px dashed var(--border)"></div>` +
+      surfaceRow('CPU Last', `${d.cpu||0} %`, surfaceBar(d.cpu||0, '#60a5fa')) +
       surfaceRow('Uptime', d.uptime) +
-      surfaceRow('RAM', `${Math.round(d.ramUsed/1024)} / ${Math.round(d.ramTotal/1024)} GB`, surfaceBar(ramPct)) +
+      surfaceRow('RAM aktuell', `${Math.round(d.ramUsed/1024)} / ${Math.round(d.ramTotal/1024)} GB`, surfaceBar(ramPct)) +
       surfaceRow('Disk C:', `${d.diskFree} GB frei / ${d.diskTotal} GB`, surfaceBar(diskPct)) +
       surfaceRow('Akku', bat1, d.bat1 >= 0 ? surfaceBar(d.bat1, '#4ade80') : '');
   } catch(e) {
@@ -2898,15 +3455,24 @@ async function loadStudioHealth() {
   try {
     const r = await fetch(API + '/api/surfaces/studio', {signal: AbortSignal.timeout(6000)});
     const d = await r.json();
-    const ramPct = Math.round(d.ramUsed / d.ramTotal * 100);
-    const diskPct = Math.round((d.diskTotal - d.diskFree) / d.diskTotal * 100);
+    const ramPct = d.ramTotal ? Math.round(d.ramUsed / d.ramTotal * 100) : 0;
+    const diskPct = d.diskTotal ? Math.round((d.diskTotal - d.diskFree) / d.diskTotal * 100) : 0;
     const svc = (ok, name) => `<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
       <span style="color:var(--dim)">${name}</span>
       <span style="${ok ? 'color:#4ade80' : 'color:#f87171'}">${ok ? '● läuft' : '● gestoppt'}</span></div>`;
+    const cpuName = (d.cpuName||'–').replace(/\(R\)/gi,'').replace(/\(TM\)/gi,'').replace(/ CPU @.*/,'').trim();
+    const gpuName = (d.gpu||'–').replace(/Intel\(R\) /gi,'Intel ');
     el.innerHTML =
-      surfaceRow('Uptime', d.uptime) +
-      surfaceRow('RAM', `${Math.round(d.ramUsed/1024)} / ${Math.round(d.ramTotal/1024)} GB`, surfaceBar(ramPct)) +
-      surfaceRow('Disk C:', `${d.diskFree} GB frei / ${d.diskTotal} GB`, surfaceBar(diskPct)) +
+      surfaceRow('Modell',   d.model  || '–') +
+      surfaceRow('Windows',  d.winVer || '–') +
+      surfaceRow('CPU',      cpuName) +
+      surfaceRow('GPU',      gpuName) +
+      surfaceRow('RAM (Spec)', d.ramPhys ? `${d.ramPhys} GB` : '–') +
+      `<div style="margin:10px 0 10px;border-top:1px dashed var(--border)"></div>` +
+      surfaceRow('CPU Last', `${d.cpu||0} %`, surfaceBar(d.cpu||0, '#60a5fa')) +
+      surfaceRow('Uptime', d.uptime || '–') +
+      (d.ramTotal ? surfaceRow('RAM aktuell', `${Math.round(d.ramUsed/1024)} / ${Math.round(d.ramTotal/1024)} GB`, surfaceBar(ramPct)) : '') +
+      (d.diskTotal ? surfaceRow('Disk C:', `${d.diskFree} GB frei / ${d.diskTotal} GB`, surfaceBar(diskPct)) : '') +
       `<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">` +
       svc(d.mcServer, 'MC Server') +
       svc(d.cloudflared, 'Cloudflared') +
@@ -3442,6 +4008,877 @@ function hexToRgb(hex) {
   return `${r},${g},${b}`;
 }
 
+// ===== IMMOBILIEN / MAKLER =====
+const MAKLER_STATUS_LABELS = {
+  neu:               { label: 'Neu',             color: '#6b7280', bg: 'rgba(107,114,128,0.15)', border: 'rgba(107,114,128,0.3)' },
+  email_gesendet:    { label: 'E-Mail gesendet', color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  border: 'rgba(96,165,250,0.3)'  },
+  angerufen:         { label: 'Angerufen',        color: '#c084fc', bg: 'rgba(192,132,252,0.12)', border: 'rgba(192,132,252,0.3)' },
+  feedback_erhalten: { label: 'Feedback ✓',       color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.3)'  },
+  termin:            { label: 'Termin 📅',         color: '#4ade80', bg: 'rgba(74,222,128,0.12)',  border: 'rgba(74,222,128,0.3)'  },
+  abgelehnt:         { label: 'Abgelehnt',        color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.3)' },
+  interessant:       { label: 'Interessant ⭐',    color: '#fb923c', bg: 'rgba(251,146,60,0.12)',  border: 'rgba(251,146,60,0.3)'  },
+};
+const MAKLER_STATUS_CYCLE = ['neu','email_gesendet','angerufen','feedback_erhalten','termin','interessant','abgelehnt'];
+
+let _maklerData = null;
+let _maklerFilter = 'alle';
+
+function _maklerStatusBadge(id, status) {
+  const s = MAKLER_STATUS_LABELS[status] || MAKLER_STATUS_LABELS.neu;
+  return `<button onclick="event.stopPropagation();maklerCycleStatus('${id}')"
+    title="Klick zum Wechseln"
+    style="border:1px solid ${s.border};background:${s.bg};color:${s.color};
+           font-size:10px;padding:2px 8px;border-radius:10px;cursor:pointer;white-space:nowrap"
+    >${s.label}</button>`;
+}
+
+function _maklerRow(m, status, notiz, datum, inboxEmails) {
+  const noEmail = !m.email;
+  const hasInbox = inboxEmails.some(e => e.from.includes(m.email?.split('@')[1] || '__'));
+  const unread = inboxEmails.filter(e => !e.isRead && e.from.includes(m.email?.split('@')[1] || '__'));
+  const emailBtn = m.email
+    ? `<a href="mailto:${m.email}" onclick="event.stopPropagation()" title="${m.email}"
+         style="color:#60a5fa;font-size:11px;text-decoration:none;opacity:.7">✉</a>`
+    : `<span title="${m.hinweis || 'Keine E-Mail'}" style="color:var(--dim);font-size:11px;opacity:.4">✉</span>`;
+  const tel = m.mobil || m.telefon;
+  const telBtn = tel
+    ? `<span style="font-size:10px;color:var(--dim);opacity:.6" title="${tel}">📞</span>`
+    : '';
+  const inboxHint = unread.length > 0
+    ? `<span title="${unread.length} ungelesene E-Mail(s)" style="background:rgba(248,113,113,0.2);color:#f87171;font-size:9px;padding:1px 5px;border-radius:8px;cursor:pointer" onclick="event.stopPropagation();showPage('email')">📬 ${unread.length} neu</span>`
+    : hasInbox
+    ? `<span title="E-Mail(s) in Posteingang" style="background:rgba(96,165,250,0.1);color:#60a5fa;font-size:9px;padding:1px 5px;border-radius:8px;cursor:pointer" onclick="event.stopPropagation();showPage('email')">📩 E-Mail</span>`
+    : '';
+  const ansprechpartner = m.ansprechpartner
+    ? `<div style="font-size:10px;color:var(--dim)">${escHtml(m.ansprechpartner)}</div>`
+    : '';
+  const notizEl = notiz
+    ? `<div style="font-size:10px;color:#fbbf24;margin-top:2px;font-style:italic">${escHtml(notiz)}</div>`
+    : '';
+  const datumEl = datum && status !== 'neu'
+    ? `<span style="font-size:9px;color:var(--dim);opacity:.5">${datum}</span>`
+    : '';
+
+  return `<div onclick="maklerOpenNotiz('${m.id}')" data-status="${status}" style="display:flex;align-items:center;gap:10px;padding:8px 18px;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:background .1s" onmouseenter="this.style.background='rgba(255,255,255,0.03)'" onmouseleave="this.style.background=''">
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:600;color:var(--text)">${escHtml(m.firma)}</span>
+        ${inboxHint}
+      </div>
+      ${ansprechpartner}
+      ${notizEl}
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+      ${datumEl}
+      ${emailBtn}${telBtn}
+      ${_maklerStatusBadge(m.id, status)}
+    </div>
+  </div>`;
+}
+
+function _maklerRenderList(data) {
+  _maklerData = data;
+  const statuses = data.statuses || {};
+  const inbox = data.inbox || [];
+  const list = document.getElementById('makler-list');
+  if (!list) return;
+
+  // Statistik für Projektkarte
+  const allMakler = data.regionen.flatMap(r => r.makler);
+  const counts = {};
+  for (const m of allMakler) {
+    const s = (statuses[m.id]?.status) || 'neu';
+    counts[s] = (counts[s] || 0) + 1;
+  }
+  const statsEl = document.getElementById('immo-stats');
+  if (statsEl) {
+    const total = allMakler.length;
+    const kontaktiert = total - (counts.neu || 0);
+    statsEl.innerHTML = `
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span>Makler gesamt</span><span style="color:var(--bright)">${total}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span>Kontaktiert</span><span style="color:#60a5fa">${kontaktiert}</span>
+      </div>
+      ${counts.feedback_erhalten ? `<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Feedback</span><span style="color:#fbbf24">${counts.feedback_erhalten}</span></div>` : ''}
+      ${counts.termin ? `<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Termin</span><span style="color:#4ade80">${counts.termin}</span></div>` : ''}
+      ${counts.interessant ? `<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Interessant</span><span style="color:#fb923c">${counts.interessant}</span></div>` : ''}
+    `;
+  }
+
+  // E-Mail-Badge
+  const badge = document.getElementById('makler-mail-badge');
+  const unreadTotal = inbox.filter(e => !e.isRead).length;
+  if (badge) {
+    if (inbox.length > 0) {
+      badge.style.display = '';
+      badge.innerHTML = `<button onclick="showPage('email')"
+        style="background:${unreadTotal > 0 ? 'rgba(248,113,113,0.15)' : 'rgba(96,165,250,0.1)'};
+               border:1px solid ${unreadTotal > 0 ? 'rgba(248,113,113,0.4)' : 'rgba(96,165,250,0.3)'};
+               color:${unreadTotal > 0 ? '#f87171' : '#60a5fa'};
+               font-size:11px;padding:4px 10px;border-radius:10px;cursor:pointer">
+        📬 ${inbox.length} E-Mail${inbox.length !== 1 ? 's' : ''} von Maklern${unreadTotal > 0 ? ` · ${unreadTotal} ungelesen` : ''} → Posteingang
+      </button>`;
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // Filter-Buttons aktualisieren mit Zählern
+  const statusCounts = {};
+  for (const m of allMakler) {
+    const s = (statuses[m.id]?.status) || 'neu';
+    statusCounts[s] = (statusCounts[s] || 0) + 1;
+  }
+  document.querySelectorAll('.mkf').forEach(b => {
+    const f = b.dataset.f;
+    const isActive = f === _maklerFilter;
+    b.style.background    = isActive ? 'rgba(37,99,235,0.35)' : 'transparent';
+    b.style.color         = isActive ? '#fff' : 'var(--dim)';
+    b.style.borderColor   = isActive ? 'rgba(96,165,250,0.6)' : 'rgba(255,255,255,0.08)';
+    b.style.fontWeight    = isActive ? '700' : '400';
+    const n = f === 'alle' ? allMakler.length : (statusCounts[f] || 0);
+    const labelMap = {
+      alle: `Alle (${n})`, neu: `Neu (${n})`,
+      email_gesendet: `E-Mail (${n})`, feedback_erhalten: `Feedback (${n})`, termin: `Termin (${n})`
+    };
+    b.textContent = labelMap[f] || f;
+  });
+
+  // Liste rendern
+  let html = '';
+  for (const region of data.regionen) {
+    const rows = region.makler.map(m => {
+      const st = statuses[m.id] || {};
+      const status = st.status || 'neu';
+      if (_maklerFilter !== 'alle' && status !== _maklerFilter) return '';
+      return _maklerRow(m, status, st.notiz || '', st.datum || '', inbox);
+    }).join('');
+    if (!rows) continue;
+    html += `<div style="padding:6px 18px 2px;font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-top:4px">${escHtml(region.name)}</div>${rows}`;
+  }
+  list.innerHTML = html || `<div style="padding:20px;color:var(--dim);font-size:13px;text-align:center">Keine Einträge für diesen Filter</div>`;
+}
+
+async function loadProjekte() {
+  loadImmoNews();
+  loadImmoBookmarks();
+  try {
+    const r = await fetch(API + '/api/makler', {signal: AbortSignal.timeout(20000)});
+    const data = await r.json();
+    _maklerRenderList(data);
+  } catch(e) {
+    const list = document.getElementById('makler-list');
+    if (list) list.innerHTML = `<div style="padding:20px;color:#f87171;font-size:13px">Fehler: ${escHtml(e.message)}</div>`;
+  }
+}
+
+const _IMMO_SOURCE_COLORS = {
+  'Welt':        '#60a5fa',
+  'ImmoScout24': '#4ade80',
+  'Süddeutsche': '#fb923c',
+  'Focus':       '#f472b6',
+  'Haufe':       '#a78bfa',
+};
+
+let _immoNewsItems = [];
+let _currentImmoArticle = null;
+let _immoBookmarks = [];
+const IMMO_CATS = ['Ausflüge','Radwege','Restaurants','Regionen','Sonstiges'];
+
+async function loadImmoNews(force = false) {
+  const body = document.getElementById('immo-news-body');
+  const btn  = document.getElementById('immo-news-refresh');
+  if (!body) return;
+  if (force) {
+    body.innerHTML = '<div style="padding:16px;color:var(--dim);font-size:12px;text-align:center"><div class="bolla-dots"><span>.</span><span>.</span><span>.</span></div></div>';
+    if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+  }
+  try {
+    const url = force ? API + '/api/immo-news/refresh' : API + '/api/immo-news';
+    const method = force ? 'POST' : 'GET';
+    const r = await fetch(url, {method, signal: AbortSignal.timeout(30000)});
+    const data = await r.json();
+    const news = data.news || [];
+    _immoNewsItems = news;
+    const age  = data.fetched_at
+      ? (() => { const m = Math.round((Date.now() - new Date(data.fetched_at))/60000); return m < 60 ? `vor ${m} Min.` : `vor ${Math.round(m/60)}h`; })()
+      : '';
+    if (!news.length) {
+      body.innerHTML = `<div style="padding:16px;color:var(--dim);font-size:12px;text-align:center">Keine aktuellen Artikel gefunden.<br><span style="font-size:10px">Manche Feeds sind gelegentlich nicht erreichbar.</span></div>`;
+    } else {
+      body.innerHTML = news.map((n, i) => {
+        const col = _IMMO_SOURCE_COLORS[n.source] || '#94a3b8';
+        return `<div onclick="showImmoSummary(${i})"
+          style="padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;transition:background .15s;border-left:3px solid ${col}"
+          onmouseenter="this.style.background='rgba(14,116,144,0.08)'" onmouseleave="this.style.background=''">
+          <div style="font-size:13px;font-weight:700;color:#f0f9ff;line-height:1.4;letter-spacing:-.01em">${escHtml(n.title)}</div>
+          <div style="margin-top:5px;display:flex;gap:8px;align-items:center">
+            <span style="font-size:9px;font-weight:700;color:${col};text-transform:uppercase;letter-spacing:.05em">${escHtml(n.source)}</span>
+            ${n.date ? `<span style="font-size:9px;color:var(--dim);opacity:.55">${escHtml(n.date.slice(0,10))}</span>` : ''}
+            <span style="font-size:9px;color:#67e8f9;opacity:.7;margin-left:auto">🐾 Zusammenfassung</span>
+          </div>
+        </div>`;
+      }).join('') +
+      `<div style="padding:6px 14px 8px;font-size:9px;color:var(--dim);opacity:.4;text-align:right">Aktualisiert ${age}</div>`;
+    }
+  } catch(e) {
+    body.innerHTML = `<div style="padding:16px;color:#f87171;font-size:12px">Fehler: ${escHtml(e.message)}</div>`;
+  }
+  if (btn) { btn.disabled = false; btn.innerHTML = '🔄'; }
+}
+
+async function showImmoSummary(idx) {
+  const n = _immoNewsItems[idx];
+  if (!n) return;
+  const title = n.title, summary = n.summary || '', source = n.source || '';
+
+  _currentImmoArticle = {title, source, url: n.url || '', date: n.date || '', summary_html: ''};
+
+  const panel = document.getElementById('news-summary-panel');
+  const body  = document.getElementById('news-summary-body');
+  const titleEl = document.getElementById('news-summary-title');
+  const saveBtn = document.getElementById('news-summary-save');
+  if (!panel) return;
+  titleEl.textContent = source ? `${source} · ${title.slice(0,60)}${title.length>60?'…':''}` : title.slice(0,70);
+  body.innerHTML = '<div style="color:#67e8f9;opacity:.7"><div class="bolla-dots"><span>.</span><span>.</span><span>.</span></div> <span style="font-size:12px">Bolla liest …</span></div>';
+  if (saveBtn) { saveBtn.style.display = 'none'; }
+  panel.classList.add('open');
+  try {
+    const r = await fetch(API + '/api/immo-news/summarize', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({title, summary}),
+      signal: AbortSignal.timeout(60000)
+    });
+    const data = await r.json();
+    if (data.html) {
+      body.innerHTML = data.html;
+      _currentImmoArticle.summary_html = data.html;
+      if (saveBtn) { saveBtn.style.display = 'flex'; }
+    } else if (data.error) {
+      body.innerHTML = `<span style="color:#f87171">${escHtml(data.error)}</span>`;
+    }
+  } catch(e) {
+    body.innerHTML = `<span style="color:#f87171">Fehler: ${escHtml(e.message)}</span>`;
+  }
+}
+
+async function saveImmoBookmark() {
+  if (!_currentImmoArticle) return;
+  const saveBtn = document.getElementById('news-summary-save');
+  const catSel  = document.getElementById('news-summary-cat');
+  const category = catSel ? catSel.value : 'Sonstiges';
+
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳'; }
+  try {
+    const r = await fetch(API + '/api/immo-bookmarks', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({..._currentImmoArticle, category})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      if (saveBtn) { saveBtn.innerHTML = '✓ Gespeichert'; saveBtn.style.background = 'rgba(74,222,128,0.15)'; saveBtn.style.borderColor = 'rgba(74,222,128,0.4)'; saveBtn.style.color = '#4ade80'; }
+      await loadImmoBookmarks();
+      setTimeout(() => { if (saveBtn) { saveBtn.style.display='none'; saveBtn.disabled=false; saveBtn.innerHTML='📌 Speichern'; saveBtn.style.background=''; saveBtn.style.borderColor=''; saveBtn.style.color=''; } }, 2000);
+    }
+  } catch(e) {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '📌 Speichern'; }
+  }
+}
+
+async function loadImmoBookmarks() {
+  try {
+    const r = await fetch(API + '/api/immo-bookmarks');
+    _immoBookmarks = await r.json();
+  } catch(e) {
+    _immoBookmarks = [];
+  }
+  renderImmoBookmarks();
+}
+
+function renderImmoBookmarks() {
+  const el = document.getElementById('immo-bookmarks-list');
+  const countEl = document.getElementById('immo-bookmarks-count');
+  const filterEl = document.getElementById('immo-bookmarks-filter');
+  if (!el) return;
+  const activeFilter = filterEl ? filterEl.value : 'Alle';
+  const filtered = activeFilter === 'Alle' ? _immoBookmarks : _immoBookmarks.filter(b => b.category === activeFilter);
+  if (countEl) countEl.textContent = _immoBookmarks.length ? `${_immoBookmarks.length} gespeichert` : '';
+  if (!filtered.length) {
+    el.innerHTML = `<div style="color:var(--dim);font-size:12px;padding:20px;text-align:center;opacity:.5">${_immoBookmarks.length ? 'Keine Einträge in dieser Kategorie.' : 'Noch nichts gespeichert — klick auf einen News-Artikel und dann auf 📌 Speichern.'}</div>`;
+    return;
+  }
+  el.innerHTML = filtered.slice().reverse().map(b => {
+    const catColor = {Ausflüge:'#34d399',Radwege:'#60a5fa',Restaurants:'#fb923c',Regionen:'#a78bfa',Sonstiges:'#94a3b8'}[b.category] || '#94a3b8';
+    const dateStr = b.saved_at ? new Date(b.saved_at).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+    const t = (b.title + ' ' + (b.category||'')).toLowerCase();
+    const icon = t.match(/radweg|fahrrad|radtour|radfahren|cycling/) ? '🚲'
+      : t.match(/wandern|wanderweg|bergwander|alpen|wandertour|trekking/) ? '🥾'
+      : t.match(/see|ammersee|starnberg|chiemsee|tegern|schwimm|bade|segeln|boot/) ? '⛵'
+      : t.match(/restaurant|gasthof|wirtshaus|biergarten|brauerei|essen|küche|kulinar/) ? '🍺'
+      : t.match(/burg|schloss|museum|sehenswürdigkeit|denkmal|kloster|basilika/) ? '🏰'
+      : t.match(/markt|volksfest|festival|fest |messe|kirchtag/) ? '🎪'
+      : t.match(/ski|snowboard|winter|schnee|rodeln|langlauf/) ? '⛷️'
+      : t.match(/wald|natur|naturpark|naturschutz|park |grün/) ? '🌲'
+      : t.match(/zug|bahn|bus|öpnv|ticket|verbund/) ? '🚂'
+      : t.match(/camping|zelt|glamping/) ? '⛺'
+      : t.match(/flug|flughafen|airport/) ? '✈️'
+      : t.match(/immobilien|wohnung|haus |häuser|grundstück|kaufen|miete/) ? '🏠'
+      : t.match(/dorf|gemeinde|ortschaft|region|landkreis|kreis /) ? '📍'
+      : t.match(/straße|autobahn|verkehr|stau/) ? '🚗'
+      : '📰';
+    return `<div style="border-bottom:1px solid rgba(255,255,255,0.05);overflow:hidden">
+      <div style="padding:12px 14px 10px;display:flex;align-items:flex-start;gap:10px">
+        <div style="font-size:22px;flex-shrink:0;margin-top:2px;line-height:1">${icon}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;flex-wrap:wrap">
+            <span style="background:rgba(255,255,255,0.06);border:1px solid ${catColor}40;color:${catColor};font-size:9px;font-weight:700;padding:1px 7px;border-radius:10px">${escHtml(b.category)}</span>
+            ${b.source ? `<span style="font-size:9px;color:var(--dim)">${escHtml(b.source)}</span>` : ''}
+            <span style="font-size:9px;color:var(--dim);opacity:.5;margin-left:auto">${dateStr}</span>
+          </div>
+          ${b.url ? `<a href="${escHtml(b.url)}" target="_blank" style="font-size:13px;font-weight:600;color:#e0f2fe;line-height:1.4;text-decoration:none;display:block" onmouseover="this.style.color='#67e8f9'" onmouseout="this.style.color='#e0f2fe'">${escHtml(b.title)}</a>`
+                  : `<div style="font-size:13px;font-weight:600;color:#e0f2fe;line-height:1.4">${escHtml(b.title)}</div>`}
+        </div>
+        <button onclick="deleteImmoBookmark('${b.id}')" title="Löschen"
+          style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);color:#f87171;font-size:11px;padding:3px 8px;border-radius:8px;cursor:pointer;flex-shrink:0" onmouseover="this.style.background='rgba(248,113,113,0.2)'" onmouseout="this.style.background='rgba(248,113,113,0.08)'">✕</button>
+      </div>
+      ${b.summary_html ? `<div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.textContent=this.textContent.includes('▶')?'▼ Zusammenfassung':'▶ Zusammenfassung'"
+        style="padding:4px 14px 6px;font-size:10px;color:#67e8f9;cursor:pointer;border-top:1px solid rgba(255,255,255,0.04)">▶ Zusammenfassung</div>
+        <div style="display:none;padding:10px 14px 12px;font-size:12px;color:#cffafe;line-height:1.7;border-top:1px solid rgba(14,116,144,0.2)">${b.summary_html}</div>` : ''}
+      <div style="padding:6px 14px 10px;border-top:1px solid rgba(255,255,255,0.04)">
+        <input type="text" value="${escHtml(b.notiz || '')}" placeholder="Notiz …"
+          onchange="updateImmoBookmark('${b.id}', {notiz: this.value})"
+          style="width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--dim);font-size:11px;padding:2px 0;outline:none;font-family:inherit">
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function deleteImmoBookmark(bid) {
+  await fetch(API + '/api/immo-bookmarks/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: bid})});
+  _immoBookmarks = _immoBookmarks.filter(b => b.id !== bid);
+  renderImmoBookmarks();
+}
+
+async function updateImmoBookmark(bid, data) {
+  await fetch(API + '/api/immo-bookmarks/update', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: bid, ...data})});
+}
+
+function closeNewsSummary() {
+  const panel = document.getElementById('news-summary-panel');
+  if (panel) panel.classList.remove('open');
+}
+
+function maklerFilter(f) {
+  _maklerFilter = f;
+  if (_maklerData) _maklerRenderList(_maklerData);
+}
+
+async function maklerCycleStatus(id) {
+  if (!_maklerData) return;
+  const statuses = _maklerData.statuses || {};
+  const cur = statuses[id]?.status || 'neu';
+  const idx = MAKLER_STATUS_CYCLE.indexOf(cur);
+  const next = MAKLER_STATUS_CYCLE[(idx + 1) % MAKLER_STATUS_CYCLE.length];
+  try {
+    await fetch(API + '/api/makler/status', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({id, status: next, notiz: statuses[id]?.notiz || ''})
+    });
+    _maklerData.statuses[id] = { status: next, notiz: statuses[id]?.notiz || '', datum: new Date().toLocaleDateString('de-DE') };
+    _maklerRenderList(_maklerData);
+  } catch(e) { console.warn('Makler status update failed', e); }
+}
+
+function maklerOpenNotiz(id) {
+  if (!_maklerData) return;
+  const allMakler = _maklerData.regionen.flatMap(r => r.makler);
+  const m = allMakler.find(x => x.id === id);
+  if (!m) return;
+  const cur = _maklerData.statuses[id]?.notiz || '';
+  const notiz = prompt(`Notiz für ${m.firma}:`, cur);
+  if (notiz === null) return;
+  const status = _maklerData.statuses[id]?.status || 'neu';
+  fetch(API + '/api/makler/status', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({id, status, notiz})
+  }).then(() => {
+    _maklerData.statuses[id] = { status, notiz, datum: _maklerData.statuses[id]?.datum || '' };
+    _maklerRenderList(_maklerData);
+  });
+}
+
+// ===== CHRIS & BOLLA PROJEKTIDEEN =====
+const BOLLA_PROJECTS = [
+  {
+    id: 'familien-chronik',
+    emoji: '📖',
+    title: 'Familien-Chronik',
+    tagline: 'Lebendiges Familientagebuch mit KI-Zusammenfassungen',
+    color: 'linear-gradient(135deg,#b45309,#d97706)',
+    mockup: `<div style="background:#1c1008;border-radius:8px;padding:10px;font-size:10px;color:#e5b96a">
+      <div style="font-size:9px;color:#a16207;margin-bottom:6px;font-weight:700">📅 MANDEL-CHRONIK · April 2026</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;gap:6px;align-items:center"><div style="width:6px;height:6px;border-radius:50%;background:#d97706;flex-shrink:0"></div><span style="color:#fef3c7">Daniels Geburtstag 🎂</span></div>
+        <div style="display:flex;gap:6px;align-items:center"><div style="width:6px;height:6px;border-radius:50%;background:#92400e;flex-shrink:0"></div><span style="color:#fde68a">Enkel Noah: 1. Wort!</span></div>
+        <div style="display:flex;gap:6px;align-items:center"><div style="width:6px;height:6px;border-radius:50%;background:#d97706;flex-shrink:0"></div><span style="color:#fef3c7">Robin: Prüfung bestanden ✅</span></div>
+      </div>
+      <div style="margin-top:8px;padding:5px;background:rgba(217,119,6,0.15);border-radius:5px;font-size:9px;color:#fcd34d;line-height:1.4">„April war ein schöner Monat. Robin hat seine Anatomie-Prüfung mit 1,7 bestanden..."</div>
+    </div>`,
+    description: `Eine KI-gestützte Familienchronik, die Geburtstage, Meilensteine und besondere Momente sammelt und automatisch zu einem monatlichen Rückblick verarbeitet.<br><br>
+    <b>Was entsteht:</b> Eine Mission Control Seite mit Familien-Timeline, automatischen Monatszusammenfassungen von Bolla, Geburtstagserinnerungen mit persönlicher Notiz und einer Galerie schöner Familienmomente.<br><br>
+    <b>Wie's funktioniert:</b> Du trägst kurze Notizen ein ("Robin hat Prüfung bestanden"), Bolla schreibt daraus warmherzige Zusammenfassungen und erinnert dich proaktiv an Geburtstage mit Vorschlägen.`,
+    prompt: `Ich möchte in meiner Mission Control (lokale HTML-Seite unter /home/bolla/workspace/mission-control/index.html) eine neue Seite "Familien-Chronik" einbauen. Die Seite soll:
+
+1. Eine Timeline mit Familieneinträgen zeigen (Datum, Person, Ereignis, optionale Notiz)
+2. Einen Button "Eintrag hinzufügen" mit kurzem Formular
+3. Eine monatliche KI-Zusammenfassung: Bolla liest alle Einträge des letzten Monats und schreibt einen warmherzigen, persönlichen Rückblick
+4. Geburtstags-Widget oben: zeigt die nächsten 3 Geburtstage aus der Familie (Daten kommen aus config/familie.json)
+5. Dunkel-lila Design passend zum Rest der Seite
+
+Familienmitglieder sind bereits in den Bolla-Memories gespeichert: Renate, Stephanie, Anne, Daniel, Robin, sowie 4 Enkelkinder.
+
+Backend: Python Flask API (bereits vorhanden unter /home/bolla/workspace/scripts/mission_control_api.py). Daten als JSON in /home/bolla/workspace/data/familien_chronik.json.`
+  },
+  {
+    id: 'unterrichts-generator',
+    emoji: '🎓',
+    title: 'Unterrichts-Generator',
+    tagline: 'Komplette Unterrichtsstunden auf Knopfdruck',
+    color: 'linear-gradient(135deg,#1d4ed8,#0ea5e9)',
+    mockup: `<div style="background:#0c1a2e;border-radius:8px;padding:10px;font-size:10px">
+      <div style="font-size:9px;color:#60a5fa;margin-bottom:6px;font-weight:700">📚 IT-Grundlagen · Klasse 9b</div>
+      <div style="background:rgba(29,78,216,0.3);border-left:2px solid #3b82f6;padding:4px 6px;border-radius:0 4px 4px 0;margin-bottom:4px;color:#bfdbfe">🎯 Lernziel: Datentypen verstehen</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:4px">
+        <div style="background:rgba(14,165,233,0.2);padding:3px 5px;border-radius:3px;color:#7dd3fc;font-size:9px">⏱ Einstieg 10'</div>
+        <div style="background:rgba(14,165,233,0.2);padding:3px 5px;border-radius:3px;color:#7dd3fc;font-size:9px">🔍 Erarbeitung 20'</div>
+        <div style="background:rgba(14,165,233,0.2);padding:3px 5px;border-radius:3px;color:#7dd3fc;font-size:9px">✏️ Übung 15'</div>
+        <div style="background:rgba(14,165,233,0.2);padding:3px 5px;border-radius:3px;color:#7dd3fc;font-size:9px">📝 Quiz 5'</div>
+      </div>
+      <div style="font-size:9px;color:#93c5fd">+ Arbeitsblatt · Quiz · Musterlösung</div>
+    </div>`,
+    description: `Sag Bolla: "Mach mir eine Stunde über Datenbanken für die 10. Klasse, 45 Minuten, Schwerpunkt SQL" — und bekomme in Sekunden einen kompletten Unterrichtsentwurf.<br><br>
+    <b>Was entsteht:</b> Stundenplan mit Phaseneinteilung, Lernziele, Arbeitsblatt (druckfertig), ein kleines Quiz mit Musterlösung, Tafelbilder als Text und Differenzierungsideen für schnelle/langsame Schüler.<br><br>
+    <b>Wie's funktioniert:</b> Mission Control Seite mit Formular (Thema, Klasse, Zeit, Schwerpunkt), Bolla generiert per Claude API alles auf einmal, Ergebnis ist per Knopfdruck als Word-Datei exportierbar.`,
+    prompt: `Ich bin Informatik-Lehrer am Lessing-Gymnasium und möchte in meiner Mission Control (HTML unter /home/bolla/workspace/mission-control/index.html) einen "Unterrichts-Generator" einbauen.
+
+Formular-Felder:
+- Thema (Freitext, z.B. "SQL-Grundlagen")
+- Klassenstufe (Dropdown: 5-12)
+- Dauer (Dropdown: 45min / 90min / Doppelstunde)
+- Schwerpunkt (z.B. "praktische Übungen", "Theorie", "Prüfungsvorbereitung")
+- Vorwissen der Klasse (optional)
+
+Ausgabe von Bolla:
+1. Unterrichtsentwurf mit Phasengliederung (Einstieg/Erarbeitung/Sicherung/Hausaufgabe)
+2. Lernziele (3-5 Stück)
+3. Ein Arbeitsblatt mit Aufgaben
+4. Ein 5-Fragen-Quiz mit Musterlösung
+5. Differenzierungsvorschläge
+
+Alles soll als schön formatierte HTML-Ausgabe erscheinen UND als Word-Datei exportierbar sein (nach /mnt/d/OneDrive/Dokumente/Unterricht/).
+
+Backend: vorhandene Flask API unter /home/bolla/workspace/scripts/mission_control_api.py erweitern.`
+  },
+  {
+    id: 'ki-reiseplaner',
+    emoji: '✈️',
+    title: 'KI-Reiseplaner',
+    tagline: 'Ziel + Tage + Budget → komplettes Reiseprogramm',
+    color: 'linear-gradient(135deg,#065f46,#059669)',
+    mockup: `<div style="background:#071a12;border-radius:8px;padding:10px;font-size:10px">
+      <div style="font-size:9px;color:#34d399;margin-bottom:5px;font-weight:700">✈️ PORTO · 4 Tage · 800€</div>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <div style="display:flex;gap:5px"><span style="color:#6ee7b7;font-size:9px;min-width:28px">Tag 1</span><span style="color:#a7f3d0">Ribeira, Dom Luís, Francesinha 🍽</span></div>
+        <div style="display:flex;gap:5px"><span style="color:#6ee7b7;font-size:9px;min-width:28px">Tag 2</span><span style="color:#a7f3d0">Sintra Tagesausflug, Palácio 🏰</span></div>
+        <div style="display:flex;gap:5px"><span style="color:#6ee7b7;font-size:9px;min-width:28px">Tag 3</span><span style="color:#a7f3d0">Belem, Pasteis, Fado-Abend 🎵</span></div>
+      </div>
+      <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">
+        <span style="background:rgba(5,150,105,0.3);color:#6ee7b7;padding:2px 5px;border-radius:3px;font-size:8px">Hotel: 3★ ab 65€/N</span>
+        <span style="background:rgba(5,150,105,0.3);color:#6ee7b7;padding:2px 5px;border-radius:3px;font-size:8px">Flug: ~120€ p.P.</span>
+      </div>
+    </div>`,
+    description: `Du sagst: "Porto, 4 Tage, zu zweit, 800 Euro" — Bolla plant die komplette Reise: Highlights, Restaurants, Unterkunftsempfehlungen, Budget-Aufteilung und Insider-Tipps.<br><br>
+    <b>Was entsteht:</b> Tagesplan mit Sehenswürdigkeiten (mit Öffnungszeiten), Restauranttipps passend zum Budget, Unterkunftstypen, Transportinfos und eine gedruckte PDF-Zusammenfassung zum Mitnehmen.<br><br>
+    <b>Wie's funktioniert:</b> Mission Control Formular, Bolla recherchiert und plant mit Claude, Ergebnis als kompaktes Reisedokument — kein Algorithmus, echte Empfehlungen.`,
+    prompt: `Ich möchte in meiner Mission Control (HTML unter /home/bolla/workspace/mission-control/index.html) einen KI-Reiseplaner einbauen, den ich für Urlaubsplanung nutze.
+
+Eingabe-Formular:
+- Reiseziel (Freitext)
+- Reisedauer (Tage, Zahlenfeld)
+- Anzahl Personen (1-6)
+- Budget gesamt (in €)
+- Reisetyp (Dropdown: Städtereise, Natur, Strand, Wandern, Kulturreise)
+- Besondere Wünsche (optional, z.B. "familienfreundlich", "kulinarisch", "kein Massentourismus")
+
+Bolla soll mit Claude einen strukturierten Reiseplan erstellen:
+1. Tagesplan (Tag 1, Tag 2, ...) mit je 3-4 Aktivitäten + Zeitangaben
+2. Top-5-Restaurants mit Preisniveau und Spezialität
+3. Unterkunftsempfehlung (Typ + geschätzte Kosten)
+4. Transport-Tipps (Anreise, vor Ort)
+5. Budget-Aufschlüsselung (Unterkunft / Essen / Aktivitäten / Transport)
+6. 3 Insider-Tipps die Touristen oft verpassen
+
+Ausgabe als schöne HTML-Karte in der Seite + Export als PDF nach /mnt/d/OneDrive/Dokumente/Bolla/Reisen/.
+
+Backend über vorhandene Flask API (/home/bolla/workspace/scripts/mission_control_api.py).`
+  },
+  {
+    id: 'smart-ausgaben',
+    emoji: '💰',
+    title: 'Smarter Sparfuchs',
+    tagline: 'Ausgaben rein, KI analysiert und spart mit dir',
+    color: 'linear-gradient(135deg,#6d28d9,#a855f7)',
+    mockup: `<div style="background:#120820;border-radius:8px;padding:10px;font-size:10px">
+      <div style="font-size:9px;color:#c084fc;margin-bottom:5px;font-weight:700">💰 APRIL 2026 · 1.847 € ausgegeben</div>
+      <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="color:#e9d5ff;font-size:9px">🛒 Lebensmittel</span>
+          <div style="flex:1;margin:0 6px;background:rgba(168,85,247,0.2);border-radius:2px;height:5px"><div style="width:62%;height:100%;background:#a855f7;border-radius:2px"></div></div>
+          <span style="color:#d8b4fe;font-size:9px">620€</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="color:#e9d5ff;font-size:9px">⛽ Tanken</span>
+          <div style="flex:1;margin:0 6px;background:rgba(168,85,247,0.2);border-radius:2px;height:5px"><div style="width:30%;height:100%;background:#7c3aed;border-radius:2px"></div></div>
+          <span style="color:#d8b4fe;font-size:9px">295€</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="color:#e9d5ff;font-size:9px">☕ Freizeit</span>
+          <div style="flex:1;margin:0 6px;background:rgba(168,85,247,0.2);border-radius:2px;height:5px"><div style="width:18%;height:100%;background:#9333ea;border-radius:2px"></div></div>
+          <span style="color:#d8b4fe;font-size:9px">180€</span>
+        </div>
+      </div>
+      <div style="background:rgba(109,40,217,0.25);border-radius:4px;padding:4px 6px;font-size:9px;color:#c4b5fd">💡 Bolla: „Aldi statt Rewe spart ~40€/Monat"</div>
+    </div>`,
+    description: `Du gibst deine Ausgaben ein (oder kopierst sie aus dem Online-Banking), Bolla kategorisiert automatisch, zeigt Trends und gibt konkrete Spartipps — ohne Cloud, ohne Datenweitergabe.<br><br>
+    <b>Was entsteht:</b> Übersichtsdashboard mit Kategorien, Monatsvergleich, Ausgabentrend und persönlichen KI-Tipps von Bolla ("Im März hast du 30% mehr für Tanken ausgegeben — liegt das am Urlaub?").<br><br>
+    <b>Wie's funktioniert:</b> Daten bleiben lokal in einer JSON-Datei, Bolla analysiert mit Claude und erkennt Muster. Importmöglichkeit für Copy-Paste aus Banking-CSV.`,
+    prompt: `Ich möchte in meiner Mission Control (HTML unter /home/bolla/workspace/mission-control/index.html) ein Haushaltsbuch mit KI-Analyse einbauen. Alles soll lokal bleiben — keine Cloud.
+
+Features:
+1. Ausgaben-Eingabe: Datum, Betrag, Beschreibung (Freitext), optionale Kategorie
+2. KI-Auto-Kategorisierung: Bolla liest die Beschreibung und ordnet automatisch zu (Lebensmittel, Tanken, Restaurant, Freizeit, Gesundheit, Technik, Sonstiges)
+3. Dashboard: Balkendiagramm nach Kategorie, Monatsvergleich (letzter Monat vs. aktuell), Top-5 Ausgaben
+4. CSV-Import: Ich kann aus meinem Sparkasse Online-Banking eine CSV exportieren und einfügen
+5. Monatlicher KI-Bericht: Bolla schreibt einen kurzen, persönlichen Kommentar zu meinen Ausgaben ("Im April haben Sie weniger für Lebensmittel ausgegeben, dafür etwas mehr für Freizeit...")
+6. Spartipps: basierend auf meinen tatsächlichen Ausgaben konkrete Hinweise
+
+Daten in /home/bolla/workspace/data/haushaltsbuch.json (lokal, nie in die Cloud).
+Backend über /home/bolla/workspace/scripts/mission_control_api.py.
+Design: dunkel-lila passend zu Mission Control.`
+  }
+];
+
+// Reservepool — IDs 0-3 initial, 4-7 Reserve
+const _PROJ_POOL_EXTRA = [
+  {
+    id: 'nachrichten-briefing',
+    emoji: '📰',
+    title: 'Tages-Briefing',
+    tagline: 'Persönliche Morgennachrichten von Bolla',
+    color: 'linear-gradient(135deg,#0f172a,#1e40af)',
+    mockup: `<div style="background:#080e1e;border-radius:8px;padding:10px;font-size:10px">
+      <div style="font-size:9px;color:#60a5fa;margin-bottom:5px;font-weight:700">☀️ GUTEN MORGEN, CHRIS · Mo 27. Apr</div>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <div style="color:#bfdbfe;font-size:9px;border-left:2px solid #3b82f6;padding-left:5px">🗳 Bundestagswahl: Koalitionsgespräche</div>
+        <div style="color:#bfdbfe;font-size:9px;border-left:2px solid #1d4ed8;padding-left:5px">🌦 Hannover: 16°C, nachmittags Regen</div>
+        <div style="color:#bfdbfe;font-size:9px;border-left:2px solid #2563eb;padding-left:5px">🎂 Morgen: Daniels Geburtstag!</div>
+        <div style="color:#bfdbfe;font-size:9px;border-left:2px solid #3b82f6;padding-left:5px">💡 KI-Tipp des Tages: Prompting</div>
+      </div>
+      <div style="margin-top:5px;font-size:8px;color:#6b7280">Täglich 07:00 · per Push + Mission Control</div>
+    </div>`,
+    description: `Jeden Morgen begrüßt dich Bolla mit einem persönlichen Briefing: aktuelle Nachrichten (Politik, Tech, Lokal), das Wetter in Hannover, anstehende Geburtstage aus der Familie und einen KI-Tipp des Tages.<br><br>
+    <b>Was entsteht:</b> Eine Mission Control Seite "Morgen" + automatischer Cron-Job der täglich um 07:00 läuft. Optional: Push-Benachrichtigung oder kurze E-Mail an dich.<br><br>
+    <b>Wie's funktioniert:</b> Bolla ruft Nachrichten-RSS-Feeds ab, kombiniert mit Wetterdaten, prüft Familiengeburtstage und schreibt alles zu einem persönlichen Überblick zusammen.`,
+    prompt: `Ich möchte in meiner Mission Control ein tägliches "Morgen-Briefing" einbauen. Jeden Morgen soll Bolla automatisch einen persönlichen Überblick erstellen.
+
+Inhalte des Briefings:
+1. Top 3 Schlagzeilen (RSS-Feeds: tagesschau.de, heise.de/news)
+2. Wetter Hannover (OpenMeteo API, kostenlos, kein Key nötig)
+3. Geburtstage: wer hat in den nächsten 7 Tagen Geburtstag? (aus /home/bolla/workspace/config/familie.json)
+4. Kalender-Reminder: Termine heute aus Outlook (via Graph API, Token bereits vorhanden)
+5. KI-Tipp des Tages: Bolla schreibt einen kurzen, nützlichen Claude/KI-Tipp
+
+Ausgabe:
+- Eine neue Seite in Mission Control: "Morgen" Tab in der Sidebar
+- Das Briefing wird täglich um 07:00 per Cron generiert und als JSON gespeichert
+- Die Seite lädt das JSON und zeigt es schön formatiert an
+- Zusätzlich: Briefing per E-Mail an ernstmandel@outlook.de senden (optional, per Checkbox)
+
+Backend: /home/bolla/workspace/scripts/mission_control_api.py erweitern.
+Cron-Skript: /home/bolla/workspace/scripts/daily_briefing.py`
+  },
+  {
+    id: 'geburtstags-assistent',
+    emoji: '🎂',
+    title: 'Geburtstags-Assistent',
+    tagline: 'Nie wieder einen Geburtstag vergessen — mit Stil',
+    color: 'linear-gradient(135deg,#831843,#db2777)',
+    mockup: `<div style="background:#1a0812;border-radius:8px;padding:10px;font-size:10px">
+      <div style="font-size:9px;color:#f472b6;margin-bottom:5px;font-weight:700">🎂 IN 3 TAGEN: Daniels Geburtstag</div>
+      <div style="background:rgba(219,39,119,0.15);border-radius:6px;padding:6px;margin-bottom:5px">
+        <div style="font-size:9px;color:#fce7f3;line-height:1.4">"Lieber Daniel, zu deinem Geburtstag wünsche ich dir alles erdenklich Gute! Besonders schön finde ich..."</div>
+      </div>
+      <div style="display:flex;gap-4px;flex-wrap:wrap;gap:3px">
+        <span style="background:rgba(219,39,119,0.2);color:#f9a8d4;padding:2px 5px;border-radius:3px;font-size:8px">💌 Nachricht</span>
+        <span style="background:rgba(219,39,119,0.2);color:#f9a8d4;padding:2px 5px;border-radius:3px;font-size:8px">🎁 Geschenkideen</span>
+        <span style="background:rgba(219,39,119,0.2);color:#f9a8d4;padding:2px 5px;border-radius:3px;font-size:8px">📬 per Mail senden</span>
+      </div>
+    </div>`,
+    description: `5 Tage vorher erinnert dich Bolla automatisch: wer hat Geburtstag, schlägt passende Geschenkideen vor und generiert eine persönliche Glückwunschnachricht — du musst nur noch auf "Senden" klicken.<br><br>
+    <b>Was entsteht:</b> Geburtstags-Widget in Mission Control, automatische Erinnerung per Push/E-Mail 5 Tage vorher, KI-generierte Glückwunschnachricht (anpassbar), Geschenkvorschläge nach Alter und Interesse.<br><br>
+    <b>Wie's funktioniert:</b> Familiengeburtstage aus config/familie.json, täglicher Check per Cron, Nachrichten werden per Claude generiert — du bestätigst und sendest direkt aus Mission Control.`,
+    prompt: `Ich möchte einen "Geburtstags-Assistenten" in meine Mission Control einbauen. Meine Familienmitglieder und ihre Geburtstage sind in /home/bolla/workspace/config/familie.json gespeichert.
+
+Features:
+1. Geburtstags-Dashboard: zeigt alle Geburtstage des Jahres chronologisch, hebt die nächsten 3 hervor
+2. Automatische Erinnerung: 5 Tage vor einem Geburtstag erscheint ein Widget auf der Startseite (Heatmap-Karte)
+3. KI-Glückwunsch-Generator: Bolla schreibt eine persönliche Nachricht basierend auf:
+   - Name, Alter (berechnet aus Geburtsjahr)
+   - Beziehung zu mir (Tochter, Enkel, Schwiegersohn...)
+   - Optional: ein persönlicher Fakt (kann in familie.json ergänzt werden)
+4. Geschenkideen: 3-5 altersgerechte Vorschläge mit ungefährem Preis
+5. Direkt senden: Button zum Versand per E-Mail (von ernstmandel@outlook.de) oder WhatsApp-Text kopieren
+
+Cron: täglich morgens checken, Push-Widget auf Mission Control Startseite wenn Geburtstag in ≤5 Tagen.
+Backend: /home/bolla/workspace/scripts/mission_control_api.py.`
+  },
+  {
+    id: 'kochplaner',
+    emoji: '🍳',
+    title: 'Kochplaner + Angebots-Sync',
+    tagline: 'Wochenplan aus Angeboten — Bolla kocht mit',
+    color: 'linear-gradient(135deg,#14532d,#16a34a)',
+    mockup: `<div style="background:#071a0e;border-radius:8px;padding:10px;font-size:10px">
+      <div style="font-size:9px;color:#4ade80;margin-bottom:5px;font-weight:700">🍳 WOCHE 18 · Zutaten im Angebot</div>
+      <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:5px">
+        <div style="display:flex;justify-content:space-between"><span style="color:#bbf7d0">Mo: Champignon-Risotto</span><span style="color:#6ee7b7;font-size:8px">Pilze 1,49€ Aldi</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:#bbf7d0">Di: Hähnchen-Curry</span><span style="color:#6ee7b7;font-size:8px">Hähnchen 3,99€</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:#bbf7d0">Mi: Pasta Arrabiata</span><span style="color:#6ee7b7;font-size:8px">Pasta 0,79€ Lidl</span></div>
+      </div>
+      <div style="background:rgba(22,163,74,0.2);border-radius:4px;padding:3px 6px;font-size:8px;color:#86efac">🛒 Einkaufsliste: 14 Artikel · ca. 28€</div>
+    </div>`,
+    description: `Bolla kennt die aktuellen Supermarkt-Angebote (Newsletter-Scanner) und plant daraus automatisch einen Wochenmenüplan mit Einkaufsliste — günstig, abwechslungsreich, lecker.<br><br>
+    <b>Was entsteht:</b> Wochenmenü-Generator der aktuelle Angebote aus dem Newsletter-Scanner nutzt, Rezeptvorschläge macht und eine fertige Einkaufsliste erstellt — optimiert nach Preis und Vielfalt.<br><br>
+    <b>Wie's funktioniert:</b> Verbindet sich mit dem bestehenden Newsletter-Scanner, liest aktuelle Angebote, Bolla plant per Claude 5-7 Mahlzeiten und generiert die Einkaufsliste mit Mengenangaben.`,
+    prompt: `Ich habe bereits einen Newsletter-Scanner (Aldi, Penny, Lidl) in meiner Mission Control. Die aktuellen Angebote stehen in /home/bolla/workspace/cache/newsletter_results.json.
+
+Ich möchte jetzt einen "Kochplaner" einbauen, der diese Angebote nutzt:
+
+1. Wochenplan-Generator:
+   - Bolla liest die aktuellen Angebote aus newsletter_results.json
+   - Generiert 5-7 Mahlzeiten-Vorschläge (Mo-So) die günstige Angebots-Zutaten verwenden
+   - Für jeden Tag: Gericht, Hauptzutat (im Angebot?), geschätzte Kochzeit
+
+2. Rezept auf Klick:
+   - Klick auf ein Gericht zeigt Vollrezept (von Bolla generiert, 4 Portionen)
+   - Zutaten mit Mengenangaben, Schritt-für-Schritt-Anleitung
+
+3. Einkaufsliste:
+   - Automatisch aus allen Wochenplan-Gerichten zusammengestellt
+   - Zeigt bei Angebots-Artikeln den Store und Preis
+   - Exportierbar als Text (copy) oder PDF
+
+4. Manuelle Eingabe: "Was ist im Kühlschrank?" → Bolla schlägt Rezepte vor
+
+Neue Seite "Kochen" in Mission Control, Tab in der Sidebar.
+Backend: /home/bolla/workspace/scripts/mission_control_api.py erweitern.`
+  },
+  {
+    id: 'smart-kalender',
+    emoji: '📅',
+    title: 'Kalender-Analyse',
+    tagline: 'Wie nutzt du deine Zeit wirklich?',
+    color: 'linear-gradient(135deg,#1e3a5f,#0e7490)',
+    mockup: `<div style="background:#071620;border-radius:8px;padding:10px;font-size:10px">
+      <div style="font-size:9px;color:#22d3ee;margin-bottom:5px;font-weight:700">📅 APRIL · Zeitanalyse</div>
+      <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:5px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="color:#a5f3fc;font-size:9px">🏫 Schule</span>
+          <div style="flex:1;margin:0 6px;background:rgba(14,116,144,0.2);border-radius:2px;height:5px"><div style="width:55%;height:100%;background:#0891b2;border-radius:2px"></div></div>
+          <span style="color:#67e8f9;font-size:9px">22h</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="color:#a5f3fc;font-size:9px">👨‍👩‍👧 Familie</span>
+          <div style="flex:1;margin:0 6px;background:rgba(14,116,144,0.2);border-radius:2px;height:5px"><div style="width:35%;height:100%;background:#0e7490;border-radius:2px"></div></div>
+          <span style="color:#67e8f9;font-size:9px">14h</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="color:#a5f3fc;font-size:9px">💻 Projekte</span>
+          <div style="flex:1;margin:0 6px;background:rgba(14,116,144,0.2);border-radius:2px;height:5px"><div style="width:20%;height:100%;background:#155e75;border-radius:2px"></div></div>
+          <span style="color:#67e8f9;font-size:9px">8h</span>
+        </div>
+      </div>
+      <div style="font-size:8px;color:#0891b2">💡 „Du hast diese Woche 3h Puffer — ideal für Robin-Besuch"</div>
+    </div>`,
+    description: `Bolla analysiert deinen Outlook-Kalender und zeigt dir, wie du deine Zeit wirklich verbringst — nach Kategorien, Trends über Wochen, und gibt persönliche Empfehlungen.<br><br>
+    <b>Was entsteht:</b> Zeit-Dashboard mit Kategorisierung (Schule, Familie, Freizeit, Projekte), Wochenvergleich, Überlastungs-Warnung und einem wöchentlichen Bolla-Kommentar ("Diese Woche hast du noch 4 Stunden Puffer für Robin").<br><br>
+    <b>Wie's funktioniert:</b> Liest Outlook-Kalender per Graph API (Token bereits vorhanden), kategorisiert Termine per Claude, speichert Trends lokal.`,
+    prompt: `Ich möchte in meiner Mission Control eine Kalender-Analyse einbauen. Ich nutze Outlook und der Graph API Token ist bereits vorhanden (in /home/bolla/workspace/scripts/mission_control_api.py, Funktion get_token()).
+
+Features:
+1. Termine der letzten 4 Wochen abrufen (Graph API: /me/calendarView)
+2. KI-Kategorisierung jedes Termins: Schule/Unterricht, Familie, Freizeit, Projekte/Tech, Gesundheit, Sonstiges
+3. Dashboard:
+   - Balkendiagramm: Stunden pro Kategorie diese Woche vs. letzte Woche
+   - "Freie Fenster": zeigt an wann diese Woche noch Zeit ist
+   - Überlastungs-Indikator: wenn >8h/Tag geplant → orange/rot
+4. Wöchentlicher Bolla-Kommentar: persönlicher Satz über die Woche ("Viel Schule diese Woche — aber Mittwochnachmittag ist noch frei")
+5. Geburtstage aus familie.json werden als Termine eingeblendet die noch nicht im Kalender stehen
+
+Neue Seite "Zeit" in Mission Control.
+Backend: /home/bolla/workspace/scripts/mission_control_api.py.`
+  }
+];
+
+// State: 4 angezeigte Slots + bereits gesehene IDs
+let _projShown = []; // IDs der 4 sichtbaren Karten
+let _projSeen  = new Set(); // alle jemals gezeigten IDs (für Rotation)
+
+function _projStateSave() {
+  localStorage.setItem('bolla_proj_shown', JSON.stringify(_projShown));
+  localStorage.setItem('bolla_proj_seen', JSON.stringify([..._projSeen]));
+}
+
+function _projStateLoad() {
+  try {
+    const shown = JSON.parse(localStorage.getItem('bolla_proj_shown') || 'null');
+    const seen  = JSON.parse(localStorage.getItem('bolla_proj_seen')  || '[]');
+    _projSeen = new Set(seen);
+    const allIds = BOLLA_PROJECTS.concat(_PROJ_POOL_EXTRA).map(p => p.id);
+    if (shown && shown.length === 4 && shown.every(id => allIds.includes(id))) {
+      _projShown = shown;
+    } else {
+      _projShown = BOLLA_PROJECTS.slice(0, 4).map(p => p.id);
+    }
+  } catch {
+    _projShown = BOLLA_PROJECTS.slice(0, 4).map(p => p.id);
+  }
+}
+
+function _projById(id) {
+  return BOLLA_PROJECTS.concat(_PROJ_POOL_EXTRA).find(p => p.id === id);
+}
+
+function _projNextId(excludeIds) {
+  const all = BOLLA_PROJECTS.concat(_PROJ_POOL_EXTRA);
+  // Nicht gezeigte bevorzugen
+  let pool = all.filter(p => !excludeIds.includes(p.id) && !_projSeen.has(p.id));
+  if (!pool.length) {
+    // Alle gesehen — Reset, aber aktuelle 4 trotzdem ausschließen
+    _projSeen = new Set(excludeIds);
+    pool = all.filter(p => !excludeIds.includes(p.id));
+  }
+  if (!pool.length) return all[0].id; // Fallback
+  return pool[Math.floor(Math.random() * pool.length)].id;
+}
+
+function _projMockup(p) {
+  return `<div style="background:rgba(0,0,0,0.3);border-radius:10px;padding:8px;margin-bottom:10px;min-height:95px">${p.mockup}</div>`;
+}
+
+function _projCard(p, slotIdx) {
+  const btnBase = 'onclick="event.stopPropagation();{FN}(' + slotIdx + ')" style="border:none;border-radius:6px;padding:4px 7px;font-size:11px;cursor:pointer;transition:opacity .15s" onmouseenter="this.style.opacity=\'1\'" onmouseleave="this.style.opacity=\'0.55\'"';
+  const btnRefresh = `<button ${btnBase.replace('{FN}','projRefresh')} title="Neue Idee anzeigen" style="background:rgba(255,255,255,0.08);color:var(--dim);opacity:.55">🔄</button>`;
+  const btnDone    = `<button ${btnBase.replace('{FN}','projDone')}    title="Umgesetzt — fertig!" style="background:rgba(34,197,94,0.15);color:#4ade80;opacity:.55">✅</button>`;
+  return `<div onclick="openProjModal('${p.id}')" data-proj-slot="${slotIdx}" style="background:#16103a;border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:14px;cursor:pointer;transition:transform .15s,box-shadow .15s,opacity .25s;position:relative;overflow:hidden" onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 28px rgba(0,0,0,0.4)'" onmouseleave="this.style.transform='';this.style.boxShadow=''">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${p.color}"></div>
+    ${_projMockup(p)}
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">
+      <span style="font-size:16px">${p.emoji}</span>
+      <span style="font-size:13px;font-weight:700;color:var(--text)">${p.title}</span>
+    </div>
+    <div style="font-size:11px;color:var(--dim);line-height:1.4">${p.tagline}</div>
+    <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:10px;color:rgba(255,255,255,0.25)">Klick für Details →</span>
+      <div style="display:flex;gap:4px">${btnRefresh}${btnDone}</div>
+    </div>
+  </div>`;
+}
+
+function _projSwap(slotIdx, flash) {
+  const grid = document.getElementById('bolla-projects-grid');
+  if (!grid) return;
+  const el = grid.querySelector(`[data-proj-slot="${slotIdx}"]`);
+  if (!el) return;
+
+  const nextId = _projNextId(_projShown);
+  _projSeen.add(_projShown[slotIdx]);
+  _projShown[slotIdx] = nextId;
+  _projSeen.add(nextId);
+  _projStateSave();
+
+  if (flash) {
+    el.style.background = 'rgba(34,197,94,0.18)';
+    el.style.borderColor = '#4ade80';
+    setTimeout(() => _projReplaceEl(el, nextId, slotIdx), 500);
+  } else {
+    _projReplaceEl(el, nextId, slotIdx);
+  }
+}
+
+function _projReplaceEl(el, newId, slotIdx) {
+  el.style.transition = 'opacity .2s';
+  el.style.opacity = '0';
+  setTimeout(() => {
+    const p = _projById(newId);
+    if (!p) return;
+    el.outerHTML = _projCard(p, slotIdx);
+  }, 200);
+}
+
+function projRefresh(slotIdx) { _projSwap(slotIdx, false); }
+function projDone(slotIdx)    { _projSwap(slotIdx, true);  }
+
+function openProjModal(id) {
+  const p = _projById(id);
+  if (!p) return;
+  const body = document.getElementById('proj-modal-body');
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-right:36px">
+      <div style="width:42px;height:42px;border-radius:10px;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${p.emoji}</div>
+      <div>
+        <div style="font-size:17px;font-weight:700;color:var(--text)">${p.title}</div>
+        <div style="font-size:12px;color:var(--dim)">${p.tagline}</div>
+      </div>
+    </div>
+    ${_projMockup(p)}
+    <div style="font-size:13px;color:var(--text);line-height:1.65;margin-bottom:18px">${p.description}</div>
+    <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🚀 Fertiger Prompt für Bolla</div>
+    <div style="background:#0e0825;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px;font-size:11.5px;color:#c4b5fd;line-height:1.7;white-space:pre-wrap;font-family:monospace;max-height:220px;overflow-y:auto" id="proj-prompt-${p.id}">${escHtml(p.prompt)}</div>
+    <button onclick="_copyProjPrompt('${p.id}')" id="proj-copy-btn-${p.id}" style="margin-top:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;cursor:pointer;width:100%">📋 Prompt kopieren</button>`;
+  const m = document.getElementById('proj-modal');
+  m.style.display = 'flex';
+}
+
+function closeProjModal() {
+  document.getElementById('proj-modal').style.display = 'none';
+}
+
+function _copyProjPrompt(id) {
+  const el = document.getElementById('proj-prompt-' + id);
+  const btn = document.getElementById('proj-copy-btn-' + id);
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    btn.textContent = '✅ Kopiert!';
+    setTimeout(() => { btn.innerHTML = '📋 Prompt kopieren'; }, 2000);
+  });
+}
+
+function loadBollaProjects() {
+  const grid = document.getElementById('bolla-projects-grid');
+  if (!grid) return;
+  _projStateLoad();
+  grid.innerHTML = _projShown.map((id, i) => {
+    const p = _projById(id);
+    return p ? _projCard(p, i) : '';
+  }).join('');
+}
+
 async function loadRedesigns() {
   try {
     const r = await fetch(API + '/api/redesigns-meta');
@@ -3461,6 +4898,7 @@ async function loadRedesigns() {
     document.getElementById('redesigns-grid').innerHTML =
       `<div style="color:var(--dim);font-size:13px;padding:40px;text-align:center;grid-column:1/-1">Fehler beim Laden: ${escHtml(e.message)}</div>`;
   }
+  loadBollaProjects();
 }
 
 // ===== SUNO =====
@@ -3546,8 +4984,32 @@ document.getElementById('suno-kontext').value = SUNO_DEFAULT_KONTEXT;
   <div class="cmd-row">
     <span id="mail-cmd-selected">📧</span>
     <button id="mail-cmd-clear" onclick="clearMailSelection()" title="Auswahl aufheben" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:14px;cursor:pointer;padding:0 2px;flex-shrink:0">✕</button>
-    <input id="mail-cmd-input" type="text" placeholder="Anweisung… prüfe · lösche · antworte dass…" autocomplete="off">
+    <button class="mail-quick-btn" onclick="runQuickCmd('prüfe')">🔍 Prüfen</button>
+    <button class="mail-quick-btn danger" onclick="runQuickCmd('lösche')">🗑 Löschen</button>
+    <input id="mail-cmd-input" type="text" placeholder="oder freie Anweisung…" autocomplete="off">
     <button id="mail-cmd-btn" onclick="sendMailCommand()">→</button>
+  </div>
+</div>
+
+<!-- ── News-Zusammenfassung Panel (slide-up) ── -->
+<div id="news-summary-panel">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:12px 18px 8px;border-bottom:1px solid rgba(14,116,144,0.25);flex-shrink:0;gap:12px">
+    <div style="min-width:0">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#67e8f9;font-weight:700">🐾 Bolla sagt</div>
+      <div id="news-summary-title" style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+    </div>
+    <button onclick="closeNewsSummary()" style="background:rgba(255,255,255,0.08);border:none;color:#fff;border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:14px;line-height:26px;text-align:center;flex-shrink:0">✕</button>
+  </div>
+  <div id="news-summary-body"></div>
+  <div id="news-summary-save" style="display:none;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid rgba(14,116,144,0.2);flex-shrink:0">
+    <select id="news-summary-cat" style="background:#0a1628;border:1px solid rgba(255,255,255,0.15);color:#e0f2fe;font-size:11px;padding:4px 8px;border-radius:8px;flex:1;outline:none">
+      <option>Ausflüge</option>
+      <option>Radwege</option>
+      <option>Restaurants</option>
+      <option>Regionen</option>
+      <option>Sonstiges</option>
+    </select>
+    <button onclick="saveImmoBookmark()" style="background:rgba(14,116,144,0.15);border:1px solid rgba(14,116,144,0.4);color:#67e8f9;font-size:11px;font-weight:600;padding:4px 12px;border-radius:8px;cursor:pointer;white-space:nowrap" onmouseover="this.style.background='rgba(14,116,144,0.3)'" onmouseout="this.style.background='rgba(14,116,144,0.15)'">📌 Speichern</button>
   </div>
 </div>
 
