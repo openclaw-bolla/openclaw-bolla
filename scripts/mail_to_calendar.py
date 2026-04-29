@@ -123,7 +123,7 @@ Regeln:
 - konfidenz "niedrig" wenn Datum unklar oder kein eindeutiger Termin"""
 
     result = subprocess.run(
-        ["claude", "-p", prompt],
+        ["/home/bolla/.local/bin/claude", "-p", prompt],
         capture_output=True, text=True, timeout=60
     )
     text = result.stdout.strip()

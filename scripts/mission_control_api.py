@@ -1478,7 +1478,7 @@ def get_pro_health():
         r = subprocess.run(
             ['ssh', '-p', '2223', '-i', '/home/bolla/.ssh/id_ed25519',
              '-o', 'ConnectTimeout=5', '-o', 'StrictHostKeyChecking=no',
-             'renat@localhost', f'powershell -EncodedCommand {enc}'],
+             'ernst@localhost', f'powershell -EncodedCommand {enc}'],
             capture_output=True, timeout=12
         )
         stdout = r.stdout.decode('utf-8', errors='replace') if r.stdout else ''
@@ -1515,8 +1515,8 @@ def get_studio_health():
     enc = base64.b64encode(ps.encode('utf-16-le')).decode()
     try:
         r = subprocess.run(
-            ['powershell.exe', '-EncodedCommand', enc],
-            capture_output=True, timeout=15
+            ['/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe', '-EncodedCommand', enc],
+            capture_output=True, timeout=30
         )
         stdout = r.stdout.decode('utf-8', errors='replace') if r.stdout else ''
         if r.returncode == 0 and stdout.strip():
@@ -1572,7 +1572,7 @@ def do_pro_action(action):
         subprocess.run(
             ['ssh', '-p', '2223', '-i', '/home/bolla/.ssh/id_ed25519',
              '-o', 'ConnectTimeout=5', '-o', 'StrictHostKeyChecking=no',
-             'renat@localhost', f'powershell -EncodedCommand {enc}'],
+             'ernst@localhost', f'powershell -EncodedCommand {enc}'],
             timeout=10
         )
         return {'ok': True, 'msg': 'Neustart gesendet'}
@@ -1584,7 +1584,7 @@ def do_pro_action(action):
         subprocess.run(
             ['ssh', '-p', '2223', '-i', '/home/bolla/.ssh/id_ed25519',
              '-o', 'ConnectTimeout=5', '-o', 'StrictHostKeyChecking=no',
-             'renat@localhost', f'powershell -EncodedCommand {enc}'],
+             'ernst@localhost', f'powershell -EncodedCommand {enc}'],
             timeout=10
         )
         return {'ok': True, 'msg': 'Tunnel-Neustart gesendet'}
@@ -2438,6 +2438,255 @@ class Handler(BaseHTTPRequestHandler):
             elif self.path == "/api/clipboard":
                 text = body.get("text", "")
                 self._send_json(save_clipboard(text))
+            elif self.path == "/api/korrektur/analyze":
+                import subprocess as _sp
+                img_b64    = body.get("image_b64", "")
+                media_type = body.get("media_type", "image/jpeg")
+                klassenstufe = body.get("klassenstufe", "").strip()
+                fach         = body.get("fach", "").strip()
+                thema        = body.get("thema", "").strip()
+                erwartung    = body.get("erwartung", "").strip()
+                if not img_b64 or not klassenstufe or not fach:
+                    self._send_json({"error": "Bild, Klassenstufe und Fach sind Pflicht"}, status=400)
+                    return
+                erw_block = f"\n\nErwartungshorizont / Musterlösung:\n{erwartung}" if erwartung else ""
+                prompt_text = f"""Du bist ein erfahrener Gymnasiallehrer und korrigierst eine Klassenarbeit.
+
+Fach: {fach} | Klassenstufe: {klassenstufe} | Thema: {thema or '(nicht angegeben)'}{erw_block}
+
+Bitte korrigiere sorgfältig und strukturiert:
+
+1. Lies den handgeschriebenen Text so gut wie möglich. Weise auf unleserliche Stellen hin.
+
+2. Gehe Aufgabe für Aufgabe durch:
+   ✅ Richtig / ❌ Falsch oder unvollständig / ➕ Fehlt
+   Kurze, konstruktive Anmerkung pro Aufgabe.
+
+3. Bewertungsübersicht als Tabelle:
+   | Aufgabe | Max. Punkte | Erreicht | Kommentar |
+   (Punkte selbst schätzen wenn kein Erwartungshorizont angegeben)
+
+4. Gesamtnote:
+   - Gesamtpunkte: X von Y
+   - Prozentzahl: XX%
+   - Empfohlene Note: [X] (Schema: 1≥87%, 2≥73%, 3≥59%, 4≥45%, 5≥30%, 6<30%)
+   - Kurze Begründung
+
+5. Pädagogisches Feedback (3–4 Sätze): Was lief gut? Wo verbessern?
+   Motivierend und konstruktiv formulieren.
+
+Antworte auf Deutsch."""
+                try:
+                    cli_input = json.dumps({
+                        "type": "user",
+                        "message": {
+                            "role": "user",
+                            "content": [
+                                {"type": "image", "source": {
+                                    "type": "base64", "media_type": media_type, "data": img_b64}},
+                                {"type": "text", "text": prompt_text}
+                            ]
+                        }
+                    })
+                    proc = _sp.run(
+                        ["/home/bolla/.local/bin/claude", "-p",
+                         "--input-format", "stream-json",
+                         "--output-format", "stream-json",
+                         "--verbose"],
+                        input=cli_input.encode(),
+                        capture_output=True,
+                        timeout=120
+                    )
+                    result_text = ""
+                    for line in proc.stdout.decode(errors="replace").splitlines():
+                        try:
+                            obj = json.loads(line)
+                            if obj.get("type") == "assistant":
+                                for block in obj.get("message", {}).get("content", []):
+                                    if block.get("type") == "text":
+                                        result_text += block["text"]
+                        except Exception:
+                            pass
+                    if result_text:
+                        self._send_json({"result": result_text})
+                    else:
+                        stderr = proc.stderr.decode(errors="replace")[:300]
+                        self._send_json({"error": f"Keine Antwort vom CLI: {stderr}"}, status=500)
+                except Exception as e:
+                    self._send_json({"error": str(e)}, status=500)
+
+            elif self.path == "/api/korrektur/docx":
+                import base64 as _b64, io as _io, re as _re
+                result_text  = body.get("result", "")
+                klassenstufe = body.get("klassenstufe", "")
+                fach         = body.get("fach", "Korrektur")
+                thema        = body.get("thema", "")
+                if not result_text:
+                    self._send_json({"error": "Kein Korrektur-Text übergeben"}, status=400)
+                    return
+                try:
+                    from docx import Document as _Doc
+                    from docx.shared import Pt as _Pt, RGBColor as _RGB, Inches as _Inch, Cm as _Cm
+                    from docx.enum.text import WD_ALIGN_PARAGRAPH as _ALIGN
+                    import datetime as _dt
+                    doc = _Doc()
+                    # Seitenränder
+                    for sec in doc.sections:
+                        sec.top_margin = _Cm(2); sec.bottom_margin = _Cm(2)
+                        sec.left_margin = _Cm(2.5); sec.right_margin = _Cm(2.5)
+                    # Titel-Block
+                    title = doc.add_heading("", level=0)
+                    run = title.add_run("KI-Korrektur & Benotung")
+                    run.font.color.rgb = _RGB(0x7C, 0x3A, 0xED)
+                    run.font.size = _Pt(22)
+                    title.alignment = _ALIGN.CENTER
+                    # Meta-Zeile
+                    meta = doc.add_paragraph()
+                    meta.alignment = _ALIGN.CENTER
+                    meta_run = meta.add_run(f"Fach: {fach}  |  Klasse: {klassenstufe}  |  Thema: {thema}  |  Erstellt: {_dt.date.today().strftime('%d.%m.%Y')}")
+                    meta_run.font.size = _Pt(10)
+                    meta_run.font.color.rgb = _RGB(0x80, 0x80, 0x80)
+                    doc.add_paragraph()
+                    # Trennlinie via Paragraph-Border
+                    sep = doc.add_paragraph("─" * 80)
+                    sep.runs[0].font.color.rgb = _RGB(0xC0, 0xC0, 0xC0)
+                    sep.runs[0].font.size = _Pt(8)
+                    doc.add_paragraph()
+                    # Inhalt — jede Zeile parsen
+                    EMOJI_RE = _re.compile(r'^(#{1,3})\s*(.*)')
+                    for raw_line in result_text.splitlines():
+                        line = raw_line.rstrip()
+                        hm = EMOJI_RE.match(line)
+                        if hm:
+                            lvl = len(hm.group(1))
+                            hdr = doc.add_heading(hm.group(2).strip(), level=min(lvl, 3))
+                            if lvl == 1:
+                                hdr.runs[0].font.color.rgb = _RGB(0x7C, 0x3A, 0xED)
+                            elif lvl == 2:
+                                hdr.runs[0].font.color.rgb = _RGB(0x06, 0xB6, 0xD4)
+                        elif line.startswith('|') and '|' in line[1:]:
+                            # Tabelle
+                            cells = [c.strip() for c in line.strip('|').split('|')]
+                            if all(set(c.replace('-','').replace(' ','')) == set() for c in cells):
+                                continue  # Trennzeile überspringen
+                            if not hasattr(doc, '_korr_tbl') or doc._korr_tbl is None:
+                                doc._korr_tbl = doc.add_table(rows=0, cols=len(cells))
+                                doc._korr_tbl.style = 'Table Grid'
+                            row = doc._korr_tbl.add_row()
+                            for i, cell_text in enumerate(cells[:len(row.cells)]):
+                                row.cells[i].text = cell_text
+                                row.cells[i].paragraphs[0].runs[0].font.size = _Pt(10)
+                        else:
+                            doc._korr_tbl = None  # Tabelle beenden
+                            color = None
+                            if '✅' in line: color = _RGB(0x22, 0xC5, 0x5E)
+                            elif '❌' in line: color = _RGB(0xEF, 0x44, 0x44)
+                            elif '➕' in line: color = _RGB(0xF5, 0x9E, 0x0B)
+                            p = doc.add_paragraph()
+                            r = p.add_run(line)
+                            r.font.size = _Pt(11)
+                            if color: r.font.color.rgb = color
+                    # Footer
+                    doc.add_paragraph()
+                    footer = doc.add_paragraph()
+                    footer.alignment = _ALIGN.CENTER
+                    fr = footer.add_run("Erstellt mit Bolla · KI-Korrektur · powered by Claude")
+                    fr.font.size = _Pt(9); fr.font.italic = True
+                    fr.font.color.rgb = _RGB(0xB0, 0xB0, 0xB0)
+                    buf = _io.BytesIO()
+                    doc.save(buf)
+                    docx_b64 = _b64.standard_b64encode(buf.getvalue()).decode()
+                    self._send_json({"docx_b64": docx_b64})
+                except Exception as e:
+                    self._send_json({"error": str(e)}, status=500)
+
+            elif self.path == "/api/korrektur/annotate":
+                import base64 as _b64, io as _io, re as _re
+                img_b64    = body.get("image_b64", "")
+                media_type = body.get("media_type", "image/jpeg")
+                result_text = body.get("result", "")
+                if not img_b64 or not result_text:
+                    self._send_json({"error": "Bild und Korrektur-Text erforderlich"}, status=400)
+                    return
+                try:
+                    from PIL import Image as _Img, ImageDraw as _Draw, ImageFont as _Font
+                    import textwrap as _tw
+                    img_data = _b64.b64decode(img_b64)
+                    img = _Img.open(_io.BytesIO(img_data)).convert("RGB")
+                    W, H = img.size
+                    draw = _Draw.Draw(img)
+                    # Deckschicht (leicht transparent geht ohne RGBA, also direkt zeichnen)
+                    # Roten Rahmen oben: "KORRIGIERT" Stempel
+                    stamp_h = max(38, H // 22)
+                    draw.rectangle([(0, 0), (W, stamp_h)], fill=(180, 0, 0))
+                    try:
+                        fnt_stamp = _Font.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", stamp_h - 8)
+                    except:
+                        fnt_stamp = _Font.load_default()
+                    draw.text((W//2, stamp_h//2), "✦  KORRIGIERT  ✦", font=fnt_stamp, fill=(255,255,255), anchor="mm")
+                    # Aufgaben-Annotierungen parsen
+                    try:
+                        fnt_ann = _Font.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", max(14, H//60))
+                        fnt_small = _Font.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", max(12, H//72))
+                    except:
+                        fnt_ann = fnt_small = _Font.load_default()
+                    # Aufgaben-Blöcke aus Korrektur-Text extrahieren
+                    task_blocks = _re.findall(
+                        r'(?:Aufgabe|Aufg\.?)\s*(\d+)[^\n]*\n((?:(?!Aufgabe|\Z).*\n?)*)',
+                        result_text, _re.IGNORECASE)
+                    # Punkte-Zeilen extrahieren
+                    point_lines = _re.findall(
+                        r'\|\s*(Aufgabe\s*\d+[^|]*)\|[^|]*\|\s*(\d+(?:[,\.]\d+)?)\s*\|',
+                        result_text, _re.IGNORECASE)
+                    note_match = _re.search(r'Empfohlene Note[:\s*]+\[?([1-6](?:[,\.]\d)?)\]?', result_text, _re.IGNORECASE)
+                    note = note_match.group(1) if note_match else "?"
+                    pct_match = _re.search(r'(\d{1,3})\s*%', result_text)
+                    pct = pct_match.group(1) if pct_match else ""
+                    # Annotations-Positionen: gleichmäßig über Bildhöhe (nach Stempel)
+                    n_tasks = max(len(task_blocks), len(point_lines), 1)
+                    margin_x = int(W * 0.03)
+                    usable_h = H - stamp_h - int(H * 0.05)
+                    for i, (task_name, task_body) in enumerate(task_blocks[:6]):
+                        y_base = stamp_h + int(usable_h * (i + 0.3) / max(n_tasks, 1))
+                        # Bewertung ermitteln
+                        is_ok = bool(_re.search(r'✅', task_body))
+                        is_bad = bool(_re.search(r'❌', task_body))
+                        # Kurzkommentar: erste nicht-leere Zeile aus Task-Body
+                        comment_lines = [l.strip() for l in task_body.splitlines() if l.strip() and not l.strip().startswith('#')]
+                        short = comment_lines[0][:45] if comment_lines else ""
+                        short = _re.sub(r'[✅❌➕\*#]', '', short).strip()
+                        icon = "✅" if is_ok and not is_bad else ("❌" if is_bad else "➕")
+                        color = (0, 160, 0) if icon == "✅" else ((200, 0, 0) if icon == "❌" else (200, 120, 0))
+                        # Hintergrund-Box
+                        box_w = int(W * 0.38); box_h = int(H * 0.042)
+                        bx = W - box_w - margin_x
+                        draw.rectangle([(bx-4, y_base-4), (bx+box_w+4, y_base+box_h+4)],
+                                       fill=(255,255,255), outline=color, width=2)
+                        draw.text((bx+6, y_base+4), f"A{task_name}: {icon} {short}", font=fnt_small, fill=color)
+                    # Punkte-Tabelle rechts unten
+                    if point_lines:
+                        by = H - int(H*0.04) * (len(point_lines)+2) - 10
+                        bx = W - int(W*0.28) - margin_x
+                        box_h2 = int(H*0.04) * (len(point_lines)+2) + 10
+                        draw.rectangle([(bx-6, by-6), (W-margin_x+6, H-margin_x+6)],
+                                       fill=(255,255,255), outline=(180,0,0), width=2)
+                        draw.text((bx, by), "Punkte-Übersicht:", font=fnt_ann, fill=(120,0,0))
+                        for j, (t_name, pts) in enumerate(point_lines[:6]):
+                            draw.text((bx, by + int(H*0.04)*(j+1)), f"  {t_name.strip()[:18]}: {pts} Pkt", font=fnt_small, fill=(60,0,0))
+                    # Note-Kreis rechts oben
+                    cr = int(min(W,H) * 0.09)
+                    cx = W - cr - margin_x; cy = stamp_h + margin_x
+                    nc = (200,0,0) if note in ('5','6') else ((200,120,0) if note in ('3','4') else (0,150,0))
+                    draw.ellipse([(cx,cy),(cx+cr,cy+cr)], fill=nc, outline=(255,255,255), width=3)
+                    draw.text((cx+cr//2, cy+cr//2), note, font=fnt_stamp, fill=(255,255,255), anchor="mm")
+                    if pct:
+                        draw.text((cx+cr//2, cy+cr+4), f"{pct}%", font=fnt_small, fill=nc, anchor="mt")
+                    buf = _io.BytesIO()
+                    img.save(buf, "JPEG", quality=88)
+                    self._send_json({"image_b64": _b64.standard_b64encode(buf.getvalue()).decode()})
+                except Exception as e:
+                    self._send_json({"error": str(e)}, status=500)
+
             elif self.path == "/api/suno/generate":
                 name = body.get("name", "").strip()
                 klasse = body.get("klasse", "").strip()

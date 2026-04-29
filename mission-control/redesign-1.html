@@ -2,141 +2,443 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Mission Control — Neon Terminal</title>
+<title>Mission Control — Neon Pulse</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#050510;color:#00ff88;font-family:'Courier New',monospace;display:flex;height:100vh;overflow:hidden}
-.sidebar{width:210px;background:#08081a;border-right:1px solid #00ff8833;display:flex;flex-direction:column;padding:20px 0;flex-shrink:0}
-.logo{padding:0 18px 18px;border-bottom:1px solid #00ff8822;margin-bottom:8px}
-.logo-title{font-size:16px;color:#00ff88;text-shadow:0 0 12px #00ff88;letter-spacing:3px;line-height:1.3}
-.logo-sub{font-size:9px;color:#00ff8855;margin-top:5px;letter-spacing:2px}
-.nav-item{padding:9px 18px;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:1px;border-left:2px solid transparent;color:#00ff8866;transition:all .15s}
-.nav-item.active{color:#00ff88;background:rgba(0,255,136,.07);border-left-color:#00ff88;text-shadow:0 0 8px #00ff88}
-.nav-item:hover:not(.active){color:#00ff88aa;border-left-color:#00ff8844;background:rgba(0,255,136,.03)}
-.nav-ic{width:13px;text-align:center;font-size:12px}
-.sb-foot{margin-top:auto;padding:12px 18px;border-top:1px solid #00ff8822;font-size:9px;color:#00ff8844;line-height:1.7}
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.topbar{background:#08081a;border-bottom:1px solid #00ff8822;padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.page-title{font-size:13px;letter-spacing:4px;color:#00ff88;text-shadow:0 0 12px #00ff88;text-transform:uppercase}
-.topbar-r{display:flex;align-items:center;gap:18px}
-.date-str{font-size:10px;color:#00ff8855;letter-spacing:2px}
-.clock{font-size:20px;color:#00ff88;text-shadow:0 0 18px #00ff88;letter-spacing:3px}
-.dot{width:7px;height:7px;background:#00ff88;border-radius:50%;box-shadow:0 0 8px #00ff88;animation:blink 2s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
-.content{flex:1;padding:22px 28px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;align-content:start}
-.card{background:#08081a;border:1px solid #00ff8822;padding:18px;position:relative;overflow:hidden}
-.card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,#00ff8866,transparent)}
-.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px;padding-bottom:9px;border-bottom:1px solid #00ff8811}
-.ct{font-size:10px;letter-spacing:2px;color:#00ff8877;text-transform:uppercase}
-.cb{font-size:9px;color:#00ff8866;background:rgba(0,255,136,.08);padding:2px 7px;border:1px solid #00ff8822}
-.stats-g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.si{background:rgba(0,255,136,.04);border:1px solid #00ff8818;padding:10px;text-align:center}
-.sv{font-size:22px;color:#00ff88;text-shadow:0 0 8px #00ff88;display:block}
-.sl{font-size:8px;color:#00ff8855;letter-spacing:1px;margin-top:3px;display:block;text-transform:uppercase}
-.chat-area{height:160px;overflow-y:auto;margin-bottom:10px}
-.msg{padding:7px 10px;margin-bottom:5px;font-size:11px;line-height:1.5}
-.msg.b{background:rgba(0,255,136,.06);border-left:2px solid #00ff8888;color:#00ff88aa}
-.msg.u{background:rgba(0,150,255,.06);border-right:2px solid #0096ffaa;color:#0096ffaa;padding-left:4px;padding-right:10px}
-.ms{font-size:8px;letter-spacing:1px;margin-bottom:3px;opacity:.6;text-transform:uppercase}
-.chat-row{display:flex;gap:7px}
-.ci{flex:1;background:rgba(0,255,136,.04);border:1px solid #00ff8822;color:#00ff88;padding:7px 9px;font-family:inherit;font-size:10px;outline:none}
-.ci::placeholder{color:#00ff8833}
-.csend{background:rgba(0,255,136,.12);border:1px solid #00ff8844;color:#00ff88;padding:7px 12px;font-family:inherit;font-size:10px;cursor:pointer}
-.act-list{list-style:none}
-.act-i{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid #00ff8809;font-size:10px;color:#00ff8877}
-.act-t{color:#00ff8844;font-size:9px;min-width:45px}
-.act-d{width:5px;height:5px;background:#00ff88;border-radius:50%;box-shadow:0 0 5px #00ff88;margin-top:2px;flex-shrink:0}
-.w-main{display:flex;align-items:center;gap:18px;margin-bottom:12px}
-.w-temp{font-size:44px;color:#00ff88;text-shadow:0 0 18px #00ff88;line-height:1}
-.w-desc{font-size:11px;color:#00ff8877}
-.w-loc{font-size:9px;color:#00ff8855;margin-top:4px}
-.w-row{display:flex;justify-content:space-between;font-size:10px;color:#00ff8866;padding:5px 0;border-top:1px solid #00ff8811}
-.sys-r{display:flex;align-items:center;gap:9px;margin-bottom:9px;font-size:10px}
-.sys-l{color:#00ff8866;width:42px;font-size:9px}
-.sys-bg{flex:1;height:7px;background:rgba(0,255,136,.08);border:1px solid #00ff8818;overflow:hidden}
-.sys-f{height:100%;background:linear-gradient(90deg,#00ff88,#00ccff);box-shadow:0 0 6px #00ff88}
-.sys-v{color:#00ff88;font-size:9px;width:32px;text-align:right}
-.s2{grid-column:span 2}.s3{grid-column:span 3}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Courier New', Courier, monospace;
+  background: #080810;
+  color: #c0c0d0;
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+.sidebar {
+  width: 204px;
+  min-width: 204px;
+  background: #0c0c18;
+  border-right: 1px solid #00e5ff18;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-logo {
+  padding: 22px 16px 18px;
+  border-bottom: 1px solid #00e5ff18;
+}
+.sidebar-logo-main {
+  font-size: 20px;
+  font-weight: bold;
+  color: #00e5ff;
+  text-shadow: 0 0 14px #00e5ff80;
+  letter-spacing: 3px;
+}
+.sidebar-logo-sub {
+  font-size: 9px;
+  color: #00e5ff44;
+  letter-spacing: 3px;
+  margin-top: 3px;
+  text-transform: uppercase;
+}
+.nav-block {
+  padding: 6px 0;
+  flex: 1;
+}
+.nav-item {
+  padding: 9px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: #4a5878;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  transition: color 0.1s;
+}
+.nav-item.active {
+  color: #00e5ff;
+  border-left-color: #00e5ff;
+  background: #00e5ff08;
+  text-shadow: 0 0 8px #00e5ff60;
+}
+.nav-item:hover:not(.active) { color: #00e5ff55; }
+.nav-icon { width: 16px; text-align: center; font-size: 13px; }
+.sidebar-footer {
+  border-top: 1px solid #00e5ff14;
+  padding: 12px 16px;
+}
+.sys-line {
+  font-size: 9px;
+  color: #283040;
+  letter-spacing: 1px;
+  line-height: 2;
+}
+.sys-line em { font-style: normal; color: #39ff1455; }
+.online {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  color: #39ff14;
+  letter-spacing: 2px;
+  margin-top: 4px;
+}
+.dot-online {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #39ff14;
+  box-shadow: 0 0 6px #39ff14;
+}
+.main-wrapper { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.topbar {
+  height: 54px;
+  background: #0c0c18;
+  border-bottom: 1px solid #00e5ff18;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  flex-shrink: 0;
+}
+.topbar-left {}
+.topbar-page {
+  font-size: 13px;
+  color: #00e5ff;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.topbar-date-str {
+  font-size: 10px;
+  color: #3a4860;
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+.topbar-right { display:flex; align-items:center; gap:18px; }
+.topbar-time {
+  font-size: 20px;
+  font-weight: bold;
+  color: #39ff14;
+  text-shadow: 0 0 12px #39ff1466;
+  letter-spacing: 2px;
+}
+.topbar-tz { font-size: 9px; color: #3a4860; letter-spacing: 1px; }
+.topbar-sep { width: 1px; height: 28px; background: #00e5ff18; }
+.topbar-user { font-size: 10px; color: #3a5070; letter-spacing: 1px; }
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 14px;
+  align-content: start;
+}
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0c0c18; }
+::-webkit-scrollbar-thumb { background: #00e5ff22; }
+.card {
+  background: #0e0e1c;
+  border: 1px solid #00e5ff14;
+  padding: 15px;
+  position: relative;
+  overflow: hidden;
+}
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, #00e5ff55, transparent 60%);
+}
+.card-title {
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: #00e5ff44;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.card-title::before { content: '//'; color: #00e5ff22; }
+.c3  { grid-column: span 3; }
+.c4  { grid-column: span 4; }
+.c5  { grid-column: span 5; }
+.c6  { grid-column: span 6; }
+.c7  { grid-column: span 7; }
+.c8  { grid-column: span 8; }
+.c12 { grid-column: span 12; }
+.stat-val {
+  font-size: 36px;
+  font-weight: bold;
+  color: #00e5ff;
+  text-shadow: 0 0 18px #00e5ff55;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+.stat-lbl {
+  font-size: 9px;
+  color: #3a4870;
+  letter-spacing: 2px;
+  margin-top: 5px;
+  text-transform: uppercase;
+}
+.stat-note {
+  font-size: 10px;
+  color: #39ff14;
+  margin-top: 8px;
+}
+.stat-note.warn { color: #ff8800; }
+.prog {
+  height: 2px;
+  background: #0a0a16;
+  margin-top: 10px;
+  position: relative;
+}
+.prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00e5ff, #39ff14);
+  box-shadow: 0 0 4px #00e5ff;
+  transition: width 0.3s;
+}
+.prog-fill.orange { background: linear-gradient(90deg, #ff6600, #ffaa00); box-shadow: 0 0 4px #ff6600; }
+.prog-fill.purple { background: linear-gradient(90deg, #8822ff, #00e5ff); box-shadow: 0 0 4px #8822ff; }
+.chat-msgs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 190px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+.cmsg {}
+.cmsg-who {
+  font-size: 10px;
+  color: #00e5ff;
+  letter-spacing: 1px;
+  margin-bottom: 3px;
+}
+.cmsg.bolla .cmsg-who { color: #39ff14; }
+.cmsg-text {
+  font-size: 11px;
+  color: #6070a0;
+  padding-left: 10px;
+  border-left: 1px solid #00e5ff1a;
+  line-height: 1.5;
+}
+.chat-inp {
+  display: flex;
+  gap: 6px;
+}
+.chat-inp input {
+  flex: 1;
+  background: #080810;
+  border: 1px solid #00e5ff2a;
+  color: #00e5ff;
+  padding: 7px 10px;
+  font-family: inherit;
+  font-size: 10px;
+  outline: none;
+  letter-spacing: 1px;
+}
+.chat-inp input::placeholder { color: #00e5ff22; }
+.chat-inp button {
+  background: #00e5ff0d;
+  border: 1px solid #00e5ff33;
+  color: #00e5ff;
+  padding: 7px 14px;
+  font-family: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.act-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #00e5ff08;
+}
+.act-row:last-child { border-bottom: none; }
+.act-time { font-size: 10px; color: #39ff1444; min-width: 42px; }
+.act-text { font-size: 10px; color: #5870a0; flex: 1; line-height: 1.4; }
+.act-tag {
+  font-size: 8px;
+  padding: 2px 6px;
+  border: 1px solid currentColor;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+.t-mail  { color: #00e5ff55; }
+.t-bolla { color: #39ff1455; }
+.t-school{ color: #ff880066; }
+.t-sys   { color: #8822ff66; }
+.wx-main { display:flex; align-items:center; gap:16px; margin-bottom:14px; }
+.wx-ico  { font-size: 42px; }
+.wx-temp { font-size: 38px; font-weight: bold; color: #00e5ff; text-shadow: 0 0 14px #00e5ff55; }
+.wx-cond { font-size: 10px; color: #3a4870; letter-spacing: 1px; margin-top: 3px; }
+.wx-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+.wx-cell { background: #080810; border: 1px solid #00e5ff0a; padding: 8px; text-align: center; }
+.wx-cval { font-size: 13px; color: #00e5ff77; }
+.wx-clbl { font-size: 8px; color: #304050; letter-spacing: 1px; margin-top: 2px; text-transform: uppercase; }
 </style>
 </head>
 <body>
-<div class="sidebar">
-  <div class="logo">
-    <div class="logo-title">MISSION<br>CONTROL</div>
-    <div class="logo-sub">// BOLLA v2.1.0 🐾</div>
+
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-main">MC</div>
+    <div class="sidebar-logo-sub">Mission Control</div>
   </div>
-  <div class="nav-item active"><span class="nav-ic">■</span>DASHBOARD</div>
-  <div class="nav-item"><span class="nav-ic">◈</span>BOLLA</div>
-  <div class="nav-item"><span class="nav-ic">▣</span>SCHULE</div>
-  <div class="nav-item"><span class="nav-ic">◷</span>KALENDER</div>
-  <div class="nav-item"><span class="nav-ic">✉</span>E-MAIL</div>
-  <div class="nav-item"><span class="nav-ic">◉</span>ROBIN</div>
-  <div class="nav-item"><span class="nav-ic">♦</span>GEBURTSTAGE</div>
-  <div class="nav-item"><span class="nav-ic">⬡</span>LOCAL SERVER</div>
-  <div class="nav-item"><span class="nav-ic">☁</span>WETTER</div>
-  <div class="nav-item"><span class="nav-ic">⬢</span>SYSTEM INFO</div>
-  <div class="sb-foot">UPTIME: 14d 06:22:11<br>HOST: SURFACE-LAPTOP<br>SYS: OPERATIONAL</div>
-</div>
-<div class="main">
-  <div class="topbar">
-    <div class="page-title">[ DASHBOARD ]</div>
-    <div class="topbar-r">
-      <span class="date-str">MO 27.04.2026</span>
-      <div class="clock">14:37:52</div>
-      <div class="dot"></div>
+  <div class="nav-block">
+    <div class="nav-item active"><span class="nav-icon">◉</span>Dashboard</div>
+    <div class="nav-item"><span class="nav-icon">🐾</span>Bolla</div>
+    <div class="nav-item"><span class="nav-icon">◈</span>Schule</div>
+    <div class="nav-item"><span class="nav-icon">▦</span>Kalender</div>
+    <div class="nav-item"><span class="nav-icon">◫</span>E-Mail</div>
+    <div class="nav-item"><span class="nav-icon">◑</span>Robin</div>
+    <div class="nav-item"><span class="nav-icon">◆</span>Geburtstage</div>
+    <div class="nav-item"><span class="nav-icon">⬡</span>Local Server</div>
+    <div class="nav-item"><span class="nav-icon">◎</span>Wetter</div>
+    <div class="nav-item"><span class="nav-icon">⚙</span>System Info</div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="sys-line">CPU &nbsp;<em>14 %</em></div>
+    <div class="sys-line">RAM &nbsp;<em>4.2 / 16 GB</em></div>
+    <div class="sys-line">UP &nbsp;&nbsp;<em>6d 14h 22m</em></div>
+    <div class="online"><span class="dot-online"></span>ONLINE</div>
+  </div>
+</nav>
+
+<div class="main-wrapper">
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-page">// Dashboard</div>
+      <div class="topbar-date-str">MI 29. APRIL 2026</div>
     </div>
-  </div>
+    <div class="topbar-right">
+      <div style="text-align:right">
+        <div class="topbar-time">08:47:23</div>
+        <div class="topbar-tz">CEST &nbsp;UTC+2</div>
+      </div>
+      <div class="topbar-sep"></div>
+      <div class="topbar-user">chris@bolla</div>
+    </div>
+  </header>
+
   <div class="content">
-    <div class="card">
-      <div class="ch"><span class="ct">// STATUS</span><span class="cb">LIVE</span></div>
-      <div class="stats-g">
-        <div class="si"><span class="sv">7</span><span class="sl">E-Mails</span></div>
-        <div class="si"><span class="sv">3</span><span class="sl">Termine</span></div>
-        <div class="si"><span class="sv">12</span><span class="sl">Aufgaben</span></div>
-        <div class="si"><span class="sv">2</span><span class="sl">Nachrichten</span></div>
+
+    <!-- Stat: E-Mail -->
+    <div class="card c3">
+      <div class="card-title">E-Mail</div>
+      <div class="stat-val">7</div>
+      <div class="stat-lbl">Ungelesen</div>
+      <div class="stat-note">↑ 3 seit gestern</div>
+      <div class="prog"><div class="prog-fill" style="width:58%"></div></div>
+    </div>
+
+    <!-- Stat: Aufgaben -->
+    <div class="card c3">
+      <div class="card-title">Aufgaben</div>
+      <div class="stat-val" style="color:#ffaa00;text-shadow:0 0 18px #ff880055;">4</div>
+      <div class="stat-lbl">Heute offen</div>
+      <div class="stat-note warn">! 1 dringend</div>
+      <div class="prog"><div class="prog-fill orange" style="width:25%"></div></div>
+    </div>
+
+    <!-- Stat: Schule -->
+    <div class="card c3">
+      <div class="card-title">Schule</div>
+      <div class="stat-val" style="color:#b055ff;text-shadow:0 0 18px #8822ff55;">3</div>
+      <div class="stat-lbl">Stunden heute</div>
+      <div class="stat-note" style="color:#b055ff;">8B · 10B · 10C</div>
+      <div class="prog"><div class="prog-fill purple" style="width:40%"></div></div>
+    </div>
+
+    <!-- Stat: Bolla -->
+    <div class="card c3">
+      <div class="card-title">Bolla Status</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+        <div class="dot-online" style="width:10px;height:10px;"></div>
+        <div class="stat-val" style="font-size:22px;">ONLINE</div>
+      </div>
+      <div class="stat-lbl">Seit 06:12 Uhr</div>
+      <div class="stat-note">Letzte Aktion 08:44</div>
+      <div class="prog"><div class="prog-fill" style="width:100%"></div></div>
+    </div>
+
+    <!-- Bolla Chat -->
+    <div class="card c7">
+      <div class="card-title">Bolla — KI-Assistent</div>
+      <div class="chat-msgs">
+        <div class="cmsg">
+          <div class="cmsg-who">// chris</div>
+          <div class="cmsg-text">Hast du die Aufgaben für 8B schon vorbereitet?</div>
+        </div>
+        <div class="cmsg bolla">
+          <div class="cmsg-who">// bolla 🐾</div>
+          <div class="cmsg-text">Ja! Arbeitsblätter zu „Lineare Gleichungen" sind fertig. Soll ich sie in den Schule-Ordner ablegen?</div>
+        </div>
+        <div class="cmsg">
+          <div class="cmsg-who">// chris</div>
+          <div class="cmsg-text">Perfekt. Und schau mal in die E-Mails, da war was von der Schulleitung.</div>
+        </div>
+        <div class="cmsg bolla">
+          <div class="cmsg-who">// bolla 🐾</div>
+          <div class="cmsg-text">Erledigt. Kurzüberblick: 2 Eltern-Mails (8B), 1 Rundbrief Schulleitung. Soll ich zusammenfassen?</div>
+        </div>
+      </div>
+      <div class="chat-inp">
+        <input type="text" placeholder="Nachricht an Bolla eingeben_" />
+        <button>SEND</button>
       </div>
     </div>
-    <div class="card">
-      <div class="ch"><span class="ct">// WETTER</span><span class="cb">MÜNCHEN</span></div>
-      <div class="w-main">
-        <div class="w-temp">18°</div>
-        <div><div class="w-desc">Teilweise bewölkt</div><div class="w-loc">München, DE // 48.1°N 11.6°E</div></div>
+
+    <!-- Weather -->
+    <div class="card c5">
+      <div class="card-title">Wetter — Berlin</div>
+      <div class="wx-main">
+        <div class="wx-ico">⛅</div>
+        <div>
+          <div class="wx-temp">18°</div>
+          <div class="wx-cond">Teilweise bewölkt</div>
+        </div>
       </div>
-      <div class="w-row"><span>Luftfeuchtigkeit</span><span>62%</span></div>
-      <div class="w-row"><span>Wind</span><span>12 km/h NW</span></div>
-      <div class="w-row"><span>Gefühlt</span><span>16°C</span></div>
-    </div>
-    <div class="card">
-      <div class="ch"><span class="ct">// SYSTEM</span><span class="cb">WSL2</span></div>
-      <div class="sys-r"><span class="sys-l">CPU</span><div class="sys-bg"><div class="sys-f" style="width:34%"></div></div><span class="sys-v">34%</span></div>
-      <div class="sys-r"><span class="sys-l">RAM</span><div class="sys-bg"><div class="sys-f" style="width:58%"></div></div><span class="sys-v">58%</span></div>
-      <div class="sys-r"><span class="sys-l">DISK</span><div class="sys-bg"><div class="sys-f" style="width:72%"></div></div><span class="sys-v">72%</span></div>
-      <div class="sys-r"><span class="sys-l">NET</span><div class="sys-bg"><div class="sys-f" style="width:21%"></div></div><span class="sys-v">21%</span></div>
-      <div style="font-size:9px;color:#00ff8844;margin-top:8px;letter-spacing:1px">KERNEL: 6.6.87.2-WSL2 // IP: 172.18.0.1</div>
-    </div>
-    <div class="card s2">
-      <div class="ch"><span class="ct">// BOLLA — KI-ASSISTENT</span><span class="cb" style="color:#00ff88;border-color:#00ff8844">● ONLINE</span></div>
-      <div class="chat-area">
-        <div class="msg b"><div class="ms">BOLLA 🐾 &gt;</div>Guten Morgen, Chris! Heute 3 Termine: Klassenarbeit 7a um 10:00, Konferenz um 13:00, Sport um 18:30. Alle Systeme grün.</div>
-        <div class="msg u"><div class="ms">&lt; CHRIS</div>Was ist mit den ungelesenen E-Mails?</div>
-        <div class="msg b"><div class="ms">BOLLA 🐾 &gt;</div>7 ungelesene. 2 wichtig: Schulleitung re. Konferenz Mittwoch + Elternmail Frau Becker (Benotung Jonas, 7a). Rest: Newsletter und Systemmeldungen — nichts Dringendes.</div>
-      </div>
-      <div class="chat-row">
-        <input class="ci" type="text" placeholder="// Befehl eingeben...">
-        <button class="csend">SEND</button>
+      <div class="wx-grid">
+        <div class="wx-cell"><div class="wx-cval">62%</div><div class="wx-clbl">Feuchte</div></div>
+        <div class="wx-cell"><div class="wx-cval">12km/h</div><div class="wx-clbl">Wind</div></div>
+        <div class="wx-cell"><div class="wx-cval">22°</div><div class="wx-clbl">Max.</div></div>
       </div>
     </div>
-    <div class="card">
-      <div class="ch"><span class="ct">// AKTIVITÄTEN</span><span class="cb">HEUTE</span></div>
-      <ul class="act-list">
-        <li class="act-i"><span class="act-t">14:12</span><div class="act-d"></div><span>Kalender-Sync abgeschlossen</span></li>
-        <li class="act-i"><span class="act-t">13:55</span><div class="act-d"></div><span>2 neue E-Mails empfangen</span></li>
-        <li class="act-i"><span class="act-t">12:30</span><div class="act-d"></div><span>OneDrive-Backup erfolgreich</span></li>
-        <li class="act-i"><span class="act-t">11:00</span><div class="act-d"></div><span>Bolla Session gestartet</span></li>
-        <li class="act-i"><span class="act-t">08:15</span><div class="act-d"></div><span>System hochgefahren</span></li>
-      </ul>
+
+    <!-- Activity Log -->
+    <div class="card c12">
+      <div class="card-title">Aktivitäts-Log — Heute</div>
+      <div class="act-row">
+        <div class="act-time">08:44</div>
+        <div class="act-text">Bolla hat Tagesnotizen vom 28. April in memory/ gespeichert und Git-Commit gepusht</div>
+        <div class="act-tag t-bolla">BOLLA</div>
+      </div>
+      <div class="act-row">
+        <div class="act-time">08:31</div>
+        <div class="act-text">Neue E-Mail von Eltern 8B — Entschuldigung für Felix M. (ernstmandel@outlook.de)</div>
+        <div class="act-tag t-mail">MAIL</div>
+      </div>
+      <div class="act-row">
+        <div class="act-time">08:15</div>
+        <div class="act-text">Stundenplan-Erinnerung: 3. Stunde — Mathematik 8B, Raum 214, Beginn 09:40</div>
+        <div class="act-tag t-school">SCHULE</div>
+      </div>
+      <div class="act-row">
+        <div class="act-time">07:50</div>
+        <div class="act-text">Mission Control gestartet — alle Dienste aktiv, Cloudflare-Tunnel online, Systemcheck OK</div>
+        <div class="act-tag t-sys">SYSTEM</div>
+      </div>
     </div>
+
   </div>
 </div>
+
 </body>
 </html>

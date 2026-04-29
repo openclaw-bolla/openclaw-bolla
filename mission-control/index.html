@@ -173,6 +173,37 @@ html, body {
 .nav-subitem { padding-left: 40px !important; font-size: 12px !important; }
 .nav-group-items { overflow: hidden; }
 
+/* Einklappbare Nav-Sections */
+.nav-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 6px;
+  margin: 2px 6px 0;
+  padding: 8px 10px 4px !important;
+  transition: color 0.15s;
+}
+.nav-section:hover { color: var(--bright); }
+.nav-section-chevron {
+  font-size: 10px;
+  color: rgba(255,255,255,0.25);
+  transition: transform 0.2s;
+  display: inline-block;
+}
+.nav-section.open .nav-section-chevron { transform: rotate(90deg); color: var(--dim); }
+.nav-section-items {
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+}
+
+/* Dezenter Custom-Scrollbar */
+#sidebar-nav::-webkit-scrollbar { width: 4px; }
+#sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+#sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,102,153,0.25); border-radius: 2px; }
+#sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,102,153,0.5); }
+
 #sidebar-footer {
   padding: 14px 18px;
   border-top: 1px solid var(--border);
@@ -546,45 +577,75 @@ html, body {
       <div class="sub">Chris Mandel</div>
     </div>
     <nav id="sidebar-nav">
-      <div class="nav-section">Übersicht</div>
-      <div class="nav-item active" data-page="dashboard"><span class="icon">📊</span><span>Dashboard</span></div>
-      <div class="nav-item" data-page="bolla"><span class="icon"><img src="/api/bolla/avatar" style="width:18px;height:18px;border-radius:50%;vertical-align:middle"></span><span>Bolla</span></div>
+      <div class="nav-section open" onclick="toggleNavSection('uebersicht')" id="nav-sec-uebersicht">Übersicht <span class="nav-section-chevron">▶</span></div>
+      <div class="nav-section-items" id="nav-section-items-uebersicht">
+        <div class="nav-item active" data-page="dashboard"><span class="icon">📊</span><span>Dashboard</span></div>
+        <div class="nav-item" data-page="bolla"><span class="icon"><img src="/api/bolla/avatar" style="width:18px;height:18px;border-radius:50%;vertical-align:middle"></span><span>Bolla</span></div>
+      </div>
 
-      <div class="nav-section">Arbeit</div>
-      <div class="nav-item" data-page="schule"><span class="icon">🏫</span><span>Schule</span></div>
-      <div class="nav-item" data-page="kalender"><span class="icon">📅</span><span>Kalender</span></div>
-      <div class="nav-item" data-page="email"><span class="icon">📧</span><span>E-Mail</span><span class="badge" id="mail-badge" style="display:none">0</span></div>
-      <div class="nav-item" data-page="clipboard"><span class="icon">📋</span><span>Clipboard</span></div>
-
-      <!-- ── Projekte-Gruppe (ausklappbar) ── -->
-      <div id="nav-group-projekte">
-        <div class="nav-group-header" id="nav-group-header-projekte" onclick="toggleNavGroup('projekte')">
-          <span class="icon">🗂️</span>
-          <span>Projekte</span>
-          <span class="nav-group-count">2</span>
-          <span class="nav-group-chevron" id="nav-chevron-projekte">▶</span>
+      <div class="nav-section open" onclick="toggleNavSection('arbeit')" id="nav-sec-arbeit">Arbeit <span class="nav-section-chevron">▶</span></div>
+      <div class="nav-section-items" id="nav-section-items-arbeit">
+        <div id="nav-group-schule">
+          <div class="nav-group-header" id="nav-group-header-schule" onclick="event.stopPropagation();toggleNavGroup('schule')">
+            <span class="icon">🏫</span>
+            <span>Schule</span>
+            <span class="nav-group-count">2</span>
+            <span class="nav-group-chevron" id="nav-chevron-schule">▶</span>
+          </div>
+          <div class="nav-group-items" id="nav-group-items-schule">
+            <div class="nav-item nav-subitem" data-page="schule"><span class="icon">📅</span><span>Übersicht</span></div>
+            <div class="nav-item nav-subitem" data-page="korrektur"><span class="icon">✏️</span><span>KI-Korrektur</span></div>
+          </div>
         </div>
-        <div class="nav-group-items" id="nav-group-items-projekte">
-          <div class="nav-item nav-subitem" data-page="projekte"><span class="icon">🏡</span><span>Immobilienkauf Bayern</span></div>
-          <div class="nav-item nav-subitem" data-page="urlaub"><span class="icon">✈️</span><span>Urlaubsplanung 2026</span></div>
+        <div class="nav-item" data-page="kalender"><span class="icon">📅</span><span>Kalender</span></div>
+        <div class="nav-item" data-page="email"><span class="icon">📧</span><span>E-Mail</span><span class="badge" id="mail-badge" style="display:none">0</span></div>
+        <div class="nav-item" data-page="clipboard"><span class="icon">📋</span><span>Clipboard</span></div>
+        <div id="nav-group-projekte">
+          <div class="nav-group-header" id="nav-group-header-projekte" onclick="event.stopPropagation();toggleNavGroup('projekte')">
+            <span class="icon">🗂️</span>
+            <span>Projekte</span>
+            <span class="nav-group-count">2</span>
+            <span class="nav-group-chevron" id="nav-chevron-projekte">▶</span>
+          </div>
+          <div class="nav-group-items" id="nav-group-items-projekte">
+            <div class="nav-item nav-subitem" data-page="projekte"><span class="icon">🏡</span><span>Immobilienkauf Bayern</span></div>
+            <div class="nav-item nav-subitem" data-page="urlaub"><span class="icon">✈️</span><span>Urlaubsplanung 2026</span></div>
+          </div>
         </div>
       </div>
 
-      <div class="nav-section">Familie</div>
-      <div class="nav-item" data-page="robin"><span class="icon">🌍</span><span>Robin</span></div>
-      <div class="nav-item" data-page="geburtstage"><span class="icon">🎂</span><span>Geburtstage</span></div>
+      <div class="nav-section open" onclick="toggleNavSection('familie')" id="nav-sec-familie">Familie <span class="nav-section-chevron">▶</span></div>
+      <div class="nav-section-items" id="nav-section-items-familie">
+        <div class="nav-item" data-page="robin"><span class="icon">🌍</span><span>Robin</span></div>
+        <div class="nav-item" data-page="geburtstage"><span class="icon">🎂</span><span>Geburtstage</span></div>
+      </div>
 
-      <div class="nav-section">KI</div>
-      <div class="nav-item" data-page="localserver"><span class="icon">🖧</span><span>Local Server</span></div>
-      <div class="nav-item" data-page="surface"><span class="icon">💻</span><span>Surfaces</span></div>
-      <div class="nav-item" data-page="redesigns"><span class="icon">🎨</span><span>Redesigns</span></div>
-      <div class="nav-item" data-page="bildgen"><span class="icon">🍌</span><span>BildGen</span></div>
-      <div class="nav-item" data-page="suno"><span class="icon">🎵</span><span>Suno Songs</span></div>
+      <div class="nav-section" onclick="toggleNavSection('ki')" id="nav-sec-ki">KI <span class="nav-section-chevron">▶</span></div>
+      <div class="nav-section-items" id="nav-section-items-ki" style="max-height:0">
+        <div class="nav-item" data-page="localserver"><span class="icon">🖧</span><span>Local Server</span></div>
+        <div class="nav-item" data-page="redesigns"><span class="icon">🎨</span><span>Redesigns</span></div>
+        <div class="nav-item" data-page="bildgen"><span class="icon">🍌</span><span>BildGen</span></div>
+        <div class="nav-item" data-page="suno"><span class="icon">🎵</span><span>Suno Songs</span></div>
+      </div>
 
-      <div class="nav-section">Info</div>
-      <div class="nav-item" data-page="wetter"><span class="icon">🌤️</span><span>Wetter</span></div>
-      <div class="nav-item" data-page="system"><span class="icon">🖥️</span><span>System Info</span></div>
-      <div class="nav-item" data-page="brain"><span class="icon">🧠</span><span>Bolla's Brain</span></div>
+      <div class="nav-section" onclick="toggleNavSection('info')" id="nav-sec-info">Info <span class="nav-section-chevron">▶</span></div>
+      <div class="nav-section-items" id="nav-section-items-info" style="max-height:0">
+        <div class="nav-item" data-page="wetter"><span class="icon">🌤️</span><span>Wetter</span></div>
+        <div id="nav-group-system">
+          <div class="nav-group-header" id="nav-group-header-system" onclick="event.stopPropagation();toggleNavGroup('system')">
+            <span class="icon">🖥️</span>
+            <span>System Info</span>
+            <span class="nav-group-count">3</span>
+            <span class="nav-group-chevron" id="nav-chevron-system">▶</span>
+          </div>
+          <div class="nav-group-items" id="nav-group-items-system">
+            <div class="nav-item nav-subitem" data-page="system"><span class="icon">📊</span><span>Überblick</span></div>
+            <div class="nav-item nav-subitem" data-page="claudecode"><span class="icon">🤖</span><span>Claude Code</span></div>
+            <div class="nav-item nav-subitem" data-page="surface"><span class="icon">💻</span><span>Surfaces</span></div>
+          </div>
+        </div>
+        <div class="nav-item" data-page="brain"><span class="icon">🧠</span><span>Bolla's Brain</span></div>
+      </div>
     </nav>
     <div id="sidebar-footer" style="flex-direction:column;align-items:stretch;gap:6px">
       <div style="display:flex;align-items:center;gap:8px">
@@ -649,6 +710,149 @@ html, body {
         <div class="grid" id="schule-content"><div class="loading">Lade...</div></div>
       </div>
 
+      <!-- KI-KORREKTUR -->
+      <div class="page" id="page-korrektur">
+        <div style="max-width:860px;margin:0 auto;padding:8px 0">
+
+          <!-- Header -->
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+            <div style="width:48px;height:48px;border-radius:12px;flex-shrink:0;
+                        background:linear-gradient(135deg,#f59e0b,#ff6699);
+                        display:flex;align-items:center;justify-content:center;font-size:26px">✏️</div>
+            <div>
+              <div style="font-size:18px;font-weight:700;color:var(--bright)">KI-Korrektur & Benotung</div>
+              <div style="font-size:11px;color:var(--dim)">Klassenarbeit hochladen → Note 1–6 + detailliertes Feedback</div>
+            </div>
+          </div>
+
+          <!-- Formular -->
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px">
+
+            <!-- Upload-Bereich -->
+            <div style="margin-bottom:16px">
+              <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:6px">📎 Klassenarbeit (Foto, Scan, PDF) *</label>
+              <div id="korr-dropzone"
+                   onclick="document.getElementById('korr-file').click()"
+                   ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+                   ondragleave="this.style.borderColor='var(--border)'"
+                   ondrop="korrHandleDrop(event)"
+                   style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;
+                          cursor:pointer;transition:border-color .2s;background:var(--card)">
+                <div id="korr-drop-hint" style="color:var(--dim);font-size:13px">
+                  <span style="font-size:32px;display:block;margin-bottom:6px">📂</span>
+                  Datei hier reinziehen oder <span style="color:var(--accent)">klicken zum Auswählen</span><br>
+                  <span style="font-size:11px">JPG · PNG · PDF</span>
+                </div>
+                <div id="korr-preview-wrap" style="display:none">
+                  <img id="korr-preview" style="max-height:160px;max-width:100%;border-radius:6px;margin-bottom:6px">
+                  <div id="korr-file-name" style="font-size:11px;color:var(--accent)"></div>
+                </div>
+              </div>
+              <input id="korr-file" type="file" accept="image/*,.pdf" style="display:none"
+                     onchange="korrHandleFile(this.files[0])">
+            </div>
+
+            <!-- Felder Zeile 1 -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:12px;margin-bottom:12px">
+              <div>
+                <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px">Klassenstufe *</label>
+                <input id="korr-klasse" type="text" placeholder="z.B. 9 oder Klasse 10a"
+                  style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);
+                         border-radius:8px;color:var(--text);padding:9px 11px;font-size:13px;outline:none;font-family:inherit">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px">Fach *</label>
+                <input id="korr-fach" type="text" placeholder="z.B. WiPo, Geschichte, Deutsch"
+                  style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);
+                         border-radius:8px;color:var(--text);padding:9px 11px;font-size:13px;outline:none;font-family:inherit">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px">Thema / Aufgabenstellung</label>
+                <input id="korr-thema" type="text" placeholder="z.B. Soziale Marktwirtschaft — Aufgaben 1–4"
+                  style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);
+                         border-radius:8px;color:var(--text);padding:9px 11px;font-size:13px;outline:none;font-family:inherit">
+              </div>
+            </div>
+
+            <!-- Erwartungshorizont -->
+            <div style="margin-bottom:16px">
+              <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px">
+                Erwartungshorizont / Musterlösung
+                <span style="color:var(--dim);font-style:italic"> — optional, KI schätzt selbst wenn leer</span>
+              </label>
+              <textarea id="korr-erwartung" rows="3"
+                placeholder="z.B. Aufgabe 1 (8P): Merkmale der sozialen Marktwirtschaft nennen und erklären — Wettbewerb, soziale Absicherung, Preismechanismus&#10;Aufgabe 2 (6P): Vor- und Nachteile gegenüberstellen&#10;Aufgabe 3 (6P): Eigene Meinung begründet formulieren"
+                style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);
+                       border-radius:8px;color:var(--text);padding:9px 11px;font-size:12px;outline:none;
+                       font-family:inherit;resize:vertical;line-height:1.5"></textarea>
+            </div>
+
+            <!-- Button -->
+            <div style="display:flex;align-items:center;gap:14px">
+              <button id="korr-btn" onclick="korrAnalyze()"
+                style="background:linear-gradient(135deg,#f59e0b,#ff6699);border:none;border-radius:9px;
+                       color:white;font-weight:700;font-size:14px;padding:11px 28px;cursor:pointer;
+                       box-shadow:0 2px 16px rgba(245,158,11,0.35);transition:opacity .2s">
+                ✏️ Jetzt korrigieren
+              </button>
+              <span id="korr-status" style="font-size:12px;color:var(--dim)"></span>
+            </div>
+          </div>
+
+          <!-- Platzhalter -->
+          <div id="korr-placeholder" style="text-align:center;padding:40px 0;color:var(--dim)">
+            <div style="font-size:52px;margin-bottom:10px">📝</div>
+            <div style="font-size:14px">Ergebnis erscheint nach der Korrektur</div>
+          </div>
+
+          <!-- Ergebnis -->
+          <div id="korr-result" style="display:none">
+            <!-- Note-Badge -->
+            <div style="display:flex;align-items:center;gap:20px;margin-bottom:16px;
+                        background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:18px 24px">
+              <div id="korr-note-badge" style="width:72px;height:72px;border-radius:50%;flex-shrink:0;
+                   background:linear-gradient(135deg,#22c55e,#06b6d4);
+                   display:flex;align-items:center;justify-content:center;
+                   font-size:32px;font-weight:900;color:white;
+                   box-shadow:0 0 24px rgba(34,197,94,0.4)">–</div>
+              <div style="flex:1">
+                <div id="korr-note-label" style="font-size:16px;font-weight:700;color:var(--bright);margin-bottom:4px">Korrektur abgeschlossen</div>
+                <div id="korr-note-sub" style="font-size:12px;color:var(--dim)"></div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px">
+                <button onclick="korrAnalyze()"
+                  style="padding:9px 14px;background:var(--card);border:1px solid var(--border);
+                         border-radius:8px;color:var(--dim);font-size:12px;cursor:pointer;font-weight:600">
+                  🔄 Neu
+                </button>
+                <button onclick="korrDownloadDocx()"
+                  style="padding:9px 14px;background:var(--card);border:1px solid var(--border);
+                         border-radius:8px;color:#818cf8;font-size:12px;cursor:pointer;font-weight:600">
+                  📄 Word
+                </button>
+                <button onclick="korrDownloadAnnotated()"
+                  style="padding:9px 14px;background:var(--card);border:1px solid var(--border);
+                         border-radius:8px;color:#f59e0b;font-size:12px;cursor:pointer;font-weight:600">
+                  🖼️ Scan
+                </button>
+                <button onclick="korrSave()"
+                  style="padding:9px 14px;background:var(--card);border:1px solid var(--border);
+                         border-radius:8px;color:var(--accent);font-size:12px;cursor:pointer;font-weight:600">
+                  💾 TXT
+                </button>
+              </div>
+            </div>
+            <!-- Korrektur-Text -->
+            <div style="background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:20px">
+              <div style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;
+                          letter-spacing:1px;margin-bottom:12px">Detaillierte Korrektur</div>
+              <div id="korr-text" style="font-size:13px;color:var(--text);line-height:1.8;white-space:pre-wrap"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       <!-- KALENDER -->
       <div class="page" id="page-kalender">
         <div class="grid" id="kalender-content"><div class="loading">Lade...</div></div>
@@ -706,6 +910,241 @@ html, body {
       <!-- SYSTEM -->
       <div class="page" id="page-system">
         <div class="grid" id="system-content"><div class="loading">Lade...</div></div>
+      </div>
+
+      <!-- CLAUDE CODE -->
+      <div class="page" id="page-claudecode">
+        <div style="padding:20px;max-width:1240px;margin:0 auto">
+
+          <!-- ═══ HERO BANNER ═══ -->
+          <div style="background:linear-gradient(135deg,rgba(124,58,237,0.35) 0%,rgba(255,102,153,0.25) 60%,rgba(6,182,212,0.15) 100%);border:1px solid var(--border);border-radius:16px;padding:20px 24px;margin-bottom:18px;display:flex;align-items:center;gap:18px;position:relative;overflow:hidden">
+            <div style="position:absolute;right:-20px;top:-20px;width:180px;height:180px;background:radial-gradient(circle,rgba(124,58,237,0.18) 0%,transparent 70%);pointer-events:none"></div>
+            <div style="position:absolute;right:120px;bottom:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(255,102,153,0.12) 0%,transparent 70%);pointer-events:none"></div>
+            <img src="/api/bolla/avatar" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid var(--accent);box-shadow:0 0 20px rgba(255,102,153,0.4);flex-shrink:0">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:20px;font-weight:700;color:var(--bright);letter-spacing:-0.3px">🤖 Bolla · Claude Code Setup</div>
+              <div style="font-size:12px;color:var(--dim);margin-top:3px">Persönlicher KI-Assistent · Aktiv seit März 2026 · WSL Ubuntu auf Windows 11</div>
+              <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+                <span id="cc-version-badge" style="padding:4px 10px;background:rgba(124,58,237,0.2);border:1px solid rgba(124,58,237,0.5);border-radius:20px;font-size:11px;color:#a78bfa">⏳ Version lädt...</span>
+                <span style="padding:4px 10px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);border-radius:20px;font-size:11px;color:#22c55e">⏰ 17 Cron Jobs aktiv</span>
+                <span style="padding:4px 10px;background:rgba(6,182,212,0.15);border:1px solid rgba(6,182,212,0.4);border-radius:20px;font-size:11px;color:#06b6d4">📁 /home/bolla/workspace</span>
+                <span style="padding:4px 10px;background:rgba(255,102,153,0.15);border:1px solid rgba(255,102,153,0.4);border-radius:20px;font-size:11px;color:var(--accent)">🌐 bolla.chrismandel.de</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ ZEILE 1: Status | Quick Start | Recovery ═══ -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px">
+
+            <!-- System Status -->
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #22c55e">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+                <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;animation:bollaBounce 2s infinite"></div>
+                <div style="font-size:12px;font-weight:700;color:#22c55e;text-transform:uppercase;letter-spacing:1px">System Status</div>
+              </div>
+              <div id="cc-status-content" style="font-size:12px;color:var(--text);line-height:2">
+                <div style="color:var(--dim)">Lade...</div>
+              </div>
+            </div>
+
+            <!-- Quick Start -->
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #818cf8">
+              <div style="font-size:12px;font-weight:700;color:#818cf8;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">▶ Bolla starten</div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="width:22px;height:22px;border-radius:50%;background:rgba(129,140,248,0.2);border:1px solid rgba(129,140,248,0.5);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#818cf8;flex-shrink:0">1</div>
+                  <span style="font-size:12px;color:var(--text)"><b style="color:var(--bright)">Windows Terminal</b> öffnen → WSL Ubuntu</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="width:22px;height:22px;border-radius:50%;background:rgba(129,140,248,0.2);border:1px solid rgba(129,140,248,0.5);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#818cf8;flex-shrink:0">2</div>
+                  <span style="font-size:12px;color:var(--text)">Eingeben: <code style="background:rgba(129,140,248,0.15);padding:2px 7px;border-radius:4px;color:#818cf8;font-size:11px">claude</code></span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="width:22px;height:22px;border-radius:50%;background:rgba(129,140,248,0.2);border:1px solid rgba(129,140,248,0.5);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#818cf8;flex-shrink:0">3</div>
+                  <span style="font-size:12px;color:var(--text)">Bolla übernimmt — liest, schreibt, verwaltet</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="width:22px;height:22px;border-radius:50%;background:rgba(129,140,248,0.2);border:1px solid rgba(129,140,248,0.5);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#818cf8;flex-shrink:0">4</div>
+                  <span style="font-size:12px;color:var(--text)">Session-Ende: Notizen → Git Push → OneDrive</span>
+                </div>
+              </div>
+              <div style="margin-top:14px;padding:10px;background:rgba(129,140,248,0.08);border-radius:8px;font-size:11px;color:var(--dim)">
+                💡 MC remote: <a href="https://bolla.chrismandel.de" target="_blank" style="color:#818cf8;text-decoration:none">bolla.chrismandel.de</a> · Login: ernstmandel@outlook.de
+              </div>
+            </div>
+
+            <!-- Recovery -->
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #f59e0b">
+              <div style="font-size:12px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">🚨 Recovery</div>
+              <div style="display:flex;flex-direction:column;gap:7px;font-size:12px">
+                <div style="padding:7px 10px;background:rgba(245,158,11,0.08);border-radius:6px;border-left:2px solid #f59e0b">
+                  <span style="color:var(--bright);font-weight:600">WSL weg?</span><br>
+                  <span style="color:var(--dim)">Windows Features → WSL aktivieren → Neustart</span>
+                </div>
+                <div style="padding:7px 10px;background:rgba(245,158,11,0.08);border-radius:6px;border-left:2px solid #f59e0b">
+                  <span style="color:var(--bright);font-weight:600">Claude Code weg?</span><br>
+                  <code style="color:#f59e0b;font-size:10px">npm install -g @anthropic-ai/claude-code</code>
+                </div>
+                <div style="padding:7px 10px;background:rgba(245,158,11,0.08);border-radius:6px;border-left:2px solid #f59e0b">
+                  <span style="color:var(--bright);font-weight:600">Tunnel / MC weg?</span><br>
+                  <code style="color:#f59e0b;font-size:10px">cloudflared tunnel run bolla-mc</code>
+                </div>
+                <div style="padding:7px 10px;background:rgba(245,158,11,0.08);border-radius:6px;border-left:2px solid #f59e0b">
+                  <span style="color:var(--bright);font-weight:600">Daten weg?</span><br>
+                  <span style="color:var(--dim)">GitHub openclaw-bolla · OneDrive Dokumente/Bolla</span>
+                </div>
+              </div>
+              <div style="display:flex;gap:6px;margin-top:12px">
+                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/bolla_recovery.docx" target="_blank" style="padding:5px 10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:6px;color:#f59e0b;font-size:10px;text-decoration:none">📄 Recovery.docx</a>
+                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/Bolla-Notfallplan.pdf" target="_blank" style="padding:5px 10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:6px;color:#f59e0b;font-size:10px;text-decoration:none">📋 Notfallplan.pdf</a>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ═══ ZEILE 2: CLAUDE.md | Pfade | Dokumente ═══ -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px">
+
+            <!-- CLAUDE.md -->
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid var(--accent)">
+              <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">⚙️ CLAUDE.md — Bollas Regeln</div>
+              <div style="font-size:10px;color:var(--dim);margin-bottom:12px">/home/bolla/.claude/CLAUDE.md · wird bei jedem Start geladen</div>
+              <div style="display:flex;flex-direction:column;gap:7px;font-size:11px">
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:13px">🗣</span><div><span style="color:var(--bright);font-weight:600">Sprache & Stil</span><br><span style="color:var(--dim)">Deutsch, locker & humorvoll — kein Corporate-Drone</span></div></div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:13px">📧</span><div><span style="color:var(--bright);font-weight:600">E-Mail Absender</span><br><span style="color:var(--dim)">ernstmandel@outlook.de · anderes Konto → erst rückfragen</span></div></div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:13px">🔑</span><div><span style="color:var(--bright);font-weight:600">Tokens & Passwörter</span><br><span style="color:var(--dim)">Nie in Config, Logs, Git oder Chat</span></div></div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:13px">💾</span><div><span style="color:var(--bright);font-weight:600">Vor großen Eingriffen</span><br><span style="color:var(--dim)">Backup als JSON → backups/ (Outlook, OneDrive, Kalender)</span></div></div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:13px">🌙</span><div><span style="color:var(--bright);font-weight:600">Session-Ende</span><br><span style="color:var(--dim)">Notizen → Git Push → OneDrive Backup</span></div></div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:13px">🧠</span><div><span style="color:var(--bright);font-weight:600">Erst selbst suchen</span><br><span style="color:var(--dim)">Fragen erst wenn wirklich feststeckend</span></div></div>
+              </div>
+            </div>
+
+            <!-- Pfade & Links -->
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #a78bfa">
+              <div style="font-size:12px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">📌 Wichtige Pfade</div>
+              <div style="display:flex;flex-direction:column;gap:8px;font-size:11px">
+                <div style="padding:7px 10px;background:rgba(167,139,250,0.07);border-radius:6px">
+                  <div style="color:var(--dim);margin-bottom:1px">Workspace</div>
+                  <code style="color:var(--bright);font-size:11px">/home/bolla/workspace/</code>
+                </div>
+                <div style="padding:7px 10px;background:rgba(167,139,250,0.07);border-radius:6px">
+                  <div style="color:var(--dim);margin-bottom:1px">Claude Settings & Memory</div>
+                  <code style="color:var(--bright);font-size:11px">/home/bolla/.claude/</code>
+                </div>
+                <div style="padding:7px 10px;background:rgba(167,139,250,0.07);border-radius:6px">
+                  <div style="color:var(--dim);margin-bottom:1px">Bolla Scripts & Tools (Windows)</div>
+                  <code style="color:var(--bright);font-size:11px">C:\ProgramData\Bolla\</code>
+                </div>
+                <div style="padding:7px 10px;background:rgba(167,139,250,0.07);border-radius:6px">
+                  <div style="color:var(--dim);margin-bottom:1px">OneDrive Backup</div>
+                  <code style="color:var(--bright);font-size:11px">D:\OneDrive\Dokumente\Bolla\</code>
+                </div>
+                <div style="padding:7px 10px;background:rgba(167,139,250,0.07);border-radius:6px">
+                  <div style="color:var(--dim);margin-bottom:1px">GitHub Backup</div>
+                  <code style="color:var(--bright);font-size:11px">openclaw-bolla/openclaw-bolla</code>
+                </div>
+                <div style="padding:7px 10px;background:rgba(167,139,250,0.07);border-radius:6px">
+                  <div style="color:var(--dim);margin-bottom:2px">Mission Control</div>
+                  <a href="http://127.0.0.1:18790" target="_blank" style="color:#a78bfa;font-size:11px;text-decoration:none">127.0.0.1:18790</a> <span style="color:var(--dim)">·</span>
+                  <a href="https://bolla.chrismandel.de" target="_blank" style="color:#a78bfa;font-size:11px;text-decoration:none">bolla.chrismandel.de</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dokumente -->
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #06b6d4">
+              <div style="font-size:12px;font-weight:700;color:#06b6d4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">📁 Dokumente</div>
+              <div style="font-size:10px;color:var(--dim);margin-bottom:12px">D:\OneDrive\Dokumente\Bolla\claud code - openclaw Doku\</div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/bolla_recovery.docx" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:11px">📄 <span style="flex:1">bolla_recovery.docx</span><span style="color:var(--dim);font-size:10px">Recovery</span></a>
+                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/mein_ki_setup.docx" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:11px">📄 <span style="flex:1">mein_ki_setup.docx</span><span style="color:var(--dim);font-size:10px">KI-Setup</span></a>
+                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/was_ist_bolla.docx" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:11px">📄 <span style="flex:1">was_ist_bolla.docx</span><span style="color:var(--dim);font-size:10px">Übersicht</span></a>
+                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/Bolla-Notfallplan.pdf" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:11px">📋 <span style="flex:1">Bolla-Notfallplan.pdf</span><span style="color:var(--dim);font-size:10px">Notfall</span></a>
+                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/Bolla-MD-Erklaerung.pdf" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:11px">📋 <span style="flex:1">Bolla-MD-Erklaerung.pdf</span><span style="color:var(--dim);font-size:10px">Memory</span></a>
+                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/KI-Modelle-Jarvis-Bolla optimiert.pdf" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:11px">📋 <span style="flex:1">KI-Modelle-Jarvis-Bolla.pdf</span><span style="color:var(--dim);font-size:10px">Modelle</span></a>
+                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/ssh-tunnel-erklaerung.pdf" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:11px">📋 <span style="flex:1">ssh-tunnel-erklaerung.pdf</span><span style="color:var(--dim);font-size:10px">SSH Tunnel</span></a>
+                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/ADB-Erklaerung.pdf" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:11px">📋 <span style="flex:1">ADB-Erklaerung.pdf</span><span style="color:var(--dim);font-size:10px">ADB Setup</span></a>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ═══ ZEILE 3: Cron Jobs (voll) ═══ -->
+          <div style="margin-bottom:14px">
+
+            <!-- Cron Jobs -->
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #f59e0b">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                <div style="font-size:12px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:1px">⏰ Automatische Jobs — Crontab</div>
+                <div style="display:flex;gap:6px;margin-left:auto;font-size:10px">
+                  <span style="padding:2px 8px;background:rgba(239,68,68,0.15);border-radius:10px;color:#ef4444">🔴 @reboot: 5</span>
+                  <span style="padding:2px 8px;background:rgba(34,197,94,0.12);border-radius:10px;color:#22c55e">🟢 alle 2 Min: 2</span>
+                  <span style="padding:2px 8px;background:rgba(129,140,248,0.12);border-radius:10px;color:#818cf8">🟣 alle 15 Min: 2</span>
+                  <span style="padding:2px 8px;background:rgba(6,182,212,0.12);border-radius:10px;color:#06b6d4">🔵 täglich: 3</span>
+                  <span style="padding:2px 8px;background:rgba(167,139,250,0.12);border-radius:10px;color:#a78bfa">🟪 wöchentlich: 5</span>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;font-size:11px">
+                <div style="padding:9px 11px;background:rgba(239,68,68,0.07);border-radius:8px;border-left:3px solid #ef4444"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">🚀 MC API</div><div style="color:var(--dim)">@reboot · Python-Server Port 18790</div></div>
+                <div style="padding:9px 11px;background:rgba(239,68,68,0.07);border-radius:8px;border-left:3px solid #ef4444"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">🚀 Telegram Bot</div><div style="color:var(--dim)">@reboot · Benachrichtigungen von Bolla</div></div>
+                <div style="padding:9px 11px;background:rgba(239,68,68,0.07);border-radius:8px;border-left:3px solid #ef4444"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">🚀 Cloudflare Tunnel</div><div style="color:var(--dim)">@reboot · bolla.chrismandel.de</div></div>
+                <div style="padding:9px 11px;background:rgba(239,68,68,0.07);border-radius:8px;border-left:3px solid #ef4444"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">🚀 SSH-Dienst</div><div style="color:var(--dim)">@reboot · Surface-Tunnels</div></div>
+                <div style="padding:9px 11px;background:rgba(239,68,68,0.07);border-radius:8px;border-left:3px solid #ef4444"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">🚀 Pro Watchdog</div><div style="color:var(--dim)">@reboot · Port 2223 wiederherst.</div></div>
+                <div style="padding:9px 11px;background:rgba(34,197,94,0.07);border-radius:8px;border-left:3px solid #22c55e"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">⏱ CF Healthcheck</div><div style="color:var(--dim)">alle 2 Min · Tunnel-Überwachung</div></div>
+                <div style="padding:9px 11px;background:rgba(34,197,94,0.07);border-radius:8px;border-left:3px solid #22c55e"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">⏱ Soul Watcher</div><div style="color:var(--dim)">alle 2 Min · SOUL.md Änderungen</div></div>
+                <div style="padding:9px 11px;background:rgba(129,140,248,0.07);border-radius:8px;border-left:3px solid #818cf8"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">⏱ Spam Watcher</div><div style="color:var(--dim)">alle 15 Min · Outlook + wtnet</div></div>
+                <div style="padding:9px 11px;background:rgba(129,140,248,0.07);border-radius:8px;border-left:3px solid #818cf8"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">⏱ Obsidian Sync</div><div style="color:var(--dim)">alle 15 Min · Notizen-Vault</div></div>
+                <div style="padding:9px 11px;background:rgba(6,182,212,0.07);border-radius:8px;border-left:3px solid #06b6d4"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">🌅 Mail → Kalender</div><div style="color:var(--dim)">07:00 tägl. · Termine + Anfahrt</div></div>
+                <div style="padding:9px 11px;background:rgba(6,182,212,0.07);border-radius:8px;border-left:3px solid #06b6d4"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">🌅 MC Redesigns</div><div style="color:var(--dim)">07:00 tägl. · 2 Mockups via Claude</div></div>
+                <div style="padding:9px 11px;background:rgba(6,182,212,0.07);border-radius:8px;border-left:3px solid #06b6d4"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">🌅 Claude Desktop</div><div style="color:var(--dim)">10:00 tägl. · prüft Win-App-Release</div></div>
+                <div style="padding:9px 11px;background:rgba(167,139,250,0.07);border-radius:8px;border-left:3px solid #a78bfa"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">📅 Newsletter Scan</div><div style="color:var(--dim)">Mo 05:00 · unbekannte Absender</div></div>
+                <div style="padding:9px 11px;background:rgba(167,139,250,0.07);border-radius:8px;border-left:3px solid #a78bfa"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">📅 Aufnahmen-Org.</div><div style="color:var(--dim)">So 03:00 · Dedup + Gemini-Sort</div></div>
+                <div style="padding:9px 11px;background:rgba(167,139,250,0.07);border-radius:8px;border-left:3px solid #a78bfa"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">📅 Wochen-Backup</div><div style="color:var(--dim)">So 17:00 · Workspace + GitHub</div></div>
+                <div style="padding:9px 11px;background:rgba(167,139,250,0.07);border-radius:8px;border-left:3px solid #a78bfa"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">📅 Outlook↔Gmail</div><div style="color:var(--dim)">So 18:00 · Kontakte + Fotos Sync</div></div>
+                <div style="padding:9px 11px;background:rgba(167,139,250,0.07);border-radius:8px;border-left:3px solid #a78bfa"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">📅 Outlook Backup</div><div style="color:var(--dim)">So 19:00 · Mails + Kalender → JSON</div></div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ═══ ZEILE 4: Was ist Bolla + Was ist .md ═══ -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+
+            <!-- Was ist Bolla -->
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid var(--accent)">
+              <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">🤖 Was ist Claude Code / Bolla?</div>
+              <div style="display:flex;gap:14px;align-items:flex-start">
+                <img src="/api/bolla/avatar" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);flex-shrink:0">
+                <div style="font-size:12px;color:var(--text);line-height:1.7">
+                  <b style="color:var(--bright)">Claude Code</b> ist Anthropics CLI für KI-Automatisierung direkt im Terminal.<br>
+                  <b style="color:var(--bright)">Bolla</b> ist Chris' persönlicher Assistent darauf — seit März 2026, kennt Setup, Vorlieben und Kontext.
+                </div>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/was_ist_bolla.docx" target="_blank" style="padding:5px 10px;background:rgba(255,102,153,0.1);border:1px solid rgba(255,102,153,0.3);border-radius:6px;color:var(--accent);font-size:10px;text-decoration:none">📄 Was ist Bolla.docx</a>
+                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/mein_ki_setup.docx" target="_blank" style="padding:5px 10px;background:rgba(255,102,153,0.1);border:1px solid rgba(255,102,153,0.3);border-radius:6px;color:var(--accent);font-size:10px;text-decoration:none">📄 Mein KI-Setup.docx</a>
+                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/KI-Modelle-Jarvis-Bolla optimiert.pdf" target="_blank" style="padding:5px 10px;background:rgba(255,102,153,0.1);border:1px solid rgba(255,102,153,0.3);border-radius:6px;color:var(--accent);font-size:10px;text-decoration:none">📋 KI-Modelle.pdf</a>
+              </div>
+            </div>
+
+            <!-- Was ist .md -->
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #34d399">
+              <div style="font-size:12px;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">📝 Was ist eine .md-Datei?</div>
+              <div style="font-size:12px;color:var(--text);line-height:1.7;margin-bottom:10px"><b style="color:var(--bright)">Markdown</b> — einfacher Text mit Formatierung. Keine Word-Datei, kein HTML.</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;margin-bottom:10px">
+                <div style="padding:5px 8px;background:rgba(52,211,153,0.07);border-radius:5px"><code style="color:#34d399"># Titel</code> <span style="color:var(--dim)">→ Überschrift</span></div>
+                <div style="padding:5px 8px;background:rgba(52,211,153,0.07);border-radius:5px"><code style="color:#34d399">**fett**</code> <span style="color:var(--dim)">→ <b>fett</b></span></div>
+                <div style="padding:5px 8px;background:rgba(52,211,153,0.07);border-radius:5px"><code style="color:#34d399">- Punkt</code> <span style="color:var(--dim)">→ Liste</span></div>
+                <div style="padding:5px 8px;background:rgba(52,211,153,0.07);border-radius:5px"><code style="color:#34d399">`code`</code> <span style="color:var(--dim)">→ inline</span></div>
+              </div>
+              <div style="padding:8px 10px;background:rgba(52,211,153,0.07);border-radius:6px;font-size:11px;color:var(--dim)">
+                Bolla nutzt .md für: <b style="color:var(--text)">CLAUDE.md</b> (Regeln) · <b style="color:var(--text)">MEMORY.md</b> (Index) · <b style="color:var(--text)">Tagesnotizen</b> · <b style="color:var(--text)">Memory-Dateien</b>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
       </div>
 
       <!-- BOLLA -->
@@ -1384,6 +1823,7 @@ const API = '';  // same-origin: lokal via 127.0.0.1:18790, remote via bolla.chr
 function showPage(page) {
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  openSectionForPage(page);
   const item = document.querySelector(`.nav-item[data-page="${page}"]`);
   if (item) item.classList.add('active');
   const pageEl = document.getElementById('page-' + page);
@@ -1394,6 +1834,8 @@ function showPage(page) {
   if (page === 'brain')      initBrain();
   if (page === 'bolla')      loadBollaModel();
   if (page === 'system')     loadSystem();
+  if (page === 'claudecode') loadClaudeCode();
+  if (page === 'korrektur')  initKorrektur();
   if (page === 'robin')      loadRobin();
   if (page === 'geburtstage')loadBirthdays();
   if (page === 'wetter')     loadWeatherFull();
@@ -1434,6 +1876,42 @@ function _closeNavGroup(name) {
   if (header) header.classList.remove('open');
   localStorage.setItem('nav-group-' + name, '0');
 }
+function toggleNavSection(name) {
+  const sec = document.getElementById('nav-sec-' + name);
+  const items = document.getElementById('nav-section-items-' + name);
+  if (!sec || !items) return;
+  const isOpen = sec.classList.contains('open');
+  if (isOpen) {
+    sec.classList.remove('open');
+    items.style.maxHeight = '0';
+    localStorage.setItem('nav-sec-' + name, '0');
+  } else {
+    sec.classList.add('open');
+    items.style.maxHeight = items.scrollHeight + 'px';
+    localStorage.setItem('nav-sec-' + name, '1');
+  }
+}
+
+// Nav-Section beim Navigieren zur richtigen Section automatisch öffnen
+function openSectionForPage(page) {
+  const sectionMap = {
+    dashboard: 'uebersicht', bolla: 'uebersicht',
+    schule: 'arbeit', kalender: 'arbeit', email: 'arbeit', clipboard: 'arbeit', projekte: 'arbeit', urlaub: 'arbeit',
+    robin: 'familie', geburtstage: 'familie',
+    localserver: 'ki', redesigns: 'ki', bildgen: 'ki', suno: 'ki',
+    wetter: 'info', system: 'info', claudecode: 'info', surface: 'info', brain: 'info'
+  };
+  const sec = sectionMap[page];
+  if (sec) {
+    const el = document.getElementById('nav-sec-' + sec);
+    const items = document.getElementById('nav-section-items-' + sec);
+    if (el && items && !el.classList.contains('open')) {
+      el.classList.add('open');
+      items.style.maxHeight = items.scrollHeight + 'px';
+    }
+  }
+}
+
 function toggleNavGroup(name) {
   const items = document.getElementById('nav-group-items-' + name);
   if (!items) return;
@@ -1445,12 +1923,31 @@ function toggleNavGroup(name) {
 }
 // State aus localStorage wiederherstellen
 (function() {
+  // Nav-Groups (Projekte, System)
   ['projekte'].forEach(name => {
     const saved = localStorage.getItem('nav-group-' + name);
     if (saved === '1') _openNavGroup(name);
     else {
       const items = document.getElementById('nav-group-items-' + name);
       if (items) items.style.display = 'none';
+    }
+  });
+
+  // Nav-Sections: max-height korrekt setzen
+  ['uebersicht', 'arbeit', 'familie', 'ki', 'info'].forEach(name => {
+    const sec = document.getElementById('nav-sec-' + name);
+    const items = document.getElementById('nav-section-items-' + name);
+    if (!sec || !items) return;
+    const saved = localStorage.getItem('nav-sec-' + name);
+    // Standard: uebersicht, arbeit, familie offen — ki und info zu
+    const defaultOpen = ['uebersicht', 'arbeit', 'familie'].includes(name);
+    const isOpen = saved !== null ? saved === '1' : defaultOpen;
+    if (isOpen) {
+      sec.classList.add('open');
+      items.style.maxHeight = '600px'; // großzügig, Animation nicht nötig beim Init
+    } else {
+      sec.classList.remove('open');
+      items.style.maxHeight = '0';
     }
   });
 })();
@@ -2350,6 +2847,211 @@ async function loadBollaModel() {
   } catch (e) {}
 }
 
+// ═══ KI-KORREKTUR ══════════════════════════════════════════════════════════════
+let korrFileB64 = null, korrMediaType = null, korrLastResult = null;
+
+function initKorrektur() {
+  // Felder mit Beispielwerten vorbefüllen wenn leer
+  const f = document.getElementById('korr-fach');
+  const k = document.getElementById('korr-klasse');
+  const t = document.getElementById('korr-thema');
+  if (!f.value) f.value = 'WiPo';
+  if (!k.value) k.value = '9';
+  if (!t.value) t.value = 'Soziale Marktwirtschaft';
+}
+
+function korrHandleDrop(e) {
+  e.preventDefault();
+  document.getElementById('korr-dropzone').style.borderColor = 'var(--border)';
+  const file = e.dataTransfer.files[0];
+  if (file) korrHandleFile(file);
+}
+
+function korrHandleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const result = e.target.result;
+    const b64 = result.split(',')[1];
+    korrFileB64 = b64;
+    korrMediaType = file.type || 'image/jpeg';
+    // Vorschau
+    document.getElementById('korr-drop-hint').style.display = 'none';
+    const wrap = document.getElementById('korr-preview-wrap');
+    wrap.style.display = 'block';
+    document.getElementById('korr-file-name').textContent = file.name;
+    if (file.type.startsWith('image/')) {
+      const img = document.getElementById('korr-preview');
+      img.src = result;
+      img.style.display = 'block';
+    } else {
+      document.getElementById('korr-preview').style.display = 'none';
+      document.getElementById('korr-drop-hint').innerHTML =
+        '<span style="font-size:32px">📄</span>';
+      document.getElementById('korr-drop-hint').style.display = 'block';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function korrAnalyze() {
+  const klasse   = document.getElementById('korr-klasse').value.trim();
+  const fach     = document.getElementById('korr-fach').value.trim();
+  const thema    = document.getElementById('korr-thema').value.trim();
+  const erwartung = document.getElementById('korr-erwartung').value.trim();
+
+  if (!korrFileB64) { korrSetStatus('⚠️ Bitte zuerst eine Datei hochladen', 'var(--warning)'); return; }
+  if (!klasse || !fach) { korrSetStatus('⚠️ Klassenstufe und Fach sind Pflichtfelder', 'var(--warning)'); return; }
+
+  document.getElementById('korr-btn').disabled = true;
+  document.getElementById('korr-placeholder').style.display = 'none';
+  document.getElementById('korr-result').style.display = 'none';
+  korrSetStatus('⏳ Claude liest und korrigiert die Arbeit …', 'var(--dim)');
+
+  try {
+    const resp = await fetch('/api/korrektur/analyze', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ image_b64: korrFileB64, media_type: korrMediaType,
+                              klassenstufe: klasse, fach, thema, erwartung }),
+      signal: AbortSignal.timeout(90000)
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+
+    korrLastResult = data.result;
+    korrSetStatus('✅ Fertig', 'var(--success)');
+    korrShowResult(data.result);
+  } catch(err) {
+    korrSetStatus('❌ Fehler: ' + err.message, 'var(--danger)');
+    document.getElementById('korr-placeholder').style.display = 'block';
+  }
+  document.getElementById('korr-btn').disabled = false;
+}
+
+function korrShowResult(text) {
+  document.getElementById('korr-result').style.display = 'block';
+  document.getElementById('korr-text').textContent = text;
+
+  // Note aus Text extrahieren
+  const noteMatch = text.match(/(?:Empfohlene Note|Note)[:\s*]+\[?([1-6](?:[,\.]\d)?)\]?/i)
+                 || text.match(/\*\*(?:Empfohlene )?Note[:\s]+([1-6](?:[,\.]\d)?)\*\*/i);
+  const note = noteMatch ? noteMatch[1] : '–';
+  const badge = document.getElementById('korr-note-badge');
+  badge.textContent = note;
+  const colors = {'1':'#22c55e','2':'#84cc16','3':'#f59e0b','4':'#f97316','5':'#ef4444','6':'#dc2626'};
+  const c = colors[note[0]] || '#818cf8';
+  badge.style.background = `linear-gradient(135deg,${c},${c}99)`;
+  badge.style.boxShadow = `0 0 24px ${c}66`;
+
+  const notenText = {'1':'Sehr gut','2':'Gut','3':'Befriedigend','4':'Ausreichend','5':'Mangelhaft','6':'Ungenügend'};
+  document.getElementById('korr-note-label').textContent = notenText[note[0]] || 'Korrektur abgeschlossen';
+
+  const pct = text.match(/(\d{1,3})\s*%/);
+  if (pct) document.getElementById('korr-note-sub').textContent = pct[1] + '% der Punkte erreicht';
+}
+
+function korrSetStatus(msg, color) {
+  const s = document.getElementById('korr-status');
+  s.textContent = msg; s.style.color = color;
+}
+
+function korrSave() {
+  if (!korrLastResult) return;
+  const klasse = document.getElementById('korr-klasse').value || 'Korrektur';
+  const fach   = document.getElementById('korr-fach').value || '';
+  const blob = new Blob([korrLastResult], {type: 'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Korrektur_${fach}_${klasse}_${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+}
+
+async function korrDownloadDocx() {
+  if (!korrLastResult) return;
+  const klasse = document.getElementById('korr-klasse').value || 'Korrektur';
+  const fach   = document.getElementById('korr-fach').value || '';
+  const thema  = document.getElementById('korr-thema').value || '';
+  korrSetStatus('⏳ Word-Dokument wird erstellt …', 'var(--dim)');
+  try {
+    const resp = await fetch('/api/korrektur/docx', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ result: korrLastResult, klassenstufe: klasse, fach, thema }),
+      signal: AbortSignal.timeout(30000)
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    const bytes = atob(data.docx_b64);
+    const arr = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+    const blob = new Blob([arr], {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `Korrektur_${fach}_${klasse}_${new Date().toISOString().slice(0,10)}.docx`;
+    a.click();
+    korrSetStatus('✅ Word-Dokument heruntergeladen', 'var(--success)');
+  } catch(err) {
+    korrSetStatus('❌ Word-Fehler: ' + err.message, 'var(--danger)');
+  }
+}
+
+async function korrDownloadAnnotated() {
+  if (!korrLastResult || !korrFileB64) return;
+  korrSetStatus('⏳ Annotierter Scan wird erstellt …', 'var(--dim)');
+  try {
+    const resp = await fetch('/api/korrektur/annotate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ image_b64: korrFileB64, media_type: korrMediaType, result: korrLastResult }),
+      signal: AbortSignal.timeout(30000)
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    const klasse = document.getElementById('korr-klasse').value || '';
+    const fach   = document.getElementById('korr-fach').value || '';
+    const bytes = atob(data.image_b64);
+    const arr = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+    const blob = new Blob([arr], {type: 'image/jpeg'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `Scan_annotiert_${fach}_${klasse}_${new Date().toISOString().slice(0,10)}.jpg`;
+    a.click();
+    korrSetStatus('✅ Scan heruntergeladen', 'var(--success)');
+  } catch(err) {
+    korrSetStatus('❌ Scan-Fehler: ' + err.message, 'var(--danger)');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function loadClaudeCode() {
+  const badge = document.getElementById('cc-version-badge');
+  const status = document.getElementById('cc-status-content');
+  try {
+    const [sysR, tokR] = await Promise.all([fetch(API+'/api/sysinfo'), fetch(API+'/api/tokenusage')]);
+    const sys = await sysR.json();
+    const tok = await tokR.json();
+    if (badge) badge.textContent = 'Claude Code ' + (sys.claude_version || '–');
+    const mcOk = sys.mission_control === 'running';
+    const tgOk = sys.telegram === 'running';
+    const cfOk = sys.cloudflared === 'running';
+    const row = (label, val, color) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)"><span style="color:var(--dim)">${label}</span><span style="color:${color||'var(--bright)'};">${val}</span></div>`;
+    status.innerHTML =
+      row('Claude Code', sys.claude_version || '–', 'var(--success)') +
+      row('WSL / Ubuntu', 'aktiv ✓', 'var(--success)') +
+      row('Mission Control API', mcOk ? '🟢 läuft' : '🔴 gestoppt', mcOk ? 'var(--success)' : 'var(--danger)') +
+      row('Cloudflare Tunnel', cfOk ? '🟢 aktiv' : '🔴 gestoppt', cfOk ? 'var(--success)' : 'var(--danger)') +
+      row('Telegram Bot', tgOk ? '🟢 aktiv' : '🔴 gestoppt', tgOk ? 'var(--success)' : 'var(--danger)') +
+      row('Token heute', tok.today ? tok.today.toLocaleString('de-DE') : '–', 'var(--text)') +
+      row('Letztes Backup', sys.last_backup || '–', 'var(--dim)');
+  } catch(e) {
+    if (badge) badge.textContent = 'Offline';
+    if (status) status.innerHTML = '<div style="color:var(--danger)">API nicht erreichbar</div>';
+  }
+}
+
 async function loadSystem() {
   try {
     const [sysR, tokR, histR] = await Promise.all([fetch(API+'/api/sysinfo'), fetch(API+'/api/tokenusage'), fetch(API+'/api/tokenusage/history')]);
@@ -2767,7 +3469,7 @@ function camToggle() {
       camVideo.srcObject = stream;
       camVideo.autoplay = true;
       camVideo.playsInline = true;
-      camVideo.style.cssText = 'max-height:200px;max-width:100%;border-radius:4px;display:block';
+      camVideo.style.cssText = 'max-height:400px;max-width:100%;border-radius:4px;display:block';
 
       preview.innerHTML = '';
       preview.style.display = 'block';
@@ -3465,7 +4167,7 @@ async function loadProHealth() {
 async function loadStudioHealth() {
   const el = document.getElementById('studio-health-body');
   try {
-    const r = await fetch(API + '/api/surfaces/studio', {signal: AbortSignal.timeout(6000)});
+    const r = await fetch(API + '/api/surfaces/studio', {signal: AbortSignal.timeout(35000)});
     const d = await r.json();
     const ramPct = d.ramTotal ? Math.round(d.ramUsed / d.ramTotal * 100) : 0;
     const diskPct = d.diskTotal ? Math.round((d.diskTotal - d.diskFree) / d.diskTotal * 100) : 0;
