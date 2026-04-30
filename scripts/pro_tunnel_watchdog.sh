@@ -6,7 +6,7 @@ while true; do
             -o ConnectTimeout=10 \
             -o StrictHostKeyChecking=no \
             ernst@192.168.178.41 \
-            "start /B ssh -i C:/ProgramData/Bolla/id_ed25519 -N -R 2223:localhost:22 -p 2200 -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=3 bolla@192.168.178.29" 2>/dev/null
+            "ssh -i C:/ProgramData/Bolla/id_ed25519 -N -R 2223:localhost:22 -p 2200 -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=3 bolla@192.168.178.29 &" 2>/dev/null
     fi
     sleep 30
 done

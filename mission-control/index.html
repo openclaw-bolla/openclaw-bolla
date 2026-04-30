@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mission Control — Chris</title>
 <link rel="icon" href="/favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
 /* ===== RESET ===== */
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -221,6 +224,26 @@ html, body {
 }
 
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes greetShimmer {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes greetFloat {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+#greeting-banner { background-size: 200% 200%; animation: greetShimmer 6s ease infinite; text-align:right; font-family:'Orbitron',sans-serif; }
+#greeting-banner .greet-emoji { display:inline-block; animation: greetFloat 3s ease-in-out infinite; }
+#greeting-banner .greet-stars { position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;overflow:hidden; }
+#greeting-banner .greet-stars span { position:absolute;border-radius:50%; }
+#greeting-banner .greet-clouds { position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;overflow:hidden; }
+#greeting-banner .greet-clouds span { position:absolute;font-size:46px;opacity:0.35; }
+#greeting-banner .greet-birds { position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;overflow:hidden; }
+#greeting-banner .greet-birds span { position:absolute;font-size:34px;opacity:0.55; }
+@keyframes cloudDrift { from{left:105%} to{left:-10%} }
+@keyframes birdFly    { from{left:-10%} to{left:105%} }
+@keyframes starDrift  { from{left:100%} to{left:0%} }
 
 /* ===== MAIN ===== */
 #main {
@@ -308,8 +331,6 @@ html, body {
 .card:hover { background: var(--card2); }
 
 .grid-4 > .card {
-  max-height: 220px;
-  overflow: hidden;
   padding: 10px 14px;
 }
 
@@ -669,22 +690,23 @@ html, body {
 
       <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
-        <div class="grid-4" style="margin-bottom:14px">
-          <div class="card">
+        <div class="grid-4" style="margin-bottom:14px;align-items:stretch">
+          <div class="card" style="grid-column:1;grid-row:1/3">
             <div class="card-head"><span class="card-title">Nächste Termine</span><span class="card-icon">📅</span></div>
             <ul class="event-list" id="upcoming-events"><li class="loading">Lade...</li></ul>
           </div>
-          <div class="card">
+          <div class="card" style="grid-column:2;grid-row:1/3">
             <div class="card-head"><span class="card-title">E-Mail</span><span class="card-icon">📧</span></div>
             <div style="font-size:38px;font-weight:300;color:var(--bright)" id="mail-count">—</div>
             <div style="font-size:13px;color:var(--dim)">ungelesene Mails</div>
             <div id="recent-mails" style="margin-top:10px"></div>
           </div>
-          <div class="card">
+          <div id="greeting-banner" style="grid-column:3/5;grid-row:1;border-radius:10px;padding:16px 22px;display:flex;flex-direction:column;justify-content:center;min-height:80px;position:relative;overflow:hidden"></div>
+          <div class="card" style="grid-column:3;grid-row:2">
             <div class="card-head"><span class="card-title">Wetter Norderstedt</span><span class="card-icon">🌤️</span></div>
             <div id="weather-dash"><div class="loading">Lade...</div></div>
           </div>
-          <div class="card">
+          <div class="card" style="grid-column:4;grid-row:2">
             <div class="card-head"><span class="card-title">Schule — Nächste</span><span class="card-icon">🏫</span></div>
             <div id="next-class"><div class="loading">Lade...</div></div>
           </div>
@@ -753,6 +775,10 @@ html, body {
             </div>
 
             <!-- Felder Zeile 1 -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;min-height:20px">
+              <div id="korr-meta-badge" style="font-size:11px;color:var(--accent)"></div>
+              <button onclick="korrReset()" id="korr-reset-btn" style="display:none;padding:3px 10px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--dim);font-size:11px;cursor:pointer">✕ Neu</button>
+            </div>
             <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:12px;margin-bottom:12px">
               <div>
                 <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px">Klassenstufe *</label>
@@ -808,45 +834,27 @@ html, body {
           <!-- Ergebnis -->
           <div id="korr-result" style="display:none">
             <!-- Note-Badge -->
-            <div style="display:flex;align-items:center;gap:20px;margin-bottom:16px;
-                        background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:18px 24px">
-              <div id="korr-note-badge" style="width:72px;height:72px;border-radius:50%;flex-shrink:0;
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;
+                        background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 16px">
+              <div id="korr-note-badge" style="width:52px;height:52px;border-radius:50%;flex-shrink:0;
                    background:linear-gradient(135deg,#22c55e,#06b6d4);
                    display:flex;align-items:center;justify-content:center;
-                   font-size:32px;font-weight:900;color:white;
-                   box-shadow:0 0 24px rgba(34,197,94,0.4)">–</div>
-              <div style="flex:1">
-                <div id="korr-note-label" style="font-size:16px;font-weight:700;color:var(--bright);margin-bottom:4px">Korrektur abgeschlossen</div>
-                <div id="korr-note-sub" style="font-size:12px;color:var(--dim)"></div>
+                   font-size:24px;font-weight:900;color:white;
+                   box-shadow:0 0 16px rgba(34,197,94,0.4)">–</div>
+              <div style="flex:1;min-width:0">
+                <div id="korr-note-label" style="font-size:13px;font-weight:700;color:var(--bright)">Korrektur abgeschlossen</div>
+                <div id="korr-note-sub" style="font-size:11px;color:var(--dim)"></div>
               </div>
-              <div style="display:flex;flex-wrap:wrap;gap:8px">
-                <button onclick="korrAnalyze()"
-                  style="padding:9px 14px;background:var(--card);border:1px solid var(--border);
-                         border-radius:8px;color:var(--dim);font-size:12px;cursor:pointer;font-weight:600">
-                  🔄 Neu
-                </button>
-                <button onclick="korrDownloadDocx()"
-                  style="padding:9px 14px;background:var(--card);border:1px solid var(--border);
-                         border-radius:8px;color:#818cf8;font-size:12px;cursor:pointer;font-weight:600">
-                  📄 Word
-                </button>
-                <button onclick="korrDownloadAnnotated()"
-                  style="padding:9px 14px;background:var(--card);border:1px solid var(--border);
-                         border-radius:8px;color:#f59e0b;font-size:12px;cursor:pointer;font-weight:600">
-                  🖼️ Scan
-                </button>
-                <button onclick="korrSave()"
-                  style="padding:9px 14px;background:var(--card);border:1px solid var(--border);
-                         border-radius:8px;color:var(--accent);font-size:12px;cursor:pointer;font-weight:600">
-                  💾 TXT
-                </button>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <button onclick="korrReset()" style="padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);font-size:11px;cursor:pointer">🔄 Neu</button>
+                <button onclick="korrDownloadDocx()" style="padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:#818cf8;font-size:11px;cursor:pointer">📄 Word</button>
+                <button onclick="korrDownloadAnnotated()" style="padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:#f59e0b;font-size:11px;cursor:pointer">🖼️ Scan</button>
+                <button onclick="korrSave()" style="padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:11px;cursor:pointer">💾 TXT</button>
               </div>
             </div>
             <!-- Korrektur-Text -->
-            <div style="background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:20px">
-              <div style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;
-                          letter-spacing:1px;margin-bottom:12px">Detaillierte Korrektur</div>
-              <div id="korr-text" style="font-size:13px;color:var(--text);line-height:1.8;white-space:pre-wrap"></div>
+            <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 16px">
+              <div id="korr-text" style="font-size:11px;color:var(--text);line-height:1.45"></div>
             </div>
           </div>
 
@@ -926,7 +934,7 @@ html, body {
               <div style="font-size:12px;color:var(--dim);margin-top:3px">Persönlicher KI-Assistent · Aktiv seit März 2026 · WSL Ubuntu auf Windows 11</div>
               <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
                 <span id="cc-version-badge" style="padding:4px 10px;background:rgba(124,58,237,0.2);border:1px solid rgba(124,58,237,0.5);border-radius:20px;font-size:11px;color:#a78bfa">⏳ Version lädt...</span>
-                <span style="padding:4px 10px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);border-radius:20px;font-size:11px;color:#22c55e">⏰ 17 Cron Jobs aktiv</span>
+                <span id="cc-cron-badge" style="padding:4px 10px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);border-radius:20px;font-size:11px;color:#22c55e">⏰ … Cron Jobs</span>
                 <span style="padding:4px 10px;background:rgba(6,182,212,0.15);border:1px solid rgba(6,182,212,0.4);border-radius:20px;font-size:11px;color:#06b6d4">📁 /home/bolla/workspace</span>
                 <span style="padding:4px 10px;background:rgba(255,102,153,0.15);border:1px solid rgba(255,102,153,0.4);border-radius:20px;font-size:11px;color:var(--accent)">🌐 bolla.chrismandel.de</span>
               </div>
@@ -1071,40 +1079,9 @@ html, body {
 
           <!-- ═══ ZEILE 3: Cron Jobs (voll) ═══ -->
           <div style="margin-bottom:14px">
-
-            <!-- Cron Jobs -->
-            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #f59e0b">
-              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-                <div style="font-size:12px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:1px">⏰ Automatische Jobs — Crontab</div>
-                <div style="display:flex;gap:6px;margin-left:auto;font-size:10px">
-                  <span style="padding:2px 8px;background:rgba(239,68,68,0.15);border-radius:10px;color:#ef4444">🔴 @reboot: 5</span>
-                  <span style="padding:2px 8px;background:rgba(34,197,94,0.12);border-radius:10px;color:#22c55e">🟢 alle 2 Min: 2</span>
-                  <span style="padding:2px 8px;background:rgba(129,140,248,0.12);border-radius:10px;color:#818cf8">🟣 alle 15 Min: 2</span>
-                  <span style="padding:2px 8px;background:rgba(6,182,212,0.12);border-radius:10px;color:#06b6d4">🔵 täglich: 3</span>
-                  <span style="padding:2px 8px;background:rgba(167,139,250,0.12);border-radius:10px;color:#a78bfa">🟪 wöchentlich: 5</span>
-                </div>
-              </div>
-              <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;font-size:11px">
-                <div style="padding:9px 11px;background:rgba(239,68,68,0.07);border-radius:8px;border-left:3px solid #ef4444"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">🚀 MC API</div><div style="color:var(--dim)">@reboot · Python-Server Port 18790</div></div>
-                <div style="padding:9px 11px;background:rgba(239,68,68,0.07);border-radius:8px;border-left:3px solid #ef4444"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">🚀 Telegram Bot</div><div style="color:var(--dim)">@reboot · Benachrichtigungen von Bolla</div></div>
-                <div style="padding:9px 11px;background:rgba(239,68,68,0.07);border-radius:8px;border-left:3px solid #ef4444"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">🚀 Cloudflare Tunnel</div><div style="color:var(--dim)">@reboot · bolla.chrismandel.de</div></div>
-                <div style="padding:9px 11px;background:rgba(239,68,68,0.07);border-radius:8px;border-left:3px solid #ef4444"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">🚀 SSH-Dienst</div><div style="color:var(--dim)">@reboot · Surface-Tunnels</div></div>
-                <div style="padding:9px 11px;background:rgba(239,68,68,0.07);border-radius:8px;border-left:3px solid #ef4444"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">🚀 Pro Watchdog</div><div style="color:var(--dim)">@reboot · Port 2223 wiederherst.</div></div>
-                <div style="padding:9px 11px;background:rgba(34,197,94,0.07);border-radius:8px;border-left:3px solid #22c55e"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">⏱ CF Healthcheck</div><div style="color:var(--dim)">alle 2 Min · Tunnel-Überwachung</div></div>
-                <div style="padding:9px 11px;background:rgba(34,197,94,0.07);border-radius:8px;border-left:3px solid #22c55e"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">⏱ Soul Watcher</div><div style="color:var(--dim)">alle 2 Min · SOUL.md Änderungen</div></div>
-                <div style="padding:9px 11px;background:rgba(129,140,248,0.07);border-radius:8px;border-left:3px solid #818cf8"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">⏱ Spam Watcher</div><div style="color:var(--dim)">alle 15 Min · Outlook + wtnet</div></div>
-                <div style="padding:9px 11px;background:rgba(129,140,248,0.07);border-radius:8px;border-left:3px solid #818cf8"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">⏱ Obsidian Sync</div><div style="color:var(--dim)">alle 15 Min · Notizen-Vault</div></div>
-                <div style="padding:9px 11px;background:rgba(6,182,212,0.07);border-radius:8px;border-left:3px solid #06b6d4"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">🌅 Mail → Kalender</div><div style="color:var(--dim)">07:00 tägl. · Termine + Anfahrt</div></div>
-                <div style="padding:9px 11px;background:rgba(6,182,212,0.07);border-radius:8px;border-left:3px solid #06b6d4"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">🌅 MC Redesigns</div><div style="color:var(--dim)">07:00 tägl. · 2 Mockups via Claude</div></div>
-                <div style="padding:9px 11px;background:rgba(6,182,212,0.07);border-radius:8px;border-left:3px solid #06b6d4"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">🌅 Claude Desktop</div><div style="color:var(--dim)">10:00 tägl. · prüft Win-App-Release</div></div>
-                <div style="padding:9px 11px;background:rgba(167,139,250,0.07);border-radius:8px;border-left:3px solid #a78bfa"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">📅 Newsletter Scan</div><div style="color:var(--dim)">Mo 05:00 · unbekannte Absender</div></div>
-                <div style="padding:9px 11px;background:rgba(167,139,250,0.07);border-radius:8px;border-left:3px solid #a78bfa"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">📅 Aufnahmen-Org.</div><div style="color:var(--dim)">So 03:00 · Dedup + Gemini-Sort</div></div>
-                <div style="padding:9px 11px;background:rgba(167,139,250,0.07);border-radius:8px;border-left:3px solid #a78bfa"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">📅 Wochen-Backup</div><div style="color:var(--dim)">So 17:00 · Workspace + GitHub</div></div>
-                <div style="padding:9px 11px;background:rgba(167,139,250,0.07);border-radius:8px;border-left:3px solid #a78bfa"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">📅 Outlook↔Gmail</div><div style="color:var(--dim)">So 18:00 · Kontakte + Fotos Sync</div></div>
-                <div style="padding:9px 11px;background:rgba(167,139,250,0.07);border-radius:8px;border-left:3px solid #a78bfa"><div style="color:var(--bright);font-weight:600;margin-bottom:2px">📅 Outlook Backup</div><div style="color:var(--dim)">So 19:00 · Mails + Kalender → JSON</div></div>
-              </div>
+            <div id="cron-jobs-container" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #f59e0b">
+              <div style="color:var(--dim);font-size:12px">Lade Cron Jobs…</div>
             </div>
-
           </div>
 
           <!-- ═══ ZEILE 4: Was ist Bolla + Was ist .md ═══ -->
@@ -1248,11 +1225,16 @@ html, body {
             <span style="font-size:20px">🖥️</span>
             <span style="font-size:14px;font-weight:700;color:var(--bright);text-transform:uppercase;letter-spacing:1.5px">Surface Studio</span>
           </div>
-          <div class="grid-2" style="margin-bottom:28px">
+          <div class="grid-2" style="margin-bottom:28px;grid-template-columns:1fr 1fr 1fr">
             <!-- Studio Health -->
             <div class="card" id="studio-health-card">
               <div class="card-head"><span class="card-title">Health</span><span class="card-icon">🖥️</span></div>
               <div id="studio-health-body"><div class="loading">Lade...</div></div>
+            </div>
+            <!-- Studio Energie -->
+            <div class="card">
+              <div class="card-head"><span class="card-title">Energie</span><span class="card-icon">⚡</span></div>
+              <div id="energie-studio"><div class="loading">Lade...</div></div>
             </div>
             <!-- Studio Funktionen -->
             <div class="card">
@@ -1272,11 +1254,16 @@ html, body {
             <span style="font-size:14px;font-weight:700;color:var(--bright);text-transform:uppercase;letter-spacing:1.5px">Surface Book</span>
             <span id="book-online-badge" style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--card2);color:var(--dim);margin-left:4px">●  prüfe...</span>
           </div>
-          <div class="grid-2" style="margin-bottom:28px">
+          <div class="grid-2" style="margin-bottom:28px;grid-template-columns:1fr 1fr 1fr">
             <!-- Book Health -->
             <div class="card" id="book-health-card">
               <div class="card-head"><span class="card-title">Health</span><span class="card-icon">💻</span></div>
               <div id="book-health-body"><div class="loading">Lade...</div></div>
+            </div>
+            <!-- Book Energie -->
+            <div class="card">
+              <div class="card-head"><span class="card-title">Energie</span><span class="card-icon">⚡</span></div>
+              <div id="energie-book"><div class="loading">Lade...</div></div>
             </div>
             <!-- Book Funktionen -->
             <div class="card">
@@ -1296,11 +1283,16 @@ html, body {
             <span style="font-size:14px;font-weight:700;color:var(--bright);text-transform:uppercase;letter-spacing:1.5px">Surface Pro</span>
             <span id="pro-online-badge" style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--card2);color:var(--dim);margin-left:4px">●  prüfe...</span>
           </div>
-          <div class="grid-2" style="margin-bottom:28px">
+          <div class="grid-2" style="margin-bottom:28px;grid-template-columns:1fr 1fr 1fr">
             <!-- Pro Health -->
             <div class="card" id="pro-health-card">
               <div class="card-head"><span class="card-title">Health</span><span class="card-icon">💻</span></div>
               <div id="pro-health-body"><div class="loading">Lade...</div></div>
+            </div>
+            <!-- Pro Energie -->
+            <div class="card">
+              <div class="card-head"><span class="card-title">Energie</span><span class="card-icon">⚡</span></div>
+              <div id="energie-pro"><div class="loading">Lade...</div></div>
             </div>
             <!-- Pro Funktionen -->
             <div class="card">
@@ -1660,21 +1652,31 @@ html, body {
       <div class="page" id="page-suno">
 
         <!-- Header -->
-        <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:18px">
-          <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#ff6699);
-                      display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🎵</div>
-          <div>
-            <div style="font-size:18px;font-weight:700;color:var(--bright)">Suno Songs</div>
-            <div style="font-size:11px;color:var(--dim)">Songs zu Themen wie Geburtstag, Abschied, Party …</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+          <div style="width:40px;flex-shrink:0"></div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#ff6699);
+                        display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🎵</div>
+            <div>
+              <div style="font-size:18px;font-weight:700;color:var(--bright)">Suno Songs</div>
+              <div style="font-size:11px;color:var(--dim)">Songs zu Themen wie Geburtstag, Abschied, Party …</div>
+            </div>
           </div>
+          <button onclick="sunoReset()"
+            style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--dim);
+                   padding:7px 14px;cursor:pointer;font-size:12px;white-space:nowrap;transition:all .2s"
+            onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'"
+            onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">
+            🗑️ Zurücksetzen
+          </button>
         </div>
 
         <!-- Formular (zentriert, ~60% Breite) -->
         <div style="max-width:65%;margin:0 auto 20px auto;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px">
           <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px">
             <div>
-              <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:3px">Name *</label>
-              <input id="suno-name" type="text" placeholder="z.B. Maximilian"
+              <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:3px">Name / Gruppe <span style="font-weight:400;opacity:0.6">(optional)</span></label>
+              <input id="suno-name" type="text" placeholder="z.B. Max · Klasse 7a · oder leer lassen"
                 style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
                        color:var(--text);padding:8px 10px;font-size:13px;outline:none;font-family:inherit">
             </div>
@@ -1846,7 +1848,7 @@ function showPage(page) {
   if (page === 'clipboard')  loadClipboard();
   if (page === 'projekte')   loadProjekte();
   // Wenn es ein Unter-Tab einer Gruppe ist → Gruppe aufklappen
-  const groups = ['projekte'];
+  const groups = ['projekte', 'schule', 'system'];
   for (const g of groups) {
     const groupItems = document.getElementById('nav-group-items-' + g);
     if (groupItems && groupItems.querySelector(`[data-page="${page}"]`)) {
@@ -1924,7 +1926,7 @@ function toggleNavGroup(name) {
 // State aus localStorage wiederherstellen
 (function() {
   // Nav-Groups (Projekte, System)
-  ['projekte'].forEach(name => {
+  ['projekte', 'schule', 'system'].forEach(name => {
     const saved = localStorage.getItem('nav-group-' + name);
     if (saved === '1') _openNavGroup(name);
     else {
@@ -2082,28 +2084,62 @@ async function loadCalendarData() {
   }
 }
 
+function _parseEvDate(dateStr) {
+  const parts = (dateStr||'').split('.').map(Number);
+  if (parts.length < 2) return new Date(9999,0,1);
+  const now = new Date();
+  let year = now.getFullYear();
+  if (parts[1] < now.getMonth() + 1) year++;
+  return new Date(year, parts[1]-1, parts[0]);
+}
+
 function renderDashboardEvents() {
   if (!_events.length) { document.getElementById('upcoming-events').innerHTML = '<li class="loading">Keine Termine</li>'; return; }
+  const today = new Date(); today.setHours(0,0,0,0);
+  const cutoff = new Date(today); cutoff.setDate(today.getDate() + 8);
+  const filtered = _events.filter(ev => {
+    const d = _parseEvDate(ev.date);
+    return d >= today && d < cutoff;
+  }).slice(0, 6);
+  const shown = filtered.length ? filtered : _events.slice(0, 3);
   let h = '';
-  _events.slice(0,6).forEach(ev => {
+  shown.forEach(ev => {
     const rgb = ev.color || '120,144,156';
     h += `<li class="event-item" style="background:rgba(${rgb},0.18);border:1px solid rgba(${rgb},0.55)">` +
          `<div class="event-dot" style="background:rgb(${rgb})"></div>` +
-         `<div class="event-time" style="font-size:14px">${ev.weekday} ${ev.time}</div>` +
-         `<div><div class="event-title" style="font-size:15px">${ev.title}</div><div class="event-meta">${ev.date}</div></div></li>`;
+         `<div class="event-time" style="font-size:13px">${ev.weekday} ${ev.time}</div>` +
+         `<div><div class="event-title" style="font-size:13px">${ev.title}</div><div class="event-meta">${ev.date}</div></div></li>`;
   });
+  if (!filtered.length) h = '<li style="color:var(--dim);font-size:12px;list-style:none;padding:4px 0">Keine Termine in den nächsten 4 Tagen</li>' + h;
   document.getElementById('upcoming-events').innerHTML = h;
 }
 
 function renderNextClass() {
-  const next = _events.find(e => e.title.match(/^7[abc]/));
-  if (next) {
-    document.getElementById('next-class').innerHTML = `
-      <div style="font-size:20px;font-weight:300;color:var(--bright)">${next.title}</div>
-      <div style="color:var(--accent);font-size:12px;margin-top:5px">${next.weekday}, ${next.date} · ${next.time}</div>`;
-  } else {
-    document.getElementById('next-class').innerHTML = '<div style="color:var(--dim)">Keine Schultermine bald</div>';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const cutoff = new Date(today); cutoff.setDate(today.getDate() + 7);
+  const schulEvents = _events.filter(ev => {
+    const cat = (ev.category||'').toLowerCase();
+    const d = _parseEvDate(ev.date);
+    return d >= today && d < cutoff && (cat.includes('lessing') || ev.title.match(/^7[abc]/i));
+  });
+  if (!schulEvents.length) {
+    document.getElementById('next-class').innerHTML = '<div style="color:var(--dim);font-size:12px">Keine Schultermine in der nächsten Woche</div>';
+    return;
   }
+  let h = '';
+  schulEvents.forEach(ev => {
+    const rgb = ev.color || '67,160,71';
+    h += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;
+                      background:rgba(${rgb},0.12);border:1px solid rgba(${rgb},0.35);
+                      border-radius:7px;padding:5px 8px">
+      <div style="font-size:11px;color:rgba(${rgb},1);font-weight:700;min-width:52px">${ev.weekday} ${ev.date}</div>
+      <div>
+        <div style="font-size:12px;color:var(--bright);font-weight:600">${ev.title}</div>
+        <div style="font-size:10px;color:var(--dim)">${ev.time}${ev.location ? ' · ' + ev.location : ''}</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('next-class').innerHTML = h;
 }
 
 function loadCalendar() {
@@ -2132,7 +2168,7 @@ async function loadEmailData() {
     const d = await r.json();
     document.getElementById('mail-count').textContent = d.count;
     if (d.count > 0) { document.getElementById('mail-badge').style.display='inline'; document.getElementById('mail-badge').textContent=d.count; }
-    const preview = [...(d.messages||[]), ...(d.recent||[])].slice(0,3);
+    const preview = [...(d.messages||[]), ...(d.recent||[])].slice(0,4);
     let h = preview.map(m => mailRow(m, true)).join('');
     if (!h) h = `<div style="font-size:12px;color:var(--dim);padding:4px 0">Keine neuen Mails</div>`;
     document.getElementById('recent-mails').innerHTML = h;
@@ -2469,12 +2505,30 @@ async function loadWeather() {
     const temp = Math.round(c.temperature_2m);
     const icon = WMO_ICONS[c.weather_code] || '🌤️';
     const desc = WMO_DESC[c.weather_code] || '';
+    const daily = d.daily;
+    let forecastHtml = '';
+    for (let i = 1; i <= 3; i++) {
+      const fday = new Date(daily.time[i]).toLocaleDateString('de-DE',{weekday:'short'});
+      const ficon = WMO_ICONS[daily.weather_code[i]] || '🌤️';
+      const fmin = Math.round(daily.temperature_2m_min[i]);
+      const fmax = Math.round(daily.temperature_2m_max[i]);
+      forecastHtml += `<div style="text-align:center;flex:1">
+        <div style="font-size:11px;color:var(--dim)">${fday}</div>
+        <div style="font-size:18px">${ficon}</div>
+        <div style="font-size:11px;color:var(--bright)">${fmax}°</div>
+        <div style="font-size:10px;color:var(--dim)">${fmin}°</div>
+      </div>`;
+    }
     document.getElementById('weather-dash').innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:30px">${icon}</span>
-        <div><div style="font-size:22px;font-weight:300;color:var(--bright)">${temp}°C</div><div style="font-size:11px;color:var(--dim)">${desc}</div></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="font-size:34px">${icon}</span>
+        <div>
+          <div style="font-size:26px;font-weight:300;color:var(--bright);line-height:1">${temp}°C</div>
+          <div style="font-size:11px;color:var(--dim)">${desc}</div>
+          <div style="font-size:11px;color:var(--dim);margin-top:2px">Gefühlt ${Math.round(c.apparent_temperature)}°C · 💧${c.relative_humidity_2m}% · 💨${Math.round(c.wind_speed_10m)} km/h</div>
+        </div>
       </div>
-      <div style="font-size:11px;color:var(--dim);margin-top:6px">Gefühlt ${Math.round(c.apparent_temperature)}°C · 💧${c.relative_humidity_2m}% · 💨${Math.round(c.wind_speed_10m)} km/h</div>`;
+      <div style="display:flex;gap:4px;border-top:1px solid var(--border);padding-top:8px">${forecastHtml}</div>`;
   } catch(e) {}
 }
 
@@ -2867,10 +2921,35 @@ function korrHandleDrop(e) {
   if (file) korrHandleFile(file);
 }
 
+function korrReset() {
+  korrFileB64 = null;
+  korrMediaType = null;
+  // Scan-Vorschau zurücksetzen
+  document.getElementById('korr-preview-wrap').style.display = 'none';
+  document.getElementById('korr-preview').src = '';
+  document.getElementById('korr-file-name').textContent = '';
+  document.getElementById('korr-drop-hint').style.display = 'block';
+  document.getElementById('korr-drop-hint').innerHTML = '📂 Scan hier ablegen oder klicken';
+  document.getElementById('korr-file').value = '';
+  // Felder leeren
+  document.getElementById('korr-klasse').value = '';
+  document.getElementById('korr-fach').value = '';
+  document.getElementById('korr-thema').value = '';
+  document.getElementById('korr-erwartung').value = '';
+  document.getElementById('korr-meta-badge').textContent = '';
+  const rb = document.getElementById('korr-reset-btn');
+  if (rb) rb.style.display = 'none';
+  // Ergebnis ausblenden
+  document.getElementById('korr-result').style.display = 'none';
+  document.getElementById('korr-placeholder').style.display = 'block';
+  korrSetStatus('', '');
+  document.getElementById('korr-btn').disabled = false;
+}
+
 function korrHandleFile(file) {
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = (e) => {
+  reader.onload = async (e) => {
     const result = e.target.result;
     const b64 = result.split(',')[1];
     korrFileB64 = b64;
@@ -2886,9 +2965,36 @@ function korrHandleFile(file) {
       img.style.display = 'block';
     } else {
       document.getElementById('korr-preview').style.display = 'none';
-      document.getElementById('korr-drop-hint').innerHTML =
-        '<span style="font-size:32px">📄</span>';
+      document.getElementById('korr-drop-hint').innerHTML = '<span style="font-size:32px">📄</span>';
       document.getElementById('korr-drop-hint').style.display = 'block';
+    }
+    // Reset-Button einblenden
+    const resetBtn = document.getElementById('korr-reset-btn');
+    if (resetBtn) resetBtn.style.display = 'inline-block';
+    // Auto-Fill Metadaten via Claude
+    const badge = document.getElementById('korr-meta-badge');
+    if (badge) badge.textContent = '⏳ Klassenstufe, Fach & Thema werden erkannt — einen Moment…';
+    try {
+      const r = await fetch(API + '/api/korrektur/meta', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({image_b64: b64}),
+        signal: AbortSignal.timeout(35000)
+      });
+      const m = await r.json();
+      if (m.klasse || m.fach || m.thema) {
+        const kEl = document.getElementById('korr-klasse');
+        const fEl = document.getElementById('korr-fach');
+        const tEl = document.getElementById('korr-thema');
+        if (m.klasse) kEl.value = m.klasse;
+        if (m.fach)   fEl.value = m.fach;
+        if (m.thema)  tEl.value = m.thema;
+        if (badge) badge.textContent = '🤖 automatisch erkannt — überschreibbar';
+      } else {
+        if (badge) badge.textContent = '';
+      }
+    } catch(e) {
+      if (badge) badge.textContent = '';
     }
   };
   reader.readAsDataURL(file);
@@ -2929,9 +3035,40 @@ async function korrAnalyze() {
   document.getElementById('korr-btn').disabled = false;
 }
 
+function korrMarkdown(text) {
+  const lines = text.split('\n');
+  let html = '', inTable = false;
+  for (const line of lines) {
+    const h = line.match(/^(#{1,3})\s*(.*)/);
+    if (line.startsWith('|') && line.includes('|',1)) {
+      const cells = line.split('|').slice(1,-1).map(c=>c.trim());
+      if (cells.every(c=>/^[-: ]+$/.test(c))) continue;
+      if (!inTable) { html += '<table style="width:100%;border-collapse:collapse;margin:4px 0 6px">'; inTable=true; }
+      html += '<tr>' + cells.map(c=>`<td style="border:1px solid var(--border);padding:2px 6px;font-size:10px">${c}</td>`).join('') + '</tr>';
+    } else {
+      if (inTable) { html += '</table>'; inTable=false; }
+      if (h) {
+        const sz = h[1].length===1?'12px':'11px', col = h[1].length===1?'var(--bright)':'var(--accent)';
+        html += `<div style="font-size:${sz};font-weight:700;color:${col};margin:7px 0 1px">${h[2]}</div>`;
+      } else if (!line.trim()) {
+        html += '<div style="height:3px"></div>';
+      } else {
+        let col='var(--text)';
+        if (line.includes('✅')) col='#22c55e';
+        else if (line.includes('❌')) col='#ef4444';
+        else if (line.includes('➕')) col='#f59e0b';
+        const escaped = line.replace(/&/g,'&amp;').replace(/</g,'&lt;')
+          .replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>');
+        html += `<div style="color:${col};padding:1px 0">${escaped}</div>`;
+      }
+    }
+  }
+  if (inTable) html += '</table>';
+  return html;
+}
 function korrShowResult(text) {
   document.getElementById('korr-result').style.display = 'block';
-  document.getElementById('korr-text').textContent = text;
+  document.getElementById('korr-text').innerHTML = korrMarkdown(text);
 
   // Note aus Text extrahieren
   const noteMatch = text.match(/(?:Empfohlene Note|Note)[:\s*]+\[?([1-6](?:[,\.]\d)?)\]?/i)
@@ -3049,6 +3186,112 @@ async function loadClaudeCode() {
   } catch(e) {
     if (badge) badge.textContent = 'Offline';
     if (status) status.innerHTML = '<div style="color:var(--danger)">API nicht erreichbar</div>';
+  }
+  loadCronJobs();
+}
+
+const CRON_META = {
+  'mission_control_api':  {name:'MC API',           desc:'Python-Server Port 18790'},
+  'telegram_bot':         {name:'Telegram Bot',      desc:'Benachrichtigungen von Bolla'},
+  'cloudflared':          {name:'Cloudflare Tunnel', desc:'bolla.chrismandel.de'},
+  'ssh':                  {name:'SSH-Dienst',        desc:'Surface-Tunnels'},
+  'pro_tunnel_watchdog':  {name:'Pro Watchdog',      desc:'Port 2223 wiederherst.'},
+  'cloudflared_healthcheck':{name:'CF Healthcheck',  desc:'Tunnel-Überwachung'},
+  'soul_watcher':         {name:'Soul Watcher',      desc:'SOUL.md Änderungen'},
+  'spam_watcher':         {name:'Spam Watcher',      desc:'Outlook + wtnet'},
+  'sync_obsidian_vault':  {name:'Obsidian Sync',     desc:'Notizen-Vault'},
+  'mail_to_calendar':     {name:'Mail → Kalender',   desc:'Termine + Anfahrt'},
+  'generate_redesigns':   {name:'MC Redesigns',      desc:'2 Mockups via Claude'},
+  'check_claude_desktop': {name:'Claude Desktop',    desc:'prüft Win-App-Release'},
+  'newsletter_scanner':   {name:'Newsletter Scan',   desc:'unbekannte Absender'},
+  'ea_organizer':         {name:'Aufnahmen-Org.',    desc:'Dedup + Gemini-Sort'},
+  'weekly_backup':        {name:'Wochen-Backup',     desc:'Workspace + GitHub'},
+  'outlook_gmail_sync':   {name:'Outlook↔Gmail',     desc:'Kontakte + Fotos Sync'},
+  'outlook_backup':       {name:'Outlook Backup',    desc:'Mails + Kalender → JSON'},
+};
+
+function parseCronSchedule(sched) {
+  if (sched === '@reboot') return {type:'reboot', label:'@reboot'};
+  const parts = sched.split(' ');
+  if (parts.length < 5) return {type:'other', label:sched};
+  const [min, hr, dom, mon, dow] = parts;
+  if (min.startsWith('*/')) {
+    const n = parseInt(min.slice(2));
+    return {type:'interval', n, label:`alle ${n} Min`};
+  }
+  const days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const hh = hr.padStart(2,'0') + ':' + min.padStart(2,'0');
+  if (dom === '*' && mon === '*') {
+    if (dow !== '*') return {type:'weekly', day:days[parseInt(dow)]||dow, label:`${days[parseInt(dow)]||dow} ${hh}`};
+    return {type:'daily', label:`tägl. ${hh}`};
+  }
+  return {type:'other', label:sched};
+}
+
+function cronCardStyle(type) {
+  const map = {
+    reboot:   {color:'#ef4444', bg:'rgba(239,68,68,0.07)'},
+    interval: {color:'#22c55e', bg:'rgba(34,197,94,0.07)'},
+    daily:    {color:'#06b6d4', bg:'rgba(6,182,212,0.07)'},
+    weekly:   {color:'#a78bfa', bg:'rgba(167,139,250,0.07)'},
+    other:    {color:'#94a3b8', bg:'rgba(148,163,184,0.07)'},
+  };
+  return map[type] || map.other;
+}
+
+function cronScriptKey(cmd) {
+  const m = cmd.match(/\/([^/.\s]+)(?:\.py|\.sh)/) || cmd.match(/(\w+)\s+tunnel/) || cmd.match(/service\s+(\w+)/);
+  return m ? m[1] : null;
+}
+
+async function loadCronJobs() {
+  const container = document.getElementById('cron-jobs-container');
+  if (!container) return;
+  try {
+    const entries = await fetch(API+'/api/crontab').then(r=>r.json());
+    const parsed = entries.map(e => {
+      const sched = parseCronSchedule(e.schedule);
+      const key = cronScriptKey(e.cmd);
+      const meta = (key && CRON_META[key]) || {name: key ? key.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()) : e.cmd.split('/').pop().split(' ')[0], desc: ''};
+      const style = cronCardStyle(sched.type);
+      return {...e, sched, meta, style, key};
+    });
+
+    // Badges zählen
+    const counts = {reboot:0, interval:{}, daily:0, weekly:0, other:0};
+    parsed.forEach(e => {
+      if (e.sched.type === 'reboot') counts.reboot++;
+      else if (e.sched.type === 'interval') counts.interval[e.sched.n] = (counts.interval[e.sched.n]||0)+1;
+      else if (e.sched.type === 'daily') counts.daily++;
+      else if (e.sched.type === 'weekly') counts.weekly++;
+      else counts.other++;
+    });
+    const totalCount = parsed.length;
+    const cronBadge = document.getElementById('cc-cron-badge');
+    if (cronBadge) cronBadge.textContent = `⏰ ${totalCount} Cron Jobs aktiv`;
+
+    const badgesHtml = [
+      counts.reboot > 0 ? `<span style="padding:2px 8px;background:rgba(239,68,68,0.15);border-radius:10px;color:#ef4444">🔴 @reboot: ${counts.reboot}</span>` : '',
+      ...Object.entries(counts.interval).map(([n,c]) => `<span style="padding:2px 8px;background:rgba(34,197,94,0.12);border-radius:10px;color:#22c55e">🟢 alle ${n} Min: ${c}</span>`),
+      counts.daily > 0 ? `<span style="padding:2px 8px;background:rgba(6,182,212,0.12);border-radius:10px;color:#06b6d4">🔵 täglich: ${counts.daily}</span>` : '',
+      counts.weekly > 0 ? `<span style="padding:2px 8px;background:rgba(167,139,250,0.12);border-radius:10px;color:#a78bfa">🟪 wöchentlich: ${counts.weekly}</span>` : '',
+      counts.other > 0 ? `<span style="padding:2px 8px;background:rgba(148,163,184,0.12);border-radius:10px;color:#94a3b8">⚪ sonstige: ${counts.other}</span>` : '',
+    ].filter(Boolean).join('');
+
+    const cardsHtml = parsed.map(e => `
+      <div style="padding:9px 11px;background:${e.style.bg};border-radius:8px;border-left:3px solid ${e.style.color}" title="${escHtml(e.cmd)}">
+        <div style="color:var(--bright);font-weight:600;margin-bottom:2px">${escHtml(e.meta.name)}</div>
+        <div style="color:var(--dim)">${escHtml(e.sched.label)}${e.meta.desc ? ' · ' + escHtml(e.meta.desc) : ''}</div>
+      </div>`).join('');
+
+    container.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:1px">⏰ Automatische Jobs — Crontab</div>
+        <div style="display:flex;gap:6px;margin-left:auto;font-size:10px;flex-wrap:wrap">${badgesHtml}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;font-size:11px">${cardsHtml}</div>`;
+  } catch(e) {
+    if (container) container.innerHTML = `<div style="color:var(--danger);font-size:12px">Fehler: ${escHtml(e.message)}</div>`;
   }
 }
 
@@ -3373,6 +3616,55 @@ async function initialLoad(attempt=0) {
 }
 initialLoad();
 
+function renderGreeting() {
+  const el = document.getElementById('greeting-banner');
+  if (!el) return;
+  const h = new Date().getHours();
+  const now = new Date().toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+  let text, emoji, grad, color, sub, stars='';
+
+  if (h >= 5 && h < 9) {
+    text='Guten Morgen'; emoji='☀️';
+    grad='linear-gradient(135deg,#f7971e,#ffd200,#f7971e)';
+    color='#5a3000'; sub='Schön, dass du da bist!';
+    const birds=[{top:2,dur:15,delay:0},{top:55,dur:21,delay:-4},{top:28,dur:18,delay:-9},{top:12,dur:23,delay:-14},{top:42,dur:16,delay:-18},{top:65,dur:20,delay:-6}];
+    stars='<div class="greet-birds">'
+      + birds.map(b=>`<span style="top:${b.top}%;animation:birdFly ${b.dur}s linear ${b.delay}s infinite">🐦</span>`).join('')
+      + '</div>';
+  } else if (h >= 9 && h < 18) {
+    text='Guten Tag'; emoji='🌤️';
+    grad='linear-gradient(135deg,#1a6fc4,#38b6ff,#1a6fc4)';
+    color='#fff'; sub='Viel Energie für heute!';
+    const clouds=[{top:0,dur:22,delay:0},{top:52,dur:28,delay:-7},{top:25,dur:25,delay:-14},{top:65,dur:30,delay:-20},{top:38,dur:24,delay:-4},{top:10,dur:27,delay:-18}];
+    stars='<div class="greet-clouds">'
+      + clouds.map(c=>`<span style="top:${c.top}%;animation:cloudDrift ${c.dur}s linear ${c.delay}s infinite">☁️</span>`).join('')
+      + '</div>';
+  } else if (h >= 18 && h < 22) {
+    text='Guten Abend'; emoji='🌅';
+    grad='linear-gradient(135deg,#c0392b,#e67e22,#f39c12,#c0392b)';
+    color='#fff'; sub='Schön entspannter Abend!';
+  } else {
+    text='Gute Nacht'; emoji='🌙';
+    grad='linear-gradient(135deg,#0f0c29,#302b63,#24243e,#0f0c29)';
+    color='#c8b4ff'; sub='Schlaf gut, Chris!';
+    const stdata=[[18,45,-4,3,0.30],[62,62,-22,2,0.37],[14,45,-30,4,0.55],[48,58,-10,2,0.42],[28,68,-40,3,0.65],[72,44,-20,4,0.72],[82,54,-44,2,0.58],[38,72,-15,3,0.79]];
+    stars='<div class="greet-stars">'
+      + stdata.map(([top,dd,dl,sz,op],i)=>`<span style="top:${top}%;width:${sz}px;height:${sz}px;background:#fff;opacity:${op};animation:pulse 2s ease-in-out ${(i*0.3).toFixed(1)}s infinite, starDrift ${dd}s linear ${dl}s infinite"></span>`).join('')
+      + '</div>';
+  }
+
+  el.style.background = grad;
+  el.style.color = color;
+  el.innerHTML = `${stars}
+    <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;opacity:0.75;margin-bottom:8px">${now} Uhr</div>
+    <div style="font-size:38px;font-weight:800;letter-spacing:0.5px;line-height:1.1">
+      ${text}, Chris! <span class="greet-emoji">${emoji}</span>
+    </div>
+    <div style="font-size:15px;opacity:0.8;margin-top:8px">${sub}</div>`;
+}
+renderGreeting();
+setInterval(renderGreeting, 60*1000);
+
 setInterval(()=>{loadCalendarData();loadEmailData();}, 5*60*1000);
 setInterval(loadWeather, 30*60*1000);
 setInterval(loadSystem, 30*1000);
@@ -3459,7 +3751,7 @@ function camToggle() {
     return;
   }
 
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } })
+  navigator.mediaDevices.getUserMedia({ video: true })
     .then(stream => {
       camStream = stream;
       btn.style.background = 'var(--success)';
@@ -3511,7 +3803,7 @@ function camSnap() {
   camVideo = null;
 
   const preview = document.getElementById('bolla-img-preview');
-  preview.innerHTML = `<img id="bolla-img-thumb" src="${dataUrl}" style="max-height:120px;max-width:100%;border-radius:4px"><button onclick="bollaRemoveImg()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:12px;line-height:22px;text-align:center">✕</button>`;
+  preview.innerHTML = `<img id="bolla-img-thumb" src="${dataUrl}" style="max-height:400px;max-width:100%;border-radius:4px"><button onclick="bollaRemoveImg()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:12px;line-height:22px;text-align:center">✕</button>`;
   document.getElementById('bolla-cam-btn').style.background = 'var(--card)';
   document.getElementById('bolla-cam-btn').style.color = 'var(--dim)';
 }
@@ -3641,13 +3933,12 @@ async function bollaSend() {
 
   if (!bollaSessionId) chat.innerHTML = '';
 
-  let msgHtml = '';
-  if (bollaImageB64) msgHtml += `<img src="data:image/png;base64,${bollaImageB64}" style="max-height:150px;max-width:100%;border-radius:6px;margin-bottom:6px;display:block">`;
-  if (text) msgHtml += escHtml(text);
-  const userDiv = document.createElement('div');
-  userDiv.style.cssText = 'margin:12px 0;padding:10px 14px;background:rgba(33,150,243,0.1);border-radius:8px;border-left:3px solid var(--accent2)';
-  userDiv.innerHTML = `<span style="color:var(--accent);font-weight:600;font-size:12px">CHRIS</span><div style="margin-top:4px">${msgHtml}</div>`;
-  chat.appendChild(userDiv);
+  if (bollaImageB64) {
+    const imgDiv = document.createElement('div');
+    imgDiv.style.cssText = 'margin:12px 0';
+    imgDiv.innerHTML = `<img src="data:image/png;base64,${bollaImageB64}" style="max-height:150px;max-width:100%;border-radius:6px;display:block">`;
+    chat.appendChild(imgDiv);
+  }
 
   const sendImage = bollaImageB64;
   input.value = '';
@@ -4056,6 +4347,8 @@ function adbRender() {
   loadBookHealth();
   loadProHealth();
   loadStudioHealth();
+  loadSurfaceEnergie();
+  setInterval(loadSurfaceEnergie, 5 * 60 * 1000);
 }
 
 function surfaceBar(pct, color) {
@@ -4097,7 +4390,7 @@ async function loadBookHealth() {
     if (!d.online) {
       badge.textContent = '● Offline';
       badge.style.cssText = 'font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(248,113,113,0.15);color:#f87171;margin-left:4px';
-      el.innerHTML = `<div style="color:#f87171;font-size:13px">● Tunnel nicht erreichbar</div>`;
+      el.innerHTML = `<div style="color:#f87171;font-size:13px">😴 Schläft oder Offline</div>`;
       return;
     }
     badge.textContent = '● Online';
@@ -4136,7 +4429,7 @@ async function loadProHealth() {
     if (!d.online) {
       badge.textContent = '● Offline';
       badge.style.cssText = 'font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(248,113,113,0.15);color:#f87171;margin-left:4px';
-      el.innerHTML = `<div style="color:#f87171;font-size:13px">● Tunnel nicht erreichbar</div>`;
+      el.innerHTML = `<div style="color:#f87171;font-size:13px">😴 Schläft oder Offline</div>`;
       return;
     }
     badge.textContent = '● Online';
@@ -4161,6 +4454,143 @@ async function loadProHealth() {
   } catch(e) {
     badge.textContent = '● Fehler';
     el.innerHTML = `<div style="color:#f87171;font-size:13px">Fehler: ${e.message}</div>`;
+  }
+}
+
+function energieHistoryPush(device, watt) {
+  if (watt == null || watt <= 0) return;
+  const key = `energie-history-${device}`;
+  const hist = JSON.parse(localStorage.getItem(key) || '[]');
+  hist.push({ts: Date.now(), w: watt});
+  const cutoff = Date.now() - 65 * 60 * 1000;
+  localStorage.setItem(key, JSON.stringify(hist.filter(e => e.ts >= cutoff)));
+}
+function energieAvg1h(device) {
+  const hist = JSON.parse(localStorage.getItem(`energie-history-${device}`) || '[]');
+  const cutoff = Date.now() - 60 * 60 * 1000;
+  const recent = hist.filter(e => e.ts >= cutoff);
+  if (!recent.length) return null;
+  return Math.round(recent.reduce((s, e) => s + e.w, 0) / recent.length * 10) / 10;
+}
+function energieBatBar(pct, label) {
+  if (pct < 0) return '';
+  const c = pct > 50 ? '#22c55e' : pct > 20 ? '#f59e0b' : '#ef4444';
+  return `<div style="margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:3px">
+      <span>${label}</span><span style="color:${c};font-weight:700">${pct}%</span>
+    </div>
+    <div style="background:rgba(255,255,255,0.08);border-radius:4px;height:6px">
+      <div style="width:${pct}%;background:${c};border-radius:4px;height:6px;transition:width 0.5s"></div>
+    </div>
+  </div>`;
+}
+
+function energieRender(el, d, device) {
+  if (!d || !d.online) {
+    el.innerHTML = '<div style="color:var(--dim);font-size:12px">😴 Schläft / Offline</div>';
+    return;
+  }
+  const hasBat = d.bat1Pct >= 0 || d.bat2Pct >= 0;
+  const plugged = d.powerOnline;
+  const refs = JSON.parse(localStorage.getItem(`energie-ref-${device}`) || '{}');
+
+  let html = '';
+
+  if (hasBat) {
+    // Laptop: Akku + Watt-Anzeige
+    if (!plugged && d.dischargeW > 0) energieHistoryPush(device, d.dischargeW);
+    const avg = energieAvg1h(device);
+    const watt = plugged ? (d.chargeW > 0 ? `+${d.chargeW}W laden` : 'Netz, voll') : `${d.dischargeW}W`;
+    const wattColor = plugged ? '#22c55e' : d.dischargeW > 15 ? '#ef4444' : d.dischargeW > 6 ? '#f59e0b' : '#22c55e';
+
+    // Gesperrt-Status (automatisch erkannt)
+    if (d.locked != null) {
+      const lc = d.locked ? '#f59e0b' : '#4ade80';
+      const lt = d.locked ? '🔒 Gesperrt' : '🔓 Aktiv';
+      html += `<div style="font-size:11px;color:${lc};font-weight:600;margin-bottom:6px">${lt}</div>`;
+      // Automatisch Gesperrt-Referenz speichern
+      if (d.locked && d.dischargeW > 0 && refs['gesperrt'] == null)
+        energieSaveRef(device, 'gesperrt', d.dischargeW);
+    }
+
+    if (d.bat1Pct >= 0) html += energieBatBar(d.bat1Pct, device === 'book' ? 'Akku Clipboard' : 'Akku');
+    if (d.bat2Pct >= 0) html += energieBatBar(d.bat2Pct, 'Akku Base');
+    html += `<div style="font-size:13px;font-weight:700;color:${wattColor};margin-bottom:2px">${plugged ? '🔌' : '🔋'} ${watt}${avg != null && !plugged ? `<span style="font-size:10px;font-weight:400;color:var(--dim);margin-left:6px">Ø 1h: ${avg}W</span>` : ''}</div>`;
+    if (d.voltV > 0) html += `<div style="font-size:11px;color:var(--dim);margin-bottom:4px">Spannung: ${d.voltV}V</div>`;
+    if (d.cpuTempC > 0) html += `<div style="font-size:11px;color:var(--dim);margin-bottom:4px">🌡️ CPU ${d.cpuTempC}°C</div>`;
+    html += `<div style="font-size:11px;color:var(--dim);margin-bottom:8px">⚙️ ${d.powerPlan || '?'} · CPU ${d.cpu ?? '?'}%</div>`;
+
+    // Referenzwerte
+    html += `<div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Referenzwerte</div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:6px">`;
+    const refLabels = {last:'Aktiv',leerlauf:'Leerlauf',gesperrt:'Gesperrt'};
+    Object.entries(refLabels).forEach(([k,label]) => {
+      const r = refs[k];
+      const isCurrent = (k === 'gesperrt' && d.locked) || (k === 'last' && !d.locked);
+      html += `<div style="display:flex;justify-content:space-between;font-size:11px">
+        <span style="color:var(--dim)">${label}${isCurrent?' <span style="color:#f59e0b;font-size:9px">●</span>':''}</span>
+        <span style="color:var(--bright)">${r != null ? r + 'W' : '—'}</span></div>`;
+    });
+    html += `</div><div style="display:flex;gap:4px;flex-wrap:wrap">`;
+    Object.keys(refLabels).forEach(k => {
+      html += `<button onclick="energieSaveRef('${device}','${k}',${d.dischargeW||0})" style="padding:3px 7px;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:5px;color:var(--dim);font-size:10px;cursor:pointer">📋 ${refLabels[k]}</button>`;
+    });
+    html += `</div>`;
+
+  } else {
+    // Desktop (Studio): CPU/GPU/Temp strukturiert
+    const ramPct = d.ramTotal ? Math.round(d.ramUsed/d.ramTotal*100) : 0;
+    html += `<div style="margin-bottom:8px">`;
+    html += `<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="color:var(--dim)">CPU</span><span style="color:var(--bright);font-weight:600">${d.cpu ?? '?'}%${d.cpuTempC>0?' · '+d.cpuTempC+'°C':''}</span></div>`;
+    html += `<div style="background:rgba(255,255,255,0.08);border-radius:4px;height:5px"><div style="background:${(d.cpu||0)>80?'#ef4444':(d.cpu||0)>50?'#f59e0b':'#60a5fa'};width:${d.cpu||0}%;height:5px;border-radius:4px;transition:width .4s"></div></div>`;
+    html += `</div>`;
+    if (d.ramTotal) {
+      html += `<div style="margin-bottom:8px">`;
+      html += `<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="color:var(--dim)">RAM</span><span style="color:var(--bright);font-weight:600">${Math.round(d.ramUsed/1024)}/${Math.round(d.ramTotal/1024)} GB</span></div>`;
+      html += `<div style="background:rgba(255,255,255,0.08);border-radius:4px;height:5px"><div style="background:${ramPct>85?'#ef4444':ramPct>60?'#f59e0b':'#4ade80'};width:${ramPct}%;height:5px;border-radius:4px;transition:width .4s"></div></div>`;
+      html += `</div>`;
+    }
+    if (d.gpuName) html += `<div style="font-size:11px;color:var(--dim);margin-bottom:4px">🎮 ${d.gpuName}</div>`;
+    html += `<div style="font-size:11px;color:var(--dim)">⚙️ ${d.powerPlan || '?'}</div>`;
+
+    // Studio: Referenzwerte (nur Aktiv/Leerlauf, kein Gesperrt)
+    html += `<div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:8px 0 3px">Referenzwerte (W Schätzung)</div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:6px">`;
+    ['last','leerlauf'].forEach(k => {
+      const r = refs[k];
+      html += `<div style="display:flex;justify-content:space-between;font-size:11px">
+        <span style="color:var(--dim)">${k==='last'?'Aktiv':'Leerlauf'}</span>
+        <span style="color:var(--bright)">${r != null ? r + 'W' : '—'}</span></div>`;
+    });
+    html += `</div><div style="display:flex;gap:4px">`;
+    ['last','leerlauf'].forEach(k => {
+      html += `<button onclick="energieSaveRef('studio','${k}',0)" style="padding:3px 7px;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:5px;color:var(--dim);font-size:10px;cursor:pointer" title="Manuell eintragen">✏️ ${k==='last'?'Aktiv':'Leerlauf'}</button>`;
+    });
+    html += `</div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+function energieSaveRef(device, label, watt) {
+  const refs = JSON.parse(localStorage.getItem(`energie-ref-${device}`) || '{}');
+  refs[label] = watt;
+  localStorage.setItem(`energie-ref-${device}`, JSON.stringify(refs));
+  loadSurfaceEnergie();
+}
+
+async function loadSurfaceEnergie() {
+  try {
+    const r = await fetch(API + '/api/surfaces/energie', {signal: AbortSignal.timeout(20000)});
+    const d = await r.json();
+    energieRender(document.getElementById('energie-studio'), d.studio, 'studio');
+    energieRender(document.getElementById('energie-book'), d.book, 'book');
+    energieRender(document.getElementById('energie-pro'), d.pro, 'pro');
+  } catch(e) {
+    ['studio','book','pro'].forEach(dev => {
+      const el = document.getElementById('energie-' + dev);
+      if (el) el.innerHTML = '<div style="color:var(--dim);font-size:12px">Fehler</div>';
+    });
   }
 }
 
@@ -4892,6 +5322,13 @@ function renderImmoCriteria() {
   if (!body) return;
   const groupLabel = {lage:'📍 Lage', objekt:'🏠 Objekt', optional:'✨ Optional'};
   const groupColor = {lage:'#60a5fa', objekt:'#a78bfa', optional:'#34d399'};
+  const prioMeta = {
+    must:      {color:'#ef4444', bg:'rgba(239,68,68,0.12)',  border:'rgba(239,68,68,0.25)',  title:'Sehr wichtig'},
+    important: {color:'#f97316', bg:'rgba(249,115,22,0.10)', border:'rgba(249,115,22,0.22)', title:'Wichtig'},
+    nice:      {color:'#94a3b8', bg:'rgba(255,255,255,0.04)',border:'rgba(255,255,255,0.06)', title:'Nice to have'}
+  };
+  const prioCycle = {must:'important', important:'nice', nice:'must'};
+  const prios = _immoCriteria.priorities || {};
   body.innerHTML = _criteriaGroups.map(grp => {
     const items = (_immoCriteria[grp] || []);
     return `<div style="margin-bottom:12px">
@@ -4899,18 +5336,39 @@ function renderImmoCriteria() {
       <div id="criteria-group-${grp}" class="criteria-group" data-group="${grp}"
         style="display:flex;flex-direction:column;gap:2px;min-height:24px"
         ondragover="criteriaDragOver(event)" ondrop="criteriaDrop(event,'${grp}')">
-        ${items.map((item,i) => `<div draggable="true" data-group="${grp}" data-idx="${i}"
-          class="criteria-item"
-          ondragstart="criteriaDragStart(event,'${grp}',${i})"
-          ondragend="criteriaDragEnd(event)"
-          style="display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:7px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);cursor:grab;transition:background .1s"
-          onmouseenter="this.style.background='rgba(255,255,255,0.08)'" onmouseleave="this.style.background='rgba(255,255,255,0.04)'">
-          <span style="color:var(--dim);font-size:11px;flex-shrink:0;cursor:grab">⠿</span>
-          <span style="font-size:11px;color:#e2e8f0;line-height:1.4">${escHtml(item)}</span>
-        </div>`).join('')}
+        ${items.map((item,i) => {
+          const p = prios[item] || 'nice';
+          const pm = prioMeta[p];
+          return `<div draggable="true" data-group="${grp}" data-idx="${i}"
+            class="criteria-item"
+            ondragstart="criteriaDragStart(event,'${grp}',${i})"
+            ondragend="criteriaDragEnd(event)"
+            style="display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:7px;background:${pm.bg};border:1px solid ${pm.border};cursor:grab;transition:background .1s"
+            onmouseenter="this.style.background='rgba(255,255,255,0.08)'" onmouseleave="this.style.background='${pm.bg}'">
+            <span style="color:var(--dim);font-size:11px;flex-shrink:0;cursor:grab">⠿</span>
+            <span onclick="criteriaCyclePrio(this)" data-item="${escHtml(item)}"
+              title="${pm.title} – klicken zum Ändern"
+              style="width:8px;height:8px;border-radius:50%;background:${pm.color};flex-shrink:0;cursor:pointer;transition:transform .15s"
+              onmousedown="event.stopPropagation()"
+              onmouseenter="this.style.transform='scale(1.4)'" onmouseleave="this.style.transform='scale(1)'"></span>
+            <span style="font-size:11px;color:#e2e8f0;line-height:1.4;flex:1">${escHtml(item)}</span>
+          </div>`;
+        }).join('')}
       </div>
     </div>`;
-  }).join('');
+  }).join('')
+    + `<div style="font-size:10px;color:var(--dim);margin-top:4px;display:flex;gap:10px">
+        <span>🔴 Sehr wichtig</span><span>🟠 Wichtig</span><span>⚫ Nice to have</span>
+       </div>`;
+}
+async function criteriaCyclePrio(el) {
+  const item = el.dataset.item;
+  const prioMeta = {must:'important', important:'nice', nice:'must'};
+  if (!_immoCriteria.priorities) _immoCriteria.priorities = {};
+  const cur = _immoCriteria.priorities[item] || 'nice';
+  _immoCriteria.priorities[item] = prioMeta[cur];
+  renderImmoCriteria();
+  await fetch(API + '/api/immo-criteria', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(_immoCriteria)});
 }
 
 function criteriaDragStart(e, grp, idx) {
@@ -4921,8 +5379,8 @@ function criteriaDragStart(e, grp, idx) {
 
 function criteriaDragEnd(e) {
   e.target.style.opacity = '';
-  document.querySelectorAll('.criteria-item').forEach(el => el.style.background = 'rgba(255,255,255,0.04)');
   document.querySelectorAll('.criteria-group').forEach(el => el.style.outline = '');
+  renderImmoCriteria();
 }
 
 function criteriaDragOver(e) {
@@ -5717,7 +6175,6 @@ function sunoSetLang(lang) {
 }
 async function sunoGenerate(feedback = '', prevLyrics = '') {
   const name = document.getElementById('suno-name').value.trim();
-  if (!name) { alert('Bitte Name eingeben'); return; }
   const kontext = document.getElementById('suno-kontext').value.trim();
   const kontextFinal = sunoLang === 'en' ? kontext.replace('Herrn Mandel', 'Mister Mandel') : kontext;
   const isDefault = kontext === SUNO_DEFAULT_KONTEXT;
@@ -5765,6 +6222,21 @@ function sunoRefresh() {
       setTimeout(() => btn.textContent = '🔄 Neu', 3000);
     }
   });
+}
+function sunoReset() {
+  document.getElementById('suno-name').value = '';
+  document.getElementById('suno-kontext').value = SUNO_DEFAULT_KONTEXT;
+  document.getElementById('suno-klasse').value = '';
+  document.getElementById('suno-alter').value = '';
+  document.getElementById('suno-geburtstag').value = '';
+  document.getElementById('suno-hit').value = '';
+  document.getElementById('suno-feedback').value = '';
+  sunoLastLyrics = '';
+  sunoSetLang('de');
+  sunoKontextChanged();
+  document.getElementById('suno-result-grid').style.display = 'none';
+  document.getElementById('suno-lyrics-placeholder').style.display = 'block';
+  document.getElementById('suno-status').textContent = '';
 }
 function sunoCopy(id) {
   const el = document.getElementById(id);

@@ -709,14 +709,43 @@ _IMMO_CRITERIA_DEFAULT = {
     ],
 }
 
+def get_crontab():
+    import subprocess as _sp, re as _re3
+    try:
+        r = _sp.run(['crontab', '-l'], capture_output=True, text=True)
+        entries = []
+        for raw in r.stdout.splitlines():
+            line = raw.strip()
+            if not line or line.startswith('#'):
+                continue
+            parts = line.split(None, 5)
+            if not parts:
+                continue
+            if parts[0] == '@reboot':
+                schedule = '@reboot'
+                cmd = ' '.join(parts[1:]) if len(parts) > 1 else ''
+            elif len(parts) >= 6:
+                schedule = ' '.join(parts[:5])
+                cmd = parts[5]
+            else:
+                continue
+            cmd = _re3.sub(r'\s*>>\s*\S+.*$', '', cmd).strip()
+            cmd = _re3.sub(r'\s*2>&1$', '', cmd).strip()
+            entries.append({'schedule': schedule, 'cmd': cmd})
+        return entries
+    except Exception as e:
+        return []
+
 def get_immo_criteria():
     if IMMO_CRITERIA_FILE.exists():
         return json.loads(IMMO_CRITERIA_FILE.read_text())
     return _IMMO_CRITERIA_DEFAULT
 
 def save_immo_criteria(data):
-    allowed = {"lage", "objekt", "optional"}
-    clean = {k: [str(x) for x in v] for k, v in data.items() if k in allowed and isinstance(v, list)}
+    list_keys = {"lage", "objekt", "optional"}
+    clean = {k: [str(x) for x in v] for k, v in data.items() if k in list_keys and isinstance(v, list)}
+    if "priorities" in data and isinstance(data["priorities"], dict):
+        clean["priorities"] = {str(k): str(v) for k, v in data["priorities"].items()}
     IMMO_CRITERIA_FILE.write_text(json.dumps(clean, ensure_ascii=False, indent=2))
     return {"ok": True}
 
@@ -1533,6 +1562,85 @@ def get_studio_health():
     return result
 
 
+def get_energie():
+    import subprocess, base64, json as _json, threading
+
+    PS_BAT = (
+        "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
+        "$bs=@(Get-WmiObject -Namespace root/wmi -Class BatteryStatus);"
+        "$fcs=@(Get-WmiObject -Namespace root/wmi -Class BatteryFullChargedCapacity);"
+        "$b1=if($bs.Count -ge 1){$bs[0]}else{$null};"
+        "$b2=if($bs.Count -ge 2){$bs[1]}else{$null};"
+        "$fc1=if($fcs.Count -ge 1){$fcs[0].FullChargedCapacity}else{0};"
+        "$fc2=if($fcs.Count -ge 2){$fcs[1].FullChargedCapacity}else{0};"
+        "$planStr=powercfg /GetActiveScheme|Out-String;"
+        "$planName=if($planStr -match '\\((.+)\\)'){$matches[1].Trim()}else{'?'};"
+        "$cpu=(Get-WmiObject Win32_Processor).LoadPercentage;"
+        "$locked=[bool](Get-Process LogonUI -ErrorAction SilentlyContinue);"
+        "$tz=Get-WmiObject -Namespace root/WMI -Class MSAcpi_ThermalZoneTemperature -EA SilentlyContinue|Select-Object -First 1;"
+        "$cpuTempC=if($tz){[math]::Round(($tz.CurrentTemperature/10)-273.15,0)}else{-1};"
+        "@{cpu=$cpu;cpuTempC=$cpuTempC;locked=$locked;powerPlan=$planName;"
+        "powerOnline=if($b1){[bool]$b1.PowerOnline}else{$true};"
+        "bat1Pct=if($b1 -and $fc1 -gt 0){[math]::Round($b1.RemainingCapacity/$fc1*100,0)}else{-1};"
+        "bat2Pct=if($b2 -and $fc2 -gt 0){[math]::Round($b2.RemainingCapacity/$fc2*100,0)}else{-1};"
+        "dischargeW=if($b1){[math]::Round($b1.DischargeRate/1000,1)}else{0};"
+        "chargeW=if($b1){[math]::Round($b1.ChargeRate/1000,1)}else{0};"
+        "voltV=if($b1){[math]::Round($b1.Voltage/1000,2)}else{0}}|ConvertTo-Json"
+    )
+    PS_STUDIO = (
+        "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
+        "$planStr=powercfg /GetActiveScheme|Out-String;"
+        "$planName=if($planStr -match '\\((.+)\\)'){$matches[1].Trim()}else{'?'};"
+        "$p=Get-WmiObject Win32_Processor;"
+        "$cpu=$p.LoadPercentage;"
+        "$cpuName=$p.Name;"
+        "$tz=Get-WmiObject -Namespace root/WMI -Class MSAcpi_ThermalZoneTemperature -EA SilentlyContinue|Select-Object -First 1;"
+        "$cpuTempC=if($tz){[math]::Round(($tz.CurrentTemperature/10)-273.15,0)}else{-1};"
+        "$gpu=(Get-WmiObject Win32_VideoController -EA SilentlyContinue|Select-Object -First 1).Name;"
+        "$os=Get-WmiObject Win32_OperatingSystem;"
+        "$rT=[math]::Round($os.TotalVisibleMemorySize/1KB,0);"
+        "$rF=[math]::Round($os.FreePhysicalMemory/1KB,0);"
+        "@{cpu=$cpu;cpuName=$cpuName;cpuTempC=$cpuTempC;gpuName=$gpu;powerPlan=$planName;"
+        "ramUsed=($rT-$rF);ramTotal=$rT;"
+        "powerOnline=$true;bat1Pct=-1;bat2Pct=-1;dischargeW=0;chargeW=0;voltV=0}|ConvertTo-Json"
+    )
+
+    results = {}
+
+    def query_studio():
+        enc = base64.b64encode(PS_STUDIO.encode('utf-16-le')).decode()
+        try:
+            r = subprocess.run(
+                ['/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe', '-EncodedCommand', enc],
+                capture_output=True, timeout=15)
+            s = r.stdout.decode('utf-8', errors='replace') if r.stdout else ''
+            results['studio'] = {**_json.loads(s), 'online': True} if r.returncode == 0 and s.strip() else {'online': False}
+        except Exception:
+            results['studio'] = {'online': False}
+
+    def query_remote(port, key):
+        enc = base64.b64encode(PS_BAT.encode('utf-16-le')).decode()
+        try:
+            r = subprocess.run(
+                ['ssh', '-p', str(port), '-i', '/home/bolla/.ssh/id_ed25519',
+                 '-o', 'ConnectTimeout=5', '-o', 'StrictHostKeyChecking=no',
+                 'ernst@localhost', f'powershell -EncodedCommand {enc}'],
+                capture_output=True, timeout=15)
+            s = r.stdout.decode('utf-8', errors='replace') if r.stdout else ''
+            results[key] = {**_json.loads(s), 'online': True} if r.returncode == 0 and s.strip() else {'online': False}
+        except Exception:
+            results[key] = {'online': False}
+
+    threads = [
+        threading.Thread(target=query_studio),
+        threading.Thread(target=query_remote, args=(2222, 'book')),
+        threading.Thread(target=query_remote, args=(2223, 'pro')),
+    ]
+    for t in threads: t.start()
+    for t in threads: t.join(timeout=16)
+    return results
+
+
 def do_book_action(action):
     import subprocess, base64
     if action == 'check':
@@ -2136,7 +2244,7 @@ class Handler(BaseHTTPRequestHandler):
         if body_bytes is not None:
             req.add_header("Content-Type", "application/json")
         try:
-            with urllib.request.urlopen(req, timeout=300) as r:
+            with urllib.request.urlopen(req, timeout=10) as r:
                 data = r.read()
                 self.send_response(r.status)
                 ct = r.headers.get("Content-Type", "application/json")
@@ -2161,6 +2269,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Cache-Control", "no-store")
+                self.send_header("Permissions-Policy", "camera=*, microphone=*")
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)
@@ -2269,6 +2378,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/surfaces/book": get_book_health,
                 "/api/surfaces/pro": get_pro_health,
                 "/api/surfaces/studio": get_studio_health,
+                "/api/surfaces/energie": get_energie,
                 "/api/tokenusage": get_token_usage,
                 "/api/tokenusage/history": get_token_halfdays,
                 "/api/status": lambda: {"ok": True, "ts": datetime.now().isoformat()},
@@ -2279,6 +2389,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/immo-news": get_immo_news,
                 "/api/immo-bookmarks": get_immo_bookmarks,
                 "/api/immo-criteria":  get_immo_criteria,
+                "/api/crontab":        get_crontab,
             }
             if self.path in simple:
                 self._send_json(simple[self.path]())
@@ -2438,6 +2549,34 @@ class Handler(BaseHTTPRequestHandler):
             elif self.path == "/api/clipboard":
                 text = body.get("text", "")
                 self._send_json(save_clipboard(text))
+            elif self.path == "/api/korrektur/meta":
+                import subprocess as _sp, shutil as _sh, tempfile as _tf, base64 as _b64, re as _re
+                img_b64 = body.get("image_b64", "")
+                if not img_b64:
+                    self._send_json({"error": "Kein Bild"}, status=400); return
+                tmp = _tf.NamedTemporaryFile(suffix=".jpg", prefix="korr_meta_", delete=False)
+                tmp.write(_b64.b64decode(img_b64)); tmp.close()
+                prompt = (
+                    f"Schau dir diesen Klassenarbeit-Scan an: {tmp.name}\n\n"
+                    "Extrahiere genau drei Infos aus dem Scan-Header und antworte NUR mit JSON, "
+                    "kein weiterer Text:\n"
+                    '{\"klasse\": \"...\", \"fach\": \"...\", \"thema\": \"...\"}\n\n'
+                    "klasse = Klassenstufe (z.B. \"10c\" oder \"9\")\n"
+                    "fach = Unterrichtsfach (z.B. \"Biologie\", \"WiPo\")\n"
+                    "thema = Thema aus der Kopfzeile (kurz, ohne Zeitangaben)"
+                )
+                claude_bin = _sh.which("claude") or os.path.expanduser("~/.local/bin/claude")
+                try:
+                    r = _sp.run([claude_bin, "-p", "--output-format", "text", prompt],
+                                capture_output=True, text=True, timeout=30,
+                                cwd=os.path.expanduser("~"))
+                    m = _re.search(r'\{[^}]+\}', r.stdout or "")
+                    self._send_json(json.loads(m.group()) if m else {"error": "Parse-Fehler"})
+                except Exception as ex:
+                    self._send_json({"error": str(ex)})
+                finally:
+                    try: os.unlink(tmp.name)
+                    except: pass
             elif self.path == "/api/korrektur/analyze":
                 import subprocess as _sp
                 img_b64    = body.get("image_b64", "")
@@ -2526,77 +2665,70 @@ Antworte auf Deutsch."""
                     return
                 try:
                     from docx import Document as _Doc
-                    from docx.shared import Pt as _Pt, RGBColor as _RGB, Inches as _Inch, Cm as _Cm
+                    from docx.shared import Pt as _Pt, RGBColor as _RGB, Cm as _Cm
                     from docx.enum.text import WD_ALIGN_PARAGRAPH as _ALIGN
                     import datetime as _dt
                     doc = _Doc()
-                    # Seitenränder
                     for sec in doc.sections:
-                        sec.top_margin = _Cm(2); sec.bottom_margin = _Cm(2)
-                        sec.left_margin = _Cm(2.5); sec.right_margin = _Cm(2.5)
-                    # Titel-Block
-                    title = doc.add_heading("", level=0)
-                    run = title.add_run("KI-Korrektur & Benotung")
-                    run.font.color.rgb = _RGB(0x7C, 0x3A, 0xED)
-                    run.font.size = _Pt(22)
-                    title.alignment = _ALIGN.CENTER
-                    # Meta-Zeile
-                    meta = doc.add_paragraph()
-                    meta.alignment = _ALIGN.CENTER
-                    meta_run = meta.add_run(f"Fach: {fach}  |  Klasse: {klassenstufe}  |  Thema: {thema}  |  Erstellt: {_dt.date.today().strftime('%d.%m.%Y')}")
-                    meta_run.font.size = _Pt(10)
-                    meta_run.font.color.rgb = _RGB(0x80, 0x80, 0x80)
-                    doc.add_paragraph()
-                    # Trennlinie via Paragraph-Border
-                    sep = doc.add_paragraph("─" * 80)
-                    sep.runs[0].font.color.rgb = _RGB(0xC0, 0xC0, 0xC0)
-                    sep.runs[0].font.size = _Pt(8)
-                    doc.add_paragraph()
-                    # Inhalt — jede Zeile parsen
+                        sec.top_margin = _Cm(1.5); sec.bottom_margin = _Cm(1.5)
+                        sec.left_margin = _Cm(2.0); sec.right_margin = _Cm(2.0)
+                    # Kompakter Header
+                    hdr_p = doc.add_paragraph()
+                    hdr_p.alignment = _ALIGN.LEFT
+                    hdr_r = hdr_p.add_run("KI-Korrektur")
+                    hdr_r.bold = True; hdr_r.font.size = _Pt(13)
+                    hdr_r.font.color.rgb = _RGB(0x7C, 0x3A, 0xED)
+                    sep_r = hdr_p.add_run(f"   ·   Fach: {fach}   Klasse: {klassenstufe}   {('Thema: ' + thema) if thema else ''}   {_dt.date.today().strftime('%d.%m.%Y')}")
+                    sep_r.font.size = _Pt(9)
+                    sep_r.font.color.rgb = _RGB(0xA0, 0xA0, 0xA0)
+                    # Inhalt
                     EMOJI_RE = _re.compile(r'^(#{1,3})\s*(.*)')
+                    doc._korr_tbl = None
                     for raw_line in result_text.splitlines():
                         line = raw_line.rstrip()
+                        if not line:
+                            continue
                         hm = EMOJI_RE.match(line)
                         if hm:
                             lvl = len(hm.group(1))
-                            hdr = doc.add_heading(hm.group(2).strip(), level=min(lvl, 3))
-                            if lvl == 1:
-                                hdr.runs[0].font.color.rgb = _RGB(0x7C, 0x3A, 0xED)
-                            elif lvl == 2:
-                                hdr.runs[0].font.color.rgb = _RGB(0x06, 0xB6, 0xD4)
+                            hdr = doc.add_heading(hm.group(2).strip(), level=min(lvl+1, 3))
+                            if hdr.runs:
+                                hdr.runs[0].font.size = _Pt(11 if lvl == 1 else 10)
+                                hdr.runs[0].font.color.rgb = _RGB(0x7C, 0x3A, 0xED) if lvl == 1 else _RGB(0x06, 0x80, 0xA0)
+                            doc._korr_tbl = None
                         elif line.startswith('|') and '|' in line[1:]:
-                            # Tabelle
                             cells = [c.strip() for c in line.strip('|').split('|')]
                             if all(set(c.replace('-','').replace(' ','')) == set() for c in cells):
-                                continue  # Trennzeile überspringen
+                                continue
                             if not hasattr(doc, '_korr_tbl') or doc._korr_tbl is None:
                                 doc._korr_tbl = doc.add_table(rows=0, cols=len(cells))
                                 doc._korr_tbl.style = 'Table Grid'
                             row = doc._korr_tbl.add_row()
-                            for i, cell_text in enumerate(cells[:len(row.cells)]):
-                                row.cells[i].text = cell_text
-                                row.cells[i].paragraphs[0].runs[0].font.size = _Pt(10)
+                            for i, ct in enumerate(cells[:len(row.cells)]):
+                                row.cells[i].text = ct
+                                if row.cells[i].paragraphs[0].runs:
+                                    row.cells[i].paragraphs[0].runs[0].font.size = _Pt(11)
                         else:
-                            doc._korr_tbl = None  # Tabelle beenden
+                            doc._korr_tbl = None
                             color = None
-                            if '✅' in line: color = _RGB(0x22, 0xC5, 0x5E)
-                            elif '❌' in line: color = _RGB(0xEF, 0x44, 0x44)
-                            elif '➕' in line: color = _RGB(0xF5, 0x9E, 0x0B)
+                            if '✅' in line: color = _RGB(0x16, 0xA3, 0x4A)
+                            elif '❌' in line: color = _RGB(0xDC, 0x26, 0x26)
+                            elif '➕' in line: color = _RGB(0xD9, 0x77, 0x06)
                             p = doc.add_paragraph()
+                            p.paragraph_format.space_before = _Pt(0)
+                            p.paragraph_format.space_after  = _Pt(1)
                             r = p.add_run(line)
-                            r.font.size = _Pt(11)
+                            r.font.size = _Pt(12)
                             if color: r.font.color.rgb = color
                     # Footer
-                    doc.add_paragraph()
-                    footer = doc.add_paragraph()
-                    footer.alignment = _ALIGN.CENTER
-                    fr = footer.add_run("Erstellt mit Bolla · KI-Korrektur · powered by Claude")
-                    fr.font.size = _Pt(9); fr.font.italic = True
-                    fr.font.color.rgb = _RGB(0xB0, 0xB0, 0xB0)
+                    foot = doc.add_paragraph()
+                    foot.alignment = _ALIGN.RIGHT
+                    fr = foot.add_run("Bolla · KI-Korrektur · Claude")
+                    fr.font.size = _Pt(8); fr.font.italic = True
+                    fr.font.color.rgb = _RGB(0xC0, 0xC0, 0xC0)
                     buf = _io.BytesIO()
                     doc.save(buf)
-                    docx_b64 = _b64.standard_b64encode(buf.getvalue()).decode()
-                    self._send_json({"docx_b64": docx_b64})
+                    self._send_json({"docx_b64": _b64.standard_b64encode(buf.getvalue()).decode()})
                 except Exception as e:
                     self._send_json({"error": str(e)}, status=500)
 
@@ -2610,79 +2742,118 @@ Antworte auf Deutsch."""
                     return
                 try:
                     from PIL import Image as _Img, ImageDraw as _Draw, ImageFont as _Font
-                    import textwrap as _tw
                     img_data = _b64.b64decode(img_b64)
                     img = _Img.open(_io.BytesIO(img_data)).convert("RGB")
                     W, H = img.size
-                    draw = _Draw.Draw(img)
-                    # Deckschicht (leicht transparent geht ohne RGBA, also direkt zeichnen)
-                    # Roten Rahmen oben: "KORRIGIERT" Stempel
-                    stamp_h = max(38, H // 22)
-                    draw.rectangle([(0, 0), (W, stamp_h)], fill=(180, 0, 0))
+
+                    # Rechte Randleiste anfügen (Lehrerrandnotizen)
+                    MARG = max(210, int(W * 0.30))
+                    canvas = _Img.new("RGB", (W + MARG, H), (252, 250, 248))
+                    canvas.paste(img, (0, 0))
+                    draw = _Draw.Draw(canvas)
+
+                    # Gestrichelte Trennlinie Scan / Randnotizen
+                    for yy in range(0, H, 8):
+                        draw.line([(W, yy), (W, yy + 4)], fill=(190, 190, 190), width=1)
+
+                    RED      = (196, 0, 0)
+                    DARK_RED = (140, 0, 0)
+                    GREEN    = (0, 130, 0)
+                    ORANGE   = (190, 100, 0)
+
+                    BOLD  = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+                    HAND  = "/mnt/c/Windows/Fonts/comic.ttf"
                     try:
-                        fnt_stamp = _Font.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", stamp_h - 8)
+                        fnt_note = _Font.truetype(BOLD, max(28, int(MARG * 0.18)))
                     except:
-                        fnt_stamp = _Font.load_default()
-                    draw.text((W//2, stamp_h//2), "✦  KORRIGIERT  ✦", font=fnt_stamp, fill=(255,255,255), anchor="mm")
-                    # Aufgaben-Annotierungen parsen
+                        fnt_note = _Font.load_default()
                     try:
-                        fnt_ann = _Font.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", max(14, H//60))
-                        fnt_small = _Font.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", max(12, H//72))
+                        fnt_hd   = _Font.truetype(HAND, max(14, H // 58))
+                        fnt_body = _Font.truetype(HAND, max(12, H // 72))
+                        fnt_tiny = _Font.truetype(HAND, max(10, H // 90))
                     except:
-                        fnt_ann = fnt_small = _Font.load_default()
-                    # Aufgaben-Blöcke aus Korrektur-Text extrahieren
+                        try:
+                            fnt_hd = fnt_body = fnt_tiny = _Font.truetype(BOLD, max(12, H // 72))
+                        except:
+                            fnt_hd = fnt_body = fnt_tiny = _Font.load_default()
+
+                    mx = W + 10  # Rand-X-Start
+
+                    # ── Note-Kreis ganz oben ──────────────────────────────
+                    note_m = _re.search(r'Empfohlene Note[:\s*]+\[?([1-6](?:[,\.]\d)?)\]?', result_text, _re.IGNORECASE)
+                    note   = note_m.group(1) if note_m else "?"
+                    pct_m  = _re.search(r'(\d{1,3})\s*%', result_text)
+                    pct    = pct_m.group(1) if pct_m else ""
+                    pts_m  = _re.search(r'(\d+)\s*von\s*(\d+)\s*Punkt', result_text, _re.IGNORECASE)
+                    nc     = RED if note in ('5','6') else (ORANGE if note in ('3','4') else GREEN)
+                    cr     = max(36, int(MARG * 0.20))
+                    cx     = W + (MARG - cr) // 2
+                    draw.ellipse([(cx, 10), (cx+cr, 10+cr)], fill=nc, outline=DARK_RED, width=2)
+                    draw.text((cx + cr//2, 10 + cr//2), note, font=fnt_note, fill=(255,255,255), anchor="mm")
+                    y_after_note = 10 + cr + 4
+                    if pct:
+                        draw.text((cx + cr//2, y_after_note), f"{pct}%", font=fnt_body, fill=nc, anchor="mt")
+                        y_after_note += 16
+                    if pts_m:
+                        draw.text((cx + cr//2, y_after_note), f"{pts_m.group(1)}/{pts_m.group(2)} Pkt", font=fnt_tiny, fill=(100,100,100), anchor="mt")
+                        y_after_note += 14
+
+                    # ── Aufgaben-Blöcke ───────────────────────────────────
+                    # Markdown-Präfixe normalisieren damit ## Aufgabe 2 als Trenner erkannt wird
+                    norm_text = _re.sub(r'^#{1,6}\s*', '', result_text, flags=_re.MULTILINE)
                     task_blocks = _re.findall(
-                        r'(?:Aufgabe|Aufg\.?)\s*(\d+)[^\n]*\n((?:(?!Aufgabe|\Z).*\n?)*)',
-                        result_text, _re.IGNORECASE)
-                    # Punkte-Zeilen extrahieren
+                        r'(?:Aufgabe|Aufg\.?)\s*(\d+)[^\n]*\n((?:(?!(?:Aufgabe|Aufg\.?)\s*\d|\Z).*\n?)*)',
+                        norm_text, _re.IGNORECASE)
                     point_lines = _re.findall(
                         r'\|\s*(Aufgabe\s*\d+[^|]*)\|[^|]*\|\s*(\d+(?:[,\.]\d+)?)\s*\|',
                         result_text, _re.IGNORECASE)
-                    note_match = _re.search(r'Empfohlene Note[:\s*]+\[?([1-6](?:[,\.]\d)?)\]?', result_text, _re.IGNORECASE)
-                    note = note_match.group(1) if note_match else "?"
-                    pct_match = _re.search(r'(\d{1,3})\s*%', result_text)
-                    pct = pct_match.group(1) if pct_match else ""
-                    # Annotations-Positionen: gleichmäßig über Bildhöhe (nach Stempel)
-                    n_tasks = max(len(task_blocks), len(point_lines), 1)
-                    margin_x = int(W * 0.03)
-                    usable_h = H - stamp_h - int(H * 0.05)
-                    for i, (task_name, task_body) in enumerate(task_blocks[:6]):
-                        y_base = stamp_h + int(usable_h * (i + 0.3) / max(n_tasks, 1))
-                        # Bewertung ermitteln
-                        is_ok = bool(_re.search(r'✅', task_body))
+
+                    n_tasks  = max(len(task_blocks), 1)
+                    y_start  = y_after_note + 10
+                    usable_h = H - y_start - 16
+                    # Mindest-Zeilenabstand pro Aufgabe
+                    row_h    = max(int(usable_h / n_tasks), int(H * 0.12))
+
+                    for i, (task_name, task_body) in enumerate(task_blocks[:8]):
+                        y_base = y_start + i * row_h
+
+                        is_ok  = bool(_re.search(r'✅', task_body))
                         is_bad = bool(_re.search(r'❌', task_body))
-                        # Kurzkommentar: erste nicht-leere Zeile aus Task-Body
-                        comment_lines = [l.strip() for l in task_body.splitlines() if l.strip() and not l.strip().startswith('#')]
-                        short = comment_lines[0][:45] if comment_lines else ""
-                        short = _re.sub(r'[✅❌➕\*#]', '', short).strip()
-                        icon = "✅" if is_ok and not is_bad else ("❌" if is_bad else "➕")
-                        color = (0, 160, 0) if icon == "✅" else ((200, 0, 0) if icon == "❌" else (200, 120, 0))
-                        # Hintergrund-Box
-                        box_w = int(W * 0.38); box_h = int(H * 0.042)
-                        bx = W - box_w - margin_x
-                        draw.rectangle([(bx-4, y_base-4), (bx+box_w+4, y_base+box_h+4)],
-                                       fill=(255,255,255), outline=color, width=2)
-                        draw.text((bx+6, y_base+4), f"A{task_name}: {icon} {short}", font=fnt_small, fill=color)
-                    # Punkte-Tabelle rechts unten
-                    if point_lines:
-                        by = H - int(H*0.04) * (len(point_lines)+2) - 10
-                        bx = W - int(W*0.28) - margin_x
-                        box_h2 = int(H*0.04) * (len(point_lines)+2) + 10
-                        draw.rectangle([(bx-6, by-6), (W-margin_x+6, H-margin_x+6)],
-                                       fill=(255,255,255), outline=(180,0,0), width=2)
-                        draw.text((bx, by), "Punkte-Übersicht:", font=fnt_ann, fill=(120,0,0))
-                        for j, (t_name, pts) in enumerate(point_lines[:6]):
-                            draw.text((bx, by + int(H*0.04)*(j+1)), f"  {t_name.strip()[:18]}: {pts} Pkt", font=fnt_small, fill=(60,0,0))
-                    # Note-Kreis rechts oben
-                    cr = int(min(W,H) * 0.09)
-                    cx = W - cr - margin_x; cy = stamp_h + margin_x
-                    nc = (200,0,0) if note in ('5','6') else ((200,120,0) if note in ('3','4') else (0,150,0))
-                    draw.ellipse([(cx,cy),(cx+cr,cy+cr)], fill=nc, outline=(255,255,255), width=3)
-                    draw.text((cx+cr//2, cy+cr//2), note, font=fnt_stamp, fill=(255,255,255), anchor="mm")
-                    if pct:
-                        draw.text((cx+cr//2, cy+cr+4), f"{pct}%", font=fnt_small, fill=nc, anchor="mt")
+                        pts_str = next((f"  {pts}Pkt" for tname, pts in point_lines if task_name in tname), "")
+                        color   = GREEN if (is_ok and not is_bad) else RED
+
+                        # Gestrichelte Verbindungslinie Scan → Rand
+                        for xc in range(W - 20, W, 5):
+                            draw.line([(xc, y_base + 8), (xc + 3, y_base + 8)], fill=(210, 150, 150), width=1)
+
+                        # Aufgaben-Kopfzeile
+                        icon = "✓" if (is_ok and not is_bad) else "✗"
+                        draw.text((mx, y_base), f"A{task_name} {icon}{pts_str}", font=fnt_hd, fill=color)
+
+                        # Schlagworte aus Aufgaben-Body extrahieren
+                        kws = []
+                        for ln in task_body.splitlines():
+                            ln = ln.strip()
+                            if not ln or ln.startswith('#'): continue
+                            clean = _re.sub(r'[✅❌➕\*#|]', '', ln).strip()
+                            if len(clean) > 4:
+                                prio = any(w in clean.lower() for w in ['fehlt','falsch','unvoll','rechts','fehler','nicht erwähnt','kein'])
+                                kws.append((clean[:40], prio))
+                            if len(kws) >= 6: break
+                        kws.sort(key=lambda x: not x[1])
+                        line_gap = max(13, fnt_tiny.size + 2) if hasattr(fnt_tiny, 'size') else 15
+                        for j, (kw, _) in enumerate(kws[:4]):
+                            draw.text((mx + 4, y_base + 18 + j * line_gap), f"→ {kw}", font=fnt_tiny, fill=DARK_RED)
+
+                    # ── Kleiner "KI"-Stempel unten links im Scan ─────────
+                    try:
+                        fnt_ki = _Font.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 9)
+                    except:
+                        fnt_ki = _Font.load_default()
+                    draw.text((4, H - 13), "KI-Korrektur", font=fnt_ki, fill=(195, 195, 195))
+
                     buf = _io.BytesIO()
-                    img.save(buf, "JPEG", quality=88)
+                    canvas.save(buf, "JPEG", quality=90)
                     self._send_json({"image_b64": _b64.standard_b64encode(buf.getvalue()).decode()})
                 except Exception as e:
                     self._send_json({"error": str(e)}, status=500)
@@ -2699,12 +2870,15 @@ Antworte auf Deutsch."""
                 prev_lyrics = body.get("prev_lyrics", "").strip()
                 SCHOOL_KONTEXT = "Geburtstagssong für Schüler · Computerkurs Herrn Mandel · Lessing-Gymnasium"
                 is_school = not kontext or kontext == SCHOOL_KONTEXT
-                if not name:
-                    self._send_json({"error": "Name fehlt"}, status=400)
-                    return
+                import re as _re2
+                # Klassennamen erkennen: "7a", "10c", "Klasse 7b", "klasse 10" usw.
+                is_class = bool(_re2.match(r'(?i)^(?:klasse\s*)?\d{1,2}\s*[a-zA-Z]?$', name))
+                # Keine Einzelperson: Klassen, Gruppen oder leer
+                is_personal = bool(name) and not is_class
+
                 if sprache == "de":
                     lang_inst = "auf Deutsch"
-                else:
+                elif is_personal:
                     lang_inst = ("in English. IMPORTANT: Before writing the lyrics, analyze the name and find the single best "
                                  "English phonetic spelling that makes an English AI singer pronounce it exactly like a German "
                                  "speaker would. Rules: (1) Use hyphenated syllables if the name has multiple syllables "
@@ -2713,7 +2887,15 @@ Antworte auf Deutsch."""
                                  "(3) Use 'eh' for short German e, 'ah' for long German a, 'oo' for German u, 'y' for German j. "
                                  "(4) Replace EVERY occurrence of the name in the lyrics with this phonetic spelling. "
                                  "(5) Do NOT use parenthetical hints or footnotes — only the phonetic spelling in the text.")
-                hit_inst = f"Orientiere dich am Stil und der Struktur des Songs '{hit}'." if hit else ""
+                else:
+                    lang_inst = "in English"
+                if hit:
+                    hit_inst = (f"Orientiere dich am Stil und der Struktur des Songs '{hit}'. "
+                                f"WICHTIG für den Style-Prompt: Analysiere diesen Song und übersetze ihn in konkrete "
+                                f"Musikelemente (z.B. Tempo, Rhythmus, Instrumente, Produktion, Energie, Klangfarbe). "
+                                f"Keinen Künstlernamen und keinen Songtitel in den Style-Prompt schreiben — nur reine Stileigenschaften.")
+                else:
+                    hit_inst = ""
                 if feedback and prev_lyrics:
                     feedback_inst = f"Hier ist der vorherige Liedtext:\n\n{prev_lyrics}\n\nBitte diesen Liedtext gezielt verbessern: {feedback}\nStruktur und gute Passagen beibehalten, nur verbessern was nötig ist."
                 elif feedback:
@@ -2751,10 +2933,34 @@ Antworte auf Deutsch."""
                         return f"Geburtstag: {gb_str}"
 
                 lehrer = "Mister Mandel" if sprache != "de" else "Herrn Mandel"
+                STYLE_RULE = ("Suno style prompt in English, 15-25 words. STRICT RULE: NO artist names, NO band names, "
+                              "NO song titles — only pure musical descriptors. Include: genre, tempo/BPM feel, key "
+                              "instruments, production style, energy/mood, vocal style. Example: 'upbeat synth-pop, "
+                              "pulsing bassline, 80s drum machine, euphoric, driving 128bpm feel, glossy production, "
+                              "powerful male vocals'")
+                TITLE_RULE = ("kreativer Songtitel mit passenden Emojis"
+                              + (" — verwende im Titel immer die ORIGINAL-Schreibweise des Namens, nicht die phonetische" if is_personal else ""))
+
+                # Pflichtinhalt-Zeile je nach Name-Typ
+                if is_personal:
+                    name_inst = f"- Den Namen '{name}' mehrfach im Liedtext verwenden"
+                elif is_class:
+                    # Bei englischen Lyrics: "Klasse"-Prefix raus, englische Form "class 7A"
+                    class_short = _re2.sub(r'(?i)^klasse\s*', '', name).strip()
+                    if sprache != "de":
+                        name_inst = f"- Address the class as 'class {class_short.upper()}' multiple times in the lyrics (NOT as 'Klasse {name}')"
+                    else:
+                        name_inst = f"- Die Klasse '{class_short}' mehrfach direkt ansprechen (z.B. 'Klasse {class_short}', 'ihr')"
+                elif name:
+                    name_inst = f"- '{name}' mehrfach im Liedtext erwähnen oder ansprechen"
+                else:
+                    name_inst = ""  # kein Name: nur anlassbezogen
+
                 if is_school:
+                    who = f"Schüler/in: {name}" if is_personal else (f"Gruppe/Klasse: {name}" if name else "Allgemeiner Klassen-Song")
                     prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Geburtstagssong {lang_inst}.
 
-Schüler/in: {name}
+{who}
 Klasse: {klasse}
 Alter: {alter}
 {gb_kontext(geburtstag)}
@@ -2762,7 +2968,7 @@ Alter: {alter}
 {feedback_inst}
 
 Pflichtinhalte im Liedtext:
-- Name des Schülers / der Schülerin mehrfach nennen
+{name_inst}
 - Lessing-Gymnasium erwähnen
 - Computerkurs bei {lehrer} erwähnen
 
@@ -2770,27 +2976,27 @@ Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Outro]
 
 Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
 {{
-  "title": "kreativer Songtitel mit passenden Emojis — verwende im Titel immer die ORIGINAL-Schreibweise des Namens, nicht die phonetische",
+  "title": "{TITLE_RULE}",
   "lyrics": "vollständiger Liedtext mit Struktur-Tags",
-  "style": "Suno style prompt auf Englisch, professionell, 15-25 Wörter, mit Tempo, Instrumente, Stimmung, Genre"
+  "style": "{STYLE_RULE}"
 }}"""
                 else:
+                    who_line = f"Person/Gruppe: {name}" if name else "Kein spezifischer Adressat (nur Anlass)"
                     prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Song {lang_inst}.
 
-Person: {name}
+{who_line}
 Anlass / Kontext: {kontext}
 {hit_inst}
 {feedback_inst}
-
-Pflichtinhalt: Den Namen der Person mehrfach im Liedtext nennen.
+{('Pflichtinhalt: ' + name_inst) if name_inst else ''}
 
 Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Outro]
 
 Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
 {{
-  "title": "kreativer Songtitel mit passenden Emojis — verwende im Titel immer die ORIGINAL-Schreibweise des Namens, nicht die phonetische",
+  "title": "{TITLE_RULE}",
   "lyrics": "vollständiger Liedtext mit Struktur-Tags",
-  "style": "Suno style prompt auf Englisch, professionell, 15-25 Wörter, mit Tempo, Instrumente, Stimmung, Genre"
+  "style": "{STYLE_RULE}"
 }}"""
                 import subprocess, shutil
                 claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
@@ -2811,13 +3017,14 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 song_data = json.loads(raw.strip())
                 if sprache == "de" and "style" in song_data:
                     song_data["style"] = song_data["style"].rstrip(", ") + ", german lyrics"
-                if sprache != "de" and name and "title" in song_data:
-                    # Ensure original name spelling in title (not phonetic)
-                    import re as _re
-                    phonetic = _re.sub(r'[^a-zA-Z]', '', name.lower())
-                    song_data["title"] = name + " — " + song_data["title"] if name.lower() not in song_data["title"].lower() else song_data["title"]
-                if sprache == "de":
-                    parts = ["Happy Birthday", name]
+                # Englisch: Original-Name im Titel sicherstellen (nur bei Einzelpersonen)
+                if sprache != "de" and is_personal and "title" in song_data:
+                    if name.lower() not in song_data["title"].lower():
+                        song_data["title"] = name + " — " + song_data["title"]
+                # Deutsch Schul-Song: kompakten Titel bauen
+                if sprache == "de" and is_school:
+                    parts = ["Happy Birthday"]
+                    if name: parts.append(name)
                     if alter: parts.append(alter)
                     if geburtstag:
                         gb = geburtstag.strip().rstrip(".")

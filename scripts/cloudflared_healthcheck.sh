@@ -15,8 +15,17 @@ FAIL_FLAG=/tmp/cloudflared_health_fail
 PID_START_FILE=/tmp/cloudflared_start_ts
 RESTART_LOCK=/tmp/cloudflared_restarting
 
+MC_LOG=/home/bolla/workspace/logs/mission_control_api.log
+
 ts() { date '+%Y-%m-%d %H:%M:%S'; }
 log() { echo "[$(ts)] $*" >> "$LOG"; }
+
+# Mission Control API Watchdog
+if ! pgrep -f "mission_control_api.py" >/dev/null; then
+  log "Mission Control API fehlt — starte neu"
+  nohup python3 /home/bolla/workspace/scripts/mission_control_api.py >> "$MC_LOG" 2>&1 &
+  log "Mission Control neu gestartet, PID $!"
+fi
 
 restart() {
   # Nicht neu starten wenn letzter Restart weniger als 90 Sek her
