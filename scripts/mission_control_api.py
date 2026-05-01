@@ -1419,6 +1419,27 @@ def get_sysinfo():
     except Exception as e:
         git_info["error"] = str(e)
 
+    def svc(name):
+        return 'running' if subprocess.run(['pgrep', '-f', name],
+                                           capture_output=True).returncode == 0 else 'stopped'
+
+    claude_ver = '–'
+    try:
+        cv = subprocess.run(['claude', '--version'], capture_output=True, text=True, timeout=5)
+        if cv.returncode == 0:
+            claude_ver = cv.stdout.strip().split('\n')[0]
+    except Exception:
+        pass
+
+    last_backup = '–'
+    try:
+        import glob as _glob
+        backups = sorted(_glob.glob(os.path.join(WORKSPACE, 'memory', '*.md')))
+        if backups:
+            last_backup = os.path.basename(backups[-1]).replace('.md', '')
+    except Exception:
+        pass
+
     return {
         "ram": {"used_mb": ram_used, "total_mb": ram_total, "pct": ram_pct},
         "swap": {"used_mb": swap_used, "total_mb": swap_total, "pct": swap_pct},
@@ -1430,7 +1451,12 @@ def get_sysinfo():
         "kernel": kernel,
         "procs": proc_count,
         "gateway": 'claude-code',
-        "git": git_info
+        "git": git_info,
+        "mission_control": svc('mission_control_api'),
+        "cloudflared":     svc('cloudflared'),
+        "telegram":        svc('telegram_bot'),
+        "claude_version":  claude_ver,
+        "last_backup":     last_backup,
     }
 
 
@@ -1552,13 +1578,6 @@ def get_studio_health():
             result.update(_json.loads(stdout))
     except Exception as e:
         result['hwError'] = str(e)
-    # Dienste-Status aus WSL2 (laufen in Linux)
-    def svc(name):
-        return bool(subprocess.run(['pgrep', '-f', name],
-                                   capture_output=True).returncode == 0)
-    result['mcServer']    = svc('mission_control_api')
-    result['cloudflared'] = svc('cloudflared')
-    result['telegramBot'] = svc('telegram_bot')
     return result
 
 
