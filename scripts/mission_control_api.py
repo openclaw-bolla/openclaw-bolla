@@ -23,6 +23,7 @@ AZURE_SPEECH_FILE = os.path.join(WORKSPACE, "config/azure_speech.json")
 CLIPBOARD_FILE = os.path.join(WORKSPACE, "config/clipboard.json")
 IMMO_BOOKMARKS_FILE  = Path(os.path.join(WORKSPACE, "config/immo_bookmarks.json"))
 IMMO_CRITERIA_FILE   = Path(os.path.join(WORKSPACE, "config/immo_criteria.json"))
+TRAVEL_FILE          = Path(os.path.join(WORKSPACE, "cache/travel.json"))
 
 
 def get_clipboard():
@@ -513,6 +514,64 @@ NEWSLETTER_WATCHLIST = Path(os.path.join(WORKSPACE, "config/newsletter_watchlist
 NEWSLETTER_RESULTS   = Path(os.path.join(WORKSPACE, "cache/newsletter_results.json"))
 
 MAKLER_FILE = Path(os.path.join(WORKSPACE, "data/makler_status.json"))
+
+def get_travel():
+    if TRAVEL_FILE.exists():
+        return json.loads(TRAVEL_FILE.read_text(encoding="utf-8"))
+    return _travel_default()
+
+def _travel_default():
+    return {
+        "urlaube": [
+            {
+                "id": "sommer2026",
+                "titel": "Sommer Badeurlaub",
+                "emoji": "🌊",
+                "von": "2026-07-11",
+                "bis": "2026-07-30",
+                "naechte": 19,
+                "reisende": 2,
+                "status": "geplant",
+                "danach": {
+                    "von": "2026-07-31",
+                    "bis": "2026-08-09",
+                    "titel": "Steffi & Enkel",
+                    "ort": "Kaufering",
+                    "adresse": "Thomas-Morus-Str. 12b, 86916 Kaufering"
+                },
+                "kriterien_pauschal": [
+                    "Flug ab Hamburg (HAM)",
+                    "mind. 4 Sterne",
+                    "Halbpension",
+                    "Pool + kostenlose Liegen & Schirmen",
+                    "Warm & sonnig (Türkei, Griechenland, Ägypten...)",
+                    "Bestes Preis-Leistungs-Verhältnis"
+                ],
+                "kriterien_eigenanreise": [
+                    "VW ID3 1st Edition (≈350 km Reichweite)",
+                    "Hotel mit Badeurlaub-Charakter",
+                    "Warm, Schwimmen möglich",
+                    "Evtl. Pool",
+                    "Südroute → Heimweg über Kaufering ideal",
+                    "Empfohlen: Gardasee, Bodensee, Adria"
+                ],
+                "pauschal": {"empfehlung": None, "aktualisiert": None},
+                "eigenanreise": {"empfehlung": None, "aktualisiert": None}
+            }
+        ]
+    }
+
+def save_travel_recommendation(urlaub_id, typ, data):
+    travel = get_travel()
+    for u in travel.get("urlaube", []):
+        if u["id"] == urlaub_id:
+            u[typ] = {
+                "empfehlung": data,
+                "aktualisiert": datetime.now().isoformat()
+            }
+            break
+    TRAVEL_FILE.write_text(json.dumps(travel, ensure_ascii=False, indent=2))
+    return {"ok": True}
 
 def get_makler():
     if not MAKLER_FILE.exists():
@@ -2433,6 +2492,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/immo-bookmarks": get_immo_bookmarks,
                 "/api/immo-criteria":  get_immo_criteria,
                 "/api/crontab":        get_crontab,
+                "/api/travel":         get_travel,
             }
             if self.path in simple:
                 self._send_json(simple[self.path]())
@@ -2471,7 +2531,11 @@ class Handler(BaseHTTPRequestHandler):
             body = {}
 
         try:
-            if self.path == "/api/recipe/save":
+            if self.path == "/api/travel/recommendation":
+                uid = body.get("id", "sommer2026")
+                typ = body.get("typ", "pauschal")
+                self._send_json(save_travel_recommendation(uid, typ, body.get("empfehlung")))
+            elif self.path == "/api/recipe/save":
                 try:
                     fname = save_recipe_docx(body)
                     self._send_json({"ok": True, "datei": fname})

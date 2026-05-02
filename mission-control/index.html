@@ -1578,19 +1578,26 @@ html, body {
 
       <!-- URLAUB 2026 -->
       <div class="page" id="page-urlaub">
-        <div style="max-width:800px;margin:0 auto">
-          <div style="background:#0f1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden">
-            <div style="background:linear-gradient(135deg,#1a3d2b,#059669);padding:20px 22px 16px">
-              <div style="font-size:28px;margin-bottom:6px">✈️</div>
-              <div style="font-size:17px;font-weight:700;color:#fff">Urlaubsplanung 2026</div>
-              <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px">Noch kein Ziel geplant</div>
+        <div style="max-width:1100px;margin:0 auto">
+
+          <!-- Header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+            <div>
+              <div style="font-size:20px;font-weight:700;color:var(--text)">✈️ Urlaubsplanung 2026</div>
+              <div style="font-size:12px;color:var(--dim);margin-top:2px">Bolla's Reiseempfehlungen · aktualisiert alle 3 Tage</div>
             </div>
-            <div style="padding:28px 24px;text-align:center;color:var(--dim)">
-              <div style="font-size:36px;margin-bottom:12px;opacity:.3">🗺️</div>
-              <div style="font-size:14px;margin-bottom:6px">Noch kein Urlaub geplant</div>
-              <div style="font-size:12px;opacity:.6">Hier kommt der Reiseplan rein — Ziel, Zeitraum, Budget, Aktivitäten.</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span id="travel-age" style="font-size:11px;color:var(--dim)"></span>
+              <button onclick="loadTravel(true)" style="padding:6px 14px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.4);border-radius:8px;color:#34d399;font-size:11px;cursor:pointer">🔄 Neu suchen</button>
             </div>
           </div>
+
+          <!-- Reise-Timeline -->
+          <div id="travel-timeline" style="display:flex;gap:8px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px"></div>
+
+          <!-- Urlaubs-Cards -->
+          <div id="travel-cards"></div>
+
         </div>
       </div>
 
@@ -1921,6 +1928,7 @@ function showPage(page) {
   if (page === 'redesigns')  loadRedesigns();
   if (page === 'clipboard')  loadClipboard();
   if (page === 'projekte')   loadProjekte();
+  if (page === 'urlaub')     loadTravel();
   // Wenn es ein Unter-Tab einer Gruppe ist → Gruppe aufklappen
   const groups = ['projekte', 'schule', 'system'];
   for (const g of groups) {
@@ -5576,6 +5584,166 @@ async function criteriaDrop(e, targetGrp) {
   }
   renderImmoCriteria();
   await fetch(API + '/api/immo-criteria', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(_immoCriteria)});
+}
+
+async function loadTravel(force = false) {
+  const cards = document.getElementById('travel-cards');
+  const timeline = document.getElementById('travel-timeline');
+  const ageEl = document.getElementById('travel-age');
+  if (!cards) return;
+  cards.innerHTML = '<div style="padding:40px;text-align:center;color:var(--dim)"><div class="bolla-dots"><span>.</span><span>.</span><span>.</span></div></div>';
+
+  let data;
+  try {
+    const r = await fetch(API + '/api/travel', {signal: AbortSignal.timeout(8000)});
+    data = await r.json();
+  } catch(e) {
+    cards.innerHTML = `<div style="color:#f87171;padding:20px">Fehler: ${escHtml(e.message)}</div>`;
+    return;
+  }
+
+  const urlaube = data.urlaube || [];
+  if (!urlaube.length) { cards.innerHTML = '<div style="color:var(--dim);padding:20px">Keine Urlaubsdaten vorhanden.</div>'; return; }
+
+  // Timeline
+  if (timeline) {
+    timeline.innerHTML = urlaube.flatMap(u => {
+      const von = new Date(u.von), bis = new Date(u.bis);
+      const now = new Date();
+      const days = Math.ceil((von - now) / 86400000);
+      const countdownStr = days > 0 ? `in ${days} Tagen` : days === 0 ? 'heute!' : 'läuft';
+      const items = [`<div style="display:flex;align-items:center;gap:8px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:8px 14px;white-space:nowrap">
+        <span style="font-size:18px">${u.emoji||'✈️'}</span>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#34d399">${escHtml(u.titel)}</div>
+          <div style="font-size:10px;color:var(--dim)">${von.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})} – ${bis.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})} · ${u.naechte}N · <b style="color:#fbbf24">${countdownStr}</b></div>
+        </div>
+      </div>`];
+      if (u.danach) {
+        items.push(`<div style="color:var(--dim);font-size:16px;padding:0 2px;align-self:center">→</div>`);
+        items.push(`<div style="display:flex;align-items:center;gap:8px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.25);border-radius:10px;padding:8px 14px;white-space:nowrap">
+          <span style="font-size:18px">👨‍👩‍👧‍👦</span>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#a78bfa">${escHtml(u.danach.titel)}</div>
+            <div style="font-size:10px;color:var(--dim)">${new Date(u.danach.von).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})} – ${new Date(u.danach.bis).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})} · ${escHtml(u.danach.ort)}</div>
+          </div>
+        </div>`);
+      }
+      return items;
+    }).join('');
+  }
+
+  // Age indicator
+  if (ageEl) {
+    const p = urlaube[0]?.pauschal?.aktualisiert;
+    if (p) {
+      const m = Math.round((Date.now() - new Date(p)) / 60000);
+      const label = m < 60 ? `vor ${m} Min.` : m < 1440 ? `vor ${Math.round(m/60)}h` : `vor ${Math.round(m/1440)}d`;
+      const old3 = (Date.now() - new Date(p)) > 3*86400000;
+      ageEl.innerHTML = `Empfehlung: <span style="color:${old3?'#f87171':'#34d399'}">${label}</span>${old3?' · ⚠️ veraltet':''}`;
+    } else {
+      ageEl.textContent = 'Noch keine Empfehlung';
+    }
+  }
+
+  // Cards
+  cards.innerHTML = urlaube.map(u => _renderTravelCard(u)).join('');
+}
+
+function _renderTravelCard(u) {
+  const von = new Date(u.von), bis = new Date(u.bis);
+  const vonStr = von.toLocaleDateString('de-DE', {day:'2-digit', month:'long'});
+  const bisStr = bis.toLocaleDateString('de-DE', {day:'2-digit', month:'long', year:'numeric'});
+
+  // Search links Pauschal
+  const vonIso = u.von.replace(/-/g,'');
+  const links_p = [
+    {label:'TUI', url:`https://www.tui.com/urlaub/?departures=HAM&duration=${u.naechte}&startdate=${vonIso}&rating=4.0&board=HP&adults=2`},
+    {label:'Alltours', url:`https://www.alltours.de/suche/?departureAirport=HAM&duration=${u.naechte}&start=${u.von}&adults=2`},
+    {label:'CHECK24', url:`https://reisen.check24.de/pauschalreisen/?depAirports=HAM&duration=${u.naechte}&startDate=${u.von}&pax=2`},
+    {label:'HolidayCheck', url:`https://www.holidaycheck.de/pauschalreise/suche#/?departureAirports=HAM&duration=${u.naechte}&from=${u.von}&adults=2&minRating=80`},
+    {label:'FTI', url:`https://www.fti.de/urlaub.html?depAirport=HAM&duration=${u.naechte}&startDate=${u.von}&adults=2`},
+  ].map(l => `<a href="${l.url}" target="_blank" style="padding:4px 10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:6px;color:#34d399;font-size:10px;text-decoration:none;white-space:nowrap">${escHtml(l.label)} →</a>`).join('');
+
+  // Search links Eigenanreise
+  const links_e = [
+    {label:'Gardasee Hotels', url:`https://www.booking.com/region/it/lago-di-garda.html?checkin=${u.von}&checkout=${u.bis}&group_adults=2&no_rooms=1&nflt=class%3D4%3Bhotelfacilities%3D11`},
+    {label:'Bodensee Hotels', url:`https://www.booking.com/region/de/lake-constance.html?checkin=${u.von}&checkout=${u.bis}&group_adults=2&no_rooms=1&nflt=class%3D4%3Bhotelfacilities%3D11`},
+    {label:'Adria/Kroatien', url:`https://www.booking.com/region/hr/istria.html?checkin=${u.von}&checkout=${u.bis}&group_adults=2&no_rooms=1&nflt=class%3D4%3Bhotelfacilities%3D11`},
+    {label:'HRS Gardasee', url:`https://www.hrs.com/de/hotel-suche/gardasee/?checkin=${u.von}&checkout=${u.bis}&rooms=1&adults=2`},
+  ].map(l => `<a href="${l.url}" target="_blank" style="padding:4px 10px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:6px;color:#fbbf24;font-size:10px;text-decoration:none;white-space:nowrap">${escHtml(l.label)} →</a>`).join('');
+
+  const p_emp = u.pauschal?.empfehlung;
+  const e_emp = u.eigenanreise?.empfehlung;
+
+  const _renderEmpfehlung = (emp, color) => {
+    if (!emp) return `<div style="padding:16px;text-align:center;color:var(--dim);font-size:12px;border:1px dashed rgba(255,255,255,0.1);border-radius:8px">
+      Noch keine Empfehlung — Bolla auf "Neu suchen" klicken oder im Chat fragen
+    </div>`;
+    return `<div style="padding:14px;background:rgba(${color},0.06);border:1px solid rgba(${color},0.2);border-radius:8px">
+      ${emp.hotel ? `<div style="font-size:14px;font-weight:700;color:var(--bright);margin-bottom:4px">🏨 ${escHtml(emp.hotel)}</div>` : ''}
+      ${emp.ziel ? `<div style="font-size:11px;color:var(--dim);margin-bottom:6px">📍 ${escHtml(emp.ziel)}</div>` : ''}
+      ${emp.beschreibung ? `<div style="font-size:12px;color:var(--text);line-height:1.6;margin-bottom:8px">${escHtml(emp.beschreibung)}</div>` : ''}
+      ${emp.ausflug ? `<div style="font-size:11px;color:var(--dim);padding:6px 10px;background:rgba(255,255,255,0.04);border-radius:6px;margin-bottom:8px">💡 Ausflugstipp: ${escHtml(emp.ausflug)}</div>` : ''}
+      ${emp.preis_pp ? `<div style="font-size:16px;font-weight:700;color:rgb(${color})">€ ${escHtml(String(emp.preis_pp))} p.P.</div>` : ''}
+      ${emp.quelle ? `<div style="font-size:10px;color:var(--dim);margin-top:6px">Quelle: ${escHtml(emp.quelle)}</div>` : ''}
+    </div>`;
+  };
+
+  return `
+  <div style="margin-bottom:24px">
+    <div style="background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(6,78,59,0.2));border:1px solid rgba(16,185,129,0.25);border-radius:14px;padding:18px 20px;margin-bottom:14px">
+      <div style="font-size:22px;margin-bottom:6px">${u.emoji||'✈️'}</div>
+      <div style="font-size:16px;font-weight:700;color:#34d399">${escHtml(u.titel)}</div>
+      <div style="font-size:12px;color:var(--dim);margin-top:2px">${vonStr} – ${bisStr} · ${u.naechte} Nächte · ${u.reisende} Personen</div>
+      ${u.danach ? `<div style="margin-top:8px;font-size:11px;color:#a78bfa">Danach: ${escHtml(u.danach.titel)} (${new Date(u.danach.von).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})}–${new Date(u.danach.bis).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})}) in ${escHtml(u.danach.ort)} → <span style="color:var(--dim)">Südroute bei Eigenanreise ideal!</span></div>` : ''}
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+      <!-- Option A: Pauschal -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #34d399">
+        <div style="font-size:11px;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">✈️ Option A · Pauschalreise</div>
+        <div style="margin-bottom:12px">
+          ${(u.kriterien_pauschal||[]).map(k => `<div style="font-size:11px;color:var(--text);padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04)">✓ ${escHtml(k)}</div>`).join('')}
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:10px;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Direkt suchen:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px">${links_p}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">🐾 Bolla's Empfehlung</div>
+          ${_renderEmpfehlung(p_emp, '16,185,129')}
+        </div>
+      </div>
+
+      <!-- Option B: Eigenanreise -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #fbbf24">
+        <div style="font-size:11px;font-weight:700;color:#fbbf24;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">🚗 Option B · Eigenanreise ID3</div>
+        <div style="margin-bottom:12px">
+          ${(u.kriterien_eigenanreise||[]).map(k => `<div style="font-size:11px;color:var(--text);padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04)">✓ ${escHtml(k)}</div>`).join('')}
+        </div>
+        <div style="margin-bottom:10px;padding:8px 10px;background:rgba(251,191,36,0.06);border-radius:8px">
+          <div style="font-size:10px;color:#fbbf24;font-weight:700;margin-bottom:5px">Route Hamburg → Ziel → Kaufering → Hamburg</div>
+          <div style="font-size:10px;color:var(--dim);line-height:1.7">
+            HH → Gardasee ≈ 900 km (3 Ladestopps ~1h)<br>
+            HH → Bodensee ≈ 880 km (2–3 Ladestopps)<br>
+            Gardasee → Kaufering ≈ 250 km (1 Ladestopp)<br>
+            Kaufering → Hamburg ≈ 830 km (2–3 Ladestopps)
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:10px;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Hotels suchen:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px">${links_e}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">🐾 Bolla's Empfehlung</div>
+          ${_renderEmpfehlung(e_emp, '251,191,36')}
+        </div>
+      </div>
+
+    </div>
+  </div>`;
 }
 
 async function loadProjekte() {
