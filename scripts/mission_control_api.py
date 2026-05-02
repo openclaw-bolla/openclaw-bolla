@@ -1118,7 +1118,11 @@ def get_recipe_of_day():
 
     if os.path.exists(cache_file):
         with open(cache_file) as f:
-            return json.load(f)
+            cached = json.load(f)
+        # Cache ungültig wenn kein Bild vorhanden (z.B. API war beim ersten Aufruf noch nicht bereit)
+        if cached.get('bild'):
+            return cached
+        os.remove(cache_file)
 
     prompt = (
         f"Heute ist {today}. Generiere ein leckeres deutsches Tagesrezept (auch internationale Gerichte "
@@ -1633,7 +1637,27 @@ def get_energie():
                 ['/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe', '-EncodedCommand', enc],
                 capture_output=True, timeout=15)
             s = r.stdout.decode('utf-8', errors='replace') if r.stdout else ''
-            results['studio'] = {**_json.loads(s), 'online': True} if r.returncode == 0 and s.strip() else {'online': False}
+            if r.returncode == 0 and s.strip():
+                data = {**_json.loads(s), 'online': True}
+                # GPU-Watt via nvidia-smi (real measurement)
+                try:
+                    ng = subprocess.run(
+                        ['/mnt/c/WINDOWS/System32/nvidia-smi.exe',
+                         '--query-gpu=power.draw', '--format=csv,noheader,nounits'],
+                        capture_output=True, timeout=5)
+                    gpu_w = round(float(ng.stdout.decode().strip()), 1)
+                    data['gpuW'] = gpu_w
+                except Exception:
+                    data['gpuW'] = None
+                # CPU-Watt-Schätzung: Load% × 45W TDP (i7-13700H) + 5W Basis
+                cpu_pct = data.get('cpu') or 0
+                data['cpuW'] = round(cpu_pct * 45 / 100 + 5, 1)
+                # Gesamtschätzung: CPU + GPU + ~28W Basis (Display, RAM, SSD, Board)
+                base_w = 28
+                data['totalW'] = round(data['cpuW'] + (data['gpuW'] or 8) + base_w, 0)
+                results['studio'] = data
+            else:
+                results['studio'] = {'online': False}
         except Exception:
             results['studio'] = {'online': False}
 
