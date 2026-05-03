@@ -3074,6 +3074,53 @@ Antworte auf Deutsch."""
                 except Exception as e:
                     self._send_json({"error": str(e)}, status=500)
 
+            elif self.path == "/api/diff/generate":
+                klasse  = body.get("klasse", "").strip()
+                fach    = body.get("fach", "").strip()
+                aufgabe = body.get("aufgabe", "").strip()
+                if not aufgabe:
+                    self._send_json({"error": "Aufgabe fehlt"}, status=400); return
+                prompt = f"""Du bist Lehrer an einem Gymnasium und erstellst differenzierte Aufgaben.
+
+Klasse: {klasse or 'nicht angegeben'}
+Fach: {fach or 'nicht angegeben'}
+Original-Aufgabe / Thema: {aufgabe}
+
+Erstelle 3 differenzierte Versionen dieser Aufgabe — eine pro Niveau.
+Jede Version enthält die Aufgabenstellung UND eine knappe Musterlösung.
+
+Regeln:
+- Fördern: vereinfacht, Hilfestellungen, weniger Komplexität
+- Regelklasse: die Aufgabe wie gestellt (leicht aufbereitet)
+- Hochbegabt: erweitert, anspruchsvoller, Transfer/Vertiefung
+
+Antworte NUR als reines JSON ohne Markdown:
+{{
+  "foerdern": {{"aufgabe": "...", "loesung": "..."}},
+  "regelklasse": {{"aufgabe": "...", "loesung": "..."}},
+  "hochbegabt": {{"aufgabe": "...", "loesung": "..."}}
+}}"""
+                import subprocess, shutil
+                claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
+                result = subprocess.run(
+                    [claude_bin, "-p", "--output-format", "json", prompt],
+                    capture_output=True, text=True, timeout=120,
+                    cwd=os.path.expanduser("~")
+                )
+                if result.returncode != 0:
+                    self._send_json({"error": result.stderr[:300]}, status=500); return
+                raw = json.loads(result.stdout).get("result", "").strip()
+                if raw.startswith("```"):
+                    raw = "\n".join(raw.split("\n")[1:])
+                if raw.endswith("```"):
+                    raw = raw.rsplit("```", 1)[0]
+                raw = raw.strip()
+                idx = raw.find('{')
+                if idx < 0:
+                    self._send_json({"error": "Kein JSON in Antwort"}, status=500); return
+                diff_data, _ = json.JSONDecoder().raw_decode(raw, idx)
+                self._send_json(diff_data)
+
             elif self.path == "/api/suno/generate":
                 name = body.get("name", "").strip()
                 klasse = body.get("klasse", "").strip()

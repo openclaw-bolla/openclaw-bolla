@@ -5912,6 +5912,84 @@ function _renderTravelCard(u) {
   </div>`;
 }
 
+function initDiff() {
+  document.getElementById('diff-klasse')?.focus();
+}
+
+function diffReset() {
+  document.getElementById('diff-aufgabe').value = '';
+  document.getElementById('diff-fach').value = '';
+  document.getElementById('diff-klasse').value = '';
+  document.getElementById('diff-result').style.display = 'none';
+  document.getElementById('diff-placeholder').style.display = '';
+  document.getElementById('diff-reset-btn').style.display = 'none';
+  document.getElementById('diff-status').textContent = '';
+  document.getElementById('diff-btn').disabled = false;
+  document.getElementById('diff-btn').style.opacity = '1';
+}
+
+async function diffGenerate() {
+  const klasse  = document.getElementById('diff-klasse').value.trim();
+  const fach    = document.getElementById('diff-fach').value.trim();
+  const aufgabe = document.getElementById('diff-aufgabe').value.trim();
+  if (!aufgabe) {
+    document.getElementById('diff-status').textContent = '⚠ Bitte Aufgabe eingeben';
+    return;
+  }
+  const btn = document.getElementById('diff-btn');
+  const status = document.getElementById('diff-status');
+  btn.disabled = true;
+  btn.style.opacity = '.5';
+  status.textContent = '⏳ Bolla denkt …';
+
+  let data;
+  try {
+    const r = await fetch(API + '/api/diff/generate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({klasse, fach, aufgabe}),
+      signal: AbortSignal.timeout(120000)
+    });
+    data = await r.json();
+  } catch(e) {
+    status.textContent = '❌ Fehler: ' + e.message;
+    btn.disabled = false; btn.style.opacity = '1';
+    return;
+  }
+  if (data.error) {
+    status.textContent = '❌ ' + data.error;
+    btn.disabled = false; btn.style.opacity = '1';
+    return;
+  }
+
+  document.getElementById('diff-foerder-aufgabe').textContent = data.foerdern?.aufgabe || '';
+  document.getElementById('diff-foerder-loesung').textContent = data.foerdern?.loesung || '';
+  document.getElementById('diff-regel-aufgabe').textContent   = data.regelklasse?.aufgabe || '';
+  document.getElementById('diff-regel-loesung').textContent   = data.regelklasse?.loesung || '';
+  document.getElementById('diff-hoch-aufgabe').textContent    = data.hochbegabt?.aufgabe || '';
+  document.getElementById('diff-hoch-loesung').textContent    = data.hochbegabt?.loesung || '';
+
+  document.getElementById('diff-placeholder').style.display = 'none';
+  document.getElementById('diff-result').style.display = '';
+  document.getElementById('diff-reset-btn').style.display = '';
+  status.textContent = '✅ Fertig';
+  btn.disabled = false; btn.style.opacity = '1';
+}
+
+function diffCopy() {
+  const f = document.getElementById('diff-foerder-aufgabe').textContent;
+  const fl = document.getElementById('diff-foerder-loesung').textContent;
+  const r = document.getElementById('diff-regel-aufgabe').textContent;
+  const rl = document.getElementById('diff-regel-loesung').textContent;
+  const h = document.getElementById('diff-hoch-aufgabe').textContent;
+  const hl = document.getElementById('diff-hoch-loesung').textContent;
+  const text = `🌱 FÖRDERN\n${f}\n→ Lösung: ${fl}\n\n📘 REGELKLASSE\n${r}\n→ Lösung: ${rl}\n\n🚀 HOCHBEGABT\n${h}\n→ Lösung: ${hl}`;
+  navigator.clipboard.writeText(text).then(() => {
+    document.getElementById('diff-copy-hint').textContent = '✓ Kopiert!';
+    setTimeout(() => document.getElementById('diff-copy-hint').textContent = '', 2000);
+  });
+}
+
 async function loadProjekte() {
   loadImmoNews();
   loadImmoBookmarks();
