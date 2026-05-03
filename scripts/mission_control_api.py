@@ -1231,64 +1231,161 @@ def get_recipe_of_day():
 REZEPTE_DIR = "/mnt/d/OneDrive/Dokumente/Rezepte-Cocktails"
 
 def save_recipe_docx(data):
-    """Speichert Rezept als Word-Datei in den Rezepte-Ordner. Gibt Pfad oder Fehler zurück."""
+    """Speichert Rezept als Word-Datei — kompaktes 1-Seiten-Layout."""
     import base64, re, io
     from docx import Document
-    from docx.shared import Pt, RGBColor, Inches
+    from docx.shared import Pt, RGBColor, Inches, Cm
     from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
+    import lxml.etree as etree
+
+    def set_cell_border(cell, **kwargs):
+        tc = cell._tc
+        tcPr = tc.get_or_add_tcPr()
+        tcBorders = OxmlElement('w:tcBorders')
+        for edge in ('top','left','bottom','right','insideH','insideV'):
+            tag = OxmlElement(f'w:{edge}')
+            tag.set(qn('w:val'), kwargs.get(edge, 'none'))
+            tag.set(qn('w:sz'), '0')
+            tag.set(qn('w:space'), '0')
+            tag.set(qn('w:color'), 'auto')
+            tcBorders.append(tag)
+        tcPr.append(tcBorders)
+
+    def set_para_spacing(para, before=0, after=0, line=None):
+        pPr = para._p.get_or_add_pPr()
+        spacing = OxmlElement('w:spacing')
+        spacing.set(qn('w:before'), str(before))
+        spacing.set(qn('w:after'), str(after))
+        if line:
+            spacing.set(qn('w:line'), str(line))
+            spacing.set(qn('w:lineRule'), 'auto')
+        pPr.append(spacing)
+
+    ACCENT = RGBColor(0xC0, 0x39, 0x2B)
+    GREY   = RGBColor(0x66, 0x66, 0x66)
 
     titel = data.get("titel", "Rezept").strip()
     fname = re.sub(r'[\\/:*?"<>|]', '', titel).strip() + ".docx"
     path = os.path.join(REZEPTE_DIR, fname)
 
     doc = Document()
+
+    # Enge Ränder für mehr Platz
+    sec = doc.sections[0]
+    sec.top_margin    = Cm(1.5)
+    sec.bottom_margin = Cm(1.5)
+    sec.left_margin   = Cm(1.8)
+    sec.right_margin  = Cm(1.8)
+
+    # Basis-Schrift
     style = doc.styles["Normal"]
     style.font.name = "Calibri"
-    style.font.size = Pt(11)
+    style.font.size = Pt(10)
 
-    # Titel
+    # ── Titel ──
     t = doc.add_heading(titel, level=1)
-    t.runs[0].font.color.rgb = RGBColor(0xC0, 0x39, 0x2B)
+    t.runs[0].font.color.rgb = ACCENT
+    t.runs[0].font.size = Pt(18)
+    set_para_spacing(t, before=0, after=60)
 
-    # Bild
+    # Beschreibung (kursiv, kompakt)
+    beschr = data.get("beschreibung", "")
+    if beschr:
+        p = doc.add_paragraph(beschr)
+        r = p.runs[0]
+        r.italic = True
+        r.font.color.rgb = GREY
+        r.font.size = Pt(10)
+        set_para_spacing(p, before=0, after=80)
+
+    # ── Trennlinie ──
+    hr = doc.add_paragraph()
+    hr_pPr = hr._p.get_or_add_pPr()
+    pb = OxmlElement('w:pBdr')
+    bot = OxmlElement('w:bottom')
+    bot.set(qn('w:val'), 'single'); bot.set(qn('w:sz'), '6')
+    bot.set(qn('w:space'), '1'); bot.set(qn('w:color'), 'C0392B')
+    pb.append(bot); hr_pPr.append(pb)
+    set_para_spacing(hr, before=0, after=80)
+
+    # ── 2-Spalten-Tabelle: Bild links | Zutaten rechts ──
     bild_b64 = data.get("bild")
+    tbl = doc.add_table(rows=1, cols=2)
+    tbl.style = "Table Grid"
+    col_links  = tbl.columns[0]
+    col_rechts = tbl.columns[1]
+    # Spaltenbreiten: Bild 5.5cm, Zutaten Rest
+    col_links.width  = Cm(5.5)
+    col_rechts.width = Cm(11.2)
+
+    cell_bild  = tbl.cell(0, 0)
+    cell_zut   = tbl.cell(0, 1)
+    set_cell_border(cell_bild)
+    set_cell_border(cell_zut)
+
+    # Bild-Zelle
     if bild_b64:
         try:
             img_bytes = base64.b64decode(bild_b64)
-            doc.add_picture(io.BytesIO(img_bytes), width=Inches(4))
-            doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+            bild_p = cell_bild.paragraphs[0]
+            run = bild_p.add_run()
+            run.add_picture(io.BytesIO(img_bytes), width=Cm(5.0))
+            bild_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            set_para_spacing(bild_p, before=20, after=20)
         except Exception:
-            pass
+            cell_bild.paragraphs[0].add_run("(Bild fehlt)")
+    else:
+        cell_bild.paragraphs[0].add_run("")
 
-    # Beschreibung
-    if data.get("beschreibung"):
-        p = doc.add_paragraph(data["beschreibung"])
-        p.runs[0].italic = True
-        p.runs[0].font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+    # Zutaten-Zelle
+    h_zut = cell_zut.paragraphs[0]
+    h_zut.clear()
+    run_h = h_zut.add_run("Zutaten")
+    run_h.bold = True
+    run_h.font.color.rgb = ACCENT
+    run_h.font.size = Pt(12)
+    set_para_spacing(h_zut, before=20, after=60)
 
-    doc.add_paragraph()
-
-    # Zutaten
-    h = doc.add_heading("Zutaten", level=2)
-    h.runs[0].font.color.rgb = RGBColor(0xC0, 0x39, 0x2B)
     for z in data.get("zutaten", []):
-        p = doc.add_paragraph(style="List Bullet")
-        p.add_run(z)
+        p = cell_zut.add_paragraph(style="List Bullet")
+        r = p.add_run(z)
+        r.font.size = Pt(10)
+        set_para_spacing(p, before=0, after=20)
 
-    doc.add_paragraph()
+    # Tipp (optional)
+    if data.get("tipp"):
+        p_tipp = cell_zut.add_paragraph()
+        set_para_spacing(p_tipp, before=60, after=0)
+        r = p_tipp.add_run(f"💡 {data['tipp']}")
+        r.italic = True
+        r.font.size = Pt(9)
+        r.font.color.rgb = GREY
 
-    # Zubereitung
-    h = doc.add_heading("Zubereitung", level=2)
-    h.runs[0].font.color.rgb = RGBColor(0xC0, 0x39, 0x2B)
-    for i, s in enumerate(data.get("anweisungen", []), 1):
+    doc.add_paragraph()  # Abstand
+
+    # ── Zubereitung (volle Breite) ──
+    h_zub = doc.add_paragraph()
+    r_h = h_zub.add_run("Zubereitung")
+    r_h.bold = True
+    r_h.font.color.rgb = ACCENT
+    r_h.font.size = Pt(12)
+    set_para_spacing(h_zub, before=40, after=60)
+
+    for s in data.get("anweisungen", []):
         p = doc.add_paragraph(style="List Number")
-        p.add_run(s)
+        r = p.add_run(s)
+        r.font.size = Pt(10)
+        set_para_spacing(p, before=0, after=30)
 
-    # Datum
+    # ── Fußzeile: Datum ──
     doc.add_paragraph()
-    p = doc.add_paragraph(f"Gespeichert am {datetime.now().strftime('%d.%m.%Y')}")
-    p.runs[0].font.size = Pt(9)
-    p.runs[0].font.color.rgb = RGBColor(0x99, 0x99, 0x99)
+    p_foot = doc.add_paragraph(f"🐾 Bolla · {datetime.now().strftime('%d.%m.%Y')}")
+    p_foot.runs[0].font.size = Pt(8)
+    p_foot.runs[0].font.color.rgb = RGBColor(0xBB, 0xBB, 0xBB)
+    p_foot.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    set_para_spacing(p_foot, before=60, after=0)
 
     os.makedirs(REZEPTE_DIR, exist_ok=True)
     doc.save(path)
