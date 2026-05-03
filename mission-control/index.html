@@ -5724,14 +5724,6 @@ async function loadTravel(force = false) {
   const ageEl = document.getElementById('travel-age');
   if (!cards) return;
 
-  if (force) {
-    // Refresh-Request: Bolla per Telegram benachrichtigen
-    try {
-      await fetch(API + '/api/travel/request-refresh', {method:'POST', signal: AbortSignal.timeout(5000)});
-    } catch(e) {}
-    if (ageEl) ageEl.innerHTML = '<span style="color:#fbbf24">⏳ Neue Suche angefragt — Bolla wird benachrichtigt</span>';
-  }
-
   cards.innerHTML = '<div style="padding:40px;text-align:center;color:var(--dim)"><div class="bolla-dots"><span>.</span><span>.</span><span>.</span></div></div>';
 
   let data;
@@ -5745,6 +5737,23 @@ async function loadTravel(force = false) {
 
   const urlaube = data.urlaube || [];
   if (!urlaube.length) { cards.innerHTML = '<div style="color:var(--dim);padding:20px">Keine Urlaubsdaten vorhanden.</div>'; return; }
+
+  // Neu suchen: Suchseiten in neuen Tabs öffnen
+  if (force) {
+    const u0 = urlaube[0];
+    if (u0) {
+      const von = u0.von, bis = u0.bis, n = u0.naechte, vonIso = von.replace(/-/g,'');
+      [
+        `https://www.alltours.de/urlaub/bulgarien/burgas/sonnenstrand/?departureAirport=HAM&duration=${n}&start=${von}&adults=2`,
+        `https://www.tui.com/urlaub/?departures=HAM&duration=${n}&startdate=${vonIso}&rating=4.0&board=HP&adults=2`,
+        `https://www.lidl-reisen.de/pauschalreisen/?departureAirport=HAM&duration=${n}&departure=${von}&adults=2`,
+        `https://www.booking.com/searchresults.html?ss=Rovinj&checkin=${von}&checkout=${bis}&group_adults=2&no_rooms=1&nflt=class%3D3%3Bhotelfacilities%3D11`,
+      ].forEach(url => window.open(url, '_blank'));
+    }
+    try { await fetch(API + '/api/travel/request-refresh', {method:'POST', signal: AbortSignal.timeout(5000)}); } catch(e) {}
+    if (ageEl) ageEl.innerHTML = '<span style="color:#fbbf24">🔍 Suche-Tabs geöffnet · Preis gefunden? Bolla fragen: <i>"Aktualisiere Reiseempfehlung auf [Hotel, Preis, Link]"</i></span>';
+    // Seite trotzdem rendern damit User die alten Werte sieht
+  }
 
   // Timeline
   if (timeline) {
