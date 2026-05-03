@@ -3230,7 +3230,12 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     raw = "\n".join(raw.split("\n")[1:])
                 if raw.endswith("```"):
                     raw = raw.rsplit("```", 1)[0]
-                song_data = json.loads(raw.strip())
+                raw = raw.strip()
+                # raw_decode ignoriert Text nach dem ersten gültigen JSON-Objekt
+                idx = raw.find('{')
+                if idx < 0:
+                    raise ValueError("Kein JSON-Objekt in Antwort gefunden")
+                song_data, _ = json.JSONDecoder().raw_decode(raw, idx)
                 if sprache == "de" and "style" in song_data:
                     song_data["style"] = song_data["style"].rstrip(", ") + ", german lyrics"
                 # Englisch: Original-Name im Titel sicherstellen (nur bei Einzelpersonen)
