@@ -2,439 +2,595 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Mission Control — Neon Pulse</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission Control — Neon Cockpit</title>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
   font-family: 'Courier New', Courier, monospace;
-  background: #080810;
-  color: #c0c0d0;
-  height: 100vh;
+  background: #080c10;
+  color: #c8d8e8;
   display: flex;
+  height: 100vh;
   overflow: hidden;
+  background-image:
+    linear-gradient(rgba(0,255,159,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,159,0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
+
 .sidebar {
-  width: 204px;
-  min-width: 204px;
-  background: #0c0c18;
-  border-right: 1px solid #00e5ff18;
+  width: 220px;
+  min-width: 220px;
+  background: #0b1018;
+  border-right: 1px solid rgba(0,255,159,0.18);
   display: flex;
   flex-direction: column;
 }
+
 .sidebar-logo {
-  padding: 22px 16px 18px;
-  border-bottom: 1px solid #00e5ff18;
+  padding: 22px 20px;
+  border-bottom: 1px solid rgba(0,255,159,0.12);
 }
-.sidebar-logo-main {
-  font-size: 20px;
-  font-weight: bold;
-  color: #00e5ff;
-  text-shadow: 0 0 14px #00e5ff80;
-  letter-spacing: 3px;
-}
-.sidebar-logo-sub {
-  font-size: 9px;
-  color: #00e5ff44;
-  letter-spacing: 3px;
-  margin-top: 3px;
+
+.logo-main {
+  font-size: 22px;
+  letter-spacing: 6px;
+  color: #00ff9f;
+  text-shadow: 0 0 16px rgba(0,255,159,0.5);
   text-transform: uppercase;
 }
-.nav-block {
-  padding: 6px 0;
-  flex: 1;
+
+.logo-sub {
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  color: #2a5a4a;
+  text-transform: uppercase;
+  margin-top: 3px;
 }
+
+.nav-section {
+  flex: 1;
+  padding: 14px 0;
+}
+
 .nav-item {
-  padding: 9px 16px;
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 9px 20px;
   font-size: 11px;
-  color: #4a5878;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: #3a5a6a;
   cursor: pointer;
   border-left: 2px solid transparent;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  transition: color 0.1s;
+  transition: all 0.15s;
 }
+
 .nav-item.active {
-  color: #00e5ff;
-  border-left-color: #00e5ff;
-  background: #00e5ff08;
-  text-shadow: 0 0 8px #00e5ff60;
+  color: #00ff9f;
+  border-left-color: #00ff9f;
+  background: rgba(0,255,159,0.04);
+  text-shadow: 0 0 8px rgba(0,255,159,0.3);
 }
-.nav-item:hover:not(.active) { color: #00e5ff55; }
+
+.nav-item:hover:not(.active) {
+  color: #6a9aaa;
+  background: rgba(255,255,255,0.02);
+}
+
 .nav-icon { width: 16px; text-align: center; font-size: 13px; }
+
 .sidebar-footer {
-  border-top: 1px solid #00e5ff14;
-  padding: 12px 16px;
-}
-.sys-line {
-  font-size: 9px;
-  color: #283040;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(0,255,159,0.1);
+  font-size: 10px;
   letter-spacing: 1px;
-  line-height: 2;
+  color: #1e3a3a;
+  line-height: 1.8;
 }
-.sys-line em { font-style: normal; color: #39ff1455; }
-.online {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 9px;
-  color: #39ff14;
-  letter-spacing: 2px;
-  margin-top: 4px;
-}
-.dot-online {
+
+.status-dot {
+  display: inline-block;
   width: 6px; height: 6px;
+  background: #00ff9f;
   border-radius: 50%;
-  background: #39ff14;
-  box-shadow: 0 0 6px #39ff14;
+  box-shadow: 0 0 8px #00ff9f;
+  margin-right: 6px;
+  animation: pulse 2.5s ease-in-out infinite;
 }
-.main-wrapper { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px #00ff9f; }
+  50% { opacity: 0.4; box-shadow: 0 0 3px #00ff9f; }
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .topbar {
-  height: 54px;
-  background: #0c0c18;
-  border-bottom: 1px solid #00e5ff18;
+  height: 52px;
+  background: #0b1018;
+  border-bottom: 1px solid rgba(0,255,159,0.12);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 22px;
-  flex-shrink: 0;
+  padding: 0 28px;
 }
-.topbar-left {}
-.topbar-page {
-  font-size: 13px;
-  color: #00e5ff;
-  letter-spacing: 3px;
+
+.topbar-title {
+  font-size: 12px;
+  letter-spacing: 3.5px;
   text-transform: uppercase;
+  color: #00ff9f;
 }
-.topbar-date-str {
-  font-size: 10px;
-  color: #3a4860;
+
+.topbar-title::before { content: '// '; opacity: 0.5; }
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  font-size: 11px;
+  color: #3a5a6a;
   letter-spacing: 1px;
-  margin-top: 2px;
 }
-.topbar-right { display:flex; align-items:center; gap:18px; }
+
 .topbar-time {
-  font-size: 20px;
-  font-weight: bold;
-  color: #39ff14;
-  text-shadow: 0 0 12px #39ff1466;
-  letter-spacing: 2px;
+  color: #00d4ff;
+  font-size: 18px;
+  letter-spacing: 3px;
+  text-shadow: 0 0 12px rgba(0,212,255,0.4);
 }
-.topbar-tz { font-size: 9px; color: #3a4860; letter-spacing: 1px; }
-.topbar-sep { width: 1px; height: 28px; background: #00e5ff18; }
-.topbar-user { font-size: 10px; color: #3a5070; letter-spacing: 1px; }
+
 .content {
   flex: 1;
   overflow-y: auto;
-  padding: 18px;
+  padding: 22px;
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
   align-content: start;
 }
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: #0c0c18; }
-::-webkit-scrollbar-thumb { background: #00e5ff22; }
+
+.content::-webkit-scrollbar { width: 3px; }
+.content::-webkit-scrollbar-track { background: transparent; }
+.content::-webkit-scrollbar-thumb { background: rgba(0,255,159,0.15); border-radius: 2px; }
+
 .card {
-  background: #0e0e1c;
-  border: 1px solid #00e5ff14;
-  padding: 15px;
+  background: #0b1018;
+  border: 1px solid rgba(0,255,159,0.12);
+  border-radius: 2px;
+  padding: 20px;
   position: relative;
-  overflow: hidden;
 }
-.card::after {
+
+.card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, #00e5ff55, transparent 60%);
+  top: -1px; left: 12px; right: 12px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #00ff9f, #00d4ff, transparent);
+  opacity: 0.5;
 }
+
+.card-corner {
+  position: absolute;
+  bottom: 8px; right: 8px;
+  width: 8px; height: 8px;
+  border-right: 1px solid rgba(0,255,159,0.2);
+  border-bottom: 1px solid rgba(0,255,159,0.2);
+}
+
 .card-title {
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 2.5px;
   text-transform: uppercase;
-  color: #00e5ff44;
-  margin-bottom: 12px;
+  color: #2a5a6a;
+  margin-bottom: 18px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
-.card-title::before { content: '//'; color: #00e5ff22; }
-.c3  { grid-column: span 3; }
-.c4  { grid-column: span 4; }
-.c5  { grid-column: span 5; }
-.c6  { grid-column: span 6; }
-.c7  { grid-column: span 7; }
-.c8  { grid-column: span 8; }
-.c12 { grid-column: span 12; }
-.stat-val {
-  font-size: 36px;
-  font-weight: bold;
-  color: #00e5ff;
-  text-shadow: 0 0 18px #00e5ff55;
-  letter-spacing: -1px;
+
+.card-title::before { content: '//'; color: #00ff9f; opacity: 0.4; }
+
+.span-2 { grid-column: span 2; }
+
+/* Stats */
+.stat-value {
+  font-size: 44px;
+  color: #00ff9f;
+  text-shadow: 0 0 24px rgba(0,255,159,0.35);
   line-height: 1;
+  margin-bottom: 6px;
 }
-.stat-lbl {
-  font-size: 9px;
-  color: #3a4870;
+
+.stat-label {
+  font-size: 10px;
+  color: #3a5a6a;
   letter-spacing: 2px;
-  margin-top: 5px;
   text-transform: uppercase;
 }
-.stat-note {
+
+.stat-sub {
   font-size: 10px;
-  color: #39ff14;
-  margin-top: 8px;
-}
-.stat-note.warn { color: #ff8800; }
-.prog {
-  height: 2px;
-  background: #0a0a16;
+  color: #00d4ff;
   margin-top: 10px;
-  position: relative;
+  letter-spacing: 0.5px;
+  opacity: 0.7;
 }
-.prog-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #00e5ff, #39ff14);
-  box-shadow: 0 0 4px #00e5ff;
-  transition: width 0.3s;
-}
-.prog-fill.orange { background: linear-gradient(90deg, #ff6600, #ffaa00); box-shadow: 0 0 4px #ff6600; }
-.prog-fill.purple { background: linear-gradient(90deg, #8822ff, #00e5ff); box-shadow: 0 0 4px #8822ff; }
+
+.stat-sub::before { content: '→ '; }
+
+/* Chat */
 .chat-msgs {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-height: 190px;
-  overflow-y: auto;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 14px;
 }
-.cmsg {}
-.cmsg-who {
-  font-size: 10px;
-  color: #00e5ff;
-  letter-spacing: 1px;
-  margin-bottom: 3px;
-}
-.cmsg.bolla .cmsg-who { color: #39ff14; }
-.cmsg-text {
-  font-size: 11px;
-  color: #6070a0;
-  padding-left: 10px;
-  border-left: 1px solid #00e5ff1a;
-  line-height: 1.5;
-}
-.chat-inp {
-  display: flex;
-  gap: 6px;
-}
-.chat-inp input {
-  flex: 1;
-  background: #080810;
-  border: 1px solid #00e5ff2a;
-  color: #00e5ff;
-  padding: 7px 10px;
-  font-family: inherit;
-  font-size: 10px;
-  outline: none;
-  letter-spacing: 1px;
-}
-.chat-inp input::placeholder { color: #00e5ff22; }
-.chat-inp button {
-  background: #00e5ff0d;
-  border: 1px solid #00e5ff33;
-  color: #00e5ff;
-  padding: 7px 14px;
-  font-family: inherit;
-  font-size: 10px;
-  cursor: pointer;
+
+.msg { display: flex; gap: 10px; }
+
+.msg-label {
+  font-size: 9px;
   letter-spacing: 2px;
   text-transform: uppercase;
+  margin-bottom: 4px;
 }
-.act-row {
+
+.msg.chris .msg-label { color: #00d4ff; }
+.msg.bolla .msg-label { color: #00ff9f; }
+
+.msg-text {
+  font-size: 12px;
+  line-height: 1.55;
+  color: #6a8a9a;
+}
+
+.msg.bolla .msg-text { color: #4a9a7a; }
+
+.msg-ts {
+  font-size: 9px;
+  color: #1e3a3a;
+  margin-top: 3px;
+}
+
+.chat-line {
+  border-top: 1px solid rgba(0,255,159,0.08);
+  padding-top: 12px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #1e3a3a;
+}
+
+.chat-prompt { color: #00ff9f; }
+
+.blink {
+  display: inline-block;
+  width: 7px; height: 13px;
+  background: #00ff9f;
+  animation: blink 1.1s step-end infinite;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* Weather */
+.weather-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.weather-icon { font-size: 44px; line-height: 1; }
+
+.weather-temp {
+  font-size: 44px;
+  color: #00d4ff;
+  text-shadow: 0 0 20px rgba(0,212,255,0.35);
+  line-height: 1;
+}
+
+.weather-city {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #2a5a6a;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.weather-desc {
+  font-size: 11px;
+  color: #3a6a7a;
+}
+
+.weather-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0,255,159,0.07);
+}
+
+.w-item { font-size: 10px; color: #2a4a5a; letter-spacing: 0.5px; }
+.w-item span { display: block; color: #00d4ff; font-size: 12px; margin-bottom: 1px; }
+
+/* Activity */
+.activity-feed { display: flex; flex-direction: column; }
+
+.act-item {
+  display: flex;
   gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid #00e5ff08;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(0,255,159,0.04);
+  align-items: flex-start;
 }
-.act-row:last-child { border-bottom: none; }
-.act-time { font-size: 10px; color: #39ff1444; min-width: 42px; }
-.act-text { font-size: 10px; color: #5870a0; flex: 1; line-height: 1.4; }
-.act-tag {
-  font-size: 8px;
-  padding: 2px 6px;
-  border: 1px solid currentColor;
-  letter-spacing: 1px;
+
+.act-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+.act-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #00ff9f;
+  margin-top: 5px;
   flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
 }
-.t-mail  { color: #00e5ff55; }
-.t-bolla { color: #39ff1455; }
-.t-school{ color: #ff880066; }
-.t-sys   { color: #8822ff66; }
-.wx-main { display:flex; align-items:center; gap:16px; margin-bottom:14px; }
-.wx-ico  { font-size: 42px; }
-.wx-temp { font-size: 38px; font-weight: bold; color: #00e5ff; text-shadow: 0 0 14px #00e5ff55; }
-.wx-cond { font-size: 10px; color: #3a4870; letter-spacing: 1px; margin-top: 3px; }
-.wx-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
-.wx-cell { background: #080810; border: 1px solid #00e5ff0a; padding: 8px; text-align: center; }
-.wx-cval { font-size: 13px; color: #00e5ff77; }
-.wx-clbl { font-size: 8px; color: #304050; letter-spacing: 1px; margin-top: 2px; text-transform: uppercase; }
+
+.act-body { flex: 1; }
+
+.act-text {
+  font-size: 12px;
+  color: #4a6a7a;
+  line-height: 1.4;
+}
+
+.act-text strong { color: #6a9aaa; font-weight: normal; }
+
+.act-time {
+  font-size: 9px;
+  color: #1e3a3a;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* Sysinfo */
+.sys-bars { display: flex; flex-direction: column; gap: 14px; }
+
+.sys-bar { display: flex; flex-direction: column; gap: 5px; }
+
+.sys-bar-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #2a4a5a;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.sys-bar-head span { color: #00ff9f; }
+
+.sys-track {
+  height: 3px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sys-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00ff9f, #00d4ff);
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(0,255,159,0.4);
+}
+
+.sys-meta {
+  margin-top: 16px;
+  font-size: 10px;
+  color: #1e3a4a;
+  letter-spacing: 0.8px;
+  line-height: 1.9;
+}
+
+.sys-ok { color: #00ff9f; text-shadow: 0 0 6px rgba(0,255,159,0.4); }
 </style>
 </head>
 <body>
 
-<nav class="sidebar">
+<div class="sidebar">
   <div class="sidebar-logo">
-    <div class="sidebar-logo-main">MC</div>
-    <div class="sidebar-logo-sub">Mission Control</div>
+    <div class="logo-main">Bolla</div>
+    <div class="logo-sub">Mission Control</div>
   </div>
-  <div class="nav-block">
-    <div class="nav-item active"><span class="nav-icon">◉</span>Dashboard</div>
-    <div class="nav-item"><span class="nav-icon">🐾</span>Bolla</div>
-    <div class="nav-item"><span class="nav-icon">◈</span>Schule</div>
-    <div class="nav-item"><span class="nav-icon">▦</span>Kalender</div>
-    <div class="nav-item"><span class="nav-icon">◫</span>E-Mail</div>
-    <div class="nav-item"><span class="nav-icon">◑</span>Robin</div>
-    <div class="nav-item"><span class="nav-icon">◆</span>Geburtstage</div>
-    <div class="nav-item"><span class="nav-icon">⬡</span>Local Server</div>
-    <div class="nav-item"><span class="nav-icon">◎</span>Wetter</div>
-    <div class="nav-item"><span class="nav-icon">⚙</span>System Info</div>
-  </div>
+  <nav class="nav-section">
+    <div class="nav-item active"><span class="nav-icon">⊞</span> Dashboard</div>
+    <div class="nav-item"><span class="nav-icon">🐾</span> Bolla</div>
+    <div class="nav-item"><span class="nav-icon">◈</span> Schule</div>
+    <div class="nav-item"><span class="nav-icon">◷</span> Kalender</div>
+    <div class="nav-item"><span class="nav-icon">✉</span> E-Mail</div>
+    <div class="nav-item"><span class="nav-icon">◉</span> Robin</div>
+    <div class="nav-item"><span class="nav-icon">◈</span> Geburtstage</div>
+    <div class="nav-item"><span class="nav-icon">⬡</span> Local Server</div>
+    <div class="nav-item"><span class="nav-icon">◌</span> Wetter</div>
+    <div class="nav-item"><span class="nav-icon">▣</span> System Info</div>
+  </nav>
   <div class="sidebar-footer">
-    <div class="sys-line">CPU &nbsp;<em>14 %</em></div>
-    <div class="sys-line">RAM &nbsp;<em>4.2 / 16 GB</em></div>
-    <div class="sys-line">UP &nbsp;&nbsp;<em>6d 14h 22m</em></div>
-    <div class="online"><span class="dot-online"></span>ONLINE</div>
+    <span class="status-dot"></span>SYSTEM ONLINE<br>
+    03.05.2026 · WSL2-KERNEL<br>
+    HOST: SURFACE LAPTOP
   </div>
-</nav>
+</div>
 
-<div class="main-wrapper">
-  <header class="topbar">
-    <div class="topbar-left">
-      <div class="topbar-page">// Dashboard</div>
-      <div class="topbar-date-str">MI 29. APRIL 2026</div>
-    </div>
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">Dashboard</div>
     <div class="topbar-right">
-      <div style="text-align:right">
-        <div class="topbar-time">08:47:23</div>
-        <div class="topbar-tz">CEST &nbsp;UTC+2</div>
-      </div>
-      <div class="topbar-sep"></div>
-      <div class="topbar-user">chris@bolla</div>
+      <span>SO · 03.05.2026</span>
+      <span class="topbar-time">14:37:22</span>
     </div>
-  </header>
+  </div>
 
   <div class="content">
 
-    <!-- Stat: E-Mail -->
-    <div class="card c3">
-      <div class="card-title">E-Mail</div>
-      <div class="stat-val">7</div>
-      <div class="stat-lbl">Ungelesen</div>
-      <div class="stat-note">↑ 3 seit gestern</div>
-      <div class="prog"><div class="prog-fill" style="width:58%"></div></div>
+    <div class="card">
+      <div class="card-title">E-Mails</div>
+      <div class="stat-value">3</div>
+      <div class="stat-label">Ungelesen</div>
+      <div class="stat-sub">1 von Schulleitung</div>
+      <div class="card-corner"></div>
     </div>
 
-    <!-- Stat: Aufgaben -->
-    <div class="card c3">
+    <div class="card">
+      <div class="card-title">Termine heute</div>
+      <div class="stat-value">2</div>
+      <div class="stat-label">Im Kalender</div>
+      <div class="stat-sub">Nächster: 16:30 Uhr</div>
+      <div class="card-corner"></div>
+    </div>
+
+    <div class="card">
       <div class="card-title">Aufgaben</div>
-      <div class="stat-val" style="color:#ffaa00;text-shadow:0 0 18px #ff880055;">4</div>
-      <div class="stat-lbl">Heute offen</div>
-      <div class="stat-note warn">! 1 dringend</div>
-      <div class="prog"><div class="prog-fill orange" style="width:25%"></div></div>
+      <div class="stat-value">5</div>
+      <div class="stat-label">Offen</div>
+      <div class="stat-sub">1 heute fällig</div>
+      <div class="card-corner"></div>
     </div>
 
-    <!-- Stat: Schule -->
-    <div class="card c3">
-      <div class="card-title">Schule</div>
-      <div class="stat-val" style="color:#b055ff;text-shadow:0 0 18px #8822ff55;">3</div>
-      <div class="stat-lbl">Stunden heute</div>
-      <div class="stat-note" style="color:#b055ff;">8B · 10B · 10C</div>
-      <div class="prog"><div class="prog-fill purple" style="width:40%"></div></div>
-    </div>
-
-    <!-- Stat: Bolla -->
-    <div class="card c3">
-      <div class="card-title">Bolla Status</div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
-        <div class="dot-online" style="width:10px;height:10px;"></div>
-        <div class="stat-val" style="font-size:22px;">ONLINE</div>
-      </div>
-      <div class="stat-lbl">Seit 06:12 Uhr</div>
-      <div class="stat-note">Letzte Aktion 08:44</div>
-      <div class="prog"><div class="prog-fill" style="width:100%"></div></div>
-    </div>
-
-    <!-- Bolla Chat -->
-    <div class="card c7">
+    <div class="card span-2">
       <div class="card-title">Bolla — KI-Assistent</div>
       <div class="chat-msgs">
-        <div class="cmsg">
-          <div class="cmsg-who">// chris</div>
-          <div class="cmsg-text">Hast du die Aufgaben für 8B schon vorbereitet?</div>
+        <div class="msg chris">
+          <div>
+            <div class="msg-label">Chris</div>
+            <div class="msg-text">Was steht heute noch an?</div>
+            <div class="msg-ts">14:22</div>
+          </div>
         </div>
-        <div class="cmsg bolla">
-          <div class="cmsg-who">// bolla 🐾</div>
-          <div class="cmsg-text">Ja! Arbeitsblätter zu „Lineare Gleichungen" sind fertig. Soll ich sie in den Schule-Ordner ablegen?</div>
+        <div class="msg bolla">
+          <div>
+            <div class="msg-label">Bolla 🐾</div>
+            <div class="msg-text">Um 16:30 Notenkonferenz — Unterlagen im Schule-Ordner. 3 neue Mails, eine davon von der Schulleitung (Pilotprojekt Vertretungsplan, Anmeldeschluss 09.05). Robin hat heute Morgen geantwortet.</div>
+            <div class="msg-ts">14:22</div>
+          </div>
         </div>
-        <div class="cmsg">
-          <div class="cmsg-who">// chris</div>
-          <div class="cmsg-text">Perfekt. Und schau mal in die E-Mails, da war was von der Schulleitung.</div>
+        <div class="msg chris">
+          <div>
+            <div class="msg-label">Chris</div>
+            <div class="msg-text">Die Mail von der Schulleitung kurz zusammenfassen?</div>
+            <div class="msg-ts">14:35</div>
+          </div>
         </div>
-        <div class="cmsg bolla">
-          <div class="cmsg-who">// bolla 🐾</div>
-          <div class="cmsg-text">Erledigt. Kurzüberblick: 2 Eltern-Mails (8B), 1 Rundbrief Schulleitung. Soll ich zusammenfassen?</div>
+        <div class="msg bolla">
+          <div>
+            <div class="msg-label">Bolla 🐾</div>
+            <div class="msg-text">Klingt spannend, aber du hast schon volle Kalender. Vielleicht erst Konferenz abwarten — ich erinnere dich am 07.05. automatisch. 🐾</div>
+            <div class="msg-ts">14:35</div>
+          </div>
         </div>
       </div>
-      <div class="chat-inp">
-        <input type="text" placeholder="Nachricht an Bolla eingeben_" />
-        <button>SEND</button>
+      <div class="chat-line">
+        <span class="chat-prompt">bolla&gt;</span>
+        <span>Nachricht eingeben</span>
+        <span class="blink"></span>
       </div>
+      <div class="card-corner"></div>
     </div>
 
-    <!-- Weather -->
-    <div class="card c5">
-      <div class="card-title">Wetter — Berlin</div>
-      <div class="wx-main">
-        <div class="wx-ico">⛅</div>
+    <div class="card">
+      <div class="card-title">Wetter</div>
+      <div class="weather-city">Stuttgart</div>
+      <div class="weather-top">
+        <div class="weather-icon">⛅</div>
         <div>
-          <div class="wx-temp">18°</div>
-          <div class="wx-cond">Teilweise bewölkt</div>
+          <div class="weather-temp">17°</div>
+          <div class="weather-desc">Teilweise bewölkt</div>
         </div>
       </div>
-      <div class="wx-grid">
-        <div class="wx-cell"><div class="wx-cval">62%</div><div class="wx-clbl">Feuchte</div></div>
-        <div class="wx-cell"><div class="wx-cval">12km/h</div><div class="wx-clbl">Wind</div></div>
-        <div class="wx-cell"><div class="wx-cval">22°</div><div class="wx-clbl">Max.</div></div>
+      <div class="weather-grid">
+        <div class="w-item"><span>12 km/h</span>Wind</div>
+        <div class="w-item"><span>68%</span>Luftfeuchte</div>
+        <div class="w-item"><span>1013 hPa</span>Luftdruck</div>
+        <div class="w-item"><span>21:08</span>Sonnenuntergang</div>
       </div>
+      <div class="card-corner"></div>
     </div>
 
-    <!-- Activity Log -->
-    <div class="card c12">
-      <div class="card-title">Aktivitäts-Log — Heute</div>
-      <div class="act-row">
-        <div class="act-time">08:44</div>
-        <div class="act-text">Bolla hat Tagesnotizen vom 28. April in memory/ gespeichert und Git-Commit gepusht</div>
-        <div class="act-tag t-bolla">BOLLA</div>
+    <div class="card span-2">
+      <div class="card-title">Aktivitäten</div>
+      <div class="activity-feed">
+        <div class="act-item">
+          <div class="act-dot" style="color:#00ff9f"></div>
+          <div class="act-body">
+            <div class="act-text"><strong>Bolla</strong> Tagesnotiz erstellt — 2026-05-03.md</div>
+            <div class="act-time">vor 5 min</div>
+          </div>
+        </div>
+        <div class="act-item">
+          <div class="act-dot" style="color:#00d4ff; background:#00d4ff"></div>
+          <div class="act-body">
+            <div class="act-text"><strong>E-Mail</strong> empfangen von Schulleitung — Pilotprojekt Vertretungsplan</div>
+            <div class="act-time">vor 18 min</div>
+          </div>
+        </div>
+        <div class="act-item">
+          <div class="act-dot" style="color:#00ff9f"></div>
+          <div class="act-body">
+            <div class="act-text"><strong>Robin</strong> hat auf deine gestrige Nachricht geantwortet</div>
+            <div class="act-time">vor 1 Std</div>
+          </div>
+        </div>
+        <div class="act-item">
+          <div class="act-dot" style="color:#00d4ff; background:#00d4ff"></div>
+          <div class="act-body">
+            <div class="act-text"><strong>Wetter-Update</strong> automatisch geladen für Stuttgart</div>
+            <div class="act-time">vor 2 Std</div>
+          </div>
+        </div>
+        <div class="act-item">
+          <div class="act-dot" style="color:#1e4a5a; background:#1e4a5a"></div>
+          <div class="act-body">
+            <div class="act-text"><strong>Mission Control</strong> gestartet — alle Dienste nominal</div>
+            <div class="act-time">09:12</div>
+          </div>
+        </div>
       </div>
-      <div class="act-row">
-        <div class="act-time">08:31</div>
-        <div class="act-text">Neue E-Mail von Eltern 8B — Entschuldigung für Felix M. (ernstmandel@outlook.de)</div>
-        <div class="act-tag t-mail">MAIL</div>
+      <div class="card-corner"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">System Info</div>
+      <div class="sys-bars">
+        <div class="sys-bar">
+          <div class="sys-bar-head">CPU <span>23%</span></div>
+          <div class="sys-track"><div class="sys-fill" style="width:23%"></div></div>
+        </div>
+        <div class="sys-bar">
+          <div class="sys-bar-head">RAM <span>4.2 / 16 GB</span></div>
+          <div class="sys-track"><div class="sys-fill" style="width:26%"></div></div>
+        </div>
+        <div class="sys-bar">
+          <div class="sys-bar-head">DISK <span>127 / 512 GB</span></div>
+          <div class="sys-track"><div class="sys-fill" style="width:25%"></div></div>
+        </div>
       </div>
-      <div class="act-row">
-        <div class="act-time">08:15</div>
-        <div class="act-text">Stundenplan-Erinnerung: 3. Stunde — Mathematik 8B, Raum 214, Beginn 09:40</div>
-        <div class="act-tag t-school">SCHULE</div>
+      <div class="sys-meta">
+        UPTIME &nbsp;&nbsp;&nbsp;3h 42m<br>
+        KERNEL &nbsp;&nbsp;6.6.87 WSL2<br>
+        STATUS &nbsp;&nbsp;<span class="sys-ok">■ NOMINAL</span>
       </div>
-      <div class="act-row">
-        <div class="act-time">07:50</div>
-        <div class="act-text">Mission Control gestartet — alle Dienste aktiv, Cloudflare-Tunnel online, Systemcheck OK</div>
-        <div class="act-tag t-sys">SYSTEM</div>
-      </div>
+      <div class="card-corner"></div>
     </div>
 
   </div>

@@ -171,6 +171,40 @@
     color: var(--text3);
   }
   .refresh-hint a { color: var(--accent); text-decoration: none; }
+
+  /* CLIPBOARD */
+  .clip-textarea {
+    width: 100%;
+    border: 1.5px solid var(--sep);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 16px;
+    font-family: inherit;
+    color: var(--text);
+    background: #fafafa;
+    resize: none;
+    outline: none;
+    line-height: 1.5;
+    min-height: 200px;
+    transition: border-color 0.15s;
+  }
+  .clip-textarea:focus { border-color: var(--accent); }
+  .clip-btn {
+    flex: 1;
+    padding: 11px 8px;
+    border-radius: 10px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    background: rgba(0,122,255,0.12);
+    color: var(--accent);
+    transition: opacity 0.15s;
+  }
+  .clip-btn:active { opacity: 0.5; }
+  .clip-btn.green { background: rgba(52,199,89,0.15); color: var(--green); }
+  .clip-btn.red { background: rgba(255,59,48,0.12); color: var(--red); }
 </style>
 </head>
 <body>
@@ -204,6 +238,20 @@
   <div id="robin-timeline"><div class="loading">Lade…</div></div>
 </div>
 
+<!-- CLIPBOARD -->
+<div class="page" id="p-clip">
+  <div class="card" style="flex-direction:column;gap:10px">
+    <textarea id="clip-text" class="clip-textarea" placeholder="Hier Text eingeben oder laden…"></textarea>
+    <div style="display:flex;gap:8px">
+      <button onclick="clipboardSave()" class="clip-btn">💾 Speichern</button>
+      <button onclick="clipboardCopy()" class="clip-btn green">📋 Kopieren</button>
+      <button onclick="clipboardClear()" class="clip-btn red">🗑️ Leeren</button>
+    </div>
+    <div id="clip-status" style="text-align:center;font-size:14px;min-height:20px"></div>
+    <div id="clip-ts" style="text-align:center;font-size:12px;color:var(--text3)"></div>
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <nav class="tabbar">
   <button class="tabbtn active" data-tab="cal"><span class="ic">📅</span>Kalender</button>
@@ -211,6 +259,7 @@
   <button class="tabbtn" data-tab="wx"><span class="ic">🌤️</span>Wetter</button>
   <button class="tabbtn" data-tab="bd"><span class="ic">🎂</span>Geburtstage</button>
   <button class="tabbtn" data-tab="robin"><span class="ic">🩺</span>Robin</button>
+  <button class="tabbtn" data-tab="clip"><span class="ic">📋</span>Clipboard</button>
 </nav>
 
 <script>
@@ -222,7 +271,8 @@ const TITLES = {
   mail: ['Mails', 'Ungelesen in deinen Postfächern'],
   wx: ['Wetter', 'Norderstedt'],
   bd: ['Geburtstage', 'Nächste Anlässe'],
-  robin: ['Robin', 'Medizinstudium Uni Ulm']
+  robin: ['Robin', 'Medizinstudium Uni Ulm'],
+  clip: ['Clipboard', 'Geräteübergreifend teilen']
 };
 
 document.querySelectorAll('.tabbtn').forEach(btn => {
@@ -249,6 +299,7 @@ async function loadTab(tab) {
   else if (tab === 'wx') await loadWeather();
   else if (tab === 'bd') await loadBirthdays();
   else if (tab === 'robin') loadRobinTimeline();
+  else if (tab === 'clip') await loadClipboard();
 }
 
 async function loadCalendar() {
@@ -437,6 +488,60 @@ function loadRobinTimeline() {
         </div>`;
       }).join('')}
     </div>`;
+}
+
+// ===== CLIPBOARD =====
+async function loadClipboard() {
+  const ta = document.getElementById('clip-text');
+  const ts = document.getElementById('clip-ts');
+  try {
+    const r = await fetch('/api/clipboard');
+    const d = await r.json();
+    ta.value = d.text || '';
+    ts.textContent = d.saved ? 'Zuletzt gespeichert: ' + new Date(d.saved).toLocaleString('de-DE') : '';
+  } catch (e) {
+    showClipStatus('⚠️ ' + e.message, false);
+  }
+}
+
+async function clipboardSave() {
+  const text = document.getElementById('clip-text').value;
+  try {
+    await fetch('/api/clipboard', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text})
+    });
+    const ts = document.getElementById('clip-ts');
+    ts.textContent = 'Zuletzt gespeichert: ' + new Date().toLocaleString('de-DE');
+    showClipStatus('✓ Gespeichert', true);
+  } catch (e) {
+    showClipStatus('⚠️ ' + e.message, false);
+  }
+}
+
+async function clipboardCopy() {
+  const text = document.getElementById('clip-text').value;
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    showClipStatus('✓ Kopiert', true);
+  } catch (e) {
+    showClipStatus('⚠️ ' + e.message, false);
+  }
+}
+
+function clipboardClear() {
+  document.getElementById('clip-text').value = '';
+  document.getElementById('clip-ts').textContent = '';
+  showClipStatus('', true);
+}
+
+function showClipStatus(msg, ok) {
+  const el = document.getElementById('clip-status');
+  el.textContent = msg;
+  el.style.color = ok ? 'var(--green)' : 'var(--red)';
+  if (msg) setTimeout(() => { el.textContent = ''; }, 2500);
 }
 
 // Initial load
