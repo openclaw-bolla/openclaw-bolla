@@ -7385,7 +7385,10 @@ async function faSearch() {
   clearTimeout(_faSearchTimer);
   document.getElementById('fa-result-count').textContent = '🔍 Übersetzt…';
   _faSearchTimer = setTimeout(async () => {
-    if (_faSearchInFlight) return;
+    if (_faSearchInFlight) {
+      document.getElementById('fa-result-count').textContent = '⏳ Suche läuft noch…';
+      return;
+    }
     _faSearchInFlight = true;
     const _flightTimeout = setTimeout(() => { _faSearchInFlight = false; }, 25000);
     try {
@@ -7401,10 +7404,8 @@ async function faSearch() {
       _faLastTerms = terms;
       faRenderGrid(results, terms.join('|'), terms, q);
     } catch(e) {
-      const qL = q.toLowerCase();
-      const filtered = _faAllResults.filter(r => (r.description||'').toLowerCase().includes(qL));
-      _faLastTerms = [qL];
-      faRenderGrid(filtered, null, [qL], q);
+      document.getElementById('fa-result-count').textContent = '⚠️ Übersetzung fehlgeschlagen — nochmal Enter drücken';
+      _faLastTerms = [];
     } finally {
       clearTimeout(_flightTimeout);
       _faSearchInFlight = false;
@@ -7448,7 +7449,7 @@ function faRenderGrid(results, _unused, terms, originalQuery) {
   const exportBtn = document.getElementById('fa-export-onedrive-btn');
   if (exportBtn) exportBtn.style.display = _faShown.length ? '' : 'none';
   // Übersetzte Terms als kleine Info-Zeile über dem Grid
-  if (termsArr.length > 1) {
+  if (termsArr.length) {
     const p = document.createElement('div');
     p.id = 'fa-terms-pill';
     p.style.cssText = 'margin-bottom:8px;font-size:11px;color:rgba(255,255,255,0.3)';
