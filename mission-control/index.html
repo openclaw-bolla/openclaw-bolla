@@ -2115,7 +2115,7 @@ html, body {
               <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Analyse-Prompt</label>
               <textarea id="fa-prompt" rows="2"
                 style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;resize:vertical;font-family:inherit"
-                >Beschreibe dieses Foto kurz auf Deutsch: Was ist zu sehen? Personen, Ort, Aktivität, Stimmung.</textarea>
+                >Describe this photo briefly: Who is visible (people, estimated age, gender), where was it taken, what activity, what mood.</textarea>
             </div>
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
               <button id="fa-start-btn" onclick="faStart()"
@@ -2147,11 +2147,19 @@ html, body {
 
           <!-- Suche + Ergebnisse -->
           <div class="card" style="padding:20px">
-            <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px">
+            <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
               <input id="fa-search" type="text" placeholder="In Beschreibungen suchen..."
                 oninput="faSearch()"
-                style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:14px">
+                style="flex:1;min-width:200px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:14px">
               <span id="fa-result-count" style="font-size:13px;color:var(--dim);white-space:nowrap"></span>
+              <button onclick="faExportCSV()"
+                style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.35);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;white-space:nowrap">
+                📊 CSV exportieren
+              </button>
+              <button onclick="faOpenFolder()"
+                style="background:rgba(96,165,250,0.15);color:#60a5fa;border:1px solid rgba(96,165,250,0.35);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;white-space:nowrap">
+                📁 Ordner öffnen
+              </button>
             </div>
             <div id="fa-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px"></div>
             <div id="fa-empty" style="color:var(--dim);font-size:14px;text-align:center;padding:40px 0;display:none">
@@ -7269,6 +7277,77 @@ function faRenderGrid(results) {
   }).join('');
 }
 
+function faExportCSV() {
+  if (!_faAllResults.length) return;
+  const rows = [['Dateiname','Ordner','Pfad','Beschreibung','Analysiert']];
+  _faAllResults.forEach(r => rows.push([
+    r.filename, r.folder || '', r.path,
+    '"' + (r.description||'').replace(/"/g,'""') + '"',
+    r.analyzed_at || ''
+  ]));
+  const csv = rows.map(r => r.join(';')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'foto-analyse-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+function faOpenFolder() {
+  const folder = document.getElementById('fa-folder').value.trim();
+  if (!folder) return;
+  // WSL-Pfad → Windows-Pfad konvertieren für Clipboard
+  let winPath = folder.replace('/mnt/d/', 'D:\\').replace('/mnt/c/', 'C:\\').replace(/\//g, '\\');
+  navigator.clipboard.writeText(winPath);
+  document.getElementById('fa-status').textContent = '📋 Windows-Pfad kopiert: ' + winPath;
+  setTimeout(() => document.getElementById('fa-status').textContent = '', 3000);
+}
+
+async function faReanalyze(path, overlay) {
+  const model = document.getElementById('fa-model').value.trim();
+  const prompt = document.getElementById('fa-prompt').value.trim();
+  const url = document.getElementById('fa-url').value.trim();
+  // Aus Ergebnissen entfernen damit es neu analysiert wird
+  await faRemoveResult(path, null);
+  overlay && overlay.remove();
+  document.getElementById('fa-status').textContent = '🔄 Foto wird neu analysiert…';
+  try {
+    const d = await fetch('/api/photos/start', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({folder: path, prompt, model, lmstudio_url: url, single: true})
+    }).then(r => r.json());
+    if (d.error) document.getElementById('fa-status').textContent = '⚠️ ' + d.error;
+    else faPollStatus();
+  } catch(e) { document.getElementById('fa-status').textContent = '⚠️ ' + e.message; }
+}
+
+async function faRemoveResult(path, overlay) {
+  _faAllResults = _faAllResults.filter(r => r.path !== path);
+  await fetch('/api/photos/remove', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({path})
+  });
+  overlay && overlay.remove();
+  faSearch();
+}
+
+async function faRename(path, description, overlay) {
+  // Neuen Namen aus Beschreibung vorschlagen
+  const base = path.split('/').pop().replace(/\.[^.]+$/, '');
+  const ext = path.split('.').pop();
+  const suggested = prompt('Neuer Dateiname (ohne Endung):', base);
+  if (!suggested || suggested === base) return;
+  const d = await fetch('/api/photos/rename', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({path, new_name: suggested + '.' + ext})
+  }).then(r => r.json());
+  if (d.error) { alert('Fehler: ' + d.error); return; }
+  // Pfad in Ergebnissen aktualisieren
+  const idx = _faAllResults.findIndex(r => r.path === path);
+  if (idx >= 0) { _faAllResults[idx].path = d.new_path; _faAllResults[idx].filename = d.new_name; }
+  overlay && overlay.remove();
+  faSearch();
+}
+
 function faShowDetail(r) {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;cursor:pointer';
@@ -7279,9 +7358,15 @@ function faShowDetail(r) {
       <div style="font-size:15px;font-weight:600;color:var(--bright);margin-bottom:8px">${r.filename}</div>
       <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:12px">${r.description}</div>
       <div style="font-size:11px;color:var(--dim);word-break:break-all;margin-bottom:12px">${r.path}</div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button onclick="navigator.clipboard.writeText('${r.path.replace(/'/g,"\\'")}');this.textContent='✓ Kopiert!';setTimeout(()=>this.textContent='📋 Pfad kopieren',1500)"
           style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer">📋 Pfad kopieren</button>
+        <button onclick="faReanalyze(${JSON.stringify(r.path)}, this.closest('div[style*=fixed]'))"
+          style="background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.35);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer">🔄 Neu analysieren</button>
+        <button onclick="faRename(${JSON.stringify(r.path)}, ${JSON.stringify(r.description)}, this.closest('div[style*=fixed]'))"
+          style="background:rgba(167,139,250,0.15);color:#a78bfa;border:1px solid rgba(167,139,250,0.35);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer">✏️ Umbenennen</button>
+        <button onclick="faRemoveResult(${JSON.stringify(r.path)}, this.closest('div[style*=fixed]'))"
+          style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer">🗑 Entfernen</button>
         <button onclick="this.closest('div[style*=fixed]').remove()"
           style="background:var(--bg);color:var(--dim);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer">Schließen</button>
       </div>

@@ -3061,6 +3061,27 @@ class Handler(BaseHTTPRequestHandler):
                 _photo_job["stop"] = True
                 _photo_save_results([])
                 self._send_json({"ok": True})
+            elif self.path == "/api/photos/remove":
+                path = body.get("path", "")
+                results = [r for r in _photo_load_results() if r.get("path") != path]
+                _photo_save_results(results)
+                self._send_json({"ok": True})
+            elif self.path == "/api/photos/rename":
+                old_path = body.get("path", "")
+                new_name = body.get("new_name", "")
+                if not old_path or not new_name or "/" in new_name or "\\" in new_name or ".." in new_name:
+                    self._send_json({"error": "Ungültige Parameter"}, status=400); return
+                new_path = os.path.join(os.path.dirname(old_path), new_name)
+                if os.path.exists(new_path):
+                    self._send_json({"error": "Datei existiert bereits"}); return
+                os.rename(old_path, new_path)
+                results = _photo_load_results()
+                for r in results:
+                    if r.get("path") == old_path:
+                        r["path"] = new_path
+                        r["filename"] = new_name
+                _photo_save_results(results)
+                self._send_json({"ok": True, "new_path": new_path, "new_name": new_name})
             elif self.path == "/api/korrektur/meta":
                 import subprocess as _sp, shutil as _sh, tempfile as _tf, base64 as _b64, re as _re
                 img_b64 = body.get("image_b64", "")
