@@ -7156,7 +7156,8 @@ async function faLoadResults() {
   try {
     const d = await fetch('/api/photos/results').then(r => r.json());
     _faAllResults = d.results || [];
-    faRenderGrid(_faAllResults);
+    const q = (document.getElementById('fa-search').value || '').toLowerCase().trim();
+    faSearch();
   } catch(e) {}
 }
 
@@ -7234,32 +7235,60 @@ async function faClear() {
 
 function faSearch() {
   const q = document.getElementById('fa-search').value.toLowerCase().trim();
-  if (!q) { faRenderGrid(_faAllResults); return; }
+  if (!q) { faRenderGrid(_faAllResults, ''); return; }
   const filtered = _faAllResults.filter(r =>
     r.description.toLowerCase().includes(q) ||
     r.filename.toLowerCase().includes(q) ||
     (r.folder || '').toLowerCase().includes(q)
   );
-  faRenderGrid(filtered);
+  faRenderGrid(filtered, q);
 }
 
-function faRenderGrid(results) {
+function faHighlight(text, q) {
+  if (!q) return text;
+  const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+  return text.replace(re, '<mark style="background:rgba(255,102,153,0.35);color:var(--bright);border-radius:2px;padding:0 2px">$1</mark>');
+}
+
+function faRenderGrid(results, q) {
   const grid  = document.getElementById('fa-grid');
   const empty = document.getElementById('fa-empty');
   const count = document.getElementById('fa-result-count');
   count.textContent = results.length + ' Fotos';
   if (!results.length) {
     grid.innerHTML = '';
-    empty.style.display = 'block';
+    empty.style.display = q ? 'block' : 'none';
+    empty.textContent = q ? `Keine Treffer für „${q}"` : 'Noch keine Analysen vorhanden.';
     return;
   }
   empty.style.display = 'none';
-  // Neueste zuerst, max 200 anzeigen
   const show = [...results].reverse().slice(0, 200);
   grid.innerHTML = show.map(r => {
     const thumbUrl = '/api/photos/thumb?path=' + encodeURIComponent(r.path);
-    const shortDesc = r.description.length > 120 ? r.description.slice(0, 120) + '…' : r.description;
     const dateStr = r.analyzed_at ? new Date(r.analyzed_at).toLocaleDateString('de-DE') : '';
+    // Zeige relevantesten Ausschnitt der Beschreibung
+    let desc = r.description || '';
+    let matchHint = '';
+    if (q) {
+      const qL = q.toLowerCase();
+      const descL = desc.toLowerCase();
+      const pos = descL.indexOf(qL);
+      if (pos >= 0) {
+        // Treffer in Beschreibung — zeige Kontext um den Treffer
+        const start = Math.max(0, pos - 40);
+        const end = Math.min(desc.length, pos + q.length + 80);
+        desc = (start > 0 ? '…' : '') + desc.slice(start, end) + (end < desc.length ? '…' : '');
+      } else {
+        // Treffer in Dateiname oder Ordner
+        desc = desc.length > 100 ? desc.slice(0, 100) + '…' : desc;
+        if (r.filename.toLowerCase().includes(qL))
+          matchHint = `<div style="font-size:11px;color:#fbbf24;margin-top:3px">📄 Treffer: Dateiname</div>`;
+        else if ((r.folder||'').toLowerCase().includes(qL))
+          matchHint = `<div style="font-size:11px;color:#fbbf24;margin-top:3px">📁 Treffer: Ordner „${r.folder}"</div>`;
+      }
+    } else {
+      desc = desc.length > 100 ? desc.slice(0, 100) + '…' : desc;
+    }
     return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color 0.15s"
               onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'"
               onclick="faShowDetail(${JSON.stringify(r).replace(/'/g,"&#39;")})">
@@ -7269,9 +7298,10 @@ function faRenderGrid(results) {
           onerror="this.style.display='none'">
       </div>
       <div style="padding:8px 10px">
-        <div style="font-size:11px;color:var(--accent);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.filename}">${r.filename}</div>
-        <div style="font-size:12px;color:var(--dim);margin-top:4px;line-height:1.4">${shortDesc}</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:6px">${dateStr}</div>
+        <div style="font-size:11px;color:var(--accent);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.filename}">${faHighlight(r.filename, q)}</div>
+        <div style="font-size:12px;color:var(--dim);margin-top:4px;line-height:1.4">${faHighlight(desc, q)}</div>
+        ${matchHint}
+        <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:4px">${dateStr}</div>
       </div>
     </div>`;
   }).join('');
