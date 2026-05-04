@@ -7406,7 +7406,14 @@ async function faSearch() {
       const results = d.results || [];
       _faCurrentQuery = q;
       _faLastTerms = terms;
-      faRenderGrid(results, terms.join('|'), terms, q);
+      if (d.no_data) {
+        document.getElementById('fa-empty').style.display = 'block';
+        document.getElementById('fa-empty').textContent = '📭 Noch keine Fotos analysiert — bitte zuerst Analyse starten';
+        document.getElementById('fa-grid').innerHTML = '';
+        document.getElementById('fa-result-count').textContent = '';
+      } else {
+        faRenderGrid(results, terms.join('|'), terms, q);
+      }
     } catch(e) {
       document.getElementById('fa-result-count').textContent = '';
       document.getElementById('fa-empty').style.display = 'block';

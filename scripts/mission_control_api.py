@@ -2678,7 +2678,7 @@ def photo_search(query):
         return {"results": [], "terms": []}
     results = _photo_load_results()
     if not results:
-        return {"results": [], "terms": []}
+        return {"results": [], "terms": [], "no_data": True}
 
     prompt = (
         "You are a photo search assistant. The user wants to find photos described in English.\n"
