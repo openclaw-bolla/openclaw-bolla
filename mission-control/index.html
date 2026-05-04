@@ -2162,8 +2162,8 @@ html, body {
               </button>
             </div>
             <div id="fa-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px"></div>
-            <div id="fa-empty" style="color:var(--dim);font-size:14px;text-align:center;padding:40px 0;display:none">
-              Noch keine Analysen vorhanden — Ordner wählen und Analyse starten.
+            <div id="fa-empty" style="color:var(--dim);font-size:14px;text-align:center;padding:40px 0;display:block">
+              Suchbegriff eingeben um Fotos zu finden.
             </div>
           </div>
         </div>
@@ -7235,12 +7235,8 @@ async function faClear() {
 
 function faSearch() {
   const q = document.getElementById('fa-search').value.toLowerCase().trim();
-  if (!q) { faRenderGrid(_faAllResults, ''); return; }
-  const filtered = _faAllResults.filter(r =>
-    r.description.toLowerCase().includes(q) ||
-    r.filename.toLowerCase().includes(q) ||
-    (r.folder || '').toLowerCase().includes(q)
-  );
+  if (!q) { faRenderGrid([], ''); return; }
+  const filtered = _faAllResults.filter(r => r.description.toLowerCase().includes(q));
   faRenderGrid(filtered, q);
 }
 
@@ -7257,8 +7253,8 @@ function faRenderGrid(results, q) {
   count.textContent = results.length + ' Fotos';
   if (!results.length) {
     grid.innerHTML = '';
-    empty.style.display = q ? 'block' : 'none';
-    empty.textContent = q ? `Keine Treffer für „${q}"` : 'Noch keine Analysen vorhanden.';
+    empty.style.display = 'block';
+    empty.textContent = q ? `Keine Treffer für „${q}"` : 'Suchbegriff eingeben um Fotos zu finden.';
     return;
   }
   empty.style.display = 'none';
@@ -7274,17 +7270,11 @@ function faRenderGrid(results, q) {
       const descL = desc.toLowerCase();
       const pos = descL.indexOf(qL);
       if (pos >= 0) {
-        // Treffer in Beschreibung — zeige Kontext um den Treffer
         const start = Math.max(0, pos - 40);
         const end = Math.min(desc.length, pos + q.length + 80);
         desc = (start > 0 ? '…' : '') + desc.slice(start, end) + (end < desc.length ? '…' : '');
       } else {
-        // Treffer in Dateiname oder Ordner
         desc = desc.length > 100 ? desc.slice(0, 100) + '…' : desc;
-        if (r.filename.toLowerCase().includes(qL))
-          matchHint = `<div style="font-size:11px;color:#fbbf24;margin-top:3px">📄 Treffer: Dateiname</div>`;
-        else if ((r.folder||'').toLowerCase().includes(qL))
-          matchHint = `<div style="font-size:11px;color:#fbbf24;margin-top:3px">📁 Treffer: Ordner „${r.folder}"</div>`;
       }
     } else {
       desc = desc.length > 100 ? desc.slice(0, 100) + '…' : desc;
