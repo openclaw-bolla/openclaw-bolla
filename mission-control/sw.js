@@ -1,5 +1,5 @@
 // MC Chris — Service Worker (minimal, für PWA-Installability)
-const CACHE = 'mc-chris-v1';
+const CACHE = 'mc-chris-v2';
 const ASSETS = ['/m', '/manifest.webmanifest', '/mc-icon-192.png', '/mc-icon-512.png'];
 
 self.addEventListener('install', (e) => {

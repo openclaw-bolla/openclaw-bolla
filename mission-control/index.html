@@ -2148,17 +2148,43 @@ html, body {
             </button>
             <div id="fa-settings-body" style="display:none;padding:0 20px 20px">
               <p style="font-size:13px;color:var(--dim);margin:0 0 14px">
-                Fotos einmalig via LM Studio analysieren — danach ist Suche sofort verfügbar.
+                Fotos einmalig analysieren — danach ist Suche sofort verfügbar.
               </p>
-              <!-- Modell + Status -->
-              <div style="display:flex;gap:12px;align-items:end;margin-bottom:12px">
-                <div style="flex:1">
-                  <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Modell (in LM Studio geladen)</label>
-                  <input id="fa-model" type="text" value="moondream2"
-                    oninput="document.getElementById('fa-model-badge').textContent=this.value"
-                    style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px">
+              <!-- Engine-Auswahl -->
+              <div style="display:flex;gap:10px;margin-bottom:16px">
+                <button id="fa-engine-gemini" onclick="faSetEngine('gemini')"
+                  style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--accent);background:rgba(99,102,241,0.15);color:var(--text);font-size:13px;cursor:pointer;font-weight:600">
+                  ☁️ Gemini Flash
+                  <div style="font-size:11px;font-weight:400;color:var(--dim);margin-top:3px">Cloud · kostenlos · max. 1500 Fotos/Tag · kein GPU-Stress</div>
+                </button>
+                <button id="fa-engine-lmstudio" onclick="faSetEngine('lmstudio')"
+                  style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--text);font-size:13px;cursor:pointer">
+                  🖥️ LM Studio
+                  <div style="font-size:11px;font-weight:400;color:var(--dim);margin-top:3px">Lokal · unbegrenzt · LM Studio muss laufen</div>
+                </button>
+              </div>
+              <!-- LM Studio Einstellungen (nur sichtbar wenn LM Studio aktiv) -->
+              <div id="fa-lmstudio-opts">
+                <!-- Modell + Status -->
+                <div style="display:flex;gap:12px;align-items:end;margin-bottom:12px">
+                  <div style="flex:1">
+                    <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Modell (in LM Studio geladen)</label>
+                    <input id="fa-model" type="text" value="moondream2"
+                      oninput="document.getElementById('fa-model-badge').textContent=this.value"
+                      style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px">
+                  </div>
+                  <span id="fa-lm-status" style="font-size:12px;color:var(--dim);white-space:nowrap;padding-bottom:9px"></span>
                 </div>
-                <span id="fa-lm-status" style="font-size:12px;color:var(--dim);white-space:nowrap;padding-bottom:9px"></span>
+                <!-- Throttle -->
+                <div style="margin-bottom:14px">
+                  <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">
+                    Pause zwischen Fotos: <strong id="fa-throttle-val">2s</strong>
+                    <span style="color:rgba(255,255,255,0.25);margin-left:6px">(0 = Vollgas, 2s = System bleibt bedienbar)</span>
+                  </label>
+                  <input id="fa-throttle" type="range" min="0" max="3" step="0.5" value="2"
+                    oninput="document.getElementById('fa-throttle-val').textContent=this.value+'s'"
+                    style="width:220px;accent-color:var(--accent)">
+                </div>
               </div>
               <!-- Buttons -->
               <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
@@ -7233,8 +7259,21 @@ let _faShown = [];
 let _faCurrentQuery = '';
 let _faLastTerms = [];
 let _faSearchInFlight = false;
+let _faEngine = 'gemini';
+
+function faSetEngine(engine) {
+  _faEngine = engine;
+  document.getElementById('fa-engine-gemini').style.borderColor = engine === 'gemini' ? 'var(--accent)' : 'var(--border)';
+  document.getElementById('fa-engine-gemini').style.background = engine === 'gemini' ? 'rgba(99,102,241,0.15)' : 'transparent';
+  document.getElementById('fa-engine-gemini').style.fontWeight = engine === 'gemini' ? '600' : 'normal';
+  document.getElementById('fa-engine-lmstudio').style.borderColor = engine === 'lmstudio' ? 'var(--accent)' : 'var(--border)';
+  document.getElementById('fa-engine-lmstudio').style.background = engine === 'lmstudio' ? 'rgba(99,102,241,0.15)' : 'transparent';
+  document.getElementById('fa-engine-lmstudio').style.fontWeight = engine === 'lmstudio' ? '600' : 'normal';
+  document.getElementById('fa-lmstudio-opts').style.display = engine === 'lmstudio' ? 'block' : 'none';
+}
 
 async function loadFotoAnalyse() {
+  faSetEngine('gemini');
   try {
     const cfg = await fetch('/api/photos/config').then(r => r.json());
     if (cfg.lmstudio_url) document.getElementById('fa-url').value = cfg.lmstudio_url;
@@ -7246,7 +7285,6 @@ async function loadFotoAnalyse() {
     if (cfg.reachable === false) {
       lmStatus.textContent = '⚠️ LM Studio nicht erreichbar';
       lmStatus.style.color = '#f87171';
-      faOpenSettings();
     } else if (cfg.model) {
       lmStatus.textContent = '✓ verbunden';
       lmStatus.style.color = '#4ade80';
@@ -7327,9 +7365,11 @@ async function faPollStatus() {
 async function faStart() {
   const folders = _faSelectedFolders.length ? _faSelectedFolders : [document.getElementById('fa-folder').value.trim()];
   const folder = folders.length === 1 ? folders[0] : folders;
-  const prompt = document.getElementById('fa-prompt').value.trim();
-  const model  = document.getElementById('fa-model').value.trim();
-  const url    = document.getElementById('fa-url').value.trim();
+  const prompt   = document.getElementById('fa-prompt').value.trim();
+  const model    = document.getElementById('fa-model').value.trim();
+  const url      = document.getElementById('fa-url').value.trim();
+  const throttle = parseFloat(document.getElementById('fa-throttle').value) || 0;
+  const engine   = _faEngine;
   if (!folders.length || !folders[0]) { document.getElementById('fa-status').textContent = '⚠️ Bitte Ordner angeben'; return; }
   document.getElementById('fa-status').textContent = '⏳ Starte…';
   document.getElementById('fa-start-btn').disabled = true;
@@ -7337,7 +7377,7 @@ async function faStart() {
     const d = await fetch('/api/photos/start', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({folder, prompt, model, lmstudio_url: url})
+      body: JSON.stringify({folder, prompt, model, lmstudio_url: url, throttle, engine})
     }).then(r => r.json());
     if (d.error) {
       document.getElementById('fa-status').textContent = '⚠️ ' + d.error;
@@ -7613,6 +7653,8 @@ async function faFolderBrowse() {
     current = path;
     const d = await fetch('/api/fs/dirs?path=' + encodeURIComponent(path)).then(r => r.json());
     const dirs = d.dirs || [];
+    const photosMap = {};
+    (d.photos || []).forEach(e => { photosMap[path.replace(/\/+$/,'') + '/' + e.name] = e.photos; });
     const parts = path.split('/').filter(Boolean);
     const breadcrumb = parts.map((p, i) => {
       const fp = '/' + parts.slice(0, i+1).join('/');
@@ -7638,6 +7680,8 @@ async function faFolderBrowse() {
           ${dirs.length ? dirs.map(name => {
             const fp = path.replace(/\/+$/,'') + '/' + name;
             const checked = _faSelectedFolders.includes(fp);
+            const cnt = photosMap[fp];
+            const cntHtml = cnt > 0 ? `<span style="font-size:11px;color:var(--dim);margin-left:auto;white-space:nowrap">${cnt} Foto${cnt!==1?'s':''}</span>` : (cnt === 0 ? `<span style="font-size:11px;color:rgba(255,255,255,0.2);margin-left:auto">—</span>` : '');
             return `<div style="padding:6px 12px;border-radius:6px;font-size:13px;color:var(--text);display:flex;align-items:center;gap:10px;cursor:pointer"
               onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''"
               onclick="event.stopPropagation()">
@@ -7645,6 +7689,7 @@ async function faFolderBrowse() {
               <span data-nav="${fp.replace(/"/g,'&quot;')}" style="flex:1;cursor:pointer">
                 <span style="color:#fbbf24">📁</span> ${name}
               </span>
+              ${cntHtml}
             </div>`;
           }).join('') : '<div style="padding:16px;color:var(--dim);font-size:13px;text-align:center">Keine Unterordner</div>'}
         </div>
@@ -7688,7 +7733,15 @@ async function faFolderBrowse() {
 
   function refreshSelCount() {
     const el = overlay.querySelector('#fa-browse-sel-count');
-    if (el) el.textContent = _faSelectedFolders.length ? `· ${_faSelectedFolders.length} gewählt` : '';
+    if (el) {
+      if (_faSelectedFolders.length) {
+        const total = _faSelectedFolders.reduce((sum, fp) => sum + (photosMap[fp] || 0), 0);
+        const totalHint = total > 0 ? ` · ca. ${total} Fotos` : '';
+        el.textContent = `· ${_faSelectedFolders.length} Ordner gewählt${totalHint}`;
+      } else {
+        el.textContent = '';
+      }
+    }
     updateConfirmBtn();
   }
 

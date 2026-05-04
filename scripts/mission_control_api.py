@@ -2535,6 +2535,47 @@ def _photo_save_results(results):
     with open(PHOTO_ANALYSIS_FILE, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
 
+GEMINI_API_KEY_FILE = os.path.join(WORKSPACE, "config/gemini_api.json")
+GEMINI_DAILY_LIMIT = 1500
+
+def _gemini_api_key():
+    try:
+        with open(GEMINI_API_KEY_FILE) as f:
+            return json.load(f).get("api_key", "")
+    except Exception:
+        return ""
+
+def _photo_analyze_one_gemini(image_path, prompt):
+    import base64 as _b64, io, urllib.request as _ur
+    key = _gemini_api_key()
+    if not key:
+        raise RuntimeError("Kein Gemini API-Key gefunden")
+    try:
+        from PIL import Image as _Img
+        img = _Img.open(image_path)
+        img.thumbnail((1024, 1024), _Img.LANCZOS)
+        if img.mode not in ("RGB", "L"):
+            img = img.convert("RGB")
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=85)
+        img_b64 = _b64.b64encode(buf.getvalue()).decode()
+    except ImportError:
+        with open(image_path, "rb") as f:
+            img_b64 = _b64.b64encode(f.read()).decode()
+    payload = {
+        "contents": [{"parts": [
+            {"inline_data": {"mime_type": "image/jpeg", "data": img_b64}},
+            {"text": prompt}
+        ]}]
+    }
+    req = _ur.Request(
+        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key}",
+        data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json"}
+    )
+    resp = json.loads(_ur.urlopen(req, timeout=60).read())
+    return resp["candidates"][0]["content"]["parts"][0]["text"].strip()
+
 def _photo_analyze_one(image_path, prompt, model, lmstudio_url):
     import base64 as _b64, io
     ext = image_path.lower().rsplit(".", 1)[-1]
@@ -2583,8 +2624,9 @@ def _photo_analyze_one(image_path, prompt, model, lmstudio_url):
             return _call(img_b64, img_mime)
         raise
 
-def _photo_worker(folder, prompt, model, lmstudio_url):
+def _photo_worker(folder, prompt, model, lmstudio_url, throttle=2.0, engine="lmstudio"):
     global _photo_job
+    import time as _time
     IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tif", ".tiff"}
     folders = folder if isinstance(folder, list) else [folder]
     all_files = []  # (fpath, base_folder)
@@ -2603,19 +2645,25 @@ def _photo_worker(folder, prompt, model, lmstudio_url):
         if _photo_job["stop"]:
             break
         try:
-            desc = _photo_analyze_one(fpath, prompt, model, lmstudio_url)
+            if engine == "gemini":
+                desc = _photo_analyze_one_gemini(fpath, prompt)
+            else:
+                desc = _photo_analyze_one(fpath, prompt, model, lmstudio_url)
             results.append({
                 "path": fpath,
                 "filename": os.path.basename(fpath),
                 "folder": os.path.relpath(os.path.dirname(fpath), base),
                 "description": desc,
-                "analyzed_at": datetime.now().isoformat()
+                "analyzed_at": datetime.now().isoformat(),
+                "engine": engine
             })
             _photo_save_results(results)
         except Exception as e:
             _photo_job["errors"] += 1
             print(f"Foto-Analyse Fehler {fpath}: {e}")
         _photo_job["done"] += 1
+        if engine == "lmstudio" and throttle > 0 and not _photo_job["stop"]:
+            _time.sleep(throttle)
     _photo_job["running"] = False
 
 def get_lmstudio_config():
@@ -2650,7 +2698,7 @@ def get_lmstudio_config():
             continue
     return {"lmstudio_url": "http://localhost:1234", "model": "smolvlm-500m-instruct", "reachable": False}
 
-def photo_start(folder, prompt, model, lmstudio_url):
+def photo_start(folder, prompt, model, lmstudio_url, throttle=2.0, engine="lmstudio"):
     global _photo_job
     if _photo_job["running"]:
         return {"error": "Analyse läuft bereits"}
@@ -2659,10 +2707,30 @@ def photo_start(folder, prompt, model, lmstudio_url):
     missing = [f for f in folders if not os.path.isdir(f)]
     if missing:
         return {"error": f"Ordner nicht gefunden: {missing[0]}"}
+    try:
+        throttle = float(throttle)
+    except Exception:
+        throttle = 2.0
+    # Gemini: Limit-Check vor dem Start
+    if engine == "gemini":
+        IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tif", ".tiff"}
+        results = _photo_load_results()
+        analyzed = {r["path"] for r in results}
+        todo_count = 0
+        for f in folders:
+            for root, _, files in os.walk(f):
+                for fname in files:
+                    fpath = os.path.join(root, fname)
+                    if os.path.splitext(fname.lower())[1] in IMAGE_EXTS and fpath not in analyzed:
+                        todo_count += 1
+        if todo_count > GEMINI_DAILY_LIMIT:
+            return {"error": f"Gemini-Tageslimit: {todo_count} Fotos zu analysieren, aber max. {GEMINI_DAILY_LIMIT}/Tag erlaubt. Bitte Ordner aufteilen oder LM Studio verwenden."}
+        if not _gemini_api_key():
+            return {"error": "Kein Gemini API-Key in config/gemini_api.json gefunden"}
     label = folders[0] if len(folders) == 1 else f"{len(folders)} Ordner"
-    _photo_job = {"running": True, "total": 0, "done": 0, "errors": 0, "stop": False, "folder": label}
+    _photo_job = {"running": True, "total": 0, "done": 0, "errors": 0, "stop": False, "folder": label, "engine": engine}
     import threading
-    threading.Thread(target=_photo_worker, args=(folders, prompt, model, lmstudio_url), daemon=True).start()
+    threading.Thread(target=_photo_worker, args=(folders, prompt, model, lmstudio_url, throttle, engine), daemon=True).start()
     return {"ok": True}
 
 def photo_thumb(path):
@@ -2891,12 +2959,20 @@ class Handler(BaseHTTPRequestHandler):
                 ALLOWED_ROOTS = ["/mnt/d/OneDrive", "/mnt/c/Users/ernst", os.path.expanduser("~")]
                 if not any(req_path.startswith(r) for r in ALLOWED_ROOTS) or ".." in req_path:
                     self._send_json({"error": "Pfad nicht erlaubt"}); return
+                IMG_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tif", ".tiff"}
+                def _count_photos(dirpath):
+                    try:
+                        return sum(1 for e in os.scandir(dirpath)
+                                   if e.is_file() and os.path.splitext(e.name.lower())[1] in IMG_EXTS)
+                    except Exception:
+                        return 0
                 try:
                     entries = sorted([
-                        e.name for e in os.scandir(req_path)
+                        e for e in os.scandir(req_path)
                         if e.is_dir() and not e.name.startswith('.')
-                    ], key=str.lower)
-                    self._send_json({"path": req_path, "dirs": entries})
+                    ], key=lambda e: e.name.lower())
+                    dirs_info = [{"name": e.name, "photos": _count_photos(e.path)} for e in entries]
+                    self._send_json({"path": req_path, "dirs": [e["name"] for e in dirs_info], "photos": dirs_info})
                 except Exception as ex:
                     self._send_json({"error": str(ex)})
                 return
@@ -3174,12 +3250,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(delete_clipboard_image(filename))
             elif self.path == "/api/photos/start":
                 folder       = body.get("folder", "")
-                prompt       = body.get("prompt", "Beschreibe dieses Foto kurz auf Deutsch.")
+                prompt       = body.get("prompt", "Describe this photo briefly: who is visible, where, what activity, what mood.")
                 model        = body.get("model", "moondream2")
                 lmstudio_url = body.get("lmstudio_url", "http://localhost:1234")
+                throttle     = body.get("throttle", 2.0)
+                engine       = body.get("engine", "lmstudio")
                 if not folder:
                     self._send_json({"error": "Kein Ordner angegeben"}, status=400); return
-                self._send_json(photo_start(folder, prompt, model, lmstudio_url))
+                self._send_json(photo_start(folder, prompt, model, lmstudio_url, throttle, engine))
             elif self.path == "/api/photos/stop":
                 _photo_job["stop"] = True
                 self._send_json({"ok": True})
