@@ -308,8 +308,30 @@ def handle_adb_command(text_lower, chat_id, msg_id):
     return False
 
 
+def interactive_claude_running():
+    """True wenn gerade eine interaktive (nicht -p) Claude-Session läuft."""
+    try:
+        r = subprocess.run(["ps", "aux"], capture_output=True, text=True)
+        for line in r.stdout.split("\n"):
+            if ("claude" in line
+                    and " -p " not in line
+                    and " --print " not in line
+                    and "grep" not in line
+                    and "telegram_bot" not in line):
+                return True
+    except Exception:
+        pass
+    return False
+
+
 def ask_claude(message, sender_name, file_path=None, media_label=None):
     """Fragt Claude Code und gibt die Antwort zurück."""
+    if interactive_claude_running():
+        log.warning("Interaktive Claude-Session aktiv — Telegram-Auftrag abgelehnt")
+        return ("Chris ist gerade aktiv in einer Claude-Session — "
+                "ich kann jetzt nicht gleichzeitig arbeiten. "
+                "Schreib mir danach nochmal! 🐾")
+
     if file_path and media_label:
         prompt = (f"[Telegram-Nachricht von {sender_name}]: {message or '(kein Text)'}\n\n"
                   f"[Angehängtes {media_label}: {file_path} — bitte lesen und analysieren/beschreiben]")

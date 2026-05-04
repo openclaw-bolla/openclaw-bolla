@@ -17,10 +17,18 @@ from datetime import datetime, timezone, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Sicherstellen dass ~/.local/bin im PATH ist (fehlt im Cron-Job-Kontext)
+_local_bin = os.path.expanduser("~/.local/bin")
+if _local_bin not in os.environ.get("PATH", ""):
+    os.environ["PATH"] = _local_bin + ":" + os.environ.get("PATH", "")
+
+CLAUDE_BIN = os.path.expanduser("~/.local/bin/claude")
+
 WORKSPACE = os.path.expanduser("~/workspace")
 TOKEN_FILE = os.path.join(WORKSPACE, "config/ms_token.json")
 AZURE_SPEECH_FILE = os.path.join(WORKSPACE, "config/azure_speech.json")
 CLIPBOARD_FILE = os.path.join(WORKSPACE, "config/clipboard.json")
+CLIPBOARD_IMAGES_DIR = os.path.join(WORKSPACE, "config/clipboard_images")
 IMMO_BOOKMARKS_FILE  = Path(os.path.join(WORKSPACE, "config/immo_bookmarks.json"))
 IMMO_CRITERIA_FILE   = Path(os.path.join(WORKSPACE, "config/immo_criteria.json"))
 TRAVEL_FILE          = Path(os.path.join(WORKSPACE, "cache/travel.json"))
@@ -38,6 +46,47 @@ def save_clipboard(text):
     with open(CLIPBOARD_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
     return data
+
+def _ensure_clipboard_images_dir():
+    os.makedirs(CLIPBOARD_IMAGES_DIR, exist_ok=True)
+
+def get_clipboard_images():
+    _ensure_clipboard_images_dir()
+    ALLOWED_EXT = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
+    images = []
+    for fname in sorted(os.listdir(CLIPBOARD_IMAGES_DIR)):
+        ext = os.path.splitext(fname)[1].lower()
+        if ext not in ALLOWED_EXT:
+            continue
+        fpath = os.path.join(CLIPBOARD_IMAGES_DIR, fname)
+        stat = os.stat(fpath)
+        images.append({"filename": fname, "ts": datetime.fromtimestamp(stat.st_mtime).isoformat(), "size": stat.st_size})
+    images.sort(key=lambda x: x["ts"], reverse=True)
+    return {"images": images}
+
+def save_clipboard_image(data_b64, mime):
+    import base64, uuid
+    _ensure_clipboard_images_dir()
+    EXT_MAP = {"image/png": ".png", "image/jpeg": ".jpg", "image/jpg": ".jpg",
+               "image/gif": ".gif", "image/webp": ".webp", "image/bmp": ".bmp"}
+    ext = EXT_MAP.get(mime, ".png")
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    fname = f"clip_{ts}_{uuid.uuid4().hex[:6]}{ext}"
+    fpath = os.path.join(CLIPBOARD_IMAGES_DIR, fname)
+    with open(fpath, "wb") as f:
+        f.write(base64.b64decode(data_b64))
+    return {"filename": fname, "ts": datetime.now().isoformat()}
+
+def delete_clipboard_image(filename):
+    _ensure_clipboard_images_dir()
+    # Sicherheitscheck: nur einfacher Dateiname, kein Pfad-Traversal
+    if "/" in filename or "\\" in filename or ".." in filename:
+        return {"error": "Ungültiger Dateiname"}
+    fpath = os.path.join(CLIPBOARD_IMAGES_DIR, filename)
+    if os.path.isfile(fpath):
+        os.remove(fpath)
+        return {"ok": True}
+    return {"error": "Nicht gefunden"}
 
 
 def azure_speech_config():
@@ -726,7 +775,7 @@ def summarize_immo_news(title, summary_text):
         f"Teaser: {summary_text or '(kein Teaser)'}\n"
     )
     try:
-        r = subprocess.run(["claude", "-p", prompt], capture_output=True, text=True, timeout=45)
+        r = subprocess.run([CLAUDE_BIN, "-p", prompt], capture_output=True, text=True, timeout=45)
         raw = (r.stdout or "").strip()
         if not raw:
             return {"error": "Keine Antwort von Claude."}
@@ -975,7 +1024,7 @@ Anweisung: {instruction}
 Schreibe NUR den E-Mail-Text (kein JSON, keine Erklärung).
 Beginne direkt mit der Anrede. Unterschreibe als Chris Mandel."""
         try:
-            r = subprocess.run(["claude","-p",prompt], capture_output=True, text=True, timeout=60)
+            r = subprocess.run([CLAUDE_BIN,"-p",prompt], capture_output=True, text=True, timeout=60)
             return {"type":"draft","text":r.stdout.strip(),
                     "draft_to": mail.get("from_email",""),
                     "draft_subject": "Re: " + mail.get("subject",""),
@@ -1028,7 +1077,7 @@ Beginne direkt mit der Anrede. Unterschreibe als Chris Mandel."""
 
 Aufgabe: {instruction or 'Fasse diese Mail(s) kurz zusammen.'}"""
     try:
-        r = subprocess.run(["claude","-p",prompt], capture_output=True, text=True, timeout=60)
+        r = subprocess.run([CLAUDE_BIN,"-p",prompt], capture_output=True, text=True, timeout=60)
         return {"type":"analysis","text":r.stdout.strip()}
     except Exception as e:
         return {"type":"error","text":str(e)}
@@ -1183,9 +1232,30 @@ def get_recipe_of_day():
             return cached
         os.remove(cache_file)
 
+    # Letzte Rezepttitel sammeln um Wiederholungen zu vermeiden
+    recent_titles = []
+    cache_dir = os.path.join(WORKSPACE, "cache")
+    for fname in sorted(os.listdir(cache_dir), reverse=True):
+        if fname.startswith("recipe_") and fname.endswith(".json") and fname != f"recipe_{today}.json":
+            try:
+                with open(os.path.join(cache_dir, fname)) as rf:
+                    t = json.load(rf).get("titel", "")
+                if t:
+                    recent_titles.append(t)
+                if len(recent_titles) >= 14:
+                    break
+            except Exception:
+                pass
+
+    avoid_hint = ""
+    if recent_titles:
+        avoid_hint = (f" Diese Gerichte hatten wir zuletzt — bitte etwas anderes wählen: "
+                      f"{', '.join(recent_titles)}.")
+
     prompt = (
-        f"Heute ist {today}. Generiere ein leckeres deutsches Tagesrezept (auch internationale Gerichte "
-        "sind willkommen). Antworte NUR als reines JSON ohne Markdown:\n"
+        f"Heute ist {today}. Generiere ein leckeres Tagesrezept (deutsch oder international)."
+        f"{avoid_hint} "
+        "Antworte NUR als reines JSON ohne Markdown:\n"
         '{"titel":"Rezeptname","beschreibung":"1 Satz was das Gericht ist","'
         'zutaten":["2 Eier","100g Mehl"],"anweisungen":["Schritt 1","Schritt 2"],'
         '"bildprompt":"food photography prompt auf Englisch, appetitlich, weißer Hintergrund"}'
@@ -1585,7 +1655,7 @@ def get_sysinfo():
 
     claude_ver = '–'
     try:
-        cv = subprocess.run(['claude', '--version'], capture_output=True, text=True, timeout=5)
+        cv = subprocess.run([CLAUDE_BIN, '--version'], capture_output=True, text=True, timeout=5)
         if cv.returncode == 0:
             claude_ver = cv.stdout.strip().split('\n')[0]
     except Exception:
@@ -2583,6 +2653,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/status": lambda: {"ok": True, "ts": datetime.now().isoformat()},
                 "/api/redesigns-meta": get_redesigns_meta,
                 "/api/clipboard": get_clipboard,
+                "/api/clipboard/images": get_clipboard_images,
                 "/api/newsletter": get_newsletter,
                 "/api/makler": get_makler,
                 "/api/immo-news": get_immo_news,
@@ -2591,7 +2662,27 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/crontab":        get_crontab,
                 "/api/travel":         get_travel,
             }
-            if self.path in simple:
+            if self.path.startswith("/api/clipboard/image/"):
+                fname = self.path[len("/api/clipboard/image/"):]
+                if "/" in fname or "\\" in fname or ".." in fname:
+                    self._send_json({"error": "Ungültig"}, status=400); return
+                fpath = os.path.join(CLIPBOARD_IMAGES_DIR, fname)
+                if not os.path.isfile(fpath):
+                    self._send_json({"error": "Nicht gefunden"}, status=404); return
+                ext = os.path.splitext(fname)[1].lower()
+                MIME_MAP = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+                            ".gif": "image/gif", ".webp": "image/webp", ".bmp": "image/bmp"}
+                ctype = MIME_MAP.get(ext, "application/octet-stream")
+                with open(fpath, "rb") as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", ctype)
+                self.send_header("Cache-Control", "max-age=86400")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            elif self.path in simple:
                 self._send_json(simple[self.path]())
             else:
                 self._send_json({"error": "not found"}, status=404)
@@ -2765,6 +2856,17 @@ class Handler(BaseHTTPRequestHandler):
             elif self.path == "/api/clipboard":
                 text = body.get("text", "")
                 self._send_json(save_clipboard(text))
+            elif self.path == "/api/clipboard/image":
+                img_b64 = body.get("image_b64", "")
+                mime = body.get("mime", "image/png")
+                if not img_b64:
+                    self._send_json({"error": "Kein Bild"}, status=400); return
+                self._send_json(save_clipboard_image(img_b64, mime))
+            elif self.path == "/api/clipboard/image/delete":
+                filename = body.get("filename", "")
+                if not filename:
+                    self._send_json({"error": "Kein Dateiname"}, status=400); return
+                self._send_json(delete_clipboard_image(filename))
             elif self.path == "/api/korrektur/meta":
                 import subprocess as _sp, shutil as _sh, tempfile as _tf, base64 as _b64, re as _re
                 img_b64 = body.get("image_b64", "")
