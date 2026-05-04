@@ -2617,7 +2617,7 @@ def get_lmstudio_config():
             import urllib.request as _ur
             resp = json.loads(_ur.urlopen(f"{base}/v1/models", timeout=3).read())
             all_models = [m.get("id","") for m in resp.get("data", [])]
-            PREFER = ["moondream", "llava", "bakllava", "minicpm-v", "cogvlm", "internvl", "smolvlm"]
+            PREFER = ["smolvlm", "moondream", "llava", "bakllava", "minicpm-v", "cogvlm", "internvl"]
             model = next((m for v in PREFER for m in all_models if v in m.lower()), \
                          all_models[0] if all_models else "moondream-2b-2025-04-14")
             return {"lmstudio_url": base, "model": model, "reachable": True, "all_models": all_models}
