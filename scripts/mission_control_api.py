@@ -2569,6 +2569,18 @@ def _photo_worker(folder, prompt, model, lmstudio_url):
         _photo_job["done"] += 1
     _photo_job["running"] = False
 
+def get_windows_host_ip():
+    """Ermittelt die Windows-Host-IP aus WSL2 (Default-Gateway)."""
+    try:
+        import subprocess as _sp
+        r = _sp.run(["ip", "route"], capture_output=True, text=True)
+        for line in r.stdout.splitlines():
+            if line.startswith("default"):
+                return line.split()[2]
+    except Exception:
+        pass
+    return "localhost"
+
 def photo_start(folder, prompt, model, lmstudio_url):
     global _photo_job
     if _photo_job["running"]:
@@ -2789,6 +2801,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/travel":         get_travel,
                 "/api/photos/status":  lambda: dict(_photo_job),
                 "/api/photos/results": lambda: {"results": _photo_load_results()},
+                "/api/photos/config":  lambda: {"lmstudio_url": f"http://{get_windows_host_ip()}:1234"},
             }
 
             # Foto-Thumb

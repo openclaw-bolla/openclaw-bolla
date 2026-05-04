@@ -7130,6 +7130,10 @@ let _faAllResults = [];
 let _faPollTimer = null;
 
 async function loadFotoAnalyse() {
+  try {
+    const cfg = await fetch('/api/photos/config').then(r => r.json());
+    if (cfg.lmstudio_url) document.getElementById('fa-url').value = cfg.lmstudio_url;
+  } catch(e) {}
   await faLoadResults();
   await faPollStatus();
 }
