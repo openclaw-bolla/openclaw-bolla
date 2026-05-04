@@ -7384,9 +7384,12 @@ async function faSearch() {
 
   clearTimeout(_faSearchTimer);
   document.getElementById('fa-result-count').textContent = '🔍 Übersetzt…';
+  document.getElementById('fa-grid').innerHTML = '';
+  document.getElementById('fa-empty').style.display = 'block';
+  document.getElementById('fa-empty').textContent = '🔍 Übersetze und suche…';
   _faSearchTimer = setTimeout(async () => {
     if (_faSearchInFlight) {
-      document.getElementById('fa-result-count').textContent = '⏳ Suche läuft noch…';
+      document.getElementById('fa-empty').textContent = '⏳ Suche läuft noch — bitte warten…';
       return;
     }
     _faSearchInFlight = true;
@@ -7404,7 +7407,9 @@ async function faSearch() {
       _faLastTerms = terms;
       faRenderGrid(results, terms.join('|'), terms, q);
     } catch(e) {
-      document.getElementById('fa-result-count').textContent = '⚠️ Übersetzung fehlgeschlagen — nochmal Enter drücken';
+      document.getElementById('fa-result-count').textContent = '';
+      document.getElementById('fa-empty').style.display = 'block';
+      document.getElementById('fa-empty').textContent = '⚠️ Übersetzung fehlgeschlagen — nochmal Enter drücken';
       _faLastTerms = [];
     } finally {
       clearTimeout(_flightTimeout);
