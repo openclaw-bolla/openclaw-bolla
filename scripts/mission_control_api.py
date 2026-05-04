@@ -2678,15 +2678,15 @@ def photo_search(query):
     prompt = (
         "You are a photo search assistant. The user wants to find photos described in English.\n"
         "The user's search query may be in any language (often German).\n"
-        "Return a JSON array of English search terms that would appear in a photo description.\n"
+        "Return a JSON array of English search terms that would appear in a casual photo description.\n"
         "IMPORTANT rules:\n"
-        "- Use SPECIFIC multi-word phrases where possible (e.g. 'christmas tree' not just 'tree')\n"
-        "- Avoid generic words that appear in many unrelated photos (like 'tree', 'person', 'people', 'standing', 'smiling')\n"
-        "- Focus on distinctive visual elements specific to the search topic\n"
-        "- 4-8 terms max, quality over quantity\n\n"
+        "- Always include the BASIC/SIMPLE English word(s) for the concept first (e.g. 'wood' before 'timber')\n"
+        "- Then add a few specific variants (e.g. 'firewood', 'wooden', 'log')\n"
+        "- Photo descriptions use everyday language, not technical terms\n"
+        "- 5-8 terms, simple first, specific last\n\n"
         f"User query: {query}\n\n"
-        "Respond with ONLY a JSON array of strings. Example for 'Weihnachten':\n"
-        '[\"christmas tree\", \"holiday decorations\", \"santa claus\", \"gifts\", \"advent\", \"ornaments\"]'
+        "Respond with ONLY a JSON array of strings. Example for 'Holz':\n"
+        '[\"wood\", \"wooden\", \"firewood\", \"log\", \"timber\", \"pile of wood\", \"log cabin\"]'
     )
     try:
         r = subprocess.run([CLAUDE_BIN, "-p", prompt], capture_output=True, text=True, timeout=20)

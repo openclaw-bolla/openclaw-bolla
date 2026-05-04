@@ -7387,6 +7387,7 @@ async function faSearch() {
   _faSearchTimer = setTimeout(async () => {
     if (_faSearchInFlight) return;
     _faSearchInFlight = true;
+    const _flightTimeout = setTimeout(() => { _faSearchInFlight = false; }, 25000);
     try {
       const d = await fetch('/api/photos/search', {
         method: 'POST',
@@ -7405,6 +7406,7 @@ async function faSearch() {
       _faLastTerms = [qL];
       faRenderGrid(filtered, null, [qL], q);
     } finally {
+      clearTimeout(_flightTimeout);
       _faSearchInFlight = false;
     }
   }, 600);
@@ -7487,6 +7489,7 @@ function faRenderGrid(results, _unused, terms, originalQuery) {
       </div>
       <div style="padding:8px 10px">
         <div style="font-size:11px;color:var(--accent);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${fnEsc}">${fnEsc}</div>
+        ${r.folder && r.folder !== '.' ? `<div style="font-size:10px;color:rgba(255,255,255,0.3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">📁 ${r.folder.replace(/</g,'&lt;')}</div>` : ''}
         <div style="font-size:12px;color:var(--dim);margin-top:4px;line-height:1.4">${faHighlight(desc, termsArr)}</div>
         <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:4px">${dateStr}</div>
       </div>
