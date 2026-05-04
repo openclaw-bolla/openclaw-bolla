@@ -7448,7 +7448,7 @@ function faRenderGrid(results, _unused, terms, originalQuery) {
     empty.style.display = 'block';
     if (label) {
       const termsLine = termsArr.length
-        ? `<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:6px">Bolla suchte auf Englisch nach: ${termsArr.map(t=>`<em>${t}</em>`).join(', ')}</div>`
+        ? `<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px">🔍 Bolla suchte auf Englisch nach: ${termsArr.map(t=>`<em>${t}</em>`).join(', ')}</div>`
         : '';
       empty.innerHTML = `<div>Keine Treffer für „${label}"</div>${termsLine}`;
     } else {
@@ -7456,12 +7456,7 @@ function faRenderGrid(results, _unused, terms, originalQuery) {
     }
     return;
   }
-  empty.style.display = 'none';
-  _faShown = [...results].reverse().slice(0, 200);
-  // Export-Button einblenden
-  const exportBtn = document.getElementById('fa-export-onedrive-btn');
-  if (exportBtn) exportBtn.style.display = _faShown.length ? '' : 'none';
-  // Übersetzte Terms als kleine Info-Zeile über dem Grid
+  // Terms auch bei Treffern anzeigen
   if (termsArr.length) {
     const p = document.createElement('div');
     p.id = 'fa-terms-pill';
@@ -7469,6 +7464,11 @@ function faRenderGrid(results, _unused, terms, originalQuery) {
     p.textContent = '🔍 ' + termsArr.join(' · ');
     grid.before(p);
   }
+  empty.style.display = 'none';
+  _faShown = [...results].reverse().slice(0, 200);
+  // Export-Button einblenden
+  const exportBtn = document.getElementById('fa-export-onedrive-btn');
+  if (exportBtn) exportBtn.style.display = _faShown.length ? '' : 'none';
 
   grid.innerHTML = _faShown.map((r, idx) => {
     const thumbUrl = '/api/photos/thumb?path=' + encodeURIComponent(r.path);

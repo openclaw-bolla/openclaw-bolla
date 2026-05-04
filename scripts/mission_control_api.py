@@ -2616,8 +2616,11 @@ def get_lmstudio_config():
             # Geladenes Modell abfragen
             import urllib.request as _ur
             resp = json.loads(_ur.urlopen(f"{base}/v1/models", timeout=3).read())
-            model = resp.get("data", [{}])[0].get("id", "smolvlm-500m-instruct")
-            return {"lmstudio_url": base, "model": model, "reachable": True}
+            all_models = [m.get("id","") for m in resp.get("data", [])]
+            PREFER = ["moondream", "llava", "bakllava", "minicpm-v", "cogvlm", "internvl", "smolvlm"]
+            model = next((m for v in PREFER for m in all_models if v in m.lower()), \
+                         all_models[0] if all_models else "moondream-2b-2025-04-14")
+            return {"lmstudio_url": base, "model": model, "reachable": True, "all_models": all_models}
         except Exception:
             continue
     return {"lmstudio_url": "http://localhost:1234", "model": "smolvlm-500m-instruct", "reachable": False}
