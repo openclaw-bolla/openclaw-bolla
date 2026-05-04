@@ -2561,11 +2561,13 @@ def _photo_analyze_one(image_path, prompt, model, lmstudio_url):
 def _photo_worker(folder, prompt, model, lmstudio_url):
     global _photo_job
     IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tif", ".tiff"}
+    folders = folder if isinstance(folder, list) else [folder]
     all_files = []
-    for root, _, files in os.walk(folder):
-        for fname in sorted(files):
-            if os.path.splitext(fname.lower())[1] in IMAGE_EXTS:
-                all_files.append(os.path.join(root, fname))
+    for f in folders:
+        for root, _, files in os.walk(f):
+            for fname in sorted(files):
+                if os.path.splitext(fname.lower())[1] in IMAGE_EXTS:
+                    all_files.append(os.path.join(root, fname))
     results = _photo_load_results()
     analyzed = {r["path"] for r in results}
     todo = [f for f in all_files if f not in analyzed]
@@ -2624,12 +2626,15 @@ def photo_start(folder, prompt, model, lmstudio_url):
     global _photo_job
     if _photo_job["running"]:
         return {"error": "Analyse läuft bereits"}
-    folder = os.path.expanduser(folder)
-    if not os.path.isdir(folder):
-        return {"error": f"Ordner nicht gefunden: {folder}"}
-    _photo_job = {"running": True, "total": 0, "done": 0, "errors": 0, "stop": False, "folder": folder}
+    folders = folder if isinstance(folder, list) else [folder]
+    folders = [os.path.expanduser(f) for f in folders]
+    missing = [f for f in folders if not os.path.isdir(f)]
+    if missing:
+        return {"error": f"Ordner nicht gefunden: {missing[0]}"}
+    label = folders[0] if len(folders) == 1 else f"{len(folders)} Ordner"
+    _photo_job = {"running": True, "total": 0, "done": 0, "errors": 0, "stop": False, "folder": label}
     import threading
-    threading.Thread(target=_photo_worker, args=(folder, prompt, model, lmstudio_url), daemon=True).start()
+    threading.Thread(target=_photo_worker, args=(folders, prompt, model, lmstudio_url), daemon=True).start()
     return {"ok": True}
 
 def photo_thumb(path):

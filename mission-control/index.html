@@ -7325,11 +7325,12 @@ async function faPollStatus() {
 }
 
 async function faStart() {
-  const folder = document.getElementById('fa-folder').value.trim();
+  const folders = _faSelectedFolders.length ? _faSelectedFolders : [document.getElementById('fa-folder').value.trim()];
+  const folder = folders.length === 1 ? folders[0] : folders;
   const prompt = document.getElementById('fa-prompt').value.trim();
   const model  = document.getElementById('fa-model').value.trim();
   const url    = document.getElementById('fa-url').value.trim();
-  if (!folder) { document.getElementById('fa-status').textContent = '⚠️ Bitte Ordner angeben'; return; }
+  if (!folders.length || !folders[0]) { document.getElementById('fa-status').textContent = '⚠️ Bitte Ordner angeben'; return; }
   document.getElementById('fa-status').textContent = '⏳ Starte…';
   document.getElementById('fa-start-btn').disabled = true;
   try {
@@ -7574,9 +7575,11 @@ async function faRename(path, description, overlay) {
   faSearch();
 }
 
+let _faSelectedFolders = [];
+
 async function faFolderBrowse() {
   const ROOT = '/mnt/d/OneDrive';
-  let current = document.getElementById('fa-folder').value.trim() || ROOT;
+  let current = (_faSelectedFolders[0] || document.getElementById('fa-folder').value.trim() || ROOT);
   if (!current.startsWith('/mnt/d/OneDrive') && !current.startsWith('/mnt/c/Users/ernst')) current = ROOT;
 
   const overlay = document.createElement('div');
@@ -7584,51 +7587,116 @@ async function faFolderBrowse() {
   overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
   document.body.appendChild(overlay);
 
+  function updateConfirmBtn() {
+    const btn = overlay.querySelector('#fa-browse-confirm');
+    if (!btn) return;
+    const n = _faSelectedFolders.length;
+    btn.textContent = n ? `✓ ${n} Ordner übernehmen` : '✓ Diesen Ordner';
+    btn.style.background = n ? 'var(--accent)' : 'rgba(255,255,255,0.15)';
+  }
+
+  function toggleFolder(path, cb) {
+    const idx = _faSelectedFolders.indexOf(path);
+    if (idx >= 0) { _faSelectedFolders.splice(idx, 1); cb.checked = false; }
+    else { _faSelectedFolders.push(path); cb.checked = true; }
+    updateConfirmBtn();
+  }
+
   async function render(path) {
     current = path;
     const d = await fetch('/api/fs/dirs?path=' + encodeURIComponent(path)).then(r => r.json());
     const dirs = d.dirs || [];
     const parts = path.split('/').filter(Boolean);
     const breadcrumb = parts.map((p, i) => {
-      const fullPath = '/' + parts.slice(0, i+1).join('/');
-      return `<span onclick="window._faBrowseTo('${fullPath.replace(/'/g,"\\'")}');event.stopPropagation()"
-        style="cursor:pointer;color:var(--accent);padding:2px 4px;border-radius:3px" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background=''">
-        ${p}</span><span style="color:var(--dim)"> / </span>`;
+      const fp = '/' + parts.slice(0, i+1).join('/');
+      return `<span data-nav="${fp}" style="cursor:pointer;color:var(--accent);padding:2px 4px;border-radius:3px"
+        onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background=''">${p}</span
+        ><span style="color:var(--dim)"> / </span>`;
     }).join('');
     const upPath = path !== ROOT && path !== '/mnt/d' ? path.split('/').slice(0,-1).join('/') || '/' : null;
+
     overlay.innerHTML = `
-      <div style="background:var(--card);border-radius:12px;width:520px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden" onclick="event.stopPropagation()">
+      <div style="background:var(--card);border-radius:12px;width:560px;max-height:82vh;display:flex;flex-direction:column;overflow:hidden" onclick="event.stopPropagation()">
         <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0">
           <span style="font-size:14px;font-weight:600;color:var(--bright)">📂 Ordner auswählen</span>
+          <span id="fa-browse-sel-count" style="font-size:12px;color:var(--accent);margin-left:4px"></span>
           <button onclick="this.closest('[style*=fixed]').remove()" style="margin-left:auto;background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;line-height:1">✕</button>
         </div>
         <div style="padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;flex-shrink:0;word-break:break-all">
           ${breadcrumb}
         </div>
-        <div style="overflow-y:auto;flex:1;padding:8px">
-          ${upPath ? `<div onclick="window._faBrowseTo('${upPath.replace(/'/g,"\\'")}');event.stopPropagation()"
-            style="padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--dim)"
+        <div id="fa-browse-list" style="overflow-y:auto;flex:1;padding:8px">
+          ${upPath ? `<div data-nav="${upPath}" style="padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--dim)"
             onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">⬆ ..</div>` : ''}
           ${dirs.length ? dirs.map(name => {
             const fp = path.replace(/\/+$/,'') + '/' + name;
-            return `<div onclick="window._faBrowseTo('${fp.replace(/'/g,"\\'")}');event.stopPropagation()"
-              style="padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px"
-              onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
-              <span style="color:#fbbf24">📁</span>${name}</div>`;
+            const checked = _faSelectedFolders.includes(fp);
+            return `<div style="padding:6px 12px;border-radius:6px;font-size:13px;color:var(--text);display:flex;align-items:center;gap:10px;cursor:pointer"
+              onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''"
+              onclick="event.stopPropagation()">
+              <input type="checkbox" data-path="${fp.replace(/"/g,'&quot;')}" ${checked?'checked':''} style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
+              <span data-nav="${fp.replace(/"/g,'&quot;')}" style="flex:1;cursor:pointer">
+                <span style="color:#fbbf24">📁</span> ${name}
+              </span>
+            </div>`;
           }).join('') : '<div style="padding:16px;color:var(--dim);font-size:13px;text-align:center">Keine Unterordner</div>'}
         </div>
-        <div style="padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0">
-          <div style="flex:1;font-size:12px;color:var(--dim);word-break:break-all;align-self:center">${path}</div>
-          <button onclick="document.getElementById('fa-folder').value='${path.replace(/'/g,"\\'")}';this.closest('[style*=fixed]').remove()"
+        ${_faSelectedFolders.length ? `<div style="padding:8px 14px;background:rgba(255,255,255,0.04);font-size:11px;color:var(--dim);max-height:80px;overflow-y:auto;border-top:1px solid var(--border)">
+          ${_faSelectedFolders.map(f => `<div style="display:flex;align-items:center;gap:6px">
+            <span style="color:#f87171;cursor:pointer" data-remove="${f.replace(/"/g,'&quot;')}">✕</span>
+            <span style="color:var(--accent)">${f.split('/').pop()}</span>
+          </div>`).join('')}
+        </div>` : ''}
+        <div style="padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0">
+          <div style="flex:1;font-size:12px;color:var(--dim);word-break:break-all">${path}</div>
+          ${_faSelectedFolders.length ? `<button onclick="_faSelectedFolders=[];render('${path.replace(/'/g,"\\'")}');" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer">✕ Alle</button>` : ''}
+          <button id="fa-browse-confirm"
             style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">
-            ✓ Auswählen
+            ✓ Diesen Ordner
           </button>
         </div>
       </div>`;
+
+    // Events
+    overlay.querySelectorAll('[data-nav]').forEach(el => {
+      el.addEventListener('click', e => { e.stopPropagation(); render(el.dataset.nav); });
+    });
+    overlay.querySelectorAll('input[type=checkbox]').forEach(cb => {
+      cb.addEventListener('change', e => { e.stopPropagation(); toggleFolder(cb.dataset.path, cb); refreshSelCount(); });
+    });
+    overlay.querySelectorAll('[data-remove]').forEach(el => {
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        _faSelectedFolders = _faSelectedFolders.filter(f => f !== el.dataset.remove);
+        render(current);
+      });
+    });
+    overlay.querySelector('#fa-browse-confirm').addEventListener('click', () => {
+      const target = _faSelectedFolders.length ? _faSelectedFolders : [current];
+      faFolderApply(target);
+      overlay.remove();
+    });
+    refreshSelCount();
   }
 
-  window._faBrowseTo = p => render(p);
+  function refreshSelCount() {
+    const el = overlay.querySelector('#fa-browse-sel-count');
+    if (el) el.textContent = _faSelectedFolders.length ? `· ${_faSelectedFolders.length} gewählt` : '';
+    updateConfirmBtn();
+  }
+
   await render(current);
+}
+
+function faFolderApply(folders) {
+  _faSelectedFolders = folders;
+  const inp = document.getElementById('fa-folder');
+  if (folders.length === 1) {
+    inp.value = folders[0];
+  } else {
+    inp.value = `${folders.length} Ordner ausgewählt`;
+    inp.title = folders.join('\n');
+  }
 }
 
 async function faExportOneDrive() {
