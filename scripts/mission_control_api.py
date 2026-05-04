@@ -2536,45 +2536,70 @@ def _photo_save_results(results):
         json.dump(results, f, ensure_ascii=False, indent=2)
 
 def _photo_analyze_one(image_path, prompt, model, lmstudio_url):
-    import base64 as _b64
+    import base64 as _b64, io
     ext = image_path.lower().rsplit(".", 1)[-1]
     mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
             "gif": "image/gif", "webp": "image/webp", "bmp": "image/bmp"}.get(ext, "image/jpeg")
-    with open(image_path, "rb") as f:
-        img_b64 = _b64.b64encode(f.read()).decode()
-    payload = {
-        "model": model,
-        "messages": [{"role": "user", "content": [
-            {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{img_b64}"}},
-            {"type": "text", "text": prompt}
-        ]}],
-        "max_tokens": 300,
-        "temperature": 0.1
-    }
+
+    def _load_img(max_px=1024):
+        try:
+            from PIL import Image as _Img
+            img = _Img.open(image_path)
+            img.thumbnail((max_px, max_px), _Img.LANCZOS)
+            if img.mode not in ("RGB", "L"):
+                img = img.convert("RGB")
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=85)
+            return _b64.b64encode(buf.getvalue()).decode(), "image/jpeg"
+        except ImportError:
+            with open(image_path, "rb") as f:
+                return _b64.b64encode(f.read()).decode(), mime
+
     import urllib.request as _ur
-    data = json.dumps(payload).encode()
-    req = _ur.Request(f"{lmstudio_url}/v1/chat/completions", data=data,
-                      headers={"Content-Type": "application/json"})
-    resp = json.loads(_ur.urlopen(req, timeout=60).read())
-    return resp["choices"][0]["message"]["content"].strip()
+
+    def _call(img_b64, img_mime):
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": [
+                {"type": "image_url", "image_url": {"url": f"data:{img_mime};base64,{img_b64}"}},
+                {"type": "text", "text": prompt}
+            ]}],
+            "max_tokens": 300,
+            "temperature": 0.1
+        }
+        data = json.dumps(payload).encode()
+        req = _ur.Request(f"{lmstudio_url}/v1/chat/completions", data=data,
+                          headers={"Content-Type": "application/json"})
+        resp = json.loads(_ur.urlopen(req, timeout=60).read())
+        return resp["choices"][0]["message"]["content"].strip()
+
+    img_b64, img_mime = _load_img(1024)
+    try:
+        return _call(img_b64, img_mime)
+    except _ur.HTTPError as e:
+        if e.code == 500:
+            # Bild verkleinern und nochmal versuchen
+            img_b64, img_mime = _load_img(512)
+            return _call(img_b64, img_mime)
+        raise
 
 def _photo_worker(folder, prompt, model, lmstudio_url):
     global _photo_job
     IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tif", ".tiff"}
     folders = folder if isinstance(folder, list) else [folder]
-    all_files = []
+    all_files = []  # (fpath, base_folder)
     for f in folders:
         for root, _, files in os.walk(f):
             for fname in sorted(files):
                 if os.path.splitext(fname.lower())[1] in IMAGE_EXTS:
-                    all_files.append(os.path.join(root, fname))
+                    all_files.append((os.path.join(root, fname), f))
     results = _photo_load_results()
     analyzed = {r["path"] for r in results}
-    todo = [f for f in all_files if f not in analyzed]
+    todo = [(fpath, base) for fpath, base in all_files if fpath not in analyzed]
     _photo_job["total"] = len(all_files)
     _photo_job["done"] = len(analyzed)
     _photo_job["errors"] = 0
-    for fpath in todo:
+    for fpath, base in todo:
         if _photo_job["stop"]:
             break
         try:
@@ -2582,7 +2607,7 @@ def _photo_worker(folder, prompt, model, lmstudio_url):
             results.append({
                 "path": fpath,
                 "filename": os.path.basename(fpath),
-                "folder": os.path.relpath(os.path.dirname(fpath), folder),
+                "folder": os.path.relpath(os.path.dirname(fpath), base),
                 "description": desc,
                 "analyzed_at": datetime.now().isoformat()
             })
