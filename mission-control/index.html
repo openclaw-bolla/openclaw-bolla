@@ -1601,9 +1601,22 @@ html, body {
             <div class="card">
               <div class="card-head"><span class="card-title">Funktionen</span><span class="card-icon">🛠️</span></div>
               <div style="display:flex;flex-direction:column;gap:8px">
-                <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600">ADB Verbindung</div>
+                <!-- Koppeln (einmalig, Android 11+) -->
+                <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600">Koppeln — einmalig (Android 11+)</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.5">
+                  Einstellungen → System → Entwickleroptionen → <strong style="color:rgba(255,255,255,0.5)">Kabelloses Debugging</strong> → <em>Gerät mit Kopplungscode koppeln</em> → IP:Port + 6-stelligen Code hier eingeben.
+                </div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-                  <input class="adb-input" data-role="connect-ip" placeholder="192.168.178.xx" style="flex:2;min-width:120px">
+                  <input class="adb-input" data-role="pair-ip" placeholder="192.168.178.xx:45321" style="flex:3;min-width:160px">
+                  <input class="adb-input" data-role="pair-code" placeholder="123456" maxlength="6" style="flex:1;min-width:70px;max-width:90px;letter-spacing:3px">
+                  <button class="adb-btn" data-act="pair">🔑 Koppeln</button>
+                </div>
+                <div class="adb-result" data-for="pair"></div>
+                <!-- Verbinden -->
+                <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:4px">ADB Verbindung</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.35)">Port von Hauptbildschirm „Kabelloses Debugging" (nicht Koppeln-Port).</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                  <input class="adb-input" data-role="connect-ip" placeholder="192.168.178.20" style="flex:2;min-width:120px">
                   <input class="adb-input" data-role="connect-port" placeholder="Port" style="flex:1;min-width:60px;max-width:80px">
                   <button class="adb-btn" data-act="connect">🔗 Verbinden</button>
                   <button class="adb-btn" data-act="disconnect">✂ Trennen</button>
@@ -2087,85 +2100,110 @@ html, body {
       <div class="page" id="page-fotoanalyse">
         <div style="max-width:1100px;margin:0 auto;padding:16px">
 
-          <!-- Einstellungen -->
+          <!-- SUCHE (prominent, oben) -->
           <div class="card" style="padding:20px;margin-bottom:16px">
-            <h3 style="margin:0 0 4px;color:var(--bright)">🔍 Foto-Analyse</h3>
-            <p style="font-size:13px;color:var(--dim);margin:0 0 16px">Fotos lokal via LM Studio (Moondream) analysieren und durchsuchbar machen.</p>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-              <div>
-                <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Ordner (OneDrive-Pfad)</label>
-                <input id="fa-folder" type="text" value="/mnt/d/OneDrive/Bilder"
-                  style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px">
-              </div>
-              <div>
-                <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">LM Studio URL</label>
-                <input id="fa-url" type="text" value="http://localhost:1234"
-                  style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px">
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr auto;gap:12px;margin-bottom:12px;align-items:end">
-              <div>
-                <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Modell</label>
-                <input id="fa-model" type="text" value="moondream2"
-                  style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px">
-              </div>
-              <div></div>
-            </div>
-            <div style="margin-bottom:14px">
-              <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Analyse-Prompt</label>
-              <textarea id="fa-prompt" rows="2"
-                style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;resize:vertical;font-family:inherit"
-                >Describe this photo briefly: Who is visible (people, estimated age, gender), where was it taken, what activity, what mood.</textarea>
-            </div>
-            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-              <button id="fa-start-btn" onclick="faStart()"
-                style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:9px 22px;font-size:14px;font-weight:600;cursor:pointer">
-                ▶ Analyse starten
-              </button>
-              <button onclick="faStop()"
-                style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer">
-                ⏹ Abbrechen
-              </button>
-              <button onclick="faClear()"
-                style="background:rgba(107,114,128,0.2);color:#9ca3af;border:1px solid rgba(107,114,128,0.4);border-radius:6px;padding:9px 16px;font-size:14px;cursor:pointer">
-                🗑 Alle löschen
-              </button>
-              <span id="fa-status" style="font-size:13px;color:var(--dim)"></span>
-            </div>
-            <!-- Fortschrittsbalken -->
-            <div id="fa-progress-wrap" style="display:none;margin-top:14px">
-              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:4px">
-                <span id="fa-progress-label">0 / 0 Fotos</span>
-                <span id="fa-progress-pct">0%</span>
-              </div>
-              <div style="background:var(--bg);border-radius:4px;height:8px;overflow:hidden">
-                <div id="fa-progress-bar" style="height:100%;background:var(--accent);width:0%;transition:width 0.5s"></div>
-              </div>
-              <div id="fa-progress-errors" style="font-size:12px;color:var(--dim);margin-top:4px"></div>
-            </div>
-          </div>
-
-          <!-- Suche + Ergebnisse -->
-          <div class="card" style="padding:20px">
-            <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-              <input id="fa-search" type="text" placeholder="In Beschreibungen suchen..."
+            <h3 style="margin:0 0 12px;color:var(--bright)">📸 Foto-Suche</h3>
+            <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+              <input id="fa-search" type="text" placeholder="Suchbegriff — Deutsch oder Englisch (z.B. Weihnachten, Beach, Familie)"
                 oninput="faSearch()"
-                style="flex:1;min-width:200px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:14px">
+                style="flex:1;min-width:280px;background:var(--bg);color:var(--text);border:1px solid var(--accent);border-radius:6px;padding:10px 14px;font-size:14px;outline:none">
               <span id="fa-result-count" style="font-size:13px;color:var(--dim);white-space:nowrap"></span>
               <button onclick="faExportCSV()"
                 style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.35);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;white-space:nowrap">
-                📊 CSV exportieren
+                📊 CSV
               </button>
-              <button onclick="faOpenFolder()"
-                style="background:rgba(96,165,250,0.15);color:#60a5fa;border:1px solid rgba(96,165,250,0.35);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;white-space:nowrap">
-                📁 Ordner öffnen
-              </button>
+            </div>
+            <!-- Ordner-Zeile -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <span style="font-size:12px;color:rgba(255,255,255,0.35);white-space:nowrap">📁 Ordner:</span>
+              <input id="fa-folder" type="text" value="/mnt/d/OneDrive/Bilder"
+                style="flex:1;background:transparent;color:rgba(255,255,255,0.5);border:none;border-bottom:1px solid var(--border);border-radius:0;padding:2px 4px;font-size:12px;outline:none"
+                onfocus="this.style.color='var(--text)';this.style.borderBottomColor='var(--accent)'"
+                onblur="this.style.color='rgba(255,255,255,0.5)';this.style.borderBottomColor='var(--border)'">
+            </div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:14px">
+              Bolla übersetzt deinen Begriff ins Englische und sucht in den KI-Beschreibungen der Fotos
             </div>
             <div id="fa-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px"></div>
             <div id="fa-empty" style="color:var(--dim);font-size:14px;text-align:center;padding:40px 0;display:block">
               Suchbegriff eingeben um Fotos zu finden.
             </div>
           </div>
+
+          <!-- ANALYSE (einklappbar) -->
+          <div class="card" style="padding:0;overflow:hidden">
+            <button onclick="faToggleSettings()" id="fa-settings-toggle"
+              style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:none;border:none;color:var(--bright);font-size:14px;font-weight:600;cursor:pointer;text-align:left">
+              <span>⚙️ Fotos analysieren</span>
+              <span style="display:flex;align-items:center;gap:10px">
+                <span id="fa-model-badge" style="font-size:11px;color:var(--dim);font-weight:400"></span>
+                <span id="fa-settings-chevron" style="font-size:12px;color:var(--dim);transition:transform 0.2s">▼</span>
+              </span>
+            </button>
+            <div id="fa-settings-body" style="display:none;padding:0 20px 20px">
+              <p style="font-size:13px;color:var(--dim);margin:0 0 14px">
+                Fotos einmalig via LM Studio analysieren — danach ist Suche sofort verfügbar.
+              </p>
+              <!-- Modell + Status -->
+              <div style="display:flex;gap:12px;align-items:end;margin-bottom:12px">
+                <div style="flex:1">
+                  <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Modell (in LM Studio geladen)</label>
+                  <input id="fa-model" type="text" value="moondream2"
+                    oninput="document.getElementById('fa-model-badge').textContent=this.value"
+                    style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px">
+                </div>
+                <span id="fa-lm-status" style="font-size:12px;color:var(--dim);white-space:nowrap;padding-bottom:9px"></span>
+              </div>
+              <!-- Buttons -->
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+                <button id="fa-start-btn" onclick="faStart()"
+                  style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:9px 22px;font-size:14px;font-weight:600;cursor:pointer">
+                  ▶ Analyse starten
+                </button>
+                <button onclick="faStop()"
+                  style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer">
+                  ⏹ Abbrechen
+                </button>
+                <button onclick="faClear()"
+                  style="background:rgba(107,114,128,0.2);color:#9ca3af;border:1px solid rgba(107,114,128,0.4);border-radius:6px;padding:9px 16px;font-size:14px;cursor:pointer">
+                  🗑 Alle löschen
+                </button>
+                <span id="fa-status" style="font-size:13px;color:var(--dim)"></span>
+              </div>
+              <!-- Fortschrittsbalken -->
+              <div id="fa-progress-wrap" style="display:none;margin-top:14px">
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:4px">
+                  <span id="fa-progress-label">0 / 0 Fotos</span>
+                  <span id="fa-progress-pct">0%</span>
+                </div>
+                <div style="background:var(--bg);border-radius:4px;height:8px;overflow:hidden">
+                  <div id="fa-progress-bar" style="height:100%;background:var(--accent);width:0%;transition:width 0.5s"></div>
+                </div>
+                <div id="fa-progress-errors" style="font-size:12px;color:var(--dim);margin-top:4px"></div>
+              </div>
+              <!-- Erweitert (URL + Prompt) -->
+              <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+                <button onclick="faToggleAdvanced()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:12px;cursor:pointer;padding:0">
+                  ▸ Erweitert (LM Studio URL &amp; Prompt)
+                </button>
+                <div id="fa-advanced" style="display:none;margin-top:10px">
+                  <div style="margin-bottom:10px">
+                    <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">LM Studio URL</label>
+                    <input id="fa-url" type="text" value="http://localhost:1234"
+                      style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px">
+                  </div>
+                  <div>
+                    <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Analyse-Prompt (immer Englisch für LM Studio)</label>
+                    <textarea id="fa-prompt" rows="2"
+                      style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;resize:vertical;font-family:inherit"
+                      >Describe this photo briefly: Who is visible (people, estimated age, gender), where was it taken, what activity, what mood.</textarea>
+                    <p style="font-size:11px;color:rgba(255,255,255,0.25);margin:4px 0 0">Dieser Prompt wird so an LM Studio geschickt — ändere ihn nur wenn du ein anderes Modell mit anderem Format nutzt.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div><!-- end page-fotoanalyse -->
 
@@ -4937,10 +4975,37 @@ async function loadDuoHealth() {
     const d = await r.json();
     const devs = Array.isArray(d.devices) ? d.devices : [];
     const online = devs.length > 0;
-    el.innerHTML = surfaceRow('Status',
-      online ? `<span style="color:#4ade80">● Verbunden</span>` : `<span style="color:var(--dim)">● Nicht verbunden</span>`) +
-      (online ? surfaceRow('Gerät', devs[0] || '–') : '') +
-      `<div style="font-size:13px;color:var(--dim);margin-top:8px">ADB via WLAN · ${devs.length} Gerät(e)</div>`;
+    const dev = devs[0] || {};
+    let html = surfaceRow('Status',
+      online ? `<span style="color:#4ade80">● Verbunden</span>` : `<span style="color:var(--dim)">● Nicht verbunden</span>`);
+    if (online) {
+      html += surfaceRow('Gerät', dev.id || '–');
+      html += surfaceRow('ADB-State', dev.state || '–');
+    }
+    html += `<div style="font-size:13px;color:var(--dim);margin-top:8px">ADB via WLAN · ${devs.length} Gerät(e)</div>`;
+    el.innerHTML = html;
+    if (online) {
+      // Akku nachladen
+      fetch(API + '/api/adb/info?kind=battery', {signal: AbortSignal.timeout(8000)})
+        .then(r => r.json()).then(b => {
+          if (b.error || !b.props) return;
+          const p = b.props;
+          const lvl = p.level ? `${p.level}%` : '–';
+          const st  = p.status_text || '–';
+          const plug = p.plugged ? (p.plugged === '0' ? 'Nein' : 'Ja') : '–';
+          const temp = p.temperature ? `${(parseInt(p.temperature)/10).toFixed(1)} °C` : '–';
+          el.innerHTML += surfaceRow('Akku', `${lvl} · ${st}`) +
+                          surfaceRow('Laden', plug) +
+                          surfaceRow('Temperatur', temp);
+        }).catch(()=>{});
+      // Aktive App nachladen
+      fetch(API + '/api/adb/info?kind=foreground', {signal: AbortSignal.timeout(8000)})
+        .then(r => r.json()).then(f => {
+          if (f.error || !f.package) return;
+          const label = f.package.split('.').pop();
+          el.innerHTML += surfaceRow('Aktive App', `<span title="${f.activity}">${label}</span>`);
+        }).catch(()=>{});
+    }
   } catch {
     el.innerHTML = `<div style="color:var(--dim);font-size:14px">ADB nicht erreichbar</div>`;
   }
@@ -5366,14 +5431,36 @@ async function adbCopy(el, text) {
 
 async function adbAction(act, btn) {
   const card = btn.closest('.card');
-  const resultKey = {devices:'devices', apps:'apps', screenshot:'screenshot', pull:'pull', push:'push', connect:'devices', disconnect:'devices', 'device-info':'device-info', battery:'battery', foreground:'foreground'}[act];
+  const resultKey = {pair:'pair', devices:'devices', apps:'apps', screenshot:'screenshot', pull:'pull', push:'push', connect:'devices', disconnect:'devices', 'device-info':'device-info', battery:'battery', foreground:'foreground'}[act];
   const out = resultKey ? card.querySelector(`.adb-result[data-for="${resultKey}"]`) : null;
   const showMsg = (html) => { if (out) out.innerHTML = html; };
   btn.disabled = true;
   let origLabel = btn.textContent;
   btn.textContent = '⏳ Läuft...';
   try {
-    if (act === 'connect') {
+    if (act === 'pair') {
+      const hostEl = card.querySelector('[data-role="pair-ip"]');
+      const codeEl = card.querySelector('[data-role="pair-code"]');
+      const host = hostEl ? hostEl.value.trim() : '';
+      const code = codeEl ? codeEl.value.trim() : '';
+      if (!host || !code) {
+        showMsg(`<div style="color:#e57373;font-size:13px;padding:8px">⚠ IP:Port und 6-stelligen Code eingeben.</div>`);
+      } else {
+        const r = await fetch(API + '/api/adb/pair', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({host, code})
+        });
+        const d = await r.json();
+        const color = d.ok ? '#66bb6a' : '#e57373';
+        showMsg(`<div style="color:${color};font-size:13px;padding:8px;background:${d.ok?'rgba(102,187,106,0.08)':'rgba(229,115,115,0.08)'};border-radius:6px">${d.ok?'✓ Gekoppelt!':'⚠'} ${adbEsc(d.message || d.error || '')}</div>`);
+        if (d.ok) {
+          const connectIp = card.querySelector('[data-role="connect-ip"]');
+          const connectPort = card.querySelector('[data-role="connect-port"]');
+          if (connectIp && host.includes(':')) connectIp.value = host.split(':')[0];
+          if (connectPort && !connectPort.value) connectPort.value = localStorage.getItem('adb-last-port') || '41873';
+        }
+      }
+    } else if (act === 'connect') {
       const ipEl = card.querySelector('[data-role="connect-ip"]');
       const portEl = card.querySelector('[data-role="connect-port"]');
       const ip = ipEl ? ipEl.value.trim() : '';
@@ -7141,24 +7228,56 @@ async function loadFotoAnalyse() {
   try {
     const cfg = await fetch('/api/photos/config').then(r => r.json());
     if (cfg.lmstudio_url) document.getElementById('fa-url').value = cfg.lmstudio_url;
-    if (cfg.model) document.getElementById('fa-model').value = cfg.model;
-    const status = document.getElementById('fa-status');
-    if (cfg.reachable === false)
-      status.textContent = '⚠️ LM Studio nicht erreichbar — API-Server starten!';
-    else
-      status.textContent = `✓ LM Studio verbunden · ${cfg.model}`;
+    if (cfg.model) {
+      document.getElementById('fa-model').value = cfg.model;
+      document.getElementById('fa-model-badge').textContent = cfg.model;
+    }
+    const lmStatus = document.getElementById('fa-lm-status');
+    if (cfg.reachable === false) {
+      lmStatus.textContent = '⚠️ LM Studio nicht erreichbar';
+      lmStatus.style.color = '#f87171';
+      faOpenSettings();
+    } else if (cfg.model) {
+      lmStatus.textContent = '✓ verbunden';
+      lmStatus.style.color = '#4ade80';
+    }
   } catch(e) {}
   await faLoadResults();
   await faPollStatus();
+  if (_faAllResults.length === 0) faOpenSettings();
+}
+
+function faOpenSettings() {
+  const body = document.getElementById('fa-settings-body');
+  const chev = document.getElementById('fa-settings-chevron');
+  body.style.display = 'block';
+  chev.style.transform = 'rotate(180deg)';
+}
+
+function faToggleAdvanced() {
+  const adv = document.getElementById('fa-advanced');
+  const btn = adv.previousElementSibling;
+  const open = adv.style.display !== 'none';
+  adv.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? '▸ Erweitert (LM Studio URL & Prompt)' : '▾ Erweitert (LM Studio URL & Prompt)';
 }
 
 async function faLoadResults() {
   try {
     const d = await fetch('/api/photos/results').then(r => r.json());
     _faAllResults = d.results || [];
-    const q = (document.getElementById('fa-search').value || '').toLowerCase().trim();
-    faSearch();
+    // Nur neu suchen wenn ein Begriff eingetippt ist
+    const q = document.getElementById('fa-search').value.trim();
+    if (q) faSearch();
   } catch(e) {}
+}
+
+function faToggleSettings() {
+  const body = document.getElementById('fa-settings-body');
+  const chev = document.getElementById('fa-settings-chevron');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  chev.style.transform = open ? '' : 'rotate(180deg)';
 }
 
 async function faPollStatus() {
@@ -7233,51 +7352,100 @@ async function faClear() {
   setTimeout(() => document.getElementById('fa-status').textContent = '', 2000);
 }
 
-function faSearch() {
-  const q = document.getElementById('fa-search').value.toLowerCase().trim();
-  if (!q) { faRenderGrid([], ''); return; }
-  const filtered = _faAllResults.filter(r => r.description.toLowerCase().includes(q));
-  faRenderGrid(filtered, q);
+let _faSearchTimer = null;
+async function faSearch() {
+  const q = document.getElementById('fa-search').value.trim();
+  if (!q) {
+    faRenderGrid([], '');
+    document.getElementById('fa-result-count').textContent = '';
+    const pill = document.getElementById('fa-terms-pill');
+    if (pill) pill.remove();
+    return;
+  }
+
+  clearTimeout(_faSearchTimer);
+  document.getElementById('fa-result-count').textContent = '🔍 Übersetzt…';
+  _faSearchTimer = setTimeout(async () => {
+    try {
+      const d = await fetch('/api/photos/search', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({query: q})
+      }).then(r => r.json());
+
+      const terms = d.terms || [];
+      const results = d.results || [];
+      faRenderGrid(results, terms.join('|'), terms, q);
+    } catch(e) {
+      const qL = q.toLowerCase();
+      const filtered = _faAllResults.filter(r => (r.description||'').toLowerCase().includes(qL));
+      faRenderGrid(filtered, null, [qL], q);
+    }
+  }, 600);
 }
 
-function faHighlight(text, q) {
-  if (!q) return text;
-  const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+function faHighlight(text, terms) {
+  if (!terms || !terms.length) return text;
+  const list = Array.isArray(terms) ? terms : [terms];
+  const escaped = list.map(t => t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+  const re = new RegExp('(' + escaped + ')', 'gi');
   return text.replace(re, '<mark style="background:rgba(255,102,153,0.35);color:var(--bright);border-radius:2px;padding:0 2px">$1</mark>');
 }
 
-function faRenderGrid(results, q) {
+function faRenderGrid(results, _unused, terms, originalQuery) {
   const grid  = document.getElementById('fa-grid');
   const empty = document.getElementById('fa-empty');
   const count = document.getElementById('fa-result-count');
-  count.textContent = results.length + ' Fotos';
+  const label = originalQuery || '';
+  const termsArr = terms ? (Array.isArray(terms) ? terms : [terms]) : [];
+  count.textContent = results.length ? results.length + ' Fotos' : '';
+  const pill = document.getElementById('fa-terms-pill');
+  if (pill) pill.remove();
   if (!results.length) {
     grid.innerHTML = '';
     empty.style.display = 'block';
-    empty.textContent = q ? `Keine Treffer für „${q}"` : 'Suchbegriff eingeben um Fotos zu finden.';
+    if (label) {
+      const termsLine = termsArr.length
+        ? `<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:6px">Bolla suchte auf Englisch nach: ${termsArr.map(t=>`<em>${t}</em>`).join(', ')}</div>`
+        : '';
+      empty.innerHTML = `<div>Keine Treffer für „${label}"</div>${termsLine}`;
+    } else {
+      empty.textContent = 'Suchbegriff eingeben um Fotos zu finden.';
+    }
     return;
   }
   empty.style.display = 'none';
   const show = [...results].reverse().slice(0, 200);
+  // Übersetzte Terms als kleine Info-Zeile über dem Grid
+  if (termsArr.length > 1) {
+    const p = document.createElement('div');
+    p.id = 'fa-terms-pill';
+    p.style.cssText = 'margin-bottom:8px;font-size:11px;color:rgba(255,255,255,0.3)';
+    p.textContent = '🔍 ' + termsArr.join(' · ');
+    grid.before(p);
+  }
+
   grid.innerHTML = show.map(r => {
     const thumbUrl = '/api/photos/thumb?path=' + encodeURIComponent(r.path);
     const dateStr = r.analyzed_at ? new Date(r.analyzed_at).toLocaleDateString('de-DE') : '';
-    // Zeige relevantesten Ausschnitt der Beschreibung
     let desc = r.description || '';
-    let matchHint = '';
-    if (q) {
-      const qL = q.toLowerCase();
+    if (termsArr.length) {
       const descL = desc.toLowerCase();
-      const pos = descL.indexOf(qL);
-      if (pos >= 0) {
-        const start = Math.max(0, pos - 40);
-        const end = Math.min(desc.length, pos + q.length + 80);
+      let bestPos = -1;
+      let bestTerm = '';
+      for (const t of termsArr) {
+        const p = descL.indexOf(t.toLowerCase());
+        if (p >= 0 && (bestPos < 0 || p < bestPos)) { bestPos = p; bestTerm = t; }
+      }
+      if (bestPos >= 0) {
+        const start = Math.max(0, bestPos - 40);
+        const end = Math.min(desc.length, bestPos + bestTerm.length + 80);
         desc = (start > 0 ? '…' : '') + desc.slice(start, end) + (end < desc.length ? '…' : '');
       } else {
-        desc = desc.length > 100 ? desc.slice(0, 100) + '…' : desc;
+        desc = desc.length > 120 ? desc.slice(0, 120) + '…' : desc;
       }
     } else {
-      desc = desc.length > 100 ? desc.slice(0, 100) + '…' : desc;
+      desc = desc.length > 120 ? desc.slice(0, 120) + '…' : desc;
     }
     return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color 0.15s"
               onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'"
@@ -7288,9 +7456,8 @@ function faRenderGrid(results, q) {
           onerror="this.style.display='none'">
       </div>
       <div style="padding:8px 10px">
-        <div style="font-size:11px;color:var(--accent);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.filename}">${faHighlight(r.filename, q)}</div>
-        <div style="font-size:12px;color:var(--dim);margin-top:4px;line-height:1.4">${faHighlight(desc, q)}</div>
-        ${matchHint}
+        <div style="font-size:11px;color:var(--accent);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.filename}">${r.filename}</div>
+        <div style="font-size:12px;color:var(--dim);margin-top:4px;line-height:1.4">${faHighlight(desc, termsArr)}</div>
         <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:4px">${dateStr}</div>
       </div>
     </div>`;
