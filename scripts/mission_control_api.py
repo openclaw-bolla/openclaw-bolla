@@ -2850,6 +2850,24 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(adb_packages(params.get("filter", ""), params.get("kind", "all")))
                 return
 
+            if self.path.startswith("/api/fs/dirs"):
+                import urllib.parse as _up
+                qs = _up.urlparse(self.path).query
+                params = dict(_up.parse_qsl(qs))
+                req_path = params.get("path", "/mnt/d/OneDrive").strip()
+                ALLOWED_ROOTS = ["/mnt/d/OneDrive", "/mnt/c/Users/ernst", os.path.expanduser("~")]
+                if not any(req_path.startswith(r) for r in ALLOWED_ROOTS) or ".." in req_path:
+                    self._send_json({"error": "Pfad nicht erlaubt"}); return
+                try:
+                    entries = sorted([
+                        e.name for e in os.scandir(req_path)
+                        if e.is_dir() and not e.name.startswith('.')
+                    ], key=str.lower)
+                    self._send_json({"path": req_path, "dirs": entries})
+                except Exception as ex:
+                    self._send_json({"error": str(ex)})
+                return
+
             if self.path.startswith("/api/adb/info"):
                 import urllib.parse as _up
                 qs = _up.urlparse(self.path).query

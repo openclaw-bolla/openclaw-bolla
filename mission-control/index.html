@@ -2111,7 +2111,8 @@ html, body {
                 style="flex:1;background:transparent;color:var(--text);border:none;font-size:13px;outline:none"
                 onfocus="this.parentElement.style.borderColor='var(--accent)'"
                 onblur="this.parentElement.style.borderColor='var(--border)'">
-              <span style="font-size:11px;color:rgba(255,255,255,0.25);white-space:nowrap">✏️ Pfad editierbar</span>
+              <button onclick="faFolderBrowse()" title="Ordner auswählen"
+                style="background:none;border:none;color:var(--accent);font-size:16px;cursor:pointer;padding:0 4px;flex-shrink:0">📂</button>
             </div>
             <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
               <input id="fa-search" type="text" placeholder="Suchbegriff — Deutsch oder Englisch (z.B. Weihnachten, Beach, Familie)"
@@ -7562,6 +7563,63 @@ async function faRename(path, description, overlay) {
   if (idx >= 0) { _faAllResults[idx].path = d.new_path; _faAllResults[idx].filename = d.new_name; }
   overlay && overlay.remove();
   faSearch();
+}
+
+async function faFolderBrowse() {
+  const ROOT = '/mnt/d/OneDrive';
+  let current = document.getElementById('fa-folder').value.trim() || ROOT;
+  if (!current.startsWith('/mnt/d/OneDrive') && !current.startsWith('/mnt/c/Users/ernst')) current = ROOT;
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+
+  async function render(path) {
+    current = path;
+    const d = await fetch('/api/fs/dirs?path=' + encodeURIComponent(path)).then(r => r.json());
+    const dirs = d.dirs || [];
+    const parts = path.split('/').filter(Boolean);
+    const breadcrumb = parts.map((p, i) => {
+      const fullPath = '/' + parts.slice(0, i+1).join('/');
+      return `<span onclick="window._faBrowseTo('${fullPath.replace(/'/g,"\\'")}');event.stopPropagation()"
+        style="cursor:pointer;color:var(--accent);padding:2px 4px;border-radius:3px" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background=''">
+        ${p}</span><span style="color:var(--dim)"> / </span>`;
+    }).join('');
+    const upPath = path !== ROOT && path !== '/mnt/d' ? path.split('/').slice(0,-1).join('/') || '/' : null;
+    overlay.innerHTML = `
+      <div style="background:var(--card);border-radius:12px;width:520px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden" onclick="event.stopPropagation()">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <span style="font-size:14px;font-weight:600;color:var(--bright)">📂 Ordner auswählen</span>
+          <button onclick="this.closest('[style*=fixed]').remove()" style="margin-left:auto;background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;line-height:1">✕</button>
+        </div>
+        <div style="padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;flex-shrink:0;word-break:break-all">
+          ${breadcrumb}
+        </div>
+        <div style="overflow-y:auto;flex:1;padding:8px">
+          ${upPath ? `<div onclick="window._faBrowseTo('${upPath.replace(/'/g,"\\'")}');event.stopPropagation()"
+            style="padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--dim)"
+            onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">⬆ ..</div>` : ''}
+          ${dirs.length ? dirs.map(name => {
+            const fp = path.replace(/\/+$/,'') + '/' + name;
+            return `<div onclick="window._faBrowseTo('${fp.replace(/'/g,"\\'")}');event.stopPropagation()"
+              style="padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px"
+              onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+              <span style="color:#fbbf24">📁</span>${name}</div>`;
+          }).join('') : '<div style="padding:16px;color:var(--dim);font-size:13px;text-align:center">Keine Unterordner</div>'}
+        </div>
+        <div style="padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0">
+          <div style="flex:1;font-size:12px;color:var(--dim);word-break:break-all;align-self:center">${path}</div>
+          <button onclick="document.getElementById('fa-folder').value='${path.replace(/'/g,"\\'")}';this.closest('[style*=fixed]').remove()"
+            style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">
+            ✓ Auswählen
+          </button>
+        </div>
+      </div>`;
+  }
+
+  window._faBrowseTo = p => render(p);
+  await render(current);
 }
 
 async function faExportOneDrive() {
