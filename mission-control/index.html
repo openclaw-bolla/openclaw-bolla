@@ -7230,6 +7230,8 @@ let _faAllResults = [];
 let _faPollTimer = null;
 let _faShown = [];
 let _faCurrentQuery = '';
+let _faLastTerms = [];
+let _faSearchInFlight = false;
 
 async function loadFotoAnalyse() {
   try {
@@ -7273,10 +7275,23 @@ async function faLoadResults() {
   try {
     const d = await fetch('/api/photos/results').then(r => r.json());
     _faAllResults = d.results || [];
-    // Nur neu suchen wenn ein Begriff eingetippt ist
     const q = document.getElementById('fa-search').value.trim();
-    if (q) faSearch();
+    if (q && _faLastTerms.length) {
+      // Poll-Update: lokal re-filtern mit gecachten Terms — kein neuer Claude-Call
+      faRenderLocal(q);
+    } else if (q && !_faSearchInFlight) {
+      faSearch();
+    }
   } catch(e) {}
+}
+
+function faRenderLocal(q) {
+  if (!_faLastTerms.length) return;
+  const patterns = _faLastTerms.map(t => {
+    try { return new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'i'); } catch(e) { return null; }
+  }).filter(Boolean);
+  const matched = _faAllResults.filter(r => patterns.some(p => p.test(r.description || '')));
+  faRenderGrid(matched, '', _faLastTerms, q);
 }
 
 function faToggleSettings() {
@@ -7373,6 +7388,8 @@ async function faSearch() {
   clearTimeout(_faSearchTimer);
   document.getElementById('fa-result-count').textContent = '🔍 Übersetzt…';
   _faSearchTimer = setTimeout(async () => {
+    if (_faSearchInFlight) return;
+    _faSearchInFlight = true;
     try {
       const d = await fetch('/api/photos/search', {
         method: 'POST',
@@ -7383,11 +7400,15 @@ async function faSearch() {
       const terms = d.terms || [];
       const results = d.results || [];
       _faCurrentQuery = q;
+      _faLastTerms = terms;
       faRenderGrid(results, terms.join('|'), terms, q);
     } catch(e) {
       const qL = q.toLowerCase();
       const filtered = _faAllResults.filter(r => (r.description||'').toLowerCase().includes(qL));
+      _faLastTerms = [qL];
       faRenderGrid(filtered, null, [qL], q);
+    } finally {
+      _faSearchInFlight = false;
     }
   }, 600);
 }
