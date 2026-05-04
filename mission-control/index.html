@@ -7275,13 +7275,9 @@ async function faLoadResults() {
   try {
     const d = await fetch('/api/photos/results').then(r => r.json());
     _faAllResults = d.results || [];
+    // Poll: nur lokal re-rendern wenn Suchbegriffe bekannt — niemals neue Suche starten
     const q = document.getElementById('fa-search').value.trim();
-    if (q && _faLastTerms.length) {
-      // Poll-Update: lokal re-filtern mit gecachten Terms — kein neuer Claude-Call
-      faRenderLocal(q);
-    } else if (q && !_faSearchInFlight) {
-      faSearch();
-    }
+    if (q && _faLastTerms.length) faRenderLocal(q);
   } catch(e) {}
 }
 
