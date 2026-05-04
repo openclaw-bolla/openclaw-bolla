@@ -3028,8 +3028,7 @@ class Handler(BaseHTTPRequestHandler):
                 _photo_job["stop"] = True
                 self._send_json({"ok": True})
             elif self.path == "/api/photos/clear":
-                if _photo_job["running"]:
-                    self._send_json({"error": "Analyse läuft noch"}); return
+                _photo_job["stop"] = True
                 _photo_save_results([])
                 self._send_json({"ok": True})
             elif self.path == "/api/korrektur/meta":
