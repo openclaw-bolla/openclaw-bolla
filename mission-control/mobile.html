@@ -250,6 +250,20 @@
     <div id="clip-status" style="text-align:center;font-size:14px;min-height:20px"></div>
     <div id="clip-ts" style="text-align:center;font-size:12px;color:var(--text3)"></div>
   </div>
+  <div class="card" style="flex-direction:column;gap:10px">
+    <h3 style="margin:0;font-size:16px;font-weight:700">🖼️ Bild-Clipboard</h3>
+    <div id="clip-drop-zone"
+      ondragover="clipImgDragOver(event)" ondragleave="clipImgDragLeave(event)" ondrop="clipImgDrop(event)"
+      onclick="document.getElementById('clip-file-input').click()"
+      style="border:2px dashed var(--sep);border-radius:10px;padding:22px 16px;text-align:center;cursor:pointer;color:var(--text3);font-size:14px;transition:border-color 0.2s,background 0.2s">
+      <div style="font-size:30px;margin-bottom:6px">📂</div>
+      <div>Tippen zum Auswählen</div>
+      <div style="font-size:12px;margin-top:2px">PNG, JPG, GIF, WebP, BMP</div>
+    </div>
+    <input type="file" id="clip-file-input" accept="image/*" style="display:none" onchange="clipImgFileSelected(event)">
+    <span id="clip-img-status" style="display:block;font-size:13px;min-height:18px;text-align:center"></span>
+    <div id="clip-img-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px"></div>
+  </div>
 </div>
 
 <!-- BOTTOM NAV -->
@@ -292,8 +306,11 @@ document.querySelectorAll('.tabbtn').forEach(btn => {
 // ===== DATA LOAD =====
 const loaded = {};
 async function loadTab(tab) {
-  if (loaded[tab]) return;
-  loaded[tab] = true;
+  // Clipboard immer frisch laden (ändert sich häufig)
+  if (tab !== 'clip') {
+    if (loaded[tab]) return;
+    loaded[tab] = true;
+  }
   if (tab === 'cal') await loadCalendar();
   else if (tab === 'mail') await loadMails();
   else if (tab === 'wx') await loadWeather();
@@ -502,6 +519,7 @@ async function loadClipboard() {
   } catch (e) {
     showClipStatus('⚠️ ' + e.message, false);
   }
+  loadClipboardImages();
 }
 
 async function clipboardSave() {
@@ -542,6 +560,84 @@ function showClipStatus(msg, ok) {
   el.textContent = msg;
   el.style.color = ok ? 'var(--green)' : 'var(--red)';
   if (msg) setTimeout(() => { el.textContent = ''; }, 2500);
+}
+
+async function loadClipboardImages() {
+  const grid = document.getElementById('clip-img-grid');
+  try {
+    const d = await fetch('/api/clipboard/images').then(r => r.json());
+    if (!d.images || d.images.length === 0) { grid.innerHTML = ''; return; }
+    grid.innerHTML = d.images.map(img => `
+      <div style="position:relative;background:var(--bg);border:1px solid var(--sep);border-radius:8px;overflow:hidden;aspect-ratio:1">
+        <img src="/api/clipboard/image/${encodeURIComponent(img.filename)}" alt="${img.filename}"
+          style="width:100%;height:100%;object-fit:cover;cursor:pointer;display:block"
+          onclick="clipboardImageFullscreen('/api/clipboard/image/${encodeURIComponent(img.filename)}')"
+          title="${img.filename}">
+        <button onclick="clipboardDeleteImage('${img.filename}')"
+          style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:4px;width:24px;height:24px;font-size:13px;cursor:pointer;line-height:1;padding:0"
+          title="Löschen">✕</button>
+      </div>`).join('');
+  } catch(e) { /* ignore */ }
+}
+
+async function _clipImgUpload(file) {
+  if (!file || !file.type.startsWith('image/')) {
+    _clipImgStatus('Kein Bild', false); return;
+  }
+  _clipImgStatus('Wird hochgeladen…', true);
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const b64 = e.target.result.split(',')[1];
+    try {
+      await fetch('/api/clipboard/image', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({image_b64: b64, mime: file.type})});
+      _clipImgStatus('✓ Gespeichert', true);
+      setTimeout(() => _clipImgStatus('', true), 2000);
+      loadClipboardImages();
+    } catch(e) {
+      _clipImgStatus('Fehler beim Hochladen', false);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function _clipImgStatus(msg, ok) {
+  const el = document.getElementById('clip-img-status');
+  el.textContent = msg;
+  el.style.color = ok ? 'var(--green)' : 'var(--red)';
+}
+
+function clipImgDragOver(e) {
+  e.preventDefault();
+  const z = document.getElementById('clip-drop-zone');
+  z.style.borderColor = 'var(--accent)';
+  z.style.background = 'rgba(0,122,255,0.07)';
+}
+function clipImgDragLeave(e) {
+  const z = document.getElementById('clip-drop-zone');
+  z.style.borderColor = ''; z.style.background = '';
+}
+function clipImgDrop(e) {
+  e.preventDefault();
+  clipImgDragLeave(e);
+  _clipImgUpload(e.dataTransfer.files[0]);
+}
+function clipImgFileSelected(e) {
+  _clipImgUpload(e.target.files[0]);
+  e.target.value = '';
+}
+
+async function clipboardDeleteImage(filename) {
+  await fetch('/api/clipboard/image/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({filename})});
+  loadClipboardImages();
+}
+
+function clipboardImageFullscreen(url) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
+  overlay.innerHTML = `<img src="${url}" style="max-width:95vw;max-height:90vh;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,0.6)">`;
+  overlay.onclick = () => document.body.removeChild(overlay);
+  document.addEventListener('keydown', function esc(e) { if(e.key==='Escape'){ document.body.removeChild(overlay); document.removeEventListener('keydown',esc); }});
+  document.body.appendChild(overlay);
 }
 
 // Initial load
