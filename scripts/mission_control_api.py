@@ -32,6 +32,10 @@ CLIPBOARD_IMAGES_DIR = os.path.join(WORKSPACE, "config/clipboard_images")
 IMMO_BOOKMARKS_FILE  = Path(os.path.join(WORKSPACE, "config/immo_bookmarks.json"))
 IMMO_CRITERIA_FILE   = Path(os.path.join(WORKSPACE, "config/immo_criteria.json"))
 TRAVEL_FILE          = Path(os.path.join(WORKSPACE, "cache/travel.json"))
+PHOTO_ANALYSIS_FILE  = os.path.join(WORKSPACE, "data/photo_analysis.json")
+
+# Foto-Analyse Job-Status (global, threadsafe via GIL für einfache dict-ops)
+_photo_job = {"running": False, "total": 0, "done": 0, "errors": 0, "stop": False, "folder": ""}
 
 
 def get_clipboard():
@@ -2490,6 +2494,128 @@ def adb_pull(remote):
         except Exception: pass
 
 
+# ═══════════════════════════════════════════════════════════
+# FOTO-ANALYSE (LM Studio / Moondream)
+# ═══════════════════════════════════════════════════════════
+
+def _photo_load_results():
+    os.makedirs(os.path.dirname(PHOTO_ANALYSIS_FILE), exist_ok=True)
+    if os.path.exists(PHOTO_ANALYSIS_FILE):
+        try:
+            with open(PHOTO_ANALYSIS_FILE, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return []
+
+def _photo_save_results(results):
+    os.makedirs(os.path.dirname(PHOTO_ANALYSIS_FILE), exist_ok=True)
+    with open(PHOTO_ANALYSIS_FILE, "w", encoding="utf-8") as f:
+        json.dump(results, f, ensure_ascii=False, indent=2)
+
+def _photo_analyze_one(image_path, prompt, model, lmstudio_url):
+    import base64 as _b64
+    ext = image_path.lower().rsplit(".", 1)[-1]
+    mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+            "gif": "image/gif", "webp": "image/webp", "bmp": "image/bmp"}.get(ext, "image/jpeg")
+    with open(image_path, "rb") as f:
+        img_b64 = _b64.b64encode(f.read()).decode()
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": [
+            {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{img_b64}"}},
+            {"type": "text", "text": prompt}
+        ]}],
+        "max_tokens": 300,
+        "temperature": 0.1
+    }
+    import urllib.request as _ur
+    data = json.dumps(payload).encode()
+    req = _ur.Request(f"{lmstudio_url}/v1/chat/completions", data=data,
+                      headers={"Content-Type": "application/json"})
+    resp = json.loads(_ur.urlopen(req, timeout=60).read())
+    return resp["choices"][0]["message"]["content"].strip()
+
+def _photo_worker(folder, prompt, model, lmstudio_url):
+    global _photo_job
+    IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tif", ".tiff"}
+    all_files = []
+    for root, _, files in os.walk(folder):
+        for fname in sorted(files):
+            if os.path.splitext(fname.lower())[1] in IMAGE_EXTS:
+                all_files.append(os.path.join(root, fname))
+    results = _photo_load_results()
+    analyzed = {r["path"] for r in results}
+    todo = [f for f in all_files if f not in analyzed]
+    _photo_job["total"] = len(all_files)
+    _photo_job["done"] = len(analyzed)
+    _photo_job["errors"] = 0
+    for fpath in todo:
+        if _photo_job["stop"]:
+            break
+        try:
+            desc = _photo_analyze_one(fpath, prompt, model, lmstudio_url)
+            results.append({
+                "path": fpath,
+                "filename": os.path.basename(fpath),
+                "folder": os.path.relpath(os.path.dirname(fpath), folder),
+                "description": desc,
+                "analyzed_at": datetime.now().isoformat()
+            })
+            _photo_save_results(results)
+        except Exception as e:
+            _photo_job["errors"] += 1
+            print(f"Foto-Analyse Fehler {fpath}: {e}")
+        _photo_job["done"] += 1
+    _photo_job["running"] = False
+
+def photo_start(folder, prompt, model, lmstudio_url):
+    global _photo_job
+    if _photo_job["running"]:
+        return {"error": "Analyse läuft bereits"}
+    folder = os.path.expanduser(folder)
+    if not os.path.isdir(folder):
+        return {"error": f"Ordner nicht gefunden: {folder}"}
+    _photo_job = {"running": True, "total": 0, "done": 0, "errors": 0, "stop": False, "folder": folder}
+    import threading
+    threading.Thread(target=_photo_worker, args=(folder, prompt, model, lmstudio_url), daemon=True).start()
+    return {"ok": True}
+
+def photo_thumb(path):
+    import base64 as _b64, io
+    path = os.path.realpath(os.path.expanduser(path))
+    allowed = ["/mnt/d/", "/mnt/c/Users/", os.path.expanduser("~/")]
+    if not any(path.startswith(a) for a in allowed):
+        return None, "Pfad nicht erlaubt"
+    if not os.path.isfile(path):
+        return None, "Datei nicht gefunden"
+    try:
+        from PIL import Image
+        img = Image.open(path)
+        img.thumbnail((240, 240), Image.LANCZOS)
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=75)
+        ext = "jpeg"
+        return _b64.b64encode(buf.getvalue()).decode(), ext
+    except ImportError:
+        pass
+    except Exception as e:
+        return None, str(e)
+    # Fallback: Datei direkt senden
+    with open(path, "rb") as f:
+        raw = f.read()
+    ext = path.lower().rsplit(".", 1)[-1]
+    if ext in ("jpg", "jpeg"):
+        ext = "jpeg"
+    elif ext == "png":
+        ext = "png"
+    else:
+        ext = "jpeg"
+    return _b64.b64encode(raw).decode(), ext
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass  # silent
@@ -2661,7 +2787,30 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/immo-criteria":  get_immo_criteria,
                 "/api/crontab":        get_crontab,
                 "/api/travel":         get_travel,
+                "/api/photos/status":  lambda: dict(_photo_job),
+                "/api/photos/results": lambda: {"results": _photo_load_results()},
             }
+
+            # Foto-Thumb
+            if self.path.startswith("/api/photos/thumb"):
+                import urllib.parse as _up
+                qs = _up.parse_qs(_up.urlparse(self.path).query)
+                path = qs.get("path", [""])[0]
+                if not path:
+                    self._send_json({"error": "Kein Pfad"}, status=400); return
+                b64, ext = photo_thumb(path)
+                if not b64:
+                    self._send_json({"error": ext}, status=404); return
+                import base64 as _b64
+                body = _b64.b64decode(b64)
+                self.send_response(200)
+                self.send_header("Content-Type", f"image/{ext}")
+                self.send_header("Cache-Control", "max-age=86400")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
             if self.path.startswith("/api/clipboard/image/"):
                 fname = self.path[len("/api/clipboard/image/"):]
                 if "/" in fname or "\\" in fname or ".." in fname:
@@ -2867,6 +3016,22 @@ class Handler(BaseHTTPRequestHandler):
                 if not filename:
                     self._send_json({"error": "Kein Dateiname"}, status=400); return
                 self._send_json(delete_clipboard_image(filename))
+            elif self.path == "/api/photos/start":
+                folder       = body.get("folder", "")
+                prompt       = body.get("prompt", "Beschreibe dieses Foto kurz auf Deutsch.")
+                model        = body.get("model", "moondream2")
+                lmstudio_url = body.get("lmstudio_url", "http://localhost:1234")
+                if not folder:
+                    self._send_json({"error": "Kein Ordner angegeben"}, status=400); return
+                self._send_json(photo_start(folder, prompt, model, lmstudio_url))
+            elif self.path == "/api/photos/stop":
+                _photo_job["stop"] = True
+                self._send_json({"ok": True})
+            elif self.path == "/api/photos/clear":
+                if _photo_job["running"]:
+                    self._send_json({"error": "Analyse läuft noch"}); return
+                _photo_save_results([])
+                self._send_json({"ok": True})
             elif self.path == "/api/korrektur/meta":
                 import subprocess as _sp, shutil as _sh, tempfile as _tf, base64 as _b64, re as _re
                 img_b64 = body.get("image_b64", "")

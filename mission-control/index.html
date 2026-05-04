@@ -702,6 +702,7 @@ html, body {
           <div class="nav-item" data-page="redesigns"><span class="icon">🎨</span><span>Redesigns</span></div>
           <div class="nav-item" data-page="bildgen"><span class="icon">🍌</span><span>BildGen</span></div>
           <div class="nav-item" data-page="suno"><span class="icon">🎵</span><span>Suno Songs</span></div>
+          <div class="nav-item" data-page="fotoanalyse"><span class="icon">🔍</span><span>Foto-Analyse</span></div>
         </div>
       </div>
 
@@ -2082,6 +2083,84 @@ html, body {
         <div id="suno-output" style="display:none"></div>
       </div><!-- end page-suno -->
 
+      <!-- FOTO-ANALYSE -->
+      <div class="page" id="page-fotoanalyse">
+        <div style="max-width:1100px;margin:0 auto;padding:16px">
+
+          <!-- Einstellungen -->
+          <div class="card" style="padding:20px;margin-bottom:16px">
+            <h3 style="margin:0 0 4px;color:var(--bright)">🔍 Foto-Analyse</h3>
+            <p style="font-size:13px;color:var(--dim);margin:0 0 16px">Fotos lokal via LM Studio (Moondream) analysieren und durchsuchbar machen.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+              <div>
+                <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Ordner (OneDrive-Pfad)</label>
+                <input id="fa-folder" type="text" value="/mnt/d/OneDrive/Bilder"
+                  style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">LM Studio URL</label>
+                <input id="fa-url" type="text" value="http://localhost:1234"
+                  style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px">
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:12px;margin-bottom:12px;align-items:end">
+              <div>
+                <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Modell</label>
+                <input id="fa-model" type="text" value="moondream2"
+                  style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px">
+              </div>
+              <div></div>
+            </div>
+            <div style="margin-bottom:14px">
+              <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Analyse-Prompt</label>
+              <textarea id="fa-prompt" rows="2"
+                style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;resize:vertical;font-family:inherit"
+                >Beschreibe dieses Foto kurz auf Deutsch: Was ist zu sehen? Personen, Ort, Aktivität, Stimmung.</textarea>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <button id="fa-start-btn" onclick="faStart()"
+                style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:9px 22px;font-size:14px;font-weight:600;cursor:pointer">
+                ▶ Analyse starten
+              </button>
+              <button onclick="faStop()"
+                style="background:var(--card);color:var(--dim);border:1px solid var(--border);border-radius:6px;padding:9px 16px;font-size:14px;cursor:pointer">
+                ⏹ Stopp
+              </button>
+              <button onclick="faClear()"
+                style="background:var(--card);color:var(--dim);border:1px solid var(--border);border-radius:6px;padding:9px 16px;font-size:14px;cursor:pointer">
+                🗑 Alle löschen
+              </button>
+              <span id="fa-status" style="font-size:13px;color:var(--dim)"></span>
+            </div>
+            <!-- Fortschrittsbalken -->
+            <div id="fa-progress-wrap" style="display:none;margin-top:14px">
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:4px">
+                <span id="fa-progress-label">0 / 0 Fotos</span>
+                <span id="fa-progress-pct">0%</span>
+              </div>
+              <div style="background:var(--bg);border-radius:4px;height:8px;overflow:hidden">
+                <div id="fa-progress-bar" style="height:100%;background:var(--accent);width:0%;transition:width 0.5s"></div>
+              </div>
+              <div id="fa-progress-errors" style="font-size:12px;color:var(--dim);margin-top:4px"></div>
+            </div>
+          </div>
+
+          <!-- Suche + Ergebnisse -->
+          <div class="card" style="padding:20px">
+            <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px">
+              <input id="fa-search" type="text" placeholder="In Beschreibungen suchen..."
+                oninput="faSearch()"
+                style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:14px">
+              <span id="fa-result-count" style="font-size:13px;color:var(--dim);white-space:nowrap"></span>
+            </div>
+            <div id="fa-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px"></div>
+            <div id="fa-empty" style="color:var(--dim);font-size:14px;text-align:center;padding:40px 0;display:none">
+              Noch keine Analysen vorhanden — Ordner wählen und Analyse starten.
+            </div>
+          </div>
+        </div>
+      </div><!-- end page-fotoanalyse -->
+
     </div><!-- end pages -->
   </div><!-- end main -->
 </div><!-- end app -->
@@ -2135,6 +2214,7 @@ function showPage(page) {
   if (page === 'clipboard')  loadClipboard();
   if (page === 'projekte')   loadProjekte();
   if (page === 'urlaub')     loadTravel();
+  if (page === 'fotoanalyse') loadFotoAnalyse();
   // Wenn es ein Unter-Tab einer Gruppe ist → Gruppe aufklappen
   const groups = ['projekte', 'schule', 'system'];
   for (const g of groups) {
@@ -7042,6 +7122,158 @@ function sunoCopy(id) {
 }
 // Kontext-Feld beim Laden vorbelegen
 document.getElementById('suno-kontext').value = SUNO_DEFAULT_KONTEXT;
+
+// ═══════════════════════════════════════════════════════════
+// FOTO-ANALYSE
+// ═══════════════════════════════════════════════════════════
+let _faAllResults = [];
+let _faPollTimer = null;
+
+async function loadFotoAnalyse() {
+  await faLoadResults();
+  await faPollStatus();
+}
+
+async function faLoadResults() {
+  try {
+    const d = await fetch('/api/photos/results').then(r => r.json());
+    _faAllResults = d.results || [];
+    faRenderGrid(_faAllResults);
+  } catch(e) {}
+}
+
+async function faPollStatus() {
+  clearTimeout(_faPollTimer);
+  try {
+    const s = await fetch('/api/photos/status').then(r => r.json());
+    const wrap = document.getElementById('fa-progress-wrap');
+    if (s.running || s.done > 0) {
+      wrap.style.display = 'block';
+      const pct = s.total > 0 ? Math.round(s.done / s.total * 100) : 0;
+      document.getElementById('fa-progress-bar').style.width = pct + '%';
+      document.getElementById('fa-progress-label').textContent = `${s.done} / ${s.total} Fotos analysiert`;
+      document.getElementById('fa-progress-pct').textContent = pct + '%';
+      if (s.errors > 0)
+        document.getElementById('fa-progress-errors').textContent = `⚠️ ${s.errors} Fehler`;
+      document.getElementById('fa-status').textContent = s.running ? '⏳ Läuft…' : '✓ Fertig';
+      document.getElementById('fa-start-btn').disabled = s.running;
+    }
+    if (s.running) {
+      await faLoadResults();
+      _faPollTimer = setTimeout(faPollStatus, 2000);
+    } else {
+      document.getElementById('fa-start-btn').disabled = false;
+    }
+  } catch(e) {}
+}
+
+async function faStart() {
+  const folder = document.getElementById('fa-folder').value.trim();
+  const prompt = document.getElementById('fa-prompt').value.trim();
+  const model  = document.getElementById('fa-model').value.trim();
+  const url    = document.getElementById('fa-url').value.trim();
+  if (!folder) { document.getElementById('fa-status').textContent = '⚠️ Bitte Ordner angeben'; return; }
+  document.getElementById('fa-status').textContent = '⏳ Starte…';
+  document.getElementById('fa-start-btn').disabled = true;
+  try {
+    const d = await fetch('/api/photos/start', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({folder, prompt, model, lmstudio_url: url})
+    }).then(r => r.json());
+    if (d.error) {
+      document.getElementById('fa-status').textContent = '⚠️ ' + d.error;
+      document.getElementById('fa-start-btn').disabled = false;
+    } else {
+      document.getElementById('fa-progress-wrap').style.display = 'block';
+      faPollStatus();
+    }
+  } catch(e) {
+    document.getElementById('fa-status').textContent = '⚠️ ' + e.message;
+    document.getElementById('fa-start-btn').disabled = false;
+  }
+}
+
+async function faStop() {
+  await fetch('/api/photos/stop', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+  document.getElementById('fa-status').textContent = '⏹ Gestoppt';
+  clearTimeout(_faPollTimer);
+  document.getElementById('fa-start-btn').disabled = false;
+}
+
+async function faClear() {
+  if (!confirm('Alle Analyseergebnisse löschen?')) return;
+  await fetch('/api/photos/clear', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+  _faAllResults = [];
+  faRenderGrid([]);
+  document.getElementById('fa-progress-wrap').style.display = 'none';
+  document.getElementById('fa-status').textContent = '';
+}
+
+function faSearch() {
+  const q = document.getElementById('fa-search').value.toLowerCase().trim();
+  if (!q) { faRenderGrid(_faAllResults); return; }
+  const filtered = _faAllResults.filter(r =>
+    r.description.toLowerCase().includes(q) ||
+    r.filename.toLowerCase().includes(q) ||
+    (r.folder || '').toLowerCase().includes(q)
+  );
+  faRenderGrid(filtered);
+}
+
+function faRenderGrid(results) {
+  const grid  = document.getElementById('fa-grid');
+  const empty = document.getElementById('fa-empty');
+  const count = document.getElementById('fa-result-count');
+  count.textContent = results.length + ' Fotos';
+  if (!results.length) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  // Neueste zuerst, max 200 anzeigen
+  const show = [...results].reverse().slice(0, 200);
+  grid.innerHTML = show.map(r => {
+    const thumbUrl = '/api/photos/thumb?path=' + encodeURIComponent(r.path);
+    const shortDesc = r.description.length > 120 ? r.description.slice(0, 120) + '…' : r.description;
+    const dateStr = r.analyzed_at ? new Date(r.analyzed_at).toLocaleDateString('de-DE') : '';
+    return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color 0.15s"
+              onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'"
+              onclick="faShowDetail(${JSON.stringify(r).replace(/'/g,"&#39;")})">
+      <div style="aspect-ratio:4/3;overflow:hidden;background:#111">
+        <img src="${thumbUrl}" loading="lazy" alt="${r.filename}"
+          style="width:100%;height:100%;object-fit:cover;display:block"
+          onerror="this.style.display='none'">
+      </div>
+      <div style="padding:8px 10px">
+        <div style="font-size:11px;color:var(--accent);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.filename}">${r.filename}</div>
+        <div style="font-size:12px;color:var(--dim);margin-top:4px;line-height:1.4">${shortDesc}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:6px">${dateStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function faShowDetail(r) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;cursor:pointer';
+  overlay.onclick = () => overlay.remove();
+  overlay.innerHTML = `
+    <div style="background:var(--card);border-radius:12px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;cursor:default" onclick="event.stopPropagation()">
+      <img src="/api/photos/thumb?path=${encodeURIComponent(r.path)}" style="width:100%;border-radius:8px;max-height:400px;object-fit:contain;background:#111;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:600;color:var(--bright);margin-bottom:8px">${r.filename}</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:12px">${r.description}</div>
+      <div style="font-size:11px;color:var(--dim);word-break:break-all;margin-bottom:12px">${r.path}</div>
+      <div style="display:flex;gap:8px">
+        <button onclick="navigator.clipboard.writeText('${r.path.replace(/'/g,"\\'")}');this.textContent='✓ Kopiert!';setTimeout(()=>this.textContent='📋 Pfad kopieren',1500)"
+          style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer">📋 Pfad kopieren</button>
+        <button onclick="this.closest('div[style*=fixed]').remove()"
+          style="background:var(--bg);color:var(--dim);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer">Schließen</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
 </script>
 
 <!-- ── Mail Befehlsleiste (fixed) ── -->
