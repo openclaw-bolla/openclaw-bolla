@@ -2103,28 +2103,33 @@ html, body {
           <!-- SUCHE (prominent, oben) -->
           <div class="card" style="padding:20px;margin-bottom:16px">
             <h3 style="margin:0 0 12px;color:var(--bright)">📸 Foto-Suche</h3>
+            <!-- Ordner-Zeile (prominent, editierbar) -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px">
+              <span style="font-size:13px;color:var(--dim);white-space:nowrap">📁</span>
+              <input id="fa-folder" type="text" value="/mnt/d/OneDrive/Bilder"
+                title="Ordner für Analyse und Suche — klicken zum Bearbeiten"
+                style="flex:1;background:transparent;color:var(--text);border:none;font-size:13px;outline:none"
+                onfocus="this.parentElement.style.borderColor='var(--accent)'"
+                onblur="this.parentElement.style.borderColor='var(--border)'">
+              <span style="font-size:11px;color:rgba(255,255,255,0.25);white-space:nowrap">✏️ Pfad editierbar</span>
+            </div>
             <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
               <input id="fa-search" type="text" placeholder="Suchbegriff — Deutsch oder Englisch (z.B. Weihnachten, Beach, Familie)"
                 oninput="faSearch()"
                 style="flex:1;min-width:280px;background:var(--bg);color:var(--text);border:1px solid var(--accent);border-radius:6px;padding:10px 14px;font-size:14px;outline:none">
               <span id="fa-result-count" style="font-size:13px;color:var(--dim);white-space:nowrap"></span>
+              <button id="fa-export-onedrive-btn" onclick="faExportOneDrive()" style="display:none;background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.35);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;white-space:nowrap">
+                💾 Nach OneDrive
+              </button>
               <button onclick="faExportCSV()"
                 style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.35);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;white-space:nowrap">
                 📊 CSV
               </button>
             </div>
-            <!-- Ordner-Zeile -->
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-              <span style="font-size:12px;color:rgba(255,255,255,0.35);white-space:nowrap">📁 Ordner:</span>
-              <input id="fa-folder" type="text" value="/mnt/d/OneDrive/Bilder"
-                style="flex:1;background:transparent;color:rgba(255,255,255,0.5);border:none;border-bottom:1px solid var(--border);border-radius:0;padding:2px 4px;font-size:12px;outline:none"
-                onfocus="this.style.color='var(--text)';this.style.borderBottomColor='var(--accent)'"
-                onblur="this.style.color='rgba(255,255,255,0.5)';this.style.borderBottomColor='var(--border)'">
-            </div>
             <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:14px">
               Bolla übersetzt deinen Begriff ins Englische und sucht in den KI-Beschreibungen der Fotos
             </div>
-            <div id="fa-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px"></div>
+            <div id="fa-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;max-height:60vh;overflow-y:auto;padding-right:4px"></div>
             <div id="fa-empty" style="color:var(--dim);font-size:14px;text-align:center;padding:40px 0;display:block">
               Suchbegriff eingeben um Fotos zu finden.
             </div>
@@ -7223,6 +7228,8 @@ document.getElementById('suno-kontext').value = SUNO_DEFAULT_KONTEXT;
 // ═══════════════════════════════════════════════════════════
 let _faAllResults = [];
 let _faPollTimer = null;
+let _faShown = [];
+let _faCurrentQuery = '';
 
 async function loadFotoAnalyse() {
   try {
@@ -7375,6 +7382,7 @@ async function faSearch() {
 
       const terms = d.terms || [];
       const results = d.results || [];
+      _faCurrentQuery = q;
       faRenderGrid(results, terms.join('|'), terms, q);
     } catch(e) {
       const qL = q.toLowerCase();
@@ -7415,7 +7423,10 @@ function faRenderGrid(results, _unused, terms, originalQuery) {
     return;
   }
   empty.style.display = 'none';
-  const show = [...results].reverse().slice(0, 200);
+  _faShown = [...results].reverse().slice(0, 200);
+  // Export-Button einblenden
+  const exportBtn = document.getElementById('fa-export-onedrive-btn');
+  if (exportBtn) exportBtn.style.display = _faShown.length ? '' : 'none';
   // Übersetzte Terms als kleine Info-Zeile über dem Grid
   if (termsArr.length > 1) {
     const p = document.createElement('div');
@@ -7425,7 +7436,7 @@ function faRenderGrid(results, _unused, terms, originalQuery) {
     grid.before(p);
   }
 
-  grid.innerHTML = show.map(r => {
+  grid.innerHTML = _faShown.map((r, idx) => {
     const thumbUrl = '/api/photos/thumb?path=' + encodeURIComponent(r.path);
     const dateStr = r.analyzed_at ? new Date(r.analyzed_at).toLocaleDateString('de-DE') : '';
     let desc = r.description || '';
@@ -7447,16 +7458,17 @@ function faRenderGrid(results, _unused, terms, originalQuery) {
     } else {
       desc = desc.length > 120 ? desc.slice(0, 120) + '…' : desc;
     }
+    const fnEsc = r.filename.replace(/"/g,'&quot;');
     return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color 0.15s"
               onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'"
-              onclick="faShowDetail(${JSON.stringify(r).replace(/'/g,"&#39;")})">
+              onclick="faShowDetail(${idx})">
       <div style="aspect-ratio:4/3;overflow:hidden;background:#111">
-        <img src="${thumbUrl}" loading="lazy" alt="${r.filename}"
+        <img src="${thumbUrl}" loading="lazy" alt="${fnEsc}"
           style="width:100%;height:100%;object-fit:cover;display:block"
           onerror="this.style.display='none'">
       </div>
       <div style="padding:8px 10px">
-        <div style="font-size:11px;color:var(--accent);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.filename}">${r.filename}</div>
+        <div style="font-size:11px;color:var(--accent);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${fnEsc}">${fnEsc}</div>
         <div style="font-size:12px;color:var(--dim);margin-top:4px;line-height:1.4">${faHighlight(desc, termsArr)}</div>
         <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:4px">${dateStr}</div>
       </div>
@@ -7535,29 +7547,62 @@ async function faRename(path, description, overlay) {
   faSearch();
 }
 
-function faShowDetail(r) {
+async function faExportOneDrive() {
+  const q = _faCurrentQuery || document.getElementById('fa-search').value.trim();
+  if (!_faShown.length || !q) return;
+  const btn = document.getElementById('fa-export-onedrive-btn');
+  const origLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Kopiere…';
+  try {
+    const paths = _faShown.map(r => r.path);
+    const d = await fetch('/api/photos/export', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({paths, query: q})
+    }).then(r => r.json());
+    if (d.error) { alert('Fehler: ' + d.error); }
+    else {
+      btn.textContent = `✓ ${d.copied} Fotos kopiert`;
+      document.getElementById('fa-status') && (document.getElementById('fa-status').textContent =
+        `✓ ${d.copied} Fotos → OneDrive\\Suchergebnisse\\${q}${d.errors ? ' (' + d.errors + ' Fehler)' : ''}`);
+      setTimeout(() => { btn.textContent = origLabel; btn.disabled = false; }, 3000);
+      return;
+    }
+  } catch(e) { alert('Fehler: ' + e.message); }
+  btn.textContent = origLabel;
+  btn.disabled = false;
+}
+
+function faShowDetail(idx) {
+  const r = _faShown[idx];
+  if (!r) return;
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;cursor:pointer';
   overlay.onclick = () => overlay.remove();
+  const btnStyle = 'border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer';
   overlay.innerHTML = `
     <div style="background:var(--card);border-radius:12px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;cursor:default" onclick="event.stopPropagation()">
       <img src="/api/photos/thumb?path=${encodeURIComponent(r.path)}" style="width:100%;border-radius:8px;max-height:400px;object-fit:contain;background:#111;margin-bottom:16px">
-      <div style="font-size:15px;font-weight:600;color:var(--bright);margin-bottom:8px">${r.filename}</div>
-      <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:12px">${r.description}</div>
-      <div style="font-size:11px;color:var(--dim);word-break:break-all;margin-bottom:12px">${r.path}</div>
+      <div style="font-size:15px;font-weight:600;color:var(--bright);margin-bottom:8px">${r.filename.replace(/</g,'&lt;')}</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:12px">${(r.description||'').replace(/</g,'&lt;')}</div>
+      <div style="font-size:11px;color:var(--dim);word-break:break-all;margin-bottom:12px">${r.path.replace(/</g,'&lt;')}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button onclick="navigator.clipboard.writeText('${r.path.replace(/'/g,"\\'")}');this.textContent='✓ Kopiert!';setTimeout(()=>this.textContent='📋 Pfad kopieren',1500)"
-          style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer">📋 Pfad kopieren</button>
-        <button onclick="faReanalyze(${JSON.stringify(r.path)}, this.closest('div[style*=fixed]'))"
-          style="background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.35);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer">🔄 Neu analysieren</button>
-        <button onclick="faRename(${JSON.stringify(r.path)}, ${JSON.stringify(r.description)}, this.closest('div[style*=fixed]'))"
-          style="background:rgba(167,139,250,0.15);color:#a78bfa;border:1px solid rgba(167,139,250,0.35);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer">✏️ Umbenennen</button>
-        <button onclick="faRemoveResult(${JSON.stringify(r.path)}, this.closest('div[style*=fixed]'))"
-          style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer">🗑 Entfernen</button>
-        <button onclick="this.closest('div[style*=fixed]').remove()"
-          style="background:var(--bg);color:var(--dim);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer">Schließen</button>
+        <button id="fa-detail-copy" style="background:var(--bg);color:var(--text);border:1px solid var(--border);${btnStyle}">📋 Pfad kopieren</button>
+        <button id="fa-detail-reanalyze" style="background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.35);${btnStyle}">🔄 Neu analysieren</button>
+        <button id="fa-detail-rename" style="background:rgba(167,139,250,0.15);color:#a78bfa;border:1px solid rgba(167,139,250,0.35);${btnStyle}">✏️ Umbenennen</button>
+        <button id="fa-detail-remove" style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);${btnStyle}">🗑 Entfernen</button>
+        <button id="fa-detail-close" style="background:var(--bg);color:var(--dim);border:1px solid var(--border);${btnStyle}">Schließen</button>
       </div>
     </div>`;
+  overlay.querySelector('#fa-detail-copy').onclick = () => {
+    navigator.clipboard.writeText(r.path);
+    const b = overlay.querySelector('#fa-detail-copy');
+    b.textContent = '✓ Kopiert!'; setTimeout(() => b.textContent = '📋 Pfad kopieren', 1500);
+  };
+  overlay.querySelector('#fa-detail-reanalyze').onclick = () => faReanalyze(r.path, overlay);
+  overlay.querySelector('#fa-detail-rename').onclick = () => faRename(r.path, r.description, overlay);
+  overlay.querySelector('#fa-detail-remove').onclick = () => faRemoveResult(r.path, overlay);
+  overlay.querySelector('#fa-detail-close').onclick = () => overlay.remove();
   document.body.appendChild(overlay);
 }
 </script>

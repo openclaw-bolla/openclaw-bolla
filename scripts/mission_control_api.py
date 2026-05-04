@@ -2334,6 +2334,28 @@ def adb_packages(filter_str="", kind="all"):
     pkgs.sort()
     return {"packages": pkgs, "count": len(pkgs), "error": None}
 
+def adb_pair(host, code):
+    host = (host or "").strip()
+    code = (code or "").strip()
+    if not host or not code:
+        return {"ok": False, "error": "IP:Port und Code erforderlich"}
+    if " " in host or "\n" in host or not code.isdigit() or len(code) != 6:
+        return {"ok": False, "error": "Ungültige Eingabe (IP:Port und 6-stelliger Code erwartet)"}
+    import subprocess
+    try:
+        r = subprocess.run(
+            ["adb", "pair", host],
+            input=(code + "\n").encode(),
+            capture_output=True, timeout=15
+        )
+        msg = (r.stdout.decode("utf-8", "replace") + " " + r.stderr.decode("utf-8", "replace")).strip()
+        ok = r.returncode == 0 and ("successfully" in msg.lower() or "paired" in msg.lower())
+        return {"ok": ok, "message": msg, "error": None if ok else (msg or "Kopplung fehlgeschlagen")}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "error": "Timeout — Duo nicht erreichbar?"}
+    except FileNotFoundError:
+        return {"ok": False, "error": "adb nicht installiert"}
+
 def adb_connect(host):
     host = (host or "").strip()
     if not host or " " in host or "\n" in host:
@@ -2643,6 +2665,57 @@ def photo_thumb(path):
     else:
         ext = "jpeg"
     return _b64.b64encode(raw).decode(), ext
+
+
+def photo_search(query):
+    """German/any-language query → Claude expands to English terms → filter results."""
+    if not query or not query.strip():
+        return {"results": [], "terms": []}
+    results = _photo_load_results()
+    if not results:
+        return {"results": [], "terms": []}
+
+    prompt = (
+        "You are a photo search assistant. The user wants to find photos described in English.\n"
+        "The user's search query may be in any language (often German).\n"
+        "Return a JSON array of English search terms that would appear in a photo description.\n"
+        "IMPORTANT rules:\n"
+        "- Use SPECIFIC multi-word phrases where possible (e.g. 'christmas tree' not just 'tree')\n"
+        "- Avoid generic words that appear in many unrelated photos (like 'tree', 'person', 'people', 'standing', 'smiling')\n"
+        "- Focus on distinctive visual elements specific to the search topic\n"
+        "- 4-8 terms max, quality over quantity\n\n"
+        f"User query: {query}\n\n"
+        "Respond with ONLY a JSON array of strings. Example for 'Weihnachten':\n"
+        '[\"christmas tree\", \"holiday decorations\", \"santa claus\", \"gifts\", \"advent\", \"ornaments\"]'
+    )
+    try:
+        r = subprocess.run([CLAUDE_BIN, "-p", prompt], capture_output=True, text=True, timeout=20)
+        raw = (r.stdout or "").strip()
+        import re as _re
+        m = _re.search(r'\[.*?\]', raw, _re.DOTALL)
+        if m:
+            import json as _json
+            terms = _json.loads(m.group())
+            terms = [t.lower().strip() for t in terms if isinstance(t, str) and t.strip()]
+        else:
+            terms = [query.lower().strip()]
+    except Exception:
+        terms = [query.lower().strip()]
+
+    import re as _re2
+    matched = []
+    # Kurze Begriffe (< 4 Zeichen) nur mit Word-Boundary matchen um False Positives zu vermeiden
+    patterns = []
+    for t in terms:
+        if len(t) < 4:
+            patterns.append(_re2.compile(r'\b' + _re2.escape(t) + r'\b', _re2.IGNORECASE))
+        else:
+            patterns.append(_re2.compile(_re2.escape(t), _re2.IGNORECASE))
+    for r in results:
+        desc = (r.get("description") or "")
+        if any(p.search(desc) for p in patterns):
+            matched.append(r)
+    return {"results": matched, "terms": terms}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -2975,6 +3048,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(do_pro_action(body.get("action", "")))
             elif self.path == "/api/surfaces/studio/action":
                 self._send_json(do_studio_action(body.get("action", "")))
+            elif self.path == "/api/adb/pair":
+                self._send_json(adb_pair(body.get("host", ""), body.get("code", "")))
             elif self.path == "/api/adb/connect":
                 self._send_json(adb_connect(body.get("host", "")))
             elif self.path == "/api/adb/disconnect":
@@ -3061,6 +3136,9 @@ class Handler(BaseHTTPRequestHandler):
                 _photo_job["stop"] = True
                 _photo_save_results([])
                 self._send_json({"ok": True})
+            elif self.path == "/api/photos/search":
+                q = body.get("query", "").strip()
+                self._send_json(photo_search(q))
             elif self.path == "/api/photos/remove":
                 path = body.get("path", "")
                 results = [r for r in _photo_load_results() if r.get("path") != path]
@@ -3082,6 +3160,25 @@ class Handler(BaseHTTPRequestHandler):
                         r["filename"] = new_name
                 _photo_save_results(results)
                 self._send_json({"ok": True, "new_path": new_path, "new_name": new_name})
+            elif self.path == "/api/photos/export":
+                import shutil as _sh, re as _re
+                paths = body.get("paths", [])
+                query = (body.get("query", "") or "").strip()
+                if not paths or not query:
+                    self._send_json({"error": "Keine Treffer oder kein Suchbegriff"}); return
+                safe = _re.sub(r'[^\w\- ]', '', query).strip()[:60] or "Suchergebnisse"
+                dest_dir = os.path.join("/mnt/d/OneDrive", "Suchergebnisse", safe)
+                os.makedirs(dest_dir, exist_ok=True)
+                copied, errors = 0, 0
+                for p in paths:
+                    if not os.path.isfile(p):
+                        errors += 1; continue
+                    try:
+                        _sh.copy2(p, os.path.join(dest_dir, os.path.basename(p)))
+                        copied += 1
+                    except Exception:
+                        errors += 1
+                self._send_json({"ok": True, "copied": copied, "errors": errors, "dest": dest_dir})
             elif self.path == "/api/korrektur/meta":
                 import subprocess as _sp, shutil as _sh, tempfile as _tf, base64 as _b64, re as _re
                 img_b64 = body.get("image_b64", "")
