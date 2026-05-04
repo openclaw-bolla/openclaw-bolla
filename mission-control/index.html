@@ -7133,6 +7133,12 @@ async function loadFotoAnalyse() {
   try {
     const cfg = await fetch('/api/photos/config').then(r => r.json());
     if (cfg.lmstudio_url) document.getElementById('fa-url').value = cfg.lmstudio_url;
+    if (cfg.model) document.getElementById('fa-model').value = cfg.model;
+    const status = document.getElementById('fa-status');
+    if (cfg.reachable === false)
+      status.textContent = '⚠️ LM Studio nicht erreichbar — API-Server starten!';
+    else
+      status.textContent = `✓ LM Studio verbunden · ${cfg.model}`;
   } catch(e) {}
   await faLoadResults();
   await faPollStatus();

@@ -2569,17 +2569,34 @@ def _photo_worker(folder, prompt, model, lmstudio_url):
         _photo_job["done"] += 1
     _photo_job["running"] = False
 
-def get_windows_host_ip():
-    """Ermittelt die Windows-Host-IP aus WSL2 (Default-Gateway)."""
+def get_lmstudio_config():
+    """Findet die erreichbare LM Studio URL und das geladene Modell."""
+    import subprocess as _sp, socket as _sock
+    # Kandidaten: WSL2-Gateway + bekannte Windows-Interface-IPs
+    candidates = []
     try:
-        import subprocess as _sp
         r = _sp.run(["ip", "route"], capture_output=True, text=True)
         for line in r.stdout.splitlines():
             if line.startswith("default"):
-                return line.split()[2]
+                candidates.append(line.split()[2])
     except Exception:
         pass
-    return "localhost"
+    candidates += ["10.5.0.2", "10.0.0.1", "192.168.1.1"]
+    candidates = list(dict.fromkeys(candidates))  # deduplizieren
+
+    for ip in candidates:
+        try:
+            s = _sock.create_connection((ip, 1234), timeout=1)
+            s.close()
+            base = f"http://{ip}:1234"
+            # Geladenes Modell abfragen
+            import urllib.request as _ur
+            resp = json.loads(_ur.urlopen(f"{base}/v1/models", timeout=3).read())
+            model = resp.get("data", [{}])[0].get("id", "smolvlm-500m-instruct")
+            return {"lmstudio_url": base, "model": model, "reachable": True}
+        except Exception:
+            continue
+    return {"lmstudio_url": "http://localhost:1234", "model": "smolvlm-500m-instruct", "reachable": False}
 
 def photo_start(folder, prompt, model, lmstudio_url):
     global _photo_job
@@ -2801,7 +2818,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/travel":         get_travel,
                 "/api/photos/status":  lambda: dict(_photo_job),
                 "/api/photos/results": lambda: {"results": _photo_load_results()},
-                "/api/photos/config":  lambda: {"lmstudio_url": f"http://{get_windows_host_ip()}:1234"},
+                "/api/photos/config":  get_lmstudio_config,
             }
 
             # Foto-Thumb
