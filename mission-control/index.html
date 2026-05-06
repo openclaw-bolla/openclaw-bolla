@@ -447,9 +447,12 @@ html, body {
 .event-meta { color: var(--dim); font-size: 13px; }
 
 /* ===== MAIL ===== */
-.mail-row { display:flex; align-items:stretch; gap:0; border-bottom:1px solid rgba(255,255,255,0.05); cursor:default; transition:background .15s; }
+.mail-row { display:flex; align-items:center; gap:10px; padding:10px 8px; border-bottom:1px solid rgba(255,255,255,0.05); cursor:pointer; transition:background .15s; position:relative; }
 .mail-row:last-child { border-bottom:none; }
-.mail-row:hover { background:rgba(255,255,255,0.03); border-radius:6px; }
+.mail-row:hover { background:rgba(255,255,255,0.04); border-radius:6px; }
+.mail-row.mail-unread { background:rgba(79,70,229,0.06); }
+.mail-quick-acts { display:none; gap:4px; flex-shrink:0; }
+.mail-row:hover .mail-quick-acts { display:flex; }
 .mail-acct-bar { width:3px; border-radius:2px; flex-shrink:0; margin:6px 10px 6px 0; }
 .mail-acct-bar.outlook { background:#4fc3f7; }
 .mail-acct-bar.wtnet   { background:#ce93d8; }
@@ -660,13 +663,14 @@ html, body {
             <div class="nav-group-header" id="nav-group-header-schule" onclick="event.stopPropagation();toggleNavGroup('schule')">
               <span class="icon">🏫</span>
               <span>Schule</span>
-              <span class="nav-group-count">3</span>
+              <span class="nav-group-count">4</span>
               <span class="nav-group-chevron" id="nav-chevron-schule">▶</span>
             </div>
             <div class="nav-group-items" id="nav-group-items-schule">
               <div class="nav-item nav-subitem" data-page="schule"><span class="icon">📅</span><span>Übersicht</span></div>
               <div class="nav-item nav-subitem" data-page="korrektur"><span class="icon">✏️</span><span>KI-Korrektur</span></div>
               <div class="nav-item nav-subitem" data-page="differenzierung"><span class="icon">🎯</span><span>Differenzierung</span></div>
+              <div class="nav-item nav-subitem" data-page="entschaerfer"><span class="icon">🕊️</span><span>Elternbrief-Entschärfer</span></div>
             </div>
           </div>
           <div class="nav-item" data-page="kalender"><span class="icon">📅</span><span>Kalender</span></div>
@@ -858,6 +862,32 @@ html, body {
                          border-radius:8px;color:var(--text);padding:9px 11px;font-size:14px;outline:none;font-family:inherit">
               </div>
             </div>
+            <!-- Felder Zeile 2: Schüler + KA -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 100px;gap:12px;margin-bottom:12px">
+              <div>
+                <label style="font-size:13px;color:var(--dim);display:block;margin-bottom:4px">Schüler Vorname</label>
+                <input id="korr-vorname" type="text" placeholder="Max"
+                  style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);
+                         border-radius:8px;color:var(--text);padding:9px 11px;font-size:14px;outline:none;font-family:inherit">
+              </div>
+              <div>
+                <label style="font-size:13px;color:var(--dim);display:block;margin-bottom:4px">Schüler Nachname</label>
+                <input id="korr-nachname" type="text" placeholder="Mustermann"
+                  style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);
+                         border-radius:8px;color:var(--text);padding:9px 11px;font-size:14px;outline:none;font-family:inherit">
+              </div>
+              <div>
+                <label style="font-size:13px;color:var(--dim);display:block;margin-bottom:4px">KA Nr.</label>
+                <select id="korr-ka-nr"
+                  style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);
+                         border-radius:8px;color:var(--text);padding:9px 11px;font-size:14px;outline:none;font-family:inherit;cursor:pointer">
+                  <option value="1">KA 1</option>
+                  <option value="2">KA 2</option>
+                  <option value="3">KA 3</option>
+                  <option value="4">KA 4</option>
+                </select>
+              </div>
+            </div>
 
             <!-- Erwartungshorizont -->
             <div style="margin-bottom:16px">
@@ -909,8 +939,11 @@ html, body {
                 <button onclick="korrDownloadDocx()" style="padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:#818cf8;font-size:13px;cursor:pointer">📄 Word</button>
                 <button onclick="korrDownloadAnnotated()" style="padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:#f59e0b;font-size:13px;cursor:pointer">🖼️ Scan</button>
                 <button onclick="korrSave()" style="padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:13px;cursor:pointer">💾 TXT</button>
+                <button onclick="korrExcelSave()" style="padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:#22c55e;font-size:13px;cursor:pointer">📊 Klassenliste</button>
               </div>
             </div>
+            <!-- Excel-Status -->
+            <div id="korr-excel-status" style="display:none;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:8px 14px;font-size:13px;margin-bottom:10px"></div>
             <!-- Korrektur-Text -->
             <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 16px">
               <div id="korr-text" style="font-size:13px;color:var(--text);line-height:1.45"></div>
@@ -1045,6 +1078,100 @@ html, body {
               <button onclick="diffCopy()" style="padding:8px 20px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--dim);font-size:13px;cursor:pointer">📋 Alle 3 Niveaus kopieren</button>
               <span id="diff-copy-hint" style="font-size:13px;color:var(--dim);margin-left:10px"></span>
             </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ELTERNBRIEF-ENTSCHÄRFER -->
+      <div class="page" id="page-entschaerfer">
+        <div style="max-width:900px;margin:0 auto;padding:8px 0">
+
+          <!-- Header -->
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+            <div style="width:48px;height:48px;border-radius:12px;flex-shrink:0;
+                        background:linear-gradient(135deg,#f59e0b,#10b981);
+                        display:flex;align-items:center;justify-content:center;font-size:26px">🕊️</div>
+            <div>
+              <div style="font-size:18px;font-weight:700;color:var(--bright)">Elternbrief-Entschärfer</div>
+              <div style="font-size:13px;color:var(--dim)">Ehrliche Notizen eingeben oder aggressiven Elternbrief einfügen → Claude formuliert professionell und deeskalierend</div>
+            </div>
+          </div>
+
+          <!-- Modus-Tabs -->
+          <div style="display:flex;gap:0;margin-bottom:18px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content">
+            <button id="eb-tab-neu" onclick="ebSetModus('neu')"
+              style="padding:8px 20px;border-radius:7px;border:none;cursor:pointer;font-size:13px;font-weight:600;
+                     background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;transition:all 0.2s">
+              ✍️ Brief schreiben
+            </button>
+            <button id="eb-tab-antwort" onclick="ebSetModus('antwort')"
+              style="padding:8px 20px;border-radius:7px;border:none;cursor:pointer;font-size:13px;font-weight:600;
+                     background:transparent;color:var(--dim);transition:all 0.2s">
+              📨 Auf Brief/Mail antworten
+            </button>
+          </div>
+
+          <!-- Eingabe -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+            <div>
+              <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:5px">Schüler/in</label>
+              <input id="eb-schueler" type="text" placeholder="z.B. Kevin Brenner"
+                style="width:100%;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-size:14px;box-sizing:border-box">
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:5px">Klasse</label>
+              <input id="eb-klasse" type="text" placeholder="z.B. 9b"
+                style="width:100%;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-size:14px;box-sizing:border-box">
+            </div>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <label id="eb-label-notizen" style="font-size:12px;color:var(--dim);display:block;margin-bottom:5px">Ehrliche Notizen / interner Sachverhalt</label>
+            <textarea id="eb-notizen" rows="8" placeholder="Kevin stört seit Wochen den Unterricht, die Eltern haben beim letzten Gespräch gedroht und wurden laut. Ich bin am Ende mit meiner Geduld aber muss trotzdem professionell bleiben…"
+              style="width:100%;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-size:14px;line-height:1.6;resize:vertical;box-sizing:border-box;font-family:inherit"></textarea>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:5px">Anlass / Thema (optional)</label>
+            <input id="eb-anlass" type="text" placeholder="z.B. Klassenarbeit Note 5 · Unterrichtsstörung · Elterngespräch"
+              style="width:100%;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-size:14px;box-sizing:border-box">
+          </div>
+
+          <!-- Demo-Buttons -->
+          <div style="margin-bottom:16px;padding:12px 14px;background:rgba(99,102,241,0.07);border:1px solid rgba(99,102,241,0.25);border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span style="font-size:12px;color:var(--dim);flex:1">🎭 Demo-Vorlagen:</span>
+            <button onclick="ebLoadDemo('brenner')" style="padding:5px 12px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.35);border-radius:6px;color:#a5b4fc;font-size:12px;cursor:pointer">📄 Elternbrief Brenner</button>
+            <button onclick="ebLoadDemo('schmidt')" style="padding:5px 12px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.35);border-radius:6px;color:#a5b4fc;font-size:12px;cursor:pointer">📧 E-Mail Schmidt</button>
+          </div>
+
+          <!-- Action -->
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+            <button id="eb-btn" onclick="ebEntschaerfen()"
+              style="padding:12px 28px;background:linear-gradient(135deg,#f59e0b,#10b981);border:none;border-radius:8px;
+                     color:#000;font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0">
+              🕊️ Entschärfen
+            </button>
+            <button onclick="ebReset()"
+              style="padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--dim);font-size:13px;cursor:pointer">
+              ✕ Neu
+            </button>
+            <div id="eb-status" style="font-size:13px;color:var(--dim)"></div>
+          </div>
+
+          <!-- Ergebnis -->
+          <div id="eb-result" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="font-size:14px;font-weight:700;color:var(--bright)">✅ Professioneller Brief</div>
+              <div style="display:flex;gap:8px">
+                <button onclick="ebCopy()" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);font-size:12px;cursor:pointer">📋 Kopieren</button>
+                <button onclick="ebDownload()" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:#22c55e;font-size:12px;cursor:pointer">⬇️ Herunterladen</button>
+              </div>
+            </div>
+            <div id="eb-text"
+              style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;
+                     font-size:14px;line-height:1.8;color:var(--bright);white-space:pre-wrap;font-family:inherit;
+                     border-left:4px solid #10b981;min-height:200px"></div>
           </div>
 
         </div>
@@ -1267,17 +1394,13 @@ html, body {
 
             <!-- Dokumente -->
             <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #06b6d4">
-              <div style="font-size:13px;font-weight:700;color:#06b6d4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">📁 Dokumente</div>
-              <div style="font-size:12px;color:var(--dim);margin-bottom:12px">D:\OneDrive\Dokumente\Bolla\claud code - openclaw Doku\</div>
-              <div style="display:flex;flex-direction:column;gap:6px">
-                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/bolla_recovery.docx" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:13px">📄 <span style="flex:1">bolla_recovery.docx</span><span style="color:var(--dim);font-size:12px">Recovery</span></a>
-                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/mein_ki_setup.docx" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:13px">📄 <span style="flex:1">mein_ki_setup.docx</span><span style="color:var(--dim);font-size:12px">KI-Setup</span></a>
-                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/was_ist_bolla.docx" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:13px">📄 <span style="flex:1">was_ist_bolla.docx</span><span style="color:var(--dim);font-size:12px">Übersicht</span></a>
-                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/Bolla-Notfallplan.pdf" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:13px">📋 <span style="flex:1">Bolla-Notfallplan.pdf</span><span style="color:var(--dim);font-size:12px">Notfall</span></a>
-                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/Bolla-MD-Erklaerung.pdf" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:13px">📋 <span style="flex:1">Bolla-MD-Erklaerung.pdf</span><span style="color:var(--dim);font-size:12px">Memory</span></a>
-                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/KI-Modelle-Jarvis-Bolla optimiert.pdf" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:13px">📋 <span style="flex:1">KI-Modelle-Jarvis-Bolla.pdf</span><span style="color:var(--dim);font-size:12px">Modelle</span></a>
-                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/ssh-tunnel-erklaerung.pdf" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:13px">📋 <span style="flex:1">ssh-tunnel-erklaerung.pdf</span><span style="color:var(--dim);font-size:12px">SSH Tunnel</span></a>
-                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/ADB-Erklaerung.pdf" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:13px">📋 <span style="flex:1">ADB-Erklaerung.pdf</span><span style="color:var(--dim);font-size:12px">ADB Setup</span></a>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                <div style="font-size:13px;font-weight:700;color:#06b6d4;text-transform:uppercase;letter-spacing:1px">📁 Dokumente</div>
+                <button onclick="docsLoad()" style="padding:3px 8px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--dim);cursor:pointer;font-size:11px">↺</button>
+              </div>
+              <div style="font-size:12px;color:var(--dim);margin-bottom:12px">claud code - openclaw Doku</div>
+              <div id="docs-list" style="display:flex;flex-direction:column;gap:6px">
+                <div style="color:var(--dim);font-size:13px">Lade…</div>
               </div>
             </div>
 
@@ -2126,6 +2249,10 @@ html, body {
                 style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.35);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;white-space:nowrap">
                 📊 CSV
               </button>
+              <button onclick="faReset()" title="Ordnerauswahl und Suche zurücksetzen"
+                style="background:rgba(107,114,128,0.15);color:#9ca3af;border:1px solid rgba(107,114,128,0.35);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;white-space:nowrap">
+                🔄 Neue Suche
+              </button>
             </div>
             <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:14px">
               Bolla übersetzt deinen Begriff ins Englische und sucht in den KI-Beschreibungen der Fotos
@@ -2308,6 +2435,15 @@ document.querySelectorAll('.nav-item').forEach(item => {
 });
 
 // ── Nav-Gruppen ──
+function _refreshOpenSections() {
+  ['uebersicht', 'arbeit', 'familie', 'ki', 'info'].forEach(name => {
+    const sec = document.getElementById('nav-sec-' + name);
+    const items = document.getElementById('nav-section-items-' + name);
+    if (sec && items && sec.classList.contains('open')) {
+      items.style.maxHeight = items.scrollHeight + 'px';
+    }
+  });
+}
 function _openNavGroup(name) {
   const items  = document.getElementById('nav-group-items-' + name);
   const header = document.getElementById('nav-group-header-' + name);
@@ -2315,6 +2451,7 @@ function _openNavGroup(name) {
   items.style.display = 'block';
   if (header) header.classList.add('open');
   localStorage.setItem('nav-group-' + name, '1');
+  _refreshOpenSections();
 }
 function _closeNavGroup(name) {
   const items  = document.getElementById('nav-group-items-' + name);
@@ -2323,6 +2460,7 @@ function _closeNavGroup(name) {
   items.style.display = 'none';
   if (header) header.classList.remove('open');
   localStorage.setItem('nav-group-' + name, '0');
+  _refreshOpenSections();
 }
 function toggleNavSection(name) {
   const sec = document.getElementById('nav-sec-' + name);
@@ -2335,7 +2473,7 @@ function toggleNavSection(name) {
     localStorage.setItem('nav-sec-' + name, '0');
   } else {
     sec.classList.add('open');
-    items.style.maxHeight = items.scrollHeight + 'px';
+    items.style.maxHeight = '2000px';
     localStorage.setItem('nav-sec-' + name, '1');
   }
 }
@@ -2392,7 +2530,7 @@ function toggleNavGroup(name) {
     const isOpen = saved !== null ? saved === '1' : defaultOpen;
     if (isOpen) {
       sec.classList.add('open');
-      items.style.maxHeight = '600px'; // großzügig, Animation nicht nötig beim Init
+      items.style.maxHeight = '2000px'; // großzügig, auch mit offenen Gruppen drin
     } else {
       sec.classList.remove('open');
       items.style.maxHeight = '0';
@@ -2690,31 +2828,69 @@ async function loadEmailData() {
   } catch(e) {}
 }
 
-function mailRow(m, showDot) {
+let _mailTab = 'inbox';
+
+function mailRow(m, isInbox) {
   const acct   = m.account === 'wtnet' ? 'wtnet' : 'outlook';
-  const dot    = showDot && !m.isRead ? `<div class="mail-unread-dot"></div>` : `<div style="width:6px;flex-shrink:0"></div>`;
-  const subCls = !m.isRead ? 'mail-subject unread' : 'mail-subject';
-  const safe   = s => (s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  const data   = `data-mail='${JSON.stringify({id:m.id||'',account:m.account||'Outlook',from:m.from||m.to||'',from_email:m.from_email||'',subject:m.subject||'',preview:m.preview||'',date:m.date||''})}'`;
-  return `<div class="mail-row" ${data} onclick="selectMail(this)">
+  const unread = isInbox && !m.isRead;
+  const initials = (m.from||m.to||'?').trim().split(/\s+/).map(w=>w[0]||'').join('').toUpperCase().slice(0,2);
+  const avatarBg = unread ? '#4f46e5' : '#374151';
+  const mailData = JSON.stringify({id:m.id||'',account:m.account||'Outlook',from:m.from||m.to||'',from_email:m.from_email||'',subject:m.subject||'',preview:m.preview||'',date:m.date||''});
+  return `<div class="mail-row${unread?' mail-unread':''}" data-mail='${mailData.replace(/'/g,"&#39;")}' onclick="selectMail(this)">
     <div class="mail-acct-bar ${acct}"></div>
-    ${dot}
-    <div class="mail-body">
+    <div style="width:36px;height:36px;border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${initials}</div>
+    <div class="mail-body" style="flex:1;min-width:0">
       <div class="mail-top">
-        <span class="mail-from">${m.from || m.to || '—'}</span>
+        <span class="mail-from" style="${unread?'color:var(--bright);font-weight:700':''}">${m.from||m.to||'—'}</span>
         <span class="mail-date">${m.date}</span>
       </div>
-      <div class="${subCls}">${m.subject}</div>
-      <div class="mail-preview">${m.preview ? m.preview.substring(0,80)+'…' : ''}</div>
+      <div class="mail-subject${unread?' unread':''}">${m.subject||'(kein Betreff)'}</div>
+      ${m.preview ? `<div class="mail-preview" style="display:block">${m.preview.substring(0,100)}…</div>` : ''}
+    </div>
+    <div class="mail-quick-acts" onclick="event.stopPropagation()">
+      <button title="Zusammenfassen" onclick="quickMailAct(this,'Fasse diese Mail kurz zusammen')" style="background:rgba(99,102,241,0.2);color:#a78bfa;border:none;border-radius:5px;padding:4px 8px;font-size:12px;cursor:pointer">📝</button>
+      <button title="Antworten" onclick="quickMailAct(this,'Schreibe eine kurze freundliche Antwort')" style="background:rgba(34,197,94,0.15);color:#4ade80;border:none;border-radius:5px;padding:4px 8px;font-size:12px;cursor:pointer">↩</button>
     </div>
   </div>`;
+}
+
+function quickMailAct(btn, cmd) {
+  const row = btn.closest('.mail-row');
+  if (!row) return;
+  selectMail(row);
+  const inp = document.getElementById('mail-cmd-input');
+  if (inp) inp.value = cmd;
+  sendMailCommand();
+}
+
+function mailTabHtml(inbox, sent) {
+  const unreadCount = inbox.filter(m => !m.isRead).length;
+  const unreadBadge = unreadCount > 0 ? `<span style="background:#4f46e5;color:#fff;border-radius:10px;padding:0 6px;font-size:10px;margin-left:4px">${unreadCount}</span>` : '';
+  return `<div style="display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0">
+    <button onclick="setMailTab('inbox')" id="mail-tab-inbox"
+      style="background:none;border:none;padding:8px 16px;font-size:13px;cursor:pointer;border-bottom:2px solid ${_mailTab==='inbox'?'var(--accent)':'transparent'};color:${_mailTab==='inbox'?'var(--bright)':'var(--dim)'}">
+      📥 Eingang${unreadBadge}
+    </button>
+    <button onclick="setMailTab('sent')" id="mail-tab-sent"
+      style="background:none;border:none;padding:8px 16px;font-size:13px;cursor:pointer;border-bottom:2px solid ${_mailTab==='sent'?'var(--accent)':'transparent'};color:${_mailTab==='sent'?'var(--bright)':'var(--dim)'}">
+      📤 Gesendet
+    </button>
+    <button onclick="setMailTab('compose')" id="mail-tab-compose"
+      style="background:none;border:none;padding:8px 16px;font-size:13px;cursor:pointer;border-bottom:2px solid ${_mailTab==='compose'?'var(--accent)':'transparent'};color:${_mailTab==='compose'?'var(--bright)':'var(--dim)'}">
+      ✉ Neu schreiben
+    </button>
+  </div>`;
+}
+
+function setMailTab(tab) {
+  _mailTab = tab;
+  loadEmailFull();
 }
 
 function loadEmailFull() {
   const d = window._emails;
   if (!d) { document.getElementById('email-content').innerHTML = '<div class="loading">Lade...</div>'; return; }
 
-  // Konto-Chips im Header
   const accounts = d.accounts || [];
   const chips = accounts.map(a => {
     const cls = a.name.toLowerCase() === 'wtnet' ? 'wtnet' : 'outlook';
@@ -2723,29 +2899,53 @@ function loadEmailFull() {
     return `<span class="mail-acct-chip ${cls}">● ${label}${unread}</span>`;
   }).join('');
 
-  // Eingehend: ungelesene zuerst, dann gelesene recent
   const unread = d.messages || [];
   const recentIds = new Set(unread.map(m => m.subject + m.date));
   const recentOnly = (d.recent || []).filter(m => !recentIds.has(m.subject + m.date));
   const allInbox = [...unread, ...recentOnly];
+  const sent = d.sent || [];
 
-  let inboxRows = allInbox.length
-    ? allInbox.map(m => mailRow(m, true)).join('')
-    : `<div style="font-size:14px;color:var(--dim);padding:10px 0">Keine Mails</div>`;
-
-  let sentRows = (d.sent||[]).length
-    ? d.sent.map(m => mailRow(m, false)).join('')
-    : `<div style="font-size:14px;color:var(--dim);padding:10px 0">Keine gesendeten Mails</div>`;
+  let tabContent = '';
+  if (_mailTab === 'inbox') {
+    tabContent = allInbox.length
+      ? allInbox.map(m => mailRow(m, true)).join('')
+      : `<div style="font-size:14px;color:var(--dim);padding:20px 0;text-align:center">📭 Posteingang leer</div>`;
+  } else if (_mailTab === 'sent') {
+    tabContent = sent.length
+      ? sent.map(m => mailRow(m, false)).join('')
+      : `<div style="font-size:14px;color:var(--dim);padding:20px 0;text-align:center">Keine gesendeten Mails</div>`;
+  } else {
+    tabContent = `<div style="padding:8px 0">
+      <div style="margin-bottom:10px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">An</label>
+        <input id="compose-to" type="email" placeholder="empfaenger@example.com"
+          style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px">
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Betreff</label>
+        <input id="compose-subject" type="text" placeholder="Betreff"
+          style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px">
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nachricht</label>
+        <textarea id="compose-body" rows="6" placeholder="Nachricht…"
+          style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button onclick="composeSend()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:9px 22px;font-size:14px;font-weight:600;cursor:pointer">✉ Senden</button>
+        <button onclick="composeBolla()" style="background:rgba(167,139,250,0.15);color:#a78bfa;border:1px solid rgba(167,139,250,0.3);border-radius:6px;padding:9px 16px;font-size:13px;cursor:pointer">✨ Bolla formulieren lassen</button>
+        <span id="compose-status" style="font-size:13px;color:var(--dim)"></span>
+      </div>
+    </div>`;
+  }
 
   const h = `<div style="grid-column:1/-1;padding-bottom:72px;display:flex;gap:14px;align-items:flex-start">
     <div style="flex:1;min-width:0">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">${chips}</div>
-      <div class="card" style="margin-bottom:14px">
-        <div class="card-head"><span class="card-title">📥 Posteingang</span></div>
-        ${inboxRows}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">${chips}</div>
+      <div class="card">
+        ${mailTabHtml(allInbox, sent)}
+        ${tabContent}
       </div>
-      <div class="mail-section-head">📤 Gesendet</div>
-      <div class="card">${sentRows}</div>
     </div>
     <div id="nl-panel" style="width:300px;flex-shrink:0"></div>
   </div>`;
@@ -2754,11 +2954,52 @@ function loadEmailFull() {
   loadNewsletterPanel();
 }
 
+async function composeSend() {
+  const to      = document.getElementById('compose-to')?.value.trim();
+  const subject = document.getElementById('compose-subject')?.value.trim();
+  const text    = document.getElementById('compose-body')?.value.trim();
+  const status  = document.getElementById('compose-status');
+  if (!to || !subject || !text) { if(status) status.textContent = '⚠ Bitte alle Felder ausfüllen'; return; }
+  if(status) status.textContent = '⏳ Sende…';
+  try {
+    const r = await fetch(API+'/api/mail-command', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({instruction:'send', mails:[{account:'Outlook',from:'',subject:'',preview:''}],
+        draft_to:to, draft_subject:subject, draft_text:text, action:'send'})});
+    const d = await r.json();
+    if(status) status.textContent = d.type==='sent'||d.text?.includes('✓') ? '✓ Gesendet!' : '⚠ '+d.text;
+  } catch(e) { if(status) status.textContent = '⚠ '+e.message; }
+}
+
+async function composeBolla() {
+  const to      = document.getElementById('compose-to')?.value.trim();
+  const subject = document.getElementById('compose-subject')?.value.trim();
+  const hint    = document.getElementById('compose-body')?.value.trim();
+  const status  = document.getElementById('compose-status');
+  if (!to || !subject) { if(status) status.textContent = '⚠ An + Betreff ausfüllen'; return; }
+  if(status) status.textContent = '⏳ Bolla schreibt…';
+  const prompt = `Schreibe eine kurze, freundliche E-Mail auf Deutsch. An: ${to}. Betreff: ${subject}.${hint?' Hinweise: '+hint:''}`;
+  try {
+    const r = await fetch(API+'/api/mail-command', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({instruction: prompt, mails:[{account:'Outlook',from:to,subject,preview:hint}]})});
+    const d = await r.json();
+    if(d.type==='draft'||d.text) {
+      const body = document.getElementById('compose-body');
+      if(body) body.value = d.text||'';
+      if(status) status.textContent = '✨ Entwurf eingefügt';
+    }
+  } catch(e) { if(status) status.textContent = '⚠ '+e.message; }
+}
+
 // ===== NEWSLETTER PANEL =====
 const NL_OFFER_PAGES = {
   "Penny":     "https://www.penny.de/angebote",
   "Aldi Nord": "https://www.aldi-nord.de/angebote-der-woche.html",
   "Lidl":      "https://www.lidl.de/angebote",
+  "Edeka":     "https://www.edeka.de/angebote/",
+  "Rewe":      "https://www.rewe.de/angebote/",
+  "Famila":    "https://www.famila-nordost.de/angebote/",
 };
 function nlStoreLink(store, artikel) {
   const base = NL_OFFER_PAGES[store];
@@ -3254,14 +3495,14 @@ async function loadRobin() {
         ${travelHtml}
       </div>
       <div class="card">
-        <div class="card-head"><span class="card-title">📅 Kommende Events</span></div>
+        <div class="card-head"><span class="card-title">📅 Kommende Events</span><span style="font-size:12px;color:var(--dim)">Klick → Karte</span></div>
         <ul class="event-list">
           ${[
-            {date:'2026-06-11', label:'11.06.', title:'Medimeisterschaften', meta:'Obermehler, Thüringen', rgb:'30,136,229'},
-            {date:'2026-07-19', label:'19.07.', title:'Semesterferien Sommer', meta:'bis 11.10. · 85 Tage frei', rgb:'67,160,71', range:'2026-10-11'},
-            {date:'2026-07-31', label:'31.07.', title:'Abflug Tansania', meta:'STR → IST → JRO · RGXQU8', rgb:'239,83,80'},
-            {date:'2026-09-08', label:'08.09.', title:'Rückkehr', meta:'JRO → IST → STR · 38 Tage', rgb:'67,160,71'},
-            {date:'2026-12-24', label:'24.12.', title:'Weihnachtsferien', meta:'bis 05.01. · 13 Tage frei', rgb:'30,136,229', range:'2027-01-05'},
+            {date:'2026-06-11', label:'11.06.', title:'Medimeisterschaften', meta:'Obermehler, Thüringen', rgb:'30,136,229', lat:51.269, lng:10.5981, zoom:10},
+            {date:'2026-07-19', label:'19.07.', title:'Semesterferien Sommer', meta:'bis 11.10. · 85 Tage frei', rgb:'67,160,71', range:'2026-10-11', lat:48.399, lng:9.989, zoom:13},
+            {date:'2026-07-31', label:'31.07.', title:'Abflug Tansania', meta:'STR → IST → JRO · RGXQU8', rgb:'239,83,80', lat:48.690, lng:9.222, zoom:11},
+            {date:'2026-09-08', label:'08.09.', title:'Rückkehr Moshi', meta:'JRO → IST → STR · 38 Tage', rgb:'67,160,71', lat:-3.349, lng:37.343, zoom:10},
+            {date:'2026-12-24', label:'24.12.', title:'Weihnachtsferien', meta:'bis 05.01. · 13 Tage frei', rgb:'30,136,229', range:'2027-01-05', lat:53.565, lng:9.982, zoom:11},
           ].map(ev => {
             const today = new Date(new Date().toDateString());
             const start = new Date(ev.date);
@@ -3275,7 +3516,9 @@ async function loadRobin() {
               badge = days <= 0 ? 'Vorbei' : days === 1 ? 'Morgen!' : `in ${days} Tagen`;
               if (days <= 0) rgb = '120,144,156';
             }
-            return `<li class="event-item" style="background:rgba(${rgb},0.18);border:1px solid rgba(${rgb},0.55)">
+            return `<li class="event-item" onclick="robinMapFlyTo(${ev.lat},${ev.lng},${ev.zoom||12},'${ev.title}')"
+              style="background:rgba(${rgb},0.18);border:1px solid rgba(${rgb},0.55);cursor:pointer;transition:background .15s"
+              onmouseenter="this.style.background='rgba(${rgb},0.28)'" onmouseleave="this.style.background='rgba(${rgb},0.18)'">
               <div class="event-dot" style="background:rgb(${rgb})"></div>
               <div class="event-time" style="min-width:44px">${ev.label}</div>
               <div style="flex:1"><div class="event-title">${ev.title}</div><div class="event-meta">${ev.meta}</div></div>
@@ -3343,7 +3586,8 @@ async function loadRobin() {
       const el = document.getElementById(mapId);
       if (!el) { setTimeout(initMap, 100); return; }
       const isDE = robin.location !== 'Tansania';
-      const map = L.map(mapId,{zoomControl:true}).setView([robin.lat,robin.lng], isDE?13:5);
+      window._robinMap = L.map(mapId,{zoomControl:true}).setView([robin.lat,robin.lng], isDE?13:5);
+      const map = window._robinMap;
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
       const mkr = (emoji, color) => L.divIcon({
         html:`<div style="background:${color};border:3px solid white;border-radius:50% 50% 50% 0;width:36px;height:36px;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);font-size:17px;line-height:1">${emoji}</span></div>`,
@@ -3362,6 +3606,11 @@ async function loadRobin() {
     };
     if (!window.L) { const s=document.createElement('script'); s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; s.onload=()=>setTimeout(initMap,100); document.head.appendChild(s); } else setTimeout(initMap,100);
   } catch(e) {}
+}
+
+function robinMapFlyTo(lat, lng, zoom, title) {
+  if (!window._robinMap) return;
+  window._robinMap.flyTo([lat, lng], zoom, {animate: true, duration: 1.2});
 }
 
 // ===== SYSTEM =====
@@ -3458,6 +3707,8 @@ function korrReset() {
   document.getElementById('korr-fach').value = '';
   document.getElementById('korr-thema').value = '';
   document.getElementById('korr-erwartung').value = '';
+  document.getElementById('korr-vorname').value = '';
+  document.getElementById('korr-nachname').value = '';
   document.getElementById('korr-meta-badge').textContent = '';
   const rb = document.getElementById('korr-reset-btn');
   if (rb) rb.style.display = 'none';
@@ -3504,13 +3755,17 @@ function korrHandleFile(file) {
         signal: AbortSignal.timeout(35000)
       });
       const m = await r.json();
-      if (m.klasse || m.fach || m.thema) {
+      if (m.klasse || m.fach || m.thema || m.vorname || m.nachname) {
         const kEl = document.getElementById('korr-klasse');
         const fEl = document.getElementById('korr-fach');
         const tEl = document.getElementById('korr-thema');
-        if (m.klasse) kEl.value = m.klasse;
-        if (m.fach)   fEl.value = m.fach;
-        if (m.thema)  tEl.value = m.thema;
+        const vnEl = document.getElementById('korr-vorname');
+        const nnEl = document.getElementById('korr-nachname');
+        if (m.klasse)   kEl.value  = m.klasse;
+        if (m.fach)     fEl.value  = m.fach;
+        if (m.thema)    tEl.value  = m.thema;
+        if (m.vorname)  vnEl.value = m.vorname;
+        if (m.nachname) nnEl.value = m.nachname;
         if (badge) badge.textContent = '🤖 automatisch erkannt — überschreibbar';
       } else {
         if (badge) badge.textContent = '';
@@ -3626,6 +3881,54 @@ function korrSave() {
   a.click();
 }
 
+function korrExtractNote(text) {
+  const m = (text||'').match(/Empfohlene\s*Note[:\s]*\[?([1-6])\]?/i)
+         || (text||'').match(/Gesamtnote[:\s\[]*([1-6])\]?/i)
+         || (text||'').match(/Note[:\s]+\[?([1-6])\]?/i);
+  return m ? m[1] : '';
+}
+
+async function korrExcelSave() {
+  const klasse   = document.getElementById('korr-klasse').value.trim();
+  const fach     = document.getElementById('korr-fach').value.trim();
+  const thema    = document.getElementById('korr-thema').value.trim();
+  const vorname  = document.getElementById('korr-vorname').value.trim();
+  const nachname = document.getElementById('korr-nachname').value.trim();
+  const kaNr     = document.getElementById('korr-ka-nr').value;
+  const note     = korrExtractNote(korrLastResult);
+  const el       = document.getElementById('korr-excel-status');
+
+  if (!vorname || !nachname) {
+    el.style.display = 'block'; el.style.borderColor = 'rgba(239,68,68,0.4)';
+    el.style.background = 'rgba(239,68,68,0.08)';
+    el.innerHTML = '⚠️ Bitte Vor- und Nachname des Schülers eintragen (Felder oben im Formular)';
+    return;
+  }
+  if (!note) {
+    el.style.display = 'block'; el.style.borderColor = 'rgba(239,68,68,0.4)';
+    el.style.background = 'rgba(239,68,68,0.08)';
+    el.innerHTML = '⚠️ Keine Note im Ergebnis gefunden — bitte manuell prüfen';
+    return;
+  }
+  el.style.display = 'block'; el.style.borderColor = 'rgba(34,197,94,0.25)';
+  el.style.background = 'rgba(34,197,94,0.08)';
+  el.innerHTML = '⏳ Trage in Klassenliste ein …';
+  try {
+    const resp = await fetch('/api/korrektur/excel', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({klasse, fach, thema, vorname, nachname, ka_nr: parseInt(kaNr), note})
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    el.innerHTML = `✅ Gespeichert in <b>${data.datei}</b> &nbsp;—&nbsp; `
+      + `<a href="${data.download}" style="color:#22c55e;font-weight:600" download>⬇ Excel herunterladen</a>`;
+  } catch(err) {
+    el.style.borderColor = 'rgba(239,68,68,0.4)'; el.style.background = 'rgba(239,68,68,0.08)';
+    el.innerHTML = '❌ Fehler: ' + err.message;
+  }
+}
+
 async function korrDownloadDocx() {
   if (!korrLastResult) return;
   const klasse = document.getElementById('korr-klasse').value || 'Korrektur';
@@ -3710,6 +4013,7 @@ async function loadClaudeCode() {
     if (status) status.innerHTML = '<div style="color:var(--danger)">API nicht erreichbar</div>';
   }
   loadCronJobs();
+  docsLoad();
 }
 
 const CRON_META = {
@@ -3764,6 +4068,26 @@ function cronCardStyle(type) {
 function cronScriptKey(cmd) {
   const m = cmd.match(/\/([^/.\s]+)(?:\.py|\.sh)/) || cmd.match(/(\w+)\s+tunnel/) || cmd.match(/service\s+(\w+)/);
   return m ? m[1] : null;
+}
+
+async function docsLoad() {
+  const el = document.getElementById('docs-list');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--dim);font-size:13px">Lade…</div>';
+  try {
+    const data = await fetch(API+'/api/dokumente').then(r=>r.json());
+    if (!data.docs || !data.docs.length) { el.innerHTML = '<div style="color:var(--dim);font-size:13px">Keine Dokumente gefunden.</div>'; return; }
+    el.innerHTML = data.docs.map(d => {
+      const url = API + d.download;
+      const kb = d.size > 1024*1024 ? (d.size/1024/1024).toFixed(1)+' MB' : Math.round(d.size/1024)+' KB';
+      return `<a href="${url}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:13px">
+        ${d.icon} <span style="flex:1">${d.name}</span>
+        <span style="color:var(--dim);font-size:11px">${kb} · ${d.modified}</span>
+      </a>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--error);font-size:13px">Fehler: ${e.message}</div>`;
+  }
 }
 
 async function loadCronJobs() {
@@ -6418,6 +6742,130 @@ function diffCopy() {
   });
 }
 
+// ===== ELTERNBRIEF-ENTSCHÄRFER =====
+let _ebModus = 'neu';
+let _ebLastResult = '';
+
+const EB_DEMOS = {
+  brenner: {
+    modus: 'antwort',
+    schueler: 'Kevin Brenner',
+    klasse: '9b',
+    anlass: 'Klassenarbeit Note 5 · Unterrichtsstörung',
+    notizen: `Sehr geehrter Herr Schreiber,\n\nwir wenden uns mit größter Empörung an Sie, da unser Sohn Kevin seit Wochen unter dem unprofessionellen Verhalten von Herrn Mandel zu leiden hat.\n\nGestern kam Kevin weinend nach Hause. Herr Mandel hat ihn vor der Klasse als "störenden Einfluss" bezeichnet. Außerdem hat er eine Note 5 erhalten — eine Arbeit, die Kevin hervorragend bearbeitet hat. Die Benotung erfolgt offensichtlich diskriminierend.\n\nWir fordern: sofortige Entschuldigung, Nachkorrektur, Gespräch innerhalb von 3 Werktagen. Andernfalls informieren wir das Schulamt.\n\nMit erzwungenen freundlichen Grüßen\nThorsten Brenner & Manuela Kowalski-Brenner`
+  },
+  schmidt: {
+    modus: 'antwort',
+    schueler: 'Lena Schmidt',
+    klasse: '9b',
+    anlass: 'Klassenarbeit Note 5 · Ignorierung im Unterricht',
+    notizen: `Herr Mandel,\n\nich habe jetzt DREI MAL versucht, Sie zu erreichen. Meine Tochter Lena (9b) kam gestern wieder in Tränen nach Hause. Sie haben ihr eine FÜNF gegeben. Lena hat eine WOCHE dafür gelernt. Bis 23 Uhr manchmal.\n\nMein Mann sagt, Lenas Ausführungen sind "solide und praxisnah". Das ist eine 5?! Sie ignorieren Lena außerdem wenn sie sich meldet — pädagogische Vernachlässigung.\n\nIch habe bereits mit einer Anwältin gesprochen (Bildungsrecht). Wenn ich bis Donnerstag 12:00 Uhr keine Antwort habe, gebe ich den Vorgang weiter.\n\nSabrina Schmidt-Mueller`
+  }
+};
+
+function ebSetModus(modus) {
+  _ebModus = modus;
+  const tabNeu = document.getElementById('eb-tab-neu');
+  const tabAnt = document.getElementById('eb-tab-antwort');
+  const label  = document.getElementById('eb-label-notizen');
+  const ta     = document.getElementById('eb-notizen');
+  if (modus === 'neu') {
+    tabNeu.style.background = 'linear-gradient(135deg,#f59e0b,#d97706)';
+    tabNeu.style.color = '#000';
+    tabAnt.style.background = 'transparent';
+    tabAnt.style.color = 'var(--dim)';
+    label.textContent = 'Ehrliche Notizen / interner Sachverhalt';
+    ta.placeholder = 'Kevin stört seit Wochen den Unterricht, die Eltern haben beim letzten Gespräch gedroht und wurden laut. Ich bin am Ende mit meiner Geduld aber muss trotzdem professionell bleiben…';
+  } else {
+    tabAnt.style.background = 'linear-gradient(135deg,#818cf8,#6366f1)';
+    tabAnt.style.color = '#fff';
+    tabNeu.style.background = 'transparent';
+    tabNeu.style.color = 'var(--dim)';
+    label.textContent = 'Elternbrief / Eltern-E-Mail (vollständigen Text einfügen)';
+    ta.placeholder = 'Hier den aggressiven Brief oder die E-Mail der Eltern einfügen…';
+  }
+}
+
+function ebLoadDemo(key) {
+  const d = EB_DEMOS[key];
+  if (!d) return;
+  ebSetModus(d.modus);
+  document.getElementById('eb-schueler').value = d.schueler;
+  document.getElementById('eb-klasse').value   = d.klasse;
+  document.getElementById('eb-anlass').value   = d.anlass;
+  document.getElementById('eb-notizen').value  = d.notizen;
+  document.getElementById('eb-status').textContent = `🎭 Demo "${key}" geladen — jetzt "Entschärfen" klicken`;
+  document.getElementById('eb-status').style.color = '#a5b4fc';
+}
+
+function ebReset() {
+  document.getElementById('eb-schueler').value = '';
+  document.getElementById('eb-klasse').value   = '';
+  document.getElementById('eb-anlass').value   = '';
+  document.getElementById('eb-notizen').value  = '';
+  document.getElementById('eb-status').textContent = '';
+  document.getElementById('eb-result').style.display = 'none';
+  document.getElementById('eb-text').textContent = '';
+  _ebLastResult = '';
+  ebSetModus('neu');
+}
+
+async function ebEntschaerfen() {
+  const notizen  = document.getElementById('eb-notizen').value.trim();
+  const schueler = document.getElementById('eb-schueler').value.trim();
+  const klasse   = document.getElementById('eb-klasse').value.trim();
+  const anlass   = document.getElementById('eb-anlass').value.trim();
+  if (!notizen) {
+    document.getElementById('eb-status').textContent = '⚠ Bitte Text eingeben';
+    document.getElementById('eb-status').style.color = 'var(--warning)';
+    return;
+  }
+  const btn = document.getElementById('eb-btn');
+  const status = document.getElementById('eb-status');
+  btn.disabled = true; btn.style.opacity = '.5';
+  document.getElementById('eb-result').style.display = 'none';
+  status.textContent = '⏳ Claude formuliert…';
+  status.style.color = 'var(--dim)';
+  try {
+    const r = await fetch(API + '/api/elternbrief/entschaerfen', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({notizen, schueler, klasse, anlass, modus: _ebModus}),
+      signal: AbortSignal.timeout(90000)
+    });
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    _ebLastResult = data.brief;
+    document.getElementById('eb-text').textContent = data.brief;
+    document.getElementById('eb-result').style.display = 'block';
+    status.textContent = '✅ Fertig';
+    status.style.color = 'var(--success)';
+  } catch(e) {
+    status.textContent = '❌ ' + e.message;
+    status.style.color = 'var(--danger)';
+  }
+  btn.disabled = false; btn.style.opacity = '1';
+}
+
+function ebCopy() {
+  if (!_ebLastResult) return;
+  navigator.clipboard.writeText(_ebLastResult).then(() => {
+    document.getElementById('eb-status').textContent = '📋 In Zwischenablage kopiert';
+    document.getElementById('eb-status').style.color = 'var(--success)';
+    setTimeout(() => document.getElementById('eb-status').textContent = '', 2500);
+  });
+}
+
+function ebDownload() {
+  if (!_ebLastResult) return;
+  const blob = new Blob([_ebLastResult], {type: 'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const schueler = document.getElementById('eb-schueler').value.trim().replace(/\s+/g,'_') || 'Brief';
+  a.download = `Elternbrief_${schueler}_${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+}
+
 async function loadProjekte() {
   loadImmoNews();
   loadImmoBookmarks();
@@ -7551,6 +7999,22 @@ function faRenderGrid(results, _unused, terms, originalQuery) {
   }).join('');
 }
 
+function faReset() {
+  _faSelectedFolders = [];
+  _faPhotosMap = {};
+  _faLastTerms = [];
+  _faCurrentQuery = '';
+  _faShown = [];
+  document.getElementById('fa-search').value = '';
+  document.getElementById('fa-folder').value = '/mnt/d/OneDrive/Bilder';
+  document.getElementById('fa-folder').title = '';
+  document.getElementById('fa-result-count').textContent = '';
+  document.getElementById('fa-export-onedrive-btn').style.display = 'none';
+  document.getElementById('fa-grid').innerHTML = '';
+  document.getElementById('fa-empty').style.display = 'block';
+  document.getElementById('fa-empty').textContent = 'Suchbegriff eingeben';
+}
+
 function faExportCSV() {
   if (!_faAllResults.length) return;
   const rows = [['Dateiname','Ordner','Pfad','Beschreibung','Analysiert']];
@@ -7623,6 +8087,7 @@ async function faRename(path, description, overlay) {
 }
 
 let _faSelectedFolders = [];
+let _faPhotosMap = {}; // fp → Foto-Anzahl (direkte Dateien), wird beim Browsen befüllt
 
 async function faFolderBrowse() {
   const ROOT = '/mnt/d/OneDrive';
@@ -7654,7 +8119,11 @@ async function faFolderBrowse() {
     const d = await fetch('/api/fs/dirs?path=' + encodeURIComponent(path)).then(r => r.json());
     const dirs = d.dirs || [];
     const photosMap = {};
-    (d.photos || []).forEach(e => { photosMap[path.replace(/\/+$/,'') + '/' + e.name] = e.photos; });
+    (d.photos || []).forEach(e => {
+      const fp = path.replace(/\/+$/,'') + '/' + e.name;
+      photosMap[fp] = e.photos;
+      _faPhotosMap[fp] = e.photos; // global merken
+    });
     const parts = path.split('/').filter(Boolean);
     const breadcrumb = parts.map((p, i) => {
       const fp = '/' + parts.slice(0, i+1).join('/');
@@ -7751,10 +8220,13 @@ async function faFolderBrowse() {
 function faFolderApply(folders) {
   _faSelectedFolders = folders;
   const inp = document.getElementById('fa-folder');
+  const totalPhotos = folders.reduce((sum, fp) => sum + (_faPhotosMap[fp] || 0), 0);
+  const photoHint = totalPhotos > 0 ? ` · ${totalPhotos} Fotos` : '';
   if (folders.length === 1) {
     inp.value = folders[0];
+    inp.title = totalPhotos > 0 ? `${totalPhotos} Fotos` : folders[0];
   } else {
-    inp.value = `${folders.length} Ordner ausgewählt`;
+    inp.value = `${folders.length} Ordner ausgewählt${photoHint}`;
     inp.title = folders.join('\n');
   }
 }

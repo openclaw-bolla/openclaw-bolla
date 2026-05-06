@@ -33,6 +33,7 @@ IMMO_BOOKMARKS_FILE  = Path(os.path.join(WORKSPACE, "config/immo_bookmarks.json"
 IMMO_CRITERIA_FILE   = Path(os.path.join(WORKSPACE, "config/immo_criteria.json"))
 TRAVEL_FILE          = Path(os.path.join(WORKSPACE, "cache/travel.json"))
 PHOTO_ANALYSIS_FILE  = os.path.join(WORKSPACE, "data/photo_analysis.json")
+KORREKTUR_DIR        = os.path.join(WORKSPACE, "korrektur")
 
 # Foto-Analyse Job-Status (global, threadsafe via GIL für einfache dict-ops)
 _photo_job = {"running": False, "total": 0, "done": 0, "errors": 0, "stop": False, "folder": ""}
@@ -2545,6 +2546,8 @@ def _gemini_api_key():
     except Exception:
         return ""
 
+GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"]
+
 def _photo_analyze_one_gemini(image_path, prompt):
     import base64 as _b64, io, urllib.request as _ur
     key = _gemini_api_key()
@@ -2568,13 +2571,23 @@ def _photo_analyze_one_gemini(image_path, prompt):
             {"text": prompt}
         ]}]
     }
-    req = _ur.Request(
-        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key}",
-        data=json.dumps(payload).encode(),
-        headers={"Content-Type": "application/json"}
-    )
-    resp = json.loads(_ur.urlopen(req, timeout=60).read())
-    return resp["candidates"][0]["content"]["parts"][0]["text"].strip()
+    last_err = None
+    for model in GEMINI_MODELS:
+        try:
+            req = _ur.Request(
+                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}",
+                data=json.dumps(payload).encode(),
+                headers={"Content-Type": "application/json"}
+            )
+            resp = json.loads(_ur.urlopen(req, timeout=60).read())
+            return resp["candidates"][0]["content"]["parts"][0]["text"].strip()
+        except _ur.HTTPError as e:
+            last_err = e
+            if e.code in (503, 429, 500):
+                print(f"Gemini {model} → {e.code}, versuche nächstes Modell...")
+                continue
+            raise
+    raise last_err
 
 def _photo_analyze_one(image_path, prompt, model, lmstudio_url):
     import base64 as _b64, io
@@ -2660,7 +2673,12 @@ def _photo_worker(folder, prompt, model, lmstudio_url, throttle=2.0, engine="lms
             _photo_save_results(results)
         except Exception as e:
             _photo_job["errors"] += 1
-            print(f"Foto-Analyse Fehler {fpath}: {e}")
+            err_detail = str(e)
+            if hasattr(e, 'read'):
+                try: err_detail += " | " + e.read().decode()[:200]
+                except: pass
+            print(f"Foto-Analyse Fehler [{engine}] {os.path.basename(fpath)}: {err_detail}")
+            _photo_job["last_error"] = f"{os.path.basename(fpath)}: {err_detail[:120]}"
         _photo_job["done"] += 1
         if engine == "lmstudio" and throttle > 0 and not _photo_job["stop"]:
             _time.sleep(throttle)
@@ -2817,6 +2835,262 @@ def photo_search(query):
         if any(p.search(desc) for p in patterns):
             matched.append(r)
     return {"results": matched, "terms": terms}
+
+
+# ─── KI-Korrektur Excel-Klassenliste ─────────────────────────────────────────
+
+def _excel_path(klasse, fach):
+    import re as _re
+    k = _re.sub(r'[^\w]', '_', klasse.strip())
+    f = _re.sub(r'[^\w]', '_', fach.strip())
+    return os.path.join(KORREKTUR_DIR, f"Klasse_{k}_{f}.xlsx")
+
+def _parse_note_num(note_str):
+    import re as _re
+    m = _re.search(r'\b([1-6])\b', str(note_str or ''))
+    return int(m.group(1)) if m else None
+
+def _read_ka_students(ws):
+    """Liest Schüler aus KA-Sheet (Zeilen 4–33)."""
+    students = []
+    for row_num in range(4, 34):
+        vn = ws.cell(row=row_num, column=1).value
+        nn = ws.cell(row=row_num, column=2).value
+        nt = ws.cell(row=row_num, column=3).value
+        if vn and str(vn).strip():
+            students.append({
+                'vorname': str(vn).strip(),
+                'nachname': str(nn or '').strip(),
+                'note': str(nt) if nt is not None else '',
+            })
+    return students
+
+def _write_ka_sheet(ws, klasse, fach, ka_nr, thema, students):
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    HDR  = PatternFill("solid", fgColor="1E3A5F")
+    SUB  = PatternFill("solid", fgColor="0F2538")
+    COL  = PatternFill("solid", fgColor="16304F")
+    AVG  = PatternFill("solid", fgColor="12243A")
+    EVEN = PatternFill("solid", fgColor="0D1B2E")
+    ODD  = PatternFill("solid", fgColor="0A1520")
+    thin = Side(style='thin', color='2A4060')
+    bd   = Border(left=thin, right=thin, top=thin, bottom=thin)
+    GCOL = {1:"16A34A",2:"86EFAC",3:"FDE68A",4:"FCA5A5",5:"EF4444",6:"991B1B"}
+
+    ws.delete_rows(1, ws.max_row or 1)
+
+    # Zeile 1: Titel
+    ws.merge_cells('A1:C1')
+    c = ws['A1']
+    c.value = f"Klasse {klasse}  ·  {fach}  ·  Klassenarbeit {ka_nr}"
+    c.font = Font(bold=True, size=13, color="E2E8F0", name='Calibri')
+    c.fill = HDR; c.alignment = Alignment(horizontal='center', vertical='center')
+    ws.row_dimensions[1].height = 24
+
+    # Zeile 2: Thema
+    ws.merge_cells('A2:C2')
+    c = ws['A2']
+    c.value = f"Thema: {thema or '—'}"
+    c.font = Font(italic=True, size=11, color="94A3B8", name='Calibri')
+    c.fill = SUB; c.alignment = Alignment(horizontal='left', vertical='center', indent=1)
+    ws.row_dimensions[2].height = 18
+
+    # Zeile 3: Spaltenköpfe
+    for col, lbl, align in [(1,'Vorname','left'),(2,'Nachname','left'),(3,'Note','center')]:
+        c = ws.cell(row=3, column=col, value=lbl)
+        c.font = Font(bold=True, size=11, color="FFFFFF", name='Calibri')
+        c.fill = COL; c.border = bd
+        c.alignment = Alignment(horizontal=align, vertical='center',
+                                 indent=1 if align=='left' else 0)
+    ws.row_dimensions[3].height = 20
+
+    # Schülerzeilen 4–33
+    notes = []
+    for i in range(30):
+        row = i + 4
+        fill = EVEN if i % 2 == 0 else ODD
+        s = students[i] if i < len(students) else {}
+        vn, nn, nt_raw = s.get('vorname',''), s.get('nachname',''), s.get('note','')
+        nt_num = _parse_note_num(nt_raw) if nt_raw else None
+        if nt_num: notes.append(nt_num)
+
+        ws.cell(row=row,column=1,value=vn or None).font = Font(size=11,name='Calibri',color="CBD5E1")
+        ws.cell(row=row,column=1).fill = fill; ws.cell(row=row,column=1).border = bd
+        ws.cell(row=row,column=1).alignment = Alignment(indent=1)
+        ws.cell(row=row,column=2,value=nn or None).font = Font(size=11,name='Calibri',color="CBD5E1")
+        ws.cell(row=row,column=2).fill = fill; ws.cell(row=row,column=2).border = bd
+        ws.cell(row=row,column=2).alignment = Alignment(indent=1)
+
+        c3 = ws.cell(row=row, column=3, value=nt_num or (nt_raw or None))
+        c3.font = Font(size=12, bold=bool(nt_num), name='Calibri',
+                       color="000000" if nt_num else "94A3B8")
+        c3.fill = PatternFill("solid",fgColor=GCOL[nt_num]) if nt_num else fill
+        c3.border = bd; c3.alignment = Alignment(horizontal='center')
+        ws.row_dimensions[row].height = 18
+
+    # Zeile 34: Durchschnitt
+    avg = round(sum(notes)/len(notes), 2) if notes else None
+    ws.cell(row=34,column=1,value=None).fill = AVG; ws.cell(row=34,column=1).border = bd
+    ws.cell(row=34,column=2,value=f"Ø Durchschnitt  ({len(notes)} Schüler)").font = Font(bold=True,size=11,color="94A3B8",name='Calibri')
+    ws.cell(row=34,column=2).fill = AVG; ws.cell(row=34,column=2).border = bd
+    ws.cell(row=34,column=2).alignment = Alignment(horizontal='right')
+    ws.cell(row=34,column=3,value=avg).font = Font(bold=True,size=13,color="F59E0B",name='Calibri')
+    ws.cell(row=34,column=3).fill = AVG; ws.cell(row=34,column=3).border = bd
+    ws.cell(row=34,column=3).alignment = Alignment(horizontal='center')
+    ws.row_dimensions[34].height = 22
+
+    ws.column_dimensions['A'].width = 18
+    ws.column_dimensions['B'].width = 22
+    ws.column_dimensions['C'].width = 9
+    ws.freeze_panes = 'A4'
+
+def _write_uebersicht_sheet(wb, klasse, fach):
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    ws = wb["Übersicht"]
+    ws.delete_rows(1, ws.max_row or 1)
+    HDR  = PatternFill("solid", fgColor="1E3A5F")
+    COL  = PatternFill("solid", fgColor="16304F")
+    AVG  = PatternFill("solid", fgColor="12243A")
+    EVEN = PatternFill("solid", fgColor="0D1B2E")
+    ODD  = PatternFill("solid", fgColor="0A1520")
+    thin = Side(style='thin', color='2A4060')
+    bd   = Border(left=thin, right=thin, top=thin, bottom=thin)
+    GCOL = {1:"16A34A",2:"86EFAC",3:"FDE68A",4:"FCA5A5",5:"EF4444",6:"991B1B"}
+
+    # Alle Schüler aus allen KA-Sheets zusammenführen
+    all_students = {}
+    for ka_nr in range(1, 5):
+        ka_name = f"KA {ka_nr}"
+        if ka_name not in wb.sheetnames:
+            continue
+        for s in _read_ka_students(wb[ka_name]):
+            key = (s['vorname'].lower(), s['nachname'].lower())
+            if key not in all_students:
+                all_students[key] = {'vorname':s['vorname'],'nachname':s['nachname'],
+                                     'ka1':None,'ka2':None,'ka3':None,'ka4':None}
+            all_students[key][f'ka{ka_nr}'] = s.get('note') or None
+
+    rows = sorted(all_students.values(), key=lambda s:(s['nachname'].lower(),s['vorname'].lower()))
+
+    # Zeile 1: Titel
+    ws.merge_cells('A1:G1')
+    c = ws['A1']
+    c.value = f"Klasse {klasse}  ·  {fach}  ·  Jahresübersicht"
+    c.font = Font(bold=True,size=13,color="E2E8F0",name='Calibri')
+    c.fill = HDR; c.alignment = Alignment(horizontal='center',vertical='center')
+    ws.row_dimensions[1].height = 24
+
+    # Zeile 2: Spaltenköpfe
+    for col, lbl in enumerate(['Vorname','Nachname','KA 1','KA 2','KA 3','KA 4','Ø Gesamt'],1):
+        c = ws.cell(row=2, column=col, value=lbl)
+        c.font = Font(bold=True,size=11,color="FFFFFF",name='Calibri')
+        c.fill = COL; c.border = bd
+        c.alignment = Alignment(horizontal='center' if col>2 else 'left',
+                                 vertical='center', indent=1 if col<=2 else 0)
+    ws.row_dimensions[2].height = 20
+
+    # Schülerzeilen
+    for i, s in enumerate(rows[:30]):
+        row = i + 3
+        fill = EVEN if i%2==0 else ODD
+        ws.cell(row=row,column=1,value=s['vorname']).font = Font(size=11,name='Calibri',color="CBD5E1")
+        ws.cell(row=row,column=1).fill = fill; ws.cell(row=row,column=1).border = bd
+        ws.cell(row=row,column=1).alignment = Alignment(indent=1)
+        ws.cell(row=row,column=2,value=s['nachname']).font = Font(size=11,name='Calibri',color="CBD5E1")
+        ws.cell(row=row,column=2).fill = fill; ws.cell(row=row,column=2).border = bd
+        ws.cell(row=row,column=2).alignment = Alignment(indent=1)
+        ka_notes = []
+        for j, ka_key in enumerate(['ka1','ka2','ka3','ka4'],3):
+            nt_raw = s.get(ka_key)
+            nt_num = _parse_note_num(nt_raw) if nt_raw else None
+            if nt_num: ka_notes.append(nt_num)
+            c = ws.cell(row=row,column=j,value=nt_num or (nt_raw or None))
+            c.font = Font(size=12,bold=bool(nt_num),name='Calibri')
+            c.fill = PatternFill("solid",fgColor=GCOL[nt_num]) if nt_num else fill
+            c.border = bd; c.alignment = Alignment(horizontal='center')
+        avg_s = round(sum(ka_notes)/len(ka_notes),2) if ka_notes else None
+        c = ws.cell(row=row,column=7,value=avg_s)
+        c.font = Font(size=12,bold=True,name='Calibri',color="F59E0B" if avg_s else "94A3B8")
+        c.fill = fill; c.border = bd; c.alignment = Alignment(horizontal='center')
+        ws.row_dimensions[row].height = 18
+
+    # Leere Zeilen bis Zeile 32
+    for row in range(len(rows)+3, 33):
+        fill = EVEN if (row-3)%2==0 else ODD
+        for col in range(1,8):
+            c = ws.cell(row=row,column=col,value=None)
+            c.fill = fill; c.border = bd
+        ws.row_dimensions[row].height = 18
+
+    # Zeile 33: Klassendurchschnitt
+    by_ka = {1:[],2:[],3:[],4:[]}
+    for s in rows:
+        for ka_nr in range(1,5):
+            n = _parse_note_num(s.get(f'ka{ka_nr}'))
+            if n: by_ka[ka_nr].append(n)
+    ws.cell(row=33,column=1,value=None).fill = AVG; ws.cell(row=33,column=1).border = bd
+    ws.cell(row=33,column=2,value="Ø Klassendurchschnitt").font = Font(bold=True,size=11,color="94A3B8",name='Calibri')
+    ws.cell(row=33,column=2).fill = AVG; ws.cell(row=33,column=2).border = bd
+    ws.cell(row=33,column=2).alignment = Alignment(horizontal='right')
+    for j, ka_nr in enumerate(range(1,5),3):
+        ns = by_ka[ka_nr]
+        av = round(sum(ns)/len(ns),2) if ns else None
+        c = ws.cell(row=33,column=j,value=av)
+        c.font = Font(bold=True,size=12,color="F59E0B" if av else "94A3B8",name='Calibri')
+        c.fill = AVG; c.border = bd; c.alignment = Alignment(horizontal='center')
+    flat = [n for ns in by_ka.values() for n in ns]
+    ov = round(sum(flat)/len(flat),2) if flat else None
+    c = ws.cell(row=33,column=7,value=ov)
+    c.font = Font(bold=True,size=13,color="F59E0B" if ov else "94A3B8",name='Calibri')
+    c.fill = AVG; c.border = bd; c.alignment = Alignment(horizontal='center')
+    ws.row_dimensions[33].height = 22
+
+    ws.column_dimensions['A'].width = 18; ws.column_dimensions['B'].width = 22
+    for col in ['C','D','E','F','G']: ws.column_dimensions[col].width = 9
+    ws.freeze_panes = 'A3'
+
+def excel_upsert_student(klasse, fach, ka_nr, thema, vorname, nachname, note_str):
+    """Schüler in Klassenlisten-Excel eintragen oder aktualisieren."""
+    from openpyxl import Workbook, load_workbook
+    os.makedirs(KORREKTUR_DIR, exist_ok=True)
+    fpath = _excel_path(klasse, fach)
+
+    if os.path.exists(fpath):
+        wb = load_workbook(fpath)
+    else:
+        wb = Workbook()
+        if 'Sheet' in wb.sheetnames: del wb['Sheet']
+        for n in range(1,5): wb.create_sheet(f"KA {n}")
+        wb.create_sheet("Übersicht")
+
+    for n in range(1,5):
+        if f"KA {n}" not in wb.sheetnames: wb.create_sheet(f"KA {n}")
+    if "Übersicht" not in wb.sheetnames: wb.create_sheet("Übersicht")
+
+    ka_name = f"KA {ka_nr}"
+    ws = wb[ka_name]
+    students = _read_ka_students(ws)
+
+    # Thema aus bestehendem Sheet lesen falls nicht übergeben
+    if not thema:
+        existing = str(ws.cell(row=2, column=1).value or "")
+        thema = existing.replace('Thema: ','').replace('Thema:','').strip() or ""
+
+    # Upsert
+    key = (vorname.strip().lower(), nachname.strip().lower())
+    updated = False
+    for s in students:
+        if (s['vorname'].lower(), s['nachname'].lower()) == key:
+            s['note'] = note_str; updated = True; break
+    if not updated:
+        students.append({'vorname':vorname.strip(),'nachname':nachname.strip(),'note':note_str})
+    students.sort(key=lambda s:(s['nachname'].lower(),s['vorname'].lower()))
+
+    _write_ka_sheet(ws, klasse, fach, ka_nr, thema, students)
+    _write_uebersicht_sheet(wb, klasse, fach)
+    wb.active = wb[ka_name]
+    wb.save(fpath)
+    return fpath
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -3061,6 +3335,75 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(body)
                 return
+
+            if self.path.startswith("/api/korrektur/excel-download"):
+                import urllib.parse as _up
+                qs = _up.parse_qs(_up.urlparse(self.path).query)
+                fname = qs.get("file", [""])[0]
+                if not fname or "/" in fname or "\\" in fname or ".." in fname:
+                    self._send_json({"error": "Ungültig"}, status=400); return
+                fpath = os.path.join(KORREKTUR_DIR, fname)
+                if not os.path.isfile(fpath):
+                    self._send_json({"error": "Nicht gefunden"}, status=404); return
+                with open(fpath, "rb") as f:
+                    data = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                self.send_header("Content-Disposition", f'attachment; filename="{fname}"')
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
+
+            elif self.path == "/api/dokumente":
+                BOLLA_DOCS = "/mnt/d/OneDrive/Dokumente/Bolla/claud code - openclaw Doku"
+                ALLOWED_EXT = {".pdf", ".docx", ".html", ".txt", ".md"}
+                EXT_ICON = {".pdf": "📄", ".docx": "📝", ".html": "🌐", ".txt": "📃", ".md": "📃"}
+                docs = []
+                if os.path.isdir(BOLLA_DOCS):
+                    for fname in sorted(os.listdir(BOLLA_DOCS)):
+                        ext = os.path.splitext(fname)[1].lower()
+                        if ext not in ALLOWED_EXT:
+                            continue
+                        fpath = os.path.join(BOLLA_DOCS, fname)
+                        stat = os.stat(fpath)
+                        docs.append({
+                            "name": fname,
+                            "icon": EXT_ICON.get(ext, "📄"),
+                            "size": stat.st_size,
+                            "modified": datetime.fromtimestamp(stat.st_mtime).strftime("%d.%m.%Y"),
+                            "download": f"/api/dokumente/download?file={urllib.parse.quote(fname)}"
+                        })
+                self._send_json({"docs": docs})
+                return
+
+            elif self.path.startswith("/api/dokumente/download"):
+                import urllib.parse as _up
+                BOLLA_DOCS = "/mnt/d/OneDrive/Dokumente/Bolla/claud code - openclaw Doku"
+                qs = _up.parse_qs(_up.urlparse(self.path).query)
+                fname = qs.get("file", [""])[0]
+                if not fname or "/" in fname or "\\" in fname or ".." in fname:
+                    self._send_json({"error": "Ungültig"}, status=400); return
+                fpath = os.path.join(BOLLA_DOCS, fname)
+                if not os.path.isfile(fpath):
+                    self._send_json({"error": "Nicht gefunden"}, status=404); return
+                ext = os.path.splitext(fname)[1].lower()
+                MIME = {".pdf": "application/pdf",
+                        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        ".html": "text/html",
+                        ".txt": "text/plain",
+                        ".md": "text/plain"}
+                ctype = MIME.get(ext, "application/octet-stream")
+                with open(fpath, "rb") as f:
+                    data = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", ctype)
+                self.send_header("Content-Disposition", f'attachment; filename="{fname}"')
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
+
             elif self.path in simple:
                 self._send_json(simple[self.path]())
             else:
@@ -3317,19 +3660,21 @@ class Handler(BaseHTTPRequestHandler):
                 tmp.write(_b64.b64decode(img_b64)); tmp.close()
                 prompt = (
                     f"Schau dir diesen Klassenarbeit-Scan an: {tmp.name}\n\n"
-                    "Extrahiere genau drei Infos aus dem Scan-Header und antworte NUR mit JSON, "
+                    "Extrahiere folgende Infos aus dem Scan-Header und antworte NUR mit JSON, "
                     "kein weiterer Text:\n"
-                    '{\"klasse\": \"...\", \"fach\": \"...\", \"thema\": \"...\"}\n\n'
+                    '{\"klasse\": \"...\", \"fach\": \"...\", \"thema\": \"...\", \"vorname\": \"...\", \"nachname\": \"...\"}\n\n'
                     "klasse = Klassenstufe (z.B. \"10c\" oder \"9\")\n"
                     "fach = Unterrichtsfach (z.B. \"Biologie\", \"WiPo\")\n"
-                    "thema = Thema aus der Kopfzeile (kurz, ohne Zeitangaben)"
+                    "thema = Thema aus der Kopfzeile (kurz, ohne Zeitangaben)\n"
+                    "vorname = Vorname des Schuelers aus dem Name-Feld (leer falls nicht erkennbar)\n"
+                    "nachname = Nachname des Schuelers aus dem Name-Feld (leer falls nicht erkennbar)"
                 )
                 claude_bin = _sh.which("claude") or os.path.expanduser("~/.local/bin/claude")
                 try:
                     r = _sp.run([claude_bin, "-p", "--output-format", "text", prompt],
                                 capture_output=True, text=True, timeout=30,
                                 cwd=os.path.expanduser("~"))
-                    m = _re.search(r'\{[^}]+\}', r.stdout or "")
+                    m = _re.search(r'\{[^}]+\}', r.stdout or "", _re.DOTALL)
                     self._send_json(json.loads(m.group()) if m else {"error": "Parse-Fehler"})
                 except Exception as ex:
                     self._send_json({"error": str(ex)})
@@ -3614,6 +3959,92 @@ Antworte auf Deutsch."""
                     buf = _io.BytesIO()
                     canvas.save(buf, "JPEG", quality=90)
                     self._send_json({"image_b64": _b64.standard_b64encode(buf.getvalue()).decode()})
+                except Exception as e:
+                    self._send_json({"error": str(e)}, status=500)
+
+            elif self.path == "/api/korrektur/excel":
+                klasse   = body.get("klasse", "").strip()
+                fach     = body.get("fach", "").strip()
+                ka_nr    = int(body.get("ka_nr", 1))
+                thema    = body.get("thema", "").strip()
+                vorname  = body.get("vorname", "").strip()
+                nachname = body.get("nachname", "").strip()
+                note     = body.get("note", "").strip()
+                if not klasse or not fach or not vorname or not nachname or not note:
+                    self._send_json({"error": "klasse, fach, vorname, nachname, note sind Pflicht"}, status=400)
+                    return
+                if ka_nr not in range(1, 5):
+                    self._send_json({"error": "ka_nr muss 1–4 sein"}, status=400)
+                    return
+                try:
+                    fpath = excel_upsert_student(klasse, fach, ka_nr, thema, vorname, nachname, note)
+                    fname = os.path.basename(fpath)
+                    self._send_json({
+                        "ok": True, "datei": fname,
+                        "download": f"/api/korrektur/excel-download?file={urllib.parse.quote(fname)}"
+                    })
+                except Exception as e:
+                    self._send_json({"error": str(e)}, status=500)
+
+            elif self.path == "/api/elternbrief/entschaerfen":
+                notizen    = body.get("notizen", "").strip()
+                schueler   = body.get("schueler", "").strip()
+                klasse     = body.get("klasse", "").strip()
+                anlass     = body.get("anlass", "").strip()
+                modus      = body.get("modus", "brief")  # "brief" oder "antwort"
+                if not notizen:
+                    self._send_json({"error": "Notizen fehlen"}, status=400); return
+
+                if modus == "antwort":
+                    prompt = f"""Du bist Lehrer und hast einen sehr aufgebrachten Brief oder eine aggressive E-Mail von Eltern erhalten.
+
+Elternnachricht (Rohtext):
+{notizen}
+
+Kontext:
+- Schueler/in: {schueler or '(nicht angegeben)'}
+- Klasse: {klasse or '(nicht angegeben)'}
+- Anlass: {anlass or '(nicht angegeben)'}
+
+Schreibe eine professionelle, deeskalierende Antwort an die Eltern.
+Die Antwort soll:
+- Verstaendnis zeigen, ohne klein beizugeben
+- Sachlich und ruhig bleiben, auch wenn der Brief aggressiv war
+- Konkrete naechste Schritte anbieten (z.B. Gespraechstermin)
+- Nicht defensiv oder entschuldigend klingen — klar und selbstbewusst
+- In normaler Briefform sein (Anrede, Inhalt, Gruss)
+
+Antworte NUR mit dem fertigen Brief-Text, kein Kommentar davor oder danach."""
+                else:
+                    prompt = f"""Du bist Lehrer und moechtest einen Brief an Eltern schreiben.
+Du hast folgende ehrliche, interne Notizen zu dem Vorfall gemacht:
+
+{notizen}
+
+Kontext:
+- Schueler/in: {schueler or '(nicht angegeben)'}
+- Klasse: {klasse or '(nicht angegeben)'}
+- Anlass: {anlass or '(nicht angegeben)'}
+
+Forme diese Notizen in einen professionellen, freundlichen Elternbrief um.
+Der Brief soll:
+- Sachlich und konstruktiv sein, keine persoenlichen Angriffe
+- Das Verhalten beschreiben, nicht das Kind bewerten
+- Loesungen und naechste Schritte vorschlagen
+- Partnerschaftlich klingen (Schule und Eltern ziehen am selben Strang)
+- In normaler Briefform sein (Anrede, Inhalt, Gruss)
+
+Antworte NUR mit dem fertigen Brief-Text, kein Kommentar davor oder danach."""
+
+                import subprocess as _sp, shutil as _sh
+                claude_bin = _sh.which("claude") or CLAUDE_BIN
+                try:
+                    r = _sp.run([claude_bin, "-p", "--output-format", "text", prompt],
+                                capture_output=True, text=True, timeout=90,
+                                cwd=os.path.expanduser("~"))
+                    if r.returncode != 0:
+                        self._send_json({"error": r.stderr[:300]}, status=500); return
+                    self._send_json({"ok": True, "brief": r.stdout.strip()})
                 except Exception as e:
                     self._send_json({"error": str(e)}, status=500)
 
