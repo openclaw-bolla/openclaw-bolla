@@ -3995,46 +3995,49 @@ Antworte auf Deutsch."""
                 if not notizen:
                     self._send_json({"error": "Notizen fehlen"}, status=400); return
 
+                import random as _rnd
+                _seed = _rnd.randint(0, 9999)
+
                 if modus == "antwort":
-                    prompt = f"""Du bist Lehrer und hast einen sehr aufgebrachten Brief oder eine aggressive E-Mail von Eltern erhalten.
+                    prompt = f"""Du bist Gymnasiallehrer und antwortest auf einen aufgebrachten Elternbrief.
 
-Elternnachricht (Rohtext):
+Elternnachricht:
 {notizen}
 
-Kontext:
-- Schueler/in: {schueler or '(nicht angegeben)'}
-- Klasse: {klasse or '(nicht angegeben)'}
-- Anlass: {anlass or '(nicht angegeben)'}
+Schueler/in: {schueler or '(nicht angegeben)'} | Klasse: {klasse or '(nicht angegeben)'} | Anlass: {anlass or '(nicht angegeben)'}
 
-Schreibe eine professionelle, deeskalierende Antwort an die Eltern.
-Die Antwort soll:
-- Verstaendnis zeigen, ohne klein beizugeben
-- Sachlich und ruhig bleiben, auch wenn der Brief aggressiv war
-- Konkrete naechste Schritte anbieten (z.B. Gespraechstermin)
-- Nicht defensiv oder entschuldigend klingen — klar und selbstbewusst
-- In normaler Briefform sein (Anrede, Inhalt, Gruss)
+Schreibe die Antwort so wie ein echter, erfahrener Lehrer sie schreiben wuerde — nicht wie ein Muster aus dem Internet.
 
-Antworte NUR mit dem fertigen Brief-Text, kein Kommentar davor oder danach."""
+Konkret:
+- Kein Einstieg mit "Vielen Dank fuer Ihre Nachricht" oder "Ich verstehe Ihre Bedenken" oder aehnlichen Floskeln
+- Kein gleichmaessiger Rhythmus — kurze und laengere Saetze mischen
+- Keine Aufzaehlung von Punkten mit gleichem Satzbau
+- Nicht entschuldigend, aber auch nicht arrogant — klar und auf Augenhoehe
+- Einen konkreten naechsten Schritt nennen (Gespraechstermin o.ae.)
+- Abschluss darf ruhig unkonventionell sein, kein "stehe Ihnen jederzeit zur Verfuegung"
+- Zufallsseed fuer Variation: {_seed}
+
+Nur der fertige Brief, kein Kommentar."""
                 else:
-                    prompt = f"""Du bist Lehrer und moechtest einen Brief an Eltern schreiben.
-Du hast folgende ehrliche, interne Notizen zu dem Vorfall gemacht:
+                    prompt = f"""Du bist Gymnasiallehrer und schreibst einen Brief an Eltern.
 
+Deine internen Notizen (NICHT woertlich uebernehmen, nur als Grundlage):
 {notizen}
 
-Kontext:
-- Schueler/in: {schueler or '(nicht angegeben)'}
-- Klasse: {klasse or '(nicht angegeben)'}
-- Anlass: {anlass or '(nicht angegeben)'}
+Schueler/in: {schueler or '(nicht angegeben)'} | Klasse: {klasse or '(nicht angegeben)'} | Anlass: {anlass or '(nicht angegeben)'}
 
-Forme diese Notizen in einen professionellen, freundlichen Elternbrief um.
-Der Brief soll:
-- Sachlich und konstruktiv sein, keine persoenlichen Angriffe
-- Das Verhalten beschreiben, nicht das Kind bewerten
-- Loesungen und naechste Schritte vorschlagen
-- Partnerschaftlich klingen (Schule und Eltern ziehen am selben Strang)
-- In normaler Briefform sein (Anrede, Inhalt, Gruss)
+Schreibe den Brief wie ein echter Lehrer — nicht wie eine KI-generierte Vorlage.
 
-Antworte NUR mit dem fertigen Brief-Text, kein Kommentar davor oder danach."""
+Konkret:
+- Nicht mit "Sehr geehrte Familie X, ich wende mich an Sie bezueglich..." beginnen — finde einen direkteren Einstieg
+- Keine drei gleichartig aufgebauten Abschaetze
+- Kein "Darüber hinaus", "Abschliessend", "In diesem Sinne"
+- Das Kind beim Namen nennen, nicht "Ihr Kind"
+- Partnerschaftlich, aber nicht weichgespuelt — Dinge klar benennen
+- Schluss ohne "Ich stehe Ihnen jederzeit zur Verfuegung"
+- Zufallsseed fuer Variation: {_seed}
+
+Nur der fertige Brief, kein Kommentar."""
 
                 import subprocess as _sp, shutil as _sh
                 claude_bin = _sh.which("claude") or CLAUDE_BIN

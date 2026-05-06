@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Newsletter-Scanner: checkt Aldi Nord, Penny und Lidl auf Watchlist-Artikel."""
+"""Newsletter-Scanner: checkt Aldi Nord, Penny, Lidl, Edeka, Rewe, Famila auf Watchlist-Artikel."""
 import json, os, re, subprocess, sys, urllib.request, urllib.parse
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
@@ -17,6 +17,12 @@ STORES = [
      "senders": ["penny.de", "newsletter.penny.de", "penny-markt.de"]},
     {"name": "Lidl",      "color": "#FFD100", "text": "#0050AA",
      "senders": ["newsletter.lidl.de", "lidl-newsletter.de", "lidl.de"]},
+    {"name": "Edeka",     "color": "#e2001a", "text": "#fff",
+     "senders": ["edeka.de", "newsletter.edeka.de", "edeka-minden-hannover.de", "mailing.edeka.de"]},
+    {"name": "Rewe",      "color": "#cc0000", "text": "#fff",
+     "senders": ["rewe.de", "newsletter.rewe.de", "mailing.rewe.de", "rewe-group.com"]},
+    {"name": "Famila",    "color": "#e8000d", "text": "#fff",
+     "senders": ["famila.de", "famila-nordost.de", "newsletter.famila.de", "famila-handelsmarkt.de"]},
 ]
 
 # Transaktionsdomains (Shop-Systeme, keine Newsletter)

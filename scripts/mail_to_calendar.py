@@ -117,7 +117,14 @@ Antworte NUR als reines JSON ohne Markdown:
 
 Regeln:
 - Nur echte Termine (mit Datum/Uhrzeit), keine Newsletter
-- Anfahrtszeit: Norderstedt=10min, Hamburg=35min, andere Stadt=60min, unbekannt=45min
+- Anfahrtszeit realistisch schaetzen basierend auf Entfernung von {HOME_ADDRESS}:
+  * Gleicher Ort / gleiche Strasse / unter 3km Entfernung = 10min (Fahrrad)
+  * Norderstedt allgemein (gleiche Stadt) = 10-15min
+  * Hamburg-Rand (Rahlstedt, Poppenbüttel, Langenhorn) = 20min
+  * Hamburg-Zentrum / Innenstadt = 35min
+  * Andere Stadt / mehr als 30km = 60min+
+  * Unbekannter Ort OHNE Stadtangabe = 20min (nicht pauschal 45min!)
+  * Wenn der Ort explizit als nah beschrieben wird oder in Norderstedt liegt = 10min
 - Dauer schätzen: Oper=150min, Konzert=120min, Theater=120min, Arzt=45min, Handwerker=120min
 - Kategorie "Event" für: Oper, Konzert, Theater, Festival, Veranstaltung
 - konfidenz "niedrig" wenn Datum unklar oder kein eindeutiger Termin"""
