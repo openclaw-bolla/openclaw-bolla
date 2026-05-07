@@ -3198,6 +3198,55 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(body)
                 return
 
+            if self.path.startswith("/api/kiforum/img/"):
+                fname = self.path.split("/api/kiforum/img/")[1]
+                if "/" in fname or ".." in fname:
+                    self._send_json({"error":"invalid"},status=400); return
+                p = Path(os.path.join(WORKSPACE, "data", fname))
+                if not p.exists(): self._send_json({"error":"not found"},status=404); return
+                data = p.read_bytes()
+                self.send_response(200); self.send_header("Access-Control-Allow-Origin","*")
+                self.send_header("Content-Type","image/png"); self.send_header("Content-Length",str(len(data)))
+                self.end_headers(); self.wfile.write(data); return
+
+            if self.path == "/api/kiforum/bg":
+                p = Path(os.path.join(WORKSPACE, "data/kif_room_bg.jpg"))
+                if not p.exists(): self._send_json({"error":"not found"},status=404); return
+                data = p.read_bytes()
+                self.send_response(200); self.send_header("Access-Control-Allow-Origin","*")
+                self.send_header("Content-Type","image/png"); self.send_header("Content-Length",str(len(data)))
+                self.end_headers(); self.wfile.write(data); return
+
+            if self.path == "/api/kiforum/bolla":
+                p = Path(os.path.join(WORKSPACE, "data/bolla_transparent.png"))
+                if not p.exists(): self._send_json({"error":"not found"},status=404); return
+                data = p.read_bytes()
+                self.send_response(200); self.send_header("Access-Control-Allow-Origin","*")
+                self.send_header("Content-Type","image/png"); self.send_header("Content-Length",str(len(data)))
+                self.end_headers(); self.wfile.write(data); return
+
+            if self.path == "/api/kiforum/chris":
+                p = Path(os.path.join(WORKSPACE, "data/chris_transparent.png"))
+                if not p.exists(): self._send_json({"error":"not found"},status=404); return
+                data = p.read_bytes()
+                self.send_response(200); self.send_header("Access-Control-Allow-Origin","*")
+                self.send_header("Content-Type","image/png"); self.send_header("Content-Length",str(len(data)))
+                self.end_headers(); self.wfile.write(data); return
+
+            if self.path == "/api/bolla/avatar/wave":
+                wave_path = os.path.expanduser("~/workspace/data/bolla_wave.gif")
+                if not os.path.isfile(wave_path):
+                    self._send_json({"error": "GIF nicht gefunden"}, status=404); return
+                with open(wave_path, "rb") as f:
+                    data = f.read()
+                self.send_response(200)
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Content-Type", "image/gif")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
+
             if self.path == "/api/bolla/avatar":
                 avatar_path = os.path.expanduser("~/workspace/bolla_avatar.png")
                 with open(avatar_path, "rb") as f:
@@ -3403,6 +3452,22 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(data)
                 return
+
+            elif self.path == "/api/kiforum":
+                KIFORUM_FILE = os.path.join(WORKSPACE, "data/kiforum.json")
+                posts = json.loads(Path(KIFORUM_FILE).read_text()) if Path(KIFORUM_FILE).exists() else []
+                self._send_json(posts)
+
+            elif self.path == "/api/kiforum/export":
+                KIFORUM_FILE = os.path.join(WORKSPACE, "data/kiforum.json")
+                data = Path(KIFORUM_FILE).read_bytes() if Path(KIFORUM_FILE).exists() else b"[]"
+                self.send_response(200)
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Disposition", 'attachment; filename="bolla-ki-forum.json"')
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
 
             elif self.path in simple:
                 self._send_json(simple[self.path]())
@@ -4279,6 +4344,167 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                         parts.append(gb)
                     song_data["title"] = " ".join(parts)
                 self._send_json(song_data)
+            elif self.path == "/api/kiforum/respond":
+                import subprocess as _sp2, uuid as _uuid3, base64 as _b64
+                thesis = body.get("thesis", "").strip()
+                text_prompt = f"""Du bist Bolla, ein meinungsstarker KI-Assistent. Chris hat folgende These aufgestellt:
+
+"{thesis}"
+
+Bewerte diese These kurz und knackig:
+- Nimm klar Stellung (dafür oder dagegen oder differenziert)
+- Max. 3 Sätze, direkt und provokativ
+- Extrahiere 3-5 Schlüsselbegriffe aus deiner Antwort
+- Formuliere ein kurzes "Aber..."-Gegenargument (1 Satz) — auch wenn du zustimmst
+- Schluss: ein kurzer englischer Bildprompt (1 Satz) der die Aussage visualisiert
+
+Antworte NUR als reines JSON:
+{{"title": "Kurze Reaktion (max 6 Wörter)", "content": "Deine Bewertung in 2-3 Sätzen.", "emoji": "Emoji", "keywords": ["Begriff1", "Begriff2", "Begriff3"], "aber": "Aber: ein prägnanter Gegenpunkt in einem Satz.", "img_prompt": "Short English image prompt for an illustration supporting your argument"}}"""
+                result = _sp2.run(
+                    [CLAUDE_BIN, "-p", "--output-format", "json", text_prompt],
+                    capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~")
+                )
+                if result.returncode != 0:
+                    self._send_json({"error": result.stderr[:200]}, status=500); return
+                raw = json.loads(result.stdout).get("result", "").strip()
+                if "```" in raw:
+                    raw = raw.split("```")[1]
+                    if raw.startswith("json"): raw = raw[4:]
+                raw = raw.strip()
+                idx = raw.find('{')
+                if idx < 0:
+                    self._send_json({"error": "Kein JSON"}, status=500); return
+                resp, _ = json.JSONDecoder().raw_decode(raw, idx)
+
+                # Generate illustration
+                img_b64_out = None
+                img_prompt = resp.get("img_prompt", "")
+                if img_prompt:
+                    try:
+                        full_img_prompt = f"{img_prompt}. Infographic style, clean modern illustration, dark background, minimal, impactful."
+                        img_data, _ = bildgen_generate(full_img_prompt, model="gemini-2.5-flash-image", aspect_ratio="1:1")
+                        if img_data:
+                            img_b64_out = img_data
+                    except Exception:
+                        pass
+
+                KIFORUM_FILE = Path(os.path.join(WORKSPACE, "data/kiforum.json"))
+                posts = json.loads(KIFORUM_FILE.read_text()) if KIFORUM_FILE.exists() else []
+                post_id = str(_uuid3.uuid4())
+
+                # Save image to disk
+                img_file = None
+                if img_b64_out:
+                    img_file = f"kif_img_{post_id}.png"
+                    (Path(WORKSPACE) / "data" / img_file).write_bytes(_b64.b64decode(img_b64_out))
+
+                post = {
+                    "id": post_id,
+                    "type": "bolla",
+                    "replyTo": thesis[:120],
+                    "timestamp": datetime.now().isoformat(),
+                    "title": resp.get("title", "Bollas Reaktion"),
+                    "content": resp.get("content", ""),
+                    "emoji": resp.get("emoji", "🐾"),
+                    "keywords": resp.get("keywords", []),
+                    "aber": resp.get("aber", ""),
+                    "img": img_file,
+                }
+                posts.insert(0, post)
+                KIFORUM_FILE.write_text(json.dumps(posts, ensure_ascii=False, indent=2))
+                self._send_json(post)
+
+            elif self.path == "/api/kiforum/add":
+                KIFORUM_FILE = Path(os.path.join(WORKSPACE, "data/kiforum.json"))
+                posts = json.loads(KIFORUM_FILE.read_text()) if KIFORUM_FILE.exists() else []
+                import uuid as _uuid
+                post = {
+                    "id": str(_uuid.uuid4()),
+                    "type": body.get("type", "user"),
+                    "timestamp": datetime.now().isoformat(),
+                    "title": body.get("title", ""),
+                    "content": body.get("content", ""),
+                    "emoji": body.get("emoji", "👤"),
+                }
+                posts.insert(0, post)
+                KIFORUM_FILE.write_text(json.dumps(posts, ensure_ascii=False, indent=2))
+                self._send_json(post)
+
+            elif self.path == "/api/kiforum/delete":
+                KIFORUM_FILE = Path(os.path.join(WORKSPACE, "data/kiforum.json"))
+                posts = json.loads(KIFORUM_FILE.read_text()) if KIFORUM_FILE.exists() else []
+                post_id = body.get("id", "")
+                posts = [p for p in posts if p.get("id") != post_id]
+                KIFORUM_FILE.write_text(json.dumps(posts, ensure_ascii=False, indent=2))
+                self._send_json({"ok": True})
+
+            elif self.path == "/api/kiforum/generate":
+                import subprocess as _sp, uuid as _uuid2
+                today = datetime.now().strftime("%d.%m.%Y")
+                KIFORUM_FILE = Path(os.path.join(WORKSPACE, "data/kiforum.json"))
+                posts = json.loads(KIFORUM_FILE.read_text()) if KIFORUM_FILE.exists() else []
+                existing_titles = [p["title"] for p in posts if p.get("title")][:15]
+                avoid_block = ""
+                if existing_titles:
+                    titles_str = "\n".join(f'- {t}' for t in existing_titles)
+                    avoid_block = f"\nBereits behandelte Themen (NICHT wiederholen, auch inhaltlich nicht):\n{titles_str}\n"
+                prompt = f"""Du bist Bolla, Chris Mandels KI-Assistent. Heute ist {today}.
+Generiere ein spannendes, NEUES KI-Diskussionsthema für ein tägliches Forum.
+Das Thema soll für einen technik-affinen, nicht-Entwickler interessant sein.
+Provokativ, meinungsstark, zum Diskutieren einladend. Max. 3 Sätze Inhalt.
+Schluss: ein kurzer englischer Bildprompt (1 Satz) der das Thema visualisiert.
+{avoid_block}
+Antworte NUR als reines JSON:
+{{
+  "title": "Kurzer prägnanter Titel (max 8 Wörter)",
+  "content": "2-3 spannende Sätze zum Thema. Regt zum Nachdenken an.",
+  "emoji": "Ein passendes Emoji",
+  "img_prompt": "Short English image prompt for a striking illustration of this topic"
+}}"""
+                claude_bin = CLAUDE_BIN
+                result = _sp.run(
+                    [claude_bin, "-p", "--output-format", "json", prompt],
+                    capture_output=True, text=True, timeout=60,
+                    cwd=os.path.expanduser("~")
+                )
+                if result.returncode != 0:
+                    self._send_json({"error": result.stderr[:200]}, status=500); return
+                raw = json.loads(result.stdout).get("result", "").strip()
+                if "```" in raw:
+                    raw = raw.split("```")[1]
+                    if raw.startswith("json"): raw = raw[4:]
+                raw = raw.strip()
+                idx = raw.find('{')
+                if idx < 0:
+                    self._send_json({"error": "Kein JSON"}, status=500); return
+                topic, _ = json.JSONDecoder().raw_decode(raw, idx)
+                # Generate illustration
+                import base64 as _b64_gen
+                gen_img_file = None
+                gen_img_prompt = topic.get("img_prompt", "")
+                if gen_img_prompt:
+                    try:
+                        full_gen_prompt = f"{gen_img_prompt}. Infographic style, clean modern illustration, dark background, minimal, impactful."
+                        gen_img_data, _ = bildgen_generate(full_gen_prompt, model="gemini-2.5-flash-image", aspect_ratio="1:1")
+                        if gen_img_data:
+                            gen_img_file = f"kif_img_{_uuid2.uuid4()}.png"
+                            (Path(WORKSPACE) / "data" / gen_img_file).write_bytes(_b64_gen.b64decode(gen_img_data))
+                    except Exception:
+                        pass
+                post_id_gen = str(_uuid2.uuid4())
+                post = {
+                    "id": post_id_gen,
+                    "type": "bolla",
+                    "timestamp": datetime.now().isoformat(),
+                    "title": topic.get("title", "Tagesthema"),
+                    "content": topic.get("content", ""),
+                    "emoji": topic.get("emoji", "🐾"),
+                    "img": gen_img_file,
+                }
+                posts.insert(0, post)
+                KIFORUM_FILE.write_text(json.dumps(posts, ensure_ascii=False, indent=2))
+                self._send_json(post)
+
             else:
                 self._send_json({"error": "not found"}, status=404)
         except Exception as e:

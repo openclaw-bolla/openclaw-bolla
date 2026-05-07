@@ -3,1231 +3,484 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Control — NEXUS CORE</title>
+<title>Mission Control — Bolla</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap');
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --neon-cyan: #00f0ff;
-    --neon-purple: #7c3aed;
-    --neon-green: #00ff88;
-    --neon-orange: #ff6b35;
-    --neon-red: #ff2d55;
-    --bg-void: #020408;
-    --bg-dark: #070d14;
-    --bg-card: rgba(0, 240, 255, 0.04);
-    --bg-card-hover: rgba(0, 240, 255, 0.08);
-    --border-dim: rgba(0, 240, 255, 0.15);
-    --border-bright: rgba(0, 240, 255, 0.5);
-    --text-primary: #e0f8ff;
-    --text-secondary: rgba(200, 240, 255, 0.5);
-    --text-dim: rgba(200, 240, 255, 0.25);
-    --font-mono: 'Share Tech Mono', 'Courier New', monospace;
-    --font-ui: 'Rajdhani', 'Segoe UI', sans-serif;
-  }
-
-  html, body {
-    height: 100%;
-    background: var(--bg-void);
-    color: var(--text-primary);
-    font-family: var(--font-ui);
-    overflow: hidden;
-  }
-
-  /* ── GRID LAYOUT ── */
-  .shell {
-    display: grid;
-    grid-template-columns: 220px 1fr;
-    grid-template-rows: 56px 1fr;
-    height: 100vh;
-    background:
-      linear-gradient(180deg, rgba(0,240,255,0.03) 0%, transparent 60%),
-      var(--bg-void);
-  }
-
-  /* ── SCANLINE OVERLAY ── */
-  .shell::before {
-    content: '';
-    position: fixed; inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 240, 255, 0.012) 2px,
-      rgba(0, 240, 255, 0.012) 4px
-    );
-    pointer-events: none;
-    z-index: 9999;
-  }
-
-  /* ── GRID BACKGROUND ── */
-  .shell::after {
-    content: '';
-    position: fixed; inset: 0;
-    background-image:
-      linear-gradient(rgba(0,240,255,0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,240,255,0.04) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* ── TOPBAR ── */
-  .topbar {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 24px 0 0;
-    background: rgba(2, 4, 8, 0.95);
-    border-bottom: 1px solid var(--border-dim);
-    position: relative;
-    z-index: 100;
-    backdrop-filter: blur(20px);
-  }
-
-  .topbar::after {
-    content: '';
-    position: absolute;
-    bottom: -1px; left: 220px; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, var(--neon-cyan), transparent 60%);
-    box-shadow: 0 0 8px var(--neon-cyan);
-  }
-
-  .topbar-logo {
-    width: 220px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 0 20px;
-    border-right: 1px solid var(--border-dim);
-    height: 100%;
-    background: rgba(0,240,255,0.03);
-  }
-
-  .logo-mark {
-    width: 28px; height: 28px;
-    border: 2px solid var(--neon-cyan);
-    border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px;
-    box-shadow: 0 0 12px rgba(0,240,255,0.4), inset 0 0 8px rgba(0,240,255,0.1);
-    animation: pulse-logo 3s ease-in-out infinite;
-  }
-
-  @keyframes pulse-logo {
-    0%, 100% { box-shadow: 0 0 12px rgba(0,240,255,0.4), inset 0 0 8px rgba(0,240,255,0.1); }
-    50% { box-shadow: 0 0 20px rgba(0,240,255,0.7), inset 0 0 12px rgba(0,240,255,0.2); }
-  }
-
-  .logo-text {
-    font-family: var(--font-mono);
-    font-size: 13px;
-    letter-spacing: 3px;
-    color: var(--neon-cyan);
-    text-shadow: 0 0 10px rgba(0,240,255,0.6);
-  }
-
-  .topbar-center {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding-left: 24px;
-    flex: 1;
-  }
-
-  .page-title {
-    font-family: var(--font-ui);
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: var(--text-primary);
-  }
-
-  .page-title-bracket {
-    color: var(--neon-cyan);
-    text-shadow: 0 0 8px var(--neon-cyan);
-    font-weight: 300;
-  }
-
-  .status-pill {
-    background: rgba(0,255,136,0.1);
-    border: 1px solid rgba(0,255,136,0.3);
-    color: var(--neon-green);
-    font-family: var(--font-mono);
-    font-size: 9px;
-    letter-spacing: 2px;
-    padding: 2px 8px;
-    border-radius: 2px;
-    margin-left: 12px;
-    animation: blink-status 2s step-end infinite;
-  }
-
-  @keyframes blink-status {
-    0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
-  }
-
-  .topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
-
-  .topbar-info {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--text-secondary);
-    letter-spacing: 1px;
-  }
-
-  .topbar-time {
-    font-family: var(--font-mono);
-    font-size: 22px;
-    font-weight: 400;
-    color: var(--neon-cyan);
-    text-shadow: 0 0 16px rgba(0,240,255,0.7);
-    letter-spacing: 3px;
-  }
-
-  .topbar-avatar {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    border: 1.5px solid var(--neon-cyan);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px;
-    background: rgba(0,240,255,0.1);
-    box-shadow: 0 0 10px rgba(0,240,255,0.3);
-    cursor: pointer;
-  }
-
-  /* ── SIDEBAR ── */
-  .sidebar {
-    background: rgba(2, 4, 8, 0.97);
-    border-right: 1px solid var(--border-dim);
-    padding: 20px 0;
-    position: relative;
-    z-index: 50;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .sidebar::before {
-    content: '';
-    position: absolute;
-    top: 0; right: -1px; bottom: 0;
-    width: 1px;
-    background: linear-gradient(180deg, var(--neon-cyan) 0%, transparent 100%);
-    box-shadow: 1px 0 8px rgba(0,240,255,0.3);
-  }
-
-  .nav-section-label {
-    font-family: var(--font-mono);
-    font-size: 8px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    padding: 12px 20px 6px;
-    text-transform: uppercase;
-  }
-
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 20px;
-    cursor: pointer;
-    position: relative;
-    transition: all 0.2s;
-    font-size: 14px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-  }
-
-  .nav-item:hover {
-    color: var(--text-primary);
-    background: rgba(0,240,255,0.05);
-  }
-
-  .nav-item.active {
-    color: var(--neon-cyan);
-    background: rgba(0,240,255,0.08);
-    text-shadow: 0 0 8px rgba(0,240,255,0.5);
-  }
-
-  .nav-item.active::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    background: var(--neon-cyan);
-    box-shadow: 2px 0 12px rgba(0,240,255,0.7);
-  }
-
-  .nav-item.active .nav-icon {
-    color: var(--neon-cyan);
-    text-shadow: 0 0 10px rgba(0,240,255,0.8);
-  }
-
-  .nav-icon {
-    font-size: 16px;
-    width: 20px;
-    text-align: center;
-    flex-shrink: 0;
-  }
-
-  .nav-badge {
-    margin-left: auto;
-    background: var(--neon-red);
-    color: white;
-    font-family: var(--font-mono);
-    font-size: 9px;
-    padding: 1px 6px;
-    border-radius: 10px;
-    box-shadow: 0 0 8px rgba(255,45,85,0.6);
-  }
-
-  .sidebar-footer {
-    margin-top: auto;
-    padding: 16px 20px;
-    border-top: 1px solid var(--border-dim);
-  }
-
-  .sys-indicator {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-family: var(--font-mono);
-    font-size: 9px;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-  }
-
-  .sys-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--neon-green);
-    box-shadow: 0 0 6px var(--neon-green);
-    animation: blink-status 1.5s ease-in-out infinite;
-  }
-
-  /* ── MAIN CONTENT ── */
-  .main {
-    padding: 24px;
-    overflow-y: auto;
-    position: relative;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  /* ── WELCOME BAND ── */
-  .welcome-band {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .welcome-text {
-    font-size: 13px;
-    color: var(--text-secondary);
-    font-family: var(--font-mono);
-    letter-spacing: 1px;
-  }
-
-  .welcome-text strong {
-    color: var(--neon-cyan);
-    text-shadow: 0 0 8px rgba(0,240,255,0.4);
-  }
-
-  .date-display {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-    border: 1px solid var(--border-dim);
-    padding: 4px 12px;
-    background: rgba(0,240,255,0.03);
-  }
-
-  /* ── WIDGET GRID ── */
-  .widget-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-  }
-
-  .widget-grid-2col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-
-  .widget-grid-3col {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
-    gap: 16px;
-  }
-
-  /* ── CARD BASE ── */
-  .card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-dim);
-    border-radius: 4px;
-    padding: 18px;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.25s;
-    backdrop-filter: blur(10px);
-  }
-
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
-    opacity: 0.4;
-  }
-
-  .card:hover {
-    background: var(--bg-card-hover);
-    border-color: var(--border-bright);
-  }
-
-  .card:hover::before { opacity: 0.8; }
-
-  .card-corner {
-    position: absolute;
-    bottom: 8px; right: 8px;
-    width: 16px; height: 16px;
-    border-right: 1px solid var(--border-bright);
-    border-bottom: 1px solid var(--border-bright);
-    opacity: 0.5;
-  }
-
-  .card-label {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .card-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border-dim);
-  }
-
-  /* ── STAT CARD ── */
-  .stat-value {
-    font-family: var(--font-mono);
-    font-size: 42px;
-    font-weight: 400;
-    line-height: 1;
-    letter-spacing: -1px;
-  }
-
-  .stat-unit {
-    font-size: 18px;
-    opacity: 0.7;
-  }
-
-  .stat-sub {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text-secondary);
-    margin-top: 4px;
-    letter-spacing: 1px;
-  }
-
-  /* ── GAUGE BAR ── */
-  .gauge-bar {
-    height: 4px;
-    background: rgba(255,255,255,0.08);
-    border-radius: 2px;
-    margin-top: 14px;
-    overflow: hidden;
-  }
-
-  .gauge-fill {
-    height: 100%;
-    border-radius: 2px;
-    position: relative;
-  }
-
-  .gauge-fill::after {
-    content: '';
-    position: absolute;
-    right: 0; top: -2px;
-    width: 2px; height: 8px;
-    border-radius: 1px;
-    background: inherit;
-    filter: brightness(2);
-    box-shadow: 0 0 6px currentColor;
-  }
-
-  /* Colors per stat type */
-  .color-cyan  { color: var(--neon-cyan); }
-  .color-green { color: var(--neon-green); }
-  .color-purple{ color: var(--neon-purple); }
-  .color-orange{ color: var(--neon-orange); }
-  .color-red   { color: var(--neon-red); }
-
-  .fill-cyan   { background: var(--neon-cyan); box-shadow: 0 0 8px rgba(0,240,255,0.5); }
-  .fill-green  { background: var(--neon-green); box-shadow: 0 0 8px rgba(0,255,136,0.5); }
-  .fill-purple { background: var(--neon-purple); box-shadow: 0 0 8px rgba(124,58,237,0.5); }
-  .fill-orange { background: var(--neon-orange); box-shadow: 0 0 8px rgba(255,107,53,0.5); }
-
-  /* ── MAIL CARD ── */
-  .mail-count-big {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-  }
-
-  .mail-number {
-    font-family: var(--font-mono);
-    font-size: 52px;
-    color: var(--neon-cyan);
-    text-shadow: 0 0 20px rgba(0,240,255,0.6);
-    line-height: 1;
-  }
-
-  .mail-label-inline {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--text-secondary);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-
-  .mail-list {
-    margin-top: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .mail-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    background: rgba(0,240,255,0.04);
-    border: 1px solid rgba(0,240,255,0.08);
-    border-radius: 2px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .mail-item:hover {
-    background: rgba(0,240,255,0.08);
-    border-color: rgba(0,240,255,0.2);
-  }
-
-  .mail-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--neon-cyan);
-    box-shadow: 0 0 6px var(--neon-cyan);
-    flex-shrink: 0;
-  }
-
-  .mail-from {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-primary);
-    letter-spacing: 1px;
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .mail-time {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-    flex-shrink: 0;
-  }
-
-  /* ── WEATHER CARD ── */
-  .weather-main {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .weather-icon {
-    font-size: 48px;
-    filter: drop-shadow(0 0 8px rgba(0,240,255,0.4));
-  }
-
-  .weather-temp {
-    font-family: var(--font-mono);
-    font-size: 46px;
-    color: var(--neon-cyan);
-    text-shadow: 0 0 16px rgba(0,240,255,0.5);
-    line-height: 1;
-  }
-
-  .weather-temp sup {
-    font-size: 20px;
-    opacity: 0.7;
-  }
-
-  .weather-meta {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text-secondary);
-    letter-spacing: 1px;
-    margin-top: 4px;
-  }
-
-  .weather-details {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 14px;
-  }
-
-  .weather-detail {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text-secondary);
-  }
-
-  .weather-detail span:first-child {
-    color: var(--neon-cyan);
-    opacity: 0.7;
-  }
-
-  /* ── BOLLA CARD ── */
-  .bolla-status {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    background: rgba(124,58,237,0.1);
-    border: 1px solid rgba(124,58,237,0.3);
-    border-radius: 2px;
-    margin-bottom: 12px;
-  }
-
-  .bolla-avatar {
-    font-size: 24px;
-    filter: drop-shadow(0 0 6px rgba(124,58,237,0.6));
-  }
-
-  .bolla-info { flex: 1; }
-
-  .bolla-name {
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    color: var(--neon-purple);
-    text-shadow: 0 0 8px rgba(124,58,237,0.5);
-  }
-
-  .bolla-tagline {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-    margin-top: 2px;
-  }
-
-  .bolla-online-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--neon-green);
-    box-shadow: 0 0 8px var(--neon-green);
-    animation: blink-status 2s ease-in-out infinite;
-  }
-
-  .bolla-quick-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .bolla-btn {
-    flex: 1;
-    padding: 8px;
-    background: rgba(124,58,237,0.08);
-    border: 1px solid rgba(124,58,237,0.25);
-    color: rgba(200,180,255,0.7);
-    font-family: var(--font-mono);
-    font-size: 9px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.15s;
-    border-radius: 2px;
-    text-align: center;
-  }
-
-  .bolla-btn:hover {
-    background: rgba(124,58,237,0.18);
-    border-color: rgba(124,58,237,0.5);
-    color: rgba(200,180,255,1);
-  }
-
-  /* ── SYSTEM CARD ── */
-  .sys-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border-dim);
-  }
-
-  .sys-row:last-child { border-bottom: none; }
-
-  .sys-row-label {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 1px;
-    color: var(--text-dim);
-    width: 60px;
-    flex-shrink: 0;
-  }
-
-  .sys-row-bar {
-    flex: 1;
-    height: 3px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .sys-row-fill {
-    height: 100%;
-    border-radius: 2px;
-  }
-
-  .sys-row-val {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    width: 36px;
-    text-align: right;
-    flex-shrink: 0;
-  }
-
-  /* ── AGENDA CARD ── */
-  .agenda-item {
-    display: flex;
-    gap: 12px;
-    padding: 9px 0;
-    border-bottom: 1px solid var(--border-dim);
-    align-items: flex-start;
-  }
-
-  .agenda-item:last-child { border-bottom: none; }
-
-  .agenda-time {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--neon-cyan);
-    letter-spacing: 1px;
-    width: 38px;
-    flex-shrink: 0;
-    padding-top: 2px;
-  }
-
-  .agenda-bar {
-    width: 2px;
-    background: var(--border-dim);
-    border-radius: 1px;
-    flex-shrink: 0;
-    align-self: stretch;
-    min-height: 12px;
-  }
-
-  .agenda-bar.active {
-    background: var(--neon-cyan);
-    box-shadow: 0 0 6px var(--neon-cyan);
-  }
-
-  .agenda-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-primary);
-    letter-spacing: 1px;
-  }
-
-  .agenda-loc {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    color: var(--text-dim);
-    margin-top: 2px;
-    letter-spacing: 1px;
-  }
-
-  /* ── MINI TICKER ── */
-  .ticker-band {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    background: rgba(0,240,255,0.03);
-    border: 1px solid var(--border-dim);
-    border-radius: 4px;
-    overflow: hidden;
-    height: 30px;
-  }
-
-  .ticker-label {
-    background: rgba(0,240,255,0.1);
-    border-right: 1px solid var(--border-dim);
-    padding: 0 12px;
-    font-family: var(--font-mono);
-    font-size: 8px;
-    letter-spacing: 3px;
-    color: var(--neon-cyan);
-    height: 100%;
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-  }
-
-  .ticker-content {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-
-  .ticker-scroll {
-    display: flex;
-    gap: 48px;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text-secondary);
-    letter-spacing: 1px;
-    animation: ticker 25s linear infinite;
-    white-space: nowrap;
-    padding-left: 16px;
-  }
-
-  @keyframes ticker {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-
-  .ticker-item { flex-shrink: 0; }
-  .ticker-item .t-up { color: var(--neon-green); }
-  .ticker-item .t-down { color: var(--neon-red); }
-
-  /* ── DECORATIVE ── */
-  .corner-tl, .corner-br {
-    position: absolute;
-    width: 10px; height: 10px;
-    pointer-events: none;
-  }
-
-  .corner-tl {
-    top: 0; left: 0;
-    border-top: 1px solid var(--neon-cyan);
-    border-left: 1px solid var(--neon-cyan);
-  }
-
-  .corner-br {
-    bottom: 0; right: 0;
-    border-bottom: 1px solid var(--neon-cyan);
-    border-right: 1px solid var(--neon-cyan);
-  }
-
-  /* ── DISK DONUT ── */
-  .donut-wrap {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-top: 6px;
-  }
-
-  .donut-svg { flex-shrink: 0; }
-
-  .donut-legend {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    flex: 1;
-  }
-
-  .donut-leg-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-family: var(--font-mono);
-    font-size: 9px;
-    color: var(--text-secondary);
-  }
-
-  .donut-leg-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .donut-leg-val {
-    margin-left: auto;
-    color: var(--text-primary);
-  }
-
-  /* ── SCROLLBAR ── */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe Print', 'Bradley Hand ITC', cursive, sans-serif;
+  background: #f7f0e2;
+  color: #2d1f0e;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 215px;
+  flex-shrink: 0;
+  background: #ede2cd;
+  border-right: 1.5px solid #cbb98c;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-image: repeating-linear-gradient(
+    transparent 0, transparent 27px,
+    rgba(170,140,90,0.18) 27px, rgba(170,140,90,0.18) 28px
+  );
+}
+
+.sidebar::before {
+  content: '';
+  position: absolute;
+  left: 38px; top: 0; bottom: 0;
+  width: 1.5px;
+  background: rgba(200,55,55,0.22);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sidebar-holes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0 8px;
+  gap: 26px;
+  position: relative;
+  z-index: 1;
+}
+
+.hole {
+  width: 16px; height: 16px;
+  background: #f0e8d4;
+  border-radius: 50%;
+  border: 1px solid #c0a878;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.18), 0 0 0 2px rgba(200,170,110,0.15);
+}
+
+.sidebar-brand {
+  padding: 8px 14px 11px 44px;
+  border-bottom: 1.5px dashed #cbb98c;
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar-brand h2 {
+  font-size: 16px;
+  color: #5a3018;
+  font-weight: bold;
+  letter-spacing: 0.3px;
+}
+
+.sidebar-brand p {
+  font-size: 9px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: #9a7a55;
+  margin-top: 2px;
+}
+
+nav {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  padding: 4px 0;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px 10px 44px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #5a3018;
+  border-left: 3px solid transparent;
+  position: relative;
+  transition: background 0.1s;
+}
+
+.nav-item:hover {
+  background: rgba(160,110,50,0.1);
+}
+
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(160,60,20,0.14) 0%, transparent 100%);
+  border-left: 3px solid #b54520;
+  color: #8a2800;
+  font-weight: bold;
+}
+
+.nav-item.active::before {
+  content: '→';
+  position: absolute;
+  left: 24px;
+  color: #b54520;
+  font-size: 11px;
+}
+
+.nav-icon { font-size: 14px; width: 16px; }
+
+.sidebar-footer {
+  padding: 11px 12px 11px 44px;
+  font-size: 10px;
+  color: #9a7a55;
+  border-top: 1px dashed #cbb98c;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── MAIN ── */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-image: repeating-linear-gradient(
+    transparent 0, transparent 27px,
+    rgba(170,140,90,0.1) 27px, rgba(170,140,90,0.1) 28px
+  );
+  background-position: 0 60px;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  height: 60px;
+  flex-shrink: 0;
+  background: #ede2cd;
+  border-bottom: 2px solid #cbb98c;
+  display: flex;
+  align-items: center;
+  padding: 0 26px;
+  gap: 14px;
+  box-shadow: 0 2px 5px rgba(130,90,30,0.1);
+}
+
+.topbar-title {
+  flex: 1;
+  font-size: 19px;
+  color: #5a3018;
+  font-weight: bold;
+}
+
+.topbar-title small {
+  font-size: 12px;
+  font-weight: normal;
+  color: #9a7a55;
+  margin-left: 8px;
+}
+
+.topbar-date {
+  text-align: right;
+  font-size: 10px;
+  color: #9a7a55;
+  line-height: 1.6;
+}
+
+.topbar-time {
+  font-size: 25px;
+  font-weight: bold;
+  color: #5a3018;
+  background: #fffdf5;
+  border: 1.5px solid #cbb98c;
+  border-radius: 5px 7px 4px 6px;
+  padding: 4px 11px;
+  box-shadow: 2px 2px 0 #cbb98c;
+  letter-spacing: 2px;
+}
+
+/* ── CONTENT ── */
+.content {
+  flex: 1;
+  padding: 22px 26px;
+  overflow-y: auto;
+}
+
+.content::-webkit-scrollbar { width: 5px; }
+.content::-webkit-scrollbar-thumb { background: #cbb98c; border-radius: 3px; }
+
+.section-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  color: #9a7a55;
+  margin-bottom: 14px;
+  padding-bottom: 5px;
+  border-bottom: 1px dashed #cbb98c;
+}
+
+/* ── WIDGET GRID ── */
+.widget-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+/* ── CARDS ── */
+.card {
+  background: #fffdf5;
+  border: 1.5px solid #cbb98c;
+  border-radius: 3px 7px 4px 6px;
+  padding: 16px 15px 13px;
+  position: relative;
+  box-shadow: 3px 3px 0 #d8c9a0, 0 1px 6px rgba(130,90,30,0.07);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.card:hover {
+  transform: translate(-1px, -2px);
+  box-shadow: 4px 5px 0 #d8c9a0, 0 3px 10px rgba(130,90,30,0.1);
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; right: 0;
+  border-style: solid;
+  border-width: 0 0 12px 12px;
+  border-color: transparent transparent #e4d4b4 transparent;
+  filter: drop-shadow(-1px -1px 0 #cbb98c);
+}
+
+.card-icon { font-size: 20px; margin-bottom: 7px; display: block; }
+.card-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: #9a7a55; margin-bottom: 4px; }
+.card-value { font-size: 36px; font-weight: bold; line-height: 1; color: #3d2010; }
+.card-sub { font-size: 10px; color: #9a7a55; margin-top: 4px; }
+
+.bar-wrap {
+  margin-top: 9px;
+  height: 6px;
+  background: #e8d8c0;
+  border-radius: 3px;
+  border: 1px solid #cbb98c;
+  overflow: hidden;
+}
+.bar-fill { height: 100%; border-radius: 3px; }
+
+.card.c-mail {
+  background: #f4fbf0;
+  border-color: #98c890;
+  box-shadow: 3px 3px 0 #c4e0b8, 0 1px 6px rgba(80,140,60,0.07);
+}
+.card.c-mail::after { border-bottom-color: #d0eccc; }
+.card.c-mail .card-value { color: #2a6820; font-size: 34px; }
+.card.c-mail .bar-wrap { background: #d4ecc8; border-color: #98c890; }
+
+.card.c-weather {
+  background: #f0f4fc;
+  border-color: #98b8e0;
+  box-shadow: 3px 3px 0 #c0d4f0, 0 1px 6px rgba(60,100,180,0.07);
+}
+.card.c-weather::after { border-bottom-color: #ccdaf4; }
+.card.c-weather .card-value { color: #1a4890; font-size: 34px; }
+
+.mail-list { margin-top: 7px; font-size: 10px; color: #3a6a32; }
+.mail-list div { padding: 2px 0; border-bottom: 1px dashed rgba(80,140,60,0.25); }
+.mail-list div:last-child { border: none; }
+
+.weather-detail { margin-top: 7px; font-size: 10px; color: #2a4888; line-height: 1.75; }
+
+/* ── STICKY NOTES ── */
+.notes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 22px;
+  padding-top: 10px;
+}
+
+.sticky {
+  padding: 13px 13px 16px;
+  min-height: 105px;
+  border-radius: 1px;
+  font-size: 12px;
+  line-height: 1.65;
+  position: relative;
+  box-shadow: 2px 4px 8px rgba(0,0,0,0.13), inset 0 22px 0 rgba(0,0,0,0.055);
+}
+
+.sticky::before {
+  content: '📌';
+  position: absolute;
+  top: -10px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+}
+
+.sticky.yellow { background: #fff59d; color: #5a4015; border: 1px solid #e8d860; }
+.sticky.blue   { background: #ddeeff; color: #1a3870; border: 1px solid #90b8e8; }
+.sticky.green  { background: #ddf5dd; color: #1a5820; border: 1px solid #88c888; }
+.sticky.pink   { background: #ffe0e0; color: #681818; border: 1px solid #e89898; }
+
+.sticky-head {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: bold;
+  margin-bottom: 7px;
+  opacity: 0.6;
+}
+
+.done { text-decoration: line-through; opacity: 0.4; }
 </style>
 </head>
 <body>
 
-<div class="shell">
+<svg style="position:absolute;width:0;height:0;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="sketchy">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="5" seed="7"/>
+      <feDisplacementMap in="SourceGraphic" scale="1.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+</svg>
 
-  <!-- ╔══════════════════════╗ -->
-  <!-- ║       TOPBAR         ║ -->
-  <!-- ╚══════════════════════╝ -->
-  <header class="topbar">
-    <div class="topbar-logo">
-      <div class="logo-mark">⬡</div>
-      <div class="logo-text">NEXUS</div>
-    </div>
+<aside class="sidebar">
+  <div class="sidebar-holes">
+    <div class="hole"></div>
+    <div class="hole"></div>
+    <div class="hole"></div>
+  </div>
 
-    <div class="topbar-center">
-      <span class="page-title">
-        <span class="page-title-bracket">[ </span>DASHBOARD<span class="page-title-bracket"> ]</span>
-      </span>
-      <span class="status-pill">● ONLINE</span>
-    </div>
+  <div class="sidebar-brand">
+    <h2>🐾 Bolla</h2>
+    <p>Mission Control</p>
+  </div>
 
-    <div class="topbar-right">
-      <div class="topbar-info">WSL2 · UBUNTU · NODE-01</div>
-      <div class="topbar-time">20:14</div>
-      <div class="topbar-avatar">🐾</div>
-    </div>
-  </header>
-
-  <!-- ╔══════════════════════╗ -->
-  <!-- ║       SIDEBAR        ║ -->
-  <!-- ╚══════════════════════╝ -->
-  <nav class="sidebar">
-
-    <div class="nav-section-label">NAVIGATION</div>
-
+  <nav>
     <div class="nav-item active">
-      <span class="nav-icon">◈</span>
-      Dashboard
+      <span class="nav-icon">🏠</span>Dashboard
     </div>
-
     <div class="nav-item">
-      <span class="nav-icon">🐾</span>
-      Bolla
+      <span class="nav-icon">🐾</span>Bolla
     </div>
-
-    <div class="nav-section-label">ARBEIT</div>
-
     <div class="nav-item">
-      <span class="nav-icon">◉</span>
-      Schule
+      <span class="nav-icon">🏫</span>Schule
     </div>
-
     <div class="nav-item">
-      <span class="nav-icon">▦</span>
-      Kalender
+      <span class="nav-icon">📅</span>Kalender
     </div>
-
     <div class="nav-item">
-      <span class="nav-icon">✉</span>
-      E-Mail
-      <span class="nav-badge">3</span>
+      <span class="nav-icon">✉️</span>E-Mail
     </div>
-
-    <div class="nav-section-label">MONITORING</div>
-
     <div class="nav-item">
-      <span class="nav-icon">◌</span>
-      Wetter
+      <span class="nav-icon">⛅</span>Wetter
     </div>
-
     <div class="nav-item">
-      <span class="nav-icon">⬡</span>
-      System Info
-    </div>
-
-    <div class="sidebar-footer">
-      <div class="sys-indicator">
-        <div class="sys-dot"></div>
-        ALLE SYSTEME NOMINAL
-      </div>
+      <span class="nav-icon">💻</span>System Info
     </div>
   </nav>
 
-  <!-- ╔══════════════════════╗ -->
-  <!-- ║     MAIN CONTENT     ║ -->
-  <!-- ╚══════════════════════╝ -->
-  <main class="main">
+  <div class="sidebar-footer">Mi, 7. Mai 2026</div>
+</aside>
 
-    <!-- Welcome Band -->
-    <div class="welcome-band">
-      <div class="welcome-text">
-        Guten Abend, <strong>Chris</strong> — Dienstag, Session aktiv.
-      </div>
-      <div class="date-display">2026-05-06 // KW 19</div>
+<div class="main">
+
+  <header class="topbar">
+    <div class="topbar-title">
+      Übersicht
+      <small>— Guten Abend, Chris 👋</small>
     </div>
+    <div class="topbar-date">Mittwoch<br>7. Mai 2026</div>
+    <div class="topbar-time">20:14</div>
+  </header>
 
-    <!-- Ticker -->
-    <div class="ticker-band">
-      <div class="ticker-label">FEED</div>
-      <div class="ticker-content">
-        <div class="ticker-scroll">
-          <span class="ticker-item">UPTIME: 14h 32m</span>
-          <span class="ticker-item">LAST BACKUP: 05-05 23:41</span>
-          <span class="ticker-item">NÄCHSTE STUNDE: Mi 08:00 · Klasse 7b</span>
-          <span class="ticker-item">OUTLOOK: 3 UNGELESEN</span>
-          <span class="ticker-item">FOTO-ANALYSE: 847 BILDER INDEXIERT</span>
-          <span class="ticker-item">GIT: 2 UNCOMMITTED CHANGES</span>
-          <span class="ticker-item">CLOUDFLARE TUNNEL: AKTIV</span>
-          <span class="ticker-item">UPTIME: 14h 32m</span>
-          <span class="ticker-item">LAST BACKUP: 05-05 23:41</span>
-          <span class="ticker-item">NÄCHSTE STUNDE: Mi 08:00 · Klasse 7b</span>
-          <span class="ticker-item">OUTLOOK: 3 UNGELESEN</span>
-          <span class="ticker-item">FOTO-ANALYSE: 847 BILDER INDEXIERT</span>
-          <span class="ticker-item">GIT: 2 UNCOMMITTED CHANGES</span>
-          <span class="ticker-item">CLOUDFLARE TUNNEL: AKTIV</span>
-        </div>
-      </div>
-    </div>
+  <div class="content">
 
-    <!-- Row 1: 4 Stat Cards -->
+    <div class="section-label">System &amp; Status</div>
+
     <div class="widget-grid">
 
-      <!-- RAM -->
       <div class="card">
-        <div class="corner-tl"></div>
-        <div class="card-label">RAM</div>
-        <div class="stat-value color-cyan">34<span class="stat-unit">%</span></div>
-        <div class="stat-sub">5.4 GB / 16 GB VERWENDET</div>
-        <div class="gauge-bar">
-          <div class="gauge-fill fill-cyan" style="width:34%"></div>
+        <span class="card-icon">🧠</span>
+        <div class="card-label">Arbeitsspeicher</div>
+        <div class="card-value">34%</div>
+        <div class="card-sub">5,4 / 16 GB belegt</div>
+        <div class="bar-wrap">
+          <div class="bar-fill" style="width:34%;background:linear-gradient(90deg,#b57030,#c88840)"></div>
         </div>
-        <div class="card-corner"></div>
       </div>
 
-      <!-- CPU -->
       <div class="card">
-        <div class="corner-tl"></div>
-        <div class="card-label">CPU</div>
-        <div class="stat-value color-green">12<span class="stat-unit">%</span></div>
-        <div class="stat-sub">INTEL i7 · 8 KERNE · 42°C</div>
-        <div class="gauge-bar">
-          <div class="gauge-fill fill-green" style="width:12%"></div>
+        <span class="card-icon">⚙️</span>
+        <div class="card-label">CPU-Auslastung</div>
+        <div class="card-value">12%</div>
+        <div class="card-sub">8 Kerne · Intel i7</div>
+        <div class="bar-wrap">
+          <div class="bar-fill" style="width:12%;background:linear-gradient(90deg,#906030,#a87840)"></div>
         </div>
-        <div class="card-corner"></div>
       </div>
 
-      <!-- E-Mail -->
-      <div class="card">
-        <div class="corner-tl"></div>
-        <div class="card-label">E-MAIL</div>
-        <div class="mail-count-big">
-          <div class="mail-number">3</div>
-          <div class="mail-label-inline">NEUE<br>NACHR.</div>
-        </div>
-        <div class="stat-sub">OUTLOOK · OUTLOOK.DE</div>
-        <div class="gauge-bar">
-          <div class="gauge-fill fill-cyan" style="width:100%; opacity:0.3"></div>
-        </div>
-        <div class="card-corner"></div>
-      </div>
-
-      <!-- Wetter -->
-      <div class="card">
-        <div class="corner-tl"></div>
-        <div class="card-label">WETTER · HAMBURG</div>
-        <div class="weather-main">
-          <div class="weather-icon">⛅</div>
-          <div>
-            <div class="weather-temp">18<sup>°C</sup></div>
-            <div class="weather-meta">BEWÖLKT · LEICHTER WIND</div>
-          </div>
-        </div>
-        <div class="card-corner"></div>
-      </div>
-
-    </div>
-
-    <!-- Row 2: 3-col layout -->
-    <div class="widget-grid-3col">
-
-      <!-- Mail Detail -->
-      <div class="card">
-        <div class="corner-tl"></div>
-        <div class="card-label">POSTEINGANG · NEU</div>
+      <div class="card c-mail">
+        <span class="card-icon">📬</span>
+        <div class="card-label">E-Mail</div>
+        <div class="card-value">3 <span style="font-size:13px;color:#c84820;vertical-align:middle;">neu</span></div>
         <div class="mail-list">
-          <div class="mail-item">
-            <div class="mail-dot"></div>
-            <div class="mail-from">Schulleitung</div>
-            <div style="flex:1; font-size:10px; color:var(--text-dim); padding: 0 6px; font-family:var(--font-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Lehrerkonferenz Mi 14:00</div>
-            <div class="mail-time">19:42</div>
-          </div>
-          <div class="mail-item">
-            <div class="mail-dot"></div>
-            <div class="mail-from">Amazon DE</div>
-            <div style="flex:1; font-size:10px; color:var(--text-dim); padding: 0 6px; font-family:var(--font-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Ihre Bestellung wurde versendet</div>
-            <div class="mail-time">17:11</div>
-          </div>
-          <div class="mail-item">
-            <div class="mail-dot"></div>
-            <div class="mail-from">GitHub</div>
-            <div style="flex:1; font-size:10px; color:var(--text-dim); padding: 0 6px; font-family:var(--font-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">[openclaw-bolla] 2 new commits</div>
-            <div class="mail-time">16:55</div>
-          </div>
+          <div>📩 Schule: Vertretungsplan</div>
+          <div>📩 Lessing: Rundschreiben</div>
+          <div>📩 Amazon: Versandinfo</div>
         </div>
-        <div class="card-corner"></div>
       </div>
 
-      <!-- Wetter Detail -->
-      <div class="card">
-        <div class="corner-tl"></div>
-        <div class="card-label">WETTER · HEUTE</div>
-        <div class="weather-details" style="margin-top:0;">
-          <div class="weather-detail"><span>💧</span> Feuchtigkeit: 71%</div>
-          <div class="weather-detail"><span>💨</span> Wind: 18 km/h</div>
-          <div class="weather-detail"><span>🌅</span> Sonnenaufg: 05:47</div>
-          <div class="weather-detail"><span>🌇</span> Sonnenuntg: 21:03</div>
-          <div class="weather-detail"><span>🌧</span> Regen: 20%</div>
-          <div class="weather-detail"><span>👁</span> Sicht: 12 km</div>
+      <div class="card c-weather">
+        <span class="card-icon">⛅</span>
+        <div class="card-label">Wetter · Hamburg</div>
+        <div class="card-value">18°C</div>
+        <div class="card-sub">Leicht bewölkt</div>
+        <div class="weather-detail">
+          ↓ 13°C &nbsp;·&nbsp; ↑ 21°C<br>
+          Feuchtigkeit: 68%
         </div>
-        <div style="margin-top:14px; display:flex; gap:6px;">
-          <div style="flex:1; text-align:center; padding:6px; background:rgba(0,240,255,0.05); border:1px solid var(--border-dim); border-radius:2px;">
-            <div style="font-size:18px;">🌦</div>
-            <div style="font-family:var(--font-mono); font-size:9px; color:var(--text-dim); margin-top:2px;">Mi</div>
-            <div style="font-family:var(--font-mono); font-size:11px; color:var(--neon-cyan);">16°</div>
-          </div>
-          <div style="flex:1; text-align:center; padding:6px; background:rgba(0,240,255,0.05); border:1px solid var(--border-dim); border-radius:2px;">
-            <div style="font-size:18px;">☀️</div>
-            <div style="font-family:var(--font-mono); font-size:9px; color:var(--text-dim); margin-top:2px;">Do</div>
-            <div style="font-family:var(--font-mono); font-size:11px; color:var(--neon-cyan);">21°</div>
-          </div>
-          <div style="flex:1; text-align:center; padding:6px; background:rgba(0,240,255,0.05); border:1px solid var(--border-dim); border-radius:2px;">
-            <div style="font-size:18px;">⛅</div>
-            <div style="font-family:var(--font-mono); font-size:9px; color:var(--text-dim); margin-top:2px;">Fr</div>
-            <div style="font-family:var(--font-mono); font-size:11px; color:var(--neon-cyan);">19°</div>
-          </div>
-        </div>
-        <div class="card-corner"></div>
-      </div>
-
-      <!-- Agenda -->
-      <div class="card">
-        <div class="corner-tl"></div>
-        <div class="card-label">AGENDA · HEUTE</div>
-        <div class="agenda-item">
-          <div class="agenda-time">08:00</div>
-          <div class="agenda-bar"></div>
-          <div>
-            <div class="agenda-title">Klasse 7b · Mathe</div>
-            <div class="agenda-loc">RAUM 214 · LESSING-GYM</div>
-          </div>
-        </div>
-        <div class="agenda-item">
-          <div class="agenda-time">10:30</div>
-          <div class="agenda-bar active"></div>
-          <div>
-            <div class="agenda-title" style="color:var(--neon-cyan);">Klasse 7a · Mathe</div>
-            <div class="agenda-loc">RAUM 214 · LESSING-GYM</div>
-          </div>
-        </div>
-        <div class="agenda-item">
-          <div class="agenda-time">14:00</div>
-          <div class="agenda-bar"></div>
-          <div>
-            <div class="agenda-title">Lehrerkonferenz</div>
-            <div class="agenda-loc">KONFERENZRAUM · EG</div>
-          </div>
-        </div>
-        <div class="card-corner"></div>
       </div>
 
     </div>
 
-    <!-- Row 3: 2-col -->
-    <div class="widget-grid-2col">
+    <div class="section-label">Notizen &amp; Aufgaben</div>
 
-      <!-- Bolla -->
-      <div class="card">
-        <div class="corner-tl"></div>
-        <div class="card-label">BOLLA AGENT</div>
-        <div class="bolla-status">
-          <div class="bolla-avatar">🐾</div>
-          <div class="bolla-info">
-            <div class="bolla-name">BOLLA</div>
-            <div class="bolla-tagline">BEREIT · CLAUDE SONNET 4.6 · WORKSPACE AKTIV</div>
-          </div>
-          <div class="bolla-online-dot"></div>
-        </div>
-        <div class="bolla-quick-actions">
-          <div class="bolla-btn">CHAT</div>
-          <div class="bolla-btn">SCHULE</div>
-          <div class="bolla-btn">FOTOS</div>
-          <div class="bolla-btn">NOTIZEN</div>
-        </div>
-        <div class="card-corner"></div>
+    <div class="notes-grid">
+
+      <div class="sticky yellow">
+        <div class="sticky-head">Heute</div>
+        Korrekturen 7b<br>
+        fertig bis Freitag!<br>
+        <br>
+        <span class="done">Elternbrief 7a</span> ✓
       </div>
 
-      <!-- System Detail -->
-      <div class="card">
-        <div class="corner-tl"></div>
-        <div class="card-label">SYSTEM INFO</div>
-        <div class="sys-row">
-          <div class="sys-row-label">RAM</div>
-          <div class="sys-row-bar"><div class="sys-row-fill fill-cyan" style="width:34%"></div></div>
-          <div class="sys-row-val color-cyan">34%</div>
-        </div>
-        <div class="sys-row">
-          <div class="sys-row-label">CPU</div>
-          <div class="sys-row-bar"><div class="sys-row-fill fill-green" style="width:12%"></div></div>
-          <div class="sys-row-val color-green">12%</div>
-        </div>
-        <div class="sys-row">
-          <div class="sys-row-label">DISK C:</div>
-          <div class="sys-row-bar"><div class="sys-row-fill fill-orange" style="width:67%"></div></div>
-          <div class="sys-row-val color-orange">67%</div>
-        </div>
-        <div class="sys-row">
-          <div class="sys-row-label">DISK D:</div>
-          <div class="sys-row-bar"><div class="sys-row-fill fill-purple" style="width:45%"></div></div>
-          <div class="sys-row-val color-purple">45%</div>
-        </div>
-        <div class="sys-row">
-          <div class="sys-row-label">NET ↓</div>
-          <div class="sys-row-bar"><div class="sys-row-fill fill-cyan" style="width:8%"></div></div>
-          <div class="sys-row-val color-cyan" style="font-size:9px;">2.1 MB</div>
-        </div>
-        <div class="card-corner"></div>
+      <div class="sticky blue">
+        <div class="sticky-head">Bolla erledigt</div>
+        WISO-Listen<br>
+        bereinigt ✓<br>
+        0 Duplikate<br>
+        Export OK
+      </div>
+
+      <div class="sticky green">
+        <div class="sticky-head">Nächste Woche</div>
+        Klassenarbeit 7a<br>
+        Thema: Wirtschaft<br>
+        Dienstag · R. 214
+      </div>
+
+      <div class="sticky pink">
+        <div class="sticky-head">Merken!</div>
+        Konferenz<br>
+        Do. 14:30 Uhr<br>
+        Lehrerzimmer B
+      </div>
+
+      <div class="sticky yellow" style="transform:rotate(-1.5deg)">
+        <div class="sticky-head">Erinnerung</div>
+        Beamer-Kabel<br>
+        zurückgeben!
       </div>
 
     </div>
 
-  </main>
+  </div>
 </div>
 
 </body>

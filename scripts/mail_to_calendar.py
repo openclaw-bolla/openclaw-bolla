@@ -156,9 +156,7 @@ def create_event(info, token):
     dauer = info.get("dauer_minuten", 60)
     anfahrt = info.get("anfahrt_minuten", 45)
 
-    ev_start = datetime(
-        *[int(x) for x in datum.split("-")], start_h, start_m,
-        tzinfo=timezone(timedelta(hours=2)))
+    ev_start = datetime(*[int(x) for x in datum.split("-")], start_h, start_m)
     event_start = ev_start - timedelta(minutes=anfahrt)
     event_end   = ev_start + timedelta(minutes=dauer + anfahrt)
 
@@ -166,16 +164,17 @@ def create_event(info, token):
     kat = info.get("kategorie", "Termin")
     if kat not in CATEGORIES: kat = "Termin"
 
-    body_text = (f"📍 {ort}\n" if ort else "") + \
+    body_text = f"🕐 Termin: {ev_start.strftime('%H:%M')} Uhr\n" + \
+                (f"📍 {ort}\n" if ort else "") + \
                 f"🚗 Anfahrt: ~{anfahrt} Min\n" + \
                 f"⏱ Dauer: ~{dauer} Min\n" + \
                 f"🏠 Rückfahrt: ~{anfahrt} Min\n" + \
                 f"📧 Automatisch aus E-Mail erstellt von Bolla"
 
     event = {
-        "subject": info["titel"],
-        "start": {"dateTime": event_start.isoformat(), "timeZone": "Europe/Berlin"},
-        "end":   {"dateTime": event_end.isoformat(),   "timeZone": "Europe/Berlin"},
+        "subject": f"{info['titel']} ⏰ {ev_start.strftime('%H:%M')}",
+        "start": {"dateTime": event_start.strftime("%Y-%m-%dT%H:%M:%S"), "timeZone": "Europe/Berlin"},
+        "end":   {"dateTime": event_end.strftime("%Y-%m-%dT%H:%M:%S"),   "timeZone": "Europe/Berlin"},
         "location": {"displayName": ort},
         "body": {"contentType": "Text", "content": body_text},
         "categories": [kat]

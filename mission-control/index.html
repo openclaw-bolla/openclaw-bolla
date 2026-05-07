@@ -12,6 +12,20 @@
 /* ===== RESET ===== */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* ===== BOLLA AVATAR WAVING ANIMATION ===== */
+@keyframes bollaWave {
+  0%   { transform: rotate(0deg) scale(1); }
+  15%  { transform: rotate(-7deg) scale(1.03); }
+  30%  { transform: rotate(5deg) scale(1.02); }
+  45%  { transform: rotate(-4deg) scale(1.02); }
+  60%  { transform: rotate(3deg) scale(1.01); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+img[src="/api/bolla/avatar"] {
+  animation: bollaWave 2.8s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
 /* ===== BOLLA THINKING DOTS ===== */
 .bolla-dots span {
   display: inline-block;
@@ -707,6 +721,7 @@ html, body {
           <div class="nav-item" data-page="bildgen"><span class="icon">🍌</span><span>BildGen</span></div>
           <div class="nav-item" data-page="suno"><span class="icon">🎵</span><span>Suno Songs</span></div>
           <div class="nav-item" data-page="fotoanalyse"><span class="icon">🔍</span><span>Foto-Analyse</span></div>
+          <div class="nav-item" data-page="kiforum"><span class="icon">🧠</span><span>KI-Forum</span></div>
         </div>
       </div>
 
@@ -2366,6 +2381,530 @@ html, body {
         </div>
       </div><!-- end page-fotoanalyse -->
 
+      <!-- ═══ KI-FORUM ═══════════════════════════════════════════════════════ -->
+      <div class="page" id="page-kiforum" style="padding:0;overflow:hidden">
+        <style>
+        /* ── KI-FORUM IMMERSIVE SCENE ── */
+        #page-kiforum.active { display:flex !important; flex-direction:column; padding:0; }
+        #page-kiforum.active {
+          display: flex !important;
+          flex-direction: column;
+        }
+        #kif-wrapper {
+          display: flex; flex-direction: column; height: 100%;
+          background: #0a1628; font-family: inherit;
+        }
+        /* ROOM SCENE — top 58% */
+        #kif-room {
+          position: relative; flex: 0 0 42%; overflow: visible;
+          background: linear-gradient(180deg, #0d1f3c 0%, #0a1628 60%, #0e1a0a 100%);
+        }
+        /* Real room background */
+        #kif-room-bg {
+          position:absolute; inset:0; z-index:0;
+          background: url('/api/kiforum/bg') center center / cover no-repeat;
+        }
+        #kif-room-bg::after {
+          content:''; position:absolute; inset:0;
+          background:linear-gradient(180deg,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.2) 100%);
+        }
+        /* CHARACTERS */
+        .kif-char {
+          position:absolute; bottom:22%; z-index:10;
+          display:flex; flex-direction:column; align-items:center; gap:4px;
+          cursor:pointer; transition:transform .2s;
+        }
+        .kif-char:hover { transform:scale(1.05) translateY(-4px); }
+        .kif-char:active { transform:scale(0.97); }
+        #kif-chris { left:5%; bottom:0 !important; transform:translateY(38px); }
+        #kif-bolla { right:5%; bottom:8% !important; transform:translateY(38px); }
+        #kif-chris:hover { transform:translateY(38px) scale(1.05) translateY(-4px); }
+        #kif-bolla:hover { transform:translateY(38px) scale(1.05) translateY(-4px); }
+        .kif-char img {
+          filter:drop-shadow(0 8px 24px rgba(0,0,0,0.8));
+          mix-blend-mode: multiply;
+        }
+        .kif-char-label {
+          font-size:11px; font-weight:700; letter-spacing:1.5px;
+          text-transform:uppercase; color:rgba(255,255,255,0.5);
+          background:rgba(0,0,0,0.4); padding:2px 8px; border-radius:10px;
+        }
+        .kif-hint {
+          font-size:10px; color:rgba(255,255,255,0.3); margin-top:-2px;
+          animation: kif-pulse 2s ease-in-out infinite;
+        }
+        @keyframes kif-pulse { 0%,100%{opacity:.3} 50%{opacity:.7} }
+        /* SPEECH BUBBLE in scene */
+        #kif-bubble-area {
+          position:absolute; top:5%; left:25%; right:25%; z-index:20;
+          display:flex; flex-direction:column; gap:8px; align-items:center;
+          max-height:75%; overflow:hidden;
+        }
+        .kif-bubble {
+          max-width:100%; padding:10px 14px; border-radius:14px;
+          font-size:13px; line-height:1.5; color:#fff; position:relative;
+          animation: kif-popin .3s cubic-bezier(.175,.885,.32,1.275);
+          box-shadow:0 4px 20px rgba(0,0,0,0.5);
+        }
+        @keyframes kif-popin {
+          from { transform:scale(0.6); opacity:0; }
+          to   { transform:scale(1);   opacity:1; }
+        }
+        .kif-bubble.bolla {
+          background:linear-gradient(135deg,#1e3a5f,#162d4a);
+          border:1px solid rgba(96,165,250,0.3);
+          align-self:flex-end;
+        }
+        .kif-bubble.user {
+          background:linear-gradient(135deg,#2d1a00,#3d2200);
+          border:1px solid rgba(255,160,50,0.3);
+          align-self:flex-start;
+        }
+        .kif-bubble-title {
+          font-weight:700; font-size:12px; margin-bottom:4px;
+          color:rgba(255,255,255,0.7);
+        }
+        .kif-bubble-del {
+          position:absolute; top:4px; right:6px;
+          background:none; border:none; color:rgba(255,255,255,0.2);
+          cursor:pointer; font-size:12px; padding:0; line-height:1;
+        }
+        .kif-bubble-del:hover { color:rgba(255,80,80,0.7); }
+        /* CHRIS INPUT MODAL */
+        #kif-input-modal {
+          display:none; position:absolute; top:50%; left:50%;
+          transform:translate(-50%,-50%); z-index:50;
+          background:#0f1e35; border:1px solid rgba(255,160,50,0.4);
+          border-radius:16px; padding:18px; width:320px;
+          box-shadow:0 20px 60px rgba(0,0,0,0.7);
+          animation:kif-popin .25s ease;
+        }
+        #kif-input-modal textarea {
+          width:100%; background:#1a2d45; border:1px solid #2a4060;
+          border-radius:8px; color:#e0e6ed; font-size:13px;
+          padding:10px; resize:none; font-family:inherit; outline:none;
+          box-sizing:border-box;
+        }
+        #kif-input-modal textarea:focus { border-color:#ff9933; }
+        /* BOLLA THINKING */
+        #kif-bolla-thinking {
+          display:none; position:absolute; bottom:28%; right:6%; z-index:30;
+          background:rgba(30,58,95,0.9); border:1px solid rgba(96,165,250,0.3);
+          border-radius:10px; padding:6px 12px; font-size:12px; color:#60a5fa;
+        }
+        /* BOTTOM FEED */
+        #kif-feed-area {
+          flex:1; overflow-y:auto; background:#080f1a;
+          border-top:2px solid #1a2a40; padding:14px 20px;
+        }
+        #kif-feed-inner {
+          max-width:900px; margin:0 auto;
+        }
+        .kif-feed-pair {
+          display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;
+        }
+        .kif-feed-pair .kif-feed-item { margin-bottom:0; }
+        /* thesis = user post */
+        .kif-feed-item {
+          display:flex; gap:12px; padding:12px 14px; border-radius:10px;
+          margin-bottom:4px; position:relative; transition:background .15s;
+        }
+        .kif-feed-item.kif-thesis {
+          background:rgba(255,153,51,0.07);
+          border:1px solid rgba(255,153,51,0.25);
+          border-left:3px solid #ff9933;
+        }
+        .kif-feed-item.kif-thesis:hover { background:rgba(255,153,51,0.11); }
+        /* bolla reaction */
+        .kif-feed-item.kif-reaction {
+          background:rgba(96,165,250,0.06);
+          border:1px solid rgba(96,165,250,0.18);
+          border-left:3px solid #3b82f6;
+          margin-bottom:14px;
+        }
+        .kif-feed-item.kif-reaction:hover { background:rgba(96,165,250,0.1); }
+        /* standalone bolla thesis (from generate) */
+        .kif-feed-item.kif-bolla-topic {
+          background:rgba(167,139,250,0.07);
+          border:1px solid rgba(167,139,250,0.22);
+          border-left:3px solid #a78bfa;
+          margin-bottom:14px;
+        }
+        .kif-feed-item.kif-bolla-topic:hover { background:rgba(167,139,250,0.11); }
+        .kif-feed-avatar { width:34px; height:34px; border-radius:50%; flex-shrink:0; object-fit:cover; }
+        .kif-feed-body { flex:1; min-width:0; }
+        .kif-feed-meta { font-size:11px; color:rgba(255,255,255,0.3); margin-bottom:3px; }
+        .kif-feed-title { font-size:16px; font-weight:700; color:#e0e6ed; margin-bottom:5px; }
+        .kif-feed-label { font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; margin-bottom:3px; }
+        .kif-thesis .kif-feed-label { color:#ff9933; }
+        .kif-reaction .kif-feed-label { color:#60a5fa; }
+        .kif-bolla-topic .kif-feed-label { color:#a78bfa; }
+        .kif-feed-content { font-size:14px; color:rgba(255,255,255,0.65); line-height:1.65; }
+        .kif-feed-img { width:100%; max-width:320px; border-radius:10px; margin-top:12px; display:block; border:1px solid rgba(255,255,255,0.1); }
+        mark.kif-kw {
+          background:rgba(96,165,250,0.22); color:#bfdbfe;
+          border-radius:3px; padding:0 2px; font-style:normal;
+          font-weight:600; text-decoration:none;
+        }
+        .kif-aber-edit {
+          margin-top:10px; padding:8px 10px; border-radius:8px;
+          background:rgba(251,191,36,0.05); border-left:3px solid #f59e0b;
+        }
+        .kif-aber-label { font-size:10px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:#f59e0b; margin-bottom:5px; }
+        .kif-aber-textarea {
+          width:100%; background:rgba(0,0,0,0.25); border:1px solid rgba(251,191,36,0.2);
+          border-radius:6px; color:#e0e6ed; font-size:12px; padding:6px 8px;
+          resize:none; font-family:inherit; outline:none; box-sizing:border-box; min-height:48px; line-height:1.4;
+        }
+        .kif-aber-textarea:focus { border-color:rgba(251,191,36,0.5); }
+        .kif-aber-btn {
+          margin-top:5px; padding:3px 10px; border-radius:6px;
+          background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.3);
+          color:#fbbf24; font-size:11px; cursor:pointer; font-family:inherit; transition:all .15s;
+        }
+        .kif-aber-btn:hover { background:rgba(251,191,36,0.22); }
+        .kif-feed-del {
+          position:absolute; top:8px; right:10px;
+          background:none; border:none; color:rgba(255,255,255,0.12);
+          cursor:pointer; font-size:14px; padding:0;
+        }
+        .kif-feed-del:hover { color:rgba(255,80,80,0.6); }
+        .kif-feed-empty { text-align:center; padding:20px; color:rgba(255,255,255,0.2); font-size:13px; }
+        /* TOP BAR */
+        #kif-topbar {
+          position:absolute; top:8px; right:12px; z-index:40;
+          display:flex; gap:6px;
+        }
+        .kif-topbtn {
+          background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.12);
+          color:rgba(255,255,255,0.6); border-radius:6px; padding:4px 10px;
+          font-size:11px; cursor:pointer; backdrop-filter:blur(4px); transition:all .15s;
+        }
+        .kif-topbtn:hover { background:rgba(255,255,255,0.1); color:#fff; }
+        /* Title overlay */
+        #kif-title-overlay {
+          position:absolute; top:8px; left:12px; z-index:40;
+          color:rgba(255,255,255,0.4); font-size:12px; font-weight:600;
+          letter-spacing:2px; text-transform:uppercase;
+        }
+        </style>
+
+        <div id="kif-wrapper">
+
+          <!-- ═══ ROOM SCENE ═══ -->
+          <div id="kif-room">
+
+            <!-- Title -->
+            <div id="kif-title-overlay">🧠 KI-Forum</div>
+
+            <!-- Top controls -->
+            <div id="kif-topbar">
+              <button class="kif-topbtn" onclick="kifExport()">📤 Export</button>
+              <button class="kif-topbtn" onclick="window.print()">🖨️</button>
+            </div>
+
+            <!-- Room background image -->
+            <div id="kif-room-bg"></div>
+
+            <!-- Speech bubbles (latest 2) -->
+            <div id="kif-bubble-area"></div>
+
+            <!-- Bolla thinking indicator -->
+            <div id="kif-bolla-thinking">⏳ Bolla denkt nach…</div>
+
+            <!-- CHRIS character (click to enter thesis) -->
+            <div class="kif-char" id="kif-chris" onclick="kifShowInput()" title="Klick um deine These einzugeben">
+              <img src="/api/kiforum/chris" height="260" alt="Chris">
+              <div class="kif-char-label">Chris</div>
+              <div class="kif-hint">← anklicken</div>
+            </div>
+
+            <!-- BOLLA character (click to generate thesis) -->
+            <div class="kif-char" id="kif-bolla" onclick="kifGenerateThesis()" title="Bolla anstupsen für eine neue These">
+              <img src="/api/kiforum/bolla" height="210"
+                style="animation:bollaWave 2.8s ease-in-out infinite;transform-origin:center bottom;"
+                alt="Bolla">
+              <div class="kif-char-label">Bolla</div>
+              <div class="kif-hint">anstupsen →</div>
+            </div>
+
+            <!-- Chris input modal -->
+            <div id="kif-input-modal">
+              <div style="font-size:13px;font-weight:600;color:#ff9933;margin-bottom:10px">
+                💬 Deine These oder Frage
+              </div>
+              <textarea id="kif-user-input" rows="3"
+                placeholder="z.B. Schüler brauchen kein PowerPoint mehr lernen…"
+                onkeydown="if(event.ctrlKey&&event.key==='Enter')kifSubmitUser()"></textarea>
+              <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
+                <button class="kif-topbtn" onclick="kifHideInput()">Abbrechen</button>
+                <button class="kif-topbtn"
+                  style="background:rgba(255,153,51,0.2);border-color:rgba(255,153,51,0.5);color:#ff9933"
+                  onclick="kifSubmitUser()">➤ Bolla fragen</button>
+              </div>
+            </div>
+
+          </div><!-- end kif-room -->
+
+          <!-- ═══ DISCUSSION FEED ═══ -->
+          <div id="kif-feed-area">
+            <div id="kif-feed-inner">
+              <div class="kif-feed-empty" id="kif-feed-empty">
+                Noch keine Beiträge — stups Bolla an oder gib selbst eine These ein!
+              </div>
+            </div>
+          </div>
+
+        </div><!-- end kif-wrapper -->
+
+        <script>
+        let _kifPosts = [];
+
+        async function kifLoad() {
+          try {
+            _kifPosts = await fetch('/api/kiforum').then(r => r.json());
+            kifRenderAll();
+            kifShowLatestBubbles();
+          } catch(e) {}
+        }
+
+        function kifEsc(s) {
+          return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        function kifRenderAll() {
+          const inner = document.getElementById('kif-feed-inner');
+          const empty = document.getElementById('kif-feed-empty');
+          inner.querySelectorAll('.kif-feed-item, .kif-feed-pair').forEach(el => el.remove());
+          if (!_kifPosts.length) { empty.style.display = 'block'; return; }
+          empty.style.display = 'none';
+          let i = 0;
+          while (i < _kifPosts.length) {
+            const p = _kifPosts[i];
+            const next = _kifPosts[i + 1];
+            if (p.type === 'bolla' && p.replyTo && next && next.type === 'user') {
+              // bolla reaction newest, then user thesis
+              inner.insertAdjacentHTML('beforeend',
+                `<div class="kif-feed-pair" id="kif-fp-${p.id}" data-thesis-id="${next.id}">
+                  ${kifThesisCard(next, p.id)}${kifReactionCard(p)}
+                </div>`);
+              i += 2;
+            } else if (p.type === 'user' && next && next.type === 'bolla' && next.replyTo) {
+              // user thesis newest, then bolla reaction
+              inner.insertAdjacentHTML('beforeend',
+                `<div class="kif-feed-pair" id="kif-fp-${next.id}" data-thesis-id="${p.id}">
+                  ${kifThesisCard(p, next.id)}${kifReactionCard(next)}
+                </div>`);
+              i += 2;
+            } else {
+              inner.insertAdjacentHTML('beforeend', kifStandaloneCard(p));
+              i++;
+            }
+          }
+        }
+
+        function kifTs(p) {
+          return new Date(p.timestamp).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+        }
+
+        function kifThesisCard(p, bollaId) {
+          const content = p.content ? `<div class="kif-feed-content" style="margin-bottom:8px">${kifEsc(p.content).replace(/\n/g,'<br>')}</div>` : '';
+          return `<div class="kif-feed-item kif-thesis" id="kif-fi-${p.id}">
+            <div class="kif-feed-body">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <span class="kif-feed-label">💬 Deine These</span>
+                <span class="kif-feed-meta">${kifTs(p)}</span>
+              </div>
+              ${content}
+              <div class="kif-aber-edit">
+                <div class="kif-aber-label">💬 Aber...</div>
+                <textarea class="kif-aber-textarea" id="kif-aber-u-${p.id}" placeholder="Dein Einwand oder Ergänzung…" rows="2">${kifEsc(p.aber_user||'')}</textarea>
+                <button class="kif-aber-btn" onclick="kifRevise('${p.id}','${bollaId}')">↩ Bolla neu befragen</button>
+              </div>
+            </div>
+            <button class="kif-feed-del" onclick="kifDelete('${p.id}')" title="Löschen">🗑</button>
+          </div>`;
+        }
+
+        function kifHighlight(text, keywords) {
+          let out = kifEsc(text);
+          if (!keywords || !keywords.length) return out;
+          keywords.forEach(kw => {
+            const safe = kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+            out = out.replace(new RegExp(`(${safe})`, 'gi'), '<mark class="kif-kw">$1</mark>');
+          });
+          return out;
+        }
+
+        function kifReactionCard(p) {
+          const title = p.title ? `<div class="kif-feed-title">${kifEsc(p.emoji||'')} ${kifEsc(p.title)}</div>` : '';
+          const bodyText = kifHighlight(p.content||'', p.keywords);
+          const body = bodyText ? `<div class="kif-feed-content">${bodyText.replace(/\n/g,'<br>')}</div>` : '';
+          const imgHtml = p.img ? `<img class="kif-feed-img" src="/api/kiforum/img/${kifEsc(p.img)}" alt="">` : '';
+          return `<div class="kif-feed-item kif-reaction" id="kif-fi-${p.id}">
+            <div class="kif-feed-body">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <span class="kif-feed-label">🤖 Bollas Reaktion</span>
+                <span class="kif-feed-meta">${kifTs(p)}</span>
+              </div>
+              ${title}${body}${imgHtml}
+            </div>
+            <button class="kif-feed-del" onclick="kifDelete('${p.id}')" title="Löschen">🗑</button>
+          </div>`;
+        }
+
+        function kifStandaloneCard(p) {
+          const title = p.title ? `<div class="kif-feed-title">${kifEsc(p.emoji||'')} ${kifEsc(p.title)}</div>` : '';
+          const bodyText = kifHighlight(p.content||'', p.keywords);
+          const body = bodyText ? `<div class="kif-feed-content">${bodyText.replace(/\n/g,'<br>')}</div>` : '';
+          const aberHtml = p.aber ? `<div class="kif-aber-edit" style="margin-bottom:0"><div class="kif-aber-label">⚡ Aber</div><div style="font-size:12px;color:rgba(251,191,36,.85);line-height:1.5">${kifEsc(p.aber)}</div></div>` : '';
+          const imgHtml = p.img ? `<img class="kif-feed-img" src="/api/kiforum/img/${kifEsc(p.img)}" alt="">` : '';
+          return `<div class="kif-feed-item kif-bolla-topic" id="kif-fi-${p.id}" style="margin-bottom:14px">
+            <div class="kif-feed-body">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <span class="kif-feed-label">🧠 Bollas Thema</span>
+                <span class="kif-feed-meta">${kifTs(p)}</span>
+              </div>
+              ${title}${body}${kwHtml}${aberHtml}${imgHtml}
+            </div>
+            <button class="kif-feed-del" onclick="kifDelete('${p.id}')" title="Löschen">🗑</button>
+          </div>`;
+        }
+
+        async function kifRevise(thesisId, bollaId) {
+          const aberText = document.getElementById('kif-aber-u-'+thesisId)?.value.trim()||'';
+          if (!aberText) return;
+          const thesisPost = _kifPosts.find(p=>p.id===thesisId);
+          await _kifDoRevise(thesisId, bollaId, thesisPost?.content||'', `Mein Einwand: ${aberText}`);
+        }
+
+        async function kifReviseFromBolla(bollaId) {
+          const aberText = document.getElementById('kif-aber-b-'+bollaId)?.value.trim()||'';
+          if (!aberText) return;
+          const pair = document.getElementById('kif-fp-'+bollaId);
+          const thesisId = pair?.dataset.thesisId;
+          const thesisPost = _kifPosts.find(p=>p.id===thesisId);
+          await _kifDoRevise(thesisId, bollaId, thesisPost?.content||'', `Weiterer Gedanke: ${aberText}`);
+        }
+
+        async function _kifDoRevise(thesisId, bollaId, thesisText, context) {
+          const bollaCol = document.getElementById('kif-fi-'+bollaId);
+          if (bollaCol) bollaCol.innerHTML = '<div style="padding:30px;text-align:center;color:#60a5fa;font-size:13px">⏳ Bolla überdenkt…</div>';
+          document.getElementById('kif-bolla').style.pointerEvents='none';
+          try {
+            await fetch('/api/kiforum/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:bollaId})});
+            const newPost = await fetch('/api/kiforum/respond',{
+              method:'POST',headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({thesis: thesisText + (context?'\n\n'+context:'')})
+            }).then(r=>r.json());
+            if (!newPost.error) {
+              _kifPosts = _kifPosts.filter(p=>p.id!==bollaId);
+              const idx = thesisId ? _kifPosts.findIndex(p=>p.id===thesisId) : -1;
+              if (idx>=0) _kifPosts.splice(idx,0,newPost); else _kifPosts.unshift(newPost);
+              kifRenderAll(); kifShowLatestBubbles();
+            }
+          } catch(e) {
+            if(bollaCol) bollaCol.innerHTML='<div style="padding:20px;color:#f87171">Fehler</div>';
+          }
+          document.getElementById('kif-bolla').style.pointerEvents='';
+        }
+
+        function kifShowLatestBubbles() {
+          const area = document.getElementById('kif-bubble-area');
+          area.innerHTML = '';
+          // show last 2 posts as bubbles
+          const recent = _kifPosts.slice(0, 2).reverse();
+          recent.forEach(p => area.insertAdjacentHTML('beforeend', kifBubble(p)));
+        }
+
+        function kifBubble(p) {
+          const isBolla = p.type === 'bolla';
+          const title = p.title ? `<div class="kif-bubble-title">${p.emoji||''} ${kifEsc(p.title)}</div>` : '';
+          const short = (p.content||'').slice(0,120) + ((p.content||'').length>120?'…':'');
+          return `<div class="kif-bubble ${p.type}" id="kif-bub-${p.id}">
+            <button class="kif-bubble-del" onclick="kifDelete('${p.id}')">✕</button>
+            ${title}
+            <div style="font-size:12px;opacity:.85">${kifEsc(short)}</div>
+          </div>`;
+        }
+
+        function kifShowInput() {
+          document.getElementById('kif-input-modal').style.display = 'block';
+          document.getElementById('kif-user-input').focus();
+        }
+        function kifHideInput() {
+          document.getElementById('kif-input-modal').style.display = 'none';
+          document.getElementById('kif-user-input').value = '';
+        }
+
+        async function kifSubmitUser() {
+          const content = document.getElementById('kif-user-input').value.trim();
+          if (!content) return;
+          kifHideInput();
+
+          // Save user post
+          const userPost = await fetch('/api/kiforum/add', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({type:'user', title:'', content, emoji:'💬'})
+          }).then(r=>r.json());
+          _kifPosts.unshift(userPost);
+
+          // Show Bolla thinking
+          document.getElementById('kif-bolla-thinking').style.display = 'block';
+          document.getElementById('kif-bolla').style.pointerEvents = 'none';
+
+          // Generate Bolla response to user thesis
+          const bollaPost = await fetch('/api/kiforum/respond', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({thesis: content})
+          }).then(r=>r.json());
+
+          document.getElementById('kif-bolla-thinking').style.display = 'none';
+          document.getElementById('kif-bolla').style.pointerEvents = '';
+
+          if (!bollaPost.error) {
+            _kifPosts.unshift(bollaPost);
+          }
+          kifRenderAll();
+          kifShowLatestBubbles();
+        }
+
+        async function kifGenerateThesis() {
+          document.getElementById('kif-bolla-thinking').style.display = 'block';
+          document.getElementById('kif-bolla').style.pointerEvents = 'none';
+          try {
+            const post = await fetch('/api/kiforum/generate', {
+              method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'
+            }).then(r=>r.json());
+            if (!post.error) {
+              _kifPosts.unshift(post);
+              kifRenderAll();
+              kifShowLatestBubbles();
+            }
+          } catch(e) {}
+          document.getElementById('kif-bolla-thinking').style.display = 'none';
+          document.getElementById('kif-bolla').style.pointerEvents = '';
+        }
+
+        async function kifDelete(id) {
+          await fetch('/api/kiforum/delete', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({id})
+          });
+          _kifPosts = _kifPosts.filter(p => p.id !== id);
+          document.getElementById('kif-bub-'+id)?.remove();
+          kifRenderAll();
+        }
+
+        function kifExport() {
+          const a = document.createElement('a');
+          a.href = '/api/kiforum/export';
+          a.download = 'bolla-ki-forum.json';
+          a.click();
+        }
+        </script>
+      </div><!-- end page-kiforum -->
+
     </div><!-- end pages -->
   </div><!-- end main -->
 </div><!-- end app -->
@@ -2420,6 +2959,7 @@ function showPage(page) {
   if (page === 'projekte')   loadProjekte();
   if (page === 'urlaub')     loadTravel();
   if (page === 'fotoanalyse') loadFotoAnalyse();
+  if (page === 'kiforum') kifLoad();
   // Wenn es ein Unter-Tab einer Gruppe ist → Gruppe aufklappen
   const groups = ['projekte', 'schule', 'system'];
   for (const g of groups) {
