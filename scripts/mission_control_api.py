@@ -3469,6 +3469,48 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(data)
 
+            elif self.path == "/api/kiforum/word":
+                import io as _io
+                from docx import Document as _DocxDoc
+                from docx.shared import Pt as _Pt, RGBColor as _RGB, Inches as _Inches
+                KIFORUM_FILE = Path(os.path.join(WORKSPACE, "data/kiforum.json"))
+                posts = json.loads(KIFORUM_FILE.read_text()) if KIFORUM_FILE.exists() else []
+                doc = _DocxDoc()
+                for sec in doc.sections:
+                    sec.left_margin = _Inches(1.1); sec.right_margin = _Inches(1.1)
+                h = doc.add_heading("KI-Forum Diskussion", 0)
+                h.runs[0].font.color.rgb = _RGB(0x1a,0x1a,0x2e)
+                doc.add_paragraph(f"Exportiert: {datetime.now().strftime('%d.%m.%Y %H:%M')} · Bolla & Chris")
+                doc.add_paragraph("")
+                for p in reversed(posts):
+                    t = p.get("type","")
+                    if t == "user":
+                        h2 = doc.add_heading(f"💬 Chris: {p.get('title','') or 'These'}", 2)
+                        for r in h2.runs: r.font.color.rgb = _RGB(0xcc,0x77,0x00)
+                    elif t == "bolla":
+                        h2 = doc.add_heading(f"{p.get('emoji','🤖')} Bolla: {p.get('title','Reaktion')}", 2)
+                        for r in h2.runs: r.font.color.rgb = _RGB(0x22,0x66,0xcc)
+                    elif t == "conclusion":
+                        h2 = doc.add_heading(f"{p.get('emoji','🎯')} Fazit: {p.get('title','')}", 2)
+                        for r in h2.runs: r.font.color.rgb = _RGB(0x88,0x44,0x00)
+                    else:
+                        continue
+                    content = p.get("content","")
+                    if content:
+                        para = doc.add_paragraph(content)
+                        if para.runs: para.runs[0].font.size = _Pt(11)
+                    doc.add_paragraph("")
+                buf = _io.BytesIO()
+                doc.save(buf)
+                data = buf.getvalue()
+                self.send_response(200)
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                self.send_header("Content-Disposition", 'attachment; filename="bolla-diskussion.docx"')
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+
             elif self.path in simple:
                 self._send_json(simple[self.path]())
             else:
@@ -4376,27 +4418,10 @@ Antworte NUR als reines JSON:
                     self._send_json({"error": "Kein JSON"}, status=500); return
                 resp, _ = json.JSONDecoder().raw_decode(raw, idx)
 
-                # Generate illustration
-                img_b64_out = None
-                img_prompt = resp.get("img_prompt", "")
-                if img_prompt:
-                    try:
-                        full_img_prompt = f"{img_prompt}. Infographic style, clean modern illustration, dark background, minimal, impactful."
-                        img_data, _ = bildgen_generate(full_img_prompt, model="gemini-2.5-flash-image", aspect_ratio="1:1")
-                        if img_data:
-                            img_b64_out = img_data
-                    except Exception:
-                        pass
-
                 KIFORUM_FILE = Path(os.path.join(WORKSPACE, "data/kiforum.json"))
                 posts = json.loads(KIFORUM_FILE.read_text()) if KIFORUM_FILE.exists() else []
                 post_id = str(_uuid3.uuid4())
-
-                # Save image to disk
                 img_file = None
-                if img_b64_out:
-                    img_file = f"kif_img_{post_id}.png"
-                    (Path(WORKSPACE) / "data" / img_file).write_bytes(_b64.b64decode(img_b64_out))
 
                 post = {
                     "id": post_id,
@@ -4478,19 +4503,7 @@ Antworte NUR als reines JSON:
                 if idx < 0:
                     self._send_json({"error": "Kein JSON"}, status=500); return
                 topic, _ = json.JSONDecoder().raw_decode(raw, idx)
-                # Generate illustration
-                import base64 as _b64_gen
                 gen_img_file = None
-                gen_img_prompt = topic.get("img_prompt", "")
-                if gen_img_prompt:
-                    try:
-                        full_gen_prompt = f"{gen_img_prompt}. Infographic style, clean modern illustration, dark background, minimal, impactful."
-                        gen_img_data, _ = bildgen_generate(full_gen_prompt, model="gemini-2.5-flash-image", aspect_ratio="1:1")
-                        if gen_img_data:
-                            gen_img_file = f"kif_img_{_uuid2.uuid4()}.png"
-                            (Path(WORKSPACE) / "data" / gen_img_file).write_bytes(_b64_gen.b64decode(gen_img_data))
-                    except Exception:
-                        pass
                 post_id_gen = str(_uuid2.uuid4())
                 post = {
                     "id": post_id_gen,
@@ -4504,6 +4517,87 @@ Antworte NUR als reines JSON:
                 posts.insert(0, post)
                 KIFORUM_FILE.write_text(json.dumps(posts, ensure_ascii=False, indent=2))
                 self._send_json(post)
+
+            elif self.path == "/api/kiforum/conclude":
+                import subprocess as _sp5, uuid as _uuid5
+                KIFORUM_FILE = Path(os.path.join(WORKSPACE, "data/kiforum.json"))
+                posts = json.loads(KIFORUM_FILE.read_text()) if KIFORUM_FILE.exists() else []
+                relevant = [p for p in reversed(posts) if p.get("type") in ("user","bolla") and not p.get("isConclusion")]
+                lines = []
+                for p in relevant:
+                    who = "Chris" if p["type"] == "user" else "Bolla"
+                    label = f"[{p.get('emoji','')} {p.get('title','')}] " if p.get("title") else ""
+                    lines.append(f"{who}: {label}{p.get('content','')}")
+                discussion = "\n\n".join(lines)
+                prompt = f"""Du bist Bolla. Hier ist die bisherige Diskussion:\n\n{discussion}\n\nZiehe jetzt eine abschließende Schlussfolgerung:\n- Was war der Kern der Diskussion?\n- Zu welchem Ergebnis kommt man?\n- Dein persönliches Fazit (klar, direkt, meinungsstark)\n- Max. 4 Sätze gesamt\n\nAntworte NUR als reines JSON:\n{{"title": "Fazit: kurzer Satz", "content": "Deine Schlussfolgerung in max. 4 Sätzen.", "emoji": "🎯"}}"""
+                result = _sp5.run(
+                    [CLAUDE_BIN, "-p", "--output-format", "json", prompt],
+                    capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~")
+                )
+                if result.returncode != 0:
+                    self._send_json({"error": result.stderr[:200]}, status=500); return
+                raw = json.loads(result.stdout).get("result", "").strip()
+                if "```" in raw:
+                    raw = raw.split("```")[1]
+                    if raw.startswith("json"): raw = raw[4:]
+                raw = raw.strip()
+                idx = raw.find('{')
+                if idx < 0:
+                    self._send_json({"error": "Kein JSON"}, status=500); return
+                resp, _ = json.JSONDecoder().raw_decode(raw, idx)
+                post = {
+                    "id": str(_uuid5.uuid4()),
+                    "type": "conclusion",
+                    "isConclusion": True,
+                    "timestamp": datetime.now().isoformat(),
+                    "title": resp.get("title", "Bollas Fazit"),
+                    "content": resp.get("content", ""),
+                    "emoji": resp.get("emoji", "🎯"),
+                }
+                posts.insert(0, post)
+                KIFORUM_FILE.write_text(json.dumps(posts, ensure_ascii=False, indent=2))
+                self._send_json(post)
+
+            elif self.path == "/api/kiforum/word":
+                from docx import Document as _DocxDoc
+                from docx.shared import Pt as _Pt, RGBColor as _RGB, Inches as _Inches
+                import uuid as _uuid6
+                KIFORUM_FILE = Path(os.path.join(WORKSPACE, "data/kiforum.json"))
+                posts = json.loads(KIFORUM_FILE.read_text()) if KIFORUM_FILE.exists() else []
+                doc = _DocxDoc()
+                for sec in doc.sections:
+                    sec.left_margin = _Inches(1.1); sec.right_margin = _Inches(1.1)
+                h = doc.add_heading("KI-Forum Diskussion", 0)
+                h.runs[0].font.color.rgb = _RGB(0x1a,0x1a,0x2e)
+                doc.add_paragraph(f"Exportiert: {datetime.now().strftime('%d.%m.%Y %H:%M')} · Bolla & Chris")
+                doc.add_paragraph("")
+                for p in reversed(posts):
+                    t = p.get("type","")
+                    if t == "user":
+                        h2 = doc.add_heading(f"💬 Chris: {p.get('title','These')}", 2)
+                        for r in h2.runs: r.font.color.rgb = _RGB(0xcc,0x77,0x00)
+                    elif t == "bolla":
+                        h2 = doc.add_heading(f"{p.get('emoji','🤖')} Bolla: {p.get('title','Reaktion')}", 2)
+                        for r in h2.runs: r.font.color.rgb = _RGB(0x22,0x66,0xcc)
+                    elif t == "conclusion":
+                        h2 = doc.add_heading(f"{p.get('emoji','🎯')} Fazit: {p.get('title','')}", 2)
+                        for r in h2.runs: r.font.color.rgb = _RGB(0x88,0x44,0x00)
+                    else:
+                        continue
+                    para = doc.add_paragraph(p.get("content",""))
+                    para.runs[0].font.size = _Pt(11) if para.runs else None
+                    doc.add_paragraph("")
+                fname = f"kif_diskussion_{_uuid6.uuid4().hex[:8]}.docx"
+                fpath = Path(WORKSPACE) / "data" / fname
+                doc.save(str(fpath))
+                with open(fpath, "rb") as f:
+                    data = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type","application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                self.send_header("Content-Disposition",f'attachment; filename="{fname}"')
+                self.send_header("Content-Length",str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
 
             else:
                 self._send_json({"error": "not found"}, status=404)

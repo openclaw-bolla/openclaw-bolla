@@ -1995,92 +1995,153 @@ html, body {
 
       <!-- BILDGEN -->
       <div class="page" id="page-bildgen">
-        <div style="max-width:700px;margin:0 auto">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1100px;margin:0 auto">
 
-          <!-- Titel / Logo -->
-          <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px">
-            <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#1a73e8,#34a853,#fbbc04,#ea4335);
-                        display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;
-                        box-shadow:0 4px 16px rgba(251,188,4,0.3)">🍌</div>
-            <div>
-              <div style="display:flex;align-items:baseline;gap:6px">
-                <span style="font-size:22px;font-weight:700;letter-spacing:-0.5px">
-                  <span style="color:#4285F4">N</span><span style="color:#EA4335">a</span><span style="color:#FBBC05">n</span><span style="color:#34A853">o</span>
-                  <span style="color:var(--text)"> </span>
-                  <span style="color:#4285F4">B</span><span style="color:#EA4335">a</span><span style="color:#FBBC05">n</span><span style="color:#34A853">a</span><span style="color:#4285F4">n</span><span style="color:#EA4335">a</span>
-                </span>
-                <span style="font-size:13px;color:var(--dim);font-weight:400">by Google</span>
+          <!-- ══ POLLINATIONS (links) ══ -->
+          <div style="display:flex;flex-direction:column;gap:0">
+
+            <!-- Logo-Header -->
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+              <div style="width:48px;height:48px;border-radius:12px;
+                          background:linear-gradient(135deg,#16a34a,#4ade80,#86efac,#15803d);
+                          display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;
+                          box-shadow:0 4px 16px rgba(74,222,128,0.3)">🌸</div>
+              <div>
+                <div style="display:flex;align-items:baseline;gap:6px">
+                  <span style="font-size:20px;font-weight:700;letter-spacing:-0.5px">
+                    <span style="color:#4ade80">P</span><span style="color:#86efac">o</span><span style="color:#4ade80">l</span><span style="color:#a3e635">l</span><span style="color:#4ade80">i</span><span style="color:#86efac">n</span><span style="color:#4ade80">a</span><span style="color:#a3e635">t</span><span style="color:#4ade80">i</span><span style="color:#86efac">o</span><span style="color:#4ade80">n</span><span style="color:#a3e635">s</span>
+                  </span>
+                  <span style="font-size:12px;color:var(--dim);font-weight:400">.ai</span>
+                </div>
+                <div style="font-size:12px;color:var(--dim);margin-top:2px">KI-Bildgenerierung · <span style="color:#4ade80;font-weight:600">kostenlos</span> · kein Account nötig</div>
               </div>
-              <div style="font-size:13px;color:var(--dim);margin-top:2px">KI-Bildgenerierung · Gemini API (kostenpflichtig, sehr günstig)</div>
+            </div>
+
+            <!-- Hinweis -->
+            <div style="background:rgba(74,222,128,0.07);border:1px solid rgba(74,222,128,0.2);border-radius:8px;
+                        padding:8px 12px;font-size:12px;color:rgba(255,255,255,0.55);margin-bottom:14px;line-height:1.5">
+              Open-Source · Flux-Modell · Geschwindigkeit variiert (meist 1–15 Sek) · Kein API-Key erforderlich
+            </div>
+
+            <!-- Prompt -->
+            <textarea id="poll-prompt" rows="3"
+              placeholder="Beschreibe das Bild… (Strg+Enter = Generieren)"
+              style="background:#1a2a3a;border:1px solid #253a50;border-radius:8px;color:#e0e6ed;
+                     font-size:14px;padding:12px;resize:vertical;font-family:inherit;outline:none;
+                     width:100%;box-sizing:border-box;margin-bottom:10px"
+              onkeydown="if(event.ctrlKey&&event.key==='Enter')pollGenerate()"></textarea>
+
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+              <select id="poll-aspect" style="background:#1a2a3a;border:1px solid #253a50;border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px;outline:none">
+                <option value="1024x1024">Quadrat (1:1)</option>
+                <option value="1280x720">Querformat (16:9)</option>
+                <option value="720x1280">Hochformat (9:16)</option>
+                <option value="1024x768">4:3</option>
+              </select>
+              <select id="poll-model" style="background:#1a2a3a;border:1px solid #253a50;border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px;outline:none">
+                <option value="flux">Flux (Standard)</option>
+                <option value="flux-realism">Flux Realism</option>
+                <option value="flux-anime">Flux Anime</option>
+                <option value="turbo">Turbo (schneller)</option>
+              </select>
+              <button id="poll-btn" onclick="pollGenerate()"
+                style="background:linear-gradient(135deg,#16a34a,#4ade80);border:none;border-radius:8px;color:white;
+                       font-weight:700;font-size:14px;padding:8px 20px;cursor:pointer;box-shadow:0 2px 8px rgba(74,222,128,0.35)">
+                🌸 Generieren
+              </button>
+              <span id="poll-status" style="font-size:12px;color:#b8c5d4"></span>
+            </div>
+
+            <div id="poll-result" style="display:none;flex-direction:column;align-items:center;gap:10px">
+              <div style="display:flex;gap:8px">
+                <button onclick="pollDownload()" style="background:#16a34a;border:none;border-radius:8px;color:#fff;font-size:13px;padding:7px 18px;cursor:pointer;font-weight:600">⬇ Download</button>
+                <button onclick="pollCopy()" style="background:#2a3a4a;border:1px solid #4a5a6a;border-radius:8px;color:#fff;font-size:13px;padding:7px 18px;cursor:pointer;font-weight:600">📋 Kopieren</button>
+              </div>
+              <img id="poll-img" src="" alt="Generiertes Bild"
+                style="max-width:100%;border-radius:12px;border:1px solid #253a50;box-shadow:0 4px 24px rgba(0,0,0,0.4)">
             </div>
           </div>
 
-          <!-- Upload-Vorschau -->
-          <div id="bildgen-upload-preview" style="display:none;margin-bottom:14px;position:relative;width:fit-content">
-            <img id="bildgen-upload-img" src="" alt="Eingabebild"
-              style="max-height:160px;max-width:100%;border-radius:10px;border:1px solid #253a50;display:block">
-            <div style="position:absolute;top:6px;left:8px;background:rgba(0,0,0,0.6);border-radius:4px;
-                        font-size:12px;color:#aaa;padding:2px 6px">Eingabebild</div>
-            <button onclick="bildgenClearUpload()"
-              style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.7);border:none;border-radius:50%;
-                     color:white;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:1;padding:0">✕</button>
-          </div>
+          <!-- ══ NANO BANANA (rechts) ══ -->
+          <div style="display:flex;flex-direction:column;gap:0">
 
-          <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+            <!-- Logo-Header -->
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+              <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#1a73e8,#34a853,#fbbc04,#ea4335);
+                          display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;
+                          box-shadow:0 4px 16px rgba(251,188,4,0.3)">🍌</div>
+              <div>
+                <div style="display:flex;align-items:baseline;gap:6px">
+                  <span style="font-size:20px;font-weight:700;letter-spacing:-0.5px">
+                    <span style="color:#4285F4">N</span><span style="color:#EA4335">a</span><span style="color:#FBBC05">n</span><span style="color:#34A853">o</span>
+                    <span style="color:var(--text)"> </span>
+                    <span style="color:#4285F4">B</span><span style="color:#EA4335">a</span><span style="color:#FBBC05">n</span><span style="color:#34A853">a</span><span style="color:#4285F4">n</span><span style="color:#EA4335">a</span>
+                  </span>
+                  <span style="font-size:12px;color:var(--dim);font-weight:400">by Google</span>
+                </div>
+                <div style="font-size:12px;color:var(--dim);margin-top:2px">KI-Bildgenerierung · <span style="color:#fbbc04;font-weight:600">~€0.04/Bild</span> · Gemini API</div>
+              </div>
+            </div>
 
-            <!-- Prompt-Zeile mit Büroklammer -->
-            <div style="position:relative">
-              <textarea id="bildgen-prompt" rows="3" placeholder="Beschreibe das Bild oder die gewünschte Änderung… (Strg+Enter = Generieren)"
+            <!-- Hinweis -->
+            <div style="background:rgba(251,188,4,0.07);border:1px solid rgba(251,188,4,0.2);border-radius:8px;
+                        padding:8px 12px;font-size:12px;color:rgba(255,255,255,0.55);margin-bottom:14px;line-height:1.5">
+              Google Gemini · Höchste Qualität · Zuverlässig schnell (3–8 Sek) · API-Key erforderlich
+            </div>
+
+            <!-- Upload-Vorschau -->
+            <div id="bildgen-upload-preview" style="display:none;margin-bottom:14px;position:relative;width:fit-content">
+              <img id="bildgen-upload-img" src="" alt="Eingabebild"
+                style="max-height:160px;max-width:100%;border-radius:10px;border:1px solid #253a50;display:block">
+              <div style="position:absolute;top:6px;left:8px;background:rgba(0,0,0,0.6);border-radius:4px;
+                          font-size:12px;color:#aaa;padding:2px 6px">Eingabebild</div>
+              <button onclick="bildgenClearUpload()"
+                style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.7);border:none;border-radius:50%;
+                       color:white;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:1;padding:0">✕</button>
+            </div>
+
+            <!-- Prompt -->
+            <div style="position:relative;margin-bottom:10px">
+              <textarea id="bildgen-prompt" rows="3" placeholder="Beschreibe das Bild… (Strg+Enter = Generieren)"
                 style="background:#1a2a3a;border:1px solid #253a50;border-radius:8px;color:#e0e6ed;
                        font-size:14px;padding:12px 44px 12px 12px;resize:vertical;font-family:inherit;outline:none;
-                       width:100%;box-sizing:border-box;transition:border-color .2s"
+                       width:100%;box-sizing:border-box"
                 onkeydown="if(event.ctrlKey&&event.key==='Enter')bildgenGenerate()"></textarea>
-              <button onclick="document.getElementById('bildgen-file').click()" title="Bild hochladen zum Bearbeiten"
+              <button onclick="document.getElementById('bildgen-file').click()" title="Bild hochladen"
                 style="position:absolute;bottom:10px;right:10px;background:none;border:none;cursor:pointer;
-                       font-size:20px;opacity:0.6;transition:opacity .2s;line-height:1;padding:0"
+                       font-size:20px;opacity:0.6;line-height:1;padding:0"
                 onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">📎</button>
               <input id="bildgen-file" type="file" accept="image/*" style="display:none" onchange="bildgenFileChanged(this)">
             </div>
 
-            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-              <select id="bildgen-aspect" style="background:#1a2a3a;border:1px solid #253a50;
-                border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:14px;outline:none">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+              <select id="bildgen-aspect" style="background:#1a2a3a;border:1px solid #253a50;border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px;outline:none">
                 <option value="1:1">Quadrat (1:1)</option>
                 <option value="16:9">Querformat (16:9)</option>
                 <option value="9:16">Hochformat (9:16)</option>
                 <option value="4:3">4:3</option>
                 <option value="3:4">3:4</option>
               </select>
-              <select id="bildgen-model" style="background:#1a2a3a;border:1px solid #253a50;
-                border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:14px;outline:none">
+              <select id="bildgen-model" style="background:#1a2a3a;border:1px solid #253a50;border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px;outline:none">
                 <option value="gemini-2.5-flash-image">Nano Banana</option>
-                <option value="gemini-3.1-flash-image-preview">Nano Banana 2 (schnell)</option>
+                <option value="gemini-3.1-flash-image-preview">Nano Banana 2</option>
               </select>
               <button id="bildgen-btn" onclick="bildgenGenerate()"
                 style="background:linear-gradient(135deg,#1a73e8,#34a853);border:none;border-radius:8px;color:white;
-                       font-weight:700;font-size:14px;padding:8px 24px;cursor:pointer;transition:opacity .2s;
-                       box-shadow:0 2px 8px rgba(26,115,232,0.4)">
+                       font-weight:700;font-size:14px;padding:8px 20px;cursor:pointer;box-shadow:0 2px 8px rgba(26,115,232,0.4)">
                 ✨ Generieren
               </button>
-              <span id="bildgen-status" style="font-size:13px;color:#b8c5d4"></span>
+              <span id="bildgen-status" style="font-size:12px;color:#b8c5d4"></span>
             </div>
-          </div>
 
-          <div id="bildgen-result" style="display:none;flex-direction:column;align-items:center;gap:14px;margin-top:8px">
-            <div style="display:flex;gap:10px;margin-bottom:4px">
-              <button onclick="bildgenDownload()"
-                style="background:#1a73e8;border:none;border-radius:8px;
-                       color:#ffffff;font-size:14px;padding:8px 22px;cursor:pointer;font-weight:600">
-                ⬇ Herunterladen
-              </button>
-              <button onclick="bildgenCopy()"
-                style="background:#2a3a4a;border:1px solid #4a5a6a;border-radius:8px;
-                       color:#ffffff;font-size:14px;padding:8px 22px;cursor:pointer;font-weight:600">
-                📋 Kopieren
-              </button>
+            <div id="bildgen-result" style="display:none;flex-direction:column;align-items:center;gap:10px">
+              <div style="display:flex;gap:8px">
+                <button onclick="bildgenDownload()" style="background:#1a73e8;border:none;border-radius:8px;color:#fff;font-size:13px;padding:7px 18px;cursor:pointer;font-weight:600">⬇ Download</button>
+                <button onclick="bildgenCopy()" style="background:#2a3a4a;border:1px solid #4a5a6a;border-radius:8px;color:#fff;font-size:13px;padding:7px 18px;cursor:pointer;font-weight:600">📋 Kopieren</button>
+              </div>
+              <img id="bildgen-img" src="" alt="Generiertes Bild"
+                style="max-width:100%;border-radius:12px;border:1px solid #253a50;box-shadow:0 4px 24px rgba(0,0,0,0.4)">
             </div>
-            <img id="bildgen-img" src="" alt="Generiertes Bild"
-              style="max-width:100%;border-radius:12px;border:1px solid #253a50;box-shadow:0 4px 24px rgba(0,0,0,0.4)">
           </div>
 
         </div>
@@ -2384,274 +2445,212 @@ html, body {
       <!-- ═══ KI-FORUM ═══════════════════════════════════════════════════════ -->
       <div class="page" id="page-kiforum" style="padding:0;overflow:hidden">
         <style>
-        /* ── KI-FORUM IMMERSIVE SCENE ── */
+        /* ── KI-FORUM ── */
         #page-kiforum.active { display:flex !important; flex-direction:column; padding:0; }
-        #page-kiforum.active {
-          display: flex !important;
-          flex-direction: column;
-        }
-        #kif-wrapper {
-          display: flex; flex-direction: column; height: 100%;
-          background: #0a1628; font-family: inherit;
-        }
-        /* ROOM SCENE — top 58% */
+        #kif-wrapper { display:flex; flex-direction:column; height:100%; background:#0a1628; font-family:inherit; }
+
+        /* ROOM SCENE */
         #kif-room {
-          position: relative; flex: 0 0 42%; overflow: visible;
-          background: linear-gradient(180deg, #0d1f3c 0%, #0a1628 60%, #0e1a0a 100%);
+          position:relative; flex:0 0 36%; overflow:visible;
+          background:linear-gradient(180deg,#0d1f3c 0%,#0a1628 60%,#0e1a0a 100%);
         }
-        /* Real room background */
-        #kif-room-bg {
-          position:absolute; inset:0; z-index:0;
-          background: url('/api/kiforum/bg') center center / cover no-repeat;
-        }
-        #kif-room-bg::after {
-          content:''; position:absolute; inset:0;
-          background:linear-gradient(180deg,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.2) 100%);
-        }
-        /* CHARACTERS */
-        .kif-char {
-          position:absolute; bottom:22%; z-index:10;
-          display:flex; flex-direction:column; align-items:center; gap:4px;
-          cursor:pointer; transition:transform .2s;
-        }
+        /* Room background */
+        #kif-room-bg { position:absolute; inset:0; z-index:0; background:url('/api/kiforum/bg') center/cover no-repeat; }
+        #kif-room-bg::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.25) 100%); }
+
+        /* Characters */
+        .kif-char { position:absolute; bottom:0; z-index:10; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; transition:transform .2s; }
         .kif-char:hover { transform:scale(1.05) translateY(-4px); }
-        .kif-char:active { transform:scale(0.97); }
-        #kif-chris { left:5%; bottom:0 !important; transform:translateY(38px); }
-        #kif-bolla { right:5%; bottom:8% !important; transform:translateY(38px); }
-        #kif-chris:hover { transform:translateY(38px) scale(1.05) translateY(-4px); }
-        #kif-bolla:hover { transform:translateY(38px) scale(1.05) translateY(-4px); }
-        .kif-char img {
-          filter:drop-shadow(0 8px 24px rgba(0,0,0,0.8));
-          mix-blend-mode: multiply;
-        }
-        .kif-char-label {
-          font-size:11px; font-weight:700; letter-spacing:1.5px;
-          text-transform:uppercase; color:rgba(255,255,255,0.5);
-          background:rgba(0,0,0,0.4); padding:2px 8px; border-radius:10px;
-        }
-        .kif-hint {
-          font-size:10px; color:rgba(255,255,255,0.3); margin-top:-2px;
-          animation: kif-pulse 2s ease-in-out infinite;
-        }
+        #kif-chris { left:4%; }
+        #kif-bolla { right:4%; }
+        .kif-char img { filter:drop-shadow(0 8px 24px rgba(0,0,0,0.8)); mix-blend-mode:multiply; }
+        .kif-char-label { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.45); background:rgba(0,0,0,0.4); padding:2px 7px; border-radius:10px; }
+        .kif-hint { font-size:10px; color:rgba(255,255,255,0.28); animation:kif-pulse 2s ease-in-out infinite; }
         @keyframes kif-pulse { 0%,100%{opacity:.3} 50%{opacity:.7} }
-        /* SPEECH BUBBLE in scene */
-        #kif-bubble-area {
-          position:absolute; top:5%; left:25%; right:25%; z-index:20;
-          display:flex; flex-direction:column; gap:8px; align-items:center;
-          max-height:75%; overflow:hidden;
+
+        /* ── BOLLA DENKT — Grafische Sprechblase ── */
+        #kif-thinking-wrap {
+          display:none; position:absolute; right:14%; top:6%; z-index:40;
         }
-        .kif-bubble {
-          max-width:100%; padding:10px 14px; border-radius:14px;
-          font-size:13px; line-height:1.5; color:#fff; position:relative;
-          animation: kif-popin .3s cubic-bezier(.175,.885,.32,1.275);
-          box-shadow:0 4px 20px rgba(0,0,0,0.5);
+        #kif-thinking-bubble {
+          background:rgba(20,45,80,0.95); border:1.5px solid rgba(96,165,250,0.5);
+          border-radius:20px; padding:12px 18px; min-width:160px; max-width:240px;
+          box-shadow:0 8px 32px rgba(0,0,0,0.6);
+          animation:kif-popin .3s cubic-bezier(.175,.885,.32,1.275);
+          position:relative;
         }
-        @keyframes kif-popin {
-          from { transform:scale(0.6); opacity:0; }
-          to   { transform:scale(1);   opacity:1; }
+        /* bubble tail pointing down-right toward Bolla */
+        #kif-thinking-bubble::after {
+          content:''; position:absolute; bottom:-9px; right:28px;
+          width:0; height:0;
+          border-left:9px solid transparent;
+          border-right:9px solid transparent;
+          border-top:10px solid rgba(96,165,250,0.5);
         }
-        .kif-bubble.bolla {
-          background:linear-gradient(135deg,#1e3a5f,#162d4a);
-          border:1px solid rgba(96,165,250,0.3);
-          align-self:flex-end;
+        /* Trail dots from bubble toward Bolla */
+        #kif-thinking-trail {
+          display:flex; justify-content:flex-end; padding-right:32px;
+          gap:5px; align-items:flex-start; margin-top:2px;
         }
-        .kif-bubble.user {
-          background:linear-gradient(135deg,#2d1a00,#3d2200);
-          border:1px solid rgba(255,160,50,0.3);
-          align-self:flex-start;
-        }
-        .kif-bubble-title {
-          font-weight:700; font-size:12px; margin-bottom:4px;
-          color:rgba(255,255,255,0.7);
-        }
-        .kif-bubble-del {
-          position:absolute; top:4px; right:6px;
-          background:none; border:none; color:rgba(255,255,255,0.2);
-          cursor:pointer; font-size:12px; padding:0; line-height:1;
-        }
-        .kif-bubble-del:hover { color:rgba(255,80,80,0.7); }
-        /* CHRIS INPUT MODAL */
-        #kif-input-modal {
-          display:none; position:absolute; top:50%; left:50%;
-          transform:translate(-50%,-50%); z-index:50;
-          background:#0f1e35; border:1px solid rgba(255,160,50,0.4);
-          border-radius:16px; padding:18px; width:320px;
-          box-shadow:0 20px 60px rgba(0,0,0,0.7);
-          animation:kif-popin .25s ease;
-        }
-        #kif-input-modal textarea {
-          width:100%; background:#1a2d45; border:1px solid #2a4060;
-          border-radius:8px; color:#e0e6ed; font-size:13px;
-          padding:10px; resize:none; font-family:inherit; outline:none;
-          box-sizing:border-box;
-        }
-        #kif-input-modal textarea:focus { border-color:#ff9933; }
-        /* BOLLA THINKING */
-        #kif-bolla-thinking {
-          display:none; position:absolute; bottom:28%; right:6%; z-index:30;
-          background:rgba(30,58,95,0.9); border:1px solid rgba(96,165,250,0.3);
-          border-radius:10px; padding:6px 12px; font-size:12px; color:#60a5fa;
-        }
-        /* BOTTOM FEED */
-        #kif-feed-area {
-          flex:1; overflow-y:auto; background:#080f1a;
-          border-top:2px solid #1a2a40; padding:14px 20px;
-        }
-        #kif-feed-inner {
-          max-width:900px; margin:0 auto;
-        }
-        .kif-feed-pair {
-          display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;
-        }
-        .kif-feed-pair .kif-feed-item { margin-bottom:0; }
-        /* thesis = user post */
-        .kif-feed-item {
-          display:flex; gap:12px; padding:12px 14px; border-radius:10px;
-          margin-bottom:4px; position:relative; transition:background .15s;
-        }
-        .kif-feed-item.kif-thesis {
-          background:rgba(255,153,51,0.07);
-          border:1px solid rgba(255,153,51,0.25);
-          border-left:3px solid #ff9933;
-        }
-        .kif-feed-item.kif-thesis:hover { background:rgba(255,153,51,0.11); }
-        /* bolla reaction */
-        .kif-feed-item.kif-reaction {
-          background:rgba(96,165,250,0.06);
-          border:1px solid rgba(96,165,250,0.18);
-          border-left:3px solid #3b82f6;
-          margin-bottom:14px;
-        }
-        .kif-feed-item.kif-reaction:hover { background:rgba(96,165,250,0.1); }
-        /* standalone bolla thesis (from generate) */
-        .kif-feed-item.kif-bolla-topic {
-          background:rgba(167,139,250,0.07);
-          border:1px solid rgba(167,139,250,0.22);
-          border-left:3px solid #a78bfa;
-          margin-bottom:14px;
-        }
-        .kif-feed-item.kif-bolla-topic:hover { background:rgba(167,139,250,0.11); }
-        .kif-feed-avatar { width:34px; height:34px; border-radius:50%; flex-shrink:0; object-fit:cover; }
-        .kif-feed-body { flex:1; min-width:0; }
-        .kif-feed-meta { font-size:11px; color:rgba(255,255,255,0.3); margin-bottom:3px; }
-        .kif-feed-title { font-size:16px; font-weight:700; color:#e0e6ed; margin-bottom:5px; }
-        .kif-feed-label { font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; margin-bottom:3px; }
-        .kif-thesis .kif-feed-label { color:#ff9933; }
-        .kif-reaction .kif-feed-label { color:#60a5fa; }
-        .kif-bolla-topic .kif-feed-label { color:#a78bfa; }
-        .kif-feed-content { font-size:14px; color:rgba(255,255,255,0.65); line-height:1.65; }
-        .kif-feed-img { width:100%; max-width:320px; border-radius:10px; margin-top:12px; display:block; border:1px solid rgba(255,255,255,0.1); }
-        mark.kif-kw {
-          background:rgba(96,165,250,0.22); color:#bfdbfe;
-          border-radius:3px; padding:0 2px; font-style:normal;
-          font-weight:600; text-decoration:none;
-        }
-        .kif-aber-edit {
-          margin-top:10px; padding:8px 10px; border-radius:8px;
-          background:rgba(251,191,36,0.05); border-left:3px solid #f59e0b;
-        }
-        .kif-aber-label { font-size:10px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:#f59e0b; margin-bottom:5px; }
-        .kif-aber-textarea {
-          width:100%; background:rgba(0,0,0,0.25); border:1px solid rgba(251,191,36,0.2);
-          border-radius:6px; color:#e0e6ed; font-size:12px; padding:6px 8px;
-          resize:none; font-family:inherit; outline:none; box-sizing:border-box; min-height:48px; line-height:1.4;
-        }
-        .kif-aber-textarea:focus { border-color:rgba(251,191,36,0.5); }
-        .kif-aber-btn {
-          margin-top:5px; padding:3px 10px; border-radius:6px;
-          background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.3);
-          color:#fbbf24; font-size:11px; cursor:pointer; font-family:inherit; transition:all .15s;
-        }
-        .kif-aber-btn:hover { background:rgba(251,191,36,0.22); }
-        .kif-feed-del {
-          position:absolute; top:8px; right:10px;
-          background:none; border:none; color:rgba(255,255,255,0.12);
-          cursor:pointer; font-size:14px; padding:0;
-        }
-        .kif-feed-del:hover { color:rgba(255,80,80,0.6); }
-        .kif-feed-empty { text-align:center; padding:20px; color:rgba(255,255,255,0.2); font-size:13px; }
+        #kif-thinking-trail span { border-radius:50%; background:rgba(96,165,250,0.55); border:1px solid rgba(96,165,250,0.7); display:block; }
+        #kif-thinking-trail span:nth-child(1) { width:9px; height:9px; }
+        #kif-thinking-trail span:nth-child(2) { width:6px; height:6px; }
+        #kif-thinking-trail span:nth-child(3) { width:3px; height:3px; }
+        /* Animated dots inside bubble (thinking state) */
+        .kif-typing-dots { display:flex; gap:5px; justify-content:center; align-items:center; min-height:22px; }
+        .kif-typing-dots span { width:7px; height:7px; border-radius:50%; background:rgba(96,165,250,0.85); display:inline-block; }
+        .kif-typing-dots span:nth-child(1) { animation:kif-bounce 1.3s ease-in-out .0s infinite; }
+        .kif-typing-dots span:nth-child(2) { animation:kif-bounce 1.3s ease-in-out .2s infinite; }
+        .kif-typing-dots span:nth-child(3) { animation:kif-bounce 1.3s ease-in-out .4s infinite; }
+        @keyframes kif-bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-7px)} }
+        /* Content state */
+        #kif-thinking-text { font-size:12px; color:#bfdbfe; line-height:1.45; display:none; }
+        #kif-thinking-label { font-size:10px; font-weight:700; letter-spacing:.6px; color:rgba(96,165,250,0.6); text-transform:uppercase; margin-bottom:5px; }
+
         /* TOP BAR */
-        #kif-topbar {
-          position:absolute; top:8px; right:12px; z-index:40;
-          display:flex; gap:6px;
-        }
-        .kif-topbtn {
-          background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.12);
-          color:rgba(255,255,255,0.6); border-radius:6px; padding:4px 10px;
-          font-size:11px; cursor:pointer; backdrop-filter:blur(4px); transition:all .15s;
-        }
+        #kif-topbar { position:absolute; top:8px; right:10px; z-index:40; display:flex; gap:5px; }
+        #kif-title-overlay { position:absolute; top:8px; left:10px; z-index:40; color:rgba(255,255,255,0.38); font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; }
+        .kif-topbtn { background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.6); border-radius:6px; padding:4px 9px; font-size:11px; cursor:pointer; backdrop-filter:blur(4px); transition:all .15s; }
         .kif-topbtn:hover { background:rgba(255,255,255,0.1); color:#fff; }
-        /* Title overlay */
-        #kif-title-overlay {
-          position:absolute; top:8px; left:12px; z-index:40;
-          color:rgba(255,255,255,0.4); font-size:12px; font-weight:600;
-          letter-spacing:2px; text-transform:uppercase;
+
+        /* Chris input modal */
+        #kif-input-modal { display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:50; background:#0f1e35; border:1px solid rgba(255,160,50,0.4); border-radius:16px; padding:18px; width:320px; box-shadow:0 20px 60px rgba(0,0,0,0.7); }
+        #kif-input-modal textarea { width:100%; background:#1a2d45; border:1px solid #2a4060; border-radius:8px; color:#e0e6ed; font-size:13px; padding:10px; resize:none; font-family:inherit; outline:none; box-sizing:border-box; }
+        #kif-input-modal textarea:focus { border-color:#ff9933; }
+
+        @keyframes kif-popin { from{transform:scale(.6);opacity:0} to{transform:scale(1);opacity:1} }
+
+        /* ── DISCUSSION FEED ── */
+        #kif-feed-area { flex:1; overflow-y:auto; background:#070e1a; border-top:2px solid #152238; padding:16px 20px 24px; }
+        #kif-feed-inner { max-width:780px; margin:0 auto; }
+
+        /* Chat messages */
+        .kif-msg-wrap { margin-bottom:6px; }
+        .kif-msg { display:flex; flex-direction:column; max-width:72%; position:relative; }
+        .kif-msg.kif-msg-chris { margin-right:auto; }
+        .kif-msg.kif-msg-bolla { margin-left:auto; align-items:flex-end; }
+        .kif-msg-bubble {
+          border-radius:18px; padding:11px 15px; position:relative;
+          box-shadow:0 4px 16px rgba(0,0,0,0.4);
         }
+        .kif-msg-chris .kif-msg-bubble {
+          background:rgba(255,153,51,0.08); border:1px solid rgba(255,153,51,0.32);
+          border-bottom-left-radius:5px;
+        }
+        .kif-msg-bolla .kif-msg-bubble {
+          background:rgba(96,165,250,0.07); border:1px solid rgba(96,165,250,0.25);
+          border-bottom-right-radius:5px;
+        }
+        .kif-msg-label { font-size:10px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; margin-bottom:4px; }
+        .kif-msg-chris .kif-msg-label { color:#ff9933; }
+        .kif-msg-bolla .kif-msg-label { color:#60a5fa; }
+        .kif-msg-title { font-size:15px; font-weight:700; color:#e0e6ed; margin-bottom:4px; }
+        .kif-msg-content { font-size:13.5px; color:rgba(255,255,255,0.68); line-height:1.65; }
+        .kif-msg-meta { font-size:10px; color:rgba(255,255,255,0.25); margin-top:5px; text-align:right; }
+        .kif-msg-img { width:100%; max-width:260px; border-radius:10px; margin-top:10px; display:block; border:1px solid rgba(255,255,255,0.1); }
+        mark.kif-kw { background:rgba(96,165,250,0.22); color:#bfdbfe; border-radius:3px; padding:0 2px; font-weight:600; }
+
+        /* Action buttons on each bubble — immer sichtbar */
+        .kif-msg-actions { display:flex; gap:6px; margin-top:7px; justify-content:flex-end; }
+        .kif-msg-btn { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.45); cursor:pointer; font-size:11px; padding:2px 8px; border-radius:6px; line-height:1.4; transition:all .15s; font-family:inherit; }
+        .kif-msg-btn:hover { background:rgba(255,255,255,0.12); color:#fff; }
+        .kif-msg-btn.del:hover { background:rgba(255,60,60,0.15); border-color:rgba(255,60,60,0.3); color:#f87171; }
+
+        /* Thought dots under each message */
+        .kif-msg-dots { display:flex; gap:5px; align-items:flex-end; padding:5px 14px 2px; height:20px; }
+        .kif-msg-chris .kif-msg-dots { justify-content:flex-start; }
+        .kif-msg-bolla .kif-msg-dots { justify-content:flex-end; }
+        .kif-msg-dots span { border-radius:50%; display:block; flex-shrink:0; }
+        .kif-msg-dots span:nth-child(1) { width:10px; height:10px; }
+        .kif-msg-dots span:nth-child(2) { width:6px; height:6px; }
+        .kif-msg-dots span:nth-child(3) { width:3px; height:3px; }
+        .kif-msg-chris .kif-msg-dots span { background:rgba(255,153,51,0.55); border:1px solid rgba(255,153,51,0.7); }
+        .kif-msg-bolla .kif-msg-dots span { background:rgba(96,165,250,0.5); border:1px solid rgba(96,165,250,0.65); }
+
+        /* Aber-bar */
+        #kif-aber-bar { margin:10px 0 6px 0; padding:12px 14px; background:rgba(251,191,36,0.05); border:1px solid rgba(251,191,36,0.2); border-radius:14px; }
+        #kif-aber-bar textarea { width:100%; background:rgba(0,0,0,0.25); border:1px solid rgba(251,191,36,0.2); border-radius:8px; color:#e0e6ed; font-size:13px; padding:8px 10px; resize:none; font-family:inherit; outline:none; box-sizing:border-box; min-height:46px; line-height:1.4; }
+        #kif-aber-bar textarea:focus { border-color:rgba(251,191,36,0.5); }
+        .kif-aber-btnrow { display:flex; gap:8px; margin-top:8px; justify-content:flex-end; flex-wrap:wrap; }
+        .kif-aber-action { padding:5px 13px; border-radius:8px; font-size:12px; cursor:pointer; font-family:inherit; transition:all .15s; border:1px solid; }
+        .kif-aber-action.einwand { background:rgba(251,191,36,0.1); border-color:rgba(251,191,36,0.35); color:#fbbf24; }
+        .kif-aber-action.einwand:hover { background:rgba(251,191,36,0.2); }
+        .kif-aber-action.abschliessen { background:rgba(74,222,128,0.1); border-color:rgba(74,222,128,0.35); color:#4ade80; }
+        .kif-aber-action.abschliessen:hover { background:rgba(74,222,128,0.2); }
+
+        /* Conclusion card */
+        .kif-conclusion { margin-top:16px; padding:16px 18px; border-radius:18px; background:rgba(251,191,36,0.06); border:1.5px solid rgba(251,191,36,0.35); box-shadow:0 4px 20px rgba(0,0,0,0.4); }
+        .kif-conclusion-label { font-size:10px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:#f59e0b; margin-bottom:6px; }
+        .kif-conclusion-title { font-size:16px; font-weight:700; color:#fde68a; margin-bottom:6px; }
+        .kif-conclusion-content { font-size:14px; color:rgba(255,255,255,0.75); line-height:1.7; }
+        .kif-conclusion-dots { display:flex; gap:5px; padding:6px 16px 2px; }
+        .kif-conclusion-dots span { border-radius:50%; background:rgba(251,191,36,0.5); border:1px solid rgba(251,191,36,0.7); display:block; }
+        .kif-conclusion-dots span:nth-child(1) { width:10px; height:10px; }
+        .kif-conclusion-dots span:nth-child(2) { width:6px; height:6px; }
+        .kif-conclusion-dots span:nth-child(3) { width:3px; height:3px; }
+
+        .kif-feed-empty { text-align:center; padding:24px; color:rgba(255,255,255,0.18); font-size:13px; }
         </style>
 
         <div id="kif-wrapper">
 
           <!-- ═══ ROOM SCENE ═══ -->
           <div id="kif-room">
-
-            <!-- Title -->
             <div id="kif-title-overlay">🧠 KI-Forum</div>
-
-            <!-- Top controls -->
-            <div id="kif-topbar">
-              <button class="kif-topbtn" onclick="kifExport()">📤 Export</button>
-              <button class="kif-topbtn" onclick="window.print()">🖨️</button>
-            </div>
-
-            <!-- Room background image -->
+            <div id="kif-topbar"></div>
             <div id="kif-room-bg"></div>
 
-            <!-- Speech bubbles (latest 2) -->
-            <div id="kif-bubble-area"></div>
+            <!-- Bolla denkt: grafische Sprechblase -->
+            <div id="kif-thinking-wrap">
+              <div id="kif-thinking-bubble">
+                <div id="kif-thinking-label">Bolla denkt…</div>
+                <div id="kif-thinking-dots-anim" class="kif-typing-dots">
+                  <span></span><span></span><span></span>
+                </div>
+                <div id="kif-thinking-text"></div>
+              </div>
+              <div id="kif-thinking-trail">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
 
-            <!-- Bolla thinking indicator -->
-            <div id="kif-bolla-thinking">⏳ Bolla denkt nach…</div>
-
-            <!-- CHRIS character (click to enter thesis) -->
-            <div class="kif-char" id="kif-chris" onclick="kifShowInput()" title="Klick um deine These einzugeben">
-              <img src="/api/kiforum/chris" height="260" alt="Chris">
+            <!-- Chris -->
+            <div class="kif-char" id="kif-chris" onclick="kifShowInput()" title="These eingeben">
+              <img src="/api/kiforum/chris" height="230" alt="Chris">
               <div class="kif-char-label">Chris</div>
               <div class="kif-hint">← anklicken</div>
             </div>
 
-            <!-- BOLLA character (click to generate thesis) -->
-            <div class="kif-char" id="kif-bolla" onclick="kifGenerateThesis()" title="Bolla anstupsen für eine neue These">
-              <img src="/api/kiforum/bolla" height="210"
-                style="animation:bollaWave 2.8s ease-in-out infinite;transform-origin:center bottom;"
-                alt="Bolla">
+            <!-- Bolla -->
+            <div class="kif-char" id="kif-bolla" onclick="kifGenerateThesis()" title="Bolla anstupsen">
+              <img src="/api/kiforum/bolla" height="190"
+                style="animation:bollaWave 2.8s ease-in-out infinite;transform-origin:center bottom;" alt="Bolla">
               <div class="kif-char-label">Bolla</div>
               <div class="kif-hint">anstupsen →</div>
             </div>
 
             <!-- Chris input modal -->
             <div id="kif-input-modal">
-              <div style="font-size:13px;font-weight:600;color:#ff9933;margin-bottom:10px">
-                💬 Deine These oder Frage
-              </div>
+              <div style="font-size:13px;font-weight:600;color:#ff9933;margin-bottom:10px">💬 Deine These oder Frage</div>
               <textarea id="kif-user-input" rows="3"
                 placeholder="z.B. Schüler brauchen kein PowerPoint mehr lernen…"
                 onkeydown="if(event.ctrlKey&&event.key==='Enter')kifSubmitUser()"></textarea>
               <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
                 <button class="kif-topbtn" onclick="kifHideInput()">Abbrechen</button>
-                <button class="kif-topbtn"
-                  style="background:rgba(255,153,51,0.2);border-color:rgba(255,153,51,0.5);color:#ff9933"
-                  onclick="kifSubmitUser()">➤ Bolla fragen</button>
+                <button class="kif-topbtn" style="background:rgba(255,153,51,0.2);border-color:rgba(255,153,51,0.5);color:#ff9933" onclick="kifSubmitUser()">➤ Bolla fragen</button>
               </div>
             </div>
-
           </div><!-- end kif-room -->
 
           <!-- ═══ DISCUSSION FEED ═══ -->
+          <div style="background:#070e1a;border-top:2px solid #152238;padding:6px 16px;display:flex;gap:6px;align-items:center;flex-shrink:0">
+            <button class="kif-topbtn" onclick="kifLoad()" style="background:rgba(96,165,250,0.1);border-color:rgba(96,165,250,0.3);color:#60a5fa">🔄 Neu laden</button>
+            <button class="kif-topbtn" onclick="kifWordExport()" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa">📄 Word</button>
+            <button class="kif-topbtn" onclick="kifJsonExport()">📤 JSON</button>
+          </div>
           <div id="kif-feed-area">
             <div id="kif-feed-inner">
-              <div class="kif-feed-empty" id="kif-feed-empty">
-                Noch keine Beiträge — stups Bolla an oder gib selbst eine These ein!
-              </div>
+              <div class="kif-feed-empty" id="kif-feed-empty">Noch keine Beiträge — stups Bolla an oder gib selbst eine These ein!</div>
             </div>
           </div>
 
@@ -2660,243 +2659,286 @@ html, body {
         <script>
         let _kifPosts = [];
 
+        // ── LOADING ──
         async function kifLoad() {
+          const btn = document.querySelector('[onclick="kifLoad()"]');
+          if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
           try {
             _kifPosts = await fetch('/api/kiforum').then(r => r.json());
             kifRenderAll();
-            kifShowLatestBubbles();
-          } catch(e) {}
+          } catch(e) {
+            const inner = document.getElementById('kif-feed-inner');
+            if (inner) inner.insertAdjacentHTML('afterbegin','<div style="color:#e57373;padding:12px;font-size:13px">⚠ Fehler beim Laden: ' + e.message + '</div>');
+          } finally {
+            if (btn) { btn.textContent = '🔄 Neu laden'; btn.disabled = false; }
+          }
         }
 
         function kifEsc(s) {
           return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         }
 
-        function kifRenderAll() {
-          const inner = document.getElementById('kif-feed-inner');
-          const empty = document.getElementById('kif-feed-empty');
-          inner.querySelectorAll('.kif-feed-item, .kif-feed-pair').forEach(el => el.remove());
-          if (!_kifPosts.length) { empty.style.display = 'block'; return; }
-          empty.style.display = 'none';
-          let i = 0;
-          while (i < _kifPosts.length) {
-            const p = _kifPosts[i];
-            const next = _kifPosts[i + 1];
-            if (p.type === 'bolla' && p.replyTo && next && next.type === 'user') {
-              // bolla reaction newest, then user thesis
-              inner.insertAdjacentHTML('beforeend',
-                `<div class="kif-feed-pair" id="kif-fp-${p.id}" data-thesis-id="${next.id}">
-                  ${kifThesisCard(next, p.id)}${kifReactionCard(p)}
-                </div>`);
-              i += 2;
-            } else if (p.type === 'user' && next && next.type === 'bolla' && next.replyTo) {
-              // user thesis newest, then bolla reaction
-              inner.insertAdjacentHTML('beforeend',
-                `<div class="kif-feed-pair" id="kif-fp-${next.id}" data-thesis-id="${p.id}">
-                  ${kifThesisCard(p, next.id)}${kifReactionCard(next)}
-                </div>`);
-              i += 2;
-            } else {
-              inner.insertAdjacentHTML('beforeend', kifStandaloneCard(p));
-              i++;
-            }
-          }
-        }
-
         function kifTs(p) {
           return new Date(p.timestamp).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
         }
 
-        function kifThesisCard(p, bollaId) {
-          const content = p.content ? `<div class="kif-feed-content" style="margin-bottom:8px">${kifEsc(p.content).replace(/\n/g,'<br>')}</div>` : '';
-          return `<div class="kif-feed-item kif-thesis" id="kif-fi-${p.id}">
-            <div class="kif-feed-body">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-                <span class="kif-feed-label">💬 Deine These</span>
-                <span class="kif-feed-meta">${kifTs(p)}</span>
-              </div>
-              ${content}
-              <div class="kif-aber-edit">
-                <div class="kif-aber-label">💬 Aber...</div>
-                <textarea class="kif-aber-textarea" id="kif-aber-u-${p.id}" placeholder="Dein Einwand oder Ergänzung…" rows="2">${kifEsc(p.aber_user||'')}</textarea>
-                <button class="kif-aber-btn" onclick="kifRevise('${p.id}','${bollaId}')">↩ Bolla neu befragen</button>
-              </div>
-            </div>
-            <button class="kif-feed-del" onclick="kifDelete('${p.id}')" title="Löschen">🗑</button>
-          </div>`;
-        }
-
         function kifHighlight(text, keywords) {
           let out = kifEsc(text);
-          if (!keywords || !keywords.length) return out;
-          keywords.forEach(kw => {
+          (keywords||[]).forEach(kw => {
             const safe = kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
             out = out.replace(new RegExp(`(${safe})`, 'gi'), '<mark class="kif-kw">$1</mark>');
           });
           return out;
         }
 
-        function kifReactionCard(p) {
-          const title = p.title ? `<div class="kif-feed-title">${kifEsc(p.emoji||'')} ${kifEsc(p.title)}</div>` : '';
-          const bodyText = kifHighlight(p.content||'', p.keywords);
-          const body = bodyText ? `<div class="kif-feed-content">${bodyText.replace(/\n/g,'<br>')}</div>` : '';
-          const imgHtml = p.img ? `<img class="kif-feed-img" src="/api/kiforum/img/${kifEsc(p.img)}" alt="">` : '';
-          return `<div class="kif-feed-item kif-reaction" id="kif-fi-${p.id}">
-            <div class="kif-feed-body">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-                <span class="kif-feed-label">🤖 Bollas Reaktion</span>
-                <span class="kif-feed-meta">${kifTs(p)}</span>
-              </div>
-              ${title}${body}${imgHtml}
-            </div>
-            <button class="kif-feed-del" onclick="kifDelete('${p.id}')" title="Löschen">🗑</button>
-          </div>`;
-        }
-
-        function kifStandaloneCard(p) {
-          const title = p.title ? `<div class="kif-feed-title">${kifEsc(p.emoji||'')} ${kifEsc(p.title)}</div>` : '';
-          const bodyText = kifHighlight(p.content||'', p.keywords);
-          const body = bodyText ? `<div class="kif-feed-content">${bodyText.replace(/\n/g,'<br>')}</div>` : '';
-          const aberHtml = p.aber ? `<div class="kif-aber-edit" style="margin-bottom:0"><div class="kif-aber-label">⚡ Aber</div><div style="font-size:12px;color:rgba(251,191,36,.85);line-height:1.5">${kifEsc(p.aber)}</div></div>` : '';
-          const imgHtml = p.img ? `<img class="kif-feed-img" src="/api/kiforum/img/${kifEsc(p.img)}" alt="">` : '';
-          return `<div class="kif-feed-item kif-bolla-topic" id="kif-fi-${p.id}" style="margin-bottom:14px">
-            <div class="kif-feed-body">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-                <span class="kif-feed-label">🧠 Bollas Thema</span>
-                <span class="kif-feed-meta">${kifTs(p)}</span>
-              </div>
-              ${title}${body}${kwHtml}${aberHtml}${imgHtml}
-            </div>
-            <button class="kif-feed-del" onclick="kifDelete('${p.id}')" title="Löschen">🗑</button>
-          </div>`;
-        }
-
-        async function kifRevise(thesisId, bollaId) {
-          const aberText = document.getElementById('kif-aber-u-'+thesisId)?.value.trim()||'';
-          if (!aberText) return;
-          const thesisPost = _kifPosts.find(p=>p.id===thesisId);
-          await _kifDoRevise(thesisId, bollaId, thesisPost?.content||'', `Mein Einwand: ${aberText}`);
-        }
-
-        async function kifReviseFromBolla(bollaId) {
-          const aberText = document.getElementById('kif-aber-b-'+bollaId)?.value.trim()||'';
-          if (!aberText) return;
-          const pair = document.getElementById('kif-fp-'+bollaId);
-          const thesisId = pair?.dataset.thesisId;
-          const thesisPost = _kifPosts.find(p=>p.id===thesisId);
-          await _kifDoRevise(thesisId, bollaId, thesisPost?.content||'', `Weiterer Gedanke: ${aberText}`);
-        }
-
-        async function _kifDoRevise(thesisId, bollaId, thesisText, context) {
-          const bollaCol = document.getElementById('kif-fi-'+bollaId);
-          if (bollaCol) bollaCol.innerHTML = '<div style="padding:30px;text-align:center;color:#60a5fa;font-size:13px">⏳ Bolla überdenkt…</div>';
-          document.getElementById('kif-bolla').style.pointerEvents='none';
-          try {
-            await fetch('/api/kiforum/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:bollaId})});
-            const newPost = await fetch('/api/kiforum/respond',{
-              method:'POST',headers:{'Content-Type':'application/json'},
-              body:JSON.stringify({thesis: thesisText + (context?'\n\n'+context:'')})
-            }).then(r=>r.json());
-            if (!newPost.error) {
-              _kifPosts = _kifPosts.filter(p=>p.id!==bollaId);
-              const idx = thesisId ? _kifPosts.findIndex(p=>p.id===thesisId) : -1;
-              if (idx>=0) _kifPosts.splice(idx,0,newPost); else _kifPosts.unshift(newPost);
-              kifRenderAll(); kifShowLatestBubbles();
+        // ── RENDER ALL ──
+        function kifRenderAll() {
+          const inner = document.getElementById('kif-feed-inner');
+          const empty = document.getElementById('kif-feed-empty');
+          inner.querySelectorAll('.kif-msg-wrap,.kif-conclusion,.kif-aber-bar-wrap').forEach(el=>el.remove());
+          const sorted = [..._kifPosts].reverse(); // oldest first
+          if (!sorted.length) { empty.style.display='block'; return; }
+          empty.style.display='none';
+          const hasConclusion = sorted.some(p=>p.type==='conclusion');
+          sorted.forEach(p => {
+            if (p.type==='user')       inner.insertAdjacentHTML('beforeend', kifMsgHtml(p, 'chris'));
+            else if (p.type==='bolla') inner.insertAdjacentHTML('beforeend', kifMsgHtml(p, 'bolla'));
+            else if (p.type==='conclusion') inner.insertAdjacentHTML('beforeend', kifConclusionHtml(p));
+          });
+          // Show Aber-bar after latest Bolla post if no conclusion
+          if (!hasConclusion) {
+            const lastBolla = [...sorted].reverse().find(p=>p.type==='bolla');
+            if (lastBolla) {
+              inner.insertAdjacentHTML('beforeend', `<div class="kif-aber-bar-wrap">${kifAberBar()}</div>`);
+              // scroll to bottom
+              setTimeout(()=>{ const fa=document.getElementById('kif-feed-area'); fa.scrollTop=fa.scrollHeight; },50);
             }
-          } catch(e) {
-            if(bollaCol) bollaCol.innerHTML='<div style="padding:20px;color:#f87171">Fehler</div>';
           }
-          document.getElementById('kif-bolla').style.pointerEvents='';
         }
 
-        function kifShowLatestBubbles() {
-          const area = document.getElementById('kif-bubble-area');
-          area.innerHTML = '';
-          // show last 2 posts as bubbles
-          const recent = _kifPosts.slice(0, 2).reverse();
-          recent.forEach(p => area.insertAdjacentHTML('beforeend', kifBubble(p)));
-        }
-
-        function kifBubble(p) {
-          const isBolla = p.type === 'bolla';
-          const title = p.title ? `<div class="kif-bubble-title">${p.emoji||''} ${kifEsc(p.title)}</div>` : '';
-          const short = (p.content||'').slice(0,120) + ((p.content||'').length>120?'…':'');
-          return `<div class="kif-bubble ${p.type}" id="kif-bub-${p.id}">
-            <button class="kif-bubble-del" onclick="kifDelete('${p.id}')">✕</button>
-            ${title}
-            <div style="font-size:12px;opacity:.85">${kifEsc(short)}</div>
+        function kifMsgHtml(p, side) {
+          const isChris = side==='chris';
+          const label = isChris ? '💬 Chris' : `${p.emoji||'🤖'} Bolla`;
+          const title = (p.title && !isChris) ? `<div class="kif-msg-title">${kifEsc(p.emoji||'')} ${kifEsc(p.title)}</div>` : '';
+          const text = isChris ? kifEsc(p.content||'').replace(/\n/g,'<br>') : kifHighlight(p.content||'', p.keywords).replace(/\n/g,'<br>');
+          const img = p.img ? `<img class="kif-msg-img" src="/api/kiforum/img/${kifEsc(p.img)}" alt="">` : '';
+          const copyTxt = encodeURIComponent((p.title?p.title+'\n':'')+p.content);
+          return `<div class="kif-msg-wrap">
+            <div class="kif-msg kif-msg-${side}" id="kif-fi-${p.id}">
+              <div class="kif-msg-bubble">
+                <div class="kif-msg-label">${label}</div>
+                ${title}
+                <div class="kif-msg-content">${text}</div>
+                ${img}
+                <div class="kif-msg-actions">
+                  <span style="font-size:10px;color:rgba(255,255,255,0.22);align-self:center">${kifTs(p)}</span>
+                  <button class="kif-msg-btn" onclick="kifPollImage('${p.id}')">🌸 Bild</button>
+                  <button class="kif-msg-btn" onclick="kifCopy('${p.id}')">📋 Kopieren</button>
+                  <button class="kif-msg-btn del" onclick="kifDelete('${p.id}')">🗑</button>
+                </div>
+                <div id="kif-poll-${p.id}" style="display:none;margin-top:10px"></div>
+              </div>
+              <div class="kif-msg-dots"><span></span><span></span><span></span></div>
+            </div>
           </div>`;
         }
 
+        function kifConclusionHtml(p) {
+          return `<div class="kif-conclusion" id="kif-fi-${p.id}">
+            <div class="kif-conclusion-label">🎯 Bollas Schlussfolgerung</div>
+            <div class="kif-conclusion-title">${kifEsc(p.emoji||'')} ${kifEsc(p.title||'')}</div>
+            <div class="kif-conclusion-content">${kifEsc(p.content||'').replace(/\n/g,'<br>')}</div>
+            <div class="kif-conclusion-dots"><span></span><span></span><span></span></div>
+            <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:8px">
+              <button class="kif-topbtn" onclick="kifCopy('${p.id}')">📋 Kopieren</button>
+              <button class="kif-topbtn" onclick="kifDelete('${p.id}')">🗑</button>
+            </div>
+          </div>`;
+        }
+
+        async function kifPollImage(id) {
+          const p = _kifPosts.find(x=>x.id===id);
+          if (!p) return;
+          const wrap = document.getElementById('kif-poll-' + id);
+          if (!wrap) return;
+
+          // Toggle: wenn Bild schon da ist, einklappen
+          if (wrap.style.display !== 'none' && wrap.innerHTML.trim()) {
+            wrap.style.display = 'none';
+            wrap.innerHTML = '';
+            return;
+          }
+
+          const promptText = ((p.title ? p.title + '. ' : '') + p.content).substring(0, 300);
+          const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=768&height=512&model=flux&nologo=true&seed=${Date.now()}`;
+
+          wrap.style.display = 'block';
+          wrap.innerHTML = '<div style="color:rgba(255,255,255,0.4);font-size:12px;padding:4px 0">🌸 Bild wird geladen…</div>';
+
+          const img = new Image();
+          img.onload = () => {
+            wrap.innerHTML = `
+              <img src="${url}" style="max-width:100%;border-radius:10px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 2px 12px rgba(0,0,0,0.4)">
+              <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
+                <button class="kif-msg-btn" onclick="window.open('${url}','_blank')">⬇ Download</button>
+                <button class="kif-msg-btn" onclick="kifPollCopyImg('${url}',this)">📋 Kopieren</button>
+                <button class="kif-msg-btn del" onclick="document.getElementById('kif-poll-${id}').style.display='none';document.getElementById('kif-poll-${id}').innerHTML=''">✕</button>
+              </div>`;
+          };
+          img.onerror = () => {
+            wrap.innerHTML = '<div style="color:#e57373;font-size:12px;padding:4px 0">❌ Bild nicht ladbar</div>';
+          };
+          img.src = url;
+        }
+
+        async function kifPollCopyImg(url, btn) {
+          try {
+            const resp = await fetch(url);
+            const blob = await resp.blob();
+            await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+            const orig = btn.textContent;
+            btn.textContent = '✅ Kopiert';
+            setTimeout(() => { btn.textContent = orig; }, 2000);
+          } catch(e) {
+            alert('Kopieren fehlgeschlagen: ' + e.message);
+          }
+        }
+
+        function kifAberBar() {
+          return `<div id="kif-aber-bar">
+            <div style="font-size:11px;font-weight:700;color:rgba(251,191,36,.7);letter-spacing:.5px;margin-bottom:6px">💬 DEIN ZUG</div>
+            <textarea id="kif-aber-input" rows="2" placeholder="Aber… / Einwand / Ergänzung"></textarea>
+            <div class="kif-aber-btnrow">
+              <button class="kif-aber-action einwand" onclick="kifSubmitAber()">↩ Einwenden</button>
+              <button class="kif-aber-action abschliessen" onclick="kifConclude()">✔ Abschließen & Fazit</button>
+            </div>
+          </div>`;
+        }
+
+        // ── THINKING BUBBLE ──
+        function kifThinking(show, text) {
+          const wrap = document.getElementById('kif-thinking-wrap');
+          const dots = document.getElementById('kif-thinking-dots-anim');
+          const txt  = document.getElementById('kif-thinking-text');
+          if (!show) { wrap.style.display='none'; return; }
+          wrap.style.display='block';
+          if (text) {
+            dots.style.display='none';
+            txt.style.display='block';
+            txt.textContent = text.slice(0,100)+(text.length>100?'…':'');
+          } else {
+            dots.style.display='flex';
+            txt.style.display='none';
+          }
+        }
+
+        // ── ACTIONS ──
         function kifShowInput() {
-          document.getElementById('kif-input-modal').style.display = 'block';
+          document.getElementById('kif-input-modal').style.display='block';
           document.getElementById('kif-user-input').focus();
         }
         function kifHideInput() {
-          document.getElementById('kif-input-modal').style.display = 'none';
-          document.getElementById('kif-user-input').value = '';
+          document.getElementById('kif-input-modal').style.display='none';
+          document.getElementById('kif-user-input').value='';
+        }
+
+        function kifCopy(id) {
+          const p = _kifPosts.find(x=>x.id===id);
+          if (!p) return;
+          const txt = (p.title ? p.title+'\n' : '') + (p.content||'');
+          navigator.clipboard.writeText(txt).then(()=>{
+            const btn = document.querySelector(`#kif-fi-${id} .kif-msg-btn`);
+            if (btn) { const orig=btn.textContent; btn.textContent='✅'; setTimeout(()=>btn.textContent=orig,1200); }
+          });
+        }
+
+        async function kifDelete(id) {
+          await fetch('/api/kiforum/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+          _kifPosts = _kifPosts.filter(p=>p.id!==id);
+          kifRenderAll();
         }
 
         async function kifSubmitUser() {
           const content = document.getElementById('kif-user-input').value.trim();
           if (!content) return;
           kifHideInput();
-
-          // Save user post
-          const userPost = await fetch('/api/kiforum/add', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({type:'user', title:'', content, emoji:'💬'})
-          }).then(r=>r.json());
+          const userPost = await fetch('/api/kiforum/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'user',title:'',content,emoji:'💬'})}).then(r=>r.json());
           _kifPosts.unshift(userPost);
-
-          // Show Bolla thinking
-          document.getElementById('kif-bolla-thinking').style.display = 'block';
-          document.getElementById('kif-bolla').style.pointerEvents = 'none';
-
-          // Generate Bolla response to user thesis
-          const bollaPost = await fetch('/api/kiforum/respond', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({thesis: content})
-          }).then(r=>r.json());
-
-          document.getElementById('kif-bolla-thinking').style.display = 'none';
-          document.getElementById('kif-bolla').style.pointerEvents = '';
-
-          if (!bollaPost.error) {
-            _kifPosts.unshift(bollaPost);
-          }
           kifRenderAll();
-          kifShowLatestBubbles();
+          kifThinking(true, null);
+          document.getElementById('kif-bolla').style.pointerEvents='none';
+          const bollaPost = await fetch('/api/kiforum/respond',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thesis:content})}).then(r=>r.json());
+          document.getElementById('kif-bolla').style.pointerEvents='';
+          if (!bollaPost.error) {
+            kifThinking(true, bollaPost.title||bollaPost.content);
+            _kifPosts.unshift(bollaPost);
+            setTimeout(()=>{ kifThinking(false); kifRenderAll(); }, 2000);
+          } else {
+            kifThinking(false); kifRenderAll();
+          }
+        }
+
+        async function kifSubmitAber() {
+          const input = document.getElementById('kif-aber-input');
+          const content = input?.value.trim();
+          if (!content) return;
+          input.value='';
+          // Find latest bolla post for context
+          const lastBolla = _kifPosts.find(p=>p.type==='bolla');
+          const context = (lastBolla?.title||'') + ' ' + (lastBolla?.content||'');
+          const userPost = await fetch('/api/kiforum/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'user',title:'Aber…',content,emoji:'💬'})}).then(r=>r.json());
+          _kifPosts.unshift(userPost);
+          kifRenderAll();
+          kifThinking(true, null);
+          document.getElementById('kif-bolla').style.pointerEvents='none';
+          const thesis = `Kontext: ${context}\n\nChris wirft ein: ${content}`;
+          const bollaPost = await fetch('/api/kiforum/respond',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thesis})}).then(r=>r.json());
+          document.getElementById('kif-bolla').style.pointerEvents='';
+          if (!bollaPost.error) {
+            kifThinking(true, bollaPost.title||bollaPost.content);
+            _kifPosts.unshift(bollaPost);
+            setTimeout(()=>{ kifThinking(false); kifRenderAll(); }, 2000);
+          } else {
+            kifThinking(false); kifRenderAll();
+          }
         }
 
         async function kifGenerateThesis() {
-          document.getElementById('kif-bolla-thinking').style.display = 'block';
-          document.getElementById('kif-bolla').style.pointerEvents = 'none';
+          kifThinking(true, null);
+          document.getElementById('kif-bolla').style.pointerEvents='none';
           try {
-            const post = await fetch('/api/kiforum/generate', {
-              method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'
-            }).then(r=>r.json());
+            const post = await fetch('/api/kiforum/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json());
             if (!post.error) {
+              kifThinking(true, post.title||post.content);
               _kifPosts.unshift(post);
-              kifRenderAll();
-              kifShowLatestBubbles();
-            }
-          } catch(e) {}
-          document.getElementById('kif-bolla-thinking').style.display = 'none';
-          document.getElementById('kif-bolla').style.pointerEvents = '';
+              setTimeout(()=>{ kifThinking(false); kifRenderAll(); }, 2200);
+            } else { kifThinking(false); }
+          } catch(e) { kifThinking(false); }
+          document.getElementById('kif-bolla').style.pointerEvents='';
         }
 
-        async function kifDelete(id) {
-          await fetch('/api/kiforum/delete', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({id})
-          });
-          _kifPosts = _kifPosts.filter(p => p.id !== id);
-          document.getElementById('kif-bub-'+id)?.remove();
-          kifRenderAll();
+        async function kifConclude() {
+          kifThinking(true, null);
+          document.getElementById('kif-bolla').style.pointerEvents='none';
+          try {
+            const post = await fetch('/api/kiforum/conclude',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json());
+            if (!post.error) {
+              kifThinking(true, post.title||post.content);
+              _kifPosts.unshift(post);
+              setTimeout(()=>{ kifThinking(false); kifRenderAll(); }, 2200);
+            } else { kifThinking(false); }
+          } catch(e) { kifThinking(false); }
+          document.getElementById('kif-bolla').style.pointerEvents='';
         }
 
-        function kifExport() {
+        function kifWordExport() {
+          const a = document.createElement('a');
+          a.href = '/api/kiforum/word';
+          a.download = 'bolla-diskussion.docx';
+          a.click();
+        }
+
+        function kifJsonExport() {
           const a = document.createElement('a');
           a.href = '/api/kiforum/export';
           a.download = 'bolla-ki-forum.json';
@@ -3253,6 +3295,73 @@ async function bildgenCopy() {
     setTimeout(() => { s.textContent = ''; }, 2000);
   } catch(e) {
     alert('Kopieren fehlgeschlagen: ' + e.message);
+  }
+}
+
+// ===== POLLINATIONS =====
+let _pollLastUrl = null;
+
+async function pollGenerate() {
+  const prompt = document.getElementById('poll-prompt').value.trim();
+  if (!prompt) {
+    const s = document.getElementById('poll-status');
+    s.style.color = '#e57373';
+    s.textContent = '⚠ Bitte erst einen Prompt eingeben.';
+    setTimeout(() => { s.style.color = '#b8c5d4'; s.textContent = ''; }, 3000);
+    return;
+  }
+  const [w, h] = document.getElementById('poll-aspect').value.split('x');
+  const model = document.getElementById('poll-model').value;
+  const btn = document.getElementById('poll-btn');
+  const status = document.getElementById('poll-status');
+  const result = document.getElementById('poll-result');
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+  btn.textContent = '⏳ Generiere…';
+  status.textContent = 'Wird generiert – kann etwas dauern…';
+  result.style.display = 'none';
+  _pollLastUrl = null;
+  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&model=${model}&nologo=true&seed=${Date.now()}`;
+  _pollLastUrl = url;
+  const img = document.getElementById('poll-img');
+  img.onload = () => {
+    result.style.display = 'flex';
+    result.scrollIntoView({behavior:'smooth', block:'start'});
+    status.textContent = '✅ Fertig!';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.textContent = '🌸 Generieren';
+  };
+  img.onerror = () => {
+    status.textContent = '❌ Fehler beim Laden – Pollinations nicht erreichbar?';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.textContent = '🌸 Generieren';
+  };
+  img.src = url;
+}
+
+function pollDownload() {
+  if (!_pollLastUrl) return;
+  const a = document.createElement('a');
+  a.href = _pollLastUrl;
+  a.download = 'pollinations_' + Date.now() + '.png';
+  a.target = '_blank';
+  a.click();
+}
+
+async function pollCopy() {
+  if (!_pollLastUrl) return;
+  const s = document.getElementById('poll-status');
+  try {
+    const resp = await fetch(_pollLastUrl);
+    const blob = await resp.blob();
+    await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+    s.textContent = 'In Zwischenablage kopiert!';
+    setTimeout(() => { s.textContent = ''; }, 2000);
+  } catch(e) {
+    s.textContent = '⚠ Kopieren fehlgeschlagen: ' + e.message;
+    setTimeout(() => { s.textContent = ''; }, 3000);
   }
 }
 
