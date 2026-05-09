@@ -1260,7 +1260,7 @@ html, body {
 
       <!-- WETTER -->
       <div class="page" id="page-wetter">
-        <div class="grid" id="wetter-content"><div class="loading">Lade...</div></div>
+        <div id="wetter-content" style="max-width:960px;margin:0 auto"><div class="loading">Lade…</div></div>
       </div>
 
       <!-- SYSTEM -->
@@ -2075,7 +2075,7 @@ html, body {
                 ✨ Prompt verbessern
               </label>
               <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:rgba(255,255,255,0.5);cursor:pointer">
-                <input type="checkbox" id="poll-private" checked
+                <input type="checkbox" id="poll-private"
                   style="accent-color:#4ade80;width:14px;height:14px">
                 🔒 Privat
               </label>
@@ -2806,31 +2806,50 @@ html, body {
 
           const promptText = (p.img_prompt || (p.title ? p.title + '. ' : '') + p.content).substring(0, 400);
           const seed = kifPostSeed(id);
-          const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=768&height=512&model=flux&nologo=true&seed=${seed}&private=true`;
+          const models = ['flux-schnell', 'flux', 'turbo'];
 
           wrap.style.display = 'block';
           let secs = 0;
           const timer = setInterval(()=>{ secs++; const el=document.getElementById('kif-poll-timer-'+id); if(el) el.textContent=`${secs}s…`; }, 1000);
           wrap.innerHTML = `<div style="color:rgba(255,255,255,0.4);font-size:12px;padding:4px 0">🌸 Bild wird generiert… <span id="kif-poll-timer-${id}">0s…</span></div>`;
 
-          const img = new Image();
-          img.onload = () => {
+          let loaded = false;
+          for (let mi = 0; mi < models.length && !loaded; mi++) {
+            const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=768&height=512&model=${models[mi]}&nologo=true&seed=${seed}`;
+            await new Promise(resolve => {
+              const img = new Image();
+              const timeout = setTimeout(() => { img.src = ''; resolve(); }, 20000);
+              img.onload = () => {
+                clearTimeout(timeout);
+                const currentWrap = document.getElementById('kif-poll-' + id);
+                if (!currentWrap) { loaded = true; resolve(); return; }
+                loaded = true;
+                clearInterval(timer);
+                const safeUrl = url.replace(/'/g, '%27');
+                currentWrap.innerHTML = `
+                  <img src="${safeUrl}" style="max-width:100%;border-radius:10px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 2px 12px rgba(0,0,0,0.4)">
+                  <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end;flex-wrap:wrap">
+                    <button class="kif-msg-btn" id="kif-embed-btn-${id}" onclick="kifEmbedImage('${id}','${safeUrl}',this)">📌 Einbinden</button>
+                    <button class="kif-msg-btn" onclick="window.open('${safeUrl}','_blank')">⬇ Download</button>
+                    <button class="kif-msg-btn" onclick="kifPollCopyImg('${safeUrl}',this)">📋 Kopieren</button>
+                    <button class="kif-msg-btn del" onclick="document.getElementById('kif-poll-${id}').style.display='none';document.getElementById('kif-poll-${id}').innerHTML=''">✕</button>
+                  </div>`;
+                resolve();
+              };
+              img.onerror = () => {
+                clearTimeout(timeout);
+                const el = document.getElementById('kif-poll-timer-'+id);
+                if (el && mi < models.length-1) el.textContent = `Retry (${models[mi+1]})…`;
+                resolve();
+              };
+              img.src = url;
+            });
+          }
+          if (!loaded) {
             clearInterval(timer);
-            const safeUrl = url.replace(/'/g, '%27');
-            wrap.innerHTML = `
-              <img src="${safeUrl}" style="max-width:100%;border-radius:10px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 2px 12px rgba(0,0,0,0.4)">
-              <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end;flex-wrap:wrap">
-                <button class="kif-msg-btn" id="kif-embed-btn-${id}" onclick="kifEmbedImage('${id}','${safeUrl}',this)">📌 Einbinden</button>
-                <button class="kif-msg-btn" onclick="window.open('${safeUrl}','_blank')">⬇ Download</button>
-                <button class="kif-msg-btn" onclick="kifPollCopyImg('${safeUrl}',this)">📋 Kopieren</button>
-                <button class="kif-msg-btn del" onclick="document.getElementById('kif-poll-${id}').style.display='none';document.getElementById('kif-poll-${id}').innerHTML=''">✕</button>
-              </div>`;
-          };
-          img.onerror = () => {
-            clearInterval(timer);
-            wrap.innerHTML = '<div style="color:#e57373;font-size:12px;padding:4px 0">❌ Bild nicht ladbar — Pollinations überlastet?</div>';
-          };
-          img.src = url;
+            const currentWrap = document.getElementById('kif-poll-' + id);
+            if (currentWrap) currentWrap.innerHTML = `<div style="color:#e57373;font-size:12px;padding:4px 0">❌ Kein Bild — <button class="kif-msg-btn" onclick="kifPollImage('${id}')">Nochmal</button></div>`;
+          }
         }
 
         async function kifEmbedImage(id, url, btn) {
@@ -4009,9 +4028,34 @@ document.addEventListener('keydown',e=>{
 const WMO_ICONS = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'❄️',73:'❄️',75:'❄️',80:'🌦️',81:'🌧️',82:'🌧️',95:'⛈️'};
 const WMO_DESC = {0:'Klar',1:'Überwiegend klar',2:'Teils bewölkt',3:'Bedeckt',45:'Nebel',51:'Leichter Nieselregen',53:'Nieselregen',61:'Leichter Regen',63:'Regen',65:'Starker Regen',71:'Leichter Schnee',73:'Schnee',75:'Starker Schnee',80:'Leichte Schauer',81:'Schauer',82:'Starke Schauer',95:'Gewitter'};
 
+const WMO_BG = {
+  0:'linear-gradient(160deg,#0d3875,#1a6abf)',
+  1:'linear-gradient(160deg,#0d3875,#1a6abf)',
+  2:'linear-gradient(160deg,#1a2a4a,#3a5070)',
+  3:'linear-gradient(160deg,#1a1f2e,#2a3040)',
+  45:'linear-gradient(160deg,#1a1f2e,#2a2f3a)',
+  51:'linear-gradient(160deg,#0d2040,#1a3050)',
+  53:'linear-gradient(160deg,#0d2040,#1a3050)',
+  61:'linear-gradient(160deg,#0a1830,#0d2545)',
+  63:'linear-gradient(160deg,#0a1830,#0d2545)',
+  65:'linear-gradient(160deg,#060f20,#0d1e3a)',
+  80:'linear-gradient(160deg,#0a1830,#0d2545)',
+  81:'linear-gradient(160deg,#0a1830,#0d2545)',
+  95:'linear-gradient(160deg,#060810,#0d1020)',
+};
+const WIND_DIR = ['N','NO','O','SO','S','SW','W','NW'];
+
+function windDir(deg) { return WIND_DIR[Math.round(deg/45)%8]; }
+function uvLabel(uv) {
+  if (uv<=2) return {label:'Niedrig',color:'#4ade80'};
+  if (uv<=5) return {label:'Mittel',color:'#facc15'};
+  if (uv<=7) return {label:'Hoch',color:'#fb923c'};
+  return {label:'Sehr hoch',color:'#f87171'};
+}
+
 async function loadWeather() {
   try {
-    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=53.69&longitude=9.98&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m,apparent_temperature&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=Europe/Berlin&forecast_days=8');
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=53.69&longitude=9.98&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m,apparent_temperature,uv_index,precipitation&hourly=temperature_2m,weather_code,precipitation_probability,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,uv_index_max,wind_speed_10m_max&timezone=Europe/Berlin&forecast_days=8');
     const d = await r.json();
     window._weather = d;
     const c = d.current;
@@ -4025,11 +4069,13 @@ async function loadWeather() {
       const ficon = WMO_ICONS[daily.weather_code[i]] || '🌤️';
       const fmin = Math.round(daily.temperature_2m_min[i]);
       const fmax = Math.round(daily.temperature_2m_max[i]);
+      const frain = daily.precipitation_probability_max[i] || 0;
       forecastHtml += `<div style="text-align:center;flex:1">
-        <div style="font-size:13px;color:var(--dim)">${fday}</div>
+        <div style="font-size:12px;color:var(--dim)">${fday}</div>
         <div style="font-size:18px">${ficon}</div>
         <div style="font-size:13px;color:var(--bright)">${fmax}°</div>
-        <div style="font-size:12px;color:var(--dim)">${fmin}°</div>
+        <div style="font-size:11px;color:var(--dim)">${fmin}°</div>
+        ${frain>20?`<div style="font-size:10px;color:#60a5fa">💧${frain}%</div>`:''}
       </div>`;
     }
     document.getElementById('weather-dash').innerHTML = `
@@ -4037,38 +4083,110 @@ async function loadWeather() {
         <span style="font-size:34px">${icon}</span>
         <div>
           <div style="font-size:26px;font-weight:300;color:var(--bright);line-height:1">${temp}°C</div>
-          <div style="font-size:13px;color:var(--dim)">${desc}</div>
-          <div style="font-size:13px;color:var(--dim);margin-top:2px">Gefühlt ${Math.round(c.apparent_temperature)}°C · 💧${c.relative_humidity_2m}% · 💨${Math.round(c.wind_speed_10m)} km/h</div>
+          <div style="font-size:12px;color:var(--dim)">${desc} · Gefühlt ${Math.round(c.apparent_temperature)}°C</div>
+          <div style="font-size:12px;color:var(--dim);margin-top:1px">💧${c.relative_humidity_2m}% · 💨${Math.round(c.wind_speed_10m)} km/h</div>
         </div>
       </div>
       <div style="display:flex;gap:4px;border-top:1px solid var(--border);padding-top:8px">${forecastHtml}</div>`;
+    if (document.getElementById('wetter-content') && document.getElementById('page-wetter').classList.contains('active')) {
+      loadWeatherFull();
+    }
   } catch(e) {}
 }
 
 function loadWeatherFull() {
   const d = window._weather;
-  if (!d) return;
+  if (!d) { loadWeather().then(loadWeatherFull); return; }
   const c = d.current;
   const icon = WMO_ICONS[c.weather_code] || '🌤️';
   const desc = WMO_DESC[c.weather_code] || '';
-  let h = `<div class="card">
-    <div class="card-head"><span class="card-title">Jetzt — Norderstedt</span></div>
-    <div style="display:flex;align-items:center;gap:12px">
-      <span style="font-size:40px">${icon}</span>
-      <div><div style="font-size:28px;font-weight:300;color:var(--bright)">${Math.round(c.temperature_2m)}°C</div><div style="color:var(--dim)">${desc}</div></div>
+  const bg = WMO_BG[c.weather_code] || WMO_BG[0];
+  const uv = uvLabel(c.uv_index || 0);
+  const nowHour = new Date(c.time).getHours();
+
+  // ── HERO ──
+  let h = `<div style="${bg};border-radius:18px;padding:28px 32px;margin-bottom:20px;position:relative;overflow:hidden">
+    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.18);border-radius:18px"></div>
+    <div style="position:relative;z-index:1;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px">
+      <div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:4px">📍 Norderstedt · Jetzt</div>
+        <div style="display:flex;align-items:baseline;gap:12px">
+          <span style="font-size:72px;font-weight:200;line-height:1;color:#fff">${Math.round(c.temperature_2m)}°</span>
+          <span style="font-size:40px">${icon}</span>
+        </div>
+        <div style="font-size:18px;color:rgba(255,255,255,0.85);margin-top:4px">${desc}</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.55);margin-top:6px">Gefühlt ${Math.round(c.apparent_temperature)}°C</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;margin-top:4px">
+        <div style="color:rgba(255,255,255,0.55);font-size:15px">💧 Luftfeuchtigkeit</div><div style="color:#fff;font-size:20px;font-weight:700">${c.relative_humidity_2m}%</div>
+        <div style="color:rgba(255,255,255,0.55);font-size:15px">💨 Wind</div><div style="color:#fff;font-size:20px;font-weight:700">${Math.round(c.wind_speed_10m)} km/h ${windDir(c.wind_direction_10m||0)}</div>
+        <div style="color:rgba(255,255,255,0.55);font-size:15px">☀️ UV-Index</div><div style="font-size:20px;font-weight:700;color:${uv.color}">${Math.round(c.uv_index||0)} – ${uv.label}</div>
+        <div style="color:rgba(255,255,255,0.55);font-size:15px">🌧 Niederschlag</div><div style="color:#fff;font-size:20px;font-weight:700">${c.precipitation||0} mm</div>
+      </div>
     </div>
-    <div style="font-size:13px;color:var(--dim);margin-top:8px">Gefühlt ${Math.round(c.apparent_temperature)}°C · 💧${c.relative_humidity_2m}% · 💨${Math.round(c.wind_speed_10m)} km/h</div>
   </div>`;
-  d.daily.time.slice(0,8).forEach((date,i) => {
-    const day = new Date(date).toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit'});
-    h += `<div class="card">
-      <div class="card-head"><span class="card-title">${day}</span></div>
-      <div style="font-size:30px">${WMO_ICONS[d.daily.weather_code[i]]||'🌤️'}</div>
-      <div style="font-size:18px;font-weight:300;color:var(--bright);margin-top:6px">${Math.round(d.daily.temperature_2m_min[i])}° – ${Math.round(d.daily.temperature_2m_max[i])}°C</div>
-      <div style="font-size:13px;color:var(--dim);margin-top:4px">${WMO_DESC[d.daily.weather_code[i]]||''}</div>
-      <div style="font-size:13px;color:var(--dim);margin-top:4px">☀️ ${d.daily.sunrise[i].slice(11,16)} · 🌙 ${d.daily.sunset[i].slice(11,16)}</div>
+
+  // ── STUNDENVERLAUF ──
+  const hourlyTimes = d.hourly.time;
+  const startIdx = hourlyTimes.findIndex(t => new Date(t).getHours() >= nowHour && t.startsWith(d.current.time.slice(0,10)));
+  const sliceStart = startIdx >= 0 ? startIdx : 0;
+  const hours = hourlyTimes.slice(sliceStart, sliceStart+24);
+  const temps = d.hourly.temperature_2m.slice(sliceStart, sliceStart+24);
+  const rains = d.hourly.precipitation_probability.slice(sliceStart, sliceStart+24);
+  const minT = Math.min(...temps), maxT = Math.max(...temps);
+  const tempRange = maxT - minT || 1;
+
+  let hourCells = '';
+  hours.forEach((t, i) => {
+    const hr = new Date(t).getHours();
+    const isNow = i === 0;
+    const rainH = Math.round((rains[i]/100)*36);
+    hourCells += `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;min-width:66px;flex-shrink:0;padding:8px 4px;${isNow?'background:rgba(255,255,255,0.08);border-radius:12px;':''}">
+      <div style="font-size:13px;color:${isNow?'#fff':'rgba(255,255,255,0.45)'};font-weight:${isNow?700:400}">${isNow?'Jetzt':String(hr).padStart(2,'0')+'h'}</div>
+      <div style="font-size:26px;line-height:1">${WMO_ICONS[d.hourly.weather_code[sliceStart+i]]||'🌤️'}</div>
+      <div style="font-size:16px;color:#e0e6ed;font-weight:600">${Math.round(temps[i])}°</div>
+      <div style="width:8px;background:rgba(96,165,250,${Math.max(rains[i]/100,0.08)});border-radius:4px;height:${rainH||4}px;min-height:4px"></div>
+      <div style="font-size:12px;color:#60a5fa;min-height:16px">${rains[i]>5?rains[i]+'%':''}</div>
     </div>`;
   });
+
+  h += `<div style="background:#0d1520;border:1px solid #1a2a3a;border-radius:14px;padding:20px;margin-bottom:20px;overflow:hidden">
+    <div style="font-size:13px;color:rgba(255,255,255,0.35);margin-bottom:16px;letter-spacing:.05em;text-transform:uppercase">Stundenverlauf — nächste 24h</div>
+    <div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.1) transparent">${hourCells}</div>
+  </div>`;
+
+  // ── 7-TAGE FORECAST ──
+  h += `<div style="background:#0d1520;border:1px solid #1a2a3a;border-radius:14px;padding:16px">
+    <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:12px;letter-spacing:.05em;text-transform:uppercase">7-Tage Vorschau</div>`;
+
+  d.daily.time.slice(0,7).forEach((date,i) => {
+    const isToday = i===0;
+    const dayLabel = isToday ? 'Heute' : new Date(date).toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit'});
+    const tMin = Math.round(d.daily.temperature_2m_min[i]);
+    const tMax = Math.round(d.daily.temperature_2m_max[i]);
+    const rain = d.daily.precipitation_probability_max[i] || 0;
+    const uvMax = uvLabel(d.daily.uv_index_max?.[i] || 0);
+    const wind = Math.round(d.daily.wind_speed_10m_max?.[i] || 0);
+    const sr = d.daily.sunrise[i].slice(11,16);
+    const ss = d.daily.sunset[i].slice(11,16);
+    const icon2 = WMO_ICONS[d.daily.weather_code[i]] || '🌤️';
+    const desc2 = WMO_DESC[d.daily.weather_code[i]] || '';
+
+    h += `<div style="display:flex;align-items:center;gap:14px;padding:13px 0;${i<6?'border-bottom:1px solid rgba(255,255,255,0.06)':''}">
+      <div style="width:90px;font-size:15px;color:${isToday?'#fff':'rgba(255,255,255,0.7)'};font-weight:${isToday?700:400};flex-shrink:0">${dayLabel}</div>
+      <div style="font-size:28px;flex-shrink:0">${icon2}</div>
+      <div style="font-size:14px;color:rgba(255,255,255,0.45);flex:1;min-width:0">${desc2}</div>
+      <div style="display:flex;gap:16px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
+        <span style="font-size:14px;color:#60a5fa" title="Regenwahrscheinlichkeit">💧${rain}%</span>
+        <span style="font-size:14px;color:rgba(255,255,255,0.4)" title="Wind">💨${wind}</span>
+        <span style="font-size:14px;color:${uvMax.color}" title="UV">UV ${Math.round(d.daily.uv_index_max?.[i]||0)}</span>
+        <span style="font-size:13px;color:rgba(255,255,255,0.35)">☀️${sr} 🌙${ss}</span>
+        <span style="font-size:15px;color:rgba(255,255,255,0.5);min-width:80px;text-align:right">${tMin}° <span style="color:#fff;font-weight:700">${tMax}°</span></span>
+      </div>
+    </div>`;
+  });
+
+  h += `</div>`;
   document.getElementById('wetter-content').innerHTML = h;
 }
 
