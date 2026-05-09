@@ -220,6 +220,7 @@ html, body {
 .nav-block + .nav-block { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); }
 .nav-block.dragging { opacity: 0.4; }
 .nav-block.drag-over > .nav-section { background: rgba(255,102,153,0.15); color: var(--accent); }
+.nav-item-drag-over { background: rgba(255,102,153,0.12) !important; border-left-color: var(--accent) !important; border-radius: 6px; }
 .nav-section-grip {
   font-size: 11px;
   color: rgba(255,255,255,0.15);
@@ -3242,28 +3243,97 @@ function initNavDrag() {
       });
     } catch(e) {}
   }
+  // Item-Reihenfolge pro Container wiederherstellen
+  const savedItems = localStorage.getItem('nav-item-order');
+  if (savedItems) {
+    try {
+      const itemOrder = JSON.parse(savedItems);
+      Object.entries(itemOrder).forEach(([containerId, ids]) => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        ids.forEach(id => {
+          const el = document.getElementById(id);
+          if (el && el.parentElement === container) container.appendChild(el);
+        });
+      });
+    } catch(e) {}
+  }
 
+  function saveItemOrder() {
+    const itemOrder = {};
+    nav.querySelectorAll('.nav-section-items, .nav-group-items').forEach(container => {
+      if (!container.id) return;
+      itemOrder[container.id] = [...container.children].map(c => c.id).filter(Boolean);
+    });
+    localStorage.setItem('nav-item-order', JSON.stringify(itemOrder));
+  }
+
+  // Generische Drag&Drop-Funktion für einen Container
+  function makeSortable(container, itemSelector, highlightClass) {
+    let src = null;
+    [...container.children].forEach(item => {
+      if (!item.matches(itemSelector)) return;
+      if (!item.id) item.id = 'nav-di-' + Math.random().toString(36).slice(2,8);
+      item.draggable = true;
+      item.style.cursor = 'grab';
+
+      item.addEventListener('dragstart', e => {
+        src = item;
+        e.stopPropagation();
+        setTimeout(() => item.style.opacity = '0.4', 0);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', item.id);
+      });
+      item.addEventListener('dragend', e => {
+        e.stopPropagation();
+        item.style.opacity = '';
+        container.querySelectorAll('.' + highlightClass).forEach(el => el.classList.remove(highlightClass));
+        saveItemOrder();
+      });
+      item.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (item !== src) {
+          container.querySelectorAll('.' + highlightClass).forEach(el => el.classList.remove(highlightClass));
+          item.classList.add(highlightClass);
+        }
+      });
+      item.addEventListener('dragleave', e => {
+        e.stopPropagation();
+        item.classList.remove(highlightClass);
+      });
+      item.addEventListener('drop', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (src && item !== src) {
+          const items = [...container.children];
+          const si = items.indexOf(src), di = items.indexOf(item);
+          container.insertBefore(src, si < di ? item.nextSibling : item);
+        }
+        item.classList.remove(highlightClass);
+      });
+    });
+  }
+
+  // Sektionen (nav-blocks) sortierbar
   let dragSrc = null;
-
   nav.querySelectorAll('.nav-block').forEach(block => {
     block.draggable = true;
-
     block.addEventListener('dragstart', e => {
+      if (e.target !== block && !e.target.classList.contains('nav-section')) return;
       dragSrc = block;
       block.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', block.id);
     });
-
     block.addEventListener('dragend', () => {
       block.classList.remove('dragging');
       nav.querySelectorAll('.nav-block').forEach(b => b.classList.remove('drag-over'));
-      // Reihenfolge speichern
       const order = [...nav.querySelectorAll('.nav-block')].map(b => b.id);
       localStorage.setItem('nav-block-order', JSON.stringify(order));
     });
-
     block.addEventListener('dragover', e => {
+      if (!dragSrc) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       if (block !== dragSrc) {
@@ -3271,25 +3341,26 @@ function initNavDrag() {
         block.classList.add('drag-over');
       }
     });
-
-    block.addEventListener('dragleave', () => {
-      block.classList.remove('drag-over');
-    });
-
+    block.addEventListener('dragleave', () => block.classList.remove('drag-over'));
     block.addEventListener('drop', e => {
       e.preventDefault();
       if (dragSrc && block !== dragSrc) {
         const blocks = [...nav.querySelectorAll('.nav-block')];
-        const srcIdx = blocks.indexOf(dragSrc);
-        const dstIdx = blocks.indexOf(block);
-        if (srcIdx < dstIdx) {
-          nav.insertBefore(dragSrc, block.nextSibling);
-        } else {
-          nav.insertBefore(dragSrc, block);
-        }
+        const si = blocks.indexOf(dragSrc), di = blocks.indexOf(block);
+        nav.insertBefore(dragSrc, si < di ? block.nextSibling : block);
       }
       block.classList.remove('drag-over');
+      dragSrc = null;
     });
+  });
+
+  // Items innerhalb jeder Sektion sortierbar
+  nav.querySelectorAll('.nav-section-items').forEach(container => {
+    makeSortable(container, '.nav-item:not(.nav-subitem), .nav-group, [id^="nav-group-"]', 'nav-item-drag-over');
+  });
+  // Sub-Items innerhalb jeder Gruppe sortierbar
+  nav.querySelectorAll('.nav-group-items').forEach(container => {
+    makeSortable(container, '.nav-item', 'nav-item-drag-over');
   });
 }
 initNavDrag();
@@ -4094,99 +4165,205 @@ async function loadWeather() {
   } catch(e) {}
 }
 
+function wettAnimParticles(code) {
+  const isRain = [51,53,61,63,65,80,81,82].includes(code);
+  const isSnow = [71,73,75,77,85,86].includes(code);
+  const isStorm = [95,96,99].includes(code);
+  const isSun  = [0,1].includes(code);
+  if (!isRain && !isSnow && !isStorm && !isSun) return '';
+  let particles = '';
+  if (isRain || isStorm) {
+    for (let i=0;i<28;i++) {
+      const left = Math.random()*100, delay = Math.random()*2, dur = 0.6+Math.random()*0.6;
+      particles += `<div style="position:absolute;left:${left}%;top:-10px;width:2px;height:${14+Math.random()*10}px;background:rgba(147,210,255,0.55);border-radius:2px;animation:wett-rain ${dur}s ${delay}s linear infinite"></div>`;
+    }
+  }
+  if (isSnow) {
+    for (let i=0;i<22;i++) {
+      const left=Math.random()*100, delay=Math.random()*4, dur=3+Math.random()*3, sz=4+Math.random()*6;
+      particles += `<div style="position:absolute;left:${left}%;top:-10px;width:${sz}px;height:${sz}px;border-radius:50%;background:rgba(220,240,255,0.8);animation:wett-snow ${dur}s ${delay}s linear infinite"></div>`;
+    }
+  }
+  if (isSun) {
+    particles += `<div style="position:absolute;top:20px;right:40px;width:80px;height:80px;border-radius:50%;background:radial-gradient(circle,rgba(255,220,80,0.35),transparent 70%);animation:wett-pulse 3s ease-in-out infinite"></div>`;
+  }
+  return particles;
+}
+
+function wettTempColor(t) {
+  if (t <= 0)  return '#a5f3fc';
+  if (t <= 10) return '#7dd3fc';
+  if (t <= 18) return '#86efac';
+  if (t <= 24) return '#fde68a';
+  if (t <= 30) return '#fb923c';
+  return '#f87171';
+}
+
 function loadWeatherFull() {
   const d = window._weather;
   if (!d) { loadWeather().then(loadWeatherFull); return; }
   const c = d.current;
   const icon = WMO_ICONS[c.weather_code] || '🌤️';
   const desc = WMO_DESC[c.weather_code] || '';
-  const bg = WMO_BG[c.weather_code] || WMO_BG[0];
-  const uv = uvLabel(c.uv_index || 0);
-  const nowHour = new Date(c.time).getHours();
+  const bg   = WMO_BG[c.weather_code] || WMO_BG[0];
+  const uv   = uvLabel(c.uv_index || 0);
+  const temp = Math.round(c.temperature_2m);
+  const nowDate = new Date(c.time);
+  const nowHour = nowDate.getHours();
+  const nowMin  = nowDate.getMinutes();
+
+  // CSS-Animationen (einmal einfügen)
+  if (!document.getElementById('wett-anim-css')) {
+    const s = document.createElement('style');
+    s.id = 'wett-anim-css';
+    s.textContent = `
+      @keyframes wett-rain { to { transform: translateY(100vh); } }
+      @keyframes wett-snow { to { transform: translateY(100vh) rotate(360deg); } }
+      @keyframes wett-pulse { 0%,100%{transform:scale(1);opacity:.6} 50%{transform:scale(1.25);opacity:1} }
+      @keyframes wett-glow  { 0%,100%{box-shadow:0 0 30px 10px rgba(255,200,50,.3)} 50%{box-shadow:0 0 60px 20px rgba(255,200,50,.6)} }
+    `;
+    document.head.appendChild(s);
+  }
+
+  // ── TAGESLICHT-ARC ──
+  const sr = d.daily.sunrise[0].slice(11,16);
+  const ss = d.daily.sunset[0].slice(11,16);
+  const srMin = parseInt(sr)*60 + parseInt(sr.slice(3));
+  const ssMin = parseInt(ss)*60 + parseInt(ss.slice(3));
+  const nowTotalMin = nowHour*60 + nowMin;
+  const dayLen = ssMin - srMin || 1;
+  const progRaw = (nowTotalMin - srMin) / dayLen;
+  const prog = Math.max(0, Math.min(1, progRaw));
+  const arcR = 80, arcCX = 100, arcCY = 90;
+  const arcStart = Math.PI, arcEnd = 0;
+  function arcPt(p) {
+    const a = Math.PI - p * Math.PI;
+    return [arcCX + arcR*Math.cos(a), arcCY - arcR*Math.sin(a)];
+  }
+  const [sunX, sunY] = arcPt(prog);
+  const arcSvg = `<svg viewBox="0 0 200 95" style="width:100%;max-width:240px;overflow:visible">
+    <path d="M${arcCX-arcR},${arcCY} A${arcR},${arcR} 0 0 1 ${arcCX+arcR},${arcCY}" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="3"/>
+    <path d="M${arcCX-arcR},${arcCY} A${arcR},${arcR} 0 0 1 ${arcPt(prog)[0]},${arcPt(prog)[1]}" fill="none" stroke="rgba(255,200,80,0.6)" stroke-width="3"/>
+    ${prog>0&&prog<1?`<circle cx="${sunX}" cy="${sunY}" r="8" fill="#fbbf24" style="filter:drop-shadow(0 0 8px #fbbf24)"/>`:``}
+    <text x="${arcCX-arcR}" y="${arcCY+16}" fill="rgba(255,255,255,0.5)" font-size="11" text-anchor="middle">☀️${sr}</text>
+    <text x="${arcCX+arcR}" y="${arcCY+16}" fill="rgba(255,255,255,0.5)" font-size="11" text-anchor="middle">🌙${ss}</text>
+  </svg>`;
 
   // ── HERO ──
-  let h = `<div style="${bg};border-radius:18px;padding:28px 32px;margin-bottom:20px;position:relative;overflow:hidden">
-    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.18);border-radius:18px"></div>
-    <div style="position:relative;z-index:1;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px">
+  const particles = wettAnimParticles(c.weather_code);
+  let h = `<div style="${bg};border-radius:22px;padding:32px;margin-bottom:22px;position:relative;overflow:hidden;min-height:200px">
+    ${particles}
+    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.15);border-radius:22px"></div>
+    <div style="position:relative;z-index:1;display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:center">
+
+      <!-- Links: Temp + Beschreibung -->
       <div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:4px">📍 Norderstedt · Jetzt</div>
-        <div style="display:flex;align-items:baseline;gap:12px">
-          <span style="font-size:72px;font-weight:200;line-height:1;color:#fff">${Math.round(c.temperature_2m)}°</span>
-          <span style="font-size:40px">${icon}</span>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:8px;letter-spacing:.04em">📍 NORDERSTEDT · JETZT</div>
+        <div style="display:flex;align-items:flex-end;gap:10px;line-height:1">
+          <span style="font-size:90px;font-weight:100;color:#fff;letter-spacing:-4px">${temp}°</span>
+          <span style="font-size:52px;margin-bottom:6px">${icon}</span>
         </div>
-        <div style="font-size:18px;color:rgba(255,255,255,0.85);margin-top:4px">${desc}</div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.55);margin-top:6px">Gefühlt ${Math.round(c.apparent_temperature)}°C</div>
+        <div style="font-size:20px;color:rgba(255,255,255,0.9);margin-top:8px;font-weight:300">${desc}</div>
+        <div style="font-size:15px;color:rgba(255,255,255,0.5);margin-top:6px">Gefühlt <strong style="color:rgba(255,255,255,0.8)">${Math.round(c.apparent_temperature)}°</strong></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;margin-top:4px">
-        <div style="color:rgba(255,255,255,0.55);font-size:15px">💧 Luftfeuchtigkeit</div><div style="color:#fff;font-size:20px;font-weight:700">${c.relative_humidity_2m}%</div>
-        <div style="color:rgba(255,255,255,0.55);font-size:15px">💨 Wind</div><div style="color:#fff;font-size:20px;font-weight:700">${Math.round(c.wind_speed_10m)} km/h ${windDir(c.wind_direction_10m||0)}</div>
-        <div style="color:rgba(255,255,255,0.55);font-size:15px">☀️ UV-Index</div><div style="font-size:20px;font-weight:700;color:${uv.color}">${Math.round(c.uv_index||0)} – ${uv.label}</div>
-        <div style="color:rgba(255,255,255,0.55);font-size:15px">🌧 Niederschlag</div><div style="color:#fff;font-size:20px;font-weight:700">${c.precipitation||0} mm</div>
+
+      <!-- Mitte: Tageslicht-Arc -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+        ${arcSvg}
+        <div style="font-size:12px;color:rgba(255,255,255,0.4);text-align:center">Tageslicht</div>
+      </div>
+
+      <!-- Rechts: Details -->
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:12px 20px;align-items:center">
+        <div style="color:rgba(255,255,255,0.5);font-size:15px;white-space:nowrap">💧 Feuchtigkeit</div>
+        <div style="color:#fff;font-size:22px;font-weight:700">${c.relative_humidity_2m}%</div>
+        <div style="color:rgba(255,255,255,0.5);font-size:15px;white-space:nowrap">💨 Wind</div>
+        <div style="color:#fff;font-size:22px;font-weight:700">${Math.round(c.wind_speed_10m)} <span style="font-size:14px;font-weight:400">km/h ${windDir(c.wind_direction_10m||0)}</span></div>
+        <div style="color:rgba(255,255,255,0.5);font-size:15px;white-space:nowrap">☀️ UV</div>
+        <div style="font-size:22px;font-weight:700;color:${uv.color}">${Math.round(c.uv_index||0)} <span style="font-size:14px;font-weight:400">${uv.label}</span></div>
+        <div style="color:rgba(255,255,255,0.5);font-size:15px;white-space:nowrap">🌧 Regen</div>
+        <div style="color:#fff;font-size:22px;font-weight:700">${c.precipitation||0} <span style="font-size:14px;font-weight:400">mm</span></div>
       </div>
     </div>
   </div>`;
 
-  // ── STUNDENVERLAUF ──
+  // ── STUNDENVERLAUF MIT SVG-KURVE ──
   const hourlyTimes = d.hourly.time;
   const startIdx = hourlyTimes.findIndex(t => new Date(t).getHours() >= nowHour && t.startsWith(d.current.time.slice(0,10)));
   const sliceStart = startIdx >= 0 ? startIdx : 0;
   const hours = hourlyTimes.slice(sliceStart, sliceStart+24);
-  const temps = d.hourly.temperature_2m.slice(sliceStart, sliceStart+24);
-  const rains = d.hourly.precipitation_probability.slice(sliceStart, sliceStart+24);
-  const minT = Math.min(...temps), maxT = Math.max(...temps);
-  const tempRange = maxT - minT || 1;
+  const temps24 = d.hourly.temperature_2m.slice(sliceStart, sliceStart+24);
+  const rains24 = d.hourly.precipitation_probability.slice(sliceStart, sliceStart+24);
+  const codes24 = d.hourly.weather_code.slice(sliceStart, sliceStart+24);
+  const minT = Math.min(...temps24), maxT = Math.max(...temps24);
+  const tRange = maxT - minT || 1;
+  const svgW = 900, svgH = 80, pad = 18;
+  const xStep = (svgW - pad*2) / (temps24.length - 1);
+  const pts = temps24.map((t,i) => [pad + i*xStep, svgH - pad - ((t-minT)/tRange)*(svgH-pad*2)]);
+  let pathD = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i=1;i<pts.length;i++) {
+    const cx = (pts[i-1][0]+pts[i][0])/2;
+    pathD += ` C${cx},${pts[i-1][1]} ${cx},${pts[i][1]} ${pts[i][0]},${pts[i][1]}`;
+  }
+  const fillD = pathD + ` L${pts[pts.length-1][0]},${svgH} L${pts[0][0]},${svgH} Z`;
 
   let hourCells = '';
-  hours.forEach((t, i) => {
+  hours.forEach((t,i) => {
     const hr = new Date(t).getHours();
-    const isNow = i === 0;
-    const rainH = Math.round((rains[i]/100)*36);
-    hourCells += `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;min-width:66px;flex-shrink:0;padding:8px 4px;${isNow?'background:rgba(255,255,255,0.08);border-radius:12px;':''}">
-      <div style="font-size:13px;color:${isNow?'#fff':'rgba(255,255,255,0.45)'};font-weight:${isNow?700:400}">${isNow?'Jetzt':String(hr).padStart(2,'0')+'h'}</div>
-      <div style="font-size:26px;line-height:1">${WMO_ICONS[d.hourly.weather_code[sliceStart+i]]||'🌤️'}</div>
-      <div style="font-size:16px;color:#e0e6ed;font-weight:600">${Math.round(temps[i])}°</div>
-      <div style="width:8px;background:rgba(96,165,250,${Math.max(rains[i]/100,0.08)});border-radius:4px;height:${rainH||4}px;min-height:4px"></div>
-      <div style="font-size:12px;color:#60a5fa;min-height:16px">${rains[i]>5?rains[i]+'%':''}</div>
+    const isNow = i===0;
+    hourCells += `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:68px;flex-shrink:0;padding:6px 2px;${isNow?'background:rgba(255,255,255,0.07);border-radius:10px':''}">
+      <div style="font-size:13px;color:${isNow?'#fff':'rgba(255,255,255,0.4)'};font-weight:${isNow?700:400}">${isNow?'Jetzt':String(hr).padStart(2,'0')+'h'}</div>
+      <div style="font-size:24px;line-height:1">${WMO_ICONS[codes24[i]]||'🌤️'}</div>
+      <div style="font-size:16px;color:${wettTempColor(Math.round(temps24[i]))};font-weight:700">${Math.round(temps24[i])}°</div>
+      <div style="font-size:12px;color:#60a5fa">${rains24[i]>5?rains24[i]+'%':'—'}</div>
     </div>`;
   });
 
-  h += `<div style="background:#0d1520;border:1px solid #1a2a3a;border-radius:14px;padding:20px;margin-bottom:20px;overflow:hidden">
-    <div style="font-size:13px;color:rgba(255,255,255,0.35);margin-bottom:16px;letter-spacing:.05em;text-transform:uppercase">Stundenverlauf — nächste 24h</div>
-    <div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.1) transparent">${hourCells}</div>
+  h += `<div style="background:#080f1c;border:1px solid #1a2a3a;border-radius:18px;padding:22px;margin-bottom:22px;overflow:hidden">
+    <div style="font-size:13px;color:rgba(255,255,255,0.3);margin-bottom:16px;letter-spacing:.06em;text-transform:uppercase">24-Stunden-Verlauf</div>
+    <svg viewBox="0 0 ${svgW} ${svgH}" style="width:100%;height:70px;display:block;margin-bottom:10px" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="wett-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="rgba(96,165,250,0.35)"/>
+          <stop offset="100%" stop-color="rgba(96,165,250,0)"/>
+        </linearGradient>
+      </defs>
+      <path d="${fillD}" fill="url(#wett-grad)"/>
+      <path d="${pathD}" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round"/>
+      ${pts.map((p,i)=>i===0?`<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="#60a5fa"/>`:``).join('')}
+    </svg>
+    <div style="display:flex;gap:3px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent">${hourCells}</div>
   </div>`;
 
-  // ── 7-TAGE FORECAST ──
-  h += `<div style="background:#0d1520;border:1px solid #1a2a3a;border-radius:14px;padding:16px">
-    <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:12px;letter-spacing:.05em;text-transform:uppercase">7-Tage Vorschau</div>`;
-
+  // ── 7-TAGE ALS FARBIGE KARTEN ──
+  h += `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:8px">`;
+  const allMax = d.daily.temperature_2m_max.slice(0,7);
+  const allMin = d.daily.temperature_2m_min.slice(0,7);
+  const globalMax = Math.max(...allMax), globalMin = Math.min(...allMin);
   d.daily.time.slice(0,7).forEach((date,i) => {
     const isToday = i===0;
-    const dayLabel = isToday ? 'Heute' : new Date(date).toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit'});
-    const tMin = Math.round(d.daily.temperature_2m_min[i]);
-    const tMax = Math.round(d.daily.temperature_2m_max[i]);
-    const rain = d.daily.precipitation_probability_max[i] || 0;
-    const uvMax = uvLabel(d.daily.uv_index_max?.[i] || 0);
-    const wind = Math.round(d.daily.wind_speed_10m_max?.[i] || 0);
-    const sr = d.daily.sunrise[i].slice(11,16);
-    const ss = d.daily.sunset[i].slice(11,16);
+    const dayLabel = isToday ? 'Heute' : new Date(date).toLocaleDateString('de-DE',{weekday:'short'});
+    const dateLabel = new Date(date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'});
+    const tMin = Math.round(allMin[i]), tMax = Math.round(allMax[i]);
+    const rain  = d.daily.precipitation_probability_max[i] || 0;
     const icon2 = WMO_ICONS[d.daily.weather_code[i]] || '🌤️';
-    const desc2 = WMO_DESC[d.daily.weather_code[i]] || '';
-
-    h += `<div style="display:flex;align-items:center;gap:14px;padding:13px 0;${i<6?'border-bottom:1px solid rgba(255,255,255,0.06)':''}">
-      <div style="width:90px;font-size:15px;color:${isToday?'#fff':'rgba(255,255,255,0.7)'};font-weight:${isToday?700:400};flex-shrink:0">${dayLabel}</div>
-      <div style="font-size:28px;flex-shrink:0">${icon2}</div>
-      <div style="font-size:14px;color:rgba(255,255,255,0.45);flex:1;min-width:0">${desc2}</div>
-      <div style="display:flex;gap:16px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
-        <span style="font-size:14px;color:#60a5fa" title="Regenwahrscheinlichkeit">💧${rain}%</span>
-        <span style="font-size:14px;color:rgba(255,255,255,0.4)" title="Wind">💨${wind}</span>
-        <span style="font-size:14px;color:${uvMax.color}" title="UV">UV ${Math.round(d.daily.uv_index_max?.[i]||0)}</span>
-        <span style="font-size:13px;color:rgba(255,255,255,0.35)">☀️${sr} 🌙${ss}</span>
-        <span style="font-size:15px;color:rgba(255,255,255,0.5);min-width:80px;text-align:right">${tMin}° <span style="color:#fff;font-weight:700">${tMax}°</span></span>
-      </div>
+    const tempNorm = (tMax - globalMin) / (globalMax - globalMin || 1);
+    const cardBg = `linear-gradient(160deg,rgba(${Math.round(20+tempNorm*60)},${Math.round(30+tempNorm*20)},${Math.round(80-tempNorm*50)},0.9),rgba(${Math.round(10+tempNorm*40)},${Math.round(15+tempNorm*10)},${Math.round(50-tempNorm*30)},0.7))`;
+    const windMax = Math.round(d.daily.wind_speed_10m_max?.[i]||0);
+    const uvMax2 = uvLabel(d.daily.uv_index_max?.[i]||0);
+    h += `<div style="${cardBg};border-radius:14px;padding:14px 10px;text-align:center;border:1px solid rgba(255,255,255,${isToday?'0.2':'0.07'});${isToday?'box-shadow:0 0 0 2px rgba(255,255,255,0.18)':''}">
+      <div style="font-size:${isToday?'16':'14'}px;color:${isToday?'#fff':'rgba(255,255,255,0.7)'};font-weight:${isToday?700:500};margin-bottom:2px">${dayLabel}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:8px">${dateLabel}</div>
+      <div style="font-size:34px;margin-bottom:8px">${icon2}</div>
+      <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:2px">${tMax}°</div>
+      <div style="font-size:14px;color:rgba(255,255,255,0.45);margin-bottom:10px">${tMin}°</div>
+      <div style="font-size:12px;color:#60a5fa;margin-bottom:3px">💧 ${rain}%</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.4)">💨 ${windMax}</div>
+      <div style="font-size:12px;color:${uvMax2.color};margin-top:3px">UV ${Math.round(d.daily.uv_index_max?.[i]||0)}</div>
     </div>`;
   });
-
   h += `</div>`;
+
   document.getElementById('wetter-content').innerHTML = h;
 }
 

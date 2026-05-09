@@ -3496,18 +3496,42 @@ class Handler(BaseHTTPRequestHandler):
                     else:
                         continue
                     content = p.get("content","")
-                    if content:
+                    img_path = None
+                    if p.get("img"):
+                        _candidate = Path(os.path.join(WORKSPACE, "data", p["img"]))
+                        if _candidate.exists():
+                            img_path = _candidate
+                    if content and img_path:
+                        from docx.oxml.ns import qn as _qn
+                        from docx.oxml import OxmlElement as _OE
+                        tbl = doc.add_table(rows=1, cols=2)
+                        tbl.style = 'Table Grid'
+                        # Rahmen entfernen
+                        for cell in tbl.rows[0].cells:
+                            tc = cell._tc
+                            tcPr = tc.get_or_add_tcPr()
+                            tcBorders = _OE('w:tcBorders')
+                            for side in ('top','left','bottom','right','insideH','insideV'):
+                                border = _OE(f'w:{side}')
+                                border.set(_qn('w:val'), 'none')
+                                tcBorders.append(border)
+                            tcPr.append(tcBorders)
+                        # Linke Zelle: Text (ca. 4.5")
+                        cell_l = tbl.cell(0, 0)
+                        cell_l.width = _Inches(4.5)
+                        p_text = cell_l.paragraphs[0]
+                        run = p_text.add_run(content)
+                        run.font.size = _Pt(11)
+                        # Rechte Zelle: Bild (ca. 1.3")
+                        cell_r = tbl.cell(0, 1)
+                        cell_r.width = _Inches(1.3)
+                        p_img = cell_r.paragraphs[0]
+                        p_img.paragraph_format.space_before = _Pt(2)
+                        run_img = p_img.add_run()
+                        run_img.add_picture(str(img_path), width=_Inches(1.2))
+                    elif content:
                         para = doc.add_paragraph(content)
                         if para.runs: para.runs[0].font.size = _Pt(11)
-                    if p.get("img"):
-                        img_path = Path(os.path.join(WORKSPACE, "data", p["img"]))
-                        if img_path.exists():
-                            doc.add_picture(str(img_path), width=_Inches(2.5))
-                            img_para = doc.paragraphs[-1]
-                            img_para.alignment = 0
-                            img_para.paragraph_format.left_indent = _Inches(0.2)
-                            img_para.paragraph_format.space_before = _Pt(4)
-                            img_para.paragraph_format.space_after = _Pt(4)
                     doc.add_paragraph("")
                 buf = _io.BytesIO()
                 doc.save(buf)
