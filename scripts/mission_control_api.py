@@ -3499,6 +3499,15 @@ class Handler(BaseHTTPRequestHandler):
                     if content:
                         para = doc.add_paragraph(content)
                         if para.runs: para.runs[0].font.size = _Pt(11)
+                    if p.get("img"):
+                        img_path = Path(os.path.join(WORKSPACE, "data", p["img"]))
+                        if img_path.exists():
+                            doc.add_picture(str(img_path), width=_Inches(2.5))
+                            img_para = doc.paragraphs[-1]
+                            img_para.alignment = 0
+                            img_para.paragraph_format.left_indent = _Inches(0.2)
+                            img_para.paragraph_format.space_before = _Pt(4)
+                            img_para.paragraph_format.space_after = _Pt(4)
                     doc.add_paragraph("")
                 buf = _io.BytesIO()
                 doc.save(buf)
@@ -4462,6 +4471,31 @@ Antworte NUR als reines JSON:
                 posts = [p for p in posts if p.get("id") != post_id]
                 KIFORUM_FILE.write_text(json.dumps(posts, ensure_ascii=False, indent=2))
                 self._send_json({"ok": True})
+
+            elif self.path == "/api/kiforum/clear":
+                KIFORUM_FILE = Path(os.path.join(WORKSPACE, "data/kiforum.json"))
+                KIFORUM_FILE.write_text("[]")
+                self._send_json({"ok": True})
+
+            elif self.path == "/api/kiforum/img-embed":
+                import urllib.request as _urllib, uuid as _uuid_e
+                KIFORUM_FILE = Path(os.path.join(WORKSPACE, "data/kiforum.json"))
+                post_id = body.get("id", "")
+                img_url  = body.get("url", "")
+                if not post_id or not img_url:
+                    self._send_json({"error": "id und url erforderlich"}, status=400); return
+                posts = json.loads(KIFORUM_FILE.read_text()) if KIFORUM_FILE.exists() else []
+                post = next((p for p in posts if p.get("id") == post_id), None)
+                if not post:
+                    self._send_json({"error": "Post nicht gefunden"}, status=404); return
+                fname = f"kif_img_{_uuid_e.uuid4()}.png"
+                dest  = Path(os.path.join(WORKSPACE, "data", fname))
+                req = _urllib.Request(img_url, headers={"User-Agent": "Mozilla/5.0"})
+                with _urllib.urlopen(req, timeout=30) as resp:
+                    dest.write_bytes(resp.read())
+                post["img"] = fname
+                KIFORUM_FILE.write_text(json.dumps(posts, ensure_ascii=False, indent=2))
+                self._send_json({"ok": True, "img": fname})
 
             elif self.path == "/api/kiforum/generate":
                 import subprocess as _sp, uuid as _uuid2

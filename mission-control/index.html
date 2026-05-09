@@ -2028,34 +2028,65 @@ html, body {
               placeholder="Beschreibe das Bild… (Strg+Enter = Generieren)"
               style="background:#1a2a3a;border:1px solid #253a50;border-radius:8px;color:#e0e6ed;
                      font-size:14px;padding:12px;resize:vertical;font-family:inherit;outline:none;
-                     width:100%;box-sizing:border-box;margin-bottom:10px"
+                     width:100%;box-sizing:border-box;margin-bottom:6px"
               onkeydown="if(event.ctrlKey&&event.key==='Enter')pollGenerate()"></textarea>
 
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+            <!-- Negativer Prompt (ausklappbar) -->
+            <div style="margin-bottom:10px">
+              <button onclick="pollToggleNeg()" id="poll-neg-toggle"
+                style="background:none;border:none;color:rgba(255,255,255,0.35);font-size:12px;cursor:pointer;padding:0;margin-bottom:4px">
+                ＋ Negativer Prompt
+              </button>
+              <textarea id="poll-neg" rows="2"
+                placeholder="Was soll NICHT im Bild sein… (z.B. blur, watermark, text)"
+                style="display:none;background:#1a2a3a;border:1px solid #253a50;border-radius:8px;color:#e0e6ed;
+                       font-size:13px;padding:10px;resize:vertical;font-family:inherit;outline:none;
+                       width:100%;box-sizing:border-box"></textarea>
+            </div>
+
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
               <select id="poll-aspect" style="background:#1a2a3a;border:1px solid #253a50;border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px;outline:none">
                 <option value="1024x1024">Quadrat (1:1)</option>
                 <option value="1280x720">Querformat (16:9)</option>
                 <option value="720x1280">Hochformat (9:16)</option>
                 <option value="1024x768">4:3</option>
+                <option value="768x1024">3:4</option>
               </select>
               <select id="poll-model" style="background:#1a2a3a;border:1px solid #253a50;border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px;outline:none">
                 <option value="flux">Flux (Standard)</option>
+                <option value="flux-pro">Flux Pro (Qualität)</option>
                 <option value="flux-realism">Flux Realism</option>
                 <option value="flux-anime">Flux Anime</option>
-                <option value="turbo">Turbo (schneller)</option>
+                <option value="flux-schnell">Flux Schnell (schnell)</option>
+                <option value="turbo">Turbo</option>
               </select>
               <button id="poll-btn" onclick="pollGenerate()"
                 style="background:linear-gradient(135deg,#16a34a,#4ade80);border:none;border-radius:8px;color:white;
                        font-weight:700;font-size:14px;padding:8px 20px;cursor:pointer;box-shadow:0 2px 8px rgba(74,222,128,0.35)">
                 🌸 Generieren
               </button>
-              <span id="poll-status" style="font-size:12px;color:#b8c5d4"></span>
+            </div>
+
+            <!-- Optionen-Zeile -->
+            <div style="display:flex;gap:14px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:rgba(255,255,255,0.5);cursor:pointer">
+                <input type="checkbox" id="poll-enhance" checked
+                  style="accent-color:#4ade80;width:14px;height:14px">
+                ✨ Prompt verbessern
+              </label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:rgba(255,255,255,0.5);cursor:pointer">
+                <input type="checkbox" id="poll-private" checked
+                  style="accent-color:#4ade80;width:14px;height:14px">
+                🔒 Privat
+              </label>
+              <span id="poll-status" style="font-size:12px;color:#b8c5d4;margin-left:auto"></span>
             </div>
 
             <div id="poll-result" style="display:none;flex-direction:column;align-items:center;gap:10px">
-              <div style="display:flex;gap:8px">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
                 <button onclick="pollDownload()" style="background:#16a34a;border:none;border-radius:8px;color:#fff;font-size:13px;padding:7px 18px;cursor:pointer;font-weight:600">⬇ Download</button>
                 <button onclick="pollCopy()" style="background:#2a3a4a;border:1px solid #4a5a6a;border-radius:8px;color:#fff;font-size:13px;padding:7px 18px;cursor:pointer;font-weight:600">📋 Kopieren</button>
+                <button onclick="pollGenerate()" style="background:#2a3a4a;border:1px solid #4a5a6a;border-radius:8px;color:#fff;font-size:13px;padding:7px 18px;cursor:pointer;font-weight:600">🔄 Nochmal</button>
               </div>
               <img id="poll-img" src="" alt="Generiertes Bild"
                 style="max-width:100%;border-radius:12px;border:1px solid #253a50;box-shadow:0 4px 24px rgba(0,0,0,0.4)">
@@ -2645,6 +2676,7 @@ html, body {
           <!-- ═══ DISCUSSION FEED ═══ -->
           <div style="background:#070e1a;border-top:2px solid #152238;padding:6px 16px;display:flex;gap:6px;align-items:center;flex-shrink:0">
             <button class="kif-topbtn" onclick="kifLoad()" style="background:rgba(96,165,250,0.1);border-color:rgba(96,165,250,0.3);color:#60a5fa">🔄 Neu laden</button>
+            <button class="kif-topbtn" onclick="kifClearAll()" style="background:rgba(229,115,115,0.1);border-color:rgba(229,115,115,0.4);color:#e57373">🗑 Alles löschen</button>
             <button class="kif-topbtn" onclick="kifWordExport()" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa">📄 Word</button>
             <button class="kif-topbtn" onclick="kifJsonExport()">📤 JSON</button>
           </div>
@@ -2756,39 +2788,81 @@ html, body {
           </div>`;
         }
 
+        function kifPostSeed(id) {
+          return id.split('').reduce((a,c)=>Math.imul(31,a)+c.charCodeAt(0)|0, 0) >>> 0;
+        }
+
         async function kifPollImage(id) {
           const p = _kifPosts.find(x=>x.id===id);
           if (!p) return;
           const wrap = document.getElementById('kif-poll-' + id);
           if (!wrap) return;
 
-          // Toggle: wenn Bild schon da ist, einklappen
           if (wrap.style.display !== 'none' && wrap.innerHTML.trim()) {
             wrap.style.display = 'none';
             wrap.innerHTML = '';
             return;
           }
 
-          const promptText = ((p.title ? p.title + '. ' : '') + p.content).substring(0, 300);
-          const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=768&height=512&model=flux&nologo=true&seed=${Date.now()}`;
+          const promptText = (p.img_prompt || (p.title ? p.title + '. ' : '') + p.content).substring(0, 400);
+          const seed = kifPostSeed(id);
+          const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=768&height=512&model=flux&nologo=true&seed=${seed}&private=true`;
 
           wrap.style.display = 'block';
-          wrap.innerHTML = '<div style="color:rgba(255,255,255,0.4);font-size:12px;padding:4px 0">🌸 Bild wird geladen…</div>';
+          let secs = 0;
+          const timer = setInterval(()=>{ secs++; const el=document.getElementById('kif-poll-timer-'+id); if(el) el.textContent=`${secs}s…`; }, 1000);
+          wrap.innerHTML = `<div style="color:rgba(255,255,255,0.4);font-size:12px;padding:4px 0">🌸 Bild wird generiert… <span id="kif-poll-timer-${id}">0s…</span></div>`;
 
           const img = new Image();
           img.onload = () => {
+            clearInterval(timer);
+            const safeUrl = url.replace(/'/g, '%27');
             wrap.innerHTML = `
-              <img src="${url}" style="max-width:100%;border-radius:10px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 2px 12px rgba(0,0,0,0.4)">
-              <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
-                <button class="kif-msg-btn" onclick="window.open('${url}','_blank')">⬇ Download</button>
-                <button class="kif-msg-btn" onclick="kifPollCopyImg('${url}',this)">📋 Kopieren</button>
+              <img src="${safeUrl}" style="max-width:100%;border-radius:10px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 2px 12px rgba(0,0,0,0.4)">
+              <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end;flex-wrap:wrap">
+                <button class="kif-msg-btn" id="kif-embed-btn-${id}" onclick="kifEmbedImage('${id}','${safeUrl}',this)">📌 Einbinden</button>
+                <button class="kif-msg-btn" onclick="window.open('${safeUrl}','_blank')">⬇ Download</button>
+                <button class="kif-msg-btn" onclick="kifPollCopyImg('${safeUrl}',this)">📋 Kopieren</button>
                 <button class="kif-msg-btn del" onclick="document.getElementById('kif-poll-${id}').style.display='none';document.getElementById('kif-poll-${id}').innerHTML=''">✕</button>
               </div>`;
           };
           img.onerror = () => {
-            wrap.innerHTML = '<div style="color:#e57373;font-size:12px;padding:4px 0">❌ Bild nicht ladbar</div>';
+            clearInterval(timer);
+            wrap.innerHTML = '<div style="color:#e57373;font-size:12px;padding:4px 0">❌ Bild nicht ladbar — Pollinations überlastet?</div>';
           };
           img.src = url;
+        }
+
+        async function kifEmbedImage(id, url, btn) {
+          btn.disabled = true;
+          btn.textContent = '⏳…';
+          try {
+            const res = await fetch('/api/kiforum/img-embed', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, url})}).then(r=>r.json());
+            if (res.ok) {
+              const p = _kifPosts.find(x=>x.id===id);
+              if (p) p.img = res.img;
+              btn.textContent = '✅ Eingebunden';
+              btn.disabled = true;
+              // Bild direkt in der Nachrichtenbox aktualisieren
+              const msgEl = document.getElementById('kif-fi-' + id);
+              if (msgEl) {
+                const existing = msgEl.querySelector('.kif-msg-img');
+                if (!existing) {
+                  const imgEl = document.createElement('img');
+                  imgEl.className = 'kif-msg-img';
+                  imgEl.src = `/api/kiforum/img/${res.img}`;
+                  const content = msgEl.querySelector('.kif-msg-content');
+                  if (content) content.insertAdjacentElement('afterend', imgEl);
+                }
+              }
+            } else {
+              btn.textContent = '❌ Fehler';
+              setTimeout(()=>{ btn.textContent='📌 Einbinden'; btn.disabled=false; }, 3000);
+            }
+          } catch(e) {
+            btn.textContent = '❌ Fehler';
+            setTimeout(()=>{ btn.textContent='📌 Einbinden'; btn.disabled=false; }, 3000);
+          }
         }
 
         async function kifPollCopyImg(url, btn) {
@@ -2883,23 +2957,29 @@ html, body {
           const content = input?.value.trim();
           if (!content) return;
           input.value='';
-          // Find latest bolla post for context
           const lastBolla = _kifPosts.find(p=>p.type==='bolla');
           const context = (lastBolla?.title||'') + ' ' + (lastBolla?.content||'');
-          const userPost = await fetch('/api/kiforum/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'user',title:'Aber…',content,emoji:'💬'})}).then(r=>r.json());
-          _kifPosts.unshift(userPost);
-          kifRenderAll();
-          kifThinking(true, null);
-          document.getElementById('kif-bolla').style.pointerEvents='none';
-          const thesis = `Kontext: ${context}\n\nChris wirft ein: ${content}`;
-          const bollaPost = await fetch('/api/kiforum/respond',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thesis})}).then(r=>r.json());
-          document.getElementById('kif-bolla').style.pointerEvents='';
-          if (!bollaPost.error) {
-            kifThinking(true, bollaPost.title||bollaPost.content);
-            _kifPosts.unshift(bollaPost);
-            setTimeout(()=>{ kifThinking(false); kifRenderAll(); }, 2000);
-          } else {
+          try {
+            const userPost = await fetch('/api/kiforum/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'user',title:'Aber…',content,emoji:'💬'})}).then(r=>r.json());
+            _kifPosts.unshift(userPost);
+            kifRenderAll();
+            kifThinking(true, null);
+            document.getElementById('kif-bolla').style.pointerEvents='none';
+            const thesis = `Kontext: ${context}\n\nChris wirft ein: ${content}`;
+            const bollaPost = await fetch('/api/kiforum/respond',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thesis}), signal:AbortSignal.timeout(90000)}).then(r=>r.json());
+            if (!bollaPost.error) {
+              kifThinking(true, bollaPost.title||bollaPost.content);
+              _kifPosts.unshift(bollaPost);
+              setTimeout(()=>{ kifThinking(false); kifRenderAll(); }, 2000);
+            } else {
+              kifThinking(false); kifRenderAll();
+            }
+          } catch(e) {
             kifThinking(false); kifRenderAll();
+            console.error('kifSubmitAber Fehler:', e);
+          } finally {
+            const bolla = document.getElementById('kif-bolla');
+            if (bolla) bolla.style.pointerEvents='';
           }
         }
 
@@ -2943,6 +3023,13 @@ html, body {
           a.href = '/api/kiforum/export';
           a.download = 'bolla-ki-forum.json';
           a.click();
+        }
+
+        async function kifClearAll() {
+          if (!confirm('Alle Diskussionsbeiträge löschen?')) return;
+          await fetch('/api/kiforum/clear', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+          _kifPosts = [];
+          kifRenderAll();
         }
         </script>
       </div><!-- end page-kiforum -->
@@ -3301,6 +3388,14 @@ async function bildgenCopy() {
 // ===== POLLINATIONS =====
 let _pollLastUrl = null;
 
+function pollToggleNeg() {
+  const neg = document.getElementById('poll-neg');
+  const btn = document.getElementById('poll-neg-toggle');
+  const visible = neg.style.display !== 'none';
+  neg.style.display = visible ? 'none' : 'block';
+  btn.textContent = visible ? '＋ Negativer Prompt' : '－ Negativer Prompt';
+}
+
 async function pollGenerate() {
   const prompt = document.getElementById('poll-prompt').value.trim();
   if (!prompt) {
@@ -3312,28 +3407,42 @@ async function pollGenerate() {
   }
   const [w, h] = document.getElementById('poll-aspect').value.split('x');
   const model = document.getElementById('poll-model').value;
+  const enhance = document.getElementById('poll-enhance').checked;
+  const isPrivate = document.getElementById('poll-private').checked;
+  const negPrompt = document.getElementById('poll-neg').value.trim();
   const btn = document.getElementById('poll-btn');
   const status = document.getElementById('poll-status');
   const result = document.getElementById('poll-result');
   btn.disabled = true;
   btn.style.opacity = '0.5';
   btn.textContent = '⏳ Generiere…';
-  status.textContent = 'Wird generiert – kann etwas dauern…';
   result.style.display = 'none';
   _pollLastUrl = null;
-  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&model=${model}&nologo=true&seed=${Date.now()}`;
+
+  let params = `width=${w}&height=${h}&model=${model}&nologo=true&seed=${Date.now()}`;
+  if (enhance) params += '&enhance=true';
+  if (isPrivate) params += '&private=true';
+  if (negPrompt) params += `&negative_prompt=${encodeURIComponent(negPrompt)}`;
+
+  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params}`;
   _pollLastUrl = url;
+
+  let secs = 0;
+  const timer = setInterval(() => { secs++; status.textContent = `⏳ ${secs}s…`; }, 1000);
+
   const img = document.getElementById('poll-img');
   img.onload = () => {
+    clearInterval(timer);
     result.style.display = 'flex';
     result.scrollIntoView({behavior:'smooth', block:'start'});
-    status.textContent = '✅ Fertig!';
+    status.textContent = `✅ Fertig nach ${secs}s`;
     btn.disabled = false;
     btn.style.opacity = '1';
     btn.textContent = '🌸 Generieren';
   };
   img.onerror = () => {
-    status.textContent = '❌ Fehler beim Laden – Pollinations nicht erreichbar?';
+    clearInterval(timer);
+    status.textContent = '❌ Fehler – Pollinations nicht erreichbar?';
     btn.disabled = false;
     btn.style.opacity = '1';
     btn.textContent = '🌸 Generieren';
