@@ -3,481 +3,504 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Control — Bolla</title>
+<title>Mission Control · Feldnotizen</title>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 
-body {
-  font-family: 'Segoe Print', 'Bradley Hand ITC', cursive, sans-serif;
-  background: #f7f0e2;
-  color: #2d1f0e;
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
+body{
+  font-family:Georgia,'Times New Roman',serif;
+  background:#CEC0A0;
+  min-height:100vh;
+  display:flex;
+  overflow:hidden;
 }
 
-/* ── SIDEBAR ── */
-.sidebar {
-  width: 215px;
-  flex-shrink: 0;
-  background: #ede2cd;
-  border-right: 1.5px solid #cbb98c;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  background-image: repeating-linear-gradient(
-    transparent 0, transparent 27px,
-    rgba(170,140,90,0.18) 27px, rgba(170,140,90,0.18) 28px
+/* Notebook-Linien über alles */
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 27px,
+    rgba(100,70,30,.07) 27px,
+    rgba(100,70,30,.07) 28px
+  );
+  pointer-events:none;
+  z-index:9000;
+}
+
+/* ── SIDEBAR ─────────────────────────────── */
+.sidebar{
+  width:228px;flex-shrink:0;
+  background:#F5EDD6;
+  border-right:3px solid #7A5520;
+  display:flex;flex-direction:column;
+  position:relative;
+  box-shadow:4px 0 16px rgba(80,50,20,.22);
+}
+
+/* rote Randlinie */
+.sidebar::after{
+  content:'';
+  position:absolute;
+  left:46px;top:0;bottom:0;width:1.5px;
+  background:rgba(180,50,50,.28);
+  pointer-events:none;
+}
+
+/* Ringbindung */
+.rings{
+  position:absolute;
+  left:6px;top:52px;
+  display:flex;flex-direction:column;gap:30px;
+  z-index:10;
+}
+.ring{
+  width:22px;height:22px;
+  border:3px solid #7A5520;
+  border-radius:50%;
+  background:#CEC0A0;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.2);
+}
+
+.logo{
+  padding:22px 16px 18px 56px;
+  border-bottom:2px dashed #C4A060;
+}
+.logo-name{
+  font-size:17px;font-weight:bold;
+  color:#4A2C0E;letter-spacing:.5px;
+}
+.logo-sub{
+  font-size:11px;color:#8B5E2A;
+  margin-top:2px;font-style:italic;
+}
+
+nav{flex:1;padding:12px 0;}
+
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 14px 9px 56px;
+  color:#4A2C0E;font-size:13.5px;
+  text-decoration:none;
+  cursor:pointer;
+  position:relative;
+  transition:background .12s;
+}
+.nav-item:hover{background:rgba(122,85,32,.1);}
+.nav-item.active{
+  background:rgba(122,85,32,.16);
+  font-weight:bold;
+}
+.nav-item.active::before{
+  content:'›';
+  position:absolute;left:36px;
+  color:#C67C2A;font-size:18px;line-height:1;
+  top:50%;transform:translateY(-50%);
+}
+.nav-icon{font-size:15px;width:18px;text-align:center;}
+.nav-badge{
+  margin-left:auto;
+  background:#B85C1A;color:#FFF;
+  font-size:10px;font-family:sans-serif;
+  padding:1px 6px;border-radius:10px;
+  font-weight:bold;
+}
+
+.sidebar-foot{
+  padding:14px 14px 18px 56px;
+  border-top:2px dashed #C4A060;
+  font-size:11px;color:#8B5E2A;font-style:italic;
+  line-height:1.7;
+}
+
+/* ── MAIN ────────────────────────────────── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── TOPBAR ──────────────────────────────── */
+.topbar{
+  background:#F5EDD6;
+  border-bottom:3px solid #7A5520;
+  padding:14px 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 3px 10px rgba(80,50,20,.14);
+  flex-shrink:0;
+}
+.topbar-left{}
+.page-title{
+  font-size:21px;font-weight:bold;
+  color:#4A2C0E;
+  display:inline-block;
+  position:relative;
+}
+.page-title::after{
+  content:'';
+  position:absolute;
+  bottom:-2px;left:0;right:0;height:2px;
+  background:#C67C2A;
+  transform:rotate(-.2deg) scaleX(1.02);
+}
+.page-greeting{
+  font-size:12px;color:#8B5E2A;
+  font-style:italic;margin-top:4px;
+}
+.topbar-right{display:flex;align-items:center;gap:22px;}
+.topbar-datebox{text-align:right;}
+.topbar-datestr{font-size:12px;color:#8B5E2A;font-style:italic;}
+.topbar-weekstr{font-size:11px;color:#A07040;font-style:italic;}
+.topbar-time{
+  font-size:32px;font-weight:bold;
+  color:#4A2C0E;
+  font-family:'Courier New',monospace;
+  letter-spacing:3px;
+  text-shadow:1px 1px 0 rgba(122,85,32,.2);
+}
+
+/* ── CONTENT GRID ────────────────────────── */
+.content{
+  flex:1;overflow-y:auto;
+  padding:24px 28px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:20px;
+  align-content:start;
+}
+.content::-webkit-scrollbar{width:7px;}
+.content::-webkit-scrollbar-track{background:#D4C4A0;}
+.content::-webkit-scrollbar-thumb{background:#B09060;border-radius:4px;}
+
+/* ── CARD ────────────────────────────────── */
+.card{
+  background:#FBF5E4;
+  border:2px solid #8B6030;
+  border-radius:2px;
+  padding:18px 20px;
+  position:relative;
+  transform:rotate(var(--tilt,0deg));
+  box-shadow:
+    3px 4px 0 #C8A858,
+    5px 7px 0 rgba(80,50,20,.09);
+  transition:transform .2s,box-shadow .2s;
+}
+.card:hover{
+  transform:rotate(0deg) translateY(-2px);
+  box-shadow:4px 6px 0 #C8A858,7px 10px 0 rgba(80,50,20,.12);
+}
+/* innere Rahmenlinie */
+.card::before{
+  content:'';
+  position:absolute;inset:4px;
+  border:1px dashed rgba(139,96,48,.18);
+  border-radius:1px;
+  pointer-events:none;
+}
+
+.card-label{
+  font-size:10.5px;font-weight:bold;
+  text-transform:uppercase;letter-spacing:2px;
+  color:#8B5E2A;margin-bottom:14px;
+  display:flex;align-items:center;gap:7px;
+}
+
+/* ── GAUGE ───────────────────────────────── */
+.gauge-wrap{display:flex;align-items:center;gap:16px;}
+.gauge-svg{transform:rotate(-90deg);flex-shrink:0;}
+.g-track{fill:none;stroke:#E4D4A8;stroke-width:9;}
+.g-fill{fill:none;stroke-width:9;stroke-linecap:round;}
+.gauge-info{}
+.gauge-pct{
+  font-size:40px;font-weight:bold;color:#4A2C0E;
+  font-family:'Courier New',monospace;line-height:1;
+}
+.gauge-pct span{font-size:17px;color:#8B5E2A;font-family:Georgia,serif;}
+.gauge-sub{font-size:11px;color:#8B5E2A;font-style:italic;margin-top:3px;}
+
+/* Schraffur-Balken */
+.bar{
+  height:13px;
+  background:#E4D4A8;
+  border:2px solid #8B6030;
+  border-radius:2px;
+  margin-top:13px;overflow:hidden;
+}
+.bar-fill{
+  height:100%;
+  background:repeating-linear-gradient(
+    45deg,
+    #7A9E7E 0,#7A9E7E 3px,
+    #A8C8AC 3px,#A8C8AC 7px
   );
 }
-
-.sidebar::before {
-  content: '';
-  position: absolute;
-  left: 38px; top: 0; bottom: 0;
-  width: 1.5px;
-  background: rgba(200,55,55,0.22);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.sidebar-holes {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px 0 8px;
-  gap: 26px;
-  position: relative;
-  z-index: 1;
-}
-
-.hole {
-  width: 16px; height: 16px;
-  background: #f0e8d4;
-  border-radius: 50%;
-  border: 1px solid #c0a878;
-  box-shadow: inset 0 1px 4px rgba(0,0,0,0.18), 0 0 0 2px rgba(200,170,110,0.15);
-}
-
-.sidebar-brand {
-  padding: 8px 14px 11px 44px;
-  border-bottom: 1.5px dashed #cbb98c;
-  margin-bottom: 6px;
-  position: relative;
-  z-index: 1;
-}
-
-.sidebar-brand h2 {
-  font-size: 16px;
-  color: #5a3018;
-  font-weight: bold;
-  letter-spacing: 0.3px;
-}
-
-.sidebar-brand p {
-  font-size: 9px;
-  letter-spacing: 1.8px;
-  text-transform: uppercase;
-  color: #9a7a55;
-  margin-top: 2px;
-}
-
-nav {
-  flex: 1;
-  position: relative;
-  z-index: 1;
-  padding: 4px 0;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 10px 12px 10px 44px;
-  cursor: pointer;
-  font-size: 13px;
-  color: #5a3018;
-  border-left: 3px solid transparent;
-  position: relative;
-  transition: background 0.1s;
-}
-
-.nav-item:hover {
-  background: rgba(160,110,50,0.1);
-}
-
-.nav-item.active {
-  background: linear-gradient(90deg, rgba(160,60,20,0.14) 0%, transparent 100%);
-  border-left: 3px solid #b54520;
-  color: #8a2800;
-  font-weight: bold;
-}
-
-.nav-item.active::before {
-  content: '→';
-  position: absolute;
-  left: 24px;
-  color: #b54520;
-  font-size: 11px;
-}
-
-.nav-icon { font-size: 14px; width: 16px; }
-
-.sidebar-footer {
-  padding: 11px 12px 11px 44px;
-  font-size: 10px;
-  color: #9a7a55;
-  border-top: 1px dashed #cbb98c;
-  position: relative;
-  z-index: 1;
-}
-
-/* ── MAIN ── */
-.main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background-image: repeating-linear-gradient(
-    transparent 0, transparent 27px,
-    rgba(170,140,90,0.1) 27px, rgba(170,140,90,0.1) 28px
+.bar-fill.amber{
+  background:repeating-linear-gradient(
+    45deg,
+    #C67C2A 0,#C67C2A 3px,
+    #E8A860 3px,#E8A860 7px
   );
-  background-position: 0 60px;
+}
+.card-note{font-size:11px;color:#8B5E2A;font-style:italic;margin-top:7px;}
+
+/* ── WETTER ──────────────────────────────── */
+.wx-row{display:flex;align-items:center;gap:14px;margin:4px 0 8px;}
+.wx-icon{font-size:52px;line-height:1;}
+.wx-temp{
+  font-size:50px;font-weight:bold;
+  color:#4A2C0E;font-family:'Courier New',monospace;line-height:1;
+}
+.wx-temp sup{font-size:20px;vertical-align:super;}
+.wx-desc{font-size:12px;color:#8B5E2A;font-style:italic;margin-bottom:10px;}
+.wx-details{display:flex;gap:14px;flex-wrap:wrap;}
+.wx-detail{font-size:11px;color:#5C3D1E;text-align:center;}
+.wx-detail strong{display:block;font-size:13px;margin-bottom:1px;}
+
+/* ── MAIL ────────────────────────────────── */
+.mail-count{
+  font-size:60px;font-weight:bold;
+  color:#4A2C0E;line-height:1;
+  font-family:'Courier New',monospace;
+}
+.mail-sub{font-size:12px;color:#8B5E2A;font-style:italic;margin-bottom:10px;}
+.mail-list{display:flex;flex-direction:column;gap:5px;}
+.mail-item{
+  padding:5px 8px;
+  background:rgba(198,124,42,.09);
+  border-left:3px solid #C67C2A;
+  border-radius:0 2px 2px 0;
+}
+.mail-from{font-size:12px;font-weight:bold;color:#4A2C0E;}
+.mail-preview{font-size:11px;color:#8B5E2A;font-style:italic;}
+
+/* ── STATUS ──────────────────────────────── */
+.status-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;margin-top:6px;
+}
+.status-item{
+  display:flex;align-items:center;gap:7px;
+  font-size:12px;color:#4A2C0E;
+}
+.dot{
+  width:9px;height:9px;border-radius:50%;flex-shrink:0;
+  border:1.5px solid rgba(0,0,0,.2);
+}
+.dot.g{background:#6DAE74;box-shadow:0 0 4px rgba(109,174,116,.5);}
+.dot.y{background:#D4A820;box-shadow:0 0 4px rgba(212,168,32,.4);}
+.dot.r{background:#C05050;box-shadow:0 0 4px rgba(192,80,80,.4);}
+.uptime{font-size:11px;color:#8B5E2A;font-style:italic;margin-top:10px;}
+
+/* ── BOLLA NOTE (Klebezettel) ─────────────── */
+.card.note{
+  background:#FFFDE0;
+  border-color:#C4A040;
+  --tilt:0.8deg;
+}
+.tape{
+  position:absolute;
+  top:-11px;left:50%;
+  transform:translateX(-50%) rotate(-1.5deg);
+  width:56px;height:20px;
+  background:rgba(255,230,120,.65);
+  border:1px solid rgba(180,150,60,.35);
+}
+.note-body{
+  font-style:italic;font-size:14px;
+  color:#4A2C0E;line-height:1.65;
+}
+.note-sig{
+  margin-top:10px;font-size:11px;
+  color:#8B5E2A;text-align:right;
 }
 
-/* ── TOPBAR ── */
-.topbar {
-  height: 60px;
-  flex-shrink: 0;
-  background: #ede2cd;
-  border-bottom: 2px solid #cbb98c;
-  display: flex;
-  align-items: center;
-  padding: 0 26px;
-  gap: 14px;
-  box-shadow: 0 2px 5px rgba(130,90,30,0.1);
+/* ── KALENDER MINI ───────────────────────── */
+.cal-row{
+  display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;
 }
-
-.topbar-title {
-  flex: 1;
-  font-size: 19px;
-  color: #5a3018;
-  font-weight: bold;
+.cal-event{
+  padding:5px 9px;
+  background:rgba(122,85,32,.08);
+  border:1px solid rgba(122,85,32,.25);
+  border-left:3px solid #C67C2A;
+  border-radius:0 3px 3px 0;
+  font-size:11.5px;color:#4A2C0E;
+  flex:1;min-width:120px;
 }
-
-.topbar-title small {
-  font-size: 12px;
-  font-weight: normal;
-  color: #9a7a55;
-  margin-left: 8px;
-}
-
-.topbar-date {
-  text-align: right;
-  font-size: 10px;
-  color: #9a7a55;
-  line-height: 1.6;
-}
-
-.topbar-time {
-  font-size: 25px;
-  font-weight: bold;
-  color: #5a3018;
-  background: #fffdf5;
-  border: 1.5px solid #cbb98c;
-  border-radius: 5px 7px 4px 6px;
-  padding: 4px 11px;
-  box-shadow: 2px 2px 0 #cbb98c;
-  letter-spacing: 2px;
-}
-
-/* ── CONTENT ── */
-.content {
-  flex: 1;
-  padding: 22px 26px;
-  overflow-y: auto;
-}
-
-.content::-webkit-scrollbar { width: 5px; }
-.content::-webkit-scrollbar-thumb { background: #cbb98c; border-radius: 3px; }
-
-.section-label {
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 2.5px;
-  color: #9a7a55;
-  margin-bottom: 14px;
-  padding-bottom: 5px;
-  border-bottom: 1px dashed #cbb98c;
-}
-
-/* ── WIDGET GRID ── */
-.widget-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 26px;
-}
-
-/* ── CARDS ── */
-.card {
-  background: #fffdf5;
-  border: 1.5px solid #cbb98c;
-  border-radius: 3px 7px 4px 6px;
-  padding: 16px 15px 13px;
-  position: relative;
-  box-shadow: 3px 3px 0 #d8c9a0, 0 1px 6px rgba(130,90,30,0.07);
-  transition: transform 0.12s, box-shadow 0.12s;
-}
-
-.card:hover {
-  transform: translate(-1px, -2px);
-  box-shadow: 4px 5px 0 #d8c9a0, 0 3px 10px rgba(130,90,30,0.1);
-}
-
-.card::after {
-  content: '';
-  position: absolute;
-  bottom: 0; right: 0;
-  border-style: solid;
-  border-width: 0 0 12px 12px;
-  border-color: transparent transparent #e4d4b4 transparent;
-  filter: drop-shadow(-1px -1px 0 #cbb98c);
-}
-
-.card-icon { font-size: 20px; margin-bottom: 7px; display: block; }
-.card-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: #9a7a55; margin-bottom: 4px; }
-.card-value { font-size: 36px; font-weight: bold; line-height: 1; color: #3d2010; }
-.card-sub { font-size: 10px; color: #9a7a55; margin-top: 4px; }
-
-.bar-wrap {
-  margin-top: 9px;
-  height: 6px;
-  background: #e8d8c0;
-  border-radius: 3px;
-  border: 1px solid #cbb98c;
-  overflow: hidden;
-}
-.bar-fill { height: 100%; border-radius: 3px; }
-
-.card.c-mail {
-  background: #f4fbf0;
-  border-color: #98c890;
-  box-shadow: 3px 3px 0 #c4e0b8, 0 1px 6px rgba(80,140,60,0.07);
-}
-.card.c-mail::after { border-bottom-color: #d0eccc; }
-.card.c-mail .card-value { color: #2a6820; font-size: 34px; }
-.card.c-mail .bar-wrap { background: #d4ecc8; border-color: #98c890; }
-
-.card.c-weather {
-  background: #f0f4fc;
-  border-color: #98b8e0;
-  box-shadow: 3px 3px 0 #c0d4f0, 0 1px 6px rgba(60,100,180,0.07);
-}
-.card.c-weather::after { border-bottom-color: #ccdaf4; }
-.card.c-weather .card-value { color: #1a4890; font-size: 34px; }
-
-.mail-list { margin-top: 7px; font-size: 10px; color: #3a6a32; }
-.mail-list div { padding: 2px 0; border-bottom: 1px dashed rgba(80,140,60,0.25); }
-.mail-list div:last-child { border: none; }
-
-.weather-detail { margin-top: 7px; font-size: 10px; color: #2a4888; line-height: 1.75; }
-
-/* ── STICKY NOTES ── */
-.notes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
-  gap: 22px;
-  padding-top: 10px;
-}
-
-.sticky {
-  padding: 13px 13px 16px;
-  min-height: 105px;
-  border-radius: 1px;
-  font-size: 12px;
-  line-height: 1.65;
-  position: relative;
-  box-shadow: 2px 4px 8px rgba(0,0,0,0.13), inset 0 22px 0 rgba(0,0,0,0.055);
-}
-
-.sticky::before {
-  content: '📌';
-  position: absolute;
-  top: -10px; left: 50%;
-  transform: translateX(-50%);
-  font-size: 14px;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
-}
-
-.sticky.yellow { background: #fff59d; color: #5a4015; border: 1px solid #e8d860; }
-.sticky.blue   { background: #ddeeff; color: #1a3870; border: 1px solid #90b8e8; }
-.sticky.green  { background: #ddf5dd; color: #1a5820; border: 1px solid #88c888; }
-.sticky.pink   { background: #ffe0e0; color: #681818; border: 1px solid #e89898; }
-
-.sticky-head {
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  font-weight: bold;
-  margin-bottom: 7px;
-  opacity: 0.6;
-}
-
-.done { text-decoration: line-through; opacity: 0.4; }
+.cal-time{font-size:10px;color:#8B5E2A;font-style:italic;margin-bottom:1px;}
 </style>
 </head>
 <body>
 
-<svg style="position:absolute;width:0;height:0;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <filter id="sketchy">
-      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="5" seed="7"/>
-      <feDisplacementMap in="SourceGraphic" scale="1.5" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-  </defs>
-</svg>
-
+<!-- ── SIDEBAR ── -->
 <aside class="sidebar">
-  <div class="sidebar-holes">
-    <div class="hole"></div>
-    <div class="hole"></div>
-    <div class="hole"></div>
+  <div class="rings">
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <div class="ring"></div>
   </div>
 
-  <div class="sidebar-brand">
-    <h2>🐾 Bolla</h2>
-    <p>Mission Control</p>
+  <div class="logo">
+    <div class="logo-name">🐾 Mission Control</div>
+    <div class="logo-sub">Bolla · v2.1</div>
   </div>
 
   <nav>
-    <div class="nav-item active">
-      <span class="nav-icon">🏠</span>Dashboard
-    </div>
-    <div class="nav-item">
-      <span class="nav-icon">🐾</span>Bolla
-    </div>
-    <div class="nav-item">
-      <span class="nav-icon">🏫</span>Schule
-    </div>
-    <div class="nav-item">
-      <span class="nav-icon">📅</span>Kalender
-    </div>
-    <div class="nav-item">
-      <span class="nav-icon">✉️</span>E-Mail
-    </div>
-    <div class="nav-item">
-      <span class="nav-icon">⛅</span>Wetter
-    </div>
-    <div class="nav-item">
-      <span class="nav-icon">💻</span>System Info
-    </div>
+    <a class="nav-item active">
+      <span class="nav-icon">🏠</span> Dashboard
+    </a>
+    <a class="nav-item">
+      <span class="nav-icon">🐾</span> Bolla
+    </a>
+    <a class="nav-item">
+      <span class="nav-icon">📚</span> Schule
+    </a>
+    <a class="nav-item">
+      <span class="nav-icon">📅</span> Kalender
+    </a>
+    <a class="nav-item">
+      <span class="nav-icon">✉️</span> E-Mail
+      <span class="nav-badge">3</span>
+    </a>
+    <a class="nav-item">
+      <span class="nav-icon">🌤</span> Wetter
+    </a>
+    <a class="nav-item">
+      <span class="nav-icon">⚙️</span> System Info
+    </a>
   </nav>
 
-  <div class="sidebar-footer">Mi, 7. Mai 2026</div>
+  <div class="sidebar-foot">
+    Fr, 09.05.2026<br>
+    WSL2 · online ✓
+  </div>
 </aside>
 
+<!-- ── MAIN ── -->
 <div class="main">
 
+  <!-- TOPBAR -->
   <header class="topbar">
-    <div class="topbar-title">
-      Übersicht
-      <small>— Guten Abend, Chris 👋</small>
+    <div class="topbar-left">
+      <div class="page-title">Dashboard</div>
+      <div class="page-greeting">Guten Abend, Chris — alles im Blick 👋</div>
     </div>
-    <div class="topbar-date">Mittwoch<br>7. Mai 2026</div>
-    <div class="topbar-time">20:14</div>
+    <div class="topbar-right">
+      <div class="topbar-datebox">
+        <div class="topbar-datestr">Fr, 09.05.2026</div>
+        <div class="topbar-weekstr">Kalenderwoche 19</div>
+      </div>
+      <div class="topbar-time">20:14</div>
+    </div>
   </header>
 
+  <!-- GRID -->
   <div class="content">
 
-    <div class="section-label">System &amp; Status</div>
-
-    <div class="widget-grid">
-
-      <div class="card">
-        <span class="card-icon">🧠</span>
-        <div class="card-label">Arbeitsspeicher</div>
-        <div class="card-value">34%</div>
-        <div class="card-sub">5,4 / 16 GB belegt</div>
-        <div class="bar-wrap">
-          <div class="bar-fill" style="width:34%;background:linear-gradient(90deg,#b57030,#c88840)"></div>
+    <!-- RAM -->
+    <div class="card" style="--tilt:-0.5deg">
+      <div class="card-label">💾 Arbeitsspeicher</div>
+      <div class="gauge-wrap">
+        <svg class="gauge-svg" width="72" height="72" viewBox="0 0 100 100">
+          <circle class="g-track" cx="50" cy="50" r="42"/>
+          <circle class="g-fill" cx="50" cy="50" r="42"
+            stroke="#7A9E7E"
+            stroke-dasharray="263.9"
+            stroke-dashoffset="174"/>
+        </svg>
+        <div class="gauge-info">
+          <div class="gauge-pct">34<span>%</span></div>
+          <div class="gauge-sub">von 32 GB</div>
         </div>
       </div>
-
-      <div class="card">
-        <span class="card-icon">⚙️</span>
-        <div class="card-label">CPU-Auslastung</div>
-        <div class="card-value">12%</div>
-        <div class="card-sub">8 Kerne · Intel i7</div>
-        <div class="bar-wrap">
-          <div class="bar-fill" style="width:12%;background:linear-gradient(90deg,#906030,#a87840)"></div>
-        </div>
-      </div>
-
-      <div class="card c-mail">
-        <span class="card-icon">📬</span>
-        <div class="card-label">E-Mail</div>
-        <div class="card-value">3 <span style="font-size:13px;color:#c84820;vertical-align:middle;">neu</span></div>
-        <div class="mail-list">
-          <div>📩 Schule: Vertretungsplan</div>
-          <div>📩 Lessing: Rundschreiben</div>
-          <div>📩 Amazon: Versandinfo</div>
-        </div>
-      </div>
-
-      <div class="card c-weather">
-        <span class="card-icon">⛅</span>
-        <div class="card-label">Wetter · Hamburg</div>
-        <div class="card-value">18°C</div>
-        <div class="card-sub">Leicht bewölkt</div>
-        <div class="weather-detail">
-          ↓ 13°C &nbsp;·&nbsp; ↑ 21°C<br>
-          Feuchtigkeit: 68%
-        </div>
-      </div>
-
+      <div class="bar"><div class="bar-fill" style="width:34%"></div></div>
+      <div class="card-note">10,9 GB belegt · 21,1 GB frei</div>
     </div>
 
-    <div class="section-label">Notizen &amp; Aufgaben</div>
-
-    <div class="notes-grid">
-
-      <div class="sticky yellow">
-        <div class="sticky-head">Heute</div>
-        Korrekturen 7b<br>
-        fertig bis Freitag!<br>
-        <br>
-        <span class="done">Elternbrief 7a</span> ✓
+    <!-- CPU -->
+    <div class="card" style="--tilt:0.4deg">
+      <div class="card-label">⚡ Prozessor</div>
+      <div class="gauge-wrap">
+        <svg class="gauge-svg" width="72" height="72" viewBox="0 0 100 100">
+          <circle class="g-track" cx="50" cy="50" r="42"/>
+          <circle class="g-fill" cx="50" cy="50" r="42"
+            stroke="#7A9E7E"
+            stroke-dasharray="263.9"
+            stroke-dashoffset="232"/>
+        </svg>
+        <div class="gauge-info">
+          <div class="gauge-pct">12<span>%</span></div>
+          <div class="gauge-sub">12 Kerne</div>
+        </div>
       </div>
+      <div class="bar"><div class="bar-fill" style="width:12%"></div></div>
+      <div class="card-note">AMD Ryzen · 2,8 GHz · Temp 41 °C</div>
+    </div>
 
-      <div class="sticky blue">
-        <div class="sticky-head">Bolla erledigt</div>
-        WISO-Listen<br>
-        bereinigt ✓<br>
-        0 Duplikate<br>
-        Export OK
+    <!-- E-Mail -->
+    <div class="card" style="--tilt:-0.3deg">
+      <div class="card-label">✉️ E-Mail</div>
+      <div class="mail-count">3</div>
+      <div class="mail-sub">neue Nachrichten</div>
+      <div class="mail-list">
+        <div class="mail-item">
+          <div class="mail-from">Schulsekretariat</div>
+          <div class="mail-preview">Vertretungsplan KW 20 ...</div>
+        </div>
+        <div class="mail-item">
+          <div class="mail-from">GitHub Notifications</div>
+          <div class="mail-preview">PR #42 merged: mission-control</div>
+        </div>
+        <div class="mail-item">
+          <div class="mail-from">Max Mustermann</div>
+          <div class="mail-preview">Re: Klassenarbeit — Termin ok?</div>
+        </div>
       </div>
+    </div>
 
-      <div class="sticky green">
-        <div class="sticky-head">Nächste Woche</div>
-        Klassenarbeit 7a<br>
-        Thema: Wirtschaft<br>
-        Dienstag · R. 214
+    <!-- Wetter -->
+    <div class="card" style="--tilt:0.6deg">
+      <div class="card-label">🌤 Wetter · Hamburg</div>
+      <div class="wx-row">
+        <div class="wx-icon">⛅</div>
+        <div class="wx-temp">18<sup>°C</sup></div>
       </div>
-
-      <div class="sticky pink">
-        <div class="sticky-head">Merken!</div>
-        Konferenz<br>
-        Do. 14:30 Uhr<br>
-        Lehrerzimmer B
+      <div class="wx-desc">Teils bewölkt · gefühlt 16 °C</div>
+      <div class="wx-details">
+        <div class="wx-detail"><strong>💧 68 %</strong>Luftfeuchte</div>
+        <div class="wx-detail"><strong>🌬 14 km/h</strong>Wind SW</div>
+        <div class="wx-detail"><strong>☀️ 05:45</strong>Aufgang</div>
+        <div class="wx-detail"><strong>🌙 21:02</strong>Untergang</div>
       </div>
+    </div>
 
-      <div class="sticky yellow" style="transform:rotate(-1.5deg)">
-        <div class="sticky-head">Erinnerung</div>
-        Beamer-Kabel<br>
-        zurückgeben!
+    <!-- System Status -->
+    <div class="card" style="--tilt:-0.25deg">
+      <div class="card-label">🔌 Systemstatus</div>
+      <div class="status-grid">
+        <div class="status-item"><div class="dot g"></div> MC-Server</div>
+        <div class="status-item"><div class="dot g"></div> Cloudflare</div>
+        <div class="status-item"><div class="dot g"></div> WSL2</div>
+        <div class="status-item"><div class="dot g"></div> GitHub</div>
+        <div class="status-item"><div class="dot y"></div> OneDrive</div>
+        <div class="status-item"><div class="dot r"></div> Edge TTS</div>
       </div>
+      <div class="uptime">Uptime: 4 h 32 min · /home: 124 GB frei</div>
+    </div>
 
+    <!-- Bolla Note -->
+    <div class="card note">
+      <div class="tape"></div>
+      <div class="card-label" style="color:#9B6E1A">🐾 Bolla notiert</div>
+      <div class="note-body">
+        „Schöner Abend! 3 neue Mails warten, Hamburg ist mild. Die KI-Forum-Session ist commitet und gesichert. Fast alles grün — Edge TTS wäre noch nett."
+      </div>
+      <div class="note-sig">— Bolla, 20:14 Uhr</div>
     </div>
 
   </div>
