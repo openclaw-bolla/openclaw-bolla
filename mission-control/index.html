@@ -703,6 +703,9 @@ html, body {
   <!-- SIDEBAR -->
   <div id="sidebar">
     <div id="sidebar-header">
+      <div style="text-align:center;margin-bottom:8px">
+        <img src="/api/bolla/avatar/wave" style="width:58px;height:58px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);box-shadow:0 0 16px rgba(255,102,153,0.4)">
+      </div>
       <h1>MISSION CONTROL</h1>
       <div class="sub">Chris Mandel</div>
     </div>
@@ -1321,7 +1324,7 @@ html, body {
           <div style="background:linear-gradient(135deg,rgba(124,58,237,0.35) 0%,rgba(255,102,153,0.25) 60%,rgba(6,182,212,0.15) 100%);border:1px solid var(--border);border-radius:16px;padding:20px 24px;margin-bottom:18px;display:flex;align-items:center;gap:18px;position:relative;overflow:hidden">
             <div style="position:absolute;right:-20px;top:-20px;width:180px;height:180px;background:radial-gradient(circle,rgba(124,58,237,0.18) 0%,transparent 70%);pointer-events:none"></div>
             <div style="position:absolute;right:120px;bottom:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(255,102,153,0.12) 0%,transparent 70%);pointer-events:none"></div>
-            <img src="/api/bolla/avatar" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid var(--accent);box-shadow:0 0 20px rgba(255,102,153,0.4);flex-shrink:0">
+            <img src="/api/bolla/avatar/wave" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid var(--accent);box-shadow:0 0 20px rgba(255,102,153,0.4);flex-shrink:0">
             <div style="flex:1;min-width:0">
               <div style="font-size:20px;font-weight:700;color:var(--bright);letter-spacing:-0.3px">🤖 Bolla · Claude Code Setup</div>
               <div style="font-size:13px;color:var(--dim);margin-top:3px">Persönlicher KI-Assistent · Aktiv seit März 2026 · WSL Ubuntu auf Windows 11</div>
@@ -1480,7 +1483,7 @@ html, body {
             <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid var(--accent)">
               <div style="font-size:13px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">🤖 Was ist Claude Code / Bolla?</div>
               <div style="display:flex;gap:14px;align-items:flex-start">
-                <img src="/api/bolla/avatar" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);flex-shrink:0">
+                <img src="/api/bolla/avatar/wave" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);flex-shrink:0">
                 <div style="font-size:13px;color:var(--text);line-height:1.7">
                   <b style="color:var(--bright)">Claude Code</b> ist Anthropics CLI für KI-Automatisierung direkt im Terminal.<br>
                   <b style="color:var(--bright)">Bolla</b> ist Chris' persönlicher Assistent darauf — seit März 2026, kennt Setup, Vorlieben und Kontext.
@@ -1593,7 +1596,7 @@ html, body {
           <!-- Chat -->
           <div style="flex:1;display:flex;flex-direction:column;padding:16px;min-width:0">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-shrink:0;flex-wrap:wrap">
-              <img src="/api/bolla/avatar" style="width:48px;height:48px;border-radius:50%;object-fit:cover">
+              <img src="/api/bolla/avatar/wave" style="width:48px;height:48px;border-radius:50%;object-fit:cover">
               <div style="flex:1;min-width:180px">
                 <div style="font-size:20px;font-weight:300;color:var(--bright)">Bolla</div>
                 <div id="bolla-model-line" style="font-size:13px;color:var(--dim)">Claude Opus 4.7 · Max Plan · Live-Tools</div>
@@ -1623,7 +1626,7 @@ html, body {
             </div>
             <div id="bolla-chat" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;overflow-y:auto;font-size:14px;line-height:1.7;color:var(--text)">
               <div style="color:var(--dim);text-align:center;padding:40px 20px">
-                <img src="/api/bolla/avatar" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:12px">
+                <img src="/api/bolla/avatar/wave" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:12px">
                 <div style="font-size:16px;color:var(--bright);margin-bottom:4px">Hey Chris!</div>
                 <div style="font-size:14px">Schreib mir was — ich bin da.</div>
               </div>
@@ -2699,8 +2702,10 @@ html, body {
 
             <!-- Bolla -->
             <div class="kif-char" id="kif-bolla" onclick="kifGenerateThesis()" title="Bolla anstupsen">
-              <img src="/api/kiforum/bolla" height="190"
-                style="animation:bollaWave 2.8s ease-in-out infinite;transform-origin:center bottom;" alt="Bolla">
+              <video autoplay loop muted playsinline height="190"
+                style="transform-origin:center bottom;display:block">
+                <source src="/api/bolla/avatar/wave/webm" type="video/webm">
+              </video>
               <div class="kif-char-label">Bolla</div>
               <div class="kif-hint">anstupsen →</div>
             </div>
@@ -2849,9 +2854,10 @@ html, body {
             return;
           }
 
-          const promptText = (p.img_prompt || (p.title ? p.title + '. ' : '') + p.content).substring(0, 400);
+          const basePrompt = p.img_prompt || ((p.title ? p.title + '. ' : '') + p.content);
+          const promptText = (basePrompt + ', digital art, vibrant, detailed').substring(0, 500);
           const seed = kifPostSeed(id);
-          const models = ['flux-schnell', 'flux', 'turbo'];
+          const models = ['flux', 'flux-realism', 'turbo'];
 
           wrap.style.display = 'block';
           let secs = 0;
@@ -2860,7 +2866,7 @@ html, body {
 
           let loaded = false;
           for (let mi = 0; mi < models.length && !loaded; mi++) {
-            const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=768&height=512&model=${models[mi]}&nologo=true&seed=${seed}`;
+            const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=768&height=768&model=${models[mi]}&nologo=true&seed=${seed}&enhance=true`;
             await new Promise(resolve => {
               const img = new Image();
               const timeout = setTimeout(() => { img.src = ''; resolve(); }, 20000);
@@ -3276,6 +3282,11 @@ function initNavDrag() {
   const nav = document.getElementById('sidebar-nav');
   if (!nav) return;
 
+  // Stabile IDs vergeben BEVOR Restore läuft (sonst findet getElementById nichts)
+  nav.querySelectorAll('.nav-item, .nav-group').forEach((item, i) => {
+    if (!item.id) item.id = 'nav-di-' + (item.dataset.page || item.dataset.group || i);
+  });
+
   // Gespeicherte Reihenfolge wiederherstellen
   const saved = localStorage.getItem('nav-block-order');
   if (saved) {
@@ -3321,7 +3332,7 @@ function initNavDrag() {
   }
 
   function makeItemDraggable(item) {
-    if (!item.id) item.id = 'nav-di-' + Math.random().toString(36).slice(2,8);
+    if (!item.id) item.id = 'nav-di-' + (item.dataset.page || item.dataset.group || Date.now());
     item.draggable = true;
     item.style.cursor = 'grab';
     item.addEventListener('dragstart', e => {
@@ -3432,13 +3443,13 @@ function initNavDrag() {
     });
   });
 
-  // Items in jeder Sektion — jetzt cross-section draggable
-  nav.querySelectorAll('.nav-section-items').forEach(container => {
-    makeSortable(container, '.nav-item:not(.nav-subitem), .nav-group, [id^="nav-group-"]');
+  // Alle Items draggable — egal ob Top-Level, Gruppe oder Sub-Item
+  nav.querySelectorAll('.nav-item, .nav-group').forEach(item => {
+    makeItemDraggable(item);
   });
-  // Sub-Items innerhalb jeder Gruppe
-  nav.querySelectorAll('.nav-group-items').forEach(container => {
-    makeSortable(container, '.nav-item');
+  // Alle Container droppable — cross-section, cross-group
+  nav.querySelectorAll('.nav-section-items, .nav-group-items').forEach(container => {
+    makeContainerDroppable(container);
   });
 }
 initNavDrag();
@@ -4178,19 +4189,19 @@ const WMO_ICONS = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'�
 const WMO_DESC = {0:'Klar',1:'Überwiegend klar',2:'Teils bewölkt',3:'Bedeckt',45:'Nebel',51:'Leichter Nieselregen',53:'Nieselregen',61:'Leichter Regen',63:'Regen',65:'Starker Regen',71:'Leichter Schnee',73:'Schnee',75:'Starker Schnee',80:'Leichte Schauer',81:'Schauer',82:'Starke Schauer',95:'Gewitter'};
 
 const WMO_BG = {
-  0:'linear-gradient(160deg,#0d3875,#1a6abf)',
-  1:'linear-gradient(160deg,#0d3875,#1a6abf)',
-  2:'linear-gradient(160deg,#1a2a4a,#3a5070)',
-  3:'linear-gradient(160deg,#1a1f2e,#2a3040)',
-  45:'linear-gradient(160deg,#1a1f2e,#2a2f3a)',
-  51:'linear-gradient(160deg,#0d2040,#1a3050)',
-  53:'linear-gradient(160deg,#0d2040,#1a3050)',
-  61:'linear-gradient(160deg,#0a1830,#0d2545)',
-  63:'linear-gradient(160deg,#0a1830,#0d2545)',
-  65:'linear-gradient(160deg,#060f20,#0d1e3a)',
-  80:'linear-gradient(160deg,#0a1830,#0d2545)',
-  81:'linear-gradient(160deg,#0a1830,#0d2545)',
-  95:'linear-gradient(160deg,#060810,#0d1020)',
+  0:'linear-gradient(180deg,#0a3a8a 0%,#1560bf 40%,#4a9ad4 100%)',
+  1:'linear-gradient(180deg,#0d3e8f 0%,#1a68c4 35%,#5aaada 70%,#7abde0 100%)',
+  2:'radial-gradient(ellipse 120% 55% at 60% 15%,rgba(255,255,255,0.28) 0%,transparent 55%),radial-gradient(ellipse 70% 40% at 15% 40%,rgba(210,225,240,0.35) 0%,transparent 50%),linear-gradient(180deg,#1c4a7a 0%,#3a7ab8 30%,#7aaecb 65%,#5a92b5 100%)',
+  3:'radial-gradient(ellipse 200% 30% at 30% 22%,rgba(230,235,238,0.5) 0%,transparent 48%),radial-gradient(ellipse 150% 28% at 72% 12%,rgba(215,222,228,0.45) 0%,transparent 44%),radial-gradient(ellipse 110% 22% at 55% 62%,rgba(70,82,90,0.35) 0%,transparent 48%),radial-gradient(ellipse 90% 20% at 18% 75%,rgba(60,72,80,0.3) 0%,transparent 45%),linear-gradient(185deg,#4a5c68 0%,#647880 22%,#8298a2 48%,#a0b5bc 72%,#8298a2 100%)',
+  45:'radial-gradient(ellipse 180% 90% at 50% 0%,rgba(205,215,220,0.65) 0%,transparent 65%),radial-gradient(ellipse 120% 60% at 30% 60%,rgba(195,208,215,0.5) 0%,transparent 55%),linear-gradient(180deg,#7a8f98 0%,#a0b5bc 35%,#c2d0d6 70%,#a8bcc2 100%)',
+  51:'radial-gradient(ellipse 160% 50% at 40% 20%,rgba(140,165,185,0.7) 0%,transparent 55%),linear-gradient(180deg,#2a3e52 0%,#3d5870 35%,#5a7a90 70%,#3d5870 100%)',
+  53:'radial-gradient(ellipse 160% 50% at 40% 20%,rgba(120,148,168,0.7) 0%,transparent 55%),linear-gradient(180deg,#223040 0%,#304a60 35%,#486878 70%,#304a60 100%)',
+  61:'radial-gradient(ellipse 140% 45% at 30% 25%,rgba(100,130,155,0.65) 0%,transparent 52%),linear-gradient(180deg,#1a2a38 0%,#253a50 35%,#3a5568 70%,#253a50 100%)',
+  63:'linear-gradient(180deg,#151f2a 0%,#1e2e40 40%,#2a4055 100%)',
+  65:'linear-gradient(180deg,#0d1520 0%,#151e2a 40%,#1e2f3f 100%)',
+  80:'radial-gradient(ellipse 140% 50% at 35% 20%,rgba(110,140,165,0.65) 0%,transparent 55%),linear-gradient(180deg,#1a2a38 0%,#253a52 35%,#3d5870 70%,#253a52 100%)',
+  81:'linear-gradient(180deg,#151f2a 0%,#1e2e40 35%,#2a4055 100%)',
+  95:'linear-gradient(180deg,#080c12 0%,#0d1520 40%,#151f2a 100%)',
 };
 const WIND_DIR = ['N','NO','O','SO','S','SW','W','NW'];
 
@@ -4329,7 +4340,7 @@ function loadWeatherFull() {
 
   // ── HERO ──
   const particles = wettAnimParticles(c.weather_code);
-  let h = `<div style="${bg};border-radius:22px;padding:32px;margin-bottom:22px;position:relative;overflow:hidden;min-height:200px">
+  let h = `<div style="background:${bg};border-radius:22px;padding:32px;margin-bottom:22px;position:relative;overflow:hidden;min-height:200px">
     ${particles}
     <div style="position:absolute;inset:0;background:rgba(0,0,0,0.15);border-radius:22px"></div>
     <div style="position:relative;z-index:1;display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:center">
@@ -4426,10 +4437,10 @@ function loadWeatherFull() {
     const rain  = d.daily.precipitation_probability_max[i] || 0;
     const icon2 = WMO_ICONS[d.daily.weather_code[i]] || '🌤️';
     const tempNorm = (tMax - globalMin) / (globalMax - globalMin || 1);
-    const cardBg = `linear-gradient(160deg,rgba(${Math.round(20+tempNorm*60)},${Math.round(30+tempNorm*20)},${Math.round(80-tempNorm*50)},0.9),rgba(${Math.round(10+tempNorm*40)},${Math.round(15+tempNorm*10)},${Math.round(50-tempNorm*30)},0.7))`;
+    const cardBg = `linear-gradient(160deg,rgb(${Math.round(28+tempNorm*75)},${Math.round(35+tempNorm*28)},${Math.round(90-tempNorm*55)}),rgb(${Math.round(15+tempNorm*50)},${Math.round(18+tempNorm*18)},${Math.round(58-tempNorm*35)}))`;
     const windMax = Math.round(d.daily.wind_speed_10m_max?.[i]||0);
     const uvMax2 = uvLabel(d.daily.uv_index_max?.[i]||0);
-    h += `<div style="${cardBg};border-radius:14px;padding:14px 10px;text-align:center;border:1px solid rgba(255,255,255,${isToday?'0.2':'0.07'});${isToday?'box-shadow:0 0 0 2px rgba(255,255,255,0.18)':''}">
+    h += `<div style="background:${cardBg};border-radius:14px;padding:14px 10px;text-align:center;border:1px solid rgba(255,255,255,${isToday?'0.2':'0.07'});${isToday?'box-shadow:0 0 0 2px rgba(255,255,255,0.18)':''}">
       <div style="font-size:${isToday?'16':'14'}px;color:${isToday?'#fff':'rgba(255,255,255,0.7)'};font-weight:${isToday?700:500};margin-bottom:2px">${dayLabel}</div>
       <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:8px">${dateLabel}</div>
       <div style="font-size:34px;margin-bottom:8px">${icon2}</div>

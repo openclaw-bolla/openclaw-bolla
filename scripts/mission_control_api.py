@@ -3233,6 +3233,20 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header("Content-Type","image/png"); self.send_header("Content-Length",str(len(data)))
                 self.end_headers(); self.wfile.write(data); return
 
+            if self.path == "/api/bolla/avatar/wave/webm":
+                webm_path = os.path.expanduser("~/workspace/data/bolla_wave_transparent.webm")
+                if not os.path.isfile(webm_path):
+                    self._send_json({"error": "WebM nicht gefunden"}, status=404); return
+                with open(webm_path, "rb") as f:
+                    data = f.read()
+                self.send_response(200)
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Content-Type", "video/webm")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
+
             if self.path == "/api/bolla/avatar/wave":
                 wave_path = os.path.expanduser("~/workspace/data/bolla_wave.gif")
                 if not os.path.isfile(wave_path):
@@ -4431,10 +4445,10 @@ Bewerte diese These kurz und knackig:
 - Max. 3 Sätze, direkt und provokativ
 - Extrahiere 3-5 Schlüsselbegriffe aus deiner Antwort
 - Formuliere ein kurzes "Aber..."-Gegenargument (1 Satz) — auch wenn du zustimmst
-- Schluss: ein kurzer englischer Bildprompt (1 Satz) der die Aussage visualisiert
+- Schluss: ein detaillierter englischer Bildprompt der die Kernaussage stark visualisiert (konkrete Szene, Stimmung, Stil)
 
 Antworte NUR als reines JSON:
-{{"title": "Kurze Reaktion (max 6 Wörter)", "content": "Deine Bewertung in 2-3 Sätzen.", "emoji": "Emoji", "keywords": ["Begriff1", "Begriff2", "Begriff3"], "aber": "Aber: ein prägnanter Gegenpunkt in einem Satz.", "img_prompt": "Short English image prompt for an illustration supporting your argument"}}"""
+{{"title": "Kurze Reaktion (max 6 Wörter)", "content": "Deine Bewertung in 2-3 Sätzen.", "emoji": "Emoji", "keywords": ["Begriff1", "Begriff2", "Begriff3"], "aber": "Aber: ein prägnanter Gegenpunkt in einem Satz.", "img_prompt": "Vivid digital illustration: [specific scene directly related to the argument], dramatic lighting, rich colors, detailed, high quality — NOT generic AI imagery"}}"""
                 result = _sp2.run(
                     [CLAUDE_BIN, "-p", "--output-format", "json", text_prompt],
                     capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~")
@@ -4466,6 +4480,7 @@ Antworte NUR als reines JSON:
                     "emoji": resp.get("emoji", "🐾"),
                     "keywords": resp.get("keywords", []),
                     "aber": resp.get("aber", ""),
+                    "img_prompt": resp.get("img_prompt", ""),
                     "img": img_file,
                 }
                 posts.insert(0, post)
@@ -4535,14 +4550,14 @@ Antworte NUR als reines JSON:
 Generiere ein spannendes, NEUES KI-Diskussionsthema für ein tägliches Forum.
 Das Thema soll für einen technik-affinen, nicht-Entwickler interessant sein.
 Provokativ, meinungsstark, zum Diskutieren einladend. Max. 3 Sätze Inhalt.
-Schluss: ein kurzer englischer Bildprompt (1 Satz) der das Thema visualisiert.
+Schluss: ein detaillierter englischer Bildprompt der das Thema stark visualisiert (konkrete Szene, keine Abstraktion).
 {avoid_block}
 Antworte NUR als reines JSON:
 {{
   "title": "Kurzer prägnanter Titel (max 8 Wörter)",
   "content": "2-3 spannende Sätze zum Thema. Regt zum Nachdenken an.",
   "emoji": "Ein passendes Emoji",
-  "img_prompt": "Short English image prompt for a striking illustration of this topic"
+  "img_prompt": "Vivid digital illustration: [specific scene that powerfully visualizes the topic], dramatic lighting, rich colors, detailed, cinematic — NOT generic tech imagery"
 }}"""
                 claude_bin = CLAUDE_BIN
                 result = _sp.run(
@@ -4570,6 +4585,7 @@ Antworte NUR als reines JSON:
                     "title": topic.get("title", "Tagesthema"),
                     "content": topic.get("content", ""),
                     "emoji": topic.get("emoji", "🐾"),
+                    "img_prompt": topic.get("img_prompt", ""),
                     "img": gen_img_file,
                 }
                 posts.insert(0, post)
