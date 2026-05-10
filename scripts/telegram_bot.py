@@ -326,11 +326,9 @@ def interactive_claude_running():
 
 def ask_claude(message, sender_name, file_path=None, media_label=None):
     """Fragt Claude Code und gibt die Antwort zurück."""
-    if interactive_claude_running():
-        log.warning("Interaktive Claude-Session aktiv — Telegram-Auftrag abgelehnt")
-        return ("Chris ist gerade aktiv in einer Claude-Session — "
-                "ich kann jetzt nicht gleichzeitig arbeiten. "
-                "Schreib mir danach nochmal! 🐾")
+    parallel = interactive_claude_running()
+    if parallel:
+        log.info("Interaktive Claude-Session aktiv — versuche trotzdem (kürzerer Timeout)")
 
     if file_path and media_label:
         prompt = (f"[Telegram-Nachricht von {sender_name}]: {message or '(kein Text)'}\n\n"
@@ -339,9 +337,10 @@ def ask_claude(message, sender_name, file_path=None, media_label=None):
         prompt = f"[Telegram-Nachricht von {sender_name}]: {message}"
     claude_bin = os.path.expanduser("~/.local/bin/claude")
     cmd = [claude_bin, "-p", "--output-format", "json", prompt]
+    timeout = 60 if parallel else 120
     try:
         result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=120,
+            cmd, capture_output=True, text=True, timeout=timeout,
             cwd=os.path.expanduser("~")
         )
         if result.returncode != 0:
@@ -350,6 +349,8 @@ def ask_claude(message, sender_name, file_path=None, media_label=None):
         data = json.loads(result.stdout)
         return data.get("result", "")
     except subprocess.TimeoutExpired:
+        if parallel:
+            return "Bolla ist gerade in einer aktiven Session beschäftigt — kurz warten und nochmal schreiben! 🐾"
         return "Sorry, das hat zu lange gedauert — versuch's nochmal! 🐾"
     except Exception as e:
         log.error(f"Claude Fehler: {e}")

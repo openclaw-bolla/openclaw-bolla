@@ -650,6 +650,50 @@ html, body {
   color: rgba(255,255,255,0.65); font-size: 14px;
   background: rgba(0,0,0,0.5); padding: 5px 14px; border-radius: 20px;
 }
+
+/* ===== RESPONSIVE: kleinere Bildschirme (Surface Pro ≤ 1280px) ===== */
+
+/* Grundregel: Grid-Children dürfen schrumpfen, kein Überlauf */
+.page > * { min-width: 0; box-sizing: border-box; }
+.page [style*="grid-template-columns"] { max-width: 100%; }
+.page [style*="grid-template-columns"] > * { min-width: 0; box-sizing: border-box; }
+
+@media (max-width: 1280px) {
+  html, body { font-size: 18px; }
+  #sidebar { width: 175px; min-width: 175px; }
+  #sidebar-header { padding: 16px 14px 12px; }
+  #sidebar-header h1 { font-size: 18px; }
+  #topbar { height: 44px; min-height: 44px; padding: 0 16px; }
+  #topbar h2 { font-size: 17px; }
+  .page { padding: 14px 16px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .card { padding: 14px; }
+  .grid-4 > .card { padding: 8px 12px; }
+  /* Inline-Grid-Fixes: alle grid-children dürfen schrumpfen */
+  .page [style*="grid-template-columns"] > * { min-width: 0; }
+  /* Breite Grids auf kleineren Screens umbrechen */
+  .page [style*="1fr 1fr 1fr"] { grid-template-columns: 1fr 1fr !important; }
+  .page [style*="grid-template-columns:1fr 1fr 2fr"] { grid-template-columns: 1fr 1fr !important; }
+  .page [style*="grid-template-columns:1fr 2fr"] { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 1100px) {
+  html, body { font-size: 15px; }
+  #sidebar { width: 155px; min-width: 155px; }
+  #sidebar-header h1 { font-size: 16px; }
+  .nav-item { padding: 6px 10px 6px 12px; font-size: 12px; }
+  .nav-group-header { padding: 6px 10px 6px 11px; font-size: 12px; }
+  .nav-subitem { padding-left: 36px !important; font-size: 11px !important; }
+  .page { padding: 10px 12px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+  .grid-2 { grid-template-columns: 1fr !important; }
+  .grid-3-1 { grid-template-columns: 1fr !important; }
+  .card { padding: 10px 12px; }
+  .card-head { margin-bottom: 8px; }
+  .page [style*="1fr 1fr"] { grid-template-columns: 1fr !important; }
+  .page [style*="1fr 1fr 1fr"] { grid-template-columns: 1fr !important; }
+}
 </style>
 </head>
 <body>
@@ -1798,7 +1842,7 @@ html, body {
           </div>
 
           <!-- Immobilien-Layout: Projektkarte | Makler | News -->
-          <div style="display:grid;grid-template-columns:300px 1fr 290px;gap:16px;align-items:start">
+          <div style="display:grid;grid-template-columns:clamp(200px,25%,300px) 1fr clamp(200px,23%,290px);gap:16px;align-items:start">
 
             <!-- ── Linke Spalte: Projektkarte + Kriterien ── -->
             <div style="display:flex;flex-direction:column;gap:12px">
@@ -3243,7 +3287,7 @@ function initNavDrag() {
       });
     } catch(e) {}
   }
-  // Item-Reihenfolge pro Container wiederherstellen
+  // Item-Reihenfolge pro Container wiederherstellen (auch cross-section)
   const savedItems = localStorage.getItem('nav-item-order');
   if (savedItems) {
     try {
@@ -3253,7 +3297,7 @@ function initNavDrag() {
         if (!container) return;
         ids.forEach(id => {
           const el = document.getElementById(id);
-          if (el && el.parentElement === container) container.appendChild(el);
+          if (el) container.appendChild(el); // cross-section: auch aus anderem Container
         });
       });
     } catch(e) {}
@@ -3268,51 +3312,85 @@ function initNavDrag() {
     localStorage.setItem('nav-item-order', JSON.stringify(itemOrder));
   }
 
-  // Generische Drag&Drop-Funktion für einen Container
-  function makeSortable(container, itemSelector, highlightClass) {
-    let src = null;
-    [...container.children].forEach(item => {
-      if (!item.matches(itemSelector)) return;
-      if (!item.id) item.id = 'nav-di-' + Math.random().toString(36).slice(2,8);
-      item.draggable = true;
-      item.style.cursor = 'grab';
+  // Globaler Drag-State für cross-section dragging
+  let _dragItem = null, _dragHighlight = null;
 
-      item.addEventListener('dragstart', e => {
-        src = item;
-        e.stopPropagation();
-        setTimeout(() => item.style.opacity = '0.4', 0);
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', item.id);
-      });
-      item.addEventListener('dragend', e => {
-        e.stopPropagation();
-        item.style.opacity = '';
-        container.querySelectorAll('.' + highlightClass).forEach(el => el.classList.remove(highlightClass));
-        saveItemOrder();
-      });
-      item.addEventListener('dragover', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (item !== src) {
-          container.querySelectorAll('.' + highlightClass).forEach(el => el.classList.remove(highlightClass));
-          item.classList.add(highlightClass);
-        }
-      });
-      item.addEventListener('dragleave', e => {
-        e.stopPropagation();
-        item.classList.remove(highlightClass);
-      });
-      item.addEventListener('drop', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (src && item !== src) {
-          const items = [...container.children];
-          const si = items.indexOf(src), di = items.indexOf(item);
-          container.insertBefore(src, si < di ? item.nextSibling : item);
-        }
-        item.classList.remove(highlightClass);
-      });
+  function clearHighlights() {
+    nav.querySelectorAll('.nav-item-drag-over').forEach(el => el.classList.remove('nav-item-drag-over'));
+    if (_dragHighlight) { _dragHighlight.style.outline = ''; _dragHighlight = null; }
+  }
+
+  function makeItemDraggable(item) {
+    if (!item.id) item.id = 'nav-di-' + Math.random().toString(36).slice(2,8);
+    item.draggable = true;
+    item.style.cursor = 'grab';
+    item.addEventListener('dragstart', e => {
+      _dragItem = item;
+      e.stopPropagation();
+      setTimeout(() => item.style.opacity = '0.4', 0);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', item.id);
     });
+    item.addEventListener('dragend', e => {
+      e.stopPropagation();
+      item.style.opacity = '';
+      clearHighlights();
+      saveItemOrder();
+      _dragItem = null;
+    });
+    item.addEventListener('dragover', e => {
+      if (!_dragItem || _dragItem === item) return;
+      e.preventDefault(); e.stopPropagation();
+      clearHighlights();
+      item.classList.add('nav-item-drag-over');
+    });
+    item.addEventListener('dragleave', () => item.classList.remove('nav-item-drag-over'));
+    item.addEventListener('drop', e => {
+      e.preventDefault(); e.stopPropagation();
+      if (!_dragItem || _dragItem === item) return;
+      const targetContainer = item.parentElement;
+      const items = [...targetContainer.children];
+      const di = items.indexOf(item);
+      const srcInSame = _dragItem.parentElement === targetContainer;
+      const si = srcInSame ? items.indexOf(_dragItem) : -1;
+      targetContainer.insertBefore(_dragItem, si >= 0 && si < di ? item.nextSibling : item);
+      // Sub-Items mitziehen falls es eine Gruppe ist
+      item.classList.remove('nav-item-drag-over');
+    });
+  }
+
+  // Container (section-items) als Drop-Zone für leere Sektionen
+  function makeContainerDroppable(container) {
+    container.addEventListener('dragover', e => {
+      if (!_dragItem) return;
+      e.preventDefault();
+      if (!container.contains(_dragItem)) {
+        clearHighlights();
+        container.style.outline = '1px dashed rgba(255,102,153,0.5)';
+        _dragHighlight = container;
+      }
+    });
+    container.addEventListener('dragleave', e => {
+      if (!container.contains(e.relatedTarget)) {
+        container.style.outline = '';
+        if (_dragHighlight === container) _dragHighlight = null;
+      }
+    });
+    container.addEventListener('drop', e => {
+      e.preventDefault(); e.stopPropagation();
+      if (!_dragItem) return;
+      container.style.outline = '';
+      if (!container.contains(_dragItem)) container.appendChild(_dragItem);
+      saveItemOrder();
+    });
+  }
+
+  // Generische Drag&Drop-Funktion (bleibt für Gruppen-Sub-Items)
+  function makeSortable(container, itemSelector) {
+    [...container.children].forEach(item => {
+      if (item.matches(itemSelector)) makeItemDraggable(item);
+    });
+    makeContainerDroppable(container);
   }
 
   // Sektionen (nav-blocks) sortierbar
@@ -3354,13 +3432,13 @@ function initNavDrag() {
     });
   });
 
-  // Items innerhalb jeder Sektion sortierbar
+  // Items in jeder Sektion — jetzt cross-section draggable
   nav.querySelectorAll('.nav-section-items').forEach(container => {
-    makeSortable(container, '.nav-item:not(.nav-subitem), .nav-group, [id^="nav-group-"]', 'nav-item-drag-over');
+    makeSortable(container, '.nav-item:not(.nav-subitem), .nav-group, [id^="nav-group-"]');
   });
-  // Sub-Items innerhalb jeder Gruppe sortierbar
+  // Sub-Items innerhalb jeder Gruppe
   nav.querySelectorAll('.nav-group-items').forEach(container => {
-    makeSortable(container, '.nav-item', 'nav-item-drag-over');
+    makeSortable(container, '.nav-item');
   });
 }
 initNavDrag();
@@ -6361,6 +6439,7 @@ function adbRender() {
   loadStudioHealth();
   loadSurfaceEnergie();
   setInterval(loadSurfaceEnergie, 5 * 60 * 1000);
+  setInterval(() => { loadBookHealth(); loadProHealth(); }, 2 * 60 * 1000);
 }
 
 function surfaceBar(pct, color) {

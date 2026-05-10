@@ -3,506 +3,599 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Control · Feldnotizen</title>
+<title>Mission Control</title>
 <style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-body{
-  font-family:Georgia,'Times New Roman',serif;
-  background:#CEC0A0;
-  min-height:100vh;
-  display:flex;
-  overflow:hidden;
-}
+  body {
+    font-family: 'Georgia', 'Palatino Linotype', serif;
+    background: #E8DCCB;
+    min-height: 100vh;
+    color: #2C1A0E;
+  }
 
-/* Notebook-Linien über alles */
-body::after{
-  content:'';
-  position:fixed;inset:0;
-  background:repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 27px,
-    rgba(100,70,30,.07) 27px,
-    rgba(100,70,30,.07) 28px
-  );
-  pointer-events:none;
-  z-index:9000;
-}
+  .app {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
 
-/* ── SIDEBAR ─────────────────────────────── */
-.sidebar{
-  width:228px;flex-shrink:0;
-  background:#F5EDD6;
-  border-right:3px solid #7A5520;
-  display:flex;flex-direction:column;
-  position:relative;
-  box-shadow:4px 0 16px rgba(80,50,20,.22);
-}
+  /* ===== SIDEBAR ===== */
+  .sidebar {
+    width: 210px;
+    min-width: 210px;
+    background: #EAD9C0;
+    border-right: 2.5px solid #9B7A50;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 20px;
+    position: relative;
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 27px,
+        rgba(150,120,70,0.12) 28px
+      );
+  }
 
-/* rote Randlinie */
-.sidebar::after{
-  content:'';
-  position:absolute;
-  left:46px;top:0;bottom:0;width:1.5px;
-  background:rgba(180,50,50,.28);
-  pointer-events:none;
-}
+  /* Red margin line */
+  .sidebar::before {
+    content: '';
+    position: absolute;
+    left: 36px;
+    top: 0; bottom: 0;
+    width: 1.5px;
+    background: rgba(180,60,60,0.25);
+    pointer-events: none;
+  }
 
-/* Ringbindung */
-.rings{
-  position:absolute;
-  left:6px;top:52px;
-  display:flex;flex-direction:column;gap:30px;
-  z-index:10;
-}
-.ring{
-  width:22px;height:22px;
-  border:3px solid #7A5520;
-  border-radius:50%;
-  background:#CEC0A0;
-  box-shadow:inset 0 1px 3px rgba(0,0,0,.2);
-}
+  /* Paper shadow on sidebar right edge */
+  .sidebar::after {
+    content: '';
+    position: absolute;
+    right: -5px;
+    top: 0; bottom: 0;
+    width: 4px;
+    background: linear-gradient(to right, rgba(80,50,20,0.18), transparent);
+    pointer-events: none;
+  }
 
-.logo{
-  padding:22px 16px 18px 56px;
-  border-bottom:2px dashed #C4A060;
-}
-.logo-name{
-  font-size:17px;font-weight:bold;
-  color:#4A2C0E;letter-spacing:.5px;
-}
-.logo-sub{
-  font-size:11px;color:#8B5E2A;
-  margin-top:2px;font-style:italic;
-}
+  .sidebar-logo {
+    padding: 20px 18px 18px 18px;
+    border-bottom: 1.5px dashed #B8975A;
+    margin-bottom: 10px;
+  }
 
-nav{flex:1;padding:12px 0;}
+  .sidebar-logo-name {
+    font-size: 21px;
+    font-weight: bold;
+    color: #4A2A0A;
+    letter-spacing: -0.5px;
+  }
 
-.nav-item{
-  display:flex;align-items:center;gap:10px;
-  padding:9px 14px 9px 56px;
-  color:#4A2C0E;font-size:13.5px;
-  text-decoration:none;
-  cursor:pointer;
-  position:relative;
-  transition:background .12s;
-}
-.nav-item:hover{background:rgba(122,85,32,.1);}
-.nav-item.active{
-  background:rgba(122,85,32,.16);
-  font-weight:bold;
-}
-.nav-item.active::before{
-  content:'›';
-  position:absolute;left:36px;
-  color:#C67C2A;font-size:18px;line-height:1;
-  top:50%;transform:translateY(-50%);
-}
-.nav-icon{font-size:15px;width:18px;text-align:center;}
-.nav-badge{
-  margin-left:auto;
-  background:#B85C1A;color:#FFF;
-  font-size:10px;font-family:sans-serif;
-  padding:1px 6px;border-radius:10px;
-  font-weight:bold;
-}
+  .sidebar-logo-sub {
+    font-size: 11px;
+    color: #9B7A55;
+    margin-top: 3px;
+    font-style: italic;
+    letter-spacing: 0.5px;
+  }
 
-.sidebar-foot{
-  padding:14px 14px 18px 56px;
-  border-top:2px dashed #C4A060;
-  font-size:11px;color:#8B5E2A;font-style:italic;
-  line-height:1.7;
-}
+  .nav-section {
+    padding: 6px 0 4px 0;
+  }
 
-/* ── MAIN ────────────────────────────────── */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+  .nav-item {
+    display: flex;
+    align-items: center;
+    padding: 9px 16px 9px 14px;
+    cursor: pointer;
+    color: #5C3A1E;
+    font-size: 13.5px;
+    border-left: 3px solid transparent;
+    gap: 9px;
+    position: relative;
+  }
 
-/* ── TOPBAR ──────────────────────────────── */
-.topbar{
-  background:#F5EDD6;
-  border-bottom:3px solid #7A5520;
-  padding:14px 28px;
-  display:flex;align-items:center;justify-content:space-between;
-  box-shadow:0 3px 10px rgba(80,50,20,.14);
-  flex-shrink:0;
-}
-.topbar-left{}
-.page-title{
-  font-size:21px;font-weight:bold;
-  color:#4A2C0E;
-  display:inline-block;
-  position:relative;
-}
-.page-title::after{
-  content:'';
-  position:absolute;
-  bottom:-2px;left:0;right:0;height:2px;
-  background:#C67C2A;
-  transform:rotate(-.2deg) scaleX(1.02);
-}
-.page-greeting{
-  font-size:12px;color:#8B5E2A;
-  font-style:italic;margin-top:4px;
-}
-.topbar-right{display:flex;align-items:center;gap:22px;}
-.topbar-datebox{text-align:right;}
-.topbar-datestr{font-size:12px;color:#8B5E2A;font-style:italic;}
-.topbar-weekstr{font-size:11px;color:#A07040;font-style:italic;}
-.topbar-time{
-  font-size:32px;font-weight:bold;
-  color:#4A2C0E;
-  font-family:'Courier New',monospace;
-  letter-spacing:3px;
-  text-shadow:1px 1px 0 rgba(122,85,32,.2);
-}
+  .nav-item:hover {
+    background: rgba(160,120,60,0.12);
+    border-left-color: #C4A060;
+    color: #3D2008;
+  }
 
-/* ── CONTENT GRID ────────────────────────── */
-.content{
-  flex:1;overflow-y:auto;
-  padding:24px 28px;
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:20px;
-  align-content:start;
-}
-.content::-webkit-scrollbar{width:7px;}
-.content::-webkit-scrollbar-track{background:#D4C4A0;}
-.content::-webkit-scrollbar-thumb{background:#B09060;border-radius:4px;}
+  .nav-item.active {
+    background: rgba(160,120,60,0.22);
+    border-left: 3px solid #7A5530;
+    font-weight: bold;
+    color: #2C1A0E;
+  }
 
-/* ── CARD ────────────────────────────────── */
-.card{
-  background:#FBF5E4;
-  border:2px solid #8B6030;
-  border-radius:2px;
-  padding:18px 20px;
-  position:relative;
-  transform:rotate(var(--tilt,0deg));
-  box-shadow:
-    3px 4px 0 #C8A858,
-    5px 7px 0 rgba(80,50,20,.09);
-  transition:transform .2s,box-shadow .2s;
-}
-.card:hover{
-  transform:rotate(0deg) translateY(-2px);
-  box-shadow:4px 6px 0 #C8A858,7px 10px 0 rgba(80,50,20,.12);
-}
-/* innere Rahmenlinie */
-.card::before{
-  content:'';
-  position:absolute;inset:4px;
-  border:1px dashed rgba(139,96,48,.18);
-  border-radius:1px;
-  pointer-events:none;
-}
+  /* little pencil tick for active */
+  .nav-item.active::after {
+    content: '✓';
+    position: absolute;
+    right: 12px;
+    font-size: 11px;
+    color: #9B7A55;
+  }
 
-.card-label{
-  font-size:10.5px;font-weight:bold;
-  text-transform:uppercase;letter-spacing:2px;
-  color:#8B5E2A;margin-bottom:14px;
-  display:flex;align-items:center;gap:7px;
-}
+  .nav-icon { font-size: 14px; width: 18px; text-align: center; }
 
-/* ── GAUGE ───────────────────────────────── */
-.gauge-wrap{display:flex;align-items:center;gap:16px;}
-.gauge-svg{transform:rotate(-90deg);flex-shrink:0;}
-.g-track{fill:none;stroke:#E4D4A8;stroke-width:9;}
-.g-fill{fill:none;stroke-width:9;stroke-linecap:round;}
-.gauge-info{}
-.gauge-pct{
-  font-size:40px;font-weight:bold;color:#4A2C0E;
-  font-family:'Courier New',monospace;line-height:1;
-}
-.gauge-pct span{font-size:17px;color:#8B5E2A;font-family:Georgia,serif;}
-.gauge-sub{font-size:11px;color:#8B5E2A;font-style:italic;margin-top:3px;}
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 14px 18px;
+    border-top: 1.5px dashed #B8975A;
+    font-size: 11px;
+    color: #9B7A55;
+    font-style: italic;
+  }
 
-/* Schraffur-Balken */
-.bar{
-  height:13px;
-  background:#E4D4A8;
-  border:2px solid #8B6030;
-  border-radius:2px;
-  margin-top:13px;overflow:hidden;
-}
-.bar-fill{
-  height:100%;
-  background:repeating-linear-gradient(
-    45deg,
-    #7A9E7E 0,#7A9E7E 3px,
-    #A8C8AC 3px,#A8C8AC 7px
-  );
-}
-.bar-fill.amber{
-  background:repeating-linear-gradient(
-    45deg,
-    #C67C2A 0,#C67C2A 3px,
-    #E8A860 3px,#E8A860 7px
-  );
-}
-.card-note{font-size:11px;color:#8B5E2A;font-style:italic;margin-top:7px;}
+  /* ===== MAIN ===== */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #F2E8D5;
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 27px,
+        rgba(150,120,70,0.1) 28px
+      );
+  }
 
-/* ── WETTER ──────────────────────────────── */
-.wx-row{display:flex;align-items:center;gap:14px;margin:4px 0 8px;}
-.wx-icon{font-size:52px;line-height:1;}
-.wx-temp{
-  font-size:50px;font-weight:bold;
-  color:#4A2C0E;font-family:'Courier New',monospace;line-height:1;
-}
-.wx-temp sup{font-size:20px;vertical-align:super;}
-.wx-desc{font-size:12px;color:#8B5E2A;font-style:italic;margin-bottom:10px;}
-.wx-details{display:flex;gap:14px;flex-wrap:wrap;}
-.wx-detail{font-size:11px;color:#5C3D1E;text-align:center;}
-.wx-detail strong{display:block;font-size:13px;margin-bottom:1px;}
+  /* ===== TOPBAR ===== */
+  .topbar {
+    height: 54px;
+    background: #EAD9C0;
+    border-bottom: 2px solid #9B7A50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    flex-shrink: 0;
+    position: relative;
+  }
 
-/* ── MAIL ────────────────────────────────── */
-.mail-count{
-  font-size:60px;font-weight:bold;
-  color:#4A2C0E;line-height:1;
-  font-family:'Courier New',monospace;
-}
-.mail-sub{font-size:12px;color:#8B5E2A;font-style:italic;margin-bottom:10px;}
-.mail-list{display:flex;flex-direction:column;gap:5px;}
-.mail-item{
-  padding:5px 8px;
-  background:rgba(198,124,42,.09);
-  border-left:3px solid #C67C2A;
-  border-radius:0 2px 2px 0;
-}
-.mail-from{font-size:12px;font-weight:bold;color:#4A2C0E;}
-.mail-preview{font-size:11px;color:#8B5E2A;font-style:italic;}
+  .topbar::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(to bottom, rgba(80,50,20,0.1), transparent);
+  }
 
-/* ── STATUS ──────────────────────────────── */
-.status-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:8px;margin-top:6px;
-}
-.status-item{
-  display:flex;align-items:center;gap:7px;
-  font-size:12px;color:#4A2C0E;
-}
-.dot{
-  width:9px;height:9px;border-radius:50%;flex-shrink:0;
-  border:1.5px solid rgba(0,0,0,.2);
-}
-.dot.g{background:#6DAE74;box-shadow:0 0 4px rgba(109,174,116,.5);}
-.dot.y{background:#D4A820;box-shadow:0 0 4px rgba(212,168,32,.4);}
-.dot.r{background:#C05050;box-shadow:0 0 4px rgba(192,80,80,.4);}
-.uptime{font-size:11px;color:#8B5E2A;font-style:italic;margin-top:10px;}
+  .topbar-left {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
 
-/* ── BOLLA NOTE (Klebezettel) ─────────────── */
-.card.note{
-  background:#FFFDE0;
-  border-color:#C4A040;
-  --tilt:0.8deg;
-}
-.tape{
-  position:absolute;
-  top:-11px;left:50%;
-  transform:translateX(-50%) rotate(-1.5deg);
-  width:56px;height:20px;
-  background:rgba(255,230,120,.65);
-  border:1px solid rgba(180,150,60,.35);
-}
-.note-body{
-  font-style:italic;font-size:14px;
-  color:#4A2C0E;line-height:1.65;
-}
-.note-sig{
-  margin-top:10px;font-size:11px;
-  color:#8B5E2A;text-align:right;
-}
+  .topbar-title {
+    font-size: 19px;
+    color: #3D2008;
+    font-weight: bold;
+    letter-spacing: 0.3px;
+  }
 
-/* ── KALENDER MINI ───────────────────────── */
-.cal-row{
-  display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;
-}
-.cal-event{
-  padding:5px 9px;
-  background:rgba(122,85,32,.08);
-  border:1px solid rgba(122,85,32,.25);
-  border-left:3px solid #C67C2A;
-  border-radius:0 3px 3px 0;
-  font-size:11.5px;color:#4A2C0E;
-  flex:1;min-width:120px;
-}
-.cal-time{font-size:10px;color:#8B5E2A;font-style:italic;margin-bottom:1px;}
+  .topbar-date {
+    font-size: 12px;
+    color: #9B7A55;
+    font-style: italic;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .topbar-time {
+    font-size: 26px;
+    color: #4A2A0A;
+    font-family: 'Georgia', serif;
+    letter-spacing: 3px;
+    position: relative;
+  }
+
+  /* ===== CONTENT ===== */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px;
+  }
+
+  .content::-webkit-scrollbar { width: 6px; }
+  .content::-webkit-scrollbar-track { background: transparent; }
+  .content::-webkit-scrollbar-thumb { background: #C4A97A; border-radius: 3px; }
+
+  /* ===== SECTION LABEL ===== */
+  .section-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: #9B7A55;
+    margin-bottom: 14px;
+    padding-bottom: 5px;
+    border-bottom: 1.5px dashed #C4A97A;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ===== WIDGET GRID ===== */
+  .widget-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-bottom: 26px;
+  }
+
+  /* ===== CARD ===== */
+  .card {
+    background: #FBF5E6;
+    border: 2px solid #9B7A50;
+    border-radius: 3px;
+    padding: 16px 17px;
+    position: relative;
+    box-shadow: 3px 4px 0 rgba(80,55,20,0.14);
+    transition: transform 0.15s;
+  }
+
+  .card:nth-child(1) { transform: rotate(-0.4deg); }
+  .card:nth-child(2) { transform: rotate(0.3deg); }
+  .card:nth-child(3) { transform: rotate(-0.2deg); }
+  .card:nth-child(4) { transform: rotate(0.5deg); }
+
+  .card:hover { transform: rotate(0deg) translateY(-2px); }
+
+  /* Tape strip on top of cards */
+  .card::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 44px;
+    height: 14px;
+    background: rgba(220,200,150,0.55);
+    border: 1px solid rgba(180,150,90,0.4);
+    border-radius: 1px;
+  }
+
+  .card-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    color: #9B7A55;
+    margin-bottom: 8px;
+  }
+
+  .card-value {
+    font-size: 38px;
+    font-weight: bold;
+    color: #2C1A0E;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .card-sub {
+    font-size: 11.5px;
+    color: #9B7A55;
+    font-style: italic;
+    margin-bottom: 8px;
+  }
+
+  /* Progress Bar */
+  .bar-track {
+    height: 7px;
+    background: #D9C8A8;
+    border-radius: 2px;
+    overflow: hidden;
+    border: 1px solid #C4A97A;
+    margin-top: 6px;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 1px;
+  }
+
+  .bar-green  { background: #5B7A4A; }
+  .bar-orange { background: #C47A3A; }
+  .bar-red    { background: #B83C3C; }
+
+  /* Badge */
+  .badge {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: #B83C3C;
+    color: #FFF9F0;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    font-style: normal;
+    font-family: 'Georgia', serif;
+  }
+
+  /* Weather card */
+  .weather-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .weather-icon { font-size: 30px; }
+
+  .weather-temp {
+    font-size: 38px;
+    font-weight: bold;
+    color: #2C1A0E;
+    line-height: 1;
+  }
+
+  /* ===== BOTTOM GRID ===== */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+
+  /* ===== NOTE CARD ===== */
+  .note-card {
+    background: #FFFCE6;
+    border: 2px solid #C4B550;
+    border-radius: 3px;
+    padding: 16px 18px;
+    box-shadow: 3px 4px 0 rgba(140,120,30,0.14);
+    font-size: 13px;
+    line-height: 1.85;
+    color: #3A2C08;
+    position: relative;
+    background-image:
+      repeating-linear-gradient(
+        transparent,
+        transparent 25px,
+        rgba(180,160,50,0.18) 26px
+      );
+    transform: rotate(0.3deg);
+  }
+
+  .note-card::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 18px;
+    width: 44px;
+    height: 14px;
+    background: rgba(220,200,150,0.55);
+    border: 1px solid rgba(180,150,90,0.4);
+    border-radius: 1px;
+  }
+
+  .note-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #9B8A30;
+    margin-bottom: 10px;
+  }
+
+  .note-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    margin-bottom: 2px;
+  }
+
+  .note-item.done { color: #9B8A55; text-decoration: line-through; }
+
+  /* ===== QUICK LINKS ===== */
+  .links-card {
+    background: #FBF5E6;
+    border: 2px solid #9B7A50;
+    border-radius: 3px;
+    padding: 16px 18px;
+    box-shadow: 3px 4px 0 rgba(80,55,20,0.14);
+    transform: rotate(-0.3deg);
+    position: relative;
+  }
+
+  .links-card::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 18px;
+    width: 44px;
+    height: 14px;
+    background: rgba(220,200,150,0.55);
+    border: 1px solid rgba(180,150,90,0.4);
+    border-radius: 1px;
+  }
+
+  .links-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #9B7A55;
+    margin-bottom: 14px;
+  }
+
+  .links-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+
+  .quick-link {
+    background: #EAD9C0;
+    border: 1.5px solid #9B7A50;
+    border-radius: 3px;
+    padding: 9px 11px;
+    font-size: 12.5px;
+    color: #5C3A1E;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 rgba(80,55,20,0.12);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.1s;
+  }
+
+  .quick-link:hover {
+    background: #D9C8A8;
+    transform: translateY(-1px);
+  }
 </style>
 </head>
 <body>
 
-<!-- ── SIDEBAR ── -->
-<aside class="sidebar">
-  <div class="rings">
-    <div class="ring"></div>
-    <div class="ring"></div>
-    <div class="ring"></div>
-    <div class="ring"></div>
-    <div class="ring"></div>
-    <div class="ring"></div>
-    <div class="ring"></div>
-    <div class="ring"></div>
-    <div class="ring"></div>
-  </div>
+<div class="app">
 
-  <div class="logo">
-    <div class="logo-name">🐾 Mission Control</div>
-    <div class="logo-sub">Bolla · v2.1</div>
-  </div>
-
-  <nav>
-    <a class="nav-item active">
-      <span class="nav-icon">🏠</span> Dashboard
-    </a>
-    <a class="nav-item">
-      <span class="nav-icon">🐾</span> Bolla
-    </a>
-    <a class="nav-item">
-      <span class="nav-icon">📚</span> Schule
-    </a>
-    <a class="nav-item">
-      <span class="nav-icon">📅</span> Kalender
-    </a>
-    <a class="nav-item">
-      <span class="nav-icon">✉️</span> E-Mail
-      <span class="nav-badge">3</span>
-    </a>
-    <a class="nav-item">
-      <span class="nav-icon">🌤</span> Wetter
-    </a>
-    <a class="nav-item">
-      <span class="nav-icon">⚙️</span> System Info
-    </a>
-  </nav>
-
-  <div class="sidebar-foot">
-    Fr, 09.05.2026<br>
-    WSL2 · online ✓
-  </div>
-</aside>
-
-<!-- ── MAIN ── -->
-<div class="main">
-
-  <!-- TOPBAR -->
-  <header class="topbar">
-    <div class="topbar-left">
-      <div class="page-title">Dashboard</div>
-      <div class="page-greeting">Guten Abend, Chris — alles im Blick 👋</div>
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-name">🐾 Bolla</div>
+      <div class="sidebar-logo-sub">Mission Control</div>
     </div>
-    <div class="topbar-right">
-      <div class="topbar-datebox">
-        <div class="topbar-datestr">Fr, 09.05.2026</div>
-        <div class="topbar-weekstr">Kalenderwoche 19</div>
+
+    <nav class="nav-section">
+      <div class="nav-item active">
+        <span class="nav-icon">🏠</span>Dashboard
       </div>
-      <div class="topbar-time">20:14</div>
+      <div class="nav-item">
+        <span class="nav-icon">🐾</span>Bolla
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">📚</span>Schule
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">📅</span>Kalender
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">✉️</span>E-Mail
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">🌤</span>Wetter
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">⚙️</span>System Info
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      Sonntag, 10. Mai 2026<br>
+      Alles im grünen Bereich ✓
     </div>
-  </header>
+  </aside>
 
-  <!-- GRID -->
-  <div class="content">
+  <!-- ===== MAIN ===== -->
+  <div class="main">
 
-    <!-- RAM -->
-    <div class="card" style="--tilt:-0.5deg">
-      <div class="card-label">💾 Arbeitsspeicher</div>
-      <div class="gauge-wrap">
-        <svg class="gauge-svg" width="72" height="72" viewBox="0 0 100 100">
-          <circle class="g-track" cx="50" cy="50" r="42"/>
-          <circle class="g-fill" cx="50" cy="50" r="42"
-            stroke="#7A9E7E"
-            stroke-dasharray="263.9"
-            stroke-dashoffset="174"/>
-        </svg>
-        <div class="gauge-info">
-          <div class="gauge-pct">34<span>%</span></div>
-          <div class="gauge-sub">von 32 GB</div>
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">Dashboard</div>
+        <div class="topbar-date">Guten Abend, Chris</div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-time">20:14</div>
+      </div>
+    </header>
+
+    <!-- CONTENT -->
+    <main class="content">
+
+      <!-- System Widgets -->
+      <div class="section-label">⬡ System &amp; Nachrichten</div>
+      <div class="widget-grid">
+
+        <!-- RAM -->
+        <div class="card">
+          <div class="card-label">Arbeitsspeicher</div>
+          <div class="card-value">34<span style="font-size:18px;color:#9B7A55">%</span></div>
+          <div class="card-sub">5,4 GB von 16 GB</div>
+          <div class="bar-track">
+            <div class="bar-fill bar-green" style="width:34%"></div>
+          </div>
         </div>
-      </div>
-      <div class="bar"><div class="bar-fill" style="width:34%"></div></div>
-      <div class="card-note">10,9 GB belegt · 21,1 GB frei</div>
-    </div>
 
-    <!-- CPU -->
-    <div class="card" style="--tilt:0.4deg">
-      <div class="card-label">⚡ Prozessor</div>
-      <div class="gauge-wrap">
-        <svg class="gauge-svg" width="72" height="72" viewBox="0 0 100 100">
-          <circle class="g-track" cx="50" cy="50" r="42"/>
-          <circle class="g-fill" cx="50" cy="50" r="42"
-            stroke="#7A9E7E"
-            stroke-dasharray="263.9"
-            stroke-dashoffset="232"/>
-        </svg>
-        <div class="gauge-info">
-          <div class="gauge-pct">12<span>%</span></div>
-          <div class="gauge-sub">12 Kerne</div>
+        <!-- CPU -->
+        <div class="card">
+          <div class="card-label">CPU-Auslastung</div>
+          <div class="card-value">12<span style="font-size:18px;color:#9B7A55">%</span></div>
+          <div class="card-sub">Leerlauf · ruhig</div>
+          <div class="bar-track">
+            <div class="bar-fill bar-green" style="width:12%"></div>
+          </div>
         </div>
-      </div>
-      <div class="bar"><div class="bar-fill" style="width:12%"></div></div>
-      <div class="card-note">AMD Ryzen · 2,8 GHz · Temp 41 °C</div>
-    </div>
 
-    <!-- E-Mail -->
-    <div class="card" style="--tilt:-0.3deg">
-      <div class="card-label">✉️ E-Mail</div>
-      <div class="mail-count">3</div>
-      <div class="mail-sub">neue Nachrichten</div>
-      <div class="mail-list">
-        <div class="mail-item">
-          <div class="mail-from">Schulsekretariat</div>
-          <div class="mail-preview">Vertretungsplan KW 20 ...</div>
+        <!-- Mail -->
+        <div class="card">
+          <span class="badge">3 neu</span>
+          <div class="card-label">E-Mail</div>
+          <div class="card-value" style="color:#B83C3C">3</div>
+          <div class="card-sub">neue Nachrichten</div>
+          <div style="font-size:11px;color:#9B7A55;margin-top:6px;border-top:1px dashed #C4A97A;padding-top:6px;">
+            📧 Schule — Vertretungsplan<br>
+            📧 Ernst — Familien-Update<br>
+            📧 ING-DiBa — Kontoauszug
+          </div>
         </div>
-        <div class="mail-item">
-          <div class="mail-from">GitHub Notifications</div>
-          <div class="mail-preview">PR #42 merged: mission-control</div>
+
+        <!-- Wetter -->
+        <div class="card">
+          <div class="card-label">Wetter · Hamburg</div>
+          <div class="weather-row">
+            <span class="weather-icon">⛅</span>
+            <span class="weather-temp">18<span style="font-size:18px;color:#9B7A55">°C</span></span>
+          </div>
+          <div class="card-sub">Teils bewölkt</div>
+          <div style="font-size:11px;color:#9B7A55;border-top:1px dashed #C4A97A;padding-top:6px;margin-top:4px;">
+            💨 Wind 14 km/h &nbsp;·&nbsp; 🌧 20% Regen<br>
+            Morgen: 21°C, sonniger
+          </div>
         </div>
-        <div class="mail-item">
-          <div class="mail-from">Max Mustermann</div>
-          <div class="mail-preview">Re: Klassenarbeit — Termin ok?</div>
+
+      </div>
+
+      <!-- Bottom area -->
+      <div class="section-label">⬡ Notizen &amp; Schnellzugriff</div>
+      <div class="bottom-grid">
+
+        <!-- Notes -->
+        <div class="note-card">
+          <div class="note-title">📌 Offene Punkte</div>
+          <div class="note-item">☐ Korrekturen 7b morgen abgeben</div>
+          <div class="note-item">☐ Stundenvorbereitung 7a — Grammatik</div>
+          <div class="note-item">☐ Zahnarzt Di. 13:30 Uhr bestätigen</div>
+          <div class="note-item">☐ OneDrive-Backup prüfen</div>
+          <div class="note-item done">✓ Mission Control Design finalisiert</div>
+          <div class="note-item done">✓ Wetterseite überarbeitet</div>
         </div>
-      </div>
-    </div>
 
-    <!-- Wetter -->
-    <div class="card" style="--tilt:0.6deg">
-      <div class="card-label">🌤 Wetter · Hamburg</div>
-      <div class="wx-row">
-        <div class="wx-icon">⛅</div>
-        <div class="wx-temp">18<sup>°C</sup></div>
-      </div>
-      <div class="wx-desc">Teils bewölkt · gefühlt 16 °C</div>
-      <div class="wx-details">
-        <div class="wx-detail"><strong>💧 68 %</strong>Luftfeuchte</div>
-        <div class="wx-detail"><strong>🌬 14 km/h</strong>Wind SW</div>
-        <div class="wx-detail"><strong>☀️ 05:45</strong>Aufgang</div>
-        <div class="wx-detail"><strong>🌙 21:02</strong>Untergang</div>
-      </div>
-    </div>
+        <!-- Quick links -->
+        <div class="links-card">
+          <div class="links-title">⚡ Schnellzugriff</div>
+          <div class="links-grid">
+            <div class="quick-link">📬 Outlook</div>
+            <div class="quick-link">📆 Kalender</div>
+            <div class="quick-link">🌤 Wetter</div>
+            <div class="quick-link">📚 Schule</div>
+            <div class="quick-link">🐾 Bolla-Chat</div>
+            <div class="quick-link">⚙️ System</div>
+          </div>
+        </div>
 
-    <!-- System Status -->
-    <div class="card" style="--tilt:-0.25deg">
-      <div class="card-label">🔌 Systemstatus</div>
-      <div class="status-grid">
-        <div class="status-item"><div class="dot g"></div> MC-Server</div>
-        <div class="status-item"><div class="dot g"></div> Cloudflare</div>
-        <div class="status-item"><div class="dot g"></div> WSL2</div>
-        <div class="status-item"><div class="dot g"></div> GitHub</div>
-        <div class="status-item"><div class="dot y"></div> OneDrive</div>
-        <div class="status-item"><div class="dot r"></div> Edge TTS</div>
       </div>
-      <div class="uptime">Uptime: 4 h 32 min · /home: 124 GB frei</div>
-    </div>
 
-    <!-- Bolla Note -->
-    <div class="card note">
-      <div class="tape"></div>
-      <div class="card-label" style="color:#9B6E1A">🐾 Bolla notiert</div>
-      <div class="note-body">
-        „Schöner Abend! 3 neue Mails warten, Hamburg ist mild. Die KI-Forum-Session ist commitet und gesichert. Fast alles grün — Edge TTS wäre noch nett."
-      </div>
-      <div class="note-sig">— Bolla, 20:14 Uhr</div>
-    </div>
-
+    </main>
   </div>
 </div>
 

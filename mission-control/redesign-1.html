@@ -3,961 +3,764 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Control // TERMINAL_ZERO</title>
+<title>Mission Control</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  :root {
-    --green: #00ff41;
-    --green-dim: #00cc33;
-    --green-dark: #007a1a;
-    --green-faint: #003b00;
-    --bg: #000000;
-    --bg2: #060e06;
-    --bg3: #0a160a;
-    --amber: #ffb800;
-    --red: #ff3333;
-    --cyan: #00ffff;
-    --font: 'Courier New', 'Lucida Console', monospace;
-  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    background: var(--bg);
-    color: var(--green);
-    font-family: var(--font);
-    height: 100vh;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a0533 0%, #0d1b3e 35%, #0a2a2a 70%, #1a0533 100%);
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    text-shadow: 0 0 6px var(--green);
+    color: #f0e8ff;
   }
 
-  /* Scanline overlay */
+  /* Aurora blobs */
   body::before {
     content: '';
     position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.08) 2px,
-      rgba(0,0,0,0.08) 4px
-    );
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(192,132,252,0.25) 0%, transparent 70%);
+    top: -150px; left: 80px;
+    animation: drift 8s ease-in-out infinite alternate;
     pointer-events: none;
-    z-index: 9999;
+    z-index: 0;
   }
-
-  /* CRT vignette */
   body::after {
     content: '';
     position: fixed;
-    inset: 0;
-    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
-    pointer-events: none;
-    z-index: 9998;
-  }
-
-  /* ── TOPBAR ── */
-  .topbar {
-    background: var(--bg2);
-    border-bottom: 1px solid var(--green-dark);
-    padding: 0 24px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-    position: relative;
-  }
-
-  .topbar::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--green), transparent);
-    opacity: 0.5;
-  }
-
-  .topbar-left {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .topbar-logo {
-    font-size: 11px;
-    color: var(--green-dark);
-    letter-spacing: 2px;
-    border-right: 1px solid var(--green-dark);
-    padding-right: 16px;
-  }
-
-  .topbar-title {
-    font-size: 15px;
-    font-weight: bold;
-    letter-spacing: 3px;
-    color: var(--green);
-  }
-
-  .topbar-title span {
-    color: var(--green-dim);
-    font-size: 11px;
-    margin-left: 8px;
-    letter-spacing: 1px;
-  }
-
-  .topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    font-size: 12px;
-  }
-
-  .topbar-status {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--green-dim);
-  }
-
-  .dot {
-    width: 7px;
-    height: 7px;
+    width: 500px; height: 500px;
     border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green);
-    animation: pulse 2s infinite;
+    background: radial-gradient(circle, rgba(103,232,249,0.2) 0%, transparent 70%);
+    bottom: -100px; right: 100px;
+    animation: drift 10s ease-in-out infinite alternate-reverse;
+    pointer-events: none;
+    z-index: 0;
+  }
+  @keyframes drift {
+    from { transform: translate(0, 0) scale(1); }
+    to   { transform: translate(40px, 30px) scale(1.08); }
   }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
+  .blob-mid {
+    position: fixed;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(251,191,133,0.15) 0%, transparent 70%);
+    top: 40%; left: 45%;
+    animation: drift 12s ease-in-out infinite alternate;
+    pointer-events: none;
+    z-index: 0;
   }
 
-  .topbar-clock {
-    font-size: 20px;
-    font-weight: bold;
-    letter-spacing: 4px;
-    color: var(--green);
-    text-shadow: 0 0 12px var(--green);
-  }
-
-  .topbar-date {
-    font-size: 11px;
-    color: var(--green-dark);
-    letter-spacing: 1px;
-  }
-
-  /* ── MAIN LAYOUT ── */
-  .layout {
+  /* Layout */
+  .shell {
     display: flex;
-    flex: 1;
-    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    z-index: 1;
   }
 
-  /* ── SIDEBAR ── */
+  /* ── Sidebar ── */
   .sidebar {
     width: 220px;
-    background: var(--bg2);
-    border-right: 1px solid var(--green-dark);
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    flex-shrink: 0;
-    padding: 16px 0;
+    padding: 28px 16px;
+    gap: 6px;
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-right: 1px solid rgba(255,255,255,0.12);
   }
 
-  .sidebar-section {
-    font-size: 10px;
-    color: var(--green-dark);
-    letter-spacing: 3px;
-    padding: 12px 20px 6px;
-    border-bottom: 1px solid var(--green-faint);
-    margin-bottom: 4px;
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 8px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 8px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #c084fc, #67e8f9);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 0 16px rgba(192,132,252,0.5);
+  }
+  .logo-text { font-size: 15px; font-weight: 700; letter-spacing: 0.5px; color: #f0e8ff; }
+  .logo-sub  { font-size: 10px; color: rgba(240,232,255,0.45); letter-spacing: 1px; text-transform: uppercase; }
+
+  .nav-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: rgba(240,232,255,0.35);
+    padding: 12px 10px 4px;
   }
 
   .nav-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 9px 20px;
-    font-size: 13px;
-    letter-spacing: 1px;
-    color: var(--green-dim);
+    padding: 10px 12px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: all 0.1s;
-    border-left: 2px solid transparent;
-    text-decoration: none;
+    font-size: 13.5px;
+    color: rgba(240,232,255,0.65);
+    transition: all 0.2s;
     position: relative;
   }
-
   .nav-item:hover {
-    color: var(--green);
-    background: var(--green-faint);
-    border-left-color: var(--green-dark);
+    background: rgba(255,255,255,0.08);
+    color: #f0e8ff;
   }
-
   .nav-item.active {
-    color: var(--green);
-    background: var(--bg3);
-    border-left-color: var(--green);
-    text-shadow: 0 0 8px var(--green);
+    background: linear-gradient(135deg, rgba(192,132,252,0.25), rgba(103,232,249,0.15));
+    color: #f0e8ff;
+    box-shadow: inset 0 0 0 1px rgba(192,132,252,0.3);
   }
-
-  .nav-item.active::after {
-    content: '_';
-    animation: blink 1s step-end infinite;
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 20%; bottom: 20%;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: linear-gradient(#c084fc, #67e8f9);
   }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-  }
-
-  .nav-icon {
-    width: 16px;
-    text-align: center;
-    font-size: 14px;
-  }
-
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
   .nav-badge {
     margin-left: auto;
-    background: var(--green-dark);
-    color: var(--green);
+    background: linear-gradient(135deg, #f472b6, #c084fc);
+    color: white;
     font-size: 10px;
-    padding: 1px 6px;
-    border: 1px solid var(--green-dark);
-    box-shadow: 0 0 4px var(--green-dark);
-  }
-
-  .nav-badge.alert {
-    background: #330000;
-    color: var(--red);
-    border-color: var(--red);
-    box-shadow: 0 0 4px var(--red);
-    text-shadow: 0 0 6px var(--red);
-    animation: pulse 1.5s infinite;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 99px;
   }
 
   .sidebar-footer {
     margin-top: auto;
-    padding: 16px 20px;
-    border-top: 1px solid var(--green-faint);
-    font-size: 10px;
-    color: var(--green-dark);
-    line-height: 1.8;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .avatar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.06);
+  }
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fbbf87, #f472b6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+  }
+  .avatar-name { font-size: 13px; font-weight: 600; }
+  .avatar-role { font-size: 10px; color: rgba(240,232,255,0.45); }
+  .avatar-more { margin-left: auto; color: rgba(240,232,255,0.4); font-size: 14px; cursor: pointer; }
+
+  /* ── Main ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
-  /* ── CONTENT ── */
+  /* Topbar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    padding: 20px 28px;
+    gap: 16px;
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .page-title { font-size: 20px; font-weight: 700; color: #f0e8ff; }
+  .page-sub   { font-size: 12px; color: rgba(240,232,255,0.4); margin-top: 1px; }
+
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 7px 14px;
+    font-size: 13px;
+    color: rgba(240,232,255,0.5);
+    cursor: pointer;
+  }
+
+  .clock-chip {
+    background: linear-gradient(135deg, rgba(192,132,252,0.2), rgba(103,232,249,0.15));
+    border: 1px solid rgba(192,132,252,0.3);
+    border-radius: 10px;
+    padding: 6px 14px;
+    text-align: center;
+  }
+  .clock-time { font-size: 18px; font-weight: 700; letter-spacing: 1px; color: #e9d5ff; line-height: 1.1; }
+  .clock-date { font-size: 9px; color: rgba(233,213,255,0.55); letter-spacing: 0.5px; }
+
+  .notif-btn {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    position: relative;
+  }
+  .notif-btn::after {
+    content: '3';
+    position: absolute;
+    top: -5px; right: -5px;
+    background: #f472b6;
+    color: white;
+    font-size: 9px; font-weight: 700;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Content */
   .content {
     flex: 1;
     overflow-y: auto;
-    padding: 24px;
-    background: var(--bg);
-    scrollbar-width: thin;
-    scrollbar-color: var(--green-dark) var(--bg2);
-  }
-
-  .content::-webkit-scrollbar { width: 6px; }
-  .content::-webkit-scrollbar-track { background: var(--bg2); }
-  .content::-webkit-scrollbar-thumb { background: var(--green-dark); }
-
-  /* Page header */
-  .page-header {
-    margin-bottom: 24px;
-    border-bottom: 1px solid var(--green-faint);
-    padding-bottom: 12px;
-  }
-
-  .page-header h1 {
-    font-size: 11px;
-    color: var(--green-dark);
-    letter-spacing: 4px;
-    margin-bottom: 4px;
-  }
-
-  .page-header .prompt {
-    font-size: 16px;
-    color: var(--green);
-    letter-spacing: 2px;
-  }
-
-  .prompt-cursor {
-    animation: blink 1s step-end infinite;
-  }
-
-  /* ── GRID ── */
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-
-  .col-3 { grid-column: span 3; }
-  .col-4 { grid-column: span 4; }
-  .col-6 { grid-column: span 6; }
-  .col-8 { grid-column: span 8; }
-  .col-12 { grid-column: span 12; }
-
-  /* ── WIDGET ── */
-  .widget {
-    background: var(--bg2);
-    border: 1px solid var(--green-dark);
-    padding: 16px;
-    position: relative;
-    transition: border-color 0.2s;
-  }
-
-  .widget:hover {
-    border-color: var(--green);
-    box-shadow: 0 0 12px rgba(0,255,65,0.1);
-  }
-
-  /* corner decorations */
-  .widget::before,
-  .widget::after {
-    content: '';
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    border-color: var(--green);
-    border-style: solid;
-  }
-  .widget::before { top: -1px; left: -1px; border-width: 1px 0 0 1px; }
-  .widget::after  { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
-
-  .widget-title {
-    font-size: 10px;
-    letter-spacing: 3px;
-    color: var(--green-dark);
-    margin-bottom: 12px;
-    text-transform: uppercase;
+    padding: 24px 28px;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .widget-title .tag {
-    background: var(--green-faint);
-    border: 1px solid var(--green-dark);
-    padding: 1px 6px;
-    font-size: 9px;
-    letter-spacing: 1px;
-  }
-
-  /* ── STAT WIDGET ── */
-  .stat-value {
-    font-size: 42px;
-    font-weight: bold;
-    line-height: 1;
-    margin-bottom: 4px;
-    letter-spacing: -2px;
-  }
-
-  .stat-label {
-    font-size: 11px;
-    color: var(--green-dim);
-    letter-spacing: 2px;
-    margin-bottom: 12px;
-  }
-
-  /* Bar */
-  .bar-track {
-    height: 6px;
-    background: var(--green-faint);
-    border: 1px solid var(--green-dark);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .bar-fill {
-    height: 100%;
-    background: var(--green);
-    box-shadow: 0 0 8px var(--green);
-    transition: width 1s ease;
-  }
-
-  .bar-fill.warn {
-    background: var(--amber);
-    box-shadow: 0 0 8px var(--amber);
-  }
-
-  .bar-fill.danger {
-    background: var(--red);
-    box-shadow: 0 0 8px var(--red);
-  }
-
-  .bar-label {
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    color: var(--green-dark);
-    margin-top: 4px;
-    letter-spacing: 1px;
-  }
-
-  /* ── MAIL WIDGET ── */
-  .mail-item {
-    border-bottom: 1px solid var(--green-faint);
-    padding: 8px 0;
-    font-size: 12px;
-  }
-
-  .mail-item:last-child { border-bottom: none; }
-
-  .mail-from {
-    color: var(--green);
-    letter-spacing: 1px;
-    margin-bottom: 2px;
-  }
-
-  .mail-subject {
-    color: var(--green-dim);
-    font-size: 11px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .mail-time {
-    float: right;
-    font-size: 10px;
-    color: var(--green-dark);
-  }
-
-  .mail-unread {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    background: var(--green);
-    box-shadow: 0 0 4px var(--green);
-    margin-right: 6px;
-    vertical-align: middle;
-  }
-
-  /* ── WEATHER WIDGET ── */
-  .weather-main {
-    display: flex;
-    align-items: flex-end;
-    gap: 16px;
-    margin-bottom: 12px;
-  }
-
-  .weather-temp {
-    font-size: 56px;
-    font-weight: bold;
-    line-height: 1;
-    letter-spacing: -3px;
-  }
-
-  .weather-temp sup {
-    font-size: 18px;
-    vertical-align: top;
-    margin-top: 8px;
-    letter-spacing: 0;
-    color: var(--green-dim);
-  }
-
-  .weather-info {
-    font-size: 12px;
-    color: var(--green-dim);
-    line-height: 1.8;
-    letter-spacing: 1px;
-  }
-
-  .weather-icon {
-    font-size: 40px;
-    margin-bottom: 4px;
-    filter: drop-shadow(0 0 6px var(--green));
-    line-height: 1;
-  }
-
-  .weather-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    color: var(--green-dark);
-    padding: 3px 0;
-    border-bottom: 1px solid var(--green-faint);
-    letter-spacing: 1px;
-  }
-
-  .weather-row:last-child { border-bottom: none; }
-
-  .weather-row span:last-child {
-    color: var(--green-dim);
-  }
-
-  /* ── LOG WIDGET ── */
-  .log-line {
-    font-size: 11px;
-    line-height: 1.9;
-    letter-spacing: 0.5px;
-    border-bottom: 1px dashed var(--green-faint);
-    padding: 1px 0;
-    display: flex;
-    gap: 8px;
-  }
-
-  .log-line:last-child { border-bottom: none; }
-
-  .log-time { color: var(--green-dark); flex-shrink: 0; }
-  .log-tag {
-    flex-shrink: 0;
-    padding: 0 4px;
-    font-size: 9px;
-    letter-spacing: 1px;
-    align-self: center;
-  }
-  .log-tag.ok  { background: #003300; color: var(--green); border: 1px solid var(--green-dark); }
-  .log-tag.warn{ background: #332200; color: var(--amber); border: 1px solid var(--amber); text-shadow: 0 0 4px var(--amber); }
-  .log-tag.err { background: #330000; color: var(--red);   border: 1px solid var(--red);   text-shadow: 0 0 4px var(--red); }
-  .log-msg { color: var(--green-dim); }
-
-  /* ── SPARKLINE ── */
-  .sparkline {
-    display: flex;
-    align-items: flex-end;
-    gap: 2px;
-    height: 32px;
-    margin-top: 8px;
-  }
-
-  .spark-bar {
-    flex: 1;
-    background: var(--green-dark);
-    min-height: 2px;
-    transition: background 0.2s;
-  }
-
-  .spark-bar.hi {
-    background: var(--green);
-    box-shadow: 0 0 4px var(--green);
-  }
-
-  /* ── CALENDAR WIDGET ── */
-  .cal-header {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    text-align: center;
-    font-size: 10px;
-    color: var(--green-dark);
-    letter-spacing: 1px;
-    margin-bottom: 4px;
-  }
-
-  .cal-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    text-align: center;
-    gap: 1px;
-  }
-
-  .cal-day {
-    font-size: 11px;
-    padding: 4px 2px;
-    color: var(--green-dim);
-    cursor: default;
-  }
-
-  .cal-day.other { color: var(--green-faint); }
-
-  .cal-day.today {
-    color: var(--bg);
-    background: var(--green);
-    box-shadow: 0 0 8px var(--green);
-    text-shadow: none;
-    font-weight: bold;
-  }
-
-  .cal-day.event {
-    border-bottom: 1px solid var(--amber);
-    color: var(--amber);
-    text-shadow: 0 0 4px var(--amber);
-  }
-
-  /* ── DONUT CHART ── */
-  .donut-wrap {
-    display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 20px;
   }
+  .content::-webkit-scrollbar { width: 4px; }
+  .content::-webkit-scrollbar-track { background: transparent; }
+  .content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 99px; }
 
-  .donut {
-    width: 80px;
-    height: 80px;
+  /* Greeting */
+  .greeting {
+    font-size: 22px;
+    font-weight: 700;
+    color: #f0e8ff;
+  }
+  .greeting span {
+    background: linear-gradient(90deg, #c084fc, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .greeting-sub { font-size: 13px; color: rgba(240,232,255,0.45); margin-top: 3px; }
+
+  /* Grid */
+  .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+  .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+
+  /* Glass card */
+  .card {
+    background: rgba(255,255,255,0.07);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 18px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  }
+
+  /* Stat cards */
+  .stat-icon {
+    width: 38px; height: 38px;
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+  .stat-value { font-size: 26px; font-weight: 800; line-height: 1; color: #f0e8ff; }
+  .stat-label { font-size: 11px; color: rgba(240,232,255,0.45); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-trend { font-size: 11px; margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+  .trend-up   { color: #4ade80; }
+  .trend-dn   { color: #f472b6; }
+  .trend-neu  { color: rgba(240,232,255,0.4); }
+
+  .card-ram   .stat-icon { background: rgba(192,132,252,0.2); }
+  .card-cpu   .stat-icon { background: rgba(103,232,249,0.2); }
+  .card-mail  .stat-icon { background: rgba(244,114,182,0.2); }
+  .card-wx    .stat-icon { background: rgba(251,191,133,0.2); }
+
+  /* Donut */
+  .donut-wrap {
+    position: absolute;
+    bottom: 14px; right: 14px;
+    width: 56px; height: 56px;
+  }
+  .donut-wrap svg { transform: rotate(-90deg); }
+  .donut-bg   { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 6; }
+  .donut-fill { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dasharray 1s; }
+
+  /* Progress bar */
+  .progress-bar {
+    width: 100%;
+    height: 5px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 99px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+  .progress-fill { height: 100%; border-radius: 99px; }
+
+  /* Weather detail */
+  .wx-big { font-size: 40px; font-weight: 800; color: #f0e8ff; line-height: 1; }
+  .wx-city { font-size: 12px; color: rgba(240,232,255,0.45); margin-top: 2px; }
+  .wx-row { display: flex; gap: 18px; margin-top: 14px; }
+  .wx-detail { font-size: 11px; color: rgba(240,232,255,0.5); }
+  .wx-detail strong { display: block; font-size: 13px; color: #e9d5ff; font-weight: 600; }
+  .wx-icon-big { font-size: 52px; line-height: 1; text-align: right; margin-top: -8px; }
+
+  /* Activity feed */
+  .section-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(240,232,255,0.4);
+    margin-bottom: 14px;
+  }
+  .feed-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .feed-item:last-child { border-bottom: none; }
+  .feed-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-top: 5px;
     flex-shrink: 0;
   }
+  .feed-msg { font-size: 13px; color: rgba(240,232,255,0.75); line-height: 1.4; }
+  .feed-time { font-size: 10px; color: rgba(240,232,255,0.35); margin-top: 2px; }
 
-  .donut-legend {
-    font-size: 11px;
-    line-height: 2;
-    color: var(--green-dim);
-    letter-spacing: 1px;
+  /* Quick Actions */
+  .qa-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .qa-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    cursor: pointer;
+    font-size: 12.5px;
+    color: rgba(240,232,255,0.7);
+    transition: all 0.2s;
   }
+  .qa-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #f0e8ff;
+  }
+  .qa-ico { font-size: 16px; }
 
-  .donut-legend span {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    margin-right: 6px;
-    vertical-align: middle;
+  /* Mini Calendar */
+  .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .cal-month  { font-size: 14px; font-weight: 600; }
+  .cal-nav    { font-size: 16px; cursor: pointer; color: rgba(240,232,255,0.4); }
+  .cal-grid   { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; text-align: center; }
+  .cal-day-name { font-size: 9px; color: rgba(240,232,255,0.35); padding: 4px 0; text-transform: uppercase; }
+  .cal-day {
+    font-size: 12px;
+    padding: 5px 3px;
+    border-radius: 7px;
+    cursor: pointer;
+    color: rgba(240,232,255,0.6);
+    transition: background 0.15s;
+  }
+  .cal-day:hover { background: rgba(255,255,255,0.08); }
+  .cal-day.today {
+    background: linear-gradient(135deg, #c084fc, #67e8f9);
+    color: white;
+    font-weight: 700;
+  }
+  .cal-day.has-event::after {
+    content: '·';
+    display: block;
+    font-size: 14px;
+    line-height: 0;
+    margin-top: 2px;
+    color: #f472b6;
+  }
+  .cal-day.other { color: rgba(240,232,255,0.2); }
+
+  /* Bolla chip */
+  .bolla-card {
+    background: linear-gradient(135deg, rgba(192,132,252,0.18) 0%, rgba(103,232,249,0.12) 100%);
+    border-color: rgba(192,132,252,0.3);
+  }
+  .bolla-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .bolla-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #c084fc, #67e8f9);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 0 14px rgba(192,132,252,0.4);
+  }
+  .bolla-name { font-size: 14px; font-weight: 700; color: #e9d5ff; }
+  .bolla-status { font-size: 10px; color: rgba(233,213,255,0.5); }
+  .bolla-msg {
+    font-size: 13px;
+    color: rgba(240,232,255,0.7);
+    line-height: 1.55;
+    border-left: 2px solid rgba(192,132,252,0.5);
+    padding-left: 10px;
   }
 </style>
 </head>
 <body>
+<div class="blob-mid"></div>
+<div class="shell">
 
-<!-- TOPBAR -->
-<div class="topbar">
-  <div class="topbar-left">
-    <div class="topbar-logo">BOLLA/v2.4</div>
-    <div class="topbar-title">MISSION CONTROL <span>// DASHBOARD</span></div>
-  </div>
-  <div class="topbar-right">
-    <div class="topbar-status"><div class="dot"></div> SYSTEM ONLINE</div>
-    <div class="topbar-date">FR 2026-05-09</div>
-    <div class="topbar-clock">20:14</div>
-  </div>
-</div>
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">🛸</div>
+      <div>
+        <div class="logo-text">Mission Control</div>
+        <div class="logo-sub">Bolla v2</div>
+      </div>
+    </div>
 
-<!-- LAYOUT -->
-<div class="layout">
+    <div class="nav-label">Menü</div>
 
-  <!-- SIDEBAR -->
-  <nav class="sidebar">
-    <div class="sidebar-section">// NAVIGATION</div>
+    <div class="nav-item active">
+      <span class="nav-icon">⬡</span> Dashboard
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">🐾</span> Bolla
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">📚</span> Schule
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">📅</span> Kalender
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">✉️</span> E-Mail
+      <span class="nav-badge">3</span>
+    </div>
 
-    <a class="nav-item active" href="#">
-      <span class="nav-icon">▣</span> DASHBOARD
-    </a>
-    <a class="nav-item" href="#">
-      <span class="nav-icon">◈</span> BOLLA
-    </a>
-    <a class="nav-item" href="#">
-      <span class="nav-icon">✦</span> SCHULE
-    </a>
-    <a class="nav-item" href="#">
-      <span class="nav-icon">◷</span> KALENDER
-      <span class="nav-badge">2</span>
-    </a>
-    <a class="nav-item" href="#">
-      <span class="nav-icon">✉</span> E-MAIL
-      <span class="nav-badge alert">3</span>
-    </a>
-    <a class="nav-item" href="#">
-      <span class="nav-icon">☁</span> WETTER
-    </a>
-    <a class="nav-item" href="#">
-      <span class="nav-icon">⊞</span> SYSTEM INFO
-    </a>
+    <div class="nav-label">System</div>
 
-    <div class="sidebar-section" style="margin-top:12px;">// QUICK CMDS</div>
-    <a class="nav-item" href="#">
-      <span class="nav-icon">⚡</span> BOLLA CHAT
-    </a>
-    <a class="nav-item" href="#">
-      <span class="nav-icon">⊕</span> NEUE AUFGABE
-    </a>
+    <div class="nav-item">
+      <span class="nav-icon">⛅</span> Wetter
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">💻</span> System Info
+    </div>
 
     <div class="sidebar-footer">
-      UPTIME: 14d 07:32:11<br>
-      KERNEL: 6.6.87-wsl2<br>
-      USER: chris@bolla<br>
-      <br>
-      <span style="color:var(--green);text-shadow:0 0 6px var(--green);">🐾 BOLLA READY</span>
+      <div class="avatar-row">
+        <div class="avatar">C</div>
+        <div>
+          <div class="avatar-name">Chris</div>
+          <div class="avatar-role">Administrator</div>
+        </div>
+        <div class="avatar-more">⋯</div>
+      </div>
     </div>
-  </nav>
+  </aside>
 
-  <!-- CONTENT -->
-  <main class="content">
+  <!-- ── Main ── -->
+  <div class="main">
 
-    <div class="page-header">
-      <h1>// SEKTION</h1>
-      <div class="prompt">root@bolla:~$ ./dashboard --live<span class="prompt-cursor">_</span></div>
-    </div>
-
-    <!-- ROW 1: System Stats -->
-    <div class="grid">
-
-      <!-- RAM -->
-      <div class="widget col-3">
-        <div class="widget-title">RAM-AUSLASTUNG <span class="tag">MEM</span></div>
-        <div class="stat-value">34<span style="font-size:20px;color:var(--green-dim)">%</span></div>
-        <div class="stat-label">5.5 GB / 16 GB</div>
-        <div class="bar-track"><div class="bar-fill" style="width:34%"></div></div>
-        <div class="bar-label"><span>0%</span><span>34%</span><span>100%</span></div>
-        <div class="sparkline">
-          <div class="spark-bar" style="height:40%"></div>
-          <div class="spark-bar" style="height:55%"></div>
-          <div class="spark-bar" style="height:48%"></div>
-          <div class="spark-bar" style="height:60%"></div>
-          <div class="spark-bar" style="height:35%"></div>
-          <div class="spark-bar" style="height:38%"></div>
-          <div class="spark-bar hi" style="height:34%"></div>
+    <!-- Topbar -->
+    <div class="topbar">
+      <div>
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">Guten Abend, Chris ✦</div>
+      </div>
+      <div class="topbar-right">
+        <div class="search-box">🔍 &nbsp;Suchen…</div>
+        <div class="notif-btn">🔔</div>
+        <div class="clock-chip">
+          <div class="clock-time">20:14</div>
+          <div class="clock-date">Sa, 10. Mai 2026</div>
         </div>
       </div>
-
-      <!-- CPU -->
-      <div class="widget col-3">
-        <div class="widget-title">CPU-AUSLASTUNG <span class="tag">PROC</span></div>
-        <div class="stat-value">12<span style="font-size:20px;color:var(--green-dim)">%</span></div>
-        <div class="stat-label">AMD Ryzen 7 · 8 Cores</div>
-        <div class="bar-track"><div class="bar-fill" style="width:12%"></div></div>
-        <div class="bar-label"><span>0%</span><span>12%</span><span>100%</span></div>
-        <div class="sparkline">
-          <div class="spark-bar" style="height:20%"></div>
-          <div class="spark-bar" style="height:80%"></div>
-          <div class="spark-bar" style="height:35%"></div>
-          <div class="spark-bar" style="height:22%"></div>
-          <div class="spark-bar" style="height:18%"></div>
-          <div class="spark-bar" style="height:45%"></div>
-          <div class="spark-bar hi" style="height:12%"></div>
-        </div>
-      </div>
-
-      <!-- DISK -->
-      <div class="widget col-3">
-        <div class="widget-title">DISK-NUTZUNG <span class="tag">SSD</span></div>
-        <div class="stat-value" style="color:var(--amber);text-shadow:0 0 8px var(--amber)">71<span style="font-size:20px;color:var(--green-dim)">%</span></div>
-        <div class="stat-label" style="color:var(--amber)">284 GB / 400 GB</div>
-        <div class="bar-track"><div class="bar-fill warn" style="width:71%"></div></div>
-        <div class="bar-label"><span>0%</span><span>71%</span><span>100%</span></div>
-        <div class="sparkline">
-          <div class="spark-bar" style="height:65%;background:var(--amber)"></div>
-          <div class="spark-bar" style="height:66%;background:var(--amber)"></div>
-          <div class="spark-bar" style="height:67%;background:var(--amber)"></div>
-          <div class="spark-bar" style="height:68%;background:var(--amber)"></div>
-          <div class="spark-bar" style="height:69%;background:var(--amber)"></div>
-          <div class="spark-bar" style="height:70%;background:var(--amber)"></div>
-          <div class="spark-bar" style="height:71%;background:var(--amber);box-shadow:0 0 4px var(--amber)"></div>
-        </div>
-      </div>
-
-      <!-- NET -->
-      <div class="widget col-3">
-        <div class="widget-title">NETZWERK <span class="tag">NET</span></div>
-        <div class="stat-value" style="font-size:28px;letter-spacing:-1px;margin-top:6px">↑ 1.2<span style="font-size:14px;color:var(--green-dim)"> MB/s</span></div>
-        <div class="stat-label">↓ 4.8 MB/s · eth0</div>
-        <div class="bar-track" style="margin-bottom:4px"><div class="bar-fill" style="width:24%"></div></div>
-        <div class="bar-track"><div class="bar-fill" style="width:48%"></div></div>
-        <div class="bar-label"><span>UP</span><span>DOWN</span><span>100MB</span></div>
-      </div>
-
     </div>
 
-    <!-- ROW 2: Mail + Weather + Calendar -->
-    <div class="grid">
+    <!-- Content -->
+    <div class="content">
 
-      <!-- E-MAIL -->
-      <div class="widget col-4">
-        <div class="widget-title">
-          POSTEINGANG
-          <span class="tag" style="color:var(--red);border-color:var(--red);background:#330000;text-shadow:0 0 4px var(--red)">3 NEU</span>
-        </div>
-
-        <div class="mail-item">
-          <div class="mail-from">
-            <span class="mail-unread"></span>Schule-Sekretariat
-            <span class="mail-time">19:47</span>
-          </div>
-          <div class="mail-subject">Vertretungsplan KW20 — bitte bestätigen</div>
-        </div>
-        <div class="mail-item">
-          <div class="mail-from">
-            <span class="mail-unread"></span>GitHub Notifications
-            <span class="mail-time">18:22</span>
-          </div>
-          <div class="mail-subject">[openclaw-bolla] Workflow completed ✓</div>
-        </div>
-        <div class="mail-item">
-          <div class="mail-from">
-            <span class="mail-unread"></span>Cloudflare
-            <span class="mail-time">16:05</span>
-          </div>
-          <div class="mail-subject">Tunnel bolla-mc: 99.97% uptime this month</div>
-        </div>
-        <div class="mail-item">
-          <div class="mail-from" style="color:var(--green-dark)">
-            newsletter@amazon.de
-            <span class="mail-time" style="color:var(--green-faint)">08:33</span>
-          </div>
-          <div class="mail-subject" style="color:var(--green-dark)">Ihr Paket ist unterwegs...</div>
-        </div>
-
-        <div style="margin-top:12px;font-size:10px;color:var(--green-dark);letter-spacing:2px;border-top:1px solid var(--green-faint);padding-top:8px;">
-          KONTO: ernstmandel@outlook.de · 4 von 247 angezeigt
-        </div>
+      <div>
+        <div class="greeting">Willkommen zurück, <span>Chris</span> 👋</div>
+        <div class="greeting-sub">Alles im grünen Bereich — 4 Widgets aktiv, keine kritischen Meldungen.</div>
       </div>
 
-      <!-- WETTER -->
-      <div class="widget col-4">
-        <div class="widget-title">WETTER HAMBURG <span class="tag">WX</span></div>
-        <div class="weather-main">
-          <div>
-            <div class="weather-icon">⛅</div>
-            <div class="weather-temp">18<sup>°C</sup></div>
+      <!-- Stat cards -->
+      <div class="grid-4">
+
+        <!-- RAM -->
+        <div class="card card-ram">
+          <div class="stat-icon">🧠</div>
+          <div class="stat-value">34%</div>
+          <div class="stat-label">RAM-Auslastung</div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:34%;background:linear-gradient(90deg,#c084fc,#a855f7)"></div>
           </div>
-          <div class="weather-info">
-            Teilbewölkt<br>
-            Feels like 16°C<br>
-            Hamburg, DE
+          <div class="stat-trend trend-neu">5.4 GB / 16 GB genutzt</div>
+          <div class="donut-wrap">
+            <svg viewBox="0 0 56 56" width="56" height="56">
+              <circle class="donut-bg" cx="28" cy="28" r="22"/>
+              <circle class="donut-fill" cx="28" cy="28" r="22"
+                stroke="#c084fc"
+                stroke-dasharray="47 91"
+                stroke-dashoffset="0"/>
+            </svg>
           </div>
         </div>
-        <div class="weather-row"><span>LUFTFEUCHTIGKEIT</span><span>68 %</span></div>
-        <div class="weather-row"><span>WIND</span><span>WSW 14 km/h</span></div>
-        <div class="weather-row"><span>SICHTWEITE</span><span>10+ km</span></div>
-        <div class="weather-row"><span>UV-INDEX</span><span>3 (mäßig)</span></div>
-        <div class="weather-row">
-          <span>MORGEN</span>
-          <span>☁ 15°C / 12°C · Regen</span>
+
+        <!-- CPU -->
+        <div class="card card-cpu">
+          <div class="stat-icon">⚡</div>
+          <div class="stat-value">12%</div>
+          <div class="stat-label">CPU-Auslastung</div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:12%;background:linear-gradient(90deg,#67e8f9,#22d3ee)"></div>
+          </div>
+          <div class="stat-trend trend-up">↓ ruhig, 4 Kerne aktiv</div>
+          <div class="donut-wrap">
+            <svg viewBox="0 0 56 56" width="56" height="56">
+              <circle class="donut-bg" cx="28" cy="28" r="22"/>
+              <circle class="donut-fill" cx="28" cy="28" r="22"
+                stroke="#67e8f9"
+                stroke-dasharray="17 121"
+                stroke-dashoffset="0"/>
+            </svg>
+          </div>
         </div>
-        <div style="margin-top:10px;font-size:10px;color:var(--green-dark);letter-spacing:1px;">
-          LETZTE AKTUALISIERUNG: 20:00 · Quelle: OpenMeteo
+
+        <!-- Mail -->
+        <div class="card card-mail">
+          <div class="stat-icon">✉️</div>
+          <div class="stat-value">3</div>
+          <div class="stat-label">Neue E-Mails</div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:60%;background:linear-gradient(90deg,#f472b6,#ec4899)"></div>
+          </div>
+          <div class="stat-trend trend-dn">2 ungelesen, 1 mit Anhang</div>
+          <div class="donut-wrap">
+            <svg viewBox="0 0 56 56" width="56" height="56">
+              <circle class="donut-bg" cx="28" cy="28" r="22"/>
+              <circle class="donut-fill" cx="28" cy="28" r="22"
+                stroke="#f472b6"
+                stroke-dasharray="83 55"
+                stroke-dashoffset="0"/>
+            </svg>
+          </div>
         </div>
+
+        <!-- Weather -->
+        <div class="card card-wx">
+          <div class="stat-icon">⛅</div>
+          <div class="stat-value">18°C</div>
+          <div class="stat-label">Hamburg · Wetter</div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:55%;background:linear-gradient(90deg,#fbbf87,#f59e0b)"></div>
+          </div>
+          <div class="stat-trend trend-neu">Leicht bewölkt, 60% Regen ↓</div>
+          <div class="donut-wrap">
+            <svg viewBox="0 0 56 56" width="56" height="56">
+              <circle class="donut-bg" cx="28" cy="28" r="22"/>
+              <circle class="donut-fill" cx="28" cy="28" r="22"
+                stroke="#fbbf87"
+                stroke-dasharray="76 62"
+                stroke-dashoffset="0"/>
+            </svg>
+          </div>
+        </div>
+
       </div>
 
-      <!-- KALENDER -->
-      <div class="widget col-4">
-        <div class="widget-title">KALENDER MAI 2026 <span class="tag">CAL</span></div>
-        <div class="cal-header">
-          <span>MO</span><span>DI</span><span>MI</span><span>DO</span><span>FR</span><span>SA</span><span>SO</span>
+      <!-- Row 2 -->
+      <div class="grid-2-1">
+
+        <!-- Activity Feed -->
+        <div class="card">
+          <div class="section-title">Letzte Aktivitäten</div>
+          <div class="feed-item">
+            <div class="feed-dot" style="background:#4ade80"></div>
+            <div>
+              <div class="feed-msg">Cloudflare Tunnel <strong>bolla-mc</strong> gestartet — Verbindung stabil</div>
+              <div class="feed-time">vor 4 Minuten</div>
+            </div>
+          </div>
+          <div class="feed-item">
+            <div class="feed-dot" style="background:#f472b6"></div>
+            <div>
+              <div class="feed-msg">Neue Mail von <strong>petra.mueller@lessing-hh.de</strong>: „Vertretungsplan KW 20"</div>
+              <div class="feed-time">vor 18 Minuten</div>
+            </div>
+          </div>
+          <div class="feed-item">
+            <div class="feed-dot" style="background:#c084fc"></div>
+            <div>
+              <div class="feed-msg">Git-Push: <strong>55ded5d</strong> — Rezept-Cache, KI-Forum-Daten, Redesign-Stand</div>
+              <div class="feed-time">vor 1 Stunde</div>
+            </div>
+          </div>
+          <div class="feed-item">
+            <div class="feed-dot" style="background:#67e8f9"></div>
+            <div>
+              <div class="feed-msg">Wetterseite neu gebaut — Pollinations Timeout-Fix eingespielt</div>
+              <div class="feed-time">vor 2 Stunden</div>
+            </div>
+          </div>
+          <div class="feed-item">
+            <div class="feed-dot" style="background:#fbbf87"></div>
+            <div>
+              <div class="feed-msg">OneDrive-Backup abgeschlossen — 231 Dateien synchronisiert</div>
+              <div class="feed-time">vor 3 Stunden</div>
+            </div>
+          </div>
         </div>
-        <div class="cal-grid">
-          <span class="cal-day other">27</span>
-          <span class="cal-day other">28</span>
-          <span class="cal-day other">29</span>
-          <span class="cal-day other">30</span>
-          <span class="cal-day">01</span>
-          <span class="cal-day">02</span>
-          <span class="cal-day">03</span>
-          <span class="cal-day">04</span>
-          <span class="cal-day event">05</span>
-          <span class="cal-day">06</span>
-          <span class="cal-day event">07</span>
-          <span class="cal-day">08</span>
-          <span class="cal-day">09</span>
-          <span class="cal-day">10</span>
-          <span class="cal-day">11</span>
-          <span class="cal-day">12</span>
-          <span class="cal-day">13</span>
-          <span class="cal-day event">14</span>
-          <span class="cal-day today">15</span>
-          <span class="cal-day">16</span>
-          <span class="cal-day">17</span>
-          <span class="cal-day">18</span>
-          <span class="cal-day">19</span>
-          <span class="cal-day">20</span>
-          <span class="cal-day">21</span>
-          <span class="cal-day event">22</span>
-          <span class="cal-day">23</span>
-          <span class="cal-day">24</span>
-          <span class="cal-day">25</span>
-          <span class="cal-day">26</span>
-          <span class="cal-day">27</span>
-          <span class="cal-day">28</span>
-          <span class="cal-day">29</span>
-          <span class="cal-day">30</span>
-          <span class="cal-day">31</span>
-          <span class="cal-day other">01</span>
-          <span class="cal-day other">02</span>
-          <span class="cal-day other">03</span>
-          <span class="cal-day other">04</span>
+
+        <!-- Mini Calendar -->
+        <div class="card">
+          <div class="cal-header">
+            <span class="cal-nav">‹</span>
+            <span class="cal-month">Mai 2026</span>
+            <span class="cal-nav">›</span>
+          </div>
+          <div class="cal-grid">
+            <div class="cal-day-name">Mo</div><div class="cal-day-name">Di</div>
+            <div class="cal-day-name">Mi</div><div class="cal-day-name">Do</div>
+            <div class="cal-day-name">Fr</div><div class="cal-day-name">Sa</div>
+            <div class="cal-day-name">So</div>
+
+            <div class="cal-day other"></div>
+            <div class="cal-day other"></div>
+            <div class="cal-day other"></div>
+            <div class="cal-day other"></div>
+            <div class="cal-day other">1</div>
+            <div class="cal-day">2</div>
+            <div class="cal-day">3</div>
+
+            <div class="cal-day">4</div>
+            <div class="cal-day has-event">5</div>
+            <div class="cal-day">6</div>
+            <div class="cal-day has-event">7</div>
+            <div class="cal-day">8</div>
+            <div class="cal-day">9</div>
+            <div class="cal-day today">10</div>
+
+            <div class="cal-day has-event">11</div>
+            <div class="cal-day">12</div>
+            <div class="cal-day">13</div>
+            <div class="cal-day">14</div>
+            <div class="cal-day has-event">15</div>
+            <div class="cal-day">16</div>
+            <div class="cal-day">17</div>
+
+            <div class="cal-day">18</div>
+            <div class="cal-day">19</div>
+            <div class="cal-day has-event">20</div>
+            <div class="cal-day">21</div>
+            <div class="cal-day">22</div>
+            <div class="cal-day">23</div>
+            <div class="cal-day">24</div>
+
+            <div class="cal-day">25</div>
+            <div class="cal-day">26</div>
+            <div class="cal-day">27</div>
+            <div class="cal-day has-event">28</div>
+            <div class="cal-day">29</div>
+            <div class="cal-day">30</div>
+            <div class="cal-day">31</div>
+          </div>
         </div>
-        <div style="margin-top:10px;font-size:10px;color:var(--green-dark);letter-spacing:1px;">
-          <span style="color:var(--amber)">●</span> Zeugnis-Konferenz 22.05 &nbsp;
-          <span style="color:var(--amber)">●</span> Abitur 07.05
-        </div>
+
       </div>
 
+      <!-- Row 3 -->
+      <div class="grid-3">
+
+        <!-- Wetter Detail -->
+        <div class="card">
+          <div class="section-title">Wetter-Detail</div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <div class="wx-big">18°C</div>
+              <div class="wx-city">Hamburg · leicht bewölkt</div>
+              <div class="wx-row">
+                <div class="wx-detail"><strong>60%</strong>Regen</div>
+                <div class="wx-detail"><strong>14 km/h</strong>Wind NW</div>
+                <div class="wx-detail"><strong>72%</strong>Feuchte</div>
+                <div class="wx-detail"><strong>1013 hPa</strong>Druck</div>
+              </div>
+            </div>
+            <div class="wx-icon-big">⛅</div>
+          </div>
+        </div>
+
+        <!-- Bolla -->
+        <div class="card bolla-card">
+          <div class="bolla-head">
+            <div class="bolla-avatar">🐾</div>
+            <div>
+              <div class="bolla-name">Bolla</div>
+              <div class="bolla-status">● Online</div>
+            </div>
+          </div>
+          <div class="bolla-msg">
+            Schönen Abend, Chris! Tunnel läuft stabil. 3 neue Mails warten — die von Petra klingt nach Vertretung. Soll ich werfen?
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+          <div class="section-title">Schnellaktionen</div>
+          <div class="qa-grid">
+            <div class="qa-btn"><span class="qa-ico">✉️</span> Mails öffnen</div>
+            <div class="qa-btn"><span class="qa-ico">💾</span> Backup starten</div>
+            <div class="qa-btn"><span class="qa-ico">🔄</span> Tunnel neustart</div>
+            <div class="qa-btn"><span class="qa-ico">📋</span> Aufgaben</div>
+            <div class="qa-btn"><span class="qa-ico">🌤️</span> Wetter live</div>
+            <div class="qa-btn"><span class="qa-ico">📚</span> Schule</div>
+          </div>
+        </div>
+
+      </div>
     </div>
-
-    <!-- ROW 3: System Log + Bolla Status -->
-    <div class="grid">
-
-      <!-- SYSTEM LOG -->
-      <div class="widget col-8">
-        <div class="widget-title">SYSTEM LOG <span class="tag">LIVE</span></div>
-
-        <div class="log-line">
-          <span class="log-time">20:14:02</span>
-          <span class="log-tag ok">OK</span>
-          <span class="log-msg">cloudflared tunnel bolla-mc heartbeat received (latency: 12ms)</span>
-        </div>
-        <div class="log-line">
-          <span class="log-time">20:13:48</span>
-          <span class="log-tag ok">OK</span>
-          <span class="log-msg">mission-control HTTP server alive on :18790</span>
-        </div>
-        <div class="log-line">
-          <span class="log-time">20:12:11</span>
-          <span class="log-tag warn">WARN</span>
-          <span class="log-msg">disk usage crossed 70% threshold on /dev/sda — monitor recommended</span>
-        </div>
-        <div class="log-line">
-          <span class="log-time">20:10:55</span>
-          <span class="log-tag ok">OK</span>
-          <span class="log-msg">bolla memory sync completed — 3 files updated in ~/.claude/projects/</span>
-        </div>
-        <div class="log-line">
-          <span class="log-time">20:08:33</span>
-          <span class="log-tag ok">OK</span>
-          <span class="log-msg">git push origin master → openclaw-bolla/openclaw-bolla [2 commits ahead]</span>
-        </div>
-        <div class="log-line">
-          <span class="log-time">20:05:17</span>
-          <span class="log-tag ok">OK</span>
-          <span class="log-msg">cron: Nachtsicherung scheduled for 00:15 (active)</span>
-        </div>
-        <div class="log-line">
-          <span class="log-time">19:58:44</span>
-          <span class="log-tag err">ERR</span>
-          <span class="log-msg">wsl2: network interface reset detected — reconnected in 340ms</span>
-        </div>
-        <div class="log-line">
-          <span class="log-time">19:44:20</span>
-          <span class="log-tag ok">OK</span>
-          <span class="log-msg">kiforum data refresh: 247 posts indexed, 8 new images cached</span>
-        </div>
-        <div class="log-line">
-          <span class="log-time">18:00:01</span>
-          <span class="log-tag ok">OK</span>
-          <span class="log-msg">weather update fetched from OpenMeteo API (Hamburg, 53.5°N 10.0°E)</span>
-        </div>
-      </div>
-
-      <!-- BOLLA STATUS -->
-      <div class="widget col-4">
-        <div class="widget-title">BOLLA STATUS <span class="tag">AI</span></div>
-
-        <div style="text-align:center;margin:8px 0 16px;">
-          <div style="font-size:36px;line-height:1;text-shadow:0 0 16px var(--green);">🐾</div>
-          <div style="font-size:13px;letter-spacing:2px;margin-top:8px;color:var(--green);">BEREIT</div>
-          <div style="font-size:10px;color:var(--green-dark);letter-spacing:1px;margin-top:2px;">SESSION AKTIV</div>
-        </div>
-
-        <div class="weather-row"><span>MODELL</span><span style="color:var(--cyan);text-shadow:0 0 4px var(--cyan)">Sonnet 4.6</span></div>
-        <div class="weather-row"><span>MEMORY</span><span>7 Einträge</span></div>
-        <div class="weather-row"><span>LETZTE SESSION</span><span>09.05 · 20:14</span></div>
-        <div class="weather-row"><span>WORKSPACE</span><span>/home/bolla/</span></div>
-        <div class="weather-row"><span>GIT STATUS</span><span style="color:var(--amber);text-shadow:0 0 4px var(--amber)">8 untracked</span></div>
-
-        <div style="margin-top:12px;">
-          <div style="font-size:10px;color:var(--green-dark);letter-spacing:2px;margin-bottom:6px;">// OFFENE AUFGABEN</div>
-          <div style="font-size:11px;color:var(--green-dim);line-height:1.9;">
-            <span style="color:var(--amber)">▶</span> KIF-Forum Bilder committen<br>
-            <span style="color:var(--amber)">▶</span> Mission Control Redesign<br>
-            <span style="color:var(--green-dark)">✓</span> <span style="color:var(--green-dark)">WISO Bereinigung ✓</span>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-  </main>
+  </div>
 </div>
-
 </body>
 </html>
