@@ -231,6 +231,16 @@ html, body {
   transition: color 0.15s;
 }
 .nav-section:hover .nav-section-grip { color: rgba(255,255,255,0.4); }
+.nav-group-grip {
+  font-size: 10px;
+  color: rgba(255,255,255,0.12);
+  cursor: grab;
+  margin-right: 3px;
+  letter-spacing: -1px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.nav-group-header:hover .nav-group-grip { color: rgba(255,255,255,0.35); }
 
 /* Nav-Group Farben */
 #nav-group-schule .nav-group-header {
@@ -723,7 +733,7 @@ html, body {
         <div class="nav-section-items" id="nav-section-items-arbeit">
           <div id="nav-group-schule">
             <div class="nav-group-header" id="nav-group-header-schule" onclick="event.stopPropagation();toggleNavGroup('schule')">
-              <span class="icon">🏫</span>
+              <span class="nav-group-grip">⠿</span><span class="icon">🏫</span>
               <span>Schule</span>
               <span class="nav-group-count">4</span>
               <span class="nav-group-chevron" id="nav-chevron-schule">▶</span>
@@ -740,7 +750,7 @@ html, body {
           <div class="nav-item" data-page="clipboard"><span class="icon">📋</span><span>Clipboard</span></div>
           <div id="nav-group-projekte">
             <div class="nav-group-header" id="nav-group-header-projekte" onclick="event.stopPropagation();toggleNavGroup('projekte')">
-              <span class="icon">🗂️</span>
+              <span class="nav-group-grip">⠿</span><span class="icon">🗂️</span>
               <span>Projekte</span>
               <span class="nav-group-count">2</span>
               <span class="nav-group-chevron" id="nav-chevron-projekte">▶</span>
@@ -779,7 +789,7 @@ html, body {
           <div class="nav-item" data-page="wetter"><span class="icon">🌤️</span><span>Wetter</span></div>
           <div id="nav-group-system">
             <div class="nav-group-header" id="nav-group-header-system" onclick="event.stopPropagation();toggleNavGroup('system')">
-              <span class="icon">🖥️</span>
+              <span class="nav-group-grip">⠿</span><span class="icon">🖥️</span>
               <span>System Info</span>
               <span class="nav-group-count">3</span>
               <span class="nav-group-chevron" id="nav-chevron-system">▶</span>
@@ -1399,15 +1409,15 @@ html, body {
                 </div>
               </div>
               <div style="display:flex;gap:6px;margin-top:12px">
-                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/bolla_recovery.docx" target="_blank" style="padding:5px 10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:6px;color:#f59e0b;font-size:12px;text-decoration:none">📄 Recovery.docx</a>
-                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/Bolla-Notfallplan.pdf" target="_blank" style="padding:5px 10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:6px;color:#f59e0b;font-size:12px;text-decoration:none">📋 Notfallplan.pdf</a>
+                <span onclick="fetch('/api/dokumente/open?file=bolla_recovery.docx')" style="padding:5px 10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:6px;color:#f59e0b;font-size:12px;cursor:pointer">📄 Recovery.docx</span>
+                <span onclick="window.open('/api/dokumente/download?file=Bolla-Notfallplan.pdf','_blank')" style="padding:5px 10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:6px;color:#f59e0b;font-size:12px;cursor:pointer">📋 Notfallplan.pdf</span>
               </div>
             </div>
 
           </div>
 
-          <!-- ═══ ZEILE 2: CLAUDE.md | Pfade | Dokumente ═══ -->
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px">
+          <!-- ═══ ZEILE 2: CLAUDE.md | Pfade ═══ -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
 
             <!-- CLAUDE.md -->
             <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid var(--accent)">
@@ -1455,21 +1465,23 @@ html, body {
               </div>
             </div>
 
-            <!-- Dokumente -->
+          </div>
+
+          <!-- ═══ ZEILE 3: Dokumente (voll) ═══ -->
+          <div style="margin-bottom:14px">
             <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #06b6d4">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
                 <div style="font-size:13px;font-weight:700;color:#06b6d4;text-transform:uppercase;letter-spacing:1px">📁 Dokumente</div>
                 <button onclick="docsLoad()" style="padding:3px 8px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--dim);cursor:pointer;font-size:11px">↺</button>
               </div>
-              <div style="font-size:12px;color:var(--dim);margin-bottom:12px">claud code - openclaw Doku</div>
-              <div id="docs-list" style="display:flex;flex-direction:column;gap:6px">
+              <div style="font-size:12px;color:var(--dim);margin-bottom:12px">D:\OneDrive\Dokumente\Bolla\claud code - openclaw Doku\ — Klick öffnet direkt</div>
+              <div id="docs-list" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 20px">
                 <div style="color:var(--dim);font-size:13px">Lade…</div>
               </div>
             </div>
-
           </div>
 
-          <!-- ═══ ZEILE 3: Cron Jobs (voll) ═══ -->
+          <!-- ═══ ZEILE 4: Cron Jobs (voll) ═══ -->
           <div style="margin-bottom:14px">
             <div id="cron-jobs-container" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #f59e0b">
               <div style="color:var(--dim);font-size:13px">Lade Cron Jobs…</div>
@@ -1490,9 +1502,9 @@ html, body {
                 </div>
               </div>
               <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
-                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/was_ist_bolla.docx" target="_blank" style="padding:5px 10px;background:rgba(255,102,153,0.1);border:1px solid rgba(255,102,153,0.3);border-radius:6px;color:var(--accent);font-size:12px;text-decoration:none">📄 Was ist Bolla.docx</a>
-                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/mein_ki_setup.docx" target="_blank" style="padding:5px 10px;background:rgba(255,102,153,0.1);border:1px solid rgba(255,102,153,0.3);border-radius:6px;color:var(--accent);font-size:12px;text-decoration:none">📄 Mein KI-Setup.docx</a>
-                <a href="file:///D:/OneDrive/Dokumente/Bolla/claud code - openclaw Doku/KI-Modelle-Jarvis-Bolla optimiert.pdf" target="_blank" style="padding:5px 10px;background:rgba(255,102,153,0.1);border:1px solid rgba(255,102,153,0.3);border-radius:6px;color:var(--accent);font-size:12px;text-decoration:none">📋 KI-Modelle.pdf</a>
+                <span onclick="fetch('/api/dokumente/open?file=was_ist_bolla.docx')" style="padding:5px 10px;background:rgba(255,102,153,0.1);border:1px solid rgba(255,102,153,0.3);border-radius:6px;color:var(--accent);font-size:12px;cursor:pointer">📄 Was ist Bolla.docx</span>
+                <span onclick="fetch('/api/dokumente/open?file=mein_ki_setup.docx')" style="padding:5px 10px;background:rgba(255,102,153,0.1);border:1px solid rgba(255,102,153,0.3);border-radius:6px;color:var(--accent);font-size:12px;cursor:pointer">📄 Mein KI-Setup.docx</span>
+                <span onclick="window.open('/api/dokumente/download?file=KI-Modelle-Jarvis-Bolla optimiert.pdf','_blank')" style="padding:5px 10px;background:rgba(255,102,153,0.1);border:1px solid rgba(255,102,153,0.3);border-radius:6px;color:var(--accent);font-size:12px;cursor:pointer">📋 KI-Modelle.pdf</span>
               </div>
             </div>
 
@@ -2601,7 +2613,7 @@ html, body {
 
         /* ── MIC STAND ── */
         #kif-mic-stand {
-          position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+          position:absolute; bottom:0; left:20%; transform:translateX(-50%);
           z-index:15; display:flex; flex-direction:column; align-items:center;
           cursor:pointer; transition:transform .2s; user-select:none;
         }
@@ -2771,7 +2783,10 @@ html, body {
 
             <!-- Chris input modal -->
             <div id="kif-input-modal">
-              <div style="font-size:13px;font-weight:600;color:#ff9933;margin-bottom:10px">💬 Deine These oder Frage</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <span style="font-size:13px;font-weight:600;color:#ff9933">💬 Deine These oder Frage</span>
+                <button onclick="kifMicToggle()" id="kif-modal-mic" title="Spracheingabe" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:16px;color:rgba(255,255,255,0.7);transition:all .2s">🎙️</button>
+              </div>
               <textarea id="kif-user-input" rows="3"
                 placeholder="z.B. Schüler brauchen kein PowerPoint mehr lernen…"
                 onkeydown="if(event.ctrlKey&&event.key==='Enter')kifSubmitUser()"></textarea>
@@ -2913,8 +2928,12 @@ html, body {
             return;
           }
 
-          const basePrompt = p.img_prompt || ((p.title ? p.title + '. ' : '') + p.content);
-          const promptText = (basePrompt + ', digital art, vibrant, detailed').substring(0, 500);
+          let basePrompt = p.img_prompt;
+          if (!basePrompt) {
+            const raw = ((p.title ? p.title + '. ' : '') + p.content).trim();
+            basePrompt = `Vivid digital illustration inspired by: "${raw.substring(0,120)}", dramatic lighting, rich colors, detailed, cinematic`;
+          }
+          const promptText = basePrompt.substring(0, 500);
           const seed = kifPostSeed(id);
           const models = ['flux', 'flux-realism', 'turbo'];
 
@@ -2928,7 +2947,7 @@ html, body {
             const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=768&height=768&model=${models[mi]}&nologo=true&seed=${seed}&enhance=true`;
             await new Promise(resolve => {
               const img = new Image();
-              const timeout = setTimeout(() => { img.src = ''; resolve(); }, 20000);
+              const timeout = setTimeout(() => { img.src = ''; resolve(); }, 35000);
               img.onload = () => {
                 clearTimeout(timeout);
                 const currentWrap = document.getElementById('kif-poll-' + id);
@@ -3009,7 +3028,10 @@ html, body {
 
         function kifAberBar() {
           return `<div id="kif-aber-bar">
-            <div style="font-size:11px;font-weight:700;color:rgba(251,191,36,.7);letter-spacing:.5px;margin-bottom:6px">💬 DEIN ZUG</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <span style="font-size:11px;font-weight:700;color:rgba(251,191,36,.7);letter-spacing:.5px">💬 DEIN ZUG</span>
+              <button onclick="kifMicAber()" id="kif-aber-mic" title="Spracheingabe" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:13px;color:rgba(255,255,255,0.6);transition:all .2s">🎙️</button>
+            </div>
             <textarea id="kif-aber-input" rows="2" placeholder="Aber… / Einwand / Ergänzung"></textarea>
             <div class="kif-aber-btnrow">
               <button class="kif-aber-action einwand" onclick="kifSubmitAber()">↩ Einwenden</button>
@@ -3341,6 +3363,12 @@ function initNavDrag() {
   const nav = document.getElementById('sidebar-nav');
   if (!nav) return;
 
+  // Einmalig kaputten Item-Order-Stand löschen (Gruppen waren nicht grip-only)
+  if (localStorage.getItem('nav-drag-version') !== '3') {
+    localStorage.removeItem('nav-item-order');
+    localStorage.setItem('nav-drag-version', '3');
+  }
+
   // Stabile IDs vergeben BEVOR Restore läuft (sonst findet getElementById nichts)
   nav.querySelectorAll('.nav-item, .nav-group').forEach((item, i) => {
     if (!item.id) item.id = 'nav-di-' + (item.dataset.page || item.dataset.group || i);
@@ -3463,12 +3491,52 @@ function initNavDrag() {
     makeContainerDroppable(container);
   }
 
-  // Sektionen (nav-blocks) sortierbar
+  // Gruppen innerhalb Sektionen sortierbar — NUR via Grip ⠿
+  nav.querySelectorAll('[id^="nav-group-"]').forEach(grp => {
+    if (!grp.id) grp.id = 'nav-di-' + Date.now();
+    grp.draggable = true;
+    grp.addEventListener('dragstart', e => {
+      const fromGrip = e.target.classList.contains('nav-group-grip') || e.target.closest?.('.nav-group-grip');
+      if (!fromGrip) { e.preventDefault(); return; }
+      _dragItem = grp;
+      e.stopPropagation();
+      setTimeout(() => grp.style.opacity = '0.4', 0);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', grp.id);
+    });
+    grp.addEventListener('dragend', e => {
+      e.stopPropagation();
+      grp.style.opacity = '';
+      clearHighlights();
+      saveItemOrder();
+      _dragItem = null;
+    });
+    grp.addEventListener('dragover', e => {
+      if (!_dragItem || _dragItem === grp) return;
+      e.preventDefault(); e.stopPropagation();
+      clearHighlights();
+      grp.classList.add('nav-item-drag-over');
+    });
+    grp.addEventListener('dragleave', () => grp.classList.remove('nav-item-drag-over'));
+    grp.addEventListener('drop', e => {
+      e.preventDefault(); e.stopPropagation();
+      if (!_dragItem || _dragItem === grp) return;
+      const tc = grp.parentElement;
+      const items = [...tc.children];
+      const di = items.indexOf(grp);
+      const si = _dragItem.parentElement === tc ? items.indexOf(_dragItem) : -1;
+      tc.insertBefore(_dragItem, si >= 0 && si < di ? grp.nextSibling : grp);
+      grp.classList.remove('nav-item-drag-over');
+    });
+  });
+
+  // Sektionen (nav-blocks) sortierbar — NUR via Grip ⠿
   let dragSrc = null;
   nav.querySelectorAll('.nav-block').forEach(block => {
     block.draggable = true;
     block.addEventListener('dragstart', e => {
-      if (e.target !== block && !e.target.classList.contains('nav-section')) return;
+      const fromGrip = e.target.classList.contains('nav-section-grip') || e.target.closest?.('.nav-section-grip');
+      if (!fromGrip) return;
       dragSrc = block;
       block.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
@@ -5275,20 +5343,48 @@ async function docsLoad() {
   const el = document.getElementById('docs-list');
   if (!el) return;
   el.innerHTML = '<div style="color:var(--dim);font-size:13px">Lade…</div>';
+  const GROUPS = [
+    { label: '🤖 Bolla & Setup', color: '#f472b6', files: ['was_ist_bolla.docx','mein_ki_setup.docx','bolla_recovery.docx','Bolla-Notfallplan.pdf','accounts_overview.pdf','00_DOKUMENTATIONS_INDEX.docx'] },
+    { label: '⚙️ Claude Code & Skills', color: '#a78bfa', files: ['Claude Code Skills.docx','Bolla Skill bolla-status.docx','Bolla-MD-Erklaerung.pdf','Tokens-Erklaerung.docx'] },
+    { label: '🔧 Technik & Infrastruktur', color: '#34d399', files: ['WSL_Crash_Erklaerung.docx','ssh-tunnel-erklaerung.pdf','Cloudflare-IONOS-Erklaerung.docx','ADB-Erklaerung.pdf'] },
+    { label: '🧠 KI Allgemein', color: '#60a5fa', files: ['KI-Modelle-Jarvis-Bolla optimiert.pdf','ki-modelle-erklaerung.html','openclaw-zusammenfassung.pdf'] },
+    { label: '🎵 Musik & Streaming', color: '#fb923c', files: ['Suno_RouteNote_Anleitung.docx'] },
+    { label: '🏫 Schule / Demos', color: '#facc15', files: ['Demo_Elternbrief_Brenner.docx','Demo_Elternmail_Schmidt.docx'] },
+  ];
   try {
     const data = await fetch(API+'/api/dokumente').then(r=>r.json());
     if (!data.docs || !data.docs.length) { el.innerHTML = '<div style="color:var(--dim);font-size:13px">Keine Dokumente gefunden.</div>'; return; }
-    el.innerHTML = data.docs.map(d => {
-      const url = API + d.download;
-      const kb = d.size > 1024*1024 ? (d.size/1024/1024).toFixed(1)+' MB' : Math.round(d.size/1024)+' KB';
-      return `<a href="${url}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(6,182,212,0.07);border-radius:6px;text-decoration:none;color:var(--text);font-size:13px">
-        ${d.icon} <span style="flex:1">${d.name}</span>
-        <span style="color:var(--dim);font-size:11px">${kb} · ${d.modified}</span>
-      </a>`;
-    }).join('');
+    const byName = Object.fromEntries(data.docs.map(d => [d.name, d]));
+    const assigned = new Set();
+    const allGrouped = GROUPS.flatMap(g => g.files);
+    const cols = [[], [], []];
+    let ci = 0;
+    for (const grp of GROUPS) {
+      const docs = grp.files.map(f => byName[f]).filter(Boolean);
+      if (!docs.length) continue;
+      cols[ci % 3].push(`<div style="font-size:11px;font-weight:700;color:${grp.color};letter-spacing:.5px;margin:10px 0 4px;text-transform:uppercase">${grp.label}</div>`);
+      cols[ci % 3].push(...docs.map(d => docEntry(d)));
+      ci++;
+    }
+    const rest = data.docs.filter(d => !allGrouped.includes(d.name));
+    if (rest.length) {
+      cols[ci % 3].push(`<div style="font-size:11px;font-weight:700;color:var(--dim);letter-spacing:.5px;margin:10px 0 4px;text-transform:uppercase">📄 Sonstiges</div>`);
+      cols[ci % 3].push(...rest.map(d => docEntry(d)));
+    }
+    el.innerHTML = cols.map(c => `<div style="display:flex;flex-direction:column;gap:3px">${c.join('')}</div>`).join('');
   } catch(e) {
     el.innerHTML = `<div style="color:var(--error);font-size:13px">Fehler: ${e.message}</div>`;
   }
+}
+function docEntry(d) {
+  const kb = d.size > 1024*1024 ? (d.size/1024/1024).toFixed(1)+' MB' : Math.round(d.size/1024)+' KB';
+  const isPdf = d.name.toLowerCase().endsWith('.pdf') || d.name.toLowerCase().endsWith('.html');
+  const openUrl = isPdf ? (API + d.download) : ('/api/dokumente/open?file=' + encodeURIComponent(d.name));
+  const clickHandler = isPdf ? `window.open('${openUrl}','_blank')` : `fetch('${openUrl}').then(()=>this.style.background='rgba(6,182,212,0.2)')`;
+  return `<div onclick="${clickHandler}" style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(6,182,212,0.07);border-radius:6px;cursor:pointer;color:var(--text);font-size:13px;margin-bottom:3px">
+    ${d.icon} <span style="flex:1">${d.name}</span>
+    <span style="color:var(--dim);font-size:11px">${kb}</span>
+  </div>`;
 }
 
 async function loadCronJobs() {
@@ -6377,22 +6473,15 @@ let kifMicRec = null, kifMicActive = false;
 function kifMicToast(msg, dur=2200) {
   const t = document.getElementById('kif-mic-toast');
   if (!t) return;
-  t.textContent = msg;
+  t.innerHTML = msg;
   t.style.display = 'block';
   clearTimeout(t._timer);
   t._timer = setTimeout(() => t.style.display = 'none', dur);
 }
 
-function kifMicToggle() {
+function kifMicStart() {
   const stand = document.getElementById('kif-mic-stand');
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { kifMicToast('❌ Browser unterstützt keine Spracheingabe — bitte Chrome/Edge nutzen', 3500); return; }
-
-  if (kifMicActive) {
-    try { kifMicRec && kifMicRec.stop(); } catch(e) {}
-    return;
-  }
-
   kifMicRec = new SR();
   kifMicRec.lang = 'de-DE';
   kifMicRec.continuous = false;
@@ -6402,6 +6491,8 @@ function kifMicToggle() {
     kifMicActive = true;
     stand.classList.add('recording');
     document.getElementById('kif-mic-label').textContent = '● aufnahme';
+    const mb = document.getElementById('kif-modal-mic');
+    if (mb) { mb.textContent = '🔴'; mb.style.borderColor='rgba(248,113,113,0.6)'; }
     kifMicToast('🎙️ Spreche deine These…', 30000);
   };
 
@@ -6415,15 +6506,65 @@ function kifMicToggle() {
   };
 
   kifMicRec.onerror = (e) => {
-    if (e.error !== 'no-speech') kifMicToast('⚠️ ' + e.error, 2500);
+    if (e.error === 'not-allowed') {
+      kifMicToast('❌ Mikrofon-Zugriff verweigert — Schloss-Icon → Mikrofon → Erlauben', 5000);
+    } else if (e.error === 'aborted') {
+      kifMicToast('🔄 Abgebrochen — <span onclick="kifMicToggle()" style="cursor:pointer;text-decoration:underline;color:#60a5fa">Nochmal versuchen</span>', 3500);
+    } else if (e.error === 'network') {
+      kifMicToast('📡 Verbindungsfehler — <span onclick="kifMicToggle()" style="cursor:pointer;text-decoration:underline;color:#60a5fa">Nochmal versuchen</span>', 4000);
+    } else if (e.error !== 'no-speech') {
+      kifMicToast('⚠️ ' + e.error + ' — <span onclick="kifMicToggle()" style="cursor:pointer;text-decoration:underline;color:#60a5fa">Retry</span>', 3000);
+    }
   };
 
   kifMicRec.onend = () => {
     kifMicActive = false;
     stand.classList.remove('recording');
+    const mb = document.getElementById('kif-modal-mic');
+    if (mb) { mb.textContent = '🎙️'; mb.style.borderColor='rgba(255,255,255,0.15)'; }
     document.getElementById('kif-mic-label').textContent = 'sprechen';
   };
 
+  try { kifMicRec.start(); } catch(e) { kifMicToast('⚠️ Mikrofon nicht verfügbar', 2500); }
+}
+
+function kifMicToggle() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { kifMicToast('❌ Browser unterstützt keine Spracheingabe — bitte Chrome/Edge nutzen', 3500); return; }
+
+  if (kifMicActive) {
+    try { kifMicRec && kifMicRec.stop(); } catch(e) {}
+    return;
+  }
+
+  kifMicStart();
+}
+
+function kifMicAber() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { kifMicToast('❌ Browser unterstützt keine Spracheingabe', 3500); return; }
+  try { if (kifMicRec) kifMicRec.abort(); } catch(e) {}
+  kifMicActive = false;
+  kifMicRec = new SR();
+  kifMicRec.lang = 'de-DE';
+  kifMicRec.continuous = false;
+  kifMicRec.interimResults = false;
+  const btn = document.getElementById('kif-aber-mic');
+  kifMicRec.onstart = () => { if (btn) { btn.textContent = '🔴'; btn.style.borderColor = 'rgba(248,113,113,0.6)'; } };
+  kifMicRec.onresult = (ev) => {
+    const text = ev.results[0][0].transcript.trim();
+    const ta = document.getElementById('kif-aber-input');
+    if (ta) ta.value = text;
+    kifMicToast(`✅ "${text.substring(0,40)}${text.length>40?'…':''}"`, 2500);
+  };
+  kifMicRec.onerror = (e) => {
+    if (e.error === 'not-allowed') {
+      kifMicToast('❌ Mikrofon gesperrt — Windows: Einstellungen → Datenschutz → Mikrofon → Edge erlauben', 6000);
+    } else if (e.error !== 'no-speech') {
+      kifMicToast('⚠️ ' + e.error + ' — <span onclick="kifMicAber()" style="cursor:pointer;text-decoration:underline;color:#60a5fa">Retry</span>', 3000);
+    }
+  };
+  kifMicRec.onend = () => { if (btn) { btn.textContent = '🎙️'; btn.style.borderColor = 'rgba(255,255,255,0.15)'; } };
   try { kifMicRec.start(); } catch(e) { kifMicToast('⚠️ Mikrofon nicht verfügbar', 2500); }
 }
 

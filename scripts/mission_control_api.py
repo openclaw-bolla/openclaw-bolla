@@ -3440,6 +3440,21 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"docs": docs})
                 return
 
+            elif self.path.startswith("/api/dokumente/open"):
+                import urllib.parse as _up
+                BOLLA_DOCS = "/mnt/d/OneDrive/Dokumente/Bolla/claud code - openclaw Doku"
+                qs = _up.parse_qs(_up.urlparse(self.path).query)
+                fname = qs.get("file", [""])[0]
+                if not fname or "/" in fname or "\\" in fname or ".." in fname:
+                    self._send_json({"error": "Ungültig"}, status=400); return
+                fpath = os.path.join(BOLLA_DOCS, fname)
+                if not os.path.isfile(fpath):
+                    self._send_json({"error": "Nicht gefunden"}, status=404); return
+                win_path = fpath.replace("/mnt/d/", "D:\\").replace("/", "\\")
+                subprocess.Popen(["/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe", "-Command", f'Start-Process "{win_path}"'])
+                self._send_json({"ok": True})
+                return
+
             elif self.path.startswith("/api/dokumente/download"):
                 import urllib.parse as _up
                 BOLLA_DOCS = "/mnt/d/OneDrive/Dokumente/Bolla/claud code - openclaw Doku"
@@ -3461,7 +3476,8 @@ class Handler(BaseHTTPRequestHandler):
                     data = f.read()
                 self.send_response(200)
                 self.send_header("Content-Type", ctype)
-                self.send_header("Content-Disposition", f'attachment; filename="{fname}"')
+                disp = "inline" if ext == ".pdf" else "attachment"
+                self.send_header("Content-Disposition", f'{disp}; filename="{fname}"')
                 self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
                 self.wfile.write(data)
