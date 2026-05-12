@@ -6459,7 +6459,7 @@ async function micToggle() {
     } else if (hasSpeech && !silenceTimer && recordingMs > 500) {
       silenceTimer = setTimeout(() => {
         if (window._micMediaRec && window._micMediaRec.state === 'recording') window._micMediaRec.stop();
-      }, 1500);
+      }, 800);
     }
   }, 100);
 
@@ -6507,72 +6507,71 @@ function kifMicToast(msg, dur=2200) {
   t._timer = setTimeout(() => t.style.display = 'none', dur);
 }
 
-function kifMicStart() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return;
-  kifMicRec = new SR();
-  kifMicRec.lang = 'de-DE';
-  kifMicRec.continuous = false;
-  kifMicRec.interimResults = false;
-
-  kifMicRec.onstart = () => {
-    kifMicActive = true;
-    const stand = document.getElementById('kif-mic-stand');
-    if (stand) stand.classList.add('recording');
-    const label = document.getElementById('kif-mic-label');
-    if (label) label.textContent = '● aufnahme';
-    const mb = document.getElementById('kif-modal-mic');
-    if (mb) { mb.textContent = '🔴'; mb.style.borderColor='rgba(248,113,113,0.6)'; }
-    kifMicToast('🎙️ Spreche deine These…', 30000);
-  };
-
-  kifMicRec.onresult = (ev) => {
-    const text = ev.results[0][0].transcript.trim();
-    if (!text) return;
-    const ta = document.getElementById('kif-user-input');
-    if (ta) ta.value = text;
-    kifMicToast(`✅ "${text.substring(0,40)}${text.length>40?'…':''}"`, 2500);
-    setTimeout(() => kifShowInput(), 150);
-  };
-
-  kifMicRec.onerror = (e) => {
-    if (e.error === 'not-allowed') {
-      kifMicToast('❌ Mikrofon-Zugriff verweigert — Schloss-Icon → Mikrofon → Erlauben', 5000);
-    } else if (e.error === 'network') {
-      kifMicToast('📡 Verbindungsfehler (F-Secure?) — bolla.chrismandel.de versuchen', 4000);
-    } else if (e.error !== 'no-speech' && e.error !== 'aborted') {
-      kifMicToast('⚠️ ' + e.error, 3000);
-    }
-    kifMicActive = false;
-    const stand = document.getElementById('kif-mic-stand');
-    if (stand) stand.classList.remove('recording');
-    const mb = document.getElementById('kif-modal-mic');
-    if (mb) { mb.textContent = '🎙️'; mb.style.borderColor='rgba(255,255,255,0.15)'; }
-    const label = document.getElementById('kif-mic-label');
-    if (label) label.textContent = 'sprechen';
-  };
-
-  kifMicRec.onend = () => {
-    kifMicActive = false;
-    const stand = document.getElementById('kif-mic-stand');
-    if (stand) stand.classList.remove('recording');
-    const mb = document.getElementById('kif-modal-mic');
-    if (mb) { mb.textContent = '🎙️'; mb.style.borderColor='rgba(255,255,255,0.15)'; }
-    const label = document.getElementById('kif-mic-label');
-    if (label) label.textContent = 'sprechen';
-  };
-
-  try { kifMicRec.start(); } catch(e) { kifMicToast('⚠️ Mikrofon nicht verfügbar', 2500); }
-}
-
-function kifMicToggle() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { kifMicToast('❌ Browser unterstützt keine Spracheingabe — bitte Chrome/Edge nutzen', 3500); return; }
+async function kifMicToggle() {
   if (kifMicActive) {
-    try { kifMicRec && kifMicRec.stop(); } catch(e) {}
+    if (window._kifMediaRec && window._kifMediaRec.state === 'recording') window._kifMediaRec.stop();
     return;
   }
-  kifMicStart();
+  kifMicActive = true;
+  const stand = document.getElementById('kif-mic-stand');
+  if (stand) stand.classList.add('recording');
+  const label = document.getElementById('kif-mic-label');
+  if (label) label.textContent = '● aufnahme';
+  const mb = document.getElementById('kif-modal-mic');
+  if (mb) { mb.textContent = '🔴'; mb.style.borderColor='rgba(248,113,113,0.6)'; }
+
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch(e) {
+    kifMicToast('❌ Mikrofon-Zugriff verweigert', 4000);
+    kifMicActive = false;
+    if (stand) stand.classList.remove('recording');
+    if (mb) { mb.textContent = '🎙️'; mb.style.borderColor='rgba(255,255,255,0.15)'; }
+    if (label) label.textContent = 'sprechen';
+    return;
+  }
+
+  const ctx = new AudioContext(); await ctx.resume();
+  const analyser = ctx.createAnalyser(); analyser.fftSize = 512;
+  ctx.createMediaStreamSource(stream).connect(analyser);
+  const buf = new Uint8Array(analyser.frequencyBinCount);
+  let hasSpeech = false, silenceTimer = null, recMs = 0;
+  const silenceCheck = setInterval(() => {
+    recMs += 100;
+    analyser.getByteFrequencyData(buf);
+    const vol = buf.reduce((a, b) => a + b, 0) / buf.length;
+    if (vol > 5) { hasSpeech = true; clearTimeout(silenceTimer); silenceTimer = null; }
+    else if (hasSpeech && !silenceTimer && recMs > 500)
+      silenceTimer = setTimeout(() => { if (window._kifMediaRec?.state === 'recording') window._kifMediaRec.stop(); }, 800);
+  }, 100);
+
+  const chunks = [], mr = new MediaRecorder(stream);
+  window._kifMediaRec = mr;
+  mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  mr.onstop = async () => {
+    clearInterval(silenceCheck); clearTimeout(silenceTimer);
+    ctx.close(); stream.getTracks().forEach(t => t.stop());
+    kifMicActive = false;
+    if (stand) stand.classList.remove('recording');
+    if (mb) { mb.textContent = '🎙️'; mb.style.borderColor='rgba(255,255,255,0.15)'; }
+    if (label) label.textContent = 'sprechen';
+    kifMicToast('⏳ Wird erkannt…', 8000);
+    const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' });
+    try {
+      const resp = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': blob.type }, body: blob });
+      const data = await resp.json();
+      const text = (data.text || '').trim();
+      if (text) {
+        const ta = document.getElementById('kif-user-input');
+        if (ta) ta.value = text;
+        kifMicToast(`✅ "${text.substring(0,40)}${text.length>40?'…':''}"`, 2500);
+        setTimeout(() => kifShowInput(), 150);
+      } else { kifMicToast('🔇 Nichts erkannt', 2500); }
+    } catch(e) { kifMicToast('⚠️ ' + e.message, 3000); }
+  };
+  mr.start();
+  setTimeout(() => { if (mr.state === 'recording') mr.stop(); }, 30000);
+  kifMicToast('🎙️ Spreche deine These…', 30000);
 }
 
 async function kifMicAber() {
@@ -6595,7 +6594,7 @@ async function kifMicAber() {
     analyser.getByteFrequencyData(buf);
     const vol = buf.reduce((a, b) => a + b, 0) / buf.length;
     if (vol > 5) { hasSpeech = true; clearTimeout(silenceTimer); silenceTimer = null; }
-    else if (hasSpeech && !silenceTimer && recMs > 500) silenceTimer = setTimeout(() => { if (rec.state === 'recording') rec.stop(); }, 1500);
+    else if (hasSpeech && !silenceTimer && recMs > 500) silenceTimer = setTimeout(() => { if (rec.state === 'recording') rec.stop(); }, 800);
   }, 100);
 
   const chunks = [], rec = new MediaRecorder(stream);

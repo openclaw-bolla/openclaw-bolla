@@ -17,6 +17,11 @@ from datetime import datetime, timezone, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# CUDA-Bibliotheken für faster-whisper GPU-Betrieb
+_cuda_lib = os.path.expanduser("~/.local/lib/python3.12/site-packages/nvidia/cublas/lib")
+if os.path.isdir(_cuda_lib):
+    os.environ["LD_LIBRARY_PATH"] = _cuda_lib + ":" + os.environ.get("LD_LIBRARY_PATH", "")
+
 # Sicherstellen dass ~/.local/bin im PATH ist (fehlt im Cron-Job-Kontext)
 _local_bin = os.path.expanduser("~/.local/bin")
 if _local_bin not in os.environ.get("PATH", ""):
@@ -64,7 +69,7 @@ def transcribe_audio(audio_bytes: bytes, content_type: str = "audio/webm") -> st
         print(f"[transcribe] ffmpeg rc={r.returncode}, wav={wav_size} bytes")
         model = _get_whisper()
         segments, info = model.transcribe(
-            tmp_wav, language="de", beam_size=5, vad_filter=True,
+            tmp_wav, language="de", beam_size=5, vad_filter=False,
             initial_prompt="Das ist eine Spracheingabe auf Deutsch."
         )
         text = " ".join(s.text.strip() for s in segments).strip()
