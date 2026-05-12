@@ -3412,6 +3412,8 @@ function initNavDrag() {
 
   // Globaler Drag-State für cross-section dragging
   let _dragItem = null, _dragHighlight = null;
+  let _grpGripDown = false, _secGripDown = false;
+  document.addEventListener('mouseup', () => { _grpGripDown = false; _secGripDown = false; });
 
   function clearHighlights() {
     nav.querySelectorAll('.nav-item-drag-over').forEach(el => el.classList.remove('nav-item-drag-over'));
@@ -3438,14 +3440,32 @@ function initNavDrag() {
     });
     item.addEventListener('dragover', e => {
       if (!_dragItem || _dragItem === item) return;
+      const isGrpDrag = _dragItem.id && _dragItem.id.startsWith('nav-group-');
+      if (isGrpDrag) {
+        // Gruppe über Item: nur in direkte Section-Items erlauben
+        if (item.parentElement.classList.contains('nav-section-items')) e.preventDefault();
+        return;
+      }
+      if (!_dragItem.classList.contains('nav-item')) return;
       e.preventDefault(); e.stopPropagation();
       clearHighlights();
       item.classList.add('nav-item-drag-over');
     });
     item.addEventListener('dragleave', () => item.classList.remove('nav-item-drag-over'));
     item.addEventListener('drop', e => {
-      e.preventDefault(); e.stopPropagation();
       if (!_dragItem || _dragItem === item) return;
+      const isGrpDrag = _dragItem.id && _dragItem.id.startsWith('nav-group-');
+      if (isGrpDrag) {
+        const tc = item.parentElement;
+        if (!tc.classList.contains('nav-section-items')) return;
+        e.preventDefault(); e.stopPropagation();
+        const mid = item.getBoundingClientRect().top + item.getBoundingClientRect().height / 2;
+        tc.insertBefore(_dragItem, e.clientY < mid ? item : item.nextSibling);
+        saveItemOrder();
+        return;
+      }
+      if (!_dragItem.classList.contains('nav-item')) return;
+      e.preventDefault(); e.stopPropagation();
       const targetContainer = item.parentElement;
       const items = [...targetContainer.children];
       const di = items.indexOf(item);
@@ -3459,8 +3479,13 @@ function initNavDrag() {
 
   // Container (section-items) als Drop-Zone für leere Sektionen
   function makeContainerDroppable(container) {
+    const isSecItems = container.classList.contains('nav-section-items');
     container.addEventListener('dragover', e => {
       if (!_dragItem) return;
+      const isItemDrag = _dragItem.classList.contains('nav-item');
+      const isGrpDrag = _dragItem.id && _dragItem.id.startsWith('nav-group-');
+      if (!isItemDrag && !isGrpDrag) return;
+      if (isGrpDrag && !isSecItems) return; // Gruppen nur in Section-Container, nicht in Gruppen-Items
       e.preventDefault();
       if (!container.contains(_dragItem)) {
         clearHighlights();
@@ -3475,8 +3500,12 @@ function initNavDrag() {
       }
     });
     container.addEventListener('drop', e => {
-      e.preventDefault(); e.stopPropagation();
       if (!_dragItem) return;
+      const isItemDrag = _dragItem.classList.contains('nav-item');
+      const isGrpDrag = _dragItem.id && _dragItem.id.startsWith('nav-group-');
+      if (!isItemDrag && !isGrpDrag) return;
+      if (isGrpDrag && !isSecItems) return; // Gruppen-Drag: in Gruppen-Items nicht abfangen
+      e.preventDefault(); e.stopPropagation();
       container.style.outline = '';
       if (!container.contains(_dragItem)) container.appendChild(_dragItem);
       saveItemOrder();
@@ -3492,12 +3521,15 @@ function initNavDrag() {
   }
 
   // Gruppen innerhalb Sektionen sortierbar — NUR via Grip ⠿
-  nav.querySelectorAll('[id^="nav-group-"]').forEach(grp => {
-    if (!grp.id) grp.id = 'nav-di-' + Date.now();
+  nav.querySelectorAll('.nav-section-items > [id^="nav-group-"]').forEach(grp => {
+    const grip = grp.querySelector('.nav-group-grip');
+    if (grip) {
+      grip.addEventListener('mousedown', () => { _grpGripDown = true; });
+      grip.addEventListener('click', e => e.stopPropagation()); // verhindert Gruppe-Toggle beim Grip-Klick
+    }
     grp.draggable = true;
     grp.addEventListener('dragstart', e => {
-      const fromGrip = e.target.classList.contains('nav-group-grip') || e.target.closest?.('.nav-group-grip');
-      if (!fromGrip) { e.preventDefault(); return; }
+      if (!_grpGripDown) { e.preventDefault(); e.stopPropagation(); return; }
       _dragItem = grp;
       e.stopPropagation();
       setTimeout(() => grp.style.opacity = '0.4', 0);
@@ -3533,16 +3565,21 @@ function initNavDrag() {
   // Sektionen (nav-blocks) sortierbar — NUR via Grip ⠿
   let dragSrc = null;
   nav.querySelectorAll('.nav-block').forEach(block => {
+    const secGrip = block.querySelector('.nav-section-grip');
+    if (secGrip) {
+      secGrip.addEventListener('mousedown', () => { _secGripDown = true; });
+      secGrip.addEventListener('click', e => e.stopPropagation());
+    }
     block.draggable = true;
     block.addEventListener('dragstart', e => {
-      const fromGrip = e.target.classList.contains('nav-section-grip') || e.target.closest?.('.nav-section-grip');
-      if (!fromGrip) return;
+      if (!_secGripDown) { e.preventDefault(); return; }
       dragSrc = block;
       block.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', block.id);
     });
     block.addEventListener('dragend', () => {
+      dragSrc = null;
       block.classList.remove('dragging');
       nav.querySelectorAll('.nav-block').forEach(b => b.classList.remove('drag-over'));
       const order = [...nav.querySelectorAll('.nav-block')].map(b => b.id);
@@ -3832,7 +3869,7 @@ function renderDashboardEvents() {
 
 function renderNextClass() {
   const today = new Date(); today.setHours(0,0,0,0);
-  const cutoff = new Date(today); cutoff.setDate(today.getDate() + 7);
+  const cutoff = new Date(today); cutoff.setDate(today.getDate() + 14);
   const schulEvents = _events.filter(ev => {
     const cat = (ev.category||'').toLowerCase();
     const d = _parseEvDate(ev.date);
