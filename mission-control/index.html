@@ -6396,75 +6396,103 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ============ MIC / SPEECH-TO-TEXT (Web Speech API) ============
-let micRec = null;
+// ============ MIC / SPEECH-TO-TEXT (lokales Whisper large-v3 via GPU) ============
 let micActive = false;
 
-function micInit() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return null;
-  const r = new SR();
-  r.lang = 'de-DE';
-  r.continuous = true;
-  r.interimResults = true;
-  return r;
+function micToast(msg, dur=3500) {
+  let t = document.getElementById('bolla-mic-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'bolla-mic-toast';
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(30,40,80,0.95);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:9999;pointer-events:none;max-width:380px;text-align:center;border:1px solid rgba(96,165,250,0.3)';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.style.display = 'none', dur);
 }
 
-function micToggle() {
+function micSetBtn(on) {
   const btn = document.getElementById('bolla-mic-btn');
-  const input = document.getElementById('bolla-input');
+  if (!btn) return;
+  if (on) {
+    btn.textContent = '🔴'; btn.style.background = 'var(--danger)';
+    btn.style.color = 'white'; btn.title = 'Stopp';
+  } else {
+    btn.textContent = '🎤'; btn.style.background = 'var(--card)';
+    btn.style.color = 'var(--dim)'; btn.title = 'Mit Bolla sprechen';
+  }
+}
 
+async function micToggle() {
   if (micActive) {
-    try { micRec && micRec.stop(); } catch(e) {}
+    if (window._micMediaRec && window._micMediaRec.state === 'recording') window._micMediaRec.stop();
     return;
   }
-
-  if (!micRec) micRec = micInit();
-  if (!micRec) {
-    alert('Dein Browser unterstützt keine Web Speech API. Nutze Chrome oder Edge.');
-    return;
-  }
-
-  // Laufende TTS stoppen — sonst hört das Mikro Bolla zu
   voiceStop();
+  try { if (kifMicActive) kifMicActive = false; } catch(e) {}
 
-  let finalText = input.value ? input.value + ' ' : '';
-  let interimText = '';
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch(e) { micToast('❌ Mikrofon gesperrt — Windows: Einstellungen → Datenschutz → Mikrofon → Edge erlauben', 6000); return; }
 
-  micRec.onstart = () => {
-    micActive = true;
-    btn.textContent = '🔴';
-    btn.style.background = 'var(--danger)';
-    btn.style.color = 'white';
-    btn.title = 'Stopp';
-  };
-
-  micRec.onresult = (ev) => {
-    interimText = '';
-    for (let i = ev.resultIndex; i < ev.results.length; i++) {
-      const res = ev.results[i];
-      if (res.isFinal) finalText += res[0].transcript + ' ';
-      else interimText += res[0].transcript;
+  // Stille-Erkennung via AudioContext
+  const ctx = new AudioContext();
+  await ctx.resume(); // wichtig: Edge startet oft im suspended-Zustand
+  const src = ctx.createMediaStreamSource(stream);
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 512;
+  src.connect(analyser);
+  const buf = new Uint8Array(analyser.frequencyBinCount);
+  let silenceTimer = null;
+  let hasSpeech = false;
+  let recordingMs = 0;
+  const silenceCheck = setInterval(() => {
+    recordingMs += 100;
+    analyser.getByteFrequencyData(buf);
+    const vol = buf.reduce((a, b) => a + b, 0) / buf.length;
+    if (vol > 5) {
+      hasSpeech = true;
+      clearTimeout(silenceTimer);
+      silenceTimer = null;
+    } else if (hasSpeech && !silenceTimer && recordingMs > 500) {
+      silenceTimer = setTimeout(() => {
+        if (window._micMediaRec && window._micMediaRec.state === 'recording') window._micMediaRec.stop();
+      }, 1500);
     }
-    input.value = (finalText + interimText).replace(/\s+/g, ' ').trim();
+  }, 100);
+
+  const chunks = [];
+  const mr = new MediaRecorder(stream);
+  window._micMediaRec = mr;
+  mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  mr.onstop = async () => {
+    clearInterval(silenceCheck); clearTimeout(silenceTimer);
+    ctx.close(); stream.getTracks().forEach(t => t.stop());
+    micActive = false; micSetBtn(false);
+    micToast('⏳ Wird erkannt…', 8000);
+    const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' });
+    try {
+      const resp = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': blob.type }, body: blob });
+      const data = await resp.json();
+      const text = (data.text || '').trim();
+      if (text) {
+        const input = document.getElementById('bolla-input');
+        if (input) input.value = (input.value ? input.value + ' ' : '') + text;
+        micToast('✅ ' + text.substring(0, 60), 3000);
+        if (document.getElementById('voice-toggle')?.checked) setTimeout(() => bollaSend(), 200);
+      } else {
+        micToast('🔇 Nichts erkannt', 2500);
+      }
+    } catch(e) { micToast('⚠️ ' + e.message, 4000); }
   };
 
-  micRec.onerror = (e) => { console.warn('mic error', e.error); };
-
-  micRec.onend = () => {
-    micActive = false;
-    btn.textContent = '🎤';
-    btn.style.background = 'var(--card)';
-    btn.style.color = 'var(--dim)';
-    btn.title = 'Mit Bolla sprechen (Web Speech, de-DE)';
-    // Auto-Send wenn Voice-Mode an und Text da
-    const txt = input.value.trim();
-    if (txt && document.getElementById('voice-toggle')?.checked) {
-      setTimeout(() => bollaSend(), 200);
-    }
-  };
-
-  try { micRec.start(); } catch(e) { console.warn(e); }
+  micActive = true; micSetBtn(true);
+  micToast('🎙️ Spreche… (stoppt automatisch)', 30000);
+  mr.start();
+  // Sicherheits-Timeout nach 30s
+  setTimeout(() => { if (mr.state === 'recording') mr.stop(); }, 30000);
 }
 
 // ── KI-FORUM MIC ──────────────────────────────────────────────────────────
@@ -6480,8 +6508,8 @@ function kifMicToast(msg, dur=2200) {
 }
 
 function kifMicStart() {
-  const stand = document.getElementById('kif-mic-stand');
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
   kifMicRec = new SR();
   kifMicRec.lang = 'de-DE';
   kifMicRec.continuous = false;
@@ -6489,8 +6517,10 @@ function kifMicStart() {
 
   kifMicRec.onstart = () => {
     kifMicActive = true;
-    stand.classList.add('recording');
-    document.getElementById('kif-mic-label').textContent = '● aufnahme';
+    const stand = document.getElementById('kif-mic-stand');
+    if (stand) stand.classList.add('recording');
+    const label = document.getElementById('kif-mic-label');
+    if (label) label.textContent = '● aufnahme';
     const mb = document.getElementById('kif-modal-mic');
     if (mb) { mb.textContent = '🔴'; mb.style.borderColor='rgba(248,113,113,0.6)'; }
     kifMicToast('🎙️ Spreche deine These…', 30000);
@@ -6508,21 +6538,28 @@ function kifMicStart() {
   kifMicRec.onerror = (e) => {
     if (e.error === 'not-allowed') {
       kifMicToast('❌ Mikrofon-Zugriff verweigert — Schloss-Icon → Mikrofon → Erlauben', 5000);
-    } else if (e.error === 'aborted') {
-      kifMicToast('🔄 Abgebrochen — <span onclick="kifMicToggle()" style="cursor:pointer;text-decoration:underline;color:#60a5fa">Nochmal versuchen</span>', 3500);
     } else if (e.error === 'network') {
-      kifMicToast('📡 Verbindungsfehler — <span onclick="kifMicToggle()" style="cursor:pointer;text-decoration:underline;color:#60a5fa">Nochmal versuchen</span>', 4000);
-    } else if (e.error !== 'no-speech') {
-      kifMicToast('⚠️ ' + e.error + ' — <span onclick="kifMicToggle()" style="cursor:pointer;text-decoration:underline;color:#60a5fa">Retry</span>', 3000);
+      kifMicToast('📡 Verbindungsfehler (F-Secure?) — bolla.chrismandel.de versuchen', 4000);
+    } else if (e.error !== 'no-speech' && e.error !== 'aborted') {
+      kifMicToast('⚠️ ' + e.error, 3000);
     }
+    kifMicActive = false;
+    const stand = document.getElementById('kif-mic-stand');
+    if (stand) stand.classList.remove('recording');
+    const mb = document.getElementById('kif-modal-mic');
+    if (mb) { mb.textContent = '🎙️'; mb.style.borderColor='rgba(255,255,255,0.15)'; }
+    const label = document.getElementById('kif-mic-label');
+    if (label) label.textContent = 'sprechen';
   };
 
   kifMicRec.onend = () => {
     kifMicActive = false;
-    stand.classList.remove('recording');
+    const stand = document.getElementById('kif-mic-stand');
+    if (stand) stand.classList.remove('recording');
     const mb = document.getElementById('kif-modal-mic');
     if (mb) { mb.textContent = '🎙️'; mb.style.borderColor='rgba(255,255,255,0.15)'; }
-    document.getElementById('kif-mic-label').textContent = 'sprechen';
+    const label = document.getElementById('kif-mic-label');
+    if (label) label.textContent = 'sprechen';
   };
 
   try { kifMicRec.start(); } catch(e) { kifMicToast('⚠️ Mikrofon nicht verfügbar', 2500); }
@@ -6531,41 +6568,56 @@ function kifMicStart() {
 function kifMicToggle() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { kifMicToast('❌ Browser unterstützt keine Spracheingabe — bitte Chrome/Edge nutzen', 3500); return; }
-
   if (kifMicActive) {
     try { kifMicRec && kifMicRec.stop(); } catch(e) {}
     return;
   }
-
   kifMicStart();
 }
 
-function kifMicAber() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { kifMicToast('❌ Browser unterstützt keine Spracheingabe', 3500); return; }
-  try { if (kifMicRec) kifMicRec.abort(); } catch(e) {}
-  kifMicActive = false;
-  kifMicRec = new SR();
-  kifMicRec.lang = 'de-DE';
-  kifMicRec.continuous = false;
-  kifMicRec.interimResults = false;
+async function kifMicAber() {
   const btn = document.getElementById('kif-aber-mic');
-  kifMicRec.onstart = () => { if (btn) { btn.textContent = '🔴'; btn.style.borderColor = 'rgba(248,113,113,0.6)'; } };
-  kifMicRec.onresult = (ev) => {
-    const text = ev.results[0][0].transcript.trim();
-    const ta = document.getElementById('kif-aber-input');
-    if (ta) ta.value = text;
-    kifMicToast(`✅ "${text.substring(0,40)}${text.length>40?'…':''}"`, 2500);
+  if (btn && btn.textContent === '🔴') return;
+  if (btn) { btn.textContent = '🔴'; btn.style.borderColor = 'rgba(248,113,113,0.6)'; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch(e) { kifMicToast('❌ Mikrofon-Zugriff verweigert', 4000); if (btn) { btn.textContent = '🎙️'; btn.style.borderColor = 'rgba(255,255,255,0.15)'; } return; }
+
+  const ctx = new AudioContext();
+  await ctx.resume();
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 512;
+  ctx.createMediaStreamSource(stream).connect(analyser);
+  const buf = new Uint8Array(analyser.frequencyBinCount);
+  let hasSpeech = false, silenceTimer = null, recMs = 0;
+  const silenceCheck = setInterval(() => {
+    recMs += 100;
+    analyser.getByteFrequencyData(buf);
+    const vol = buf.reduce((a, b) => a + b, 0) / buf.length;
+    if (vol > 5) { hasSpeech = true; clearTimeout(silenceTimer); silenceTimer = null; }
+    else if (hasSpeech && !silenceTimer && recMs > 500) silenceTimer = setTimeout(() => { if (rec.state === 'recording') rec.stop(); }, 1500);
+  }, 100);
+
+  const chunks = [], rec = new MediaRecorder(stream);
+  rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  rec.onstop = async () => {
+    clearInterval(silenceCheck); clearTimeout(silenceTimer);
+    ctx.close(); stream.getTracks().forEach(t => t.stop());
+    if (btn) btn.textContent = '⏳';
+    const blob = new Blob(chunks, { type: rec.mimeType || 'audio/webm' });
+    try {
+      const resp = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': blob.type }, body: blob });
+      const data = await resp.json();
+      const text = (data.text || '').trim();
+      const ta = document.getElementById('kif-aber-input');
+      if (ta && text) ta.value = text;
+      kifMicToast(text ? `✅ "${text.substring(0,40)}${text.length>40?'…':''}"` : '🔇 Nichts erkannt', 2500);
+    } catch(e) { kifMicToast('⚠️ ' + e.message, 3000); }
+    if (btn) { btn.textContent = '🎙️'; btn.style.borderColor = 'rgba(255,255,255,0.15)'; }
   };
-  kifMicRec.onerror = (e) => {
-    if (e.error === 'not-allowed') {
-      kifMicToast('❌ Mikrofon gesperrt — Windows: Einstellungen → Datenschutz → Mikrofon → Edge erlauben', 6000);
-    } else if (e.error !== 'no-speech') {
-      kifMicToast('⚠️ ' + e.error + ' — <span onclick="kifMicAber()" style="cursor:pointer;text-decoration:underline;color:#60a5fa">Retry</span>', 3000);
-    }
-  };
-  kifMicRec.onend = () => { if (btn) { btn.textContent = '🎙️'; btn.style.borderColor = 'rgba(255,255,255,0.15)'; } };
-  try { kifMicRec.start(); } catch(e) { kifMicToast('⚠️ Mikrofon nicht verfügbar', 2500); }
+  rec.start();
+  setTimeout(() => { if (rec.state === 'recording') rec.stop(); }, 15000);
+  kifMicToast('🎙️ Spreche… (stoppt automatisch)', 15000);
 }
 
 // Stimmenliste beim ersten Öffnen der Bolla-Seite laden

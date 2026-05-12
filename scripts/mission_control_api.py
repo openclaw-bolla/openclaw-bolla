@@ -38,6 +38,44 @@ KORREKTUR_DIR        = os.path.join(WORKSPACE, "korrektur")
 # Foto-Analyse Job-Status (global, threadsafe via GIL für einfache dict-ops)
 _photo_job = {"running": False, "total": 0, "done": 0, "errors": 0, "stop": False, "folder": ""}
 
+# Whisper Spracherkennung (lokal, kein F-Secure-Problem)
+_whisper_model = None
+def _get_whisper():
+    global _whisper_model
+    if _whisper_model is None:
+        from faster_whisper import WhisperModel
+        _whisper_model = WhisperModel("large-v3", device="cuda", compute_type="float16")
+    return _whisper_model
+
+def transcribe_audio(audio_bytes: bytes, content_type: str = "audio/webm") -> str:
+    import tempfile, subprocess
+    print(f"[transcribe] {len(audio_bytes)} bytes, type={content_type}")
+    suffix = ".webm" if "webm" in content_type else ".ogg" if "ogg" in content_type else ".wav"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+        f.write(audio_bytes)
+        tmp_in = f.name
+    tmp_wav = tmp_in + ".wav"
+    try:
+        r = subprocess.run(
+            ["ffmpeg", "-y", "-i", tmp_in, "-ar", "16000", "-ac", "1", "-f", "wav", tmp_wav],
+            capture_output=True, timeout=30
+        )
+        wav_size = os.path.getsize(tmp_wav) if os.path.exists(tmp_wav) else 0
+        print(f"[transcribe] ffmpeg rc={r.returncode}, wav={wav_size} bytes")
+        model = _get_whisper()
+        segments, info = model.transcribe(
+            tmp_wav, language="de", beam_size=5, vad_filter=True,
+            initial_prompt="Das ist eine Spracheingabe auf Deutsch."
+        )
+        text = " ".join(s.text.strip() for s in segments).strip()
+        print(f"[transcribe] result: '{text}' (duration={info.duration:.1f}s)")
+        return text
+    finally:
+        try: os.unlink(tmp_in)
+        except: pass
+        try: os.unlink(tmp_wav)
+        except: pass
+
 
 def get_clipboard():
     try:
@@ -3593,6 +3631,18 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             raw = b""
 
+        if self.path == "/api/transcribe":
+            ct = self.headers.get("Content-Type", "audio/webm")
+            if not raw:
+                self._send_json({"error": "no audio data"}, status=400)
+                return
+            try:
+                text = transcribe_audio(raw, ct)
+                self._send_json({"text": text})
+            except Exception as e:
+                self._send_json({"error": str(e)}, status=500)
+            return
+
         if self.path.startswith("/api/lms/"):
             try:
                 self._proxy_lms("POST", raw)
@@ -4765,6 +4815,13 @@ Antworte NUR als reines JSON:
 
 
 if __name__ == "__main__":
+    import threading
+    def _warmup_whisper():
+        import time; time.sleep(5)
+        try: _get_whisper(); print("Whisper small model vorgeladen.")
+        except Exception as e: print(f"Whisper warmup: {e}")
+    threading.Thread(target=_warmup_whisper, daemon=True).start()
+
     port = 18790
     server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
     print(f"Mission Control API läuft auf http://127.0.0.1:{port}")
