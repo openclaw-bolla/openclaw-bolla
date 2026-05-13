@@ -861,6 +861,7 @@ html, body {
           <div class="card-head"><span class="card-title">🍽️ Rezept des Tages</span><button onclick="downloadRecipe()" title="Rezept herunterladen" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:14px;padding:4px 10px;cursor:pointer;margin-left:auto">⬇ Speichern</button><span class="card-icon" style="margin-left:10px">👨‍🍳</span></div>
           <div id="recipe-card"><div class="loading">Lade...</div></div>
         </div>
+
       </div>
 
       <!-- SCHULE -->
@@ -1323,6 +1324,49 @@ html, body {
 
       <!-- SYSTEM -->
       <div class="page" id="page-system">
+
+        <!-- ═══ ANTHROPIC WOCHENBUDGET ═══ -->
+        <div style="margin:14px 14px 0;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #f97316">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+            <div>
+              <div style="font-size:13px;font-weight:700;color:#f97316;text-transform:uppercase;letter-spacing:1px">⚡ Anthropic Wochenbudget</div>
+              <div style="font-size:11px;color:var(--dim);margin-top:2px">Automatisch berechnet · Reset: Samstag 23:59</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="text-align:center">
+                <div id="tb-countdown" style="font-size:20px;font-weight:700;color:var(--bright);font-variant-numeric:tabular-nums">…</div>
+                <div style="font-size:10px;color:var(--dim)">bis Reset</div>
+              </div>
+              <div style="text-align:center;padding:8px 14px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid var(--border)">
+                <div id="tb-remaining-pct" style="font-size:20px;font-weight:700;color:#22c55e">…%</div>
+                <div style="font-size:10px;color:var(--dim)">verbleibend</div>
+              </div>
+              <button onclick="tbLoad()" title="Jetzt aktualisieren" style="padding:6px 10px;background:rgba(249,115,22,0.12);border:1px solid rgba(249,115,22,0.35);border-radius:6px;color:#f97316;font-size:16px;cursor:pointer">↺</button>
+            </div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:11px;color:var(--dim)">Verbraucht diese Woche</span>
+              <span id="tb-pct-label" style="font-size:14px;font-weight:700;color:#f97316">…%</span>
+            </div>
+            <div style="height:20px;background:rgba(255,255,255,0.05);border-radius:10px;overflow:hidden;border:1px solid var(--border);position:relative">
+              <div id="tb-bar" style="height:100%;border-radius:10px;width:0%;transition:width 0.7s ease,background 0.7s ease"></div>
+              <div style="position:absolute;left:50%;top:0;width:1px;height:100%;background:rgba(34,197,94,0.35)"></div>
+              <div style="position:absolute;left:75%;top:0;width:1px;height:100%;background:rgba(245,158,11,0.5)"></div>
+              <div style="position:absolute;left:90%;top:0;width:1px;height:100%;background:rgba(239,68,68,0.5)"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:2px">
+              <span style="font-size:9px;color:var(--dim)">0%</span>
+              <span style="font-size:9px;color:#22c55e;margin-left:42%">50%</span>
+              <span style="font-size:9px;color:#f59e0b">75%</span>
+              <span style="font-size:9px;color:#ef4444">90%</span>
+              <span style="font-size:9px;color:var(--dim)">100%</span>
+            </div>
+          </div>
+          <div id="tb-tip" style="padding:9px 12px;background:rgba(249,115,22,0.07);border-radius:7px;border-left:3px solid #f97316;font-size:12px;color:var(--text)">Lade…</div>
+          <div id="tb-updated" style="font-size:10px;color:var(--dim);margin-top:6px;text-align:right"></div>
+        </div>
+
         <div class="grid" id="system-content"><div class="loading">Lade...</div></div>
       </div>
 
@@ -3222,6 +3266,7 @@ function showPage(page) {
   if (item) document.getElementById('page-title').textContent = item.querySelector('span:nth-child(2)')?.textContent || '';
   const cmdBar = document.getElementById('mail-cmd-bar');
   if (page !== 'email') { if (cmdBar) cmdBar.style.display='none'; closeMailResult(); _selectedMails=[]; }
+  if (page === 'system')     tbInit();
   if (page === 'brain')      initBrain();
   if (page === 'bolla')      loadBollaModel();
   if (page === 'system')     loadSystem();
@@ -5321,6 +5366,55 @@ async function loadClaudeCode() {
   loadCronJobs();
   docsLoad();
 }
+
+// ── Token Budget Widget (automatisch via API) ─────────────────
+async function tbLoad() {
+  try {
+    const d = await fetch('/api/tokenbudget').then(r => r.json());
+    if (d.error || d.pct === null) return;
+
+    const pct = d.pct, rem = d.remaining;
+    const bar   = document.getElementById('tb-bar');
+    const label = document.getElementById('tb-pct-label');
+    const remEl = document.getElementById('tb-remaining-pct');
+    const tip   = document.getElementById('tb-tip');
+    const cd    = document.getElementById('tb-countdown');
+    const upd   = document.getElementById('tb-updated');
+
+    if (label) label.textContent = pct + '%';
+    if (remEl) { remEl.textContent = rem + '%'; remEl.style.color = rem < 12 ? '#ef4444' : rem < 25 ? '#f97316' : '#22c55e'; }
+    if (cd)    cd.textContent = d.reset_hours + 'h ' + String(d.reset_minutes).padStart(2,'0') + 'm';
+    if (upd)   upd.textContent = 'Berechnet: ' + new Date().toLocaleString('de-DE', {timeZone:'Europe/Berlin', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) + ' Uhr';
+
+    if (!bar || !label) return;
+    bar.style.width = Math.min(100, pct) + '%';
+
+    let color, grad, tipStyle;
+    if (pct < 50) {
+      color = '#22c55e'; grad = 'linear-gradient(90deg,#22c55e,#22c55e)'; tipStyle = '#22c55e';
+    } else if (pct < 75) {
+      color = '#f59e0b'; grad = 'linear-gradient(90deg,#22c55e 50%,#f59e0b)'; tipStyle = '#f59e0b';
+    } else if (pct < 90) {
+      color = '#f97316'; grad = 'linear-gradient(90deg,#22c55e 48%,#f59e0b 70%,#f97316)'; tipStyle = '#f97316';
+    } else {
+      color = '#ef4444'; grad = 'linear-gradient(90deg,#22c55e 44%,#f59e0b 66%,#f97316 82%,#ef4444)'; tipStyle = '#ef4444';
+    }
+    bar.style.background = grad;
+    label.style.color = color;
+    if (tip) { tip.style.borderLeftColor = tipStyle; tip.textContent = d.tip; }
+  } catch(e) {
+    const tip = document.getElementById('tb-tip');
+    if (tip) tip.textContent = 'Budget-API nicht erreichbar.';
+  }
+}
+// Auto-Refresh: beim Dashboard-Load + alle 6 Stunden
+let _tbInterval = null;
+function tbInit() {
+  tbLoad();
+  if (_tbInterval) clearInterval(_tbInterval);
+  _tbInterval = setInterval(tbLoad, 6 * 3600 * 1000);
+}
+// ─────────────────────────────────────────────────────────────
 
 const CRON_META = {
   'mission_control_api':  {name:'MC API',           desc:'Python-Server Port 18790'},

@@ -2216,6 +2216,106 @@ def get_token_usage():
     return data
 
 
+_TB_FILE = "/home/bolla/workspace/config/token_budget.json"
+
+def get_token_budget():
+    """Berechnet Anthropic-Wochenbudget-Prozentsatz aus gespeichertem Wochenstart."""
+    import time as _t
+    try:
+        tok = get_token_usage()
+        total_out = tok["total"]["output"]
+
+        with open(_TB_FILE, encoding="utf-8") as f:
+            cfg = json.load(f)
+
+        week_start_out = cfg.get("week_start_output", 0)
+        limit = cfg.get("estimated_limit_output", 2000000)
+        week_start_date = cfg.get("week_start_date", "")
+
+        used = max(0, total_out - week_start_out)
+        pct  = min(100, round(used / limit * 100, 1))
+        rem  = round(100 - pct, 1)
+
+        # Countdown bis nächsten Samstag 23:59 Europe/Berlin
+        from datetime import timezone as _tz
+        import pytz
+        berlin = pytz.timezone("Europe/Berlin")
+        now_berlin = datetime.now(berlin)
+        day = now_berlin.weekday()          # 0=Mo … 5=Sa, 6=So
+        # Samstag = weekday 5
+        days_until_sat = (5 - day) % 7
+        if days_until_sat == 0:
+            # heute Samstag: wenn vor 23:59 noch heute, sonst in 7 Tagen
+            if now_berlin.hour < 23 or (now_berlin.hour == 23 and now_berlin.minute < 59):
+                days_until_sat = 0
+            else:
+                days_until_sat = 7
+        from datetime import timedelta
+        reset_dt = (now_berlin + timedelta(days=days_until_sat)).replace(
+            hour=23, minute=59, second=0, microsecond=0)
+        diff_s = int((reset_dt - now_berlin).total_seconds())
+        h, r   = divmod(diff_s, 3600)
+        m      = r // 60
+
+        # Tipp je nach Status
+        if pct < 50:
+            tip = "Entspannt — alles möglich."
+        elif pct < 75:
+            tip = "Moderat — große Features bewusst planen."
+        elif pct < 90:
+            tip = "Kritisch — nur kleine Fixes & kurze Sessions."
+        else:
+            tip = "Fast leer — bis Samstag auf das Nötigste beschränken."
+
+        return {
+            "pct": pct,
+            "remaining": rem,
+            "used_output": used,
+            "limit_output": limit,
+            "week_start_date": week_start_date,
+            "reset_hours": h,
+            "reset_minutes": m,
+            "tip": tip
+        }
+    except Exception as e:
+        return {"error": str(e), "pct": None}
+
+
+def token_budget_snapshot():
+    """Samstags-Reset: speichert aktuellen total_output als neuen Wochenstart."""
+    try:
+        tok = get_token_usage()
+        total_out = tok["total"]["output"]
+        with open(_TB_FILE, encoding="utf-8") as f:
+            cfg = json.load(f)
+
+        # Limit aus letzter Woche berechnen falls möglich
+        old_start = cfg.get("week_start_output", 0)
+        week_used = total_out - old_start
+        history = cfg.get("history", [])
+        history.append({
+            "week_start": cfg.get("week_start_date"),
+            "output_used": week_used,
+            "pct_of_limit": round(week_used / cfg.get("estimated_limit_output", 2000000) * 100, 1)
+        })
+        # Limit nach 3+ Wochen aus Maximalwert der letzten 4 Wochen schätzen
+        if len(history) >= 3:
+            recent_used = [h["output_used"] for h in history[-4:]]
+            new_limit = int(max(recent_used) * 1.1)  # 10% Puffer
+            cfg["estimated_limit_output"] = new_limit
+
+        cfg["week_start_output"] = total_out
+        cfg["week_start_date"] = datetime.now().strftime("%Y-%m-%d")
+        cfg["history"] = history[-12:]  # max 12 Wochen History
+
+        with open(_TB_FILE, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2, ensure_ascii=False)
+
+        return {"ok": True, "new_start": total_out, "week_used": week_used}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 def bolla_chat_stream(message, session_id=None, image_b64=None):
     """Streamt Claude-Code-Events als Generator. Jeder yield ist ein JSON-Objekt."""
     import subprocess, tempfile, base64, shutil
@@ -3385,6 +3485,8 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/surfaces/energie": get_energie,
                 "/api/tokenusage": get_token_usage,
                 "/api/tokenusage/history": get_token_halfdays,
+                "/api/tokenbudget": get_token_budget,
+                "/api/tokenbudget/snapshot": token_budget_snapshot,
                 "/api/status": lambda: {"ok": True, "ts": datetime.now().isoformat()},
                 "/api/redesigns-meta": get_redesigns_meta,
                 "/api/clipboard": get_clipboard,

@@ -1,131 +1,212 @@
 #!/usr/bin/env python3
-"""Flensburg Rundgang — Word-Dokument Generator v2"""
+"""Flensburg Rundgang — Word-Dokument Generator v3 (kein Routing, korrekte Marker)"""
 
-from staticmap import StaticMap, CircleMarker, Line
+from staticmap import StaticMap, CircleMarker
+from staticmap.staticmap import _lon_to_x, _lat_to_y
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
-import math, requests
 from PIL import Image, ImageDraw, ImageFont
 
 OUTPUT   = "/mnt/d/OneDrive/Desktop/Flensburg_Rundgang.docx"
 MAP_FILE = "/tmp/flensburg_map.png"
 
-ZOOM   = 15
-IMG_W  = 900
-IMG_H  = 720
-# Karten-Mittelpunkt: leicht nördlich des Parkhauses damit alles passt
-CTR_LAT = 54.7895
-CTR_LON = 9.4308
+ZOOM  = 15
+IMG_W = 1100
+IMG_H = 880
 
 STOPS = [
-    {"nr": 1, "name": "Parkhaus Süderhofenden",      "lat": 54.7838, "lon": 9.4378,
-     "color": "#6366f1", "dist": "—",     "zeit": "—",      "notiz": "Ausgangspunkt im Zentrum"},
-    {"nr": 2, "name": "Südermarkt & Nikolaikirche",  "lat": 54.7832, "lon": 9.4355,
-     "color": "#f59e0b", "dist": "350 m", "zeit": "4 Min",  "notiz": "Gotische Hallenkirche (14. Jh.), historischer Marktplatz"},
-    {"nr": 3, "name": "Schifffahrts- & Rummuseum",   "lat": 54.7872, "lon": 9.4325,
-     "color": "#f59e0b", "dist": "500 m", "zeit": "7 Min",  "notiz": "800 J. Seefahrt + Rum-Keller (Di–So 10–17, 8 €)"},
-    {"nr": 4, "name": "Museumshafen",                "lat": 54.7890, "lon": 9.4308,
-     "color": "#f59e0b", "dist": "250 m", "zeit": "3 Min",  "notiz": "Histor. Rahsegler & Schoner — Eintritt frei"},
-    {"nr": 5, "name": "Hafenspitze (Kaffeepause)",   "lat": 54.7918, "lon": 9.4282,
-     "color": "#0ea5e9", "dist": "400 m", "zeit": "5 Min",  "notiz": "Biergarten mit Förde-Panoramablick bis nach Dänemark"},
-    {"nr": 6, "name": "Kaufmannshöfe Norderstr.",    "lat": 54.7905, "lon": 9.4325,
-     "color": "#f59e0b", "dist": "550 m", "zeit": "7 Min",  "notiz": "18 histor. Innenhöfe (18. Jh.) — Norderstr. 86 empfohlen"},
-    {"nr": 7, "name": "Nordermarkt & Neptunbrunnen", "lat": 54.7928, "lon": 9.4318,
-     "color": "#f59e0b", "dist": "250 m", "zeit": "3 Min",  "notiz": "Ältester Markt (um 1200), Brunnen von 1758"},
-    {"nr": 8, "name": "Nordertor",                   "lat": 54.7952, "lon": 9.4305,
-     "color": "#ef4444", "dist": "300 m", "zeit": "4 Min",  "notiz": "Wahrzeichen Flensburgs — gotisches Stadttor von 1595"},
-    {"nr": 9, "name": "Duburg-Ruine (Aussicht)",     "lat": 54.7940, "lon": 9.4238,
-     "color": "#16a34a", "dist": "700 m", "zeit": "9 Min",  "notiz": "Mittelalterl. Burg (1411), Panorama über Flensburg & Förde"},
+    {"nr": 1,
+     "name": "Parkhaus Süderhofenden",
+     "lat": 54.7861, "lon": 9.4365,
+     "color": "#6366f1",
+     "dist": "Start", "zeit": "",
+     "kurz": "Ausgangspunkt im Zentrum",
+     "detail": (
+         "Zentralstes Parkhaus der Innenstadt, direkt am Süderhofenden. "
+         "Normale Stadtparkgebühren, kurze Laufwege zu allen Sehenswürdigkeiten. "
+         "Tipp: Ticket beim Einfahren ziehen — am Ende automatenlos zahlen."
+     )},
+
+    {"nr": 2,
+     "name": "Südermarkt & St. Nikolai",
+     "lat": 54.7828, "lon": 9.4363,
+     "color": "#f59e0b",
+     "dist": "350 m", "zeit": "4 Min",
+     "kurz": "Gotische Hallenkirche (14. Jh.), historischer Marktplatz",
+     "detail": (
+         "Die gotische Nikolaikirche prägt seit dem 14. Jahrhundert die Flensburger Silhouette. "
+         "Innen: Flügelaltar und mittelalterliche Ausstattung. "
+         "Der Südermarkt davor ist der südliche historische Marktplatz — "
+         "Do & Sa Wochenmarkt mit frischen Waren aus Schleswig-Holstein und Dänemark."
+     )},
+
+    {"nr": 3,
+     "name": "Schifffahrts- & Rummuseum",
+     "lat": 54.7931, "lon": 9.4333,
+     "color": "#f59e0b",
+     "dist": "500 m", "zeit": "7 Min",
+     "kurz": "800 Jahre Seefahrt + Rum-Keller (Di–So 10–17 Uhr, 8 €)",
+     "detail": (
+         "Flensburg war Jahrhunderte lang eine der bedeutendsten Hafenstädte der Ostsee — "
+         "und bis heute Deutschlands inoffizielle Rum-Hauptstadt. "
+         "Das Museum zeigt prächtige Schiffsmodelle, Navigation, Handelsgeschichte "
+         "und natürlich den legendären Flensburger Rum-Keller: "
+         "original Fässer, Destillier-Technik und Verkostung. Unbedingt anschauen!"
+     )},
+
+    {"nr": 4,
+     "name": "Museumshafen",
+     "lat": 54.7937, "lon": 9.4342,
+     "color": "#f59e0b",
+     "dist": "250 m", "zeit": "3 Min",
+     "kurz": "Historische Rahsegler & Schoner — Eintritt frei",
+     "detail": (
+         "Im Museumshafen liegen originalgetreu restaurierte Segelschiffe aus dem 19. Jahrhundert — "
+         "Rahsegler, Schoner und Dampfschiffe, teils begehbar. "
+         "Eintritt kostenlos. Bei schönem Wetter hervorragend für Fotos. "
+         "Im Sommer finden hier regelmäßig Hafenfeste und Regatten statt."
+     )},
+
+    {"nr": 5,
+     "name": "Hafenspitze — Kaffeepause",
+     "lat": 54.7878, "lon": 9.4372,
+     "color": "#0ea5e9",
+     "dist": "400 m", "zeit": "5 Min",
+     "kurz": "Biergarten mit Förde-Panorama bis nach Dänemark",
+     "detail": (
+         "Die Hafenspitze bietet den schönsten Weitblick der gesamten Tour: "
+         "Über die Flensburger Förde bis Glücksburg und bei klarem Wetter bis nach Dänemark. "
+         "Hier empfiehlt sich eine Kaffeepause im Biergarten — "
+         "frischer Fisch, Krabbenbrötchen und dänische Backwaren. "
+         "Der Ort trennt den deutschen und den früher dänischen Teil der Förde."
+     )},
+
+    {"nr": 6,
+     "name": "Kaufmannshöfe Norderstr.",
+     "lat": 54.7937, "lon": 9.4316,
+     "color": "#f59e0b",
+     "dist": "550 m", "zeit": "7 Min",
+     "kurz": "18 historische Innenhöfe (18. Jh.) — Nr. 86 besonders empfohlen",
+     "detail": (
+         "Die Norderstraße ist eines der besterhaltenen Kaufmannshof-Ensembles Norddeutschlands. "
+         "18 Höfe aus dem 17.–18. Jahrhundert, ursprünglich für Lagerung und Handel genutzt. "
+         "Norderstraße 86 ist besonders beeindruckend — Durchgang einfach betreten, "
+         "die Höfe sind öffentlich zugänglich. Manche beherbergen heute Galerien und Cafés."
+     )},
+
+    {"nr": 7,
+     "name": "Nordermarkt & Neptunbrunnen",
+     "lat": 54.7893, "lon": 9.4323,
+     "color": "#f59e0b",
+     "dist": "250 m", "zeit": "3 Min",
+     "kurz": "Ältester Marktplatz (um 1200) — Neptunbrunnen von 1758",
+     "detail": (
+         "Der Nordermarkt ist der älteste Marktplatz Flensburgs, "
+         "seit dem frühen Mittelalter (um 1200) Zentrum des Handels. "
+         "Der Neptunbrunnen stammt aus dem Jahr 1758 und ist ein Wahrzeichen des Platzes. "
+         "Di & Fr Wochenmarkt. Umgeben von historischen Bürgerhäusern "
+         "aus dem 17.–19. Jahrhundert."
+     )},
+
+    {"nr": 8,
+     "name": "Nordertor",
+     "lat": 54.7955, "lon": 9.4302,
+     "color": "#ef4444",
+     "dist": "300 m", "zeit": "4 Min",
+     "kurz": "Wahrzeichen Flensburgs — gotisches Stadttor von 1595",
+     "detail": (
+         "Das Nordertor von 1595 ist das bekannteste Wahrzeichen Flensburgs. "
+         "Das gotische Backsteintor war einst Teil der mittelalterlichen Stadtmauer "
+         "und ist heute einer der meistfotografierten Orte der Stadt. "
+         "Der rote Backstein, die gotischen Spitzbögen und die Inschriften "
+         "aus dem 17. Jahrhundert machen es zu einem perfekten Fotomotiv."
+     )},
+
+    {"nr": 9,
+     "name": "Duburg-Ruine (Aussicht)",
+     "lat": 54.7925, "lon": 9.4274,
+     "color": "#16a34a",
+     "dist": "700 m", "zeit": "9 Min",
+     "kurz": "Mittelalterliche Burg (1411) — Panorama über Flensburg & Förde",
+     "detail": (
+         "Die Duburg wurde 1411 als herzogliche Residenz erbaut. "
+         "Heute ist sie eine malerische Ruine auf einem Hügel über der Stadt — "
+         "mit dem besten Panoramablick über Flensburg, die Förde und das dänische Ufer. "
+         "Der Aufstieg dauert ca. 10 Minuten, lohnt sich aber sehr. "
+         "Eintritt frei, immer geöffnet. Perfekter Abschluss des Rundgangs."
+     )},
 ]
 
-RETURN_ROW = ("→1", "Zurück zum Parkhaus", "1,1 km / 14 Min", "Durch die Innenstadt zurück")
-TOTAL_ROW  = ("∑",  "Gesamt",              "~4,5 km",         "~56 Min reine Gehzeit (ohne Pausen)")
+RETURN_ROW = ("→ 1", "Zurück zum Parkhaus", "1,1 km / ca. 14 Min",
+              "Durch die Fußgängerzone zurück — ggf. noch shoppen")
+TOTAL_ROW  = ("∑", "Gesamt", "~4,5 km",
+              "ca. 56 Min reine Gehzeit · mit Pausen und Museum ca. 3–4 Stunden")
 
 
-# ── Routing ───────────────────────────────────────────────────────────────────
-def get_osrm_route():
-    pts = STOPS + [STOPS[0]]
-    coords = ";".join(f"{s['lon']},{s['lat']}" for s in pts)
-    url = f"http://router.project-osrm.org/route/v1/foot/{coords}?geometries=geojson&overview=full"
-    try:
-        r = requests.get(url, timeout=25)
-        d = r.json()
-        if d.get("code") == "Ok":
-            print("  OSRM: Straßenroute geladen")
-            return [(c[0], c[1]) for c in d["routes"][0]["geometry"]["coordinates"]]
-    except Exception as e:
-        print(f"  OSRM fehlgeschlagen ({e}), nehme Luftlinien")
-    return [(s["lon"], s["lat"]) for s in pts]
-
-
-# ── Pixel-Koordinaten ──────────────────────────────────────────────────────────
-def ll2px(lat, lon):
-    def deg2t(la, lo):
-        n = 2 ** ZOOM
-        x = (lo + 180) / 360 * n
-        y = (1 - math.log(math.tan(math.radians(la)) + 1 / math.cos(math.radians(la))) / math.pi) / 2 * n
-        return x, y
-    cx, cy = deg2t(CTR_LAT, CTR_LON)
-    px, py = deg2t(lat, lon)
-    return int((px - cx) * 256 + IMG_W / 2), int((py - cy) * 256 + IMG_H / 2)
-
-
-# ── Karte ──────────────────────────────────────────────────────────────────────
+# ── Karte generieren ──────────────────────────────────────────────────────────
 def generate_map():
-    m = StaticMap(IMG_W, IMG_H, url_template="https://tile.openstreetmap.org/{z}/{x}/{y}.png")
+    m = StaticMap(IMG_W, IMG_H,
+                  url_template="https://tile.openstreetmap.org/{z}/{x}/{y}.png")
 
-    route = get_osrm_route()
-    m.add_line(Line(route, "#3b82f6", 4))
-
-    # Kleine unsichtbare Marker damit StaticMap die Bounds kennt
+    # Minimale Marker damit staticmap die Bounds kennt
     for s in STOPS:
-        m.add_marker(CircleMarker((s["lon"], s["lat"]), "white", 1))
+        m.add_marker(CircleMarker((s["lon"], s["lat"]), "#ffffff", 2))
 
-    img = m.render(zoom=ZOOM, center=(CTR_LON, CTR_LAT))
+    # Render (setzt m.x_center, m.y_center, m.zoom intern)
+    img = m.render(zoom=ZOOM)
     draw = ImageDraw.Draw(img)
 
     try:
-        font_nr  = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15)
-        font_hdr = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 12)
-        font_sm  = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11)
+        font_nr  = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
+        font_sm  = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
+        font_hdr = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 13)
     except Exception:
         font_nr = font_hdr = font_sm = ImageFont.load_default()
 
-    def draw_marker(x, y, text, hex_col):
-        r = 15
-        rgb = tuple(int(hex_col.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-        # Schwarzer Schatten-Ring für Kontrast
-        draw.ellipse([x-r-2, y-r-2, x+r+2, y+r+2], fill=(20, 20, 20))
-        draw.ellipse([x-r, y-r, x+r, y+r], fill=rgb)
-        # Zentrierte Zahl
+    def hex2rgb(h):
+        h = h.lstrip('#')
+        return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+
+    def draw_marker(px, py, text, hex_col):
+        r = 17
+        rgb = hex2rgb(hex_col)
+        draw.ellipse([px-r-2, py-r-2, px+r+2, py+r+2], fill=(10, 10, 10))
+        draw.ellipse([px-r,   py-r,   px+r,   py+r],   fill=rgb)
         bb = draw.textbbox((0, 0), text, font=font_nr)
         tw, th = bb[2]-bb[0], bb[3]-bb[1]
-        draw.text((x - tw//2 - bb[0], y - th//2 - bb[1]), text, font=font_nr, fill="white")
+        draw.text((px - tw//2 - bb[0], py - th//2 - bb[1]),
+                  text, font=font_nr, fill="white")
 
+    # Korrekte Pixel-Koordinaten via staticmap-interne API
     for s in STOPS:
-        px, py = ll2px(s["lat"], s["lon"])
+        tile_x = _lon_to_x(s["lon"], m.zoom)
+        tile_y = _lat_to_y(s["lat"], m.zoom)
+        px = m._x_to_px(tile_x)
+        py = m._y_to_px(tile_y)
         draw_marker(px, py, str(s["nr"]), s["color"])
 
     # Legende
     lx, ly = 8, 8
-    lh = 26 + len(STOPS) * 19 + 6
-    draw.rectangle([lx, ly, lx+240, ly+lh], fill=(255, 255, 255), outline=(160, 160, 160))
-    draw.text((lx+7, ly+6), "RUNDGANG FLENSBURG", font=font_hdr, fill=(20, 20, 20))
+    lh = 30 + len(STOPS) * 21 + 8
+    draw.rectangle([lx, ly, lx+255, ly+lh], fill=(255,255,255,230), outline=(160,160,160))
+    draw.text((lx+8, ly+7), "RUNDGANG FLENSBURG", font=font_hdr, fill=(20,20,20))
     for i, s in enumerate(STOPS):
-        ry = ly + 26 + i * 19
-        rgb = tuple(int(s["color"].lstrip('#')[j:j+2], 16) for j in (0, 2, 4))
-        draw.ellipse([lx+7, ry+3, lx+22, ry+18], fill=rgb)
-        nb = draw.textbbox((0, 0), str(s["nr"]), font=font_sm)
+        ry = ly + 30 + i * 21
+        rgb = hex2rgb(s["color"])
+        r = 9
+        draw.ellipse([lx+8, ry+2, lx+8+r*2, ry+2+r*2], fill=rgb)
+        nb = draw.textbbox((0,0), str(s["nr"]), font=font_sm)
         nw, nh = nb[2]-nb[0], nb[3]-nb[1]
-        draw.text((lx+14 - nw//2 - nb[0], ry+10 - nh//2 - nb[1]), str(s["nr"]), font=font_sm, fill="white")
-        draw.text((lx+28, ry+3), s["name"][:30], font=font_sm, fill=(20, 20, 20))
+        draw.text((lx+8+r - nw//2 - nb[0], ry+2+r - nh//2 - nb[1]),
+                  str(s["nr"]), font=font_sm, fill="white")
+        draw.text((lx+32, ry+3), s["name"][:32], font=font_sm, fill=(20,20,20))
 
-    img.save(MAP_FILE, quality=92)
-    print(f"  Karte: {MAP_FILE}")
+    img.save(MAP_FILE, quality=95)
+    print(f"  Karte gespeichert: {MAP_FILE}")
 
 
 # ── Word-Dokument ──────────────────────────────────────────────────────────────
@@ -139,17 +220,32 @@ def set_bg(cell, hex_color):
     tcPr.append(shd)
 
 
-def cell_para(cell, text, size=9, bold=False, color=None):
+def set_cell_text(cell, text, size=10, bold=False, color=None, italic=False,
+                  space_before=2, space_after=2, align=WD_ALIGN_PARAGRAPH.LEFT):
     p = cell.paragraphs[0]
-    p.paragraph_format.space_before = Pt(1)
-    p.paragraph_format.space_after  = Pt(1)
-    if p.runs:
-        run = p.runs[0]
+    p.paragraph_format.space_before = Pt(space_before)
+    p.paragraph_format.space_after  = Pt(space_after)
+    p.alignment = align
+    run = p.add_run(text) if not p.runs else p.runs[0]
+    if not p.runs:
+        run = p.add_run(text)
     else:
-        run = p.add_run()
-    run.text = text
-    run.font.size = Pt(size)
-    run.font.bold = bold
+        run = p.runs[0]
+        run.text = text
+    run.font.size   = Pt(size)
+    run.font.bold   = bold
+    run.font.italic = italic
+    if color:
+        run.font.color.rgb = color
+
+
+def add_cell_run(cell, text, size=10, bold=False, color=None, italic=False):
+    """Weiteren Run zur ersten Paragraph hinzufügen."""
+    p = cell.paragraphs[0]
+    run = p.add_run(text)
+    run.font.size   = Pt(size)
+    run.font.bold   = bold
+    run.font.italic = italic
     if color:
         run.font.color.rgb = color
 
@@ -163,45 +259,52 @@ def generate_doc():
         sec.left_margin   = Cm(1.8)
         sec.right_margin  = Cm(1.8)
 
-    # Titel
-    t = doc.add_heading("Flensburg — Rundgang", 0)
+    # ── Titel ──
+    t = doc.add_heading("Flensburg — Stadtspaziergang", 0)
     t.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    t.runs[0].font.size = Pt(17)
+    t.runs[0].font.size = Pt(22)
     t.runs[0].font.color.rgb = RGBColor(0x1e, 0x40, 0xaf)
     t.paragraph_format.space_before = Pt(0)
-    t.paragraph_format.space_after  = Pt(2)
+    t.paragraph_format.space_after  = Pt(4)
 
-    # Untertitel
-    sub = doc.add_paragraph("Donnerstag  ·  VW ID.3  ·  ~4,5 km  ·  ca. 3–4 Stunden mit Pausen")
+    sub = doc.add_paragraph("Donnerstag  ·  VW ID.3  ·  9 Stopps  ·  ~4,5 km  ·  ca. 3–4 Stunden mit Pausen")
     sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    sub.runs[0].font.size = Pt(9)
+    sub.runs[0].font.size = Pt(11)
     sub.runs[0].font.color.rgb = RGBColor(0x64, 0x74, 0x8b)
-    sub.paragraph_format.space_after = Pt(4)
+    sub.paragraph_format.space_after = Pt(6)
 
-    # Laden-Info
+    # ── Info-Zeile ──
     p1 = doc.add_paragraph()
-    r1 = p1.add_run("⚡ EnBW HPC 300 kW: BAUHAUS Schleswiger Str. 107–109 (2,5 km vor Zentrum) — weitere Stationen in der EnBW-App")
-    r1.font.size = Pt(9); r1.font.bold = True
+    r1 = p1.add_run("⚡  EnBW HPC 300 kW · BAUHAUS Schleswiger Str. 107–109 (2,5 km vor Zentrum)")
+    r1.font.size = Pt(10); r1.font.bold = True
     r1.font.color.rgb = RGBColor(0x15, 0x80, 0x3d)
     p1.paragraph_format.space_after = Pt(2)
 
     p2 = doc.add_paragraph()
-    r2 = p2.add_run("🅿  Parkhaus Süderhofenden — zentral, normale Parkgebühren, direkt am Startpunkt")
-    r2.font.size = Pt(9)
+    r2 = p2.add_run("🅿  Parkhaus Süderhofenden · zentral · normale Stadtparkgebühren · Startpunkt")
+    r2.font.size = Pt(10)
     r2.font.color.rgb = RGBColor(0x44, 0x55, 0x6b)
-    p2.paragraph_format.space_after = Pt(5)
+    p2.paragraph_format.space_after = Pt(8)
 
-    # Karte
-    doc.add_picture(MAP_FILE, width=Inches(5.0))
+    # ── Karte ──
+    doc.add_picture(MAP_FILE, width=Inches(6.2))
     doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-    doc.paragraphs[-1].paragraph_format.space_after = Pt(6)
+    doc.paragraphs[-1].paragraph_format.space_after = Pt(8)
 
-    # Tabelle (Route + Highlights kombiniert)
+    # ── Routen-Tabelle ──
+    lbl = doc.add_paragraph("Route & Highlights")
+    lbl.runs[0].font.size = Pt(12)
+    lbl.runs[0].font.bold = True
+    lbl.runs[0].font.color.rgb = RGBColor(0x1e, 0x40, 0xaf)
+    lbl.paragraph_format.space_after = Pt(4)
+
+    # Spaltenbreiten: # | Station | Weg/Zeit | Highlight
+    COL_W = [Cm(0.9), Cm(5.0), Cm(2.8), Cm(8.6)]
+
     tbl = doc.add_table(rows=1, cols=4)
     tbl.style = 'Table Grid'
     tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
 
-    # Tabellen-Layout auf fixed setzen
     tblPr = tbl._tbl.find(qn('w:tblPr'))
     if tblPr is None:
         tblPr = OxmlElement('w:tblPr')
@@ -210,55 +313,126 @@ def generate_doc():
     tblLayout.set(qn('w:type'), 'fixed')
     tblPr.append(tblLayout)
 
-    # Spaltenbreiten: 0.7 | 4.5 | 2.2 | 9.7 = 17.1 cm
-    COL_W = [Cm(0.7), Cm(4.5), Cm(2.2), Cm(9.7)]
-
     hdr = tbl.rows[0].cells
-    for i, (txt, w) in enumerate(zip(["#", "Station", "↔ / ⏱", "Highlight"], COL_W)):
+    for i, (txt, w) in enumerate(zip(["#", "Station", "Weg / Zeit", "Highlight"], COL_W)):
         hdr[i].width = w
-        cell_para(hdr[i], txt, size=9, bold=True, color=RGBColor(0xff, 0xff, 0xff))
+        set_cell_text(hdr[i], txt, size=10, bold=True,
+                      color=RGBColor(0xff, 0xff, 0xff), align=WD_ALIGN_PARAGRAPH.CENTER)
         set_bg(hdr[i], "1e40af")
 
-    rows_data = []
-    for s in STOPS:
-        if s["nr"] == 1:
-            dt = "Start"
-        else:
-            dt = f"{s['dist']} / {s['zeit']}"
-        rows_data.append((str(s["nr"]), s["name"], dt, s["notiz"]))
-    rows_data.append(RETURN_ROW)
-    rows_data.append(TOTAL_ROW)
-
-    for i, (nr, name, dist, notiz) in enumerate(rows_data):
+    for i, s in enumerate(STOPS):
+        dist_txt = s["dist"] if s["dist"] == "Start" else f"{s['dist']} / {s['zeit']}"
         row = tbl.add_row().cells
-        is_total = (i == len(rows_data) - 1)
-        for j, (cell, w) in enumerate(zip(row, COL_W)):
-            cell.width = w
-        cell_para(row[0], nr,     bold=is_total)
-        cell_para(row[1], name,   bold=is_total)
-        cell_para(row[2], dist,   bold=is_total)
-        cell_para(row[3], notiz,  bold=is_total)
-        if is_total:
+        for j, w in enumerate(COL_W):
+            row[j].width = w
+        set_cell_text(row[0], str(s["nr"]), size=10, bold=True,
+                      align=WD_ALIGN_PARAGRAPH.CENTER)
+        set_cell_text(row[1], s["name"], size=10, bold=True)
+        set_cell_text(row[2], dist_txt, size=9,
+                      color=RGBColor(0x44, 0x55, 0x6b), align=WD_ALIGN_PARAGRAPH.CENTER)
+        set_cell_text(row[3], s["kurz"], size=9)
+        if i % 2 == 1:
             for cell in row:
-                set_bg(cell, "dbeafe")
-        elif i % 2 == 1:
+                set_bg(cell, "eef2ff")
+
+    # Rückweg
+    row = tbl.add_row().cells
+    for j, w in enumerate(COL_W):
+        row[j].width = w
+    set_cell_text(row[0], "→1", size=9, color=RGBColor(0x64, 0x74, 0x8b),
+                  align=WD_ALIGN_PARAGRAPH.CENTER)
+    set_cell_text(row[1], "Zurück zum Parkhaus", size=9)
+    set_cell_text(row[2], "1,1 km / ~14 Min", size=9,
+                  color=RGBColor(0x64, 0x74, 0x8b), align=WD_ALIGN_PARAGRAPH.CENTER)
+    set_cell_text(row[3], "Durch die Fußgängerzone zurück — noch shoppen?", size=9)
+
+    # Gesamt
+    row = tbl.add_row().cells
+    for j, w in enumerate(COL_W):
+        row[j].width = w
+    set_cell_text(row[0], "∑", size=10, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+    set_cell_text(row[1], "Gesamt", size=10, bold=True)
+    set_cell_text(row[2], "~4,5 km", size=10, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+    set_cell_text(row[3], "ca. 56 Min Gehzeit · mit Pausen & Museum ca. 3–4 Stunden", size=9, bold=True)
+    for cell in row:
+        set_bg(cell, "dbeafe")
+
+    # ── Seite 2: Ausführliche Beschreibungen ──────────────────────────────────
+    doc.add_page_break()
+
+    lbl2 = doc.add_paragraph("Stationen im Detail")
+    lbl2.runs[0].font.size = Pt(16)
+    lbl2.runs[0].font.bold = True
+    lbl2.runs[0].font.color.rgb = RGBColor(0x1e, 0x40, 0xaf)
+    lbl2.paragraph_format.space_after = Pt(10)
+
+    COL_W2 = [Cm(0.9), Cm(4.6), Cm(11.8)]
+    tbl2 = doc.add_table(rows=1, cols=3)
+    tbl2.style = 'Table Grid'
+    tbl2.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+    tblPr2 = tbl2._tbl.find(qn('w:tblPr'))
+    if tblPr2 is None:
+        tblPr2 = OxmlElement('w:tblPr')
+        tbl2._tbl.insert(0, tblPr2)
+    tblLayout2 = OxmlElement('w:tblLayout')
+    tblLayout2.set(qn('w:type'), 'fixed')
+    tblPr2.append(tblLayout2)
+
+    hdr2 = tbl2.rows[0].cells
+    for i, (txt, w) in enumerate(zip(["#", "Station", "Beschreibung & Tipps"], COL_W2)):
+        hdr2[i].width = w
+        set_cell_text(hdr2[i], txt, size=10, bold=True,
+                      color=RGBColor(0xff, 0xff, 0xff), align=WD_ALIGN_PARAGRAPH.CENTER)
+        set_bg(hdr2[i], "1e40af")
+
+    for i, s in enumerate(STOPS):
+        row = tbl2.add_row().cells
+        for j, w in enumerate(COL_W2):
+            row[j].width = w
+
+        # Nummer (farbige Kugel simulieren mit farbigem Text)
+        set_cell_text(row[0], str(s["nr"]), size=11, bold=True,
+                      align=WD_ALIGN_PARAGRAPH.CENTER)
+
+        # Station + Weg
+        p = row[1].paragraphs[0]
+        p.paragraph_format.space_before = Pt(3)
+        p.paragraph_format.space_after  = Pt(2)
+        name_run = p.add_run(s["name"])
+        name_run.font.size = Pt(10)
+        name_run.font.bold = True
+        if s["dist"] and s["dist"] != "Start":
+            dist_run = p.add_run(f"\n{s['dist']} / {s['zeit']}")
+            dist_run.font.size = Pt(8.5)
+            dist_run.font.italic = True
+            dist_run.font.color.rgb = RGBColor(0x64, 0x74, 0x8b)
+
+        # Beschreibung
+        dp = row[2].paragraphs[0]
+        dp.paragraph_format.space_before = Pt(3)
+        dp.paragraph_format.space_after  = Pt(3)
+        dr = dp.add_run(s["detail"])
+        dr.font.size = Pt(10)
+
+        if i % 2 == 1:
             for cell in row:
-                set_bg(cell, "f0f5ff")
+                set_bg(cell, "eef2ff")
 
     # Footer
-    foot = doc.add_paragraph("Bolla · Flensburg Ausflug · Viel Spaß! 🐾")
+    foot = doc.add_paragraph("🐾  Bolla · Flensburg Ausflug · Viel Spaß und gutes Wetter!")
     foot.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    foot.runs[0].font.size = Pt(8)
+    foot.runs[0].font.size = Pt(9)
     foot.runs[0].font.color.rgb = RGBColor(0x94, 0xa3, 0xb8)
-    foot.paragraph_format.space_before = Pt(4)
+    foot.paragraph_format.space_before = Pt(10)
 
     doc.save(OUTPUT)
-    print(f"  Word: {OUTPUT}")
+    print(f"  Word gespeichert: {OUTPUT}")
 
 
 if __name__ == "__main__":
-    print("Generiere Karte...")
+    print("Generiere Karte (ohne Routenlinie)...")
     generate_map()
-    print("Erstelle Word-Dokument...")
+    print("Erstelle Word-Dokument (2 Seiten)...")
     generate_doc()
     print("Fertig!")
