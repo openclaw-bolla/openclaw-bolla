@@ -16,7 +16,8 @@ TOKEN_FILE     = Path("/home/bolla/workspace/config/outlook_token.json")
 OAUTH_CFG      = Path("/home/bolla/workspace/config/outlook_oauth2.json")
 IMAP_CFG       = Path("/home/bolla/workspace/config/wtnet_account.json")
 TG_CFG         = Path("/home/bolla/workspace/config/telegram_bot.json")
-PROCESSED_FILE = Path("/home/bolla/workspace/logs/mail_calendar_processed.json")
+PROCESSED_FILE  = Path("/home/bolla/workspace/logs/mail_calendar_processed.json")
+LAST_RUN_FILE   = Path("/home/bolla/workspace/logs/mail_calendar_last_run.json")
 GRAPH          = "https://graph.microsoft.com/v1.0/me"
 
 CATEGORIES = {
@@ -45,9 +46,10 @@ def get_token():
     tok = json.loads(TOKEN_FILE.read_text())
     data = urllib.parse.urlencode({
         'client_id':     cfg['client_id'],
+        'client_secret': cfg['client_secret'],
         'refresh_token': tok['refresh_token'],
         'grant_type':    'refresh_token',
-        'scope':         'Mail.ReadWrite Mail.Send Calendars.ReadWrite Contacts.ReadWrite Tasks.ReadWrite',
+        'scope':         'Mail.ReadWrite Mail.Send Calendars.ReadWrite Contacts.ReadWrite Tasks.ReadWrite offline_access',
     }).encode()
     req = urllib.request.Request(
         'https://login.microsoftonline.com/consumers/oauth2/v2.0/token',
@@ -326,12 +328,31 @@ def get_emails_imap(days):
     return all_emails
 
 # ── Hauptprogramm ─────────────────────────────────────────────────────────────
+def load_days_since_last_run():
+    if not LAST_RUN_FILE.exists():
+        return 90
+    try:
+        data = json.loads(LAST_RUN_FILE.read_text())
+        last = datetime.fromisoformat(data["last_run"])
+        diff = (datetime.now(timezone.utc) - last).days + 1
+        return min(max(diff, 1), 90)
+    except Exception:
+        return 90
+
+def save_last_run():
+    LAST_RUN_FILE.write_text(json.dumps({"last_run": datetime.now(timezone.utc).isoformat()}))
+
 def main():
     initial_run = "--initial" in sys.argv
-    days = 90 if initial_run else 1
+    if initial_run:
+        days = 90
+        label = "(Erstlauf: 90 Tage)"
+    else:
+        days = load_days_since_last_run()
+        label = f"(letzter Lauf vor {days} Tag{'en' if days != 1 else ''})"
 
     print(f"{'='*55}")
-    print(f"  Mail → Kalender  {'(Erstlauf: 90 Tage)' if initial_run else '(täglich)'}")
+    print(f"  Mail → Kalender  {label}")
     print(f"{'='*55}\n")
 
     token = get_token()
@@ -466,6 +487,7 @@ def main():
 
         PROCESSED_FILE.write_text(json.dumps(processed, indent=2))
 
+    save_last_run()
     print(f"\n{'='*55}")
     print(f"✓ Eingetragen: {added} | Übersprungen: {skipped} | Rückfrage: {uncertain}")
     print(f"{'='*55}")
