@@ -1330,12 +1330,13 @@ html, body {
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
             <div>
               <div style="font-size:13px;font-weight:700;color:#f97316;text-transform:uppercase;letter-spacing:1px">⚡ Anthropic Wochenbudget</div>
-              <div style="font-size:11px;color:var(--dim);margin-top:2px">Automatisch berechnet · Reset: Samstag 23:59</div>
+              <div style="font-size:11px;color:var(--dim);margin-top:2px">Echte Daten von Anthropic · <span id="tb-5h-label" style="color:#a78bfa">5h: …%</span></div>
             </div>
             <div style="display:flex;align-items:center;gap:12px">
               <div style="text-align:center">
                 <div id="tb-countdown" style="font-size:20px;font-weight:700;color:var(--bright);font-variant-numeric:tabular-nums">…</div>
                 <div style="font-size:10px;color:var(--dim)">bis Reset</div>
+                <div id="tb-reset-label" style="font-size:10px;color:var(--dim);margin-top:1px">…</div>
               </div>
               <div style="text-align:center;padding:8px 14px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid var(--border)">
                 <div id="tb-remaining-pct" style="font-size:20px;font-weight:700;color:#22c55e">…%</div>
@@ -5367,24 +5368,32 @@ async function loadClaudeCode() {
   docsLoad();
 }
 
-// ── Token Budget Widget (automatisch via API) ─────────────────
+// ── Token Budget Widget (echte Anthropic OAuth Daten) ─────────
 async function tbLoad() {
   try {
-    const d = await fetch('/api/tokenbudget').then(r => r.json());
-    if (d.error || d.pct === null) return;
+    const d = await fetch('/api/claudequota').then(r => r.json());
+    if (d.error) {
+      const tip = document.getElementById('tb-tip');
+      if (tip) tip.textContent = 'Quota-API Fehler: ' + d.error;
+      return;
+    }
 
-    const pct = d.pct, rem = d.remaining;
+    const pct = d.seven_day_pct, rem = d.seven_day_rem;
     const bar   = document.getElementById('tb-bar');
     const label = document.getElementById('tb-pct-label');
     const remEl = document.getElementById('tb-remaining-pct');
     const tip   = document.getElementById('tb-tip');
     const cd    = document.getElementById('tb-countdown');
     const upd   = document.getElementById('tb-updated');
+    const fhLbl = document.getElementById('tb-5h-label');
 
     if (label) label.textContent = pct + '%';
     if (remEl) { remEl.textContent = rem + '%'; remEl.style.color = rem < 12 ? '#ef4444' : rem < 25 ? '#f97316' : '#22c55e'; }
     if (cd)    cd.textContent = d.reset_hours + 'h ' + String(d.reset_minutes).padStart(2,'0') + 'm';
-    if (upd)   upd.textContent = 'Berechnet: ' + new Date().toLocaleString('de-DE', {timeZone:'Europe/Berlin', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) + ' Uhr';
+    const rlEl = document.getElementById('tb-reset-label');
+    if (rlEl && d.reset_label) rlEl.textContent = d.reset_label;
+    if (fhLbl) fhLbl.textContent = '5h: ' + d.five_hour_pct + '%';
+    if (upd)   upd.textContent = 'Anthropic live · ' + new Date().toLocaleString('de-DE', {timeZone:'Europe/Berlin', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) + ' Uhr';
 
     if (!bar || !label) return;
     bar.style.width = Math.min(100, pct) + '%';
@@ -5401,7 +5410,7 @@ async function tbLoad() {
     }
     bar.style.background = grad;
     label.style.color = color;
-    if (tip) { tip.style.borderLeftColor = tipStyle; tip.textContent = d.tip; }
+    if (tip) { tip.style.borderLeftColor = tipStyle; tip.style.color = 'var(--text)'; tip.textContent = d.tip; }
   } catch(e) {
     const tip = document.getElementById('tb-tip');
     if (tip) tip.textContent = 'Budget-API nicht erreichbar.';

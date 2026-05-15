@@ -2281,6 +2281,77 @@ def get_token_budget():
         return {"error": str(e), "pct": None}
 
 
+_claude_quota_cache = {"ts": 0, "data": None}
+
+def get_claude_quota():
+    """Ruft echte Claude Pro Usage direkt von Anthropic API ab (OAuth)."""
+    import time as _t
+    import urllib.request as _ur
+    if _claude_quota_cache["data"] and _t.time() - _claude_quota_cache["ts"] < 300:
+        return _claude_quota_cache["data"]
+    try:
+        creds = json.load(open(os.path.expanduser("~/.claude/.credentials.json")))
+        token = creds["claudeAiOauth"]["accessToken"]
+        req = _ur.Request(
+            "https://api.anthropic.com/api/oauth/usage",
+            headers={"Authorization": f"Bearer {token}", "anthropic-beta": "oauth-2025-04-20", "Accept": "application/json"}
+        )
+        with _ur.urlopen(req, timeout=10) as r:
+            raw = json.loads(r.read().decode())
+
+        fh = raw.get("five_hour") or {}
+        sd = raw.get("seven_day") or {}
+        fh_pct = round(fh.get("utilization", 0), 1)
+        sd_pct = round(sd.get("utilization", 0), 1)
+        sd_rem = round(100 - sd_pct, 1)
+
+        # Reset-Countdown aus resets_at
+        import pytz
+        from datetime import timezone as _tz
+        berlin = pytz.timezone("Europe/Berlin")
+        now_berlin = datetime.now(berlin)
+        reset_h, reset_m = 0, 0
+        reset_label = "–"
+        resets_at_str = sd.get("resets_at") or fh.get("resets_at")
+        if resets_at_str:
+            from datetime import datetime as _dt
+            rt = _dt.fromisoformat(resets_at_str.replace("Z", "+00:00")).astimezone(berlin)
+            diff_s = max(0, int((rt - now_berlin).total_seconds()))
+            reset_h, r2 = divmod(diff_s, 3600)
+            reset_m = r2 // 60
+            reset_label = rt.strftime("%a %d.%m. %H:%M")
+
+        if sd_pct < 50:
+            tip = "Entspannt — alles möglich."
+            tip_color = "#22c55e"
+        elif sd_pct < 75:
+            tip = "Moderat — große Features bewusst planen."
+            tip_color = "#f59e0b"
+        elif sd_pct < 90:
+            tip = "Kritisch — nur kleine Fixes & kurze Sessions."
+            tip_color = "#f97316"
+        else:
+            tip = "Fast leer — bis Reset auf das Nötigste beschränken."
+            tip_color = "#ef4444"
+
+        data = {
+            "five_hour_pct": fh_pct,
+            "seven_day_pct": sd_pct,
+            "seven_day_rem": sd_rem,
+            "reset_hours": reset_h,
+            "reset_minutes": reset_m,
+            "reset_label": reset_label,
+            "tip": tip,
+            "tip_color": tip_color,
+            "source": "anthropic_oauth"
+        }
+        _claude_quota_cache["ts"] = _t.time()
+        _claude_quota_cache["data"] = data
+        return data
+    except Exception as e:
+        return {"error": str(e)}
+
+
 def token_budget_snapshot():
     """Samstags-Reset: speichert aktuellen total_output als neuen Wochenstart."""
     try:
@@ -3487,6 +3558,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/tokenusage/history": get_token_halfdays,
                 "/api/tokenbudget": get_token_budget,
                 "/api/tokenbudget/snapshot": token_budget_snapshot,
+                "/api/claudequota": get_claude_quota,
                 "/api/status": lambda: {"ok": True, "ts": datetime.now().isoformat()},
                 "/api/redesigns-meta": get_redesigns_meta,
                 "/api/clipboard": get_clipboard,
