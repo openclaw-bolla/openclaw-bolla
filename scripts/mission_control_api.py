@@ -2352,6 +2352,31 @@ def get_claude_quota():
         return {"error": str(e)}
 
 
+_KOSTEN_FILE = "/home/bolla/workspace/config/kosten.json"
+
+def get_kosten():
+    try:
+        with open(_KOSTEN_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        return {"error": str(e)}
+
+def kosten_update_guthaben(name, betrag):
+    try:
+        with open(_KOSTEN_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+        for k in data["konten"]:
+            if k["name"] == name:
+                k["betrag"] = betrag
+                k["aktualisiert"] = datetime.now().strftime("%Y-%m-%d")
+        data["zuletzt_geaendert"] = datetime.now().strftime("%Y-%m-%d")
+        with open(_KOSTEN_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return {"ok": True}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 def token_budget_snapshot():
     """Samstags-Reset: speichert aktuellen total_output als neuen Wochenstart."""
     try:
@@ -3559,6 +3584,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/tokenbudget": get_token_budget,
                 "/api/tokenbudget/snapshot": token_budget_snapshot,
                 "/api/claudequota": get_claude_quota,
+                "/api/kosten": get_kosten,
                 "/api/status": lambda: {"ok": True, "ts": datetime.now().isoformat()},
                 "/api/redesigns-meta": get_redesigns_meta,
                 "/api/clipboard": get_clipboard,
@@ -3840,7 +3866,9 @@ class Handler(BaseHTTPRequestHandler):
             body = {}
 
         try:
-            if self.path == "/api/travel/recommendation":
+            if self.path == "/api/kosten/guthaben":
+                self._send_json(kosten_update_guthaben(body.get("name",""), body.get("betrag", 0)))
+            elif self.path == "/api/travel/recommendation":
                 uid = body.get("id", "sommer2026")
                 typ = body.get("typ", "pauschal")
                 self._send_json(save_travel_recommendation(uid, typ, body.get("empfehlung")))

@@ -1368,6 +1368,17 @@ html, body {
           <div id="tb-updated" style="font-size:10px;color:var(--dim);margin-top:6px;text-align:right"></div>
         </div>
 
+        <!-- ═══ BOLLA KONTEN & KOSTEN ═══ -->
+        <div id="kosten-box" style="margin:10px 14px 0;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 18px;border-top:3px solid #a78bfa">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div style="font-size:13px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:1px">💳 Bolla Konten & Kosten</div>
+            <button onclick="kostenLoad()" title="Aktualisieren" style="padding:4px 8px;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.35);border-radius:6px;color:#a78bfa;font-size:14px;cursor:pointer">↺</button>
+          </div>
+          <div id="kosten-content" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
+            <div class="loading">Lade…</div>
+          </div>
+        </div>
+
         <div class="grid" id="system-content"><div class="loading">Lade...</div></div>
       </div>
 
@@ -3267,7 +3278,7 @@ function showPage(page) {
   if (item) document.getElementById('page-title').textContent = item.querySelector('span:nth-child(2)')?.textContent || '';
   const cmdBar = document.getElementById('mail-cmd-bar');
   if (page !== 'email') { if (cmdBar) cmdBar.style.display='none'; closeMailResult(); _selectedMails=[]; }
-  if (page === 'system')     tbInit();
+  if (page === 'system')     { tbInit(); kostenLoad(); }
   if (page === 'brain')      initBrain();
   if (page === 'bolla')      loadBollaModel();
   if (page === 'system')     loadSystem();
@@ -5423,6 +5434,51 @@ function tbInit() {
   if (_tbInterval) clearInterval(_tbInterval);
   _tbInterval = setInterval(tbLoad, 6 * 3600 * 1000);
 }
+
+// ── Kosten & Konten Widget ─────────────────────────────────────
+async function kostenLoad() {
+  try {
+    const d = await fetch('/api/kosten').then(r => r.json());
+    if (d.error || !d.konten) return;
+    const el = document.getElementById('kosten-content');
+    if (!el) return;
+    el.innerHTML = d.konten.map(k => {
+      const kostenlos = k.typ === 'kostenlos';
+      const isGuthaben = k.typ === 'guthaben';
+      const niedrig = isGuthaben && k.betrag < 1.0;
+      const betragColor = niedrig ? '#ef4444' : kostenlos ? '#6b7280' : '#22c55e';
+      const betragText = kostenlos ? 'Kostenlos' : isGuthaben
+        ? `$${k.betrag.toFixed(2)} Guthaben`
+        : `${k.betrag % 1 === 0 ? k.betrag.toFixed(0) : k.betrag.toFixed(2)} ${k.einheit}`;
+      const aktualisiert = k.aktualisiert ? `<div style="font-size:10px;color:var(--dim);margin-top:3px">Stand: ${k.aktualisiert}</div>` : '';
+      const editBtn = isGuthaben ? `<button onclick="kostenEdit('${k.name}',${k.betrag})" style="padding:2px 7px;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);border-radius:4px;color:#a78bfa;font-size:11px;cursor:pointer;margin-top:4px">✏️ Anpassen</button>` : '';
+      return `<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-left:3px solid ${k.farbe};border-radius:8px;padding:10px 12px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="font-size:16px">${k.icon}</span>
+          <span style="font-size:13px;font-weight:600;color:var(--bright)">${k.name}</span>
+        </div>
+        <div style="font-size:14px;font-weight:700;color:${betragColor}">${betragText}</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:2px">${k.info}</div>
+        ${aktualisiert}${editBtn}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    const el = document.getElementById('kosten-content');
+    if (el) el.innerHTML = '<div style="font-size:12px;color:var(--dim)">Nicht verfügbar</div>';
+  }
+}
+
+async function kostenEdit(name, aktuell) {
+  const neu = prompt(`Neues Guthaben für ${name} ($):`, aktuell);
+  if (neu === null || isNaN(parseFloat(neu))) return;
+  await fetch('/api/kosten/guthaben', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({name, betrag: parseFloat(neu)})
+  });
+  kostenLoad();
+}
+// ─────────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────
 
 const CRON_META = {
@@ -5618,6 +5674,23 @@ async function loadSystem() {
 
     document.getElementById('system-content').innerHTML = `
       <div class="card">
+        <div class="card-head"><span class="card-title">🐾 Bolla</span></div>
+        <div style="font-size:20px;color:var(--success);margin-bottom:8px">🟢 Claude Code aktiv</div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;margin-bottom:8px">
+          <div style="font-size:12px;color:var(--dim);margin-bottom:3px">Aktuelles Modell</div>
+          <div style="font-size:14px;color:var(--accent)">${tok.model||'Claude Sonnet 4.6'}</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;margin-bottom:8px">
+          <div style="font-size:12px;color:var(--dim);margin-bottom:6px">Modell-Mix (7 Tage)</div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span style="color:var(--dim)">🔴 Opus</span><span style="color:${opusCalls7d>50?'var(--warning)':'var(--bright)'}">${opusCalls7d} Anfragen</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span style="color:var(--dim)">🔵 Sonnet</span><span style="color:var(--bright)">${sonnetCalls7d} Anfragen</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--dim);border-top:1px solid rgba(255,255,255,0.06);margin-top:4px;padding-top:4px"><span>Ø Output/Tag</span><span>${fmtTok(avgOutPerDay)} Tokens</span></div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px">
+          <div style="font-size:13px;color:${proColor};line-height:1.5">${proText}</div>
+        </div>
+      </div>
+      <div class="card">
         <div class="card-head"><span class="card-title">💻 Rechner</span></div>
         <div style="display:flex;gap:16px;font-size:13px;color:var(--dim);margin-bottom:10px;flex-wrap:wrap">
           <span>⏱ Uptime: <span style="color:var(--bright)">${sys.uptime}</span></span>
@@ -5647,30 +5720,6 @@ async function loadSystem() {
           ${bar(sys.disk_d.pct, sys.disk_d.pct>85?'var(--danger)':'var(--success)')}
         </div>` : ''}
         <div style="font-size:12px;color:var(--dim);margin-top:8px;font-family:monospace">${sys.kernel||''}</div>
-      </div>
-      <div class="card">
-        <div class="card-head"><span class="card-title">🐾 Bolla</span></div>
-        <div style="font-size:22px;color:var(--success);margin-bottom:8px">🟢 Claude Code</div>
-        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;margin-bottom:8px">
-          <div style="font-size:13px;color:var(--dim);margin-bottom:4px">Aktuelles Modell</div>
-          <div style="font-size:14px;color:var(--accent)">${tok.model||'Claude Opus 4.7'}</div>
-        </div>
-        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;margin-bottom:8px">
-          <div style="font-size:13px;color:var(--dim);margin-bottom:6px">Modell-Mix (7 Tage)</div>
-          <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--bright);margin-bottom:3px"><span>🔴 Opus-Anfragen</span><span style="color:${opusCalls7d>50?'var(--warning)':'var(--bright)'}">${opusCalls7d}</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--bright);margin-bottom:3px"><span>🔵 Sonnet-Anfragen</span><span>${sonnetCalls7d}</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--dim);margin-top:4px;border-top:1px solid rgba(255,255,255,0.06);padding-top:4px"><span>Ø Output/Tag</span><span>${fmtTok(avgOutPerDay)} Tokens</span></div>
-        </div>
-        <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px;margin-bottom:8px">
-          <div style="font-size:13px;color:var(--dim);margin-bottom:6px">Einschätzung für Pro-Plan (ab 10.05.)</div>
-          <div style="font-size:13px;color:${proColor};line-height:1.5">${proText}</div>
-          <div style="font-size:12px;color:var(--dim);margin-top:6px;line-height:1.5">
-            <b style="color:var(--bright)">Sonnet</b> = Standardmodell, großzügiges Limit<br>
-            <b style="color:var(--bright)">Opus</b> = stärkeres Modell, engeres Limit<br>
-            Bei Pro: Opus sparsam einsetzen
-          </div>
-        </div>
-        ${renderHalfdays(hist)}
       </div>
       <div class="card">
         <div class="card-head"><span class="card-title">📦 GitHub</span></div>
