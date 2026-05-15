@@ -2354,10 +2354,33 @@ def get_claude_quota():
 
 _KOSTEN_FILE = "/home/bolla/workspace/config/kosten.json"
 
+_PLAN_INFO = {
+    "max":         {"label": "Max Plan",  "betrag": 100.0, "einheit": "$/Monat"},
+    "max_5x":      {"label": "Max Plan",  "betrag": 100.0, "einheit": "$/Monat"},
+    "pro":         {"label": "Pro Plan",  "betrag": 20.0,  "einheit": "$/Monat"},
+    "free":        {"label": "Free Plan", "betrag": 0.0,   "einheit": ""},
+}
+
 def get_kosten():
     try:
         with open(_KOSTEN_FILE, encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+        # Anthropic-Plan automatisch aus OAuth-Token befüllen
+        try:
+            creds = json.load(open(os.path.expanduser("~/.claude/.credentials.json")))
+            sub = creds["claudeAiOauth"].get("subscriptionType", "").lower()
+            tier = creds["claudeAiOauth"].get("rateLimitTier", "").lower()
+            plan_key = "pro" if "pro" in sub else ("max" if "max" in sub or "max" in tier else None)
+            if plan_key:
+                plan = _PLAN_INFO.get(plan_key, _PLAN_INFO["pro"])
+                for k in data["konten"]:
+                    if k.get("typ") == "abo_auto" and "Anthropic" in k["name"]:
+                        k["betrag"] = plan["betrag"]
+                        k["einheit"] = plan["einheit"]
+                        k["info"] = f"{plan['label']} · automatisch erkannt"
+        except Exception:
+            pass
+        return data
     except Exception as e:
         return {"error": str(e)}
 
@@ -3470,6 +3493,18 @@ class Handler(BaseHTTPRequestHandler):
                 data = p.read_bytes()
                 self.send_response(200); self.send_header("Access-Control-Allow-Origin","*")
                 self.send_header("Content-Type","image/png"); self.send_header("Content-Length",str(len(data)))
+                self.end_headers(); self.wfile.write(data); return
+
+            if self.path == "/api/chris/avatar/shrug/webm":
+                p = os.path.expanduser("~/workspace/data/chris_shrug_transparent.webm")
+                if not os.path.isfile(p):
+                    self._send_json({"error": "WebM nicht gefunden"}, status=404); return
+                with open(p, "rb") as f:
+                    data = f.read()
+                self.send_response(200)
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Content-Type", "video/webm")
+                self.send_header("Content-Length", str(len(data)))
                 self.end_headers(); self.wfile.write(data); return
 
             if self.path == "/api/bolla/avatar/wave/webm":
@@ -4758,7 +4793,8 @@ Antworte NUR als reines JSON:
                 }
                 posts.insert(0, post)
                 KIFORUM_FILE.write_text(json.dumps(posts, ensure_ascii=False, indent=2))
-                self._send_json(post)
+                # chris_keywords: Bollas Keywords auch für Chris-These verwenden
+                self._send_json({**post, "chris_keywords": resp.get("keywords", [])})
 
             elif self.path == "/api/kiforum/add":
                 KIFORUM_FILE = Path(os.path.join(WORKSPACE, "data/kiforum.json"))
@@ -4830,6 +4866,7 @@ Antworte NUR als reines JSON:
   "title": "Kurzer prägnanter Titel (max 8 Wörter)",
   "content": "2-3 spannende Sätze zum Thema. Regt zum Nachdenken an.",
   "emoji": "Ein passendes Emoji",
+  "keywords": ["Begriff1", "Begriff2", "Begriff3"],
   "img_prompt": "Vivid digital illustration: [specific scene that powerfully visualizes the topic], dramatic lighting, rich colors, detailed, cinematic — NOT generic tech imagery"
 }}"""
                 claude_bin = CLAUDE_BIN
@@ -4858,6 +4895,7 @@ Antworte NUR als reines JSON:
                     "title": topic.get("title", "Tagesthema"),
                     "content": topic.get("content", ""),
                     "emoji": topic.get("emoji", "🐾"),
+                    "keywords": topic.get("keywords", []),
                     "img_prompt": topic.get("img_prompt", ""),
                     "img": gen_img_file,
                 }

@@ -1324,9 +1324,10 @@ html, body {
 
       <!-- SYSTEM -->
       <div class="page" id="page-system">
+        <div style="padding:14px;display:flex;flex-direction:column;gap:10px">
 
         <!-- ═══ ANTHROPIC WOCHENBUDGET ═══ -->
-        <div style="margin:14px 14px 0;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #f97316">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #f97316">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
             <div>
               <div style="font-size:13px;font-weight:700;color:#f97316;text-transform:uppercase;letter-spacing:1px">⚡ Anthropic Wochenbudget</div>
@@ -1369,7 +1370,7 @@ html, body {
         </div>
 
         <!-- ═══ BOLLA KONTEN & KOSTEN ═══ -->
-        <div id="kosten-box" style="margin:10px 14px 0;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 18px;border-top:3px solid #a78bfa">
+        <div id="kosten-box" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 18px;border-top:3px solid #a78bfa">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <div style="font-size:13px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:1px">💳 Bolla Konten & Kosten</div>
             <button onclick="kostenLoad()" title="Aktualisieren" style="padding:4px 8px;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.35);border-radius:6px;color:#a78bfa;font-size:14px;cursor:pointer">↺</button>
@@ -1380,6 +1381,7 @@ html, body {
         </div>
 
         <div class="grid" id="system-content"><div class="loading">Lade...</div></div>
+        </div><!-- end padding-wrapper -->
       </div>
 
       <!-- CLAUDE CODE -->
@@ -2813,7 +2815,11 @@ html, body {
 
             <!-- Chris -->
             <div class="kif-char" id="kif-chris" onclick="kifShowInput()" title="These eingeben">
-              <img src="/api/kiforum/chris" height="230" alt="Chris">
+              <video autoplay loop muted playsinline height="230"
+                style="transform-origin:center bottom;display:block;mix-blend-mode:multiply">
+                <source src="/api/chris/avatar/shrug/webm" type="video/webm">
+                <img src="/api/kiforum/chris" height="230" alt="Chris">
+              </video>
               <div class="kif-char-label">Chris</div>
               <div class="kif-hint">← anklicken</div>
             </div>
@@ -2932,7 +2938,7 @@ html, body {
           const isChris = side==='chris';
           const label = isChris ? '💬 Chris' : `${p.emoji||'🤖'} Bolla`;
           const title = (p.title && !isChris) ? `<div class="kif-msg-title">${kifEsc(p.emoji||'')} ${kifEsc(p.title)}</div>` : '';
-          const text = isChris ? kifEsc(p.content||'').replace(/\n/g,'<br>') : kifHighlight(p.content||'', p.keywords).replace(/\n/g,'<br>');
+          const text = kifHighlight(p.content||'', p.keywords).replace(/\n/g,'<br>');
           const img = p.img ? `<img class="kif-msg-img" src="/api/kiforum/img/${kifEsc(p.img)}" alt="">` : '';
           const copyTxt = encodeURIComponent((p.title?p.title+'\n':'')+p.content);
           return `<div class="kif-msg-wrap">
@@ -3152,6 +3158,8 @@ html, body {
           document.getElementById('kif-bolla').style.pointerEvents='';
           if (!bollaPost.error) {
             kifThinking(true, bollaPost.title||bollaPost.content);
+            // Chris-These nachträglich mit Keywords versehen
+            if (bollaPost.chris_keywords?.length) userPost.keywords = bollaPost.chris_keywords;
             _kifPosts.unshift(bollaPost);
             setTimeout(()=>{ kifThinking(false); kifRenderAll(); }, 2000);
           } else {
@@ -3176,6 +3184,7 @@ html, body {
             const bollaPost = await fetch('/api/kiforum/respond',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thesis}), signal:AbortSignal.timeout(90000)}).then(r=>r.json());
             if (!bollaPost.error) {
               kifThinking(true, bollaPost.title||bollaPost.content);
+              if (bollaPost.chris_keywords?.length) userPost.keywords = bollaPost.chris_keywords;
               _kifPosts.unshift(bollaPost);
               setTimeout(()=>{ kifThinking(false); kifRenderAll(); }, 2000);
             } else {
