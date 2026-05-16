@@ -12,230 +12,428 @@
 <link rel="icon" href="/mc-icon-192.png">
 <title>MC Chris</title>
 <style>
-  :root {
-    --bg: #f2f2f7;
-    --card: #ffffff;
-    --text: #1c1c1e;
-    --text2: #6c6c70;
-    --text3: #8e8e93;
-    --sep: rgba(60,60,67,0.12);
-    --accent: #007aff;
-    --accent2: #2196f3;
-    --green: #34c759;
-    --orange: #ff9500;
-    --red: #ff3b30;
-    --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
-  }
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body {
-    margin: 0; padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    font-size: 16px;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-  }
-  body {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: calc(72px + env(safe-area-inset-bottom));
-    min-height: 100vh;
-  }
+:root {
+  --bg: #f2f2f7;
+  --card: #ffffff;
+  --text: #1c1c1e;
+  --text2: #6c6c70;
+  --text3: #8e8e93;
+  --sep: rgba(60,60,67,0.12);
+  --accent: #007aff;
+  --green: #34c759;
+  --orange: #ff9500;
+  --red: #ff3b30;
+  --purple: #af52de;
+  --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+  --tab-h: 58px;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom));
+  min-height: 100vh;
+}
 
-  /* HEADER */
-  .header {
-    position: sticky; top: 0; z-index: 10;
-    padding: 12px 16px 10px;
-    padding-top: calc(12px + env(safe-area-inset-top));
-    background: rgba(242,242,247,0.92);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    border-bottom: 0.5px solid var(--sep);
-  }
-  .header h1 {
-    margin: 0;
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-  }
-  .header .sub {
-    margin-top: 2px;
-    font-size: 13px;
-    color: var(--text3);
-  }
+/* HEADER */
+.header {
+  position: sticky; top: 0; z-index: 10;
+  padding: 12px 16px 10px;
+  padding-top: calc(12px + env(safe-area-inset-top));
+  background: rgba(242,242,247,0.94);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid var(--sep);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+}
+.header-left { flex: 1; min-width: 0; }
+.header h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.header .sub {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text3);
+}
+.header-refresh {
+  background: none; border: none;
+  font-size: 20px; padding: 4px;
+  cursor: pointer; color: var(--accent);
+  flex-shrink: 0;
+  border-radius: 8px;
+  transition: opacity 0.15s;
+}
+.header-refresh:active { opacity: 0.4; }
+.header-refresh.spinning { animation: spin 0.6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes recPulse { 0%,100% { box-shadow: 0 0 0 8px rgba(255,59,48,0.2), 0 4px 20px rgba(255,59,48,0.35); } 50% { box-shadow: 0 0 0 14px rgba(255,59,48,0.08), 0 4px 20px rgba(255,59,48,0.35); } }
 
-  /* CONTENT */
-  .page { display: none; padding: 12px 16px 20px; }
-  .page.active { display: block; }
+/* CONTENT */
+.page { display: none; padding: 12px 16px 20px; }
+.page.active { display: block; }
 
-  .card {
-    background: var(--card);
-    border-radius: 14px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
-    box-shadow: var(--shadow);
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-  }
-  .card .left { flex-shrink: 0; }
-  .card .right { flex: 1; min-width: 0; }
-  .card .title { font-weight: 600; font-size: 16px; line-height: 1.3; }
-  .card .meta { font-size: 13px; color: var(--text2); margin-top: 3px; line-height: 1.35; }
-  .card .extra { font-size: 12px; color: var(--text3); margin-top: 4px; }
-  .card-dot {
-    width: 40px; height: 40px; border-radius: 20px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
-    background: #eef2f7;
-  }
-  .card-dot.blue { background: rgba(0,122,255,0.12); color: var(--accent); }
-  .card-dot.green { background: rgba(52,199,89,0.15); color: var(--green); }
-  .card-dot.orange { background: rgba(255,149,0,0.15); color: var(--orange); }
-  .card-dot.pink { background: rgba(255,45,85,0.15); color: #ff2d55; }
+/* SECTION HEADER */
+.section-head {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text3);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  margin: 16px 4px 6px;
+}
+.section-head:first-child { margin-top: 0; }
 
-  /* EMAIL-STYLE */
-  .mail .from { font-weight: 600; font-size: 15px; color: var(--text); }
-  .mail .subj { font-size: 14px; color: var(--text); margin-top: 2px; font-weight: 500; }
-  .mail .prev { font-size: 13px; color: var(--text3); margin-top: 2px; line-height: 1.4;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .mail .date { font-size: 12px; color: var(--text3); text-align: right; white-space: nowrap; margin-left: 8px; }
-  .mail { display: flex; justify-content: space-between; align-items: flex-start; }
-  .mail .body { flex: 1; min-width: 0; }
-  .badge {
-    display: inline-block; padding: 1px 6px; border-radius: 4px;
-    font-size: 10px; font-weight: 600; letter-spacing: 0.3px;
-    background: rgba(0,122,255,0.12); color: var(--accent);
-    margin-right: 6px; vertical-align: 1px;
-  }
-  .badge.gmail { background: rgba(234,67,53,0.12); color: #ea4335; }
+/* DATE GROUP */
+.date-group-head {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text2);
+  margin: 14px 4px 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.date-group-head:first-child { margin-top: 0; }
+.date-group-head .badge-today {
+  background: var(--accent); color: #fff;
+  padding: 1px 7px; border-radius: 6px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
+}
+.date-group-head .badge-tomorrow {
+  background: rgba(52,199,89,0.15); color: var(--green);
+  padding: 1px 7px; border-radius: 6px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
+}
 
-  /* WETTER */
-  .wx-now {
-    background: linear-gradient(135deg, #4a90e2, #357abd);
-    color: #fff;
-    border-radius: 18px;
-    padding: 20px;
-    margin-bottom: 12px;
-    box-shadow: 0 4px 16px rgba(74,144,226,0.3);
-  }
-  .wx-now .temp { font-size: 56px; font-weight: 200; line-height: 1; letter-spacing: -2px; }
-  .wx-now .desc { font-size: 17px; margin-top: 4px; opacity: 0.95; }
-  .wx-now .loc { font-size: 13px; opacity: 0.85; margin-top: 2px; }
-  .wx-now .extra { font-size: 13px; margin-top: 12px; opacity: 0.9; display: flex; gap: 16px; }
-  .wx-day { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 0.5px solid var(--sep); }
-  .wx-day:last-child { border-bottom: none; }
-  .wx-day .name { font-weight: 500; width: 50px; }
-  .wx-day .icon { font-size: 22px; flex: 1; text-align: center; }
-  .wx-day .t { text-align: right; font-variant-numeric: tabular-nums; }
-  .wx-day .tmax { font-weight: 600; }
-  .wx-day .tmin { color: var(--text3); margin-left: 8px; }
+/* CARDS */
+.card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.card .left { flex-shrink: 0; }
+.card .right { flex: 1; min-width: 0; }
+.card .title { font-weight: 600; font-size: 15px; line-height: 1.3; }
+.card .meta { font-size: 13px; color: var(--text2); margin-top: 3px; line-height: 1.35; }
+.card .extra { font-size: 12px; color: var(--text3); margin-top: 4px; }
 
-  /* LOADING */
-  .loading { text-align: center; padding: 30px; color: var(--text3); font-size: 14px; }
-  .empty { text-align: center; padding: 40px 20px; color: var(--text3); }
-  .empty .big { font-size: 44px; margin-bottom: 8px; }
+.card-dot {
+  width: 40px; height: 40px; border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; background: #eef2f7; flex-shrink: 0;
+}
+.card-dot.blue   { background: rgba(0,122,255,0.12);  color: var(--accent); }
+.card-dot.green  { background: rgba(52,199,89,0.15);  color: var(--green); }
+.card-dot.orange { background: rgba(255,149,0,0.15);  color: var(--orange); }
+.card-dot.pink   { background: rgba(255,45,85,0.15);  color: #ff2d55; }
+.card-dot.purple { background: rgba(175,82,222,0.15); color: var(--purple); }
 
-  /* BOTTOM NAV */
-  .tabbar {
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
-    background: rgba(255,255,255,0.92);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    border-top: 0.5px solid var(--sep);
-    display: flex;
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  .tabbtn {
-    flex: 1;
-    padding: 8px 4px 6px;
-    text-align: center;
-    color: var(--text3);
-    font-size: 10px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: color 0.15s;
-    border: none;
-    background: transparent;
-    font-family: inherit;
-  }
-  .tabbtn .ic { font-size: 22px; display: block; margin-bottom: 2px; }
-  .tabbtn.active { color: var(--accent); }
-  .tabbtn:active { opacity: 0.5; }
+/* MAIL */
+.mail-card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.initials {
+  width: 40px; height: 40px; border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; color: #fff;
+  flex-shrink: 0; letter-spacing: -0.3px;
+}
+.mail-from { font-weight: 600; font-size: 15px; color: var(--text); }
+.mail-subj { font-size: 14px; color: var(--text); margin-top: 2px; font-weight: 500; }
+.mail-prev { font-size: 13px; color: var(--text3); margin-top: 2px; line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mail-date { font-size: 12px; color: var(--text3); text-align: right; white-space: nowrap; margin-left: 8px; flex-shrink: 0; }
+.mail-body { flex: 1; min-width: 0; }
+.mail-header-row { display: flex; justify-content: space-between; align-items: flex-start; }
 
-  /* REFRESH HINT */
-  .refresh-hint {
-    text-align: center;
-    padding: 10px;
-    font-size: 12px;
-    color: var(--text3);
-  }
-  .refresh-hint a { color: var(--accent); text-decoration: none; }
+.badge {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.3px;
+  background: rgba(0,122,255,0.12); color: var(--accent);
+  margin-right: 6px; vertical-align: 1px;
+}
+.badge.gmail { background: rgba(234,67,53,0.12); color: #ea4335; }
 
-  /* CLIPBOARD */
-  .clip-textarea {
-    width: 100%;
-    border: 1.5px solid var(--sep);
-    border-radius: 10px;
-    padding: 12px;
-    font-size: 16px;
-    font-family: inherit;
-    color: var(--text);
-    background: #fafafa;
-    resize: none;
-    outline: none;
-    line-height: 1.5;
-    min-height: 200px;
-    transition: border-color 0.15s;
-  }
-  .clip-textarea:focus { border-color: var(--accent); }
-  .clip-btn {
-    flex: 1;
-    padding: 11px 8px;
-    border-radius: 10px;
-    border: none;
-    font-size: 14px;
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    background: rgba(0,122,255,0.12);
-    color: var(--accent);
-    transition: opacity 0.15s;
-  }
-  .clip-btn:active { opacity: 0.5; }
-  .clip-btn.green { background: rgba(52,199,89,0.15); color: var(--green); }
-  .clip-btn.red { background: rgba(255,59,48,0.12); color: var(--red); }
+/* WETTER */
+.wx-now {
+  background: linear-gradient(135deg, #4a90e2, #357abd);
+  color: #fff;
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 16px rgba(74,144,226,0.3);
+}
+.wx-now .temp { font-size: 56px; font-weight: 200; line-height: 1; letter-spacing: -2px; }
+.wx-now .desc { font-size: 17px; margin-top: 4px; opacity: 0.95; }
+.wx-now .loc  { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+.wx-now .extra { font-size: 13px; margin-top: 12px; opacity: 0.9; display: flex; gap: 16px; flex-wrap: wrap; }
+.wx-day { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 0.5px solid var(--sep); }
+.wx-day:last-child { border-bottom: none; }
+.wx-day .name { font-weight: 500; width: 50px; }
+.wx-day .icon { font-size: 22px; flex: 1; text-align: center; }
+.wx-day .t { text-align: right; font-variant-numeric: tabular-nums; }
+.wx-day .tmax { font-weight: 600; }
+.wx-day .tmin { color: var(--text3); margin-left: 8px; }
+
+/* REZEPT */
+.recipe-img {
+  width: 100%;
+  border-radius: 16px;
+  display: block;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+.recipe-placeholder {
+  width: 100%; aspect-ratio: 4/3;
+  background: linear-gradient(135deg, #f5f0e8, #ede8dc);
+  border-radius: 16px;
+  margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 72px;
+}
+.ingredient-row {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 9px 0; border-bottom: 0.5px solid var(--sep);
+}
+.ingredient-row:last-child { border-bottom: none; }
+.ingredient-dot { color: var(--accent); font-size: 20px; line-height: 1; flex-shrink: 0; }
+.ingredient-text { font-size: 15px; line-height: 1.4; }
+
+.step-row {
+  display: flex; gap: 14px; padding: 10px 0;
+  border-bottom: 0.5px solid var(--sep);
+  align-items: flex-start;
+}
+.step-row:last-child { border-bottom: none; }
+.step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.step-text { font-size: 15px; line-height: 1.55; padding-top: 4px; flex: 1; }
+
+.primary-btn {
+  width: 100%;
+  padding: 15px;
+  border-radius: 13px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: opacity 0.15s;
+}
+.primary-btn:active { opacity: 0.7; }
+.primary-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* STATES */
+.loading {
+  text-align: center; padding: 40px 20px; color: var(--text3); font-size: 15px;
+}
+.loading::after {
+  content: ''; display: block; margin: 16px auto 0;
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 3px solid var(--sep);
+  border-top-color: var(--accent);
+  animation: spin 0.7s linear infinite;
+}
+.empty { text-align: center; padding: 40px 20px; color: var(--text3); }
+.empty .big { font-size: 48px; margin-bottom: 8px; }
+
+/* BOTTOM NAV */
+.tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+  background: rgba(255,255,255,0.93);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 0.5px solid var(--sep);
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: env(safe-area-inset-bottom);
+  height: calc(var(--tab-h) + env(safe-area-inset-bottom));
+}
+.tabbar::-webkit-scrollbar { display: none; }
+.tabbtn {
+  flex: 0 0 auto;
+  width: 70px;
+  padding: 7px 4px 5px;
+  text-align: center;
+  color: var(--text3);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  letter-spacing: 0.1px;
+}
+.tabbtn .ic { font-size: 23px; display: block; margin-bottom: 2px; }
+.tabbtn.active { color: var(--accent); }
+.tabbtn:active { opacity: 0.45; }
+
+/* CLIPBOARD */
+.clip-textarea {
+  width: 100%;
+  border: 1.5px solid var(--sep);
+  border-radius: 12px;
+  padding: 13px;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fafafa;
+  resize: none;
+  outline: none;
+  line-height: 1.5;
+  min-height: 200px;
+  transition: border-color 0.15s;
+}
+.clip-textarea:focus { border-color: var(--accent); }
+.clip-btn {
+  flex: 1;
+  padding: 12px 8px;
+  border-radius: 11px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  background: rgba(0,122,255,0.12);
+  color: var(--accent);
+  transition: opacity 0.15s;
+}
+.clip-btn:active { opacity: 0.5; }
+.clip-btn.green { background: rgba(52,199,89,0.15); color: var(--green); }
+.clip-btn.red   { background: rgba(255,59,48,0.12); color: var(--red); }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1 id="page-title">Kalender</h1>
-  <div class="sub" id="page-sub"></div>
+  <div class="header-left">
+    <h1 id="page-title">Kalender</h1>
+    <div class="sub" id="page-sub"></div>
+  </div>
+  <button class="header-refresh" id="refresh-btn" onclick="refreshTab()" title="Aktualisieren">↻</button>
 </div>
 
 <!-- KALENDER -->
 <div class="page active" id="p-cal">
-  <div id="cal-list"><div class="loading">Lade Termine…</div></div>
+  <div id="cal-list"><div class="loading">Lade Termine</div></div>
 </div>
 
 <!-- MAILS -->
 <div class="page" id="p-mail">
-  <div id="mail-list"><div class="loading">Lade Mails…</div></div>
+  <div id="mail-list"><div class="loading">Lade Mails</div></div>
 </div>
 
 <!-- WETTER -->
 <div class="page" id="p-wx">
-  <div id="wx-content"><div class="loading">Lade Wetter…</div></div>
+  <div id="wx-content"><div class="loading">Lade Wetter</div></div>
+</div>
+
+<!-- REZEPT -->
+<div class="page" id="p-rezept">
+  <div id="rezept-content"><div class="loading">Generiere Rezept des Tages</div></div>
 </div>
 
 <!-- GEBURTSTAGE -->
 <div class="page" id="p-bd">
-  <div id="bd-list"><div class="loading">Lade Geburtstage…</div></div>
+  <div id="bd-list"><div class="loading">Lade Geburtstage</div></div>
 </div>
 
+<!-- ROBIN -->
 <div class="page" id="p-robin">
-  <div id="robin-timeline"><div class="loading">Lade…</div></div>
+  <div id="robin-timeline"><div class="loading">Lade</div></div>
+</div>
+
+<!-- LADEN (EV Charging) -->
+<div class="page" id="p-laden">
+  <div id="laden-content"><div class="loading">Standort wird ermittelt</div></div>
+</div>
+
+<!-- NOTIZ (Sprachnotiz) -->
+<div class="page" id="p-notiz">
+  <div class="card" style="flex-direction:column;align-items:center;gap:16px;padding:24px 16px">
+    <div id="notiz-status-top" style="font-size:14px;color:var(--text3)">Aufnahme-Taste drücken und sprechen</div>
+    <button id="rec-btn" onclick="toggleRecording()"
+      style="width:90px;height:90px;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:36px;cursor:pointer;box-shadow:0 4px 20px rgba(255,59,48,0.35);transition:transform 0.1s,box-shadow 0.1s">
+      🎙️
+    </button>
+    <div id="rec-timer" style="font-size:24px;font-weight:200;color:var(--text3);font-variant-numeric:tabular-nums;min-height:32px"></div>
+  </div>
+  <div id="notiz-result" style="display:none">
+    <div class="card" style="flex-direction:column;gap:10px">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px">Erkannter Text</div>
+      <div id="notiz-text" style="font-size:17px;line-height:1.5;color:var(--text)"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button onclick="notizSenden(false)" class="clip-btn">📩 Telegram</button>
+      <button onclick="notizSenden(true)" class="clip-btn green">💾 Speichern</button>
+      <button onclick="notizKopieren()" class="clip-btn" style="background:rgba(175,82,222,0.12);color:var(--purple)">📋 Kopieren</button>
+    </div>
+    <div id="notiz-action-status" style="text-align:center;font-size:14px;min-height:20px;margin-bottom:12px"></div>
+  </div>
+  <div id="notiz-verlauf-wrap">
+    <div class="section-head">Letzte Notizen</div>
+    <div id="notiz-verlauf"><div class="loading" style="padding:20px"></div></div>
+  </div>
+</div>
+
+<!-- SOS -->
+<div class="page" id="p-sos">
+  <div style="background:#ff3b30;border-radius:18px;padding:20px;margin-bottom:12px;color:#fff;text-align:center">
+    <div style="font-size:48px;margin-bottom:8px">🆘</div>
+    <div style="font-size:22px;font-weight:700;margin-bottom:4px">Notfall</div>
+    <div id="sos-address" style="font-size:14px;opacity:0.85;line-height:1.4">Standort wird ermittelt…</div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <a href="tel:112" style="flex:1;padding:14px;background:rgba(255,255,255,0.2);border-radius:12px;color:#fff;text-decoration:none;font-size:18px;font-weight:700;text-align:center">📞 112</a>
+      <button onclick="sosSend()" style="flex:1;padding:14px;background:rgba(255,255,255,0.2);border-radius:12px;border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">📡 Standort<br>senden</button>
+    </div>
+  </div>
+  <div id="sos-send-status" style="text-align:center;font-size:14px;min-height:20px;margin-bottom:8px"></div>
+  <div class="section-head">Meine Kontakte</div>
+  <div id="sos-contacts"><div class="loading" style="padding:20px"></div></div>
+  <div class="section-head">Medizinische Infos</div>
+  <div id="sos-medical" class="card" style="flex-direction:column;gap:8px"></div>
 </div>
 
 <!-- CLIPBOARD -->
@@ -262,61 +460,126 @@
     </div>
     <input type="file" id="clip-file-input" accept="image/*" style="display:none" onchange="clipImgFileSelected(event)">
     <span id="clip-img-status" style="display:block;font-size:13px;min-height:18px;text-align:center"></span>
-    <div id="clip-img-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px"></div>
+    <div id="clip-img-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px"></div>
   </div>
 </div>
 
 <!-- BOTTOM NAV -->
-<nav class="tabbar">
+<nav class="tabbar" id="tabbar">
   <button class="tabbtn active" data-tab="cal"><span class="ic">📅</span>Kalender</button>
   <button class="tabbtn" data-tab="mail"><span class="ic">📧</span>Mails</button>
   <button class="tabbtn" data-tab="wx"><span class="ic">🌤️</span>Wetter</button>
-  <button class="tabbtn" data-tab="bd"><span class="ic">🎂</span>Geburtstage</button>
+  <button class="tabbtn" data-tab="rezept"><span class="ic">🍽️</span>Rezept</button>
+  <button class="tabbtn" data-tab="bd"><span class="ic">🎂</span>Geburtstag</button>
+  <button class="tabbtn" data-tab="laden"><span class="ic">🔋</span>Laden</button>
+  <button class="tabbtn" data-tab="notiz"><span class="ic">🎙️</span>Notiz</button>
   <button class="tabbtn" data-tab="robin"><span class="ic">🩺</span>Robin</button>
   <button class="tabbtn" data-tab="clip"><span class="ic">📋</span>Clipboard</button>
+  <button class="tabbtn" data-tab="sos" style="color:#ff3b30"><span class="ic">🆘</span>SOS</button>
 </nav>
 
 <script>
-// ===== TAB SWITCH =====
+// ===== UTILS =====
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+const INITIALS_COLORS = ['#007aff','#34c759','#ff9500','#ff2d55','#af52de','#5ac8fa','#ff6b35','#30b0c7'];
+function initialsColor(name) {
+  let h = 0;
+  for (let i = 0; i < (name||'').length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff;
+  return INITIALS_COLORS[h % INITIALS_COLORS.length];
+}
+function getInitials(name) {
+  const parts = (name||'').trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+  return (name||'?').slice(0,2).toUpperCase();
+}
+
+// ===== TAB MANAGEMENT =====
 const pageTitle = document.getElementById('page-title');
-const pageSub = document.getElementById('page-sub');
+const pageSub   = document.getElementById('page-sub');
 const TITLES = {
-  cal: ['Kalender', 'Kommende Termine'],
-  mail: ['Mails', 'Ungelesen in deinen Postfächern'],
-  wx: ['Wetter', 'Norderstedt'],
-  bd: ['Geburtstage', 'Nächste Anlässe'],
-  robin: ['Robin', 'Medizinstudium Uni Ulm'],
-  clip: ['Clipboard', 'Geräteübergreifend teilen']
+  cal:    ['Kalender',     'Kommende Termine'],
+  mail:   ['Mails',        'Ungelesen'],
+  wx:     ['Wetter',       'Norderstedt'],
+  rezept: ['Rezept',       'Rezept des Tages'],
+  laden:  ['Ladestopp',    'Nächste EnBW-Säulen'],
+  notiz:  ['Sprachnotiz',  'Aufnehmen · Senden · Speichern'],
+  bd:     ['Geburtstage',  'Nächste Anlässe'],
+  robin:  ['Robin',        'Medizinstudium Uni Ulm'],
+  clip:   ['Clipboard',    'Geräteübergreifend teilen'],
+  sos:    ['🆘 Notfall',   'Notruf & Standort']
 };
+
+let activeTab = 'cal';
+const loaded = {};
 
 document.querySelectorAll('.tabbtn').forEach(btn => {
   btn.addEventListener('click', () => {
     const tab = btn.dataset.tab;
+    if (tab === activeTab) { refreshTab(); return; }
+    activeTab = tab;
     document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b === btn));
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('p-' + tab).classList.add('active');
     const [title, sub] = TITLES[tab];
     pageTitle.textContent = title;
     pageSub.textContent = sub;
+    // Scroll active tab into view
+    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     loadTab(tab);
     window.scrollTo(0, 0);
   });
 });
 
-// ===== DATA LOAD =====
-const loaded = {};
+function refreshTab() {
+  delete loaded[activeTab];
+  const ri = document.getElementById('refresh-btn');
+  ri.classList.add('spinning');
+  // Reset content area
+  const containers = {
+    cal: 'cal-list', mail: 'mail-list', wx: 'wx-content',
+    rezept: 'rezept-content', laden: 'laden-content',
+    notiz: null, bd: 'bd-list', robin: 'robin-timeline',
+    clip: null, sos: null
+  };
+  const cid = containers[activeTab];
+  if (cid) document.getElementById(cid).innerHTML = '<div class="loading">Lade</div>';
+  loadTab(activeTab).finally(() => {
+    setTimeout(() => ri.classList.remove('spinning'), 400);
+  });
+}
+
 async function loadTab(tab) {
-  // Clipboard immer frisch laden (ändert sich häufig)
-  if (tab !== 'clip') {
-    if (loaded[tab]) return;
-    loaded[tab] = true;
+  if (tab !== 'clip' && loaded[tab]) return;
+  if (tab !== 'clip') loaded[tab] = true;
+  try {
+    if      (tab === 'cal')    await loadCalendar();
+    else if (tab === 'mail')   await loadMails();
+    else if (tab === 'wx')     await loadWeather();
+    else if (tab === 'rezept') await loadRezept();
+    else if (tab === 'laden')  await loadLaden();
+    else if (tab === 'notiz')  await loadNotiz();
+    else if (tab === 'bd')     await loadBirthdays();
+    else if (tab === 'robin')  loadRobinTimeline();
+    else if (tab === 'clip')   await loadClipboard();
+    else if (tab === 'sos')    await loadSOS();
+  } catch (e) {
+    console.error(tab, e);
   }
-  if (tab === 'cal') await loadCalendar();
-  else if (tab === 'mail') await loadMails();
-  else if (tab === 'wx') await loadWeather();
-  else if (tab === 'bd') await loadBirthdays();
-  else if (tab === 'robin') loadRobinTimeline();
-  else if (tab === 'clip') await loadClipboard();
+}
+
+// ===== KALENDER =====
+function parseCalDate(dateStr) {
+  // API returns "18.05." or "18.05.2026" — parse to Date
+  if (!dateStr) return null;
+  const m = dateStr.match(/^(\d{1,2})\.(\d{1,2})\.?(\d{4})?/);
+  if (!m) return null;
+  const day = parseInt(m[1]), mon = parseInt(m[2]) - 1;
+  const year = m[3] ? parseInt(m[3]) : new Date().getFullYear();
+  return new Date(year, mon, day);
 }
 
 async function loadCalendar() {
@@ -328,115 +591,242 @@ async function loadCalendar() {
       el.innerHTML = '<div class="empty"><div class="big">📅</div>Keine kommenden Termine</div>';
       return;
     }
-    el.innerHTML = data.map(ev => `
-      <div class="card">
-        <div class="left"><div class="card-dot blue">${ev.weekday || '📅'}</div></div>
-        <div class="right">
-          <div class="title">${esc(ev.title)}</div>
-          <div class="meta">${esc(ev.date)} ${esc(ev.time)}${ev.location ? ' · ' + esc(ev.location) : ''}</div>
-          ${ev.category ? `<div class="extra">${esc(ev.category)}</div>` : ''}
-        </div>
-      </div>`).join('');
+
+    const now = new Date(); now.setHours(0,0,0,0);
+    const tom = new Date(now); tom.setDate(now.getDate() + 1);
+
+    // Group by date string (raw key)
+    const groups = {};
+    const groupOrder = [];
+    data.forEach(ev => {
+      const key = ev.date || '';
+      if (!groups[key]) { groups[key] = []; groupOrder.push(key); }
+      groups[key].push(ev);
+    });
+
+    let html = '';
+    groupOrder.forEach(key => {
+      const evDate = parseCalDate(key);
+      let label = key, badge = '';
+      if (evDate) {
+        const t = evDate.getTime();
+        if (t === now.getTime()) {
+          badge = '<span class="badge-today">HEUTE</span>';
+          label = '';
+        } else if (t === tom.getTime()) {
+          badge = '<span class="badge-tomorrow">MORGEN</span>';
+          label = key;
+        } else {
+          label = key;
+        }
+      }
+      html += `<div class="date-group-head">${badge}${esc(label)}</div>`;
+      groups[key].forEach(ev => {
+        const timeStr = ev.time ? `<span style="color:var(--accent);font-weight:600">${esc(ev.time)}</span> · ` : '';
+        html += `<div class="card">
+          <div class="left"><div class="card-dot blue" style="font-size:14px;font-weight:700">${esc(ev.weekday || '📅')}</div></div>
+          <div class="right">
+            <div class="title">${esc(ev.title)}</div>
+            <div class="meta">${timeStr}${ev.location ? esc(ev.location) : ''}</div>
+            ${ev.category ? `<div class="extra">📌 ${esc(ev.category)}</div>` : ''}
+          </div>
+        </div>`;
+      });
+    });
+    el.innerHTML = html;
   } catch (e) {
-    el.innerHTML = `<div class="empty">⚠️ ${e.message}</div>`;
+    el.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`;
   }
 }
 
+// ===== MAILS =====
 async function loadMails() {
   const el = document.getElementById('mail-list');
   try {
     const r = await fetch('/api/email');
     const data = await r.json();
-    pageSub.textContent = `${data.count || 0} ungelesen`;
+    const count = data.count || 0;
+    pageSub.textContent = count === 0 ? 'Alles gelesen' : `${count} ungelesen`;
     if (!data.messages || !data.messages.length) {
-      el.innerHTML = '<div class="empty"><div class="big">📭</div>Keine ungelesenen Mails</div>';
+      el.innerHTML = '<div class="empty"><div class="big">📭</div>Alles gelesen — Inbox zero! 🎉</div>';
       return;
     }
-    el.innerHTML = data.messages.map(m => {
-      const badgeClass = (m.account || '').toLowerCase() === 'gmail' ? 'badge gmail' : 'badge';
-      return `<div class="card">
-        <div style="flex:1;min-width:0">
-          <div class="mail">
-            <div class="body">
-              <div class="from">${esc(m.from)}</div>
-              <div class="subj"><span class="${badgeClass}">${esc(m.account)}</span>${esc(m.subject)}</div>
-              <div class="prev">${esc(m.preview || '')}</div>
+
+    // Group by account
+    const byAccount = {};
+    data.messages.forEach(m => {
+      const acc = m.account || 'Sonstige';
+      if (!byAccount[acc]) byAccount[acc] = [];
+      byAccount[acc].push(m);
+    });
+
+    let html = '';
+    Object.entries(byAccount).forEach(([acc, msgs]) => {
+      const isGmail = acc.toLowerCase() === 'gmail';
+      html += `<div class="section-head">${isGmail ? '📬' : '📧'} ${esc(acc)} · ${msgs.length} ungelesen</div>`;
+      msgs.forEach(m => {
+        const init = getInitials(m.from || '?');
+        const bg = initialsColor(m.from || '');
+        const badgeClass = isGmail ? 'badge gmail' : 'badge';
+        html += `<div class="mail-card">
+          <div class="initials" style="background:${bg}">${esc(init)}</div>
+          <div class="mail-body">
+            <div class="mail-header-row">
+              <div class="mail-from">${esc(m.from)}</div>
+              <div class="mail-date">${esc(m.date)}</div>
             </div>
-            <div class="date">${esc(m.date)}</div>
+            <div class="mail-subj">${esc(m.subject)}</div>
+            <div class="mail-prev">${esc(m.preview || '')}</div>
           </div>
-        </div>
-      </div>`;
-    }).join('');
+        </div>`;
+      });
+    });
+    el.innerHTML = html;
   } catch (e) {
-    el.innerHTML = `<div class="empty">⚠️ ${e.message}</div>`;
+    el.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`;
   }
 }
 
+// ===== WETTER =====
 const WX_ICONS = {
-  0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
-  45: '🌫️', 48: '🌫️',
-  51: '🌦️', 53: '🌦️', 55: '🌦️',
-  61: '🌧️', 63: '🌧️', 65: '🌧️',
-  71: '🌨️', 73: '🌨️', 75: '❄️', 77: '❄️',
-  80: '🌦️', 81: '🌧️', 82: '⛈️',
-  85: '🌨️', 86: '🌨️',
-  95: '⛈️', 96: '⛈️', 99: '⛈️'
+  0:'☀️', 1:'🌤️', 2:'⛅', 3:'☁️',
+  45:'🌫️', 48:'🌫️',
+  51:'🌦️', 53:'🌦️', 55:'🌦️',
+  61:'🌧️', 63:'🌧️', 65:'🌧️',
+  71:'🌨️', 73:'🌨️', 75:'❄️', 77:'❄️',
+  80:'🌦️', 81:'🌧️', 82:'⛈️',
+  85:'🌨️', 86:'🌨️',
+  95:'⛈️', 96:'⛈️', 99:'⛈️'
 };
 const WX_DESC = {
-  0: 'Klar', 1: 'Heiter', 2: 'Teilweise bewölkt', 3: 'Bewölkt',
-  45: 'Nebel', 48: 'Reifnebel',
-  51: 'Leichter Nieselregen', 53: 'Nieselregen', 55: 'Starker Nieselregen',
-  61: 'Leichter Regen', 63: 'Regen', 65: 'Starker Regen',
-  71: 'Leichter Schneefall', 73: 'Schneefall', 75: 'Starker Schneefall',
-  77: 'Graupel',
-  80: 'Leichte Schauer', 81: 'Schauer', 82: 'Starke Schauer',
-  85: 'Schneeschauer', 86: 'Starke Schneeschauer',
-  95: 'Gewitter', 96: 'Gewitter mit Hagel', 99: 'Starkes Gewitter'
+  0:'Klar', 1:'Heiter', 2:'Teilweise bewölkt', 3:'Bewölkt',
+  45:'Nebel', 48:'Reifnebel',
+  51:'Leichter Nieselregen', 53:'Nieselregen', 55:'Starker Nieselregen',
+  61:'Leichter Regen', 63:'Regen', 65:'Starker Regen',
+  71:'Leichter Schneefall', 73:'Schneefall', 75:'Starker Schneefall', 77:'Graupel',
+  80:'Leichte Schauer', 81:'Schauer', 82:'Starke Schauer',
+  85:'Schneeschauer', 86:'Starke Schneeschauer',
+  95:'Gewitter', 96:'Gewitter mit Hagel', 99:'Starkes Gewitter'
 };
 
 async function loadWeather() {
   const el = document.getElementById('wx-content');
   try {
-    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=53.69&longitude=9.98&current=temperature_2m,weather_code,apparent_temperature,wind_speed_10m,relative_humidity_2m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Europe/Berlin&forecast_days=5');
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=53.69&longitude=9.98&current=temperature_2m,weather_code,apparent_temperature,wind_speed_10m,relative_humidity_2m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Europe/Berlin&forecast_days=5');
     const d = await r.json();
-    const cur = d.current;
+    const cur  = d.current;
     const days = d.daily;
     const curIcon = WX_ICONS[cur.weather_code] || '🌤️';
     const curDesc = WX_DESC[cur.weather_code] || '';
     const daysHtml = days.time.slice(1).map((day, i) => {
-      const idx = i + 1;
-      const dt = new Date(day);
-      const name = dt.toLocaleDateString('de-DE', { weekday: 'short' });
+      const idx  = i + 1;
+      const dt   = new Date(day);
+      const name = dt.toLocaleDateString('de-DE', { weekday:'short' });
       const code = days.weather_code[idx];
+      const rain = days.precipitation_probability_max?.[idx];
       return `<div class="wx-day">
         <div class="name">${name}</div>
         <div class="icon">${WX_ICONS[code] || '🌤️'}</div>
+        ${rain != null ? `<div style="font-size:12px;color:rgba(255,255,255,0.75);width:36px;text-align:center">${rain}%💧</div>` : '<div style="width:36px"></div>'}
         <div class="t"><span class="tmax">${Math.round(days.temperature_2m_max[idx])}°</span><span class="tmin">${Math.round(days.temperature_2m_min[idx])}°</span></div>
       </div>`;
     }).join('');
     el.innerHTML = `
       <div class="wx-now">
-        <div class="loc">Norderstedt · jetzt</div>
-        <div style="display:flex;align-items:flex-start;gap:12px">
+        <div class="loc">📍 Norderstedt</div>
+        <div style="display:flex;align-items:flex-start;gap:12px;margin-top:8px">
           <div class="temp">${Math.round(cur.temperature_2m)}°</div>
-          <div style="margin-top:10px;font-size:40px">${curIcon}</div>
+          <div style="margin-top:8px;font-size:44px">${curIcon}</div>
         </div>
         <div class="desc">${curDesc}</div>
         <div class="extra">
           <span>Gefühlt ${Math.round(cur.apparent_temperature)}°</span>
-          <span>Wind ${Math.round(cur.wind_speed_10m)} km/h</span>
-          <span>LF ${cur.relative_humidity_2m}%</span>
+          <span>💨 ${Math.round(cur.wind_speed_10m)} km/h</span>
+          <span>💧 ${cur.relative_humidity_2m}%</span>
         </div>
       </div>
       <div class="card" style="flex-direction:column">
-        <div style="font-weight:600;margin-bottom:4px">Nächste Tage</div>
+        <div class="section-head" style="margin:0 0 6px">Nächste Tage</div>
         ${daysHtml}
       </div>`;
   } catch (e) {
-    el.innerHTML = `<div class="empty">⚠️ ${e.message}</div>`;
+    el.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`;
   }
 }
 
+// ===== REZEPT =====
+async function loadRezept() {
+  const el = document.getElementById('rezept-content');
+  try {
+    const r = await fetch('/api/recipe');
+    const d = await r.json();
+
+    const imgHtml = d.bild
+      ? `<img class="recipe-img" src="data:image/jpeg;base64,${d.bild}" alt="${esc(d.titel)}">`
+      : `<div class="recipe-placeholder">🍽️</div>`;
+
+    const zutaten = (d.zutaten || []).map(z =>
+      `<div class="ingredient-row">
+        <span class="ingredient-dot">•</span>
+        <span class="ingredient-text">${esc(z)}</span>
+      </div>`).join('');
+
+    const anweisungen = (d.anweisungen || []).map((a, i) =>
+      `<div class="step-row">
+        <div class="step-num">${i + 1}</div>
+        <div class="step-text">${esc(a)}</div>
+      </div>`).join('');
+
+    el.innerHTML = `
+      ${imgHtml}
+      <div class="card" style="flex-direction:column;gap:8px">
+        <div style="font-size:22px;font-weight:700;letter-spacing:-0.3px;line-height:1.2">${esc(d.titel)}</div>
+        <div style="font-size:15px;color:var(--text2);line-height:1.5">${esc(d.beschreibung || '')}</div>
+      </div>
+      <div class="section-head">Zutaten</div>
+      <div class="card" style="flex-direction:column;gap:0;padding:12px 16px">
+        ${zutaten || '<div style="color:var(--text3)">Keine Zutaten</div>'}
+      </div>
+      <div class="section-head">Zubereitung</div>
+      <div class="card" style="flex-direction:column;gap:0;padding:12px 16px">
+        ${anweisungen || '<div style="color:var(--text3)">Keine Schritte</div>'}
+      </div>
+      <button class="primary-btn" id="save-rezept-btn" onclick="saveRezept()">💾 Als Word-Datei speichern</button>
+      <div id="rezept-status" style="text-align:center;font-size:14px;min-height:22px;padding-bottom:4px"></div>
+    `;
+    pageSub.textContent = d.titel || 'Rezept des Tages';
+  } catch (e) {
+    el.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`;
+  }
+}
+
+async function saveRezept() {
+  const btn = document.getElementById('save-rezept-btn');
+  const status = document.getElementById('rezept-status');
+  if (!btn) return;
+  btn.textContent = '⏳ Wird gespeichert…';
+  btn.disabled = true;
+  status.textContent = '';
+  try {
+    const r = await fetch('/api/recipe');
+    const d = await r.json();
+    const resp = await fetch('/api/recipe/save', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(d)
+    });
+    const res = await resp.json();
+    status.textContent = '✓ Gespeichert: ' + (res.filename || 'Rezept.docx');
+    status.style.color = 'var(--green)';
+  } catch (e) {
+    status.textContent = '⚠️ ' + e.message;
+    status.style.color = 'var(--red)';
+  }
+  btn.textContent = '💾 Als Word-Datei speichern';
+  btn.disabled = false;
+}
+
+// ===== GEBURTSTAGE =====
 async function loadBirthdays() {
   const el = document.getElementById('bd-list');
   try {
@@ -446,56 +836,68 @@ async function loadBirthdays() {
       el.innerHTML = '<div class="empty"><div class="big">🎂</div>Keine Geburtstage hinterlegt</div>';
       return;
     }
-    el.innerHTML = data.map(b => {
-      const daysTxt = b.today ? 'HEUTE' : b.days === 1 ? 'morgen' : `in ${b.days} Tagen`;
-      const ageTxt = b.age ? ` · wird ${b.age}` : '';
-      const dotClass = b.today ? 'pink' : b.days <= 7 ? 'orange' : 'green';
-      return `<div class="card">
-        <div class="left"><div class="card-dot ${dotClass}">🎂</div></div>
-        <div class="right">
-          <div class="title">${esc(b.name)}</div>
-          <div class="meta">${esc(b.date)} · ${daysTxt}${ageTxt}</div>
-        </div>
-      </div>`;
-    }).join('');
+    const soon   = data.filter(b => b.days <= 7 || b.today);
+    const others = data.filter(b => !b.today && b.days > 7);
+
+    let html = '';
+    if (soon.length) {
+      html += '<div class="section-head">Bald</div>';
+      html += soon.map(b => birthdayCard(b)).join('');
+    }
+    if (others.length) {
+      html += '<div class="section-head">Demnächst</div>';
+      html += others.map(b => birthdayCard(b)).join('');
+    }
+    el.innerHTML = html;
   } catch (e) {
-    el.innerHTML = `<div class="empty">⚠️ ${e.message}</div>`;
+    el.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`;
   }
 }
 
-function esc(s) {
-  if (s === null || s === undefined) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function birthdayCard(b) {
+  const daysTxt = b.today ? '🎉 HEUTE!' : b.days === 1 ? 'morgen' : `in ${b.days} Tagen`;
+  const ageTxt  = b.age ? ` · wird ${b.age}` : '';
+  const dotClass = b.today ? 'pink' : b.days <= 7 ? 'orange' : 'green';
+  return `<div class="card">
+    <div class="left"><div class="card-dot ${dotClass}">🎂</div></div>
+    <div class="right">
+      <div class="title">${esc(b.name)}</div>
+      <div class="meta">${esc(b.date)} · ${daysTxt}${ageTxt}</div>
+    </div>
+  </div>`;
 }
 
+// ===== ROBIN =====
 function loadRobinTimeline() {
   const steps = [
-    {year:'WS 2021/22', label:'FS 1–2 · Vorklinik', detail:'Biochemie, Anatomie, Physiologie, Biologie, Chemie', done:true},
-    {year:'WS 2022/23', label:'FS 3–4 · Vorklinik', detail:'Pathophysiologie, Pharmakologie, Abschluss Vorklinik', done:true},
-    {year:'SS 2023',    label:'M1 · Physikum ✓', detail:'1. Staatsexamen — Vorklinischer Abschnitt', done:true, exam:true},
-    {year:'WS 2023/24', label:'FS 5–6 · Klinik', detail:'Klinische Propädeutik, Innere Medizin, Chirurgie', done:true},
-    {year:'WS 2024/25', label:'FS 7 · Klinik', detail:'Neurologie, Psychiatrie, Pädiatrie, Kardiologie', done:true},
-    {year:'SS 2025',    label:'Forschungssemester', detail:'Experimentelle Medizin · Doktorarbeit: Neutrophile Granulozyten / TRAKI', done:true, special:true},
-    {year:'WS 2025/26', label:'FS 8 · Blockpraktikum', detail:'Alle klinischen Fächer: Innere, Chirurgie, Gynäkologie, Pädiatrie, Psychiatrie u.a.', done:true},
-    {year:'SS 2026',    label:'FS 9 ← JETZT', detail:'Fortsetzung klinische Ausbildung', current:true},
-    {year:'WS 2026/27', label:'FS 10 · Klinik Abschluss', detail:'Abschluss klinischer Abschnitt, M2-Vorbereitung', done:false},
-    {year:'Frühjahr 2027', label:'M2 · 2. Staatsexamen', detail:'Hammerexamen — 320 Fragen über 3 Tage', done:false, exam:true},
-    {year:'SS 2027 – 2028', label:'PJ · Praktisches Jahr', detail:'Innere Medizin · Chirurgie · Wahlfach', done:false},
-    {year:'Herbst 2028', label:'M3 · Approbation 🎉', detail:'3. Staatsexamen — Arzt!', done:false, exam:true},
+    {year:'WS 2021/22',    label:'FS 1–2 · Vorklinik',      detail:'Biochemie, Anatomie, Physiologie, Biologie, Chemie', done:true},
+    {year:'WS 2022/23',    label:'FS 3–4 · Vorklinik',      detail:'Pathophysiologie, Pharmakologie, Abschluss Vorklinik', done:true},
+    {year:'SS 2023',       label:'M1 · Physikum ✓',          detail:'1. Staatsexamen — Vorklinischer Abschnitt', done:true, exam:true},
+    {year:'WS 2023/24',    label:'FS 5–6 · Klinik',          detail:'Klinische Propädeutik, Innere Medizin, Chirurgie', done:true},
+    {year:'WS 2024/25',    label:'FS 7 · Klinik',            detail:'Neurologie, Psychiatrie, Pädiatrie, Kardiologie', done:true},
+    {year:'SS 2025',       label:'Forschungssemester',        detail:'Experimentelle Medizin · Doktorarbeit: Neutrophile Granulozyten / TRAKI', done:true, special:true},
+    {year:'WS 2025/26',    label:'FS 8 · Blockpraktikum',    detail:'Alle klinischen Fächer: Innere, Chirurgie, Gynäkologie, Pädiatrie, Psychiatrie u.a.', done:true},
+    {year:'SS 2026',       label:'FS 9 ← JETZT',             detail:'Fortsetzung klinische Ausbildung', current:true},
+    {year:'WS 2026/27',    label:'FS 10 · Klinik Abschluss', detail:'Abschluss klinischer Abschnitt, M2-Vorbereitung'},
+    {year:'Frühjahr 2027', label:'M2 · 2. Staatsexamen',     detail:'Hammerexamen — 320 Fragen über 3 Tage', exam:true},
+    {year:'SS 2027–2028',  label:'PJ · Praktisches Jahr',    detail:'Innere Medizin · Chirurgie · Wahlfach'},
+    {year:'Herbst 2028',   label:'M3 · Approbation 🎉',      detail:'3. Staatsexamen — Arzt!', exam:true},
   ];
   const el = document.getElementById('robin-timeline');
   el.innerHTML = `
-    <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:var(--shadow)">
-      <div style="font-size:13px;color:#8e8e93;margin-bottom:16px">Uni Ulm · Regelstudienzeit</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:14px;padding:0 2px">
+      Uni Ulm · Medizinstudium · Regelstudienzeit 12 Semester
+    </div>
+    <div style="background:var(--card);border-radius:14px;padding:16px 14px;box-shadow:var(--shadow)">
       ${steps.map((s, i, arr) => {
-        const color = s.exam ? '#ff9500' : s.special ? '#7c3aed' : s.current ? '#007aff' : s.done ? '#34c759' : '#c7c7cc';
+        const color = s.exam ? '#ff9500' : s.special ? '#af52de' : s.current ? '#007aff' : s.done ? '#34c759' : '#c7c7cc';
         const isLast = i === arr.length - 1;
         return `<div style="display:flex;gap:12px">
           <div style="display:flex;flex-direction:column;align-items:center;width:18px;flex-shrink:0">
-            <div style="width:${s.current?'16px':'12px'};height:${s.current?'16px':'12px'};border-radius:50%;background:${color};${s.current?'box-shadow:0 0 0 3px rgba(0,122,255,0.25)':''}margin-top:2px;flex-shrink:0"></div>
+            <div style="width:${s.current?'16px':'12px'};height:${s.current?'16px':'12px'};border-radius:50%;background:${color};${s.current?'box-shadow:0 0 0 3px rgba(0,122,255,0.22)':''}margin-top:3px;flex-shrink:0"></div>
             ${!isLast ? `<div style="width:2px;flex:1;background:#e5e5ea;margin:3px 0;min-height:16px"></div>` : ''}
           </div>
-          <div style="padding-bottom:${isLast?'0':'14px'};flex:1;min-width:0">
+          <div style="padding-bottom:${isLast?'0':'16px'};flex:1;min-width:0">
             <div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px">
               <span style="font-size:14px;font-weight:${s.current||s.exam?'600':'400'};color:${s.done||s.current||s.exam||s.special?'#1c1c1e':'#8e8e93'}">${s.label}</span>
               <span style="font-size:11px;color:${color};white-space:nowrap;flex-shrink:0">${s.year}</span>
@@ -515,137 +917,414 @@ async function loadClipboard() {
     const r = await fetch('/api/clipboard');
     const d = await r.json();
     ta.value = d.text || '';
-    ts.textContent = d.saved ? 'Zuletzt gespeichert: ' + new Date(d.saved).toLocaleString('de-DE') : '';
+    ts.textContent = d.saved ? 'Zuletzt: ' + new Date(d.saved).toLocaleString('de-DE') : '';
   } catch (e) {
     showClipStatus('⚠️ ' + e.message, false);
   }
   loadClipboardImages();
 }
-
 async function clipboardSave() {
-  const text = document.getElementById('clip-text').value;
   try {
-    await fetch('/api/clipboard', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({text})
-    });
-    const ts = document.getElementById('clip-ts');
-    ts.textContent = 'Zuletzt gespeichert: ' + new Date().toLocaleString('de-DE');
+    await fetch('/api/clipboard', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:document.getElementById('clip-text').value})});
+    document.getElementById('clip-ts').textContent = 'Zuletzt: ' + new Date().toLocaleString('de-DE');
     showClipStatus('✓ Gespeichert', true);
-  } catch (e) {
-    showClipStatus('⚠️ ' + e.message, false);
-  }
+  } catch (e) { showClipStatus('⚠️ ' + e.message, false); }
 }
-
 async function clipboardCopy() {
   const text = document.getElementById('clip-text').value;
   if (!text) return;
-  try {
-    await navigator.clipboard.writeText(text);
-    showClipStatus('✓ Kopiert', true);
-  } catch (e) {
-    showClipStatus('⚠️ ' + e.message, false);
-  }
+  try { await navigator.clipboard.writeText(text); showClipStatus('✓ Kopiert', true); }
+  catch (e) { showClipStatus('⚠️ ' + e.message, false); }
 }
-
 function clipboardClear() {
   document.getElementById('clip-text').value = '';
   document.getElementById('clip-ts').textContent = '';
   showClipStatus('', true);
 }
-
 function showClipStatus(msg, ok) {
   const el = document.getElementById('clip-status');
-  el.textContent = msg;
-  el.style.color = ok ? 'var(--green)' : 'var(--red)';
+  el.textContent = msg; el.style.color = ok ? 'var(--green)' : 'var(--red)';
   if (msg) setTimeout(() => { el.textContent = ''; }, 2500);
 }
-
 async function loadClipboardImages() {
   const grid = document.getElementById('clip-img-grid');
   try {
     const d = await fetch('/api/clipboard/images').then(r => r.json());
     if (!d.images || d.images.length === 0) { grid.innerHTML = ''; return; }
     grid.innerHTML = d.images.map(img => `
-      <div style="position:relative;background:var(--bg);border:1px solid var(--sep);border-radius:8px;overflow:hidden;aspect-ratio:1">
+      <div style="position:relative;background:var(--bg);border:1px solid var(--sep);border-radius:10px;overflow:hidden;aspect-ratio:1">
         <img src="/api/clipboard/image/${encodeURIComponent(img.filename)}" alt="${img.filename}"
           style="width:100%;height:100%;object-fit:cover;cursor:pointer;display:block"
           onclick="clipboardImageFullscreen('/api/clipboard/image/${encodeURIComponent(img.filename)}')"
           title="${img.filename}">
         <button onclick="clipboardDeleteImage('${img.filename}')"
-          style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:4px;width:24px;height:24px;font-size:13px;cursor:pointer;line-height:1;padding:0"
-          title="Löschen">✕</button>
+          style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:5px;width:26px;height:26px;font-size:14px;cursor:pointer;line-height:1;padding:0">✕</button>
       </div>`).join('');
   } catch(e) { /* ignore */ }
 }
-
 async function _clipImgUpload(file) {
-  if (!file || !file.type.startsWith('image/')) {
-    _clipImgStatus('Kein Bild', false); return;
-  }
+  if (!file || !file.type.startsWith('image/')) { _clipImgStatus('Kein Bild', false); return; }
   _clipImgStatus('Wird hochgeladen…', true);
   const reader = new FileReader();
   reader.onload = async e => {
-    const b64 = e.target.result.split(',')[1];
     try {
-      await fetch('/api/clipboard/image', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({image_b64: b64, mime: file.type})});
+      await fetch('/api/clipboard/image', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({image_b64:e.target.result.split(',')[1], mime:file.type})});
       _clipImgStatus('✓ Gespeichert', true);
       setTimeout(() => _clipImgStatus('', true), 2000);
       loadClipboardImages();
-    } catch(e) {
-      _clipImgStatus('Fehler beim Hochladen', false);
-    }
+    } catch(e) { _clipImgStatus('Fehler', false); }
   };
   reader.readAsDataURL(file);
 }
-
 function _clipImgStatus(msg, ok) {
   const el = document.getElementById('clip-img-status');
-  el.textContent = msg;
-  el.style.color = ok ? 'var(--green)' : 'var(--red)';
+  el.textContent = msg; el.style.color = ok ? 'var(--green)' : 'var(--red)';
 }
-
 function clipImgDragOver(e) {
   e.preventDefault();
   const z = document.getElementById('clip-drop-zone');
-  z.style.borderColor = 'var(--accent)';
-  z.style.background = 'rgba(0,122,255,0.07)';
+  z.style.borderColor = 'var(--accent)'; z.style.background = 'rgba(0,122,255,0.07)';
 }
 function clipImgDragLeave(e) {
   const z = document.getElementById('clip-drop-zone');
   z.style.borderColor = ''; z.style.background = '';
 }
-function clipImgDrop(e) {
-  e.preventDefault();
-  clipImgDragLeave(e);
-  _clipImgUpload(e.dataTransfer.files[0]);
-}
-function clipImgFileSelected(e) {
-  _clipImgUpload(e.target.files[0]);
-  e.target.value = '';
-}
-
+function clipImgDrop(e) { e.preventDefault(); clipImgDragLeave(e); _clipImgUpload(e.dataTransfer.files[0]); }
+function clipImgFileSelected(e) { _clipImgUpload(e.target.files[0]); e.target.value = ''; }
 async function clipboardDeleteImage(filename) {
-  await fetch('/api/clipboard/image/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({filename})});
+  await fetch('/api/clipboard/image/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({filename})});
   loadClipboardImages();
 }
-
 function clipboardImageFullscreen(url) {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
   overlay.innerHTML = `<img src="${url}" style="max-width:95vw;max-height:90vh;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,0.6)">`;
   overlay.onclick = () => document.body.removeChild(overlay);
-  document.addEventListener('keydown', function esc(e) { if(e.key==='Escape'){ document.body.removeChild(overlay); document.removeEventListener('keydown',esc); }});
+  document.addEventListener('keydown', function escKey(e) {
+    if(e.key==='Escape'){ document.body.removeChild(overlay); document.removeEventListener('keydown',escKey); }
+  });
   document.body.appendChild(overlay);
 }
 
-// Initial load
+// ===== LADESTOPP-FINDER =====
+const LADE_TIER = [
+  { names: ['enbw','mobility+','e-wald'], tier: 1, label: '✅ ~46 ct/kWh', color: '#34c759' },
+  { names: ['aral','pulse','total energ'], tier: 2, label: '🟡 ~55 ct/kWh', color: '#ff9500' },
+];
+function ladeTier(op) {
+  const o = (op||'').toLowerCase();
+  for (const t of LADE_TIER) if (t.names.some(n => o.includes(n))) return t;
+  return { tier: 3, label: '⚠️ variabel', color: '#8e8e93' };
+}
+function ladeDist(aLat, aLon, bLat, bLon) {
+  const dlat = (aLat-bLat)*Math.PI/180, dlon = (aLon-bLon)*Math.PI/180;
+  const a = Math.sin(dlat/2)**2 + Math.cos(aLat*Math.PI/180)*Math.cos(bLat*Math.PI/180)*Math.sin(dlon/2)**2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+async function loadLaden() {
+  const el = document.getElementById('laden-content');
+  if (!navigator.geolocation) {
+    el.innerHTML = '<div class="empty">⚠️ Geolocation nicht verfügbar</div>'; return;
+  }
+  el.innerHTML = '<div class="loading">GPS wird ermittelt</div>';
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const { latitude: lat, longitude: lon } = pos.coords;
+    el.innerHTML = '<div class="loading">Ladesäulen werden gesucht</div>';
+    try {
+      const query = `[out:json][timeout:25];node["amenity"="charging_station"](around:12000,${lat},${lon});out body;`;
+      const r = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'data=' + encodeURIComponent(query)
+      });
+      if (!r.ok) throw new Error(`Overpass HTTP ${r.status}`);
+      const d = await r.json();
+      const elements = d.elements || [];
+      if (!elements.length) { el.innerHTML = ladenFallback(lat, lon, 'Keine Säulen in 12 km'); return; }
+
+      elements.forEach(s => {
+        const op = s.tags?.operator || s.tags?.brand || s.tags?.name || '';
+        s._t  = ladeTier(op);
+        s._km = ladeDist(lat, lon, s.lat, s.lon);
+      });
+      elements.sort((a, b) => a._t.tier - b._t.tier || a._km - b._km);
+
+      const byTier = {};
+      elements.forEach(s => { const k = s._t.tier; if (!byTier[k]) byTier[k] = []; byTier[k].push(s); });
+
+      let html = `<div class="section-head" style="margin-top:0">📍 ${elements.length} Säulen in 12 km</div>`;
+      [1, 2, 3].forEach(t => {
+        if (!byTier[t]) return;
+        html += `<div class="section-head">${byTier[t][0]._t.label}</div>`;
+        byTier[t].slice(0, t === 3 ? 6 : 99).forEach(s => {
+          const tags = s.tags || {};
+          const op   = tags.operator || tags.brand || tags.name || 'Unbekannt';
+          const name = tags.name || op;
+          const addr = [tags['addr:street'], tags['addr:housenumber'], tags['addr:city']].filter(Boolean).join(' ');
+          const dist = s._km < 1 ? `${Math.round(s._km*1000)} m` : `${s._km.toFixed(1)} km`;
+          const kw   = tags['maxpower:ev'] || tags['socket:type2_combo:output'] || '';
+          const cap  = tags.capacity ? `${tags.capacity} Pl.` : '';
+          const tc   = s._t.color;
+          html += `<div class="card" style="align-items:center;gap:10px">
+            <div class="left">
+              <div class="card-dot" style="background:${tc}22;color:${tc};font-size:22px">⚡</div>
+            </div>
+            <div class="right">
+              <div class="title">${esc(name)}</div>
+              <div class="meta">${esc(op)} · ${dist}${kw ? ' · '+kw+' kW' : ''}${cap ? ' · '+cap : ''}</div>
+              ${addr ? `<div class="extra">${esc(addr)}</div>` : ''}
+            </div>
+            <a href="https://maps.google.com/?q=${s.lat},${s.lon}" target="_blank"
+               style="flex-shrink:0;padding:8px 12px;background:rgba(0,122,255,0.12);border-radius:9px;color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap">Route</a>
+          </div>`;
+        });
+      });
+      el.innerHTML = html;
+    } catch (e) {
+      el.innerHTML = ladenFallback(lat, lon, e.message);
+    }
+  }, err => {
+    el.innerHTML = ladenFallback(null, null, 'GPS: ' + err.message);
+  }, { enableHighAccuracy: false, timeout: 10000 });
+}
+
+function ladenFallback(lat, lon, errMsg) {
+  const mapsQ = lat ? `EnBW+Ladesäule+in+der+Nähe` : 'EnBW+Ladesäule';
+  const mapsUrl = lat
+    ? `https://maps.google.com/maps?q=${mapsQ}&near=${lat},${lon}`
+    : `https://maps.google.com/maps?q=${mapsQ}`;
+  return `
+    <div class="card" style="flex-direction:column;gap:6px;border-left:3px solid var(--orange)">
+      <div style="font-weight:600;color:var(--orange)">⚠️ Live-Daten nicht verfügbar</div>
+      <div style="font-size:13px;color:var(--text3)">${esc(errMsg)}</div>
+    </div>
+    <div class="section-head">Direkt öffnen</div>
+    <a href="${mapsUrl}" target="_blank" class="card" style="text-decoration:none;align-items:center;gap:14px">
+      <div class="card-dot blue" style="font-size:20px">🗺️</div>
+      <div class="right"><div class="title">Google Maps</div><div class="meta">EnBW Ladesäulen in der Nähe suchen</div></div>
+    </a>
+    <a href="https://www.enbw.com/elektromobilitaet/produkte/mobilitaet-plus/ladekartenapp/" target="_blank" class="card" style="text-decoration:none;align-items:center;gap:14px">
+      <div class="card-dot green" style="font-size:20px">✅</div>
+      <div class="right"><div class="title">EnBW mobility+</div><div class="meta">~46 ct/kWh · App öffnen</div></div>
+    </a>
+    <a href="https://www.aral-pulse.com/finden" target="_blank" class="card" style="text-decoration:none;align-items:center;gap:14px">
+      <div class="card-dot orange" style="font-size:20px">🟡</div>
+      <div class="right"><div class="title">ARAL Pulse</div><div class="meta">~55 ct/kWh · Säulenfinder</div></div>
+    </a>`;
+}
+
+// ===== SPRACHNOTIZ =====
+let _mediaRec = null, _chunks = [], _recInterval = null, _recSecs = 0;
+
+async function loadNotiz() {
+  loadNotizVerlauf();
+}
+
+function toggleRecording() {
+  if (_mediaRec && _mediaRec.state === 'recording') {
+    stopRecording(); return;
+  }
+  startRecording();
+}
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    _chunks = [];
+    _mediaRec = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg' });
+    _mediaRec.ondataavailable = e => { if (e.data.size > 0) _chunks.push(e.data); };
+    _mediaRec.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      await processRecording();
+    };
+    _mediaRec.start(200);
+    _recSecs = 0;
+    const btn = document.getElementById('rec-btn');
+    btn.style.background = '#ff3b30';
+    btn.style.boxShadow = '0 0 0 8px rgba(255,59,48,0.2), 0 4px 20px rgba(255,59,48,0.35)';
+    btn.textContent = '⏹️';
+    btn.style.animation = 'recPulse 1.2s ease infinite';
+    document.getElementById('notiz-status-top').textContent = 'Aufnahme läuft — Taste erneut drücken zum Stoppen';
+    document.getElementById('notiz-result').style.display = 'none';
+    _recInterval = setInterval(() => {
+      _recSecs++;
+      const m = Math.floor(_recSecs / 60).toString().padStart(2, '0');
+      const s = (_recSecs % 60).toString().padStart(2, '0');
+      document.getElementById('rec-timer').textContent = `${m}:${s}`;
+    }, 1000);
+  } catch (e) {
+    document.getElementById('notiz-status-top').textContent = '⚠️ Kein Mikrofon-Zugriff';
+  }
+}
+
+function stopRecording() {
+  if (_mediaRec) _mediaRec.stop();
+  clearInterval(_recInterval);
+  const btn = document.getElementById('rec-btn');
+  btn.textContent = '⏳';
+  btn.style.animation = '';
+  btn.style.background = '#8e8e93';
+  btn.style.boxShadow = 'none';
+  document.getElementById('notiz-status-top').textContent = 'Wird transkribiert…';
+  document.getElementById('rec-timer').textContent = '';
+}
+
+async function processRecording() {
+  try {
+    const blob = new Blob(_chunks, { type: _chunks[0]?.type || 'audio/webm' });
+    const r = await fetch('/api/transcribe', {
+      method: 'POST',
+      headers: { 'Content-Type': blob.type },
+      body: blob
+    });
+    const d = await r.json();
+    const text = d.text || d.error || '(kein Ergebnis)';
+    document.getElementById('notiz-text').textContent = text;
+    document.getElementById('notiz-result').style.display = 'block';
+    document.getElementById('notiz-status-top').textContent = 'Fertig — was möchtest du tun?';
+    const btn = document.getElementById('rec-btn');
+    btn.textContent = '🎙️';
+    btn.style.background = 'var(--red)';
+    btn.style.boxShadow = '0 4px 20px rgba(255,59,48,0.35)';
+  } catch (e) {
+    document.getElementById('notiz-status-top').textContent = '⚠️ Transkription fehlgeschlagen: ' + e.message;
+    const btn = document.getElementById('rec-btn');
+    btn.textContent = '🎙️'; btn.style.background = 'var(--red)';
+  }
+}
+
+async function notizSenden(saveNote) {
+  const text = document.getElementById('notiz-text').textContent;
+  if (!text) return;
+  const st = document.getElementById('notiz-action-status');
+  st.textContent = saveNote ? '💾 Wird gespeichert…' : '📩 Wird gesendet…';
+  st.style.color = 'var(--text3)';
+  try {
+    await fetch('/api/quickmsg', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, save_note: saveNote })
+    });
+    st.textContent = saveNote ? '✓ Gespeichert & per Telegram gesendet' : '✓ Per Telegram gesendet';
+    st.style.color = 'var(--green)';
+    if (saveNote) loadNotizVerlauf();
+    setTimeout(() => { st.textContent = ''; }, 3000);
+  } catch (e) {
+    st.textContent = '⚠️ ' + e.message; st.style.color = 'var(--red)';
+  }
+}
+
+function notizKopieren() {
+  const text = document.getElementById('notiz-text').textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const st = document.getElementById('notiz-action-status');
+    st.textContent = '✓ Kopiert'; st.style.color = 'var(--green)';
+    setTimeout(() => { st.textContent = ''; }, 2000);
+  });
+}
+
+async function loadNotizVerlauf() {
+  const el = document.getElementById('notiz-verlauf');
+  try {
+    const r = await fetch('/api/quicknotes');
+    const notes = await r.json();
+    if (!notes.length) { el.innerHTML = '<div style="color:var(--text3);font-size:14px;padding:8px 4px">Noch keine gespeicherten Notizen</div>'; return; }
+    el.innerHTML = notes.slice(0, 10).map(n => {
+      const ts = new Date(n.ts).toLocaleString('de-DE', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      return `<div class="card" style="align-items:flex-start;gap:10px">
+        <div class="card-dot purple" style="font-size:16px;flex-shrink:0">📝</div>
+        <div class="right">
+          <div style="font-size:15px;line-height:1.4">${esc(n.text)}</div>
+          <div class="extra">${ts}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) { el.innerHTML = ''; }
+}
+
+// ===== SOS =====
+let _sosLat = null, _sosLon = null;
+
+async function loadSOS() {
+  // Load contacts & medical info
+  try {
+    const d = await fetch('/api/sos/contacts').then(r => r.json());
+    const contacts = d.contacts || [];
+    const med = d.medical || {};
+    document.getElementById('sos-contacts').innerHTML = contacts.length
+      ? contacts.map(c => c.tel
+          ? `<a href="tel:${esc(c.tel)}" class="card" style="text-decoration:none;align-items:center;gap:14px">
+              <div class="card-dot green" style="font-size:20px">${c.emoji || '👤'}</div>
+              <div class="right"><div class="title">${esc(c.name)}</div><div class="meta">${esc(c.tel)}</div></div>
+              <div style="font-size:24px">📞</div>
+            </a>`
+          : `<div class="card" style="opacity:0.5;align-items:center">
+              <div class="card-dot" style="font-size:20px">${c.emoji || '👤'}</div>
+              <div class="right"><div class="title">${esc(c.name)}</div><div class="meta" style="font-size:12px">Nummer in sos_contacts.json eintragen</div></div>
+            </div>`
+        ).join('')
+      : '<div style="color:var(--text3);font-size:14px;padding:8px">Kontakte in config/sos_contacts.json eintragen</div>';
+
+    const medRows = [
+      med.blood_type    && ['🩸', 'Blutgruppe', med.blood_type],
+      med.lenses        && ['👁️', 'Linsen', med.lenses],
+      med.allergies     && ['⚠️', 'Allergien', med.allergies],
+      med.medications   && ['💊', 'Medikamente', med.medications],
+      med.doctor        && ['🏥', 'Hausarzt', med.doctor],
+      med.insurance     && ['📋', 'Krankenkasse', med.insurance],
+    ].filter(Boolean);
+    document.getElementById('sos-medical').innerHTML = medRows.length
+      ? medRows.map(([ic, label, val]) =>
+          `<div style="display:flex;gap:10px;padding:6px 0;border-bottom:0.5px solid var(--sep)">
+            <span style="font-size:18px;flex-shrink:0">${ic}</span>
+            <div><div style="font-size:12px;color:var(--text3)">${esc(label)}</div><div style="font-size:15px">${esc(val)}</div></div>
+          </div>`).join('')
+      : '<div style="color:var(--text3);font-size:14px">Infos in config/sos_contacts.json eintragen</div>';
+  } catch (e) { /* ignore */ }
+
+  // Get GPS position
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(async pos => {
+    _sosLat = pos.coords.latitude;
+    _sosLon = pos.coords.longitude;
+    try {
+      const nr = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${_sosLat}&lon=${_sosLon}`, {headers:{'Accept-Language':'de'}});
+      const nd = await nr.json();
+      const addr = nd.display_name || `${_sosLat.toFixed(5)}, ${_sosLon.toFixed(5)}`;
+      document.getElementById('sos-address').textContent = addr;
+    } catch {
+      document.getElementById('sos-address').textContent = `${_sosLat.toFixed(5)}, ${_sosLon.toFixed(5)}`;
+    }
+  }, () => {
+    document.getElementById('sos-address').textContent = 'Standort nicht verfügbar';
+  });
+}
+
+async function sosSend() {
+  const st = document.getElementById('sos-send-status');
+  st.textContent = '📡 Standort wird gesendet…'; st.style.color = 'var(--text3)';
+  try {
+    await fetch('/api/sos/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lat: _sosLat, lon: _sosLon,
+        address: document.getElementById('sos-address').textContent
+      })
+    });
+    st.textContent = '✓ Standort per Telegram gesendet'; st.style.color = 'var(--green)';
+  } catch (e) {
+    st.textContent = '⚠️ ' + e.message; st.style.color = 'var(--red)';
+  }
+}
+
+// ===== INIT =====
 pageTitle.textContent = TITLES.cal[0];
-pageSub.textContent = TITLES.cal[1];
+pageSub.textContent   = TITLES.cal[1];
 loadTab('cal');
 
-// SW Register
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(()=>{});
 }

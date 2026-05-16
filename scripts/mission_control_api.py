@@ -1154,6 +1154,76 @@ def get_emails():
     }
 
 
+def get_quicknotes():
+    """Zuletzt gespeicherte Schnellnotizen."""
+    notes_file = os.path.join(WORKSPACE, "data/quicknotes.json")
+    if os.path.exists(notes_file):
+        with open(notes_file) as f:
+            return json.load(f)
+    return []
+
+def get_sos_contacts():
+    """SOS-Kontakte und Notfall-Infos."""
+    cfg_file = os.path.join(WORKSPACE, "config/sos_contacts.json")
+    if os.path.exists(cfg_file):
+        with open(cfg_file) as f:
+            return json.load(f)
+    return {"contacts": [], "medical": {}}
+
+def get_chargers(lat: float, lon: float, radius: int = 12000):
+    """Ladesäulen via OpenStreetMap Overpass API."""
+    import urllib.request as _ureq, urllib.parse as _uparse, math
+    query = (f'[out:json][timeout:20];'
+             f'node["amenity"="charging_station"](around:{radius},{lat},{lon});'
+             f'out body;')
+    url = 'https://overpass-api.de/api/interpreter'
+    req = _ureq.Request(url, data=_uparse.urlencode({'data': query}).encode(),
+                        headers={'User-Agent': 'BollaMC/1.0', 'Accept': 'application/json'})
+    try:
+        with _ureq.urlopen(req, timeout=22) as resp:
+            data = json.loads(resp.read().decode())
+    except Exception as e:
+        return {"error": str(e), "stations": []}
+
+    TIER_MAP = [
+        (['enbw','mobility+','e-wald'], 1, '✅ ~46 ct/kWh', '#34c759'),
+        (['aral','pulse','total energies','avia'], 2, '🟡 ~55 ct/kWh', '#ff9500'),
+    ]
+
+    def tier(op):
+        op_l = (op or '').lower()
+        for names, t, label, color in TIER_MAP:
+            if any(n in op_l for n in names):
+                return t, label, color
+        return 3, '⚠️ variabel', '#8e8e93'
+
+    def dist_km(a_lat, a_lon):
+        dlat = math.radians(a_lat - lat)
+        dlon = math.radians(a_lon - lon)
+        a = math.sin(dlat/2)**2 + math.cos(math.radians(lat))*math.cos(math.radians(a_lat))*math.sin(dlon/2)**2
+        return 6371 * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+
+    stations = []
+    for el in data.get('elements', []):
+        tags = el.get('tags', {})
+        op = tags.get('operator') or tags.get('brand') or tags.get('name') or 'Unbekannt'
+        name = tags.get('name') or op
+        addr = ' '.join(filter(None, [tags.get('addr:street',''), tags.get('addr:housenumber',''), tags.get('addr:city','')]))
+        kw_raw = tags.get('maxpower:ev') or tags.get('socket:type2_combo:output') or tags.get('socket:chademo:output') or ''
+        try: kw = int(float(str(kw_raw).replace(' kW','').replace('kW','').strip()))
+        except: kw = 0
+        t, tlabel, tcolor = tier(op)
+        stations.append({
+            'name': name, 'operator': op, 'addr': addr.strip(),
+            'lat': el['lat'], 'lon': el['lon'],
+            'dist': round(dist_km(el['lat'], el['lon']), 2),
+            'kw': kw, 'capacity': int(tags.get('capacity', 0) or 0),
+            'tier': t, 'tier_label': tlabel, 'tier_color': tcolor,
+            'maps': f"https://maps.google.com/?q={el['lat']},{el['lon']}"
+        })
+    stations.sort(key=lambda s: (s['tier'], s['dist']))
+    return {"stations": stations, "count": len(stations)}
+
 def get_birthdays():
     """Nächste Geburtstage aus Outlook-Kontakten."""
     from datetime import datetime
@@ -3634,6 +3704,8 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/photos/status":  lambda: dict(_photo_job),
                 "/api/photos/results": lambda: {"results": _photo_load_results()},
                 "/api/photos/config":  get_lmstudio_config,
+                "/api/quicknotes":     get_quicknotes,
+                "/api/sos/contacts":   get_sos_contacts,
             }
 
             # Foto-Thumb
@@ -3852,6 +3924,15 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(data)
 
+            elif self.path.startswith("/api/chargers"):
+                import urllib.parse as _cup
+                qs = dict(_cup.parse_qsl(_cup.urlparse(self.path).query))
+                lat = qs.get("lat"); lon = qs.get("lon")
+                radius = int(qs.get("radius", 12000))
+                if not lat or not lon:
+                    self._send_json({"error": "lat/lon required"}, status=400)
+                else:
+                    self._send_json(get_chargers(float(lat), float(lon), radius))
             elif self.path in simple:
                 self._send_json(simple[self.path]())
             else:
@@ -3925,6 +4006,47 @@ class Handler(BaseHTTPRequestHandler):
                     self._send_json({"ok": True, "datei": fname})
                 except Exception as e:
                     self._send_json({"ok": False, "error": str(e)}, status=500)
+            elif self.path == "/api/quickmsg":
+                try:
+                    text = body.get("text", "").strip()
+                    save_note = body.get("save_note", False)
+                    if not text:
+                        self._send_json({"error": "kein Text"}, status=400)
+                    else:
+                        tg_cfg = json.load(open(os.path.join(WORKSPACE, "config/telegram_bot.json")))
+                        import urllib.request as _ur_qm
+                        msg = f"\U0001f4dd *Schnellnotiz*\n\n{text}"
+                        qs = urllib.parse.urlencode({"chat_id": tg_cfg["chris_id"], "text": msg, "parse_mode": "Markdown"})
+                        _ur_qm.urlopen(f"https://api.telegram.org/bot{tg_cfg['bot_token']}/sendMessage?{qs}", timeout=5)
+                        if save_note:
+                            notes_file = os.path.join(WORKSPACE, "data/quicknotes.json")
+                            notes = []
+                            if os.path.exists(notes_file):
+                                with open(notes_file) as _nf: notes = json.load(_nf)
+                            notes.insert(0, {"text": text, "ts": datetime.now().isoformat()})
+                            notes = notes[:50]
+                            with open(notes_file, "w") as _nf: json.dump(notes, _nf, ensure_ascii=False, indent=2)
+                        self._send_json({"ok": True})
+                except Exception as e:
+                    self._send_json({"error": str(e)}, status=500)
+            elif self.path == "/api/sos/send":
+                try:
+                    lat = body.get("lat")
+                    lon = body.get("lon")
+                    address = body.get("address", "Standort unbekannt")
+                    tg_cfg = json.load(open(os.path.join(WORKSPACE, "config/telegram_bot.json")))
+                    import urllib.request as _ur_sos
+                    msg = f"\U0001f198 *SOS — Standort Chris*\n\n\U0001f4cd {address}"
+                    if lat and lon:
+                        msg += f"\n\n\U0001f5fa️ [Google Maps](https://maps.google.com/?q={lat},{lon})"
+                    qs = urllib.parse.urlencode({"chat_id": tg_cfg["chris_id"], "text": msg, "parse_mode": "Markdown"})
+                    _ur_sos.urlopen(f"https://api.telegram.org/bot{tg_cfg['bot_token']}/sendMessage?{qs}", timeout=5)
+                    if lat and lon:
+                        loc_qs = urllib.parse.urlencode({"chat_id": tg_cfg["chris_id"], "latitude": str(lat), "longitude": str(lon)})
+                        _ur_sos.urlopen(f"https://api.telegram.org/bot{tg_cfg['bot_token']}/sendLocation?{loc_qs}", timeout=5)
+                    self._send_json({"ok": True})
+                except Exception as e:
+                    self._send_json({"error": str(e)}, status=500)
             elif self.path == "/api/bolla/chat":
                 self._handle_bolla_stream(body)
             elif self.path == "/api/bolla/tts":
