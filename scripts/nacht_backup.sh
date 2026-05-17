@@ -33,9 +33,18 @@ for i in 1 2 3; do
 done
 $PUSH_OK || log "WARNING: git push nicht möglich (Netz/Cloudflare?) — wird beim nächsten Start nachgeholt"
 
-# 3. OneDrive-Backup
-if cp -a /home/bolla/.claude "/mnt/d/OneDrive/Dokumente/Bolla/claude-code" 2>>"$LOG"; then
-    log "OneDrive-Backup OK"
+# 3. OneDrive-Backup — rsync mit Excludes
+# cp -a hat aktive Session-Files gelockt (D-State auf OneDrive) → WSL-Service crash.
+# nice/ionice damit es nie eine aktive Session stört.
+DEST="/mnt/d/OneDrive/Dokumente/Bolla/claude-code"
+mkdir -p "$DEST" 2>>"$LOG"
+if nice -n 19 ionice -c 3 rsync -rt --delete --no-perms --no-owner --no-group -q \
+        --exclude 'cache/' \
+        --exclude 'file-history/' \
+        --exclude 'projects/-mnt-c-Users-ernst/' \
+        --exclude '.credentials.json' \
+        /home/bolla/.claude/ "$DEST/" 2>>"$LOG"; then
+    log "OneDrive-Backup OK (rsync, ohne aktive Session)"
 else
     log "WARNING: OneDrive-Backup fehlgeschlagen"
 fi
