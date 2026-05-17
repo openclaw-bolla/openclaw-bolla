@@ -838,7 +838,7 @@ html, body {
           <div class="nav-item" data-page="localserver"><span class="icon">🖧</span><span>Local Server</span></div>
           <div class="nav-item" data-page="redesigns"><span class="icon">🎨</span><span>Redesigns</span></div>
           <div class="nav-item" data-page="bildgen"><span class="icon">🍌</span><span>BildGen</span></div>
-          <div class="nav-item" data-page="suno"><span class="icon">🎵</span><span>Suno Songs</span></div>
+          <div class="nav-item" data-page="suno"><span class="icon">🎵</span><span>Bolla Songs</span></div>
           <div class="nav-item" data-page="fotoanalyse"><span class="icon">🔍</span><span>Foto-Analyse</span></div>
           <div class="nav-item" data-page="kiforum"><span class="icon">🧠</span><span>KI-Forum</span></div>
         </div>
@@ -1338,26 +1338,29 @@ html, body {
         <div style="max-width:700px;margin:0 auto;padding:16px">
           <div class="card" style="padding:20px">
             <h3 style="margin:0 0 12px;color:var(--bright)">📋 Geräte-Clipboard</h3>
-            <p style="font-size:14px;color:var(--dim);margin:0 0 16px">Text hier ablegen und auf jedem Gerät abrufen.</p>
-            <textarea id="clipboard-text" rows="10"
+            <p style="font-size:14px;color:var(--dim);margin:0 0 16px">Text hier ablegen und auf jedem Gerät abrufen. Sprach-Notizen werden automatisch angehängt.</p>
+            <textarea id="clipboard-text" rows="4"
               style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:14px;font-family:inherit;resize:vertical;line-height:1.6"
-              placeholder="Text hier eingeben..."></textarea>
-            <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
-              <button id="clipboard-save-btn" onclick="clipboardSave()"
+              placeholder="Neuen Eintrag eingeben..."></textarea>
+            <div style="display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap">
+              <button id="clipboard-save-btn" onclick="clipboardAppend()"
                 style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:9px 22px;font-size:14px;cursor:pointer;font-weight:600">
-                Speichern
+                + Hinzufügen
               </button>
-              <button onclick="clipboardCopy()"
-                style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:9px 18px;font-size:14px;cursor:pointer">
-                Kopieren
-              </button>
-              <button onclick="clipboardClear()"
+              <button onclick="clipboardClearAll()"
                 style="background:var(--card);color:var(--dim);border:1px solid var(--border);border-radius:6px;padding:9px 18px;font-size:14px;cursor:pointer">
-                Leeren
+                Alle löschen
               </button>
               <span id="clipboard-status" style="font-size:13px;color:var(--dim);margin-left:8px"></span>
             </div>
-            <div id="clipboard-ts" style="font-size:13px;color:var(--dim);margin-top:10px"></div>
+          </div>
+
+          <div class="card" style="padding:20px;margin-top:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+              <h3 style="margin:0;color:var(--bright)">📝 Einträge</h3>
+              <span id="clipboard-count" style="font-size:13px;color:var(--dim)"></span>
+            </div>
+            <div id="clipboard-entries" style="display:flex;flex-direction:column;gap:0"></div>
           </div>
 
           <div class="card" style="padding:20px;margin-top:16px">
@@ -1731,7 +1734,7 @@ html, body {
               <img src="/api/bolla/avatar/wave" style="width:48px;height:48px;border-radius:50%;object-fit:cover">
               <div style="flex:1;min-width:180px">
                 <div style="font-size:20px;font-weight:300;color:var(--bright)">Bolla</div>
-                <div id="bolla-model-line" style="font-size:13px;color:var(--dim)">Claude Opus 4.7 · Max Plan · Live-Tools</div>
+                <div id="bolla-model-line" style="font-size:13px;color:var(--dim)">Claude Opus 4.7 · Pro Plan · Live-Tools</div>
               </div>
               <div id="bolla-status" style="font-size:13px;color:var(--success)">🟢 Bereit</div>
               <button onclick="bollaNewChat()" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;font-size:13px" title="Neuer Chat">🗑️ Neu</button>
@@ -2368,7 +2371,7 @@ html, body {
             <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#ff6699);
                         display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🎵</div>
             <div>
-              <div style="font-size:18px;font-weight:700;color:var(--bright)">Suno Songs</div>
+              <div style="font-size:18px;font-weight:700;color:var(--bright)">Bolla Songs</div>
               <div style="font-size:13px;color:var(--dim)">Songs zu Themen wie Geburtstag, Abschied, Party …</div>
             </div>
           </div>
@@ -2439,6 +2442,145 @@ html, body {
               ✨ Generieren
             </button>
             <span id="suno-status" style="font-size:13px;color:var(--dim)"></span>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div style="max-width:65%;margin:0 auto 20px auto">
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+            <div style="display:flex;border-bottom:1px solid var(--border)">
+              <button id="chart-tab-de" onclick="sunoChartTab('de')"
+                style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;
+                       background:var(--accent);color:white;transition:all .2s">🇩🇪 DE</button>
+              <button id="chart-tab-global" onclick="sunoChartTab('global')"
+                style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;
+                       background:transparent;color:var(--dim);border-left:1px solid var(--border);transition:all .2s">🌍 Global</button>
+              <button id="chart-tab-party" onclick="sunoChartTab('party')"
+                style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;
+                       background:transparent;color:var(--dim);border-left:1px solid var(--border);transition:all .2s">🥳 Party</button>
+              <button id="chart-tab-overall" onclick="sunoChartTab('overall')"
+                style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;
+                       background:transparent;color:var(--dim);border-left:1px solid var(--border);transition:all .2s">🏆 Overall</button>
+            </div>
+            <div id="suno-chart-list" style="padding:8px 0;min-height:60px;max-height:260px;overflow-y:auto">
+              <div style="padding:16px;text-align:center;color:var(--dim);font-size:13px">⏳ Charts werden geladen…</div>
+            </div>
+            <div id="suno-preview-bar" style="display:none;padding:8px 12px;background:rgba(99,102,241,0.15);border-top:1px solid rgba(99,102,241,0.4);align-items:center;gap:10px">
+              <span style="font-size:18px">🎵</span>
+              <span id="suno-preview-label" style="font-size:13px;color:var(--bright);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
+              <audio id="suno-preview-audio" controls style="height:32px;flex:1;min-width:120px;max-width:260px"></audio>
+              <button onclick="sunoPreviewStop()" style="background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer;line-height:1;padding:0 4px" title="Schließen">■</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Download + Cover Widget -->
+        <div style="max-width:65%;margin:0 auto 20px auto">
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px">
+            <div style="font-size:13px;font-weight:700;color:var(--bright);margin-bottom:10px">🎵 Song herunterladen + Cover erstellen</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input id="suno-dl-title" type="text" placeholder="Suno-Song-Titel eingeben…"
+                style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;
+                       color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
+              <div id="suno-engine-toggle" style="display:flex;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:12px;flex-shrink:0">
+                <button onclick="sunoSetEngine('pollinations',this)" id="eng-poll"
+                  style="padding:6px 10px;border:none;cursor:pointer;font-weight:700;background:#7c3aed;color:white;transition:all .2s">🌸 Poll</button>
+                <button onclick="sunoSetEngine('gemini',this)" id="eng-gem"
+                  style="padding:6px 10px;border:none;cursor:pointer;font-weight:600;background:transparent;color:var(--dim);transition:all .2s">✨ Gem</button>
+              </div>
+              <button id="suno-dl-btn" onclick="sunoDownloadCover()"
+                style="background:linear-gradient(135deg,#7c3aed,#ff6699);border:none;border-radius:8px;color:white;
+                       font-weight:700;font-size:14px;padding:9px 18px;cursor:pointer;white-space:nowrap;
+                       box-shadow:0 2px 12px rgba(124,58,237,0.4);transition:opacity .2s">
+                Herunterladen &amp; Cover
+              </button>
+            </div>
+            <div id="suno-dl-status" style="font-size:13px;color:var(--dim);margin-top:8px;min-height:18px"></div>
+            <details style="margin-top:10px">
+              <summary style="font-size:12px;color:var(--dim);cursor:pointer">🔑 Suno-Token aktualisieren</summary>
+              <div style="margin-top:10px;padding:10px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid var(--border)">
+                <div style="font-size:12px;color:var(--dim);margin-bottom:8px">
+                  <b style="color:var(--bright)">So geht's:</b> Edge öffnen → suno.com (eingeloggt) → <b>F12 → Console</b> → Code einfügen → Enter → TOKEN: kopieren
+                </div>
+                <button onclick="sunoTokenCopyScript(this)"
+                  style="background:linear-gradient(135deg,rgba(124,58,237,0.3),rgba(255,102,153,0.2));border:1px solid rgba(124,58,237,0.5);
+                         border-radius:6px;color:var(--bright);font-size:13px;padding:8px 16px;cursor:pointer;width:100%;font-weight:600;margin-bottom:10px">
+                  📋 Fetch-Befehl in Zwischenablage kopieren
+                </button>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <input id="suno-token-input" type="password" placeholder="TOKEN: … hier einfügen"
+                    style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:6px;
+                           color:var(--text);padding:7px 10px;font-size:13px;outline:none;font-family:monospace">
+                  <button onclick="sunoTokenSave()"
+                    style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--dim);
+                           font-size:13px;padding:7px 14px;cursor:pointer;white-space:nowrap">Speichern</button>
+                </div>
+                <div id="suno-token-status" style="font-size:12px;color:var(--dim);margin-top:6px"></div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- Popup Modal (versteckt) -->
+        <div id="suno-popup-backdrop" onclick="sunoClosePopup()"
+          style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;
+                 align-items:center;justify-content:center">
+          <div onclick="event.stopPropagation()"
+            style="background:var(--card);border:1px solid var(--border);border-radius:16px;
+                   width:min(900px,92vw);max-height:88vh;overflow-y:auto;padding:24px;position:relative">
+            <button onclick="sunoClosePopup()"
+              style="position:absolute;top:14px;right:16px;background:var(--card2);border:1px solid var(--border);
+                     border-radius:8px;color:var(--dim);padding:4px 12px;cursor:pointer;font-size:16px;line-height:1"
+              onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">✕</button>
+            <!-- Titel -->
+            <div style="margin-bottom:20px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <span style="font-size:14px;font-weight:700;color:var(--bright)">🏷️ Titel</span>
+                <button onclick="sunoPopupCopy('suno-title-text')"
+                  style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--dim);
+                         padding:4px 12px;cursor:pointer;font-size:13px"
+                  onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">📋 Kopieren</button>
+              </div>
+              <div id="suno-popup-title" style="font-size:20px;font-weight:700;color:var(--bright);line-height:1.3"></div>
+            </div>
+            <!-- Style -->
+            <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <span style="font-size:14px;font-weight:700;color:var(--bright)">🎛️ Style Prompt</span>
+                <button onclick="sunoPopupCopy('suno-style-text')"
+                  style="background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);
+                         padding:4px 12px;cursor:pointer;font-size:13px"
+                  onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">📋 Kopieren</button>
+              </div>
+              <div id="suno-popup-style" style="font-size:15px;color:var(--accent);font-style:italic;line-height:1.7"></div>
+            </div>
+            <!-- Lyrics -->
+            <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <span style="font-size:14px;font-weight:700;color:var(--bright)">🎤 Lyrics</span>
+                <button onclick="sunoPopupCopy('suno-lyrics-text')"
+                  style="background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);
+                         padding:4px 12px;cursor:pointer;font-size:13px"
+                  onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">📋 Kopieren</button>
+              </div>
+              <pre id="suno-popup-lyrics" style="margin:0;white-space:pre-wrap;font-family:inherit;font-size:15px;
+                   line-height:2;color:var(--text)"></pre>
+            </div>
+            <!-- Feedback -->
+            <div style="margin-top:16px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px">
+              <div style="font-size:13px;font-weight:700;color:var(--bright);margin-bottom:8px">🔄 Verbessern</div>
+              <div style="display:flex;gap:8px">
+                <input id="suno-popup-feedback" type="text" placeholder="Was soll verbessert werden?"
+                  style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:8px;
+                         color:var(--text);padding:8px 10px;font-size:13px;outline:none;font-family:inherit">
+                <button onclick="sunoPopupRefresh()"
+                  style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);
+                         padding:8px 14px;cursor:pointer;font-size:13px;white-space:nowrap"
+                  onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+                  🔄 Neu generieren
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -5102,7 +5244,7 @@ async function loadBollaModel() {
     const r = await fetch(API + '/api/tokenusage');
     const t = await r.json();
     const el = document.getElementById('bolla-model-line');
-    if (el && t.model) el.textContent = `${t.model.replace(/\s*\(.*\)$/, '')} · Max Plan · Live-Tools`;
+    if (el && t.model) el.textContent = `${t.model.replace(/\s*\(.*\)$/, '')} · Pro Plan · Live-Tools`;
   } catch (e) {}
 }
 
@@ -5832,7 +5974,7 @@ async function loadSystem() {
             <span>📤 Antworten geschrieben</span><span>${fmtTok(total.output)}</span>
           </div>
         </div>
-        <div style="font-size:13px;color:var(--success);margin-top:8px">✨ ${tok.note||'Max Plan — keine Kosten'}</div>
+        <div style="font-size:13px;color:var(--success);margin-top:8px">✨ ${tok.note||'Pro Plan — keine Kosten'}</div>
       </div>`;
   } catch(e) { document.getElementById('system-content').innerHTML='<div class="loading">System-Daten nicht verfügbar</div>'; }
 }
@@ -5964,45 +6106,95 @@ function initBrain() {
 async function loadClipboard() {
   try {
     const d = await fetch('/api/clipboard').then(r => r.json());
-    document.getElementById('clipboard-text').value = d.text || '';
-    document.getElementById('clipboard-ts').textContent = d.ts ? 'Zuletzt gespeichert: ' + new Date(d.ts).toLocaleString('de-DE') : '';
+    clipboardRenderEntries(d.entries || []);
     document.getElementById('clipboard-status').textContent = '';
   } catch(e) {
     document.getElementById('clipboard-status').textContent = 'Fehler beim Laden';
   }
   loadClipboardImages();
 }
-async function clipboardSave() {
-  const text = document.getElementById('clipboard-text').value;
+
+function clipboardRenderEntries(entries) {
+  const container = document.getElementById('clipboard-entries');
+  const countEl = document.getElementById('clipboard-count');
+  if (!entries || entries.length === 0) {
+    container.innerHTML = '<div style="color:var(--dim);font-size:14px;padding:12px 0">Noch keine Einträge.</div>';
+    if (countEl) countEl.textContent = '';
+    return;
+  }
+  if (countEl) countEl.textContent = entries.length + ' Eintrag' + (entries.length !== 1 ? 'e' : '');
+  const srcIcon = s => s === 'voice' ? '🎤' : '✏️';
+  container.innerHTML = entries.map((e, i) => `
+    <div style="padding:14px 0;${i > 0 ? 'border-top:1px solid var(--border);' : ''}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1">
+          <div style="font-size:12px;color:var(--dim);margin-bottom:6px">
+            ${srcIcon(e.source)} ${e.source === 'voice' ? 'Sprach-Notiz' : 'Manuell'} · ${e.ts ? new Date(e.ts).toLocaleString('de-DE', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''}
+          </div>
+          <div style="font-size:15px;color:var(--bright);white-space:pre-wrap;line-height:1.6">${e.text.replace(/</g,'&lt;')}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button onclick="clipboardCopyEntry(${i})" title="Kopieren"
+            style="background:var(--card);border:1px solid var(--border);border-radius:5px;color:var(--dim);font-size:13px;padding:4px 8px;cursor:pointer">📋</button>
+          <button onclick="clipboardDeleteEntry(${i})" title="Löschen"
+            style="background:var(--card);border:1px solid var(--border);border-radius:5px;color:var(--dim);font-size:13px;padding:4px 8px;cursor:pointer">✕</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function clipboardAppend() {
+  const text = document.getElementById('clipboard-text').value.trim();
+  if (!text) return;
   const btn = document.getElementById('clipboard-save-btn');
   const status = document.getElementById('clipboard-status');
   btn.disabled = true;
   try {
-    const d = await fetch('/api/clipboard', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text})}).then(r => r.json());
-    document.getElementById('clipboard-ts').textContent = d.ts ? 'Zuletzt gespeichert: ' + new Date(d.ts).toLocaleString('de-DE') : '';
+    const d = await fetch('/api/clipboard', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text, append: true, source: 'manual'})}).then(r => r.json());
+    clipboardRenderEntries(d.entries || []);
+    document.getElementById('clipboard-text').value = '';
     status.style.color = 'var(--success)';
-    status.textContent = '✓ Gespeichert';
+    status.textContent = '✓ Hinzugefügt';
     setTimeout(() => { status.textContent = ''; }, 2000);
   } catch(e) {
     status.style.color = 'var(--accent)';
-    status.textContent = 'Fehler beim Speichern';
+    status.textContent = 'Fehler';
   }
   btn.disabled = false;
 }
+
+async function clipboardCopyEntry(idx) {
+  try {
+    const d = await fetch('/api/clipboard').then(r => r.json());
+    const text = (d.entries || [])[idx]?.text || '';
+    navigator.clipboard.writeText(text);
+  } catch(e) {}
+}
+
+async function clipboardDeleteEntry(idx) {
+  try {
+    const d = await fetch('/api/clipboard/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({idx})}).then(r => r.json());
+    clipboardRenderEntries(d.entries || []);
+  } catch(e) {}
+}
+
+async function clipboardClearAll() {
+  if (!confirm('Alle Einträge löschen?')) return;
+  try {
+    const d = await fetch('/api/clipboard', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text: '', append: false})}).then(r => r.json());
+    clipboardRenderEntries([]);
+    document.getElementById('clipboard-text').value = '';
+  } catch(e) {}
+}
+
 function clipboardCopy() {
   const text = document.getElementById('clipboard-text').value;
   if (!text) return;
-  navigator.clipboard.writeText(text).then(() => {
-    const status = document.getElementById('clipboard-status');
-    status.style.color = 'var(--success)';
-    status.textContent = '✓ Kopiert';
-    setTimeout(() => { status.textContent = ''; }, 2000);
-  });
+  navigator.clipboard.writeText(text);
 }
+
 function clipboardClear() {
   document.getElementById('clipboard-text').value = '';
-  document.getElementById('clipboard-status').textContent = '';
-  clipboardSave();
 }
 
 async function loadClipboardImages() {
@@ -6184,7 +6376,8 @@ setInterval(renderGreeting, 60*1000);
 setInterval(()=>{loadCalendarData();loadEmailData();}, 5*60*1000);
 setInterval(loadWeather, 30*60*1000);
 setInterval(loadSystem, 30*1000);
-setInterval(()=>{loadBirthdays();loadRobin();loadSchule();loadPhoto();}, 10*60*1000);
+setInterval(()=>{loadBirthdays();loadRobin();loadSchule();loadPhoto();loadRecipe();}, 10*60*1000);
+setInterval(loadClaudeCode, 2*60*1000);
 
 // === CHAT PERSISTENCE ===
 function saveBollaChat() {
@@ -7018,6 +7211,7 @@ function adbRender() {
   loadSurfaceEnergie();
   setInterval(loadSurfaceEnergie, 5 * 60 * 1000);
   setInterval(() => { loadBookHealth(); loadProHealth(); }, 2 * 60 * 1000);
+  setInterval(() => { loadDuoHealth(); loadStudioHealth(); }, 2 * 60 * 1000);
 }
 
 function surfaceBar(pct, color) {
@@ -9365,6 +9559,7 @@ async function sunoGenerate(feedback = '', prevLyrics = '') {
     document.getElementById('suno-result-grid').style.display = 'grid';
     document.getElementById('suno-feedback').value = '';
     status.textContent = '✅ Fertig!';
+    sunoShowPopup();
   } catch(e) {
     status.textContent = '❌ Fehler: ' + e.message;
   } finally {
@@ -9405,6 +9600,232 @@ function sunoCopy(id) {
     btns.forEach(b => { const old = b.textContent; b.textContent = '✅ Kopiert!'; setTimeout(() => b.textContent = old, 2000); });
   });
 }
+// ── Popup ──────────────────────────────────────────────────────
+function sunoShowPopup() {
+  document.getElementById('suno-popup-title').textContent =
+    document.getElementById('suno-title-text').textContent || '';
+  document.getElementById('suno-popup-style').textContent =
+    document.getElementById('suno-style-text').textContent || '';
+  document.getElementById('suno-popup-lyrics').textContent =
+    document.getElementById('suno-lyrics-text').textContent || '';
+  document.getElementById('suno-popup-feedback').value = '';
+  const backdrop = document.getElementById('suno-popup-backdrop');
+  backdrop.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function sunoClosePopup() {
+  document.getElementById('suno-popup-backdrop').style.display = 'none';
+  document.body.style.overflow = '';
+}
+function sunoPopupCopy(sourceId) {
+  const text = document.getElementById(sourceId).textContent || '';
+  navigator.clipboard.writeText(text).then(() => {
+    const map = {
+      'suno-title-text': '[onclick="sunoPopupCopy(\'suno-title-text\')"]',
+      'suno-style-text': '[onclick="sunoPopupCopy(\'suno-style-text\')"]',
+      'suno-lyrics-text': '[onclick="sunoPopupCopy(\'suno-lyrics-text\')"]',
+    };
+    const btns = document.querySelectorAll(map[sourceId] || '');
+    btns.forEach(b => { const old = b.textContent; b.textContent = '✅ Kopiert!'; setTimeout(() => b.textContent = old, 2000); });
+  });
+}
+function sunoPopupRefresh() {
+  const feedback = document.getElementById('suno-popup-feedback').value.trim();
+  document.getElementById('suno-feedback').value = feedback;
+  sunoClosePopup();
+  sunoRefresh();
+}
+
+// ── Charts ──────────────────────────────────────────────────────
+let _sunoCharts = null;
+let _sunoChartTab = 'de';
+async function sunoLoadCharts() {
+  try {
+    const res = await fetch(API + '/api/charts');
+    _sunoCharts = await res.json();
+    sunoRenderChart();
+  } catch(e) {
+    document.getElementById('suno-chart-list').innerHTML =
+      '<div style="padding:12px;color:var(--dim);font-size:13px">❌ Charts konnten nicht geladen werden</div>';
+  }
+}
+function sunoChartTab(tab) {
+  _sunoChartTab = tab;
+  ['de','global','party','overall'].forEach(t => {
+    const btn = document.getElementById('chart-tab-' + t);
+    btn.style.background = t === tab ? 'var(--accent)' : 'transparent';
+    btn.style.color = t === tab ? 'white' : 'var(--dim)';
+  });
+  sunoRenderChart();
+}
+function sunoRenderChart() {
+  const el = document.getElementById('suno-chart-list');
+  if (!_sunoCharts) { el.innerHTML = '<div style="padding:12px;color:var(--dim);font-size:13px">⏳ Wird geladen…</div>'; return; }
+  const list = _sunoCharts[_sunoChartTab] || [];
+  if (!list.length) { el.innerHTML = '<div style="padding:12px;color:var(--dim);font-size:13px">Keine Daten</div>'; return; }
+  if (list[0] && list[0].error) { el.innerHTML = `<div style="padding:12px;color:var(--dim);font-size:13px">❌ ${list[0].error}</div>`; return; }
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:24px 28px 1fr 1fr auto;gap:0;border-bottom:1px solid var(--border);padding:4px 10px 6px">
+      <span style="font-size:11px;color:var(--dim)">#</span>
+      <span></span>
+      <span style="font-size:11px;color:var(--dim)">Titel</span>
+      <span style="font-size:11px;color:var(--dim)">Interpret</span>
+      <span style="font-size:11px;color:var(--dim);text-align:right">Streams</span>
+    </div>` +
+  list.map((s, i) => `
+    <div style="display:grid;grid-template-columns:24px 28px 1fr 1fr auto;gap:0;align-items:center;padding:5px 10px;${i%2===1?'background:rgba(255,255,255,0.02)':''}">
+      <span style="font-size:12px;color:var(--dim);font-weight:600">${i+1}</span>
+      <button onclick="sunoPreview('${(s.title||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${(s.artist||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}',this)" title="Reinhören"
+        style="background:none;border:none;cursor:pointer;font-size:15px;padding:2px 4px;color:var(--dim);line-height:1">▶</button>
+      <span onclick="sunoSelectHit('${(s.title||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')} von ${(s.artist||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}',this.parentElement)"
+        style="font-size:13px;color:var(--bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:8px;cursor:pointer"
+        onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--bright)'">${(s.title||'').replace(/</g,'&lt;')}</span>
+      <span style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:8px">${(s.artist||'').replace(/</g,'&lt;')}</span>
+      <span style="font-size:11px;color:var(--dim);text-align:right;white-space:nowrap">${s.streams||''}</span>
+    </div>`).join('');
+}
+
+let _sunoPreviewActive = null;
+let _sunoPreviewBtn = null;
+async function sunoPreview(title, artist, btn) {
+  // Gleiches nochmal → stoppen
+  if (_sunoPreviewActive === title + artist) { sunoPreviewStop(); return; }
+  // Vorherigen Stop
+  sunoPreviewStop();
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  _sunoPreviewBtn = btn;
+  try {
+    const d = await fetch(`${API}/api/charts/preview?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`).then(r => r.json());
+    if (!d.preview_url) {
+      btn.textContent = '✕';
+      btn.disabled = false;
+      setTimeout(() => { if (btn.textContent === '✕') btn.textContent = '▶'; }, 2000);
+      return;
+    }
+    const audio = document.getElementById('suno-preview-audio');
+    const label = document.getElementById('suno-preview-label');
+    const bar   = document.getElementById('suno-preview-bar');
+    audio.src = d.preview_url;
+    label.textContent = `${title} — ${artist}`;
+    bar.style.display = 'flex';
+    audio.onended = () => {
+      _sunoPreviewActive = null;
+      _sunoPreviewBtn = null;
+      btn.textContent = '▶';
+      bar.style.display = 'none';
+    };
+    await audio.play();
+    _sunoPreviewActive = title + artist;
+    btn.textContent = '⏹';
+    btn.disabled = false;
+  } catch(e) {
+    btn.textContent = '▶';
+    btn.disabled = false;
+    _sunoPreviewBtn = null;
+  }
+}
+function sunoPreviewStop() {
+  const audio = document.getElementById('suno-preview-audio');
+  const bar   = document.getElementById('suno-preview-bar');
+  if (audio) { audio.pause(); audio.src = ''; }
+  if (bar)   bar.style.display = 'none';
+  if (_sunoPreviewBtn) { _sunoPreviewBtn.textContent = '▶'; _sunoPreviewBtn.disabled = false; }
+  _sunoPreviewActive = null;
+  _sunoPreviewBtn = null;
+}
+function sunoSelectHit(value, rowEl) {
+  document.getElementById('suno-hit').value = `"${value}"`;
+  document.getElementById('suno-hit').scrollIntoView({behavior:'smooth', block:'center'});
+  document.getElementById('suno-hit').focus();
+  // Kurzes Aufleuchten
+  rowEl.style.background = 'rgba(99,102,241,0.25)';
+  setTimeout(() => rowEl.style.background = 'transparent', 600);
+}
+
+// ── Suno Token ─────────────────────────────────────────────────
+const SUNO_FETCH_SCRIPT = `fetch('https://auth.suno.com/v1/client',{credentials:'include'}).then(r=>r.json()).then(d=>{const sess=d.response?.sessions||[];sess.forEach(s=>{const tok=s.last_active_token?.jwt||'';if(tok)console.log('TOKEN:'+tok)});})`;
+
+function sunoTokenCopyScript(btn) {
+  navigator.clipboard.writeText(SUNO_FETCH_SCRIPT).then(() => {
+    const old = btn.textContent;
+    btn.textContent = '✅ Kopiert! Jetzt in Edge F12 → Console einfügen & Enter drücken';
+    btn.style.background = 'rgba(34,197,94,0.2)';
+    btn.style.borderColor = 'rgba(34,197,94,0.5)';
+    setTimeout(() => {
+      btn.textContent = old;
+      btn.style.background = '';
+      btn.style.borderColor = '';
+    }, 4000);
+  });
+}
+
+async function sunoTokenSave() {
+  const token = document.getElementById('suno-token-input').value.trim();
+  const status = document.getElementById('suno-token-status');
+  if (!token) { status.textContent = '⚠️ Kein Token eingegeben'; return; }
+  try {
+    const d = await fetch(API + '/api/suno/token', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({token})}).then(r => r.json());
+    if (d.ok) { status.style.color = 'var(--success)'; status.textContent = '✓ Token gespeichert'; document.getElementById('suno-token-input').value = ''; }
+    else { status.style.color = 'var(--danger)'; status.textContent = '❌ ' + (d.error || 'Fehler'); }
+  } catch(e) { status.style.color = 'var(--danger)'; status.textContent = '❌ ' + e.message; }
+}
+
+// ── Download + Cover ────────────────────────────────────────────
+let _sunoEngine = 'pollinations';
+function sunoSetEngine(engine, btn) {
+  _sunoEngine = engine;
+  document.getElementById('eng-poll').style.background = engine === 'pollinations' ? '#7c3aed' : 'transparent';
+  document.getElementById('eng-poll').style.color = engine === 'pollinations' ? 'white' : 'var(--dim)';
+  document.getElementById('eng-gem').style.background = engine === 'gemini' ? '#4285f4' : 'transparent';
+  document.getElementById('eng-gem').style.color = engine === 'gemini' ? 'white' : 'var(--dim)';
+}
+
+async function sunoDownloadCover() {
+  const title = document.getElementById('suno-dl-title').value.trim();
+  if (!title) { document.getElementById('suno-dl-status').textContent = '⚠️ Bitte Song-Titel eingeben'; return; }
+  const btn = document.getElementById('suno-dl-btn');
+  const status = document.getElementById('suno-dl-status');
+  btn.disabled = true; btn.style.opacity = '0.5';
+  status.style.color = 'var(--dim)';
+  status.textContent = `⏳ Suche Song in Suno-Feed… (${_sunoEngine === 'gemini' ? '✨ Gemini' : '🌸 Pollinations'})`;
+  try {
+    const res = await fetch(API + '/api/suno/download-cover', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({title, engine: _sunoEngine})
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    status.style.color = '#34c759';
+    status.textContent = `✅ Fertig! MP3: ${data.mp3.split('/').pop()} | Cover: ${data.cover.split('/').pop()}`;
+  } catch(e) {
+    status.style.color = '#ff453a';
+    status.textContent = '❌ ' + e.message;
+  } finally {
+    btn.disabled = false; btn.style.opacity = '1';
+  }
+}
+
+// Charts laden wenn Suno-Seite aktiv ist
+document.addEventListener('DOMContentLoaded', () => {
+  // Beobachte Seitennavigation
+  const _origNav = window._navPage;
+  // Beim ersten Laden: wenn Suno schon aktiv
+  if (document.getElementById('page-suno') && document.getElementById('page-suno').style.display !== 'none') {
+    sunoLoadCharts();
+  }
+});
+// Auch beim Tab-Wechsel nachladen (Navigation-Observer)
+(function() {
+  const _chartObs = new MutationObserver(() => {
+    const pg = document.getElementById('page-suno');
+    if (pg && pg.style.display !== 'none' && !_sunoCharts) sunoLoadCharts();
+  });
+  const pg = document.getElementById('page-suno');
+  if (pg) _chartObs.observe(pg, {attributes: true, attributeFilter: ['style']});
+})();
+
 // Kontext-Feld beim Laden vorbelegen
 document.getElementById('suno-kontext').value = SUNO_DEFAULT_KONTEXT;
 

@@ -49,7 +49,10 @@ def _get_whisper():
     global _whisper_model
     if _whisper_model is None:
         from faster_whisper import WhisperModel
-        _whisper_model = WhisperModel("large-v3", device="cuda", compute_type="float16")
+        try:
+            _whisper_model = WhisperModel("large-v3", device="cuda", compute_type="float16")
+        except Exception:
+            _whisper_model = WhisperModel("large-v3", device="cpu", compute_type="int8")
     return _whisper_model
 
 def transcribe_audio(audio_bytes: bytes, content_type: str = "audio/webm") -> str:
@@ -85,15 +88,50 @@ def transcribe_audio(audio_bytes: bytes, content_type: str = "audio/webm") -> st
 def get_clipboard():
     try:
         with open(CLIPBOARD_FILE, encoding="utf-8") as f:
-            return json.load(f)
+            raw = json.load(f)
+        # Migration: altes Format {"text":..., "ts":...} → neue Struktur
+        if "entries" not in raw:
+            entries = [{"text": raw["text"], "ts": raw.get("ts", ""), "source": "manual"}] if raw.get("text") else []
+            return {"entries": entries}
+        return raw
     except Exception:
-        return {"text": "", "ts": ""}
+        return {"entries": []}
 
 def save_clipboard(text):
-    data = {"text": text, "ts": datetime.now().isoformat()}
+    data = {"entries": [{"text": text, "ts": datetime.now().isoformat(), "source": "manual"}]}
     with open(CLIPBOARD_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
     return data
+
+def append_clipboard(text, source="voice"):
+    try:
+        with open(CLIPBOARD_FILE, encoding="utf-8") as f:
+            raw = json.load(f)
+        if "entries" not in raw:
+            entries = [{"text": raw["text"], "ts": raw.get("ts", ""), "source": "manual"}] if raw.get("text") else []
+        else:
+            entries = raw["entries"]
+    except Exception:
+        entries = []
+    entries.append({"text": text, "ts": datetime.now().isoformat(), "source": source})
+    data = {"entries": entries}
+    with open(CLIPBOARD_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+    return data
+
+def delete_clipboard_entry(idx):
+    try:
+        with open(CLIPBOARD_FILE, encoding="utf-8") as f:
+            raw = json.load(f)
+        entries = raw.get("entries", [])
+        if 0 <= idx < len(entries):
+            entries.pop(idx)
+        data = {"entries": entries}
+        with open(CLIPBOARD_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+        return data
+    except Exception as e:
+        return {"error": str(e)}
 
 def _ensure_clipboard_images_dir():
     os.makedirs(CLIPBOARD_IMAGES_DIR, exist_ok=True)
@@ -1169,6 +1207,134 @@ def get_sos_contacts():
         with open(cfg_file) as f:
             return json.load(f)
     return {"contacts": [], "medical": {}}
+
+# ── Charts ──────────────────────────────────────────────────────────────────
+GEMINI_CONFIG = Path(os.path.join(WORKSPACE, "config/gemini_api.json"))
+PARTY_CHARTS_CACHE = Path(os.path.join(WORKSPACE, "config/party_charts_cache.json"))
+CREDENTIALS_FILE = Path(os.path.expanduser("~/.claude/.credentials.json"))
+SUNO_API_BASE = "https://studio-api-prod.suno.com"
+SUNO_ROUTENOTE_DIR = Path("/mnt/d/OneDrive/Dokumente/Bolla/Suno_RouteNote")
+
+_charts_cache = {"data": None, "ts": 0}
+CHARTS_TTL = 1800  # 30 Minuten
+
+def _gemini_key():
+    try:
+        return json.loads(GEMINI_CONFIG.read_text()).get("api_key", "")
+    except Exception:
+        return ""
+
+SUNO_TOKEN_FILE = Path(os.path.join(WORKSPACE, "config/suno_token.json"))
+
+def _suno_token():
+    try:
+        tok = json.loads(SUNO_TOKEN_FILE.read_text()).get("token", "")
+        return tok.removeprefix("TOKEN:").strip()
+    except Exception:
+        return ""
+
+def _suno_token_save(token):
+    token = token.removeprefix("TOKEN:").strip()
+    SUNO_TOKEN_FILE.write_text(json.dumps({"token": token, "ts": datetime.now().isoformat()}))
+    return {"ok": True}
+
+def _fetch_kworb(kworb_slug, limit=10):
+    """Spotify Charts via kworb.net (Spotify-Daten, täglich aktualisiert)."""
+    import urllib.request as _ur2, re as _re2
+    url = f"https://kworb.net/spotify/country/{kworb_slug}.html"
+    req = _ur2.Request(url, headers={"User-Agent": "Mozilla/5.0 BollaMC/1.0"})
+    try:
+        html = _ur2.urlopen(req, timeout=12).read().decode("utf-8", "ignore")
+        rows = _re2.findall(r'<tr[^>]*>(.*?)</tr>', html, _re2.DOTALL)
+        results = []
+        for row in rows[1:]:
+            cells = _re2.findall(r'<td[^>]*>(.*?)</td>', row, _re2.DOTALL)
+            cells = [_re2.sub(r'<[^>]+>', '', c).strip() for c in cells]
+            if len(cells) >= 7 and cells[0].isdigit():
+                combined = cells[2]
+                if ' - ' in combined:
+                    artist, title = combined.split(' - ', 1)
+                else:
+                    artist, title = '', combined
+                results.append({"title": title.strip(), "artist": artist.strip(), "streams": cells[6]})
+            if len(results) >= limit:
+                break
+        return results
+    except Exception as e:
+        return [{"error": str(e)}]
+
+_PARTY_HITS = [
+    {"title": "Atemlos durch die Nacht",    "artist": "Helene Fischer",         "streams": "Partyklassiker"},
+    {"title": "Layla",                       "artist": "DJ Robin & Schürze",     "streams": "Partyklassiker"},
+    {"title": "Anita",                       "artist": "Mickie Krause",          "streams": "Partyklassiker"},
+    {"title": "Hulapalu",                    "artist": "Andreas Gabalier",       "streams": "Partyklassiker"},
+    {"title": "Cordula Grün",                "artist": "Josh.",                  "streams": "Partyklassiker"},
+    {"title": "Tequila",                     "artist": "Olaf Henning",           "streams": "Partyklassiker"},
+    {"title": "Ein Stern der deinen Namen trägt", "artist": "DJ Ötzi & Nik P.", "streams": "Partyklassiker"},
+    {"title": "Hey Baby",                    "artist": "DJ Ötzi",               "streams": "Partyklassiker"},
+    {"title": "Absolut geil",                "artist": "Almklausi",             "streams": "Partyklassiker"},
+    {"title": "Vamos a la playa",            "artist": "Righeira",              "streams": "Partyklassiker"},
+    {"title": "Schnappi das kleine Krokodil", "artist": "Schnappi",            "streams": "Kult"},
+    {"title": "Cowboy und Indianer",         "artist": "Truck Stop",            "streams": "Partyklassiker"},
+    {"title": "Schwarz auf Weiß",            "artist": "Voxxclub",             "streams": "Partyklassiker"},
+    {"title": "Geh mal Bier hol'n",          "artist": "Mickie Krause",         "streams": "Partyklassiker"},
+    {"title": "Schatzi schenk mir ein Foto", "artist": "Michael Wendler",       "streams": "Kult"},
+]
+
+def _fetch_party_charts():
+    """Kuratierte Liste lustiger, fröhlicher deutscher Partyhits — rotiert wöchentlich."""
+    import time as _time, random as _rnd
+    week = int(_time.time()) // (7 * 86400)
+    _rnd.seed(week)
+    shuffled = _PARTY_HITS[:]
+    _rnd.shuffle(shuffled)
+    return shuffled[:10]
+
+def _fetch_kworb_alltime(limit=10):
+    """Meistgestreamte Songs aller Zeiten via kworb.net."""
+    import urllib.request as _ur2, re as _re2
+    req = _ur2.Request("https://kworb.net/spotify/songs.html", headers={"User-Agent": "Mozilla/5.0 BollaMC/1.0"})
+    try:
+        html = _ur2.urlopen(req, timeout=12).read().decode("utf-8", "ignore")
+        rows = _re2.findall(r'<tr[^>]*>(.*?)</tr>', html, _re2.DOTALL)
+        results = []
+        for row in rows[1:]:
+            cells = _re2.findall(r'<td[^>]*>(.*?)</td>', row, _re2.DOTALL)
+            cells = [_re2.sub(r'<[^>]+>', '', c).strip() for c in cells]
+            if len(cells) >= 2 and cells[0]:
+                combined = cells[0]
+                if ' - ' in combined:
+                    artist, title = combined.split(' - ', 1)
+                else:
+                    artist, title = '', combined
+                # Streams in Milliarden formatieren
+                try:
+                    streams_raw = int(cells[1].replace(',', '').replace('.', ''))
+                    streams = f"{streams_raw/1_000_000_000:.1f} Mrd."
+                except Exception:
+                    streams = cells[1] if len(cells) > 1 else ''
+                results.append({"title": title.strip(), "artist": artist.strip(), "streams": streams})
+            if len(results) >= limit:
+                break
+        return results
+    except Exception as e:
+        return [{"error": str(e)}]
+
+def get_charts():
+    """Streaming Charts: DE + Global (Spotify via kworb) + Party + Overall Alltime."""
+    import time as _time
+    now = _time.time()
+    if _charts_cache["data"] and now - _charts_cache["ts"] < CHARTS_TTL:
+        return _charts_cache["data"]
+    de = _fetch_kworb("de_daily")
+    gl = _fetch_kworb("global_daily")
+    party = _fetch_party_charts()
+    overall = _fetch_kworb_alltime()
+    result = {"de": de, "global": gl, "party": party, "overall": overall}
+    _charts_cache["data"] = result
+    _charts_cache["ts"] = now
+    return result
+
 
 def get_chargers(lat: float, lon: float, radius: int = 12000):
     """Ladesäulen via OpenStreetMap Overpass API."""
@@ -2276,10 +2442,10 @@ def get_token_usage():
         return m
 
     data = {
-        "model": f"{_pretty(latest_model)} (Max Plan)",
+        "model": f"{_pretty(latest_model)} (Pro Plan)",
         "today": {"input": t_in, "output": t_out, "cache_read": t_cr, "cache_creation": t_ce},
         "total": {"input": a_in, "output": a_out, "cache_read": a_cr, "cache_creation": a_ce},
-        "note": "Max Plan — keine Kosten"
+        "note": "Pro Plan — keine Kosten"
     }
     _token_cache["ts"] = _t.time()
     _token_cache["data"] = data
@@ -2435,21 +2601,6 @@ def get_kosten():
     try:
         with open(_KOSTEN_FILE, encoding="utf-8") as f:
             data = json.load(f)
-        # Anthropic-Plan automatisch aus OAuth-Token befüllen
-        try:
-            creds = json.load(open(os.path.expanduser("~/.claude/.credentials.json")))
-            sub = creds["claudeAiOauth"].get("subscriptionType", "").lower()
-            tier = creds["claudeAiOauth"].get("rateLimitTier", "").lower()
-            plan_key = "pro" if "pro" in sub else ("max" if "max" in sub or "max" in tier else None)
-            if plan_key:
-                plan = _PLAN_INFO.get(plan_key, _PLAN_INFO["pro"])
-                for k in data["konten"]:
-                    if k.get("typ") == "abo_auto" and "Anthropic" in k["name"]:
-                        k["betrag"] = plan["betrag"]
-                        k["einheit"] = plan["einheit"]
-                        k["info"] = f"{plan['label']} · automatisch erkannt"
-        except Exception:
-            pass
         return data
     except Exception as e:
         return {"error": str(e)}
@@ -3706,7 +3857,36 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/photos/config":  get_lmstudio_config,
                 "/api/quicknotes":     get_quicknotes,
                 "/api/sos/contacts":   get_sos_contacts,
+                "/api/charts":         get_charts,
             }
+
+            # Chart Preview (iTunes)
+            if self.path.startswith("/api/charts/preview"):
+                import urllib.parse as _cup, urllib.request as _cur2, re as _re_p
+                qs = _cup.parse_qs(_cup.urlparse(self.path).query)
+                title = qs.get("title", [""])[0]
+                artist = qs.get("artist", [""])[0]
+                # Feature-Angaben bereinigen: (w/ ...), (feat. ...), (ft. ...)
+                clean_title = _re_p.sub(r'\s*\((?:w/|feat\.?|ft\.?)[^)]*\)', '', title, flags=_re_p.IGNORECASE).strip()
+                clean_artist = artist.split(',')[0].strip()  # nur ersten Künstler nehmen
+                def _itunes_search(term):
+                    q = _cup.urlencode({"term": term, "media": "music", "limit": "5", "entity": "song"})
+                    req_it = _cur2.Request(f"https://itunes.apple.com/search?{q}", headers={"User-Agent": "Mozilla/5.0"})
+                    d_it = json.loads(_cur2.urlopen(req_it, timeout=8).read())
+                    for r in d_it.get("results", []):
+                        if r.get("previewUrl"):
+                            return r["previewUrl"]
+                    return None
+                try:
+                    # Versuch 1: bereinigter Titel + Künstler
+                    preview = _itunes_search(f"{clean_title} {clean_artist}")
+                    # Versuch 2: nur bereinigter Titel
+                    if not preview:
+                        preview = _itunes_search(clean_title)
+                    self._send_json({"preview_url": preview})
+                except Exception as e:
+                    self._send_json({"preview_url": None, "error": str(e)})
+                return
 
             # Foto-Thumb
             if self.path.startswith("/api/photos/thumb"):
@@ -3959,6 +4139,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             try:
                 text = transcribe_audio(raw, ct)
+                append_clipboard(text, source="voice")
                 self._send_json({"text": text})
             except Exception as e:
                 self._send_json({"error": str(e)}, status=500)
@@ -4163,7 +4344,13 @@ class Handler(BaseHTTPRequestHandler):
                     self._send_json({"image_b64": img_b64, "mime_type": mime_or_err, "remaining": remaining})
             elif self.path == "/api/clipboard":
                 text = body.get("text", "")
-                self._send_json(save_clipboard(text))
+                if body.get("append"):
+                    self._send_json(append_clipboard(text, source=body.get("source", "manual")))
+                else:
+                    self._send_json(save_clipboard(text))
+            elif self.path == "/api/clipboard/delete":
+                idx = body.get("idx", -1)
+                self._send_json(delete_clipboard_entry(int(idx)))
             elif self.path == "/api/clipboard/image":
                 img_b64 = body.get("image_b64", "")
                 mime = body.get("mime", "image/png")
@@ -4863,6 +5050,121 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                         parts.append(gb)
                     song_data["title"] = " ".join(parts)
                 self._send_json(song_data)
+
+            elif self.path == "/api/suno/token":
+                token = body.get("token", "").strip()
+                if not token:
+                    self._send_json({"error": "Kein Token"}, status=400); return
+                self._send_json(_suno_token_save(token))
+            elif self.path == "/api/suno/download-cover":
+                title = body.get("title", "").strip()
+                cover_engine = body.get("engine", "pollinations")  # "pollinations" oder "gemini"
+                if not title:
+                    self._send_json({"error": "Kein Titel angegeben"}, status=400); return
+                # 1. Suno Feed abfragen
+                token = _suno_token()
+                if not token:
+                    self._send_json({"error": "Kein Suno-Token gefunden"}, status=500); return
+                feed_req = urllib.request.Request(
+                    SUNO_API_BASE + "/api/feed/?page=0",
+                    headers={"Authorization": f"Bearer {token}", "User-Agent": "BollaMC/1.0"}
+                )
+                try:
+                    with urllib.request.urlopen(feed_req, timeout=20) as resp:
+                        feed_data = json.loads(resp.read())
+                except Exception as e:
+                    self._send_json({"error": f"Suno Feed Fehler: {e}"}, status=500); return
+                # 2. Song mit Titel suchen
+                songs = feed_data if isinstance(feed_data, list) else feed_data.get("clips", feed_data.get("data", []))
+                found = None
+                for s in songs:
+                    sname = (s.get("title") or s.get("display_name") or "")
+                    if title.lower() in sname.lower():
+                        found = s; break
+                if not found:
+                    self._send_json({"error": f"Song '{title}' nicht in Suno-Feed gefunden"}); return
+                audio_url = found.get("audio_url") or found.get("mp3_url") or ""
+                if not audio_url:
+                    self._send_json({"error": "Kein audio_url im Song-Objekt"}); return
+                # 3. MP3 herunterladen
+                SUNO_ROUTENOTE_DIR.mkdir(parents=True, exist_ok=True)
+                safe_title = "".join(c for c in title if c.isalnum() or c in " _-").strip()
+                mp3_path = SUNO_ROUTENOTE_DIR / f"{safe_title}.mp3"
+                try:
+                    mp3_req = urllib.request.Request(audio_url, headers={"User-Agent": "BollaMC/1.0"})
+                    with urllib.request.urlopen(mp3_req, timeout=60) as resp:
+                        mp3_data = resp.read()
+                    mp3_path.write_bytes(mp3_data)
+                except Exception as e:
+                    self._send_json({"error": f"MP3-Download Fehler: {e}"}); return
+                # 4. Bildprompt mit Claude Haiku generieren
+                try:
+                    import subprocess as _sp2, shutil as _sh2
+                    _claude_bin2 = _sh2.which("claude") or os.path.expanduser("~/.local/bin/claude")
+                    _cover_prompt_instr = (
+                        f"Create a stunning, professional album cover image prompt in English for the song '{title}'. "
+                        f"IMPORTANT: The artist is an optimistic, life-affirming, cheerful person. "
+                        f"Always interpret the title in a POSITIVE, uplifting way — never dark, sad, hopeless or threatening. "
+                        f"Think: joy, energy, nature, light, celebration, adventure, warmth, hope, movement. "
+                        f"Describe a vivid, cinematic scene with specific lighting, vibrant colors, textures and uplifting atmosphere. "
+                        f"Be creative and visually specific — no generic descriptions. "
+                        f"3000x3000px, square format, photorealistic or high-quality illustration style. "
+                        f"End with: '— absolutely NO text, NO letters, NO words, NO typography in the image.' "
+                        f"Reply with ONLY the image prompt, nothing else."
+                    )
+                    _cp_result = _sp2.run(
+                        [_claude_bin2, "-p", "--model", "claude-sonnet-4-6", "--output-format", "json", _cover_prompt_instr],
+                        capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~")
+                    )
+                    img_prompt = json.loads(_cp_result.stdout).get("result", "").strip() if _cp_result.returncode == 0 else ""
+                    if not img_prompt:
+                        raise Exception("Kein Prompt")
+                except Exception:
+                    img_prompt = f"Cinematic album cover for '{title}': dramatic atmospheric scene, rich textures, professional studio lighting, bold colors, emotional depth — absolutely NO text, NO letters, NO words, NO typography in the image."
+                # 5. Cover generieren — Pollinations (default) oder Gemini
+                try:
+                    import urllib.parse as _urlparse_cv, io as _io_cv
+                    from PIL import Image as _PILImage
+                    if cover_engine == "gemini":
+                        import base64 as _b64_cv
+                        gemini_key = _gemini_key()
+                        if not gemini_key:
+                            self._send_json({"error": "Kein Gemini API Key"}); return
+                        _gem_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent"
+                        _gem_payload = json.dumps({
+                            "contents": [{"parts": [{"text": img_prompt}]}],
+                            "generationConfig": {"responseModalities": ["TEXT", "IMAGE"], "imageConfig": {"aspectRatio": "1:1"}}
+                        }).encode()
+                        _gem_req = urllib.request.Request(
+                            _gem_url, data=_gem_payload,
+                            headers={"x-goog-api-key": gemini_key, "Content-Type": "application/json"}
+                        )
+                        with urllib.request.urlopen(_gem_req, timeout=90) as resp:
+                            _gem_data = json.loads(resp.read())
+                        img_b64 = None
+                        for part in _gem_data.get("candidates", [{}])[0].get("content", {}).get("parts", []):
+                            if "inlineData" in part:
+                                img_b64 = part["inlineData"]["data"]; break
+                        if not img_b64:
+                            self._send_json({"error": "Gemini lieferte kein Bild"}); return
+                        img_bytes = _b64_cv.b64decode(img_b64)
+                    else:
+                        _poll_url = (
+                            f"https://image.pollinations.ai/prompt/{_urlparse_cv.quote(img_prompt)}"
+                            f"?width=3000&height=3000&nologo=true&enhance=true&model=flux"
+                        )
+                        _poll_req = urllib.request.Request(_poll_url, headers={"User-Agent": "Bolla/1.0"})
+                        with urllib.request.urlopen(_poll_req, timeout=120) as resp:
+                            img_bytes = resp.read()
+                    img = _PILImage.open(_io_cv.BytesIO(img_bytes)).convert("RGB")
+                    if img.size != (3000, 3000):
+                        img = img.resize((3000, 3000), _PILImage.LANCZOS)
+                    cover_path = SUNO_ROUTENOTE_DIR / f"{safe_title}_cover.jpg"
+                    img.save(str(cover_path), "JPEG", quality=95)
+                except Exception as e:
+                    self._send_json({"error": f"Cover-Generierung Fehler: {e}"}); return
+                self._send_json({"ok": True, "mp3": str(mp3_path), "cover": str(cover_path)})
+
             elif self.path == "/api/kiforum/respond":
                 import subprocess as _sp2, uuid as _uuid3, base64 as _b64
                 thesis = body.get("thesis", "").strip()
