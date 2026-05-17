@@ -45,13 +45,27 @@ _photo_job = {"running": False, "total": 0, "done": 0, "errors": 0, "stop": Fals
 
 # Whisper Spracherkennung (lokal, kein F-Secure-Problem)
 _whisper_model = None
-def _get_whisper():
+def _get_whisper(force_cpu=False):
     global _whisper_model
-    if _whisper_model is None:
+    if _whisper_model is None or force_cpu:
         from faster_whisper import WhisperModel
-        try:
-            _whisper_model = WhisperModel("large-v3", device="cuda", compute_type="float16")
-        except Exception:
+        if not force_cpu:
+            try:
+                m = WhisperModel("large-v3", device="cuda", compute_type="float16")
+                # CUDA-Libs werden lazy geladen — kurzen Test-Inference machen
+                import numpy as np, tempfile, wave
+                tmp = tempfile.mktemp(suffix=".wav")
+                with wave.open(tmp, 'w') as wf:
+                    wf.setnchannels(1); wf.setsampwidth(2); wf.setframerate(16000)
+                    wf.writeframes(np.zeros(16000, dtype=np.int16).tobytes())
+                list(m.transcribe(tmp, language="de")[0])
+                import os; os.unlink(tmp)
+                _whisper_model = m
+                print("[whisper] CUDA OK")
+            except Exception as e:
+                print(f"[whisper] CUDA fehlgeschlagen ({e}), verwende CPU")
+                _whisper_model = WhisperModel("large-v3", device="cpu", compute_type="int8")
+        else:
             _whisper_model = WhisperModel("large-v3", device="cpu", compute_type="int8")
     return _whisper_model
 
@@ -71,11 +85,31 @@ def transcribe_audio(audio_bytes: bytes, content_type: str = "audio/webm") -> st
         wav_size = os.path.getsize(tmp_wav) if os.path.exists(tmp_wav) else 0
         print(f"[transcribe] ffmpeg rc={r.returncode}, wav={wav_size} bytes")
         model = _get_whisper()
-        segments, info = model.transcribe(
-            tmp_wav, language="de", beam_size=5, vad_filter=False,
-            initial_prompt="Das ist eine Spracheingabe auf Deutsch."
+        import shutil; shutil.copy(tmp_wav, "/tmp/debug_voice.wav")
+        _transcribe_kwargs = dict(
+            language="de", beam_size=5,
+            vad_filter=False,
+            no_speech_threshold=0.6, condition_on_previous_text=False,
         )
-        text = " ".join(s.text.strip() for s in segments).strip()
+        try:
+            segs_gen, info = model.transcribe(tmp_wav, **_transcribe_kwargs)
+            segs = list(segs_gen)
+            for s in segs:
+                print(f"[seg] [{s.start:.1f}-{s.end:.1f}s] p={s.no_speech_prob:.2f} '{s.text.strip()}'")
+            text = " ".join(s.text.strip() for s in segs).strip()
+        except Exception as cuda_err:
+            if "cuda" in str(cuda_err).lower() or "cublas" in str(cuda_err).lower() or "libcublas" in str(cuda_err).lower():
+                print(f"[whisper] CUDA-Fehler beim Transkribieren, wechsle zu CPU: {cuda_err}")
+                global _whisper_model
+                _whisper_model = None
+                model = _get_whisper(force_cpu=True)
+                segs_gen, info = model.transcribe(tmp_wav, **_transcribe_kwargs)
+                segs = list(segs_gen)
+                for s in segs:
+                    print(f"[seg] [{s.start:.1f}-{s.end:.1f}s] p={s.no_speech_prob:.2f} '{s.text.strip()}'")
+                text = " ".join(s.text.strip() for s in segs).strip()
+            else:
+                raise
         print(f"[transcribe] result: '{text}' (duration={info.duration:.1f}s)")
         return text
     finally:
@@ -2605,7 +2639,7 @@ def get_kosten():
     except Exception as e:
         return {"error": str(e)}
 
-def kosten_update_guthaben(name, betrag):
+def kosten_update_guthaben(name, betrag, info=None):
     try:
         with open(_KOSTEN_FILE, encoding="utf-8") as f:
             data = json.load(f)
@@ -2613,6 +2647,8 @@ def kosten_update_guthaben(name, betrag):
             if k["name"] == name:
                 k["betrag"] = betrag
                 k["aktualisiert"] = datetime.now().strftime("%Y-%m-%d")
+                if info is not None:
+                    k["info"] = info
         data["zuletzt_geaendert"] = datetime.now().strftime("%Y-%m-%d")
         with open(_KOSTEN_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
@@ -4164,7 +4200,7 @@ class Handler(BaseHTTPRequestHandler):
 
         try:
             if self.path == "/api/kosten/guthaben":
-                self._send_json(kosten_update_guthaben(body.get("name",""), body.get("betrag", 0)))
+                self._send_json(kosten_update_guthaben(body.get("name",""), body.get("betrag", 0), body.get("info")))
             elif self.path == "/api/travel/recommendation":
                 uid = body.get("id", "sommer2026")
                 typ = body.get("typ", "pauschal")
@@ -5151,7 +5187,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     else:
                         _poll_url = (
                             f"https://image.pollinations.ai/prompt/{_urlparse_cv.quote(img_prompt)}"
-                            f"?width=3000&height=3000&nologo=true&enhance=true&model=flux"
+                            f"?width=3000&height=3000&nologo=true&enhance=true&model=flux-realism"
                         )
                         _poll_req = urllib.request.Request(_poll_url, headers={"User-Agent": "Bolla/1.0"})
                         with urllib.request.urlopen(_poll_req, timeout=120) as resp:

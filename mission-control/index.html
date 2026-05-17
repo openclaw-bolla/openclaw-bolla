@@ -2337,8 +2337,8 @@ html, body {
                 <option value="3:4">3:4</option>
               </select>
               <select id="bildgen-model" style="background:#1a2a3a;border:1px solid #253a50;border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px;outline:none">
-                <option value="gemini-2.5-flash-image">Nano Banana</option>
-                <option value="gemini-3.1-flash-image-preview">Nano Banana 2</option>
+                <option value="gemini-2.5-flash-image">Nano Banana (2.5 Flash)</option>
+                <option value="gemini-2.0-flash-preview-image-generation">Nano Banana 2 (2.0 Flash)</option>
               </select>
               <button id="bildgen-btn" onclick="bildgenGenerate()"
                 style="background:linear-gradient(135deg,#1a73e8,#34a853);border:none;border-radius:8px;color:white;
@@ -2711,7 +2711,7 @@ html, body {
                 <button id="fa-engine-gemini" onclick="faSetEngine('gemini')"
                   style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--accent);background:rgba(99,102,241,0.15);color:var(--text);font-size:13px;cursor:pointer;font-weight:600">
                   ☁️ Gemini Flash
-                  <div style="font-size:11px;font-weight:400;color:var(--dim);margin-top:3px">Cloud · kostenlos · max. 1500 Fotos/Tag · kein GPU-Stress</div>
+                  <div style="font-size:11px;font-weight:400;color:var(--dim);margin-top:3px">Cloud · ~€0,001/Foto · Cap 10 €/Monat · kein GPU-Stress</div>
                 </button>
                 <button id="fa-engine-lmstudio" onclick="faSetEngine('lmstudio')"
                   style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--text);font-size:13px;cursor:pointer">
@@ -3929,6 +3929,7 @@ async function bildgenGenerate() {
     setTimeout(() => { s.style.color = '#b8c5d4'; s.textContent = ''; }, 3000);
     return;
   }
+  if (!confirm('✨ Nano Banana kostet ~€0,04 pro Bild (Gemini API).\n\nFortfahren?')) return;
   const btn = document.getElementById('bildgen-btn');
   const status = document.getElementById('bildgen-status');
   const result = document.getElementById('bildgen-result');
@@ -5658,14 +5659,16 @@ async function kostenLoad() {
     el.innerHTML = d.konten.map(k => {
       const kostenlos = k.typ === 'kostenlos';
       const isGuthaben = k.typ === 'guthaben';
+      const isAbo = k.typ === 'abo' || k.typ === 'abo_auto';
       const niedrig = isGuthaben && k.betrag < 1.0;
       const betragColor = niedrig ? '#ef4444' : kostenlos ? '#6b7280' : '#22c55e';
       const betragText = kostenlos ? 'Kostenlos' : isGuthaben
-        ? `$${k.betrag.toFixed(2)} Guthaben`
+        ? `${k.betrag.toFixed(2).replace('.',',')} ${k.einheit} Guthaben`
         : `${k.betrag % 1 === 0 ? k.betrag.toFixed(0) : k.betrag.toFixed(2)} ${k.einheit}`;
+      const stripeColor = niedrig ? '#ef4444' : kostenlos ? '#22c55e' : isGuthaben ? '#f97316' : '#3b82f6';
       const aktualisiert = k.aktualisiert ? `<div style="font-size:10px;color:var(--dim);margin-top:3px">Stand: ${k.aktualisiert}</div>` : '';
       const editBtn = isGuthaben ? `<button onclick="kostenEdit('${k.name}',${k.betrag})" style="padding:2px 7px;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);border-radius:4px;color:#a78bfa;font-size:11px;cursor:pointer;margin-top:4px">✏️ Anpassen</button>` : '';
-      return `<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-left:3px solid ${k.farbe};border-radius:8px;padding:10px 12px">
+      return `<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-left:3px solid ${stripeColor};border-radius:8px;padding:10px 12px">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
           <span style="font-size:16px">${k.icon}</span>
           <span style="font-size:13px;font-weight:600;color:var(--bright)">${k.name}</span>
@@ -5682,12 +5685,33 @@ async function kostenLoad() {
 }
 
 async function kostenEdit(name, aktuell) {
-  const neu = prompt(`Neues Guthaben für ${name} ($):`, aktuell);
-  if (neu === null || isNaN(parseFloat(neu))) return;
+  const isGemini = name.toLowerCase().includes('gemini');
+  let betrag, info = null;
+  if (isGemini) {
+    const neu = prompt(`Google Gemini — aktueller Stand:\nFormat: verbraucht/cap  (z.B. 3.12/10.00)\nOder nur Restbetrag eingeben:`, '');
+    if (neu === null || neu.trim() === '') return;
+    if (neu.includes('/')) {
+      const parts = neu.split('/');
+      const verbraucht = parseFloat(parts[0].replace(',', '.'));
+      const cap = parseFloat(parts[1].replace(',', '.'));
+      if (isNaN(verbraucht) || isNaN(cap)) return;
+      betrag = Math.max(0, cap - verbraucht);
+      const resetMonat = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
+        .toLocaleDateString('de-DE', {day:'numeric', month:'long'});
+      info = `${verbraucht.toFixed(2).replace('.',',')} € / ${cap.toFixed(2).replace('.',',')} € · Reset ${resetMonat} · Nano Banana + Foto-Analyse`;
+    } else {
+      betrag = parseFloat(neu.replace(',', '.'));
+      if (isNaN(betrag)) return;
+    }
+  } else {
+    const neu = prompt(`Neues Guthaben für ${name}:`, aktuell);
+    if (neu === null || isNaN(parseFloat(neu))) return;
+    betrag = parseFloat(neu);
+  }
   await fetch('/api/kosten/guthaben', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({name, betrag: parseFloat(neu)})
+    body: JSON.stringify({name, betrag, ...(info ? {info} : {})})
   });
   kostenLoad();
 }
@@ -9784,6 +9808,7 @@ function sunoSetEngine(engine, btn) {
 async function sunoDownloadCover() {
   const title = document.getElementById('suno-dl-title').value.trim();
   if (!title) { document.getElementById('suno-dl-status').textContent = '⚠️ Bitte Song-Titel eingeben'; return; }
+  if (_sunoEngine === 'gemini' && !confirm('✨ Gemini Cover kostet ~€0,04 (Nano Banana).\n\nFortfahren?')) return;
   const btn = document.getElementById('suno-dl-btn');
   const status = document.getElementById('suno-dl-status');
   btn.disabled = true; btn.style.opacity = '0.5';
@@ -9950,6 +9975,7 @@ async function faStart() {
   const throttle = parseFloat(document.getElementById('fa-throttle').value) || 0;
   const engine   = _faEngine;
   if (!folders.length || !folders[0]) { document.getElementById('fa-status').textContent = '⚠️ Bitte Ordner angeben'; return; }
+  if (engine === 'gemini' && !confirm('☁️ Gemini Foto-Analyse kostet ~€0,0005 pro Foto (Gemini API).\n\nBei 100 Fotos ≈ €0,05 · Bei 1000 Fotos ≈ €0,50\n\nFortfahren?')) return;
   document.getElementById('fa-status').textContent = '⏳ Starte…';
   document.getElementById('fa-start-btn').disabled = true;
   try {
