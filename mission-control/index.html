@@ -781,6 +781,7 @@ html, body {
       <div class="sub">Chris Mandel</div>
     </div>
     <nav id="sidebar-nav">
+      <div id="sidebar-reset-banner" style="display:none;background:#dc3545;color:white;padding:10px;margin:0 0 8px 0;border-radius:6px;font-size:13px;cursor:pointer;text-align:center;font-weight:600" onclick="if(confirm('Sidebar-Reihenfolge zurücksetzen?')){Object.keys(localStorage).filter(k=>k.startsWith('nav-')).forEach(k=>localStorage.removeItem(k));location.reload()}">⚠️ Sidebar reparieren (Reset)</div>
       <div class="nav-block" id="navblock-uebersicht">
         <div class="nav-section open" onclick="toggleNavSection('uebersicht')" id="nav-sec-uebersicht"><span class="nav-section-grip">⠿</span>Übersicht <span class="nav-section-chevron">▶</span></div>
         <div class="nav-section-items" id="nav-section-items-uebersicht">
@@ -1775,7 +1776,7 @@ html, body {
                 📎<input type="file" accept="image/*" onchange="bollaFileSelect(event)" style="display:none">
               </label>
               <button id="bolla-cam-btn" onclick="camToggle()" style="padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:16px;color:var(--dim)" title="Webcam-Foto an Bolla senden">📷</button>
-              <button id="bolla-mic-btn" onclick="micToggle()" style="padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:16px;color:var(--dim)" title="Mit Bolla sprechen (Web Speech, de-DE)">🎤</button>
+              <button id="bolla-mic-btn" onclick="micToggle()" style="padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:16px;color:var(--dim)" title="Mit Bolla sprechen (lokal via Whisper, kein F-Secure-Block)">🎤</button>
               <input id="bolla-input" placeholder="Nachricht an Bolla... (Strg+V für Screenshot · 🎤 für Spracheingabe)" style="flex:1;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-size:14px;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();bollaSend()}">
               <button onclick="bollaSend()" id="bolla-send-btn" style="padding:12px 24px;background:var(--accent2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:opacity 0.2s">Senden</button>
             </div>
@@ -1797,6 +1798,7 @@ html, body {
                 <div id="lms-model" style="font-size:13px;color:var(--bright);font-weight:600">LM Studio · Verbinde...</div>
               </div>
               <div id="lms-status" style="font-size:13px;color:#3a5068">⏳ Prüfe...</div>
+              <button onclick="lmsCheckStatus()" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;font-size:13px" title="Status prüfen">🔄 Status</button>
               <button onclick="lmsNewChat()" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;font-size:13px" title="Neuer Chat">🗑️ Neu</button>
             </div>
             <div id="lms-chat" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;overflow-y:auto;font-size:14px;line-height:1.7;color:var(--text)">
@@ -3634,9 +3636,14 @@ function initNavDrag() {
   if (!nav) return;
 
   // Einmalig kaputten Item-Order-Stand löschen (Gruppen waren nicht grip-only)
-  if (localStorage.getItem('nav-drag-version') !== '3') {
+  // Version 4 (2026-05-18): Sidebar-Item-Reihenfolge zurücksetzen — fixt verlorenes Clipboard
+  // und andere Items die durch Drag&Drop in geschlossene Container gerutscht sind.
+  // Notfall-Reset jederzeit per ?reset-sidebar=1 in der URL.
+  if (location.search.includes('reset-sidebar') ||
+      localStorage.getItem('nav-drag-version') !== '4') {
     localStorage.removeItem('nav-item-order');
-    localStorage.setItem('nav-drag-version', '3');
+    localStorage.removeItem('nav-block-order');
+    localStorage.setItem('nav-drag-version', '4');
   }
 
   // Stabile IDs vergeben BEVOR Restore läuft (sonst findet getElementById nichts)
@@ -3670,6 +3677,46 @@ function initNavDrag() {
       });
     } catch(e) {}
   }
+
+  // Self-Heal: nach Restore prüfen ob alle nav-items in einem sichtbaren Sektion-Container liegen.
+  // Falls jemand (oder Drag-Bug) ein Item rausgezogen oder in einen verschwundenen Container gehängt
+  // hat, packen wir es zurück in die ursprüngliche Sektion gemäß data-original-section/HTML-Default.
+  // Original-Mapping aus dem statischen HTML: data-page → default Sektion
+  const DEFAULT_SECTION = {
+    'dashboard': 'nav-section-items-uebersicht',
+    'bolla': 'nav-section-items-uebersicht',
+    'schule': 'nav-section-items-arbeit',
+    'korrektur': 'nav-section-items-arbeit',
+    'differenzierung': 'nav-section-items-arbeit',
+    'entschaerfer': 'nav-section-items-arbeit',
+    'kalender': 'nav-section-items-arbeit',
+    'email': 'nav-section-items-arbeit',
+    'clipboard': 'nav-section-items-arbeit',
+    'projekte': 'nav-section-items-arbeit',
+    'urlaub': 'nav-section-items-arbeit',
+  };
+  let _healed = 0;
+  nav.querySelectorAll('.nav-item, .nav-group').forEach(item => {
+    const parent = item.closest('.nav-section-items, .nav-group-items');
+    if (parent) return; // ok, hat sichtbaren Container
+    const page = item.dataset.page || item.dataset.group;
+    const targetId = DEFAULT_SECTION[page];
+    if (targetId) {
+      const target = document.getElementById(targetId);
+      if (target) { target.appendChild(item); _healed++; console.log('[sidebar self-heal] '+page+' → '+targetId); }
+    }
+  });
+  // Wenn Clipboard fehlt trotz Self-Heal → roten Banner zeigen
+  setTimeout(() => {
+    const clip = document.querySelector('[data-page="clipboard"]');
+    const visible = clip && clip.offsetParent !== null;
+    if (!visible) {
+      const b = document.getElementById('sidebar-reset-banner');
+      if (b) b.style.display = 'block';
+      console.warn('[sidebar] Clipboard nicht sichtbar — Reparatur-Banner aktiviert. DOM-State:',
+        {exists: !!clip, parent: clip?.parentElement?.id, offsetParent: !!clip?.offsetParent});
+    }
+  }, 100);
 
   function saveItemOrder() {
     const itemOrder = {};
@@ -6147,15 +6194,31 @@ function clipboardRenderEntries(entries) {
     return;
   }
   if (countEl) countEl.textContent = entries.length + ' Eintrag' + (entries.length !== 1 ? 'e' : '');
-  const srcIcon = s => s === 'voice' ? '🎤' : '✏️';
+  const srcIcon = s => s === 'voice' ? '🎤' : s === 'bolla-anweisung' ? '🤖' : '✏️';
+  const srcLabel = s => s === 'voice' ? 'Sprach-Notiz' : s === 'bolla-anweisung' ? 'Bolla' : 'Manuell';
+  // Linkify: URLs anklickbar, Audio/Video direkt einbetten
+  const linkify = (text) => {
+    const escaped = text.replace(/</g,'&lt;');
+    return escaped.replace(/(https?:\/\/[^\s]+)/g, (url) => {
+      const isAudio = /\.(wav|mp3|ogg|m4a|webm)(\?|$)/i.test(url);
+      const isImg = /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(url);
+      if (isAudio) {
+        return `<a href="${url}" target="_blank" style="color:var(--accent)">${url}</a><br><audio controls preload="none" src="${url}" style="max-width:100%;margin-top:6px"></audio>`;
+      }
+      if (isImg) {
+        return `<a href="${url}" target="_blank" style="color:var(--accent)">${url}</a><br><img src="${url}" style="max-width:100%;margin-top:6px;border-radius:6px">`;
+      }
+      return `<a href="${url}" target="_blank" style="color:var(--accent);text-decoration:underline">${url}</a>`;
+    });
+  };
   container.innerHTML = entries.map((e, i) => `
     <div style="padding:14px 0;${i > 0 ? 'border-top:1px solid var(--border);' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div style="flex:1">
           <div style="font-size:12px;color:var(--dim);margin-bottom:6px">
-            ${srcIcon(e.source)} ${e.source === 'voice' ? 'Sprach-Notiz' : 'Manuell'} · ${e.ts ? new Date(e.ts).toLocaleString('de-DE', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''}
+            ${srcIcon(e.source)} ${srcLabel(e.source)} · ${e.ts ? new Date(e.ts).toLocaleString('de-DE', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''}
           </div>
-          <div style="font-size:15px;color:var(--bright);white-space:pre-wrap;line-height:1.6">${e.text.replace(/</g,'&lt;')}</div>
+          <div style="font-size:15px;color:var(--bright);white-space:pre-wrap;line-height:1.6">${linkify(e.text)}</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
           <button onclick="clipboardCopyEntry(${i})" title="Kopieren"
@@ -8088,8 +8151,9 @@ loadBollaChat();
 loadLmsChat();
 
 // Status beim Laden prüfen + alle 30 Sek
+// LM Studio Status wird NICHT automatisch gepollt (LM Studio läuft normalerweise nicht).
+// Wird einmal initial geprüft und sonst nur on-demand per Button (lmsCheckStatus).
 lmsCheckStatus();
-setInterval(lmsCheckStatus, 30000);
 
 // ===== REDESIGN PREVIEW =====
 function designPreview(url, title) {

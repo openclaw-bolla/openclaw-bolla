@@ -406,9 +406,9 @@ body {
       <div id="notiz-text" style="font-size:17px;line-height:1.5;color:var(--text)"></div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:10px">
-      <button onclick="notizSenden(false)" class="clip-btn">📩 Telegram</button>
-      <button onclick="notizSenden(true)" class="clip-btn green">💾 Speichern</button>
-      <button onclick="notizKopieren()" class="clip-btn" style="background:rgba(175,82,222,0.12);color:var(--purple)">📋 Kopieren</button>
+      <button onclick="notizSenden()" class="clip-btn" title="Nur per Telegram an Chris">📩 Telegram</button>
+      <button onclick="notizSpeichern()" class="clip-btn green" title="Nur in Letzte Notizen speichern">💾 Speichern</button>
+      <button onclick="notizKopieren()" class="clip-btn" style="background:rgba(175,82,222,0.12);color:var(--purple)" title="Ins geräteübergreifende Clipboard">📋 Clipboard</button>
     </div>
     <div id="notiz-action-status" style="text-align:center;font-size:14px;min-height:20px;margin-bottom:12px"></div>
   </div>
@@ -439,14 +439,13 @@ body {
 <!-- CLIPBOARD -->
 <div class="page" id="p-clip">
   <div class="card" style="flex-direction:column;gap:10px">
-    <textarea id="clip-text" class="clip-textarea" placeholder="Hier Text eingeben oder laden…"></textarea>
+    <textarea id="clip-text" class="clip-textarea" placeholder="Neuen Eintrag eingeben…" style="min-height:60px"></textarea>
     <div style="display:flex;gap:8px">
-      <button onclick="clipboardSave()" class="clip-btn">💾 Speichern</button>
-      <button onclick="clipboardCopy()" class="clip-btn green">📋 Kopieren</button>
-      <button onclick="clipboardClear()" class="clip-btn red">🗑️ Leeren</button>
+      <button onclick="clipboardAppend()" class="clip-btn">➕ Hinzufügen</button>
+      <button onclick="loadClipboard()" class="clip-btn green">🔄 Aktualisieren</button>
     </div>
     <div id="clip-status" style="text-align:center;font-size:14px;min-height:20px"></div>
-    <div id="clip-ts" style="text-align:center;font-size:12px;color:var(--text3)"></div>
+    <div id="clip-entries" style="display:flex;flex-direction:column;gap:8px"></div>
   </div>
   <div class="card" style="flex-direction:column;gap:10px">
     <h3 style="margin:0;font-size:16px;font-weight:700">🖼️ Bild-Clipboard</h3>
@@ -466,17 +465,21 @@ body {
 
 <!-- BOTTOM NAV -->
 <nav class="tabbar" id="tabbar">
+  <button class="tabbtn" data-tab="sos" style="color:#ff3b30"><span class="ic">🆘</span>SOS</button>
   <button class="tabbtn active" data-tab="cal"><span class="ic">📅</span>Kalender</button>
   <button class="tabbtn" data-tab="mail"><span class="ic">📧</span>Mails</button>
-  <button class="tabbtn" data-tab="wx"><span class="ic">🌤️</span>Wetter</button>
-  <button class="tabbtn" data-tab="rezept"><span class="ic">🍽️</span>Rezept</button>
-  <button class="tabbtn" data-tab="bd"><span class="ic">🎂</span>Geburtstag</button>
-  <button class="tabbtn" data-tab="laden"><span class="ic">🔋</span>Laden</button>
-  <button class="tabbtn" data-tab="notiz"><span class="ic">🎙️</span>Notiz</button>
-  <button class="tabbtn" data-tab="robin"><span class="ic">🩺</span>Robin</button>
   <button class="tabbtn" data-tab="clip"><span class="ic">📋</span>Clipboard</button>
-  <button class="tabbtn" data-tab="sos" style="color:#ff3b30"><span class="ic">🆘</span>SOS</button>
+  <button class="tabbtn" data-tab="wx"><span class="ic">🌤️</span>Wetter</button>
+  <button class="tabbtn" data-tab="bd"><span class="ic">🎂</span>Geburtstag</button>
+  <button class="tabbtn" data-tab="rezept"><span class="ic">🍽️</span>Rezept</button>
+  <button class="tabbtn" data-tab="laden"><span class="ic">🔋</span>Laden</button>
+  <button class="tabbtn" data-tab="robin"><span class="ic">🩺</span>Robin</button>
+  <button class="tabbtn" data-tab="notiz"><span class="ic">🎙️</span>Notiz</button>
 </nav>
+
+<!-- Floating Mic Button — auf jeder Seite außer Notiz selbst -->
+<button id="fab-mic" onclick="fabMicClick()" aria-label="Sprachnotiz aufnehmen"
+  style="position:fixed;bottom:80px;right:18px;width:60px;height:60px;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:28px;cursor:pointer;box-shadow:0 4px 16px rgba(255,59,48,0.45);z-index:200;display:flex;align-items:center;justify-content:center;transition:transform 0.15s;">🎙️</button>
 
 <script>
 // ===== UTILS =====
@@ -516,23 +519,42 @@ const TITLES = {
 let activeTab = 'cal';
 const loaded = {};
 
-document.querySelectorAll('.tabbtn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const tab = btn.dataset.tab;
-    if (tab === activeTab) { refreshTab(); return; }
-    activeTab = tab;
-    document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b === btn));
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('p-' + tab).classList.add('active');
-    const [title, sub] = TITLES[tab];
-    pageTitle.textContent = title;
-    pageSub.textContent = sub;
-    // Scroll active tab into view
-    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    loadTab(tab);
-    window.scrollTo(0, 0);
-  });
+let _clipAutoTimer = null;
+function switchTab(tab) {
+  if (tab === activeTab) { refreshTab(); return; }
+  const btn = document.querySelector('.tabbtn[data-tab="' + tab + '"]');
+  if (!btn) return;
+  activeTab = tab;
+  document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b === btn));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('p-' + tab).classList.add('active');
+  const [title, sub] = TITLES[tab];
+  pageTitle.textContent = title;
+  pageSub.textContent = sub;
+  btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  loadTab(tab);
+  window.scrollTo(0, 0);
+  // Floating Mic-Button auf Notiz-Seite ausblenden
+  const fab = document.getElementById('fab-mic');
+  if (fab) fab.style.display = (tab === 'notiz') ? 'none' : 'flex';
+  // Auto-Refresh des gclip wenn der Clip-Tab aktiv ist (alle 8 Sek)
+  if (_clipAutoTimer) { clearInterval(_clipAutoTimer); _clipAutoTimer = null; }
+  if (tab === 'clip') _clipAutoTimer = setInterval(loadClipboard, 8000);
+}
+
+// Beim Zurück auf den Tab (App in den Vordergrund) → einmal sofort neu laden
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && activeTab === 'clip') loadClipboard();
 });
+
+document.querySelectorAll('.tabbtn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+function fabMicClick() {
+  // Zur Notiz-Seite + sanftes Feedback. Aufnahme startet User selbst über den großen Mic-Button.
+  switchTab('notiz');
+}
 
 function refreshTab() {
   delete loaded[activeTab];
@@ -911,35 +933,71 @@ function loadRobinTimeline() {
 
 // ===== CLIPBOARD =====
 async function loadClipboard() {
-  const ta = document.getElementById('clip-text');
-  const ts = document.getElementById('clip-ts');
+  const list = document.getElementById('clip-entries');
   try {
     const r = await fetch('/api/clipboard');
     const d = await r.json();
-    ta.value = d.text || '';
-    ts.textContent = d.saved ? 'Zuletzt: ' + new Date(d.saved).toLocaleString('de-DE') : '';
+    const entries = d.entries || [];
+    if (entries.length === 0) {
+      list.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px 0">Keine Einträge</div>';
+    } else {
+      const srcIcon = s => s==='voice'?'🎤':s==='bolla-anweisung'?'🤖':'✏️';
+      // Linkify URLs + Audio-Player für Audio-Links
+      const linkify = (text) => {
+        const esc = text.replace(/</g,'&lt;');
+        return esc.replace(/(https?:\/\/[^\s]+)/g, (url) => {
+          if (/\.(wav|mp3|ogg|m4a|webm)(\?|$)/i.test(url)) {
+            return `<a href="${url}" target="_blank" style="color:var(--accent)">${url}</a><br><audio controls preload="none" src="${url}" style="width:100%;margin-top:6px"></audio>`;
+          }
+          if (/\.(png|jpe?g|gif|webp)(\?|$)/i.test(url)) {
+            return `<a href="${url}" target="_blank" style="color:var(--accent)">${url}</a><br><img src="${url}" style="max-width:100%;margin-top:6px;border-radius:6px">`;
+          }
+          return `<a href="${url}" target="_blank" style="color:var(--accent);text-decoration:underline">${url}</a>`;
+        });
+      };
+      list.innerHTML = entries.slice().reverse().map((e, revI) => {
+        const i = entries.length - 1 - revI;
+        const ts = e.ts ? new Date(e.ts).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+        return `<div style="border:1px solid var(--sep);border-radius:8px;padding:10px;background:var(--bg2)">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${srcIcon(e.source)} ${ts}</div>
+          <div style="font-size:14px;line-height:1.5;word-break:break-word">${linkify(e.text)}</div>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button onclick="clipCopyEntry(${i})" class="clip-btn" style="font-size:12px;padding:4px 8px">📋 Kopieren</button>
+            <button onclick="clipDelEntry(${i})" class="clip-btn red" style="font-size:12px;padding:4px 8px">✕</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
   } catch (e) {
     showClipStatus('⚠️ ' + e.message, false);
   }
   loadClipboardImages();
 }
-async function clipboardSave() {
+async function clipboardAppend() {
+  const ta = document.getElementById('clip-text');
+  const text = ta.value.trim();
+  if (!text) return;
   try {
-    await fetch('/api/clipboard', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:document.getElementById('clip-text').value})});
-    document.getElementById('clip-ts').textContent = 'Zuletzt: ' + new Date().toLocaleString('de-DE');
-    showClipStatus('✓ Gespeichert', true);
+    await fetch('/api/clipboard', {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text, append:true, source:'manual'})});
+    ta.value = '';
+    showClipStatus('✓ Hinzugefügt', true);
+    loadClipboard();
   } catch (e) { showClipStatus('⚠️ ' + e.message, false); }
 }
-async function clipboardCopy() {
-  const text = document.getElementById('clip-text').value;
-  if (!text) return;
+async function clipCopyEntry(idx) {
+  const r = await fetch('/api/clipboard'); const d = await r.json();
+  const text = d.entries?.[idx]?.text || '';
   try { await navigator.clipboard.writeText(text); showClipStatus('✓ Kopiert', true); }
   catch (e) { showClipStatus('⚠️ ' + e.message, false); }
 }
-function clipboardClear() {
-  document.getElementById('clip-text').value = '';
-  document.getElementById('clip-ts').textContent = '';
-  showClipStatus('', true);
+async function clipDelEntry(idx) {
+  if (!confirm('Eintrag löschen?')) return;
+  try {
+    await fetch('/api/clipboard/delete', {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({idx})});
+    loadClipboard();
+  } catch (e) { showClipStatus('⚠️ ' + e.message, false); }
 }
 function showClipStatus(msg, ok) {
   const el = document.getElementById('clip-status');
@@ -1171,58 +1229,91 @@ function stopRecording() {
 }
 
 async function processRecording() {
+  const statusEl = document.getElementById('notiz-status-top');
+  const btn = document.getElementById('rec-btn');
   try {
     const blob = new Blob(_chunks, { type: _chunks[0]?.type || 'audio/webm' });
+    statusEl.textContent = `⏳ Upload (${Math.round(blob.size/1024)} KB)…`;
     const r = await fetch('/api/transcribe', {
       method: 'POST',
       headers: { 'Content-Type': blob.type },
       body: blob
     });
-    const d = await r.json();
-    const text = d.text || d.error || '(kein Ergebnis)';
+    // Robuster Response-Handler: erst Text lesen, dann JSON-Parse mit Fallback
+    const rawText = await r.text();
+    let d;
+    try {
+      d = JSON.parse(rawText);
+    } catch (parseErr) {
+      // Backend hat kein JSON geliefert — vermutlich Cloudflare-Error-HTML oder Server-Crash
+      const preview = rawText.substring(0, 200).replace(/<[^>]+>/g, ' ').trim().substring(0, 120);
+      console.error('Transkription: kein JSON. Status=' + r.status + ' Body=', rawText.substring(0, 500));
+      throw new Error(`HTTP ${r.status} — kein JSON: ${preview || '(leer)'}`);
+    }
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    const text = d.text || d.error || '🔇 Keine klare Sprache erkannt (näher ans Mic / lauter sprechen)';
     document.getElementById('notiz-text').textContent = text;
     document.getElementById('notiz-result').style.display = 'block';
-    document.getElementById('notiz-status-top').textContent = 'Fertig — was möchtest du tun?';
-    const btn = document.getElementById('rec-btn');
+    statusEl.textContent = 'Fertig — was möchtest du tun?';
     btn.textContent = '🎙️';
     btn.style.background = 'var(--red)';
     btn.style.boxShadow = '0 4px 20px rgba(255,59,48,0.35)';
   } catch (e) {
-    document.getElementById('notiz-status-top').textContent = '⚠️ Transkription fehlgeschlagen: ' + e.message;
-    const btn = document.getElementById('rec-btn');
+    statusEl.textContent = '⚠️ ' + e.message;
     btn.textContent = '🎙️'; btn.style.background = 'var(--red)';
   }
 }
 
-async function notizSenden(saveNote) {
+async function notizSenden() {
+  // 📩 Telegram-Button: NUR Telegram, kein Speichern
   const text = document.getElementById('notiz-text').textContent;
   if (!text) return;
   const st = document.getElementById('notiz-action-status');
-  st.textContent = saveNote ? '💾 Wird gespeichert…' : '📩 Wird gesendet…';
-  st.style.color = 'var(--text3)';
+  st.textContent = '📩 Wird gesendet…'; st.style.color = 'var(--text3)';
   try {
-    await fetch('/api/quickmsg', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, save_note: saveNote })
-    });
-    st.textContent = saveNote ? '✓ Gespeichert & per Telegram gesendet' : '✓ Per Telegram gesendet';
-    st.style.color = 'var(--green)';
-    if (saveNote) loadNotizVerlauf();
+    await fetch('/api/quickmsg', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ text, save_note: false })});
+    st.textContent = '✓ Per Telegram gesendet'; st.style.color = 'var(--green)';
     setTimeout(() => { st.textContent = ''; }, 3000);
-  } catch (e) {
-    st.textContent = '⚠️ ' + e.message; st.style.color = 'var(--red)';
-  }
+  } catch (e) { st.textContent = '⚠️ ' + e.message; st.style.color = 'var(--red)'; }
 }
 
-function notizKopieren() {
+async function notizSpeichern() {
+  // 💾 Speichern-Button: NUR in "Letzte Notizen", kein Telegram
   const text = document.getElementById('notiz-text').textContent;
   if (!text) return;
-  navigator.clipboard.writeText(text).then(() => {
-    const st = document.getElementById('notiz-action-status');
-    st.textContent = '✓ Kopiert'; st.style.color = 'var(--green)';
-    setTimeout(() => { st.textContent = ''; }, 2000);
-  });
+  const st = document.getElementById('notiz-action-status');
+  st.textContent = '💾 Wird gespeichert…'; st.style.color = 'var(--text3)';
+  try {
+    await fetch('/api/quicknotes/add', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ text })});
+    st.textContent = '✓ In Letzte Notizen gespeichert'; st.style.color = 'var(--green)';
+    loadNotizVerlauf();
+    setTimeout(() => { st.textContent = ''; }, 3000);
+  } catch (e) { st.textContent = '⚠️ ' + e.message; st.style.color = 'var(--red)'; }
+}
+
+async function notizKopieren() {
+  // 📋 Kopieren-Button: ins gclip (geräteübergreifend, nicht Windows-Zwischenablage)
+  const text = document.getElementById('notiz-text').textContent;
+  if (!text) return;
+  const st = document.getElementById('notiz-action-status');
+  st.textContent = '📋 Ins Clipboard…'; st.style.color = 'var(--text3)';
+  try {
+    await fetch('/api/clipboard', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ text, append: true, source: 'voice' })});
+    st.textContent = '✓ Im Clipboard (auch im Studio sichtbar)'; st.style.color = 'var(--green)';
+    setTimeout(() => { st.textContent = ''; }, 3000);
+  } catch (e) { st.textContent = '⚠️ ' + e.message; st.style.color = 'var(--red)'; }
+}
+
+async function notizDelete(idx) {
+  if (!confirm('Notiz löschen?')) return;
+  try {
+    await fetch('/api/quicknotes/delete', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ idx })});
+    loadNotizVerlauf();
+  } catch (e) {}
 }
 
 async function loadNotizVerlauf() {
@@ -1231,7 +1322,7 @@ async function loadNotizVerlauf() {
     const r = await fetch('/api/quicknotes');
     const notes = await r.json();
     if (!notes.length) { el.innerHTML = '<div style="color:var(--text3);font-size:14px;padding:8px 4px">Noch keine gespeicherten Notizen</div>'; return; }
-    el.innerHTML = notes.slice(0, 10).map(n => {
+    el.innerHTML = notes.slice(0, 10).map((n, i) => {
       const ts = new Date(n.ts).toLocaleString('de-DE', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
       return `<div class="card" style="align-items:flex-start;gap:10px">
         <div class="card-dot purple" style="font-size:16px;flex-shrink:0">📝</div>
@@ -1239,6 +1330,8 @@ async function loadNotizVerlauf() {
           <div style="font-size:15px;line-height:1.4">${esc(n.text)}</div>
           <div class="extra">${ts}</div>
         </div>
+        <button onclick="notizDelete(${i})" title="Löschen"
+          style="background:transparent;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px 8px;align-self:flex-start">✕</button>
       </div>`;
     }).join('');
   } catch (e) { el.innerHTML = ''; }

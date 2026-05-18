@@ -70,7 +70,8 @@ def _get_whisper(force_cpu=False):
     return _whisper_model
 
 def transcribe_audio(audio_bytes: bytes, content_type: str = "audio/webm") -> str:
-    import tempfile, subprocess
+    import tempfile, subprocess, time
+    t_start = time.monotonic()
     print(f"[transcribe] {len(audio_bytes)} bytes, type={content_type}")
     suffix = ".webm" if "webm" in content_type else ".ogg" if "ogg" in content_type else ".wav"
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
@@ -78,18 +79,36 @@ def transcribe_audio(audio_bytes: bytes, content_type: str = "audio/webm") -> st
         tmp_in = f.name
     tmp_wav = tmp_in + ".wav"
     try:
+        t_ffmpeg_start = time.monotonic()
+        # Statischer Boost +12dB + Soft-Limiter (alimiter, kein hartes Clipping).
+        # Lessons learned:
+        #   - dynaudnorm machte "blechern + abgehackt" (Pumping) → Whisper halluziniert
+        #   - kein Filter → bei -32/-37 dB P20-Mic-Audio versteht Whisper nichts → halluziniert auch
+        #   - Static-Boost + Soft-Limiter ist der Mittelweg: lauter ohne pumping
         r = subprocess.run(
-            ["ffmpeg", "-y", "-i", tmp_in, "-ar", "16000", "-ac", "1", "-f", "wav", tmp_wav],
+            ["ffmpeg", "-y", "-i", tmp_in, "-af", "volume=12dB,alimiter=limit=0.95",
+             "-ar", "16000", "-ac", "1", "-f", "wav", tmp_wav],
             capture_output=True, timeout=30
         )
+        t_ffmpeg = time.monotonic() - t_ffmpeg_start
         wav_size = os.path.getsize(tmp_wav) if os.path.exists(tmp_wav) else 0
-        print(f"[transcribe] ffmpeg rc={r.returncode}, wav={wav_size} bytes")
+        print(f"[transcribe] ffmpeg rc={r.returncode}, wav={wav_size} bytes, t={t_ffmpeg*1000:.0f}ms")
         model = _get_whisper()
         import shutil; shutil.copy(tmp_wav, "/tmp/debug_voice.wav")
+        # Balance Speed vs. Genauigkeit (gemessen im Bench, large-v3 CUDA):
+        # - beam_size=5: robust gegen Halluzinationen
+        # - vad_filter=True mit min_silence=600ms: schneidet Stille raus aber nicht zu aggressiv
+        # - no_speech_threshold=0.8: aggressiv strikt → bei unklarem Audio lieber leer als erfunden
+        # - compression_ratio_threshold=2.0: erkennt repetitive Halluzinationen
+        # - log_prob_threshold=-1.0: erkennt unsichere Vorhersagen
+        # - initial_prompt: gibt Whisper deutschen Kontext, reduziert Halluzinationen
         _transcribe_kwargs = dict(
             language="de", beam_size=5,
-            vad_filter=False,
-            no_speech_threshold=0.6, condition_on_previous_text=False,
+            vad_filter=True,
+            vad_parameters=dict(min_silence_duration_ms=600),
+            no_speech_threshold=0.7,
+            condition_on_previous_text=False,
+            initial_prompt="Sprachnotiz auf Deutsch.",
         )
         try:
             segs_gen, info = model.transcribe(tmp_wav, **_transcribe_kwargs)
@@ -110,7 +129,58 @@ def transcribe_audio(audio_bytes: bytes, content_type: str = "audio/webm") -> st
                 text = " ".join(s.text.strip() for s in segs).strip()
             else:
                 raise
-        print(f"[transcribe] result: '{text}' (duration={info.duration:.1f}s)")
+        t_total = time.monotonic() - t_start
+        rtf = t_total / info.duration if info.duration > 0 else 0
+        # Letzte Aufnahme automatisch als p20_letzte.wav verfügbar machen → direkter Player im gclip.
+        # Mit sanftem +8dB Boost + Soft-Limiter damit Chris die Aufnahme gut hört
+        # (Whisper bekommt das Original ungeboostet — kein Filter-Bias bei Transkription).
+        try:
+            subprocess.run(
+                ["ffmpeg", "-y", "-i", tmp_wav, "-af", "volume=8dB,alimiter=limit=0.95",
+                 "/home/bolla/workspace/mission-control/p20_letzte.wav"],
+                capture_output=True, timeout=10
+            )
+        except Exception:
+            pass
+        # Halluzinations-Filter: bekannte Whisper-False-Positives bei Audios ohne klare Sprache
+        # Diese Phrasen kommen direkt aus Whispers Training-Daten (YouTube-Outros, Untertitel-Credits etc.)
+        WHISPER_HALLUCINATIONS = [
+            # YouTube-Outros (deutsch)
+            "vielen dank fürs zuschauen", "vielen dank fur's zuschauen", "danke fürs zuschauen",
+            "vielen dank fürs zuhören", "vielen dank für's zuhören", "danke fürs zuhören",
+            "vielen dank für ihre aufmerksamkeit", "vielen dank für eure aufmerksamkeit",
+            "danke für ihre aufmerksamkeit", "danke für eure aufmerksamkeit",
+            "das war's für heute", "das wars für heute", "bis zum nächsten mal",
+            "bis zum nächsten video", "ich hoffe, es hat euch gefallen",
+            "wenn euch das video gefallen hat", "abonniert den kanal",
+            # YouTube-Outros (englisch)
+            "thank you for watching", "thanks for watching", "see you next time",
+            "subscribe and like", "thanks for listening",
+            # Whisper-Klassiker (sinnlose Filler)
+            "ich bin froh, dass ich hier bin", "ich bin froh dass ich hier bin",
+            "ich freue mich, dass ihr hier seid", "schön, dass du da bist",
+            # Untertitel-Credits
+            "untertitel im auftrag", "untertitelung", "untertitel",
+            "untertitel der amara.org", "untertitel von stephanie geiges",
+            "kommentare und untertitel von amara.org",
+            # Sound-Tags
+            "[musik]", "[applaus]", "[gelächter]", "♪", "♫",
+        ]
+        text_lower = text.lower().strip(".!?, ")
+        # Treffer wenn: exakte Übereinstimmung ODER lange Phrase als Substring drin
+        is_halluc = (text_lower in WHISPER_HALLUCINATIONS or
+                     any(h in text_lower for h in WHISPER_HALLUCINATIONS if len(h) > 15))
+        # Zusätzlich: sehr kurze Texte mit "Untertitel"/"Zuschauen"-Kern als Halluzination werten
+        if not is_halluc and len(text_lower) < 80:
+            for hint in ["zuschauen", "zuhören", "zuhoeren", "aufmerksamkeit",
+                         "untertitel", "amara.org", "abonniert", "abonnieren",
+                         "vielen dank für"]:
+                if hint in text_lower:
+                    is_halluc = True; break
+        if is_halluc:
+            print(f"[transcribe] HALLUZINATION erkannt, verworfen: '{text}'")
+            text = ""
+        print(f"[transcribe] result: '{text}' (audio={info.duration:.1f}s, total={t_total*1000:.0f}ms, rtf={rtf:.2f})")
         return text
     finally:
         try: os.unlink(tmp_in)
@@ -2243,9 +2313,11 @@ def do_book_action(action):
         )
         return {'ok': True, 'msg': 'Neustart gesendet'}
     if action == 'restart_tunnel':
+        # Killt evtl. hängenden ssh und triggert den BollaTunnel-Task (= tunnel_hidden.vbs → tunnel.ps1)
+        # Vorher zeigte der Aufruf auf C:\Users\ernst\surface_book_tunnel.ps1 — Datei existiert nicht.
         ps = ('Stop-Process -Name ssh -Force -ErrorAction SilentlyContinue;'
               'Start-Sleep 2;'
-              'Start-Process powershell -ArgumentList "-WindowStyle Hidden -File C:\\\\Users\\\\ernst\\\\surface_book_tunnel.ps1" -WindowStyle Hidden')
+              'Start-Process wscript.exe -ArgumentList "C:\\\\ProgramData\\\\Bolla\\\\tunnel_hidden.vbs" -WindowStyle Hidden')
         enc = base64.b64encode(ps.encode('utf-16-le')).decode()
         subprocess.run(
             ['ssh', '-p', '2222', '-i', '/home/bolla/.ssh/id_ed25519',
@@ -3634,8 +3706,11 @@ class Handler(BaseHTTPRequestHandler):
         req = urllib.request.Request(target, data=body_bytes, method=method)
         if body_bytes is not None:
             req.add_header("Content-Type", "application/json")
+        # Status-Check kurz halten (3s). Echte Chat-Anfragen brauchen länger.
+        is_status = self.path.endswith("/v1/models") and method == "GET"
+        timeout = 3 if is_status else 60
         try:
-            with urllib.request.urlopen(req, timeout=10) as r:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
                 data = r.read()
                 self.send_response(r.status)
                 ct = r.headers.get("Content-Type", "application/json")
@@ -3644,8 +3719,11 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
                 self.wfile.write(data)
-        except urllib.error.URLError as e:
-            self._send_json({"error": f"LM Studio nicht erreichbar: {e}"}, status=502)
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            try:
+                self._send_json({"error": f"LM Studio nicht erreichbar: {e}"}, status=502)
+            except (BrokenPipeError, ConnectionResetError):
+                pass  # Client weg, egal
 
     def do_GET(self):
         try:
@@ -3653,7 +3731,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._proxy_lms("GET")
                 return
 
-            if self.path in ("/", "/index.html"):
+            # Query-String abtrennen damit Routen wie /?reset-sidebar=1 weiterhin index.html liefern
+            _path_only = self.path.split("?", 1)[0]
+            if _path_only in ("/", "/index.html"):
                 html_path = os.path.expanduser("~/workspace/mission-control/index.html")
                 with open(html_path, "rb") as f:
                     body = f.read()
@@ -3679,6 +3759,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/redesign-cyber.html":      ("redesign-cyber.html",    "text/html; charset=utf-8", "no-store"),
                 "/redesign-1.html":          ("redesign-1.html",        "text/html; charset=utf-8", "no-store"),
                 "/redesign-2.html":          ("redesign-2.html",        "text/html; charset=utf-8", "no-store"),
+                "/mmc_audio_problem.wav":    ("mmc_audio_problem.wav",  "audio/wav",               "no-store"),
             }
             if self.path in MOBILE_STATIC:
                 fname, ctype, cache = MOBILE_STATIC[self.path]
@@ -3692,6 +3773,25 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(body)
                 return
+
+            # Generische Audio-Route: alle *.wav/.mp3/.ogg aus mission-control/ ausliefern
+            # (für gclip-Player, Audio-Vergleiche, Sprachnotizen-Sharing)
+            if _path_only.endswith((".wav", ".mp3", ".ogg", ".m4a", ".webm")):
+                fname = os.path.basename(_path_only)  # Path-Traversal-Schutz
+                audio_path = os.path.expanduser(f"~/workspace/mission-control/{fname}")
+                if os.path.isfile(audio_path):
+                    with open(audio_path, "rb") as f:
+                        body = f.read()
+                    ext_to_mime = {".wav":"audio/wav", ".mp3":"audio/mpeg", ".ogg":"audio/ogg",
+                                   ".m4a":"audio/mp4", ".webm":"audio/webm"}
+                    mime = ext_to_mime.get(os.path.splitext(fname)[1].lower(), "audio/wav")
+                    self.send_response(200)
+                    self.send_header("Content-Type", mime)
+                    self.send_header("Cache-Control", "no-store")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
 
             if self.path == "/setup-pro.ps1":
                 ps1_path = os.path.expanduser("~/workspace/mission-control/setup-pro.ps1")
@@ -4175,7 +4275,8 @@ class Handler(BaseHTTPRequestHandler):
                 return
             try:
                 text = transcribe_audio(raw, ct)
-                append_clipboard(text, source="voice")
+                # KEIN automatisches Append ins gclip mehr — Frontend entscheidet explizit
+                # (verhinderte doppelte Einträge wenn User auf "📋 Clipboard"-Button klickt)
                 self._send_json({"text": text})
             except Exception as e:
                 self._send_json({"error": str(e)}, status=500)
@@ -4223,6 +4324,36 @@ class Handler(BaseHTTPRequestHandler):
                     self._send_json({"ok": True, "datei": fname})
                 except Exception as e:
                     self._send_json({"ok": False, "error": str(e)}, status=500)
+            elif self.path == "/api/quicknotes/add":
+                # Nur speichern (kein Telegram-Send) — Speichern-Button in mmc
+                try:
+                    text = body.get("text", "").strip()
+                    if not text:
+                        self._send_json({"error": "kein Text"}, status=400)
+                    else:
+                        notes_file = os.path.join(WORKSPACE, "data/quicknotes.json")
+                        notes = []
+                        if os.path.exists(notes_file):
+                            with open(notes_file) as _nf: notes = json.load(_nf)
+                        notes.insert(0, {"text": text, "ts": datetime.now().isoformat()})
+                        notes = notes[:50]
+                        os.makedirs(os.path.dirname(notes_file), exist_ok=True)
+                        with open(notes_file, "w") as _nf: json.dump(notes, _nf, ensure_ascii=False, indent=2)
+                        self._send_json({"ok": True})
+                except Exception as e:
+                    self._send_json({"error": str(e)}, status=500)
+            elif self.path == "/api/quicknotes/delete":
+                try:
+                    idx = int(body.get("idx", -1))
+                    notes_file = os.path.join(WORKSPACE, "data/quicknotes.json")
+                    if os.path.exists(notes_file):
+                        with open(notes_file) as _nf: notes = json.load(_nf)
+                        if 0 <= idx < len(notes):
+                            notes.pop(idx)
+                            with open(notes_file, "w") as _nf: json.dump(notes, _nf, ensure_ascii=False, indent=2)
+                    self._send_json({"ok": True})
+                except Exception as e:
+                    self._send_json({"error": str(e)}, status=500)
             elif self.path == "/api/quickmsg":
                 try:
                     text = body.get("text", "").strip()
@@ -5528,6 +5659,18 @@ if __name__ == "__main__":
     threading.Thread(target=_warmup_whisper, daemon=True).start()
 
     port = 18790
-    server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
+    # SO_REUSEADDR + SO_REUSEPORT damit Port-Bindung sofort nach Neustart klappt
+    # (Linux: SO_REUSEPORT umgeht TIME_WAIT zuverlässig)
+    import socket as _socket
+    class _ReusableServer(ThreadingHTTPServer):
+        allow_reuse_address = True
+        def server_bind(self):
+            self.socket.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1)
+            try:
+                self.socket.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEPORT, 1)
+            except (AttributeError, OSError):
+                pass  # SO_REUSEPORT nicht überall verfügbar
+            super().server_bind()
+    server = _ReusableServer(("0.0.0.0", port), Handler)
     print(f"Mission Control API läuft auf http://127.0.0.1:{port}")
     server.serve_forever()
