@@ -305,7 +305,16 @@ html, body {
   0%,100% { transform: translateY(0); }
   50%      { transform: translateY(-3px); }
 }
-#greeting-banner { background-size: 200% 200%; animation: greetShimmer 6s ease infinite; text-align:right; font-family:'Orbitron',sans-serif; }
+#greeting-banner { background-size: 200% 200%; animation: greetShimmer 6s ease infinite; font-family:'Orbitron',sans-serif; }
+#greeting-text { font-family:'Orbitron',sans-serif; }
+#greeting-weather .gw-icon { font-size:46px; line-height:1; }
+#greeting-weather .gw-temp { font-size:34px; font-weight:300; line-height:1; }
+#greeting-weather .gw-desc { font-size:13px; opacity:0.85; margin-top:2px; }
+#greeting-weather .gw-extra { font-size:12px; opacity:0.75; margin-top:1px; }
+@media (max-width: 720px) {
+  #greeting-banner { flex-direction: column; align-items: stretch; gap: 10px; padding: 14px 16px; }
+  #greeting-weather, #greeting-text { text-align: left !important; }
+}
 #greeting-banner .greet-emoji { display:inline-block; animation: greetFloat 3s ease-in-out infinite; }
 #greeting-banner .greet-stars { position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;overflow:hidden; }
 #greeting-banner .greet-stars span { position:absolute;border-radius:50%; }
@@ -375,6 +384,17 @@ html, body {
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
   align-items: start;
+}
+
+/* Dashboard-Top-Row: 4 Hauptboxen, atmet automatisch nach Viewport.
+   Studio (3000px): 4 Spalten. Studio extern: bis ~5 Spalten möglich.
+   Book voll: 4 Spalten ~310px. Book + Edge-Sidebar: 3 Spalten.
+   Mobile: 1-2 Spalten. Keine Inline-Grid-Positionen mehr nötig. */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  align-items: stretch;
 }
 
 .grid-2 {
@@ -889,23 +909,22 @@ html, body {
 
       <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
-        <div class="grid-4" style="margin-bottom:14px;align-items:stretch">
-          <div class="card" style="grid-column:1;grid-row:1/3">
+        <div id="greeting-banner" style="border-radius:10px;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:100px;margin-bottom:14px;position:relative;overflow:hidden">
+          <div id="greeting-weather" style="position:relative;z-index:2;flex-shrink:0"><div class="loading">Lade…</div></div>
+          <div id="greeting-text" style="position:relative;z-index:2;text-align:right;flex:1;min-width:0"></div>
+        </div>
+        <div class="dash-grid" style="margin-bottom:14px">
+          <div class="card">
             <div class="card-head"><span class="card-title">Nächste Termine</span><span class="card-icon">📅</span></div>
             <ul class="event-list" id="upcoming-events"><li class="loading">Lade...</li></ul>
           </div>
-          <div class="card" style="grid-column:2;grid-row:1/3">
+          <div class="card">
             <div class="card-head"><span class="card-title">E-Mail</span><span class="card-icon">📧</span></div>
             <div style="font-size:38px;font-weight:300;color:var(--bright)" id="mail-count">—</div>
             <div style="font-size:14px;color:var(--dim)">ungelesene Mails</div>
             <div id="recent-mails" style="margin-top:10px"></div>
           </div>
-          <div id="greeting-banner" style="grid-column:3/5;grid-row:1;border-radius:10px;padding:16px 22px;display:flex;flex-direction:column;justify-content:center;min-height:80px;position:relative;overflow:hidden"></div>
-          <div class="card" style="grid-column:3;grid-row:2">
-            <div class="card-head"><span class="card-title">Wetter Norderstedt</span><span class="card-icon">🌤️</span></div>
-            <div id="weather-dash"><div class="loading">Lade...</div></div>
-          </div>
-          <div class="card" style="grid-column:4;grid-row:2">
+          <div class="card">
             <div class="card-head"><span class="card-title">Schule — Nächste</span><span class="card-icon">🏫</span></div>
             <div id="next-class"><div class="loading">Lade...</div></div>
           </div>
@@ -4720,16 +4739,21 @@ async function loadWeather() {
         ${frain>20?`<div style="font-size:10px;color:#60a5fa">💧${frain}%</div>`:''}
       </div>`;
     }
-    document.getElementById('weather-dash').innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <span style="font-size:34px">${icon}</span>
-        <div>
-          <div style="font-size:26px;font-weight:300;color:var(--bright);line-height:1">${temp}°C</div>
-          <div style="font-size:12px;color:var(--dim)">${desc} · Gefühlt ${Math.round(c.apparent_temperature)}°C</div>
-          <div style="font-size:12px;color:var(--dim);margin-top:1px">💧${c.relative_humidity_2m}% · 💨${Math.round(c.wind_speed_10m)} km/h</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:4px;border-top:1px solid var(--border);padding-top:8px">${forecastHtml}</div>`;
+    // Kompakte Anzeige im Greeting-Banner (Wetter linksbündig)
+    const gw = document.getElementById('greeting-weather');
+    if (gw) {
+      const tmax = Math.round(daily.temperature_2m_max[0]);
+      const tmin = Math.round(daily.temperature_2m_min[0]);
+      gw.innerHTML = `
+        <div style="display:flex;align-items:center;gap:14px">
+          <span class="gw-icon">${icon}</span>
+          <div>
+            <div class="gw-temp">${temp}°C</div>
+            <div class="gw-desc">${desc}</div>
+            <div class="gw-extra">↑${tmax}° ↓${tmin}° · gefühlt ${Math.round(c.apparent_temperature)}°</div>
+          </div>
+        </div>`;
+    }
     if (document.getElementById('wetter-content') && document.getElementById('page-wetter').classList.contains('active')) {
       loadWeatherFull();
     }
@@ -6450,12 +6474,26 @@ function renderGreeting() {
 
   el.style.background = grad;
   el.style.color = color;
-  el.innerHTML = `${stars}
-    <div style="font-size:14px;letter-spacing:3px;text-transform:uppercase;opacity:0.75;margin-bottom:8px">${now} Uhr</div>
-    <div style="font-size:38px;font-weight:800;letter-spacing:0.5px;line-height:1.1">
-      ${text}, Chris! <span class="greet-emoji">${emoji}</span>
-    </div>
-    <div style="font-size:15px;opacity:0.8;margin-top:8px">${sub}</div>`;
+  // Animationen (Sterne/Wolken/Vögel) als absolut positionierter Hintergrund-Layer
+  // ohne den Wetter- und Text-Slot zu überschreiben.
+  let bgLayer = el.querySelector('.greet-bg-layer');
+  if (!bgLayer) {
+    bgLayer = document.createElement('div');
+    bgLayer.className = 'greet-bg-layer';
+    bgLayer.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:1';
+    el.insertBefore(bgLayer, el.firstChild);
+  }
+  bgLayer.innerHTML = stars;
+  const txt = document.getElementById('greeting-text');
+  if (txt) {
+    txt.style.color = color;
+    txt.innerHTML = `
+      <div style="font-size:14px;letter-spacing:3px;text-transform:uppercase;opacity:0.75;margin-bottom:8px">${now} Uhr</div>
+      <div style="font-size:38px;font-weight:800;letter-spacing:0.5px;line-height:1.1">
+        ${text}, Chris! <span class="greet-emoji">${emoji}</span>
+      </div>
+      <div style="font-size:15px;opacity:0.8;margin-top:8px">${sub}</div>`;
+  }
 }
 renderGreeting();
 setInterval(renderGreeting, 60*1000);
