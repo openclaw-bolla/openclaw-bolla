@@ -1315,6 +1315,17 @@ def get_sos_contacts():
 # ── KI-Workshop Projekt-Seite ────────────────────────────────────────────────
 WORKSHOP_MD = os.path.join(WORKSPACE, "projektwoche-ki-workshop/workshop-ideen.md")
 WORKSHOP_AUFTRAEGE = os.path.join(WORKSPACE, "projektwoche-ki-workshop/auftraege.json")
+WORKSHOP_FORTSCHRITT = os.path.join(WORKSPACE, "projektwoche-ki-workshop/fortschritt.json")
+
+def get_workshop_fortschritt():
+    """Live-Fortschritt eines laufenden Workshop-Auftrags (von Bolla geschrieben)."""
+    if os.path.exists(WORKSHOP_FORTSCHRITT):
+        try:
+            with open(WORKSHOP_FORTSCHRITT, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"active": False, "pct": 0, "label": "", "ts": ""}
 
 def get_workshop():
     """Liefert Markdown-Inhalt der Workshop-Ideensammlung + offene Aufträge."""
@@ -4050,6 +4061,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/sos/contacts":   get_sos_contacts,
                 "/api/charts":         get_charts,
                 "/api/workshop":       get_workshop,
+                "/api/workshop/fortschritt": get_workshop_fortschritt,
             }
 
             # Chart Preview (iTunes)

@@ -33,15 +33,13 @@
 
 ## 🧱 Themenblöcke (inhaltlich)
 
-### 1. Meilensteine der Informationstechnologie `[IDEE]`
-Neue Folie, die die **Beschleunigung der Technologie-Adoption** zeigt — von langsam zu rasend.
-- Bogen: **Gutenberg-Buchdruck → … → Quantencomputer**
-- Kernbotschaft: Die Zeitspannen werden immer kürzer (visuell erkennbar, z.B. Timeline mit schrumpfenden Abständen)
-- Aufhänger-Zahlen (Adoption bis 1 Mio. Nutzer) — `[RECHERCHE]` exakte Zahlen verifizieren:
-  - Radio: ~38 Jahre
-  - ChatGPT: ~5 Tage
-  - (weitere Vergleichswerte sammeln: Telefon, TV, Internet, Facebook, Instagram…)
-- Darstellung: "schön übersichtlich", Beschleunigung muss sofort ins Auge springen
+### 1. Meilensteine der Informationstechnologie `[IN PPT]` ✅
+**Umgesetzt am 20.05. als Folie 2** in KI_fuer_Lehrer.pptx ("④ Vom Buchdruck zur KI").
+- **Zeitstrahl**: Buchdruck 1450 → Telefon → Radio → TV → Computer → Internet → WWW → Smartphone → Generative KI 2022 → Quantencomputer 2025, mit Gap-Hinweisen (426 J → 23 J → 15 J → 3 J) und Farbverlauf zu Pink
+- **Adoptions-Box**: "Zeit bis 1 Mio. Nutzer" — Netflix 3,5 J · Facebook 10 Mon · Spotify 5 Mon · Instagram 2,5 Mon · ChatGPT 5 Tage (konsistente Metrik!)
+- Radio-38-Jahre als Fußnote/Kontext (das ist die „bis 50 Mio."-Metrik — bewusst getrennt gehalten, Ehrlichkeit)
+- Speaker Notes mit Quellen/Daten für Chris hinterlegt
+- Build-Script: `projektwoche-ki-workshop/build_meilenstein_folie.py` (idempotent, baut von Titelfolien-Backup)
 
 ### 2. Urheberrecht / rechtliche Fragen `[IDEE]`
 Kurzer Block, kein Vortrag — Sensibilisierung.
@@ -73,7 +71,7 @@ Von Chris als "ganz wichtig" markiert.
 | # | Folie | Status | Notiz |
 |---|-------|--------|-------|
 | 1 | Titel | vorhanden | "KI-Unterstützung für Lehrerinnen und Lehrer" |
-| – | Meilensteine IT (Timeline) | offen | siehe Themenblock 1 |
+| 2 | Meilensteine IT (Timeline) | ✅ fertig | "④ Vom Buchdruck zur KI" — Zeitstrahl + Adoptions-Box |
 | – | Urheberrecht (Suno) | offen | siehe Block 2 |
 | – | Modell-Arten (Text/Bild/Video) | offen | siehe Block 3 |
 | – | Telli SH | offen | siehe Block 4 |

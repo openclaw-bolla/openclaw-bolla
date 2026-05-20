@@ -296,6 +296,7 @@ html, body {
 }
 
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes wsShimmer { 0%{background-position:0% 0} 100%{background-position:-200% 0} }
 @keyframes greetShimmer {
   0%   { background-position: 0% 50%; }
   50%  { background-position: 100% 50%; }
@@ -2015,6 +2016,17 @@ html, body {
             </div>
             <div style="font-size:12px;color:var(--dim);margin-top:6px">Landet in der Auftrags-Liste. Bolla arbeitet sie ab, sobald die nächste Session läuft.</div>
             <div id="ws-auftraege-list" style="margin-top:10px"></div>
+            <!-- Live-Fortschritt -->
+            <div id="ws-fortschritt" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid rgba(139,92,246,0.25)">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                <span style="font-size:13px;color:#c4b5fd;font-weight:600">🤖 Bolla arbeitet…</span>
+                <span id="ws-fs-pct" style="font-size:13px;color:#c4b5fd;font-weight:700;font-variant-numeric:tabular-nums">0%</span>
+              </div>
+              <div style="height:14px;background:rgba(255,255,255,0.06);border-radius:7px;overflow:hidden;border:1px solid var(--border)">
+                <div id="ws-fs-bar" style="height:100%;width:0%;border-radius:7px;background:linear-gradient(90deg,#8b5cf6,#ec4899);transition:width 0.6s ease;background-size:200% 100%;animation:wsShimmer 2s linear infinite"></div>
+              </div>
+              <div id="ws-fs-label" style="font-size:13px;color:var(--text);margin-top:6px">…</div>
+            </div>
           </div>
 
           <!-- Inhalt: gerendert ODER Editor -->
@@ -6813,6 +6825,32 @@ async function loadKiWorkshop() {
   } catch(e) {
     content.innerHTML = `<div style="color:#f87171">Fehler: ${e.message}</div>`;
   }
+  wsStartFortschrittPoll();
+}
+
+let _wsFsTimer = null;
+async function wsPollFortschritt() {
+  try {
+    const f = await fetch(API + '/api/workshop/fortschritt').then(r => r.json());
+    const box = document.getElementById('ws-fortschritt');
+    if (!box) return;
+    if (f.active) {
+      box.style.display = 'block';
+      document.getElementById('ws-fs-pct').textContent = (f.pct || 0) + '%';
+      document.getElementById('ws-fs-bar').style.width = (f.pct || 0) + '%';
+      document.getElementById('ws-fs-label').textContent = f.label || '…';
+    } else {
+      box.style.display = 'none';
+    }
+  } catch(e) {}
+}
+function wsStartFortschrittPoll() {
+  if (_wsFsTimer) clearInterval(_wsFsTimer);
+  wsPollFortschritt();
+  _wsFsTimer = setInterval(() => {
+    const page = document.getElementById('page-ki-workshop');
+    if (page && page.classList.contains('active')) wsPollFortschritt();
+  }, 3000);
 }
 
 function wsRenderAuftraege(list) {
