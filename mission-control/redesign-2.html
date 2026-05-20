@@ -3,871 +3,1249 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Control</title>
+<title>Mission Control — NEXUS OS</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Patrick+Hand&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap');
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-void: #04050d;
+    --bg-deep: #080b18;
+    --bg-panel: #0d1228;
+    --bg-card: #101530;
+    --bg-card-hover: #141a3a;
+    --neon-cyan: #00d4ff;
+    --neon-purple: #7c3aed;
+    --neon-green: #00ff9d;
+    --neon-orange: #ff6b35;
+    --neon-pink: #ff2d7a;
+    --text-primary: #e2e8f8;
+    --text-secondary: #7889b2;
+    --text-dim: #3d4f7a;
+    --border-glow: rgba(0, 212, 255, 0.25);
+    --border-subtle: rgba(0, 212, 255, 0.08);
+    --sidebar-w: 220px;
+    --topbar-h: 60px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    font-family: 'Patrick Hand', 'Caveat', cursive, sans-serif;
-    background: #e8dcc8;
-    background-image:
-      repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(180,160,120,0.15) 27px, rgba(180,160,120,0.15) 28px),
-      repeating-linear-gradient(90deg, transparent, transparent 27px, rgba(180,160,120,0.08) 27px, rgba(180,160,120,0.08) 28px);
+    background: var(--bg-void);
+    color: var(--text-primary);
+    font-family: 'Rajdhani', 'Segoe UI', sans-serif;
     min-height: 100vh;
     display: flex;
-    flex-direction: column;
-    color: #3a2e1e;
+    overflow: hidden;
+    font-size: 15px;
   }
 
-  /* TOPBAR */
-  .topbar {
-    background: #f5efe0;
-    border-bottom: 2px solid #c8a96e;
-    padding: 10px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: 0 2px 6px rgba(100,70,20,0.10);
-    position: relative;
-    z-index: 10;
+  /* ─── GRID BACKGROUND ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
   }
-  .topbar::after {
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    width: var(--sidebar-w);
+    min-height: 100vh;
+    background: var(--bg-deep);
+    border-right: 1px solid var(--border-glow);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    z-index: 100;
+    box-shadow: 4px 0 30px rgba(0,212,255,0.07);
+  }
+
+  .sidebar::after {
     content: '';
     position: absolute;
-    bottom: -5px; left: 0; right: 0;
-    height: 3px;
-    background: repeating-linear-gradient(90deg, #c8a96e 0px, #c8a96e 6px, transparent 6px, transparent 12px);
+    top: 0; right: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, var(--neon-cyan) 30%, var(--neon-purple) 70%, transparent);
     opacity: 0.4;
   }
-  .topbar-title {
-    font-family: 'Caveat', cursive;
-    font-size: 28px;
+
+  .logo-block {
+    padding: 20px 18px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .logo-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .logo-name {
+    font-size: 20px;
     font-weight: 700;
-    color: #5a3e1b;
-    letter-spacing: 1px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
-  .topbar-title .paw {
-    font-size: 22px;
-    opacity: 0.8;
-  }
-  .topbar-title .subtitle {
-    font-size: 14px;
-    font-weight: 400;
-    color: #9a7a4a;
-    margin-left: 6px;
-    padding: 2px 8px;
-    border: 1.5px dashed #c8a96e;
-    border-radius: 4px;
-    font-family: 'Patrick Hand', cursive;
-    letter-spacing: 0;
-  }
-  .topbar-time {
-    font-family: 'Caveat', cursive;
-    font-size: 36px;
-    font-weight: 700;
-    color: #5a3e1b;
+
+  .logo-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
     letter-spacing: 2px;
-    position: relative;
-  }
-  .topbar-time::before {
-    content: 'Di, 19. Mai';
-    display: block;
-    font-size: 12px;
-    font-family: 'Patrick Hand', cursive;
-    color: #9a7a4a;
-    text-align: right;
-    letter-spacing: 0.5px;
-    margin-bottom: -4px;
-    font-weight: 400;
-  }
-
-  /* LAYOUT */
-  .layout {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-  }
-
-  /* SIDEBAR */
-  .sidebar {
-    width: 190px;
-    min-width: 190px;
-    background: #f0e8d0;
-    border-right: 2px solid #c8a96e;
-    padding: 20px 0 20px 0;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    box-shadow: 2px 0 8px rgba(100,70,20,0.07);
-  }
-  /* Spiral-Bindung links */
-  .sidebar::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 18px;
-    background: repeating-linear-gradient(
-      180deg,
-      transparent 0px,
-      transparent 22px,
-      #c8a96e 22px,
-      #c8a96e 26px,
-      transparent 26px,
-      transparent 48px
-    );
-    opacity: 0.5;
-    border-right: 1.5px solid rgba(180,140,80,0.3);
-  }
-  .sidebar-logo {
-    padding: 0 16px 18px 28px;
-    border-bottom: 1.5px dashed #c8a96e;
-    margin-bottom: 12px;
-  }
-  .sidebar-logo span {
-    font-family: 'Caveat', cursive;
-    font-size: 18px;
-    font-weight: 700;
-    color: #7a5a2a;
-    display: block;
-  }
-  .sidebar-logo small {
-    font-size: 11px;
-    color: #b89a60;
-    font-family: 'Patrick Hand', cursive;
+    margin-top: 2px;
   }
 
   .nav-section {
-    padding: 0 8px 0 22px;
-    margin-bottom: 4px;
+    padding: 14px 0 6px;
+    flex: 1;
   }
-  .nav-label {
-    font-size: 10px;
+
+  .nav-group-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    padding: 6px 18px 4px;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: #b89a60;
-    padding: 8px 8px 4px;
-    font-family: 'Patrick Hand', cursive;
   }
+
   .nav-item {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 10px;
-    border-radius: 6px;
+    padding: 10px 18px;
     cursor: pointer;
-    font-size: 15px;
-    color: #5a3e1b;
-    margin-bottom: 2px;
+    transition: all 0.2s;
     position: relative;
-    transition: background 0.15s;
-    font-family: 'Patrick Hand', cursive;
-    border: 1.5px solid transparent;
+    border-left: 2px solid transparent;
+    margin: 1px 0;
   }
+
   .nav-item:hover {
-    background: rgba(200,169,110,0.18);
-    border-color: rgba(200,169,110,0.3);
+    background: rgba(0,212,255,0.05);
+    border-left-color: rgba(0,212,255,0.3);
   }
+
   .nav-item.active {
-    background: #f5efe0;
-    border: 1.5px solid #c8a96e;
-    font-weight: 600;
-    color: #3a2010;
-    box-shadow: 1px 1px 0 #c8a96e, 2px 2px 0 rgba(200,169,110,0.3);
+    background: rgba(0,212,255,0.08);
+    border-left-color: var(--neon-cyan);
   }
-  .nav-item.active::before {
-    content: '→';
-    position: absolute;
-    left: -2px;
-    color: #c8a96e;
+
+  .nav-item.active .nav-icon { color: var(--neon-cyan); }
+  .nav-item.active .nav-label { color: var(--text-primary); font-weight: 600; }
+
+  .nav-icon {
+    font-size: 17px;
+    color: var(--text-dim);
+    width: 20px;
+    text-align: center;
+    transition: color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .nav-item:hover .nav-icon { color: var(--text-secondary); }
+
+  .nav-label {
     font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+    transition: color 0.2s;
   }
-  .nav-icon { font-size: 17px; opacity: 0.85; min-width: 20px; text-align: center; }
+
   .nav-badge {
     margin-left: auto;
-    background: #d4845a;
+    background: var(--neon-pink);
     color: #fff;
+    font-family: 'Share Tech Mono', monospace;
     font-size: 10px;
     padding: 1px 6px;
     border-radius: 10px;
-    font-weight: 700;
-    font-family: 'Patrick Hand', cursive;
+    box-shadow: 0 0 8px rgba(255,45,122,0.5);
   }
 
   .sidebar-footer {
-    margin-top: auto;
-    padding: 12px 16px 0 28px;
-    border-top: 1.5px dashed #c8a96e;
-    font-size: 11px;
-    color: #b89a60;
-    font-family: 'Patrick Hand', cursive;
-    line-height: 1.6;
+    padding: 14px 18px;
+    border-top: 1px solid var(--border-subtle);
   }
 
-  /* MAIN */
-  .main {
+  .agent-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--neon-green);
+    box-shadow: 0 0 8px var(--neon-green);
+    animation: pulse-dot 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--neon-green); }
+    50% { opacity: 0.5; box-shadow: 0 0 16px var(--neon-green); }
+  }
+
+  .agent-label { font-size: 13px; color: var(--text-secondary); }
+  .agent-name { font-weight: 700; color: var(--neon-green); }
+
+  /* ─── TOPBAR ─── */
+  .main-area {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  .topbar {
+    height: var(--topbar-h);
+    background: rgba(8,11,24,0.92);
+    border-bottom: 1px solid var(--border-glow);
+    display: flex;
+    align-items: center;
+    padding: 0 28px;
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    gap: 16px;
+  }
+
+  .topbar-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .breadcrumb-sep {
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+  }
+
+  .page-title {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-primary);
+  }
+
+  .page-subtitle {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+
+  .topbar-spacer { flex: 1; }
+
+  .topbar-pills {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .alert-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,107,53,0.1);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--neon-orange);
+  }
+
+  .sys-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(0,255,157,0.07);
+    border: 1px solid rgba(0,255,157,0.2);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--neon-green);
+  }
+
+  .clock-block {
+    text-align: right;
+    margin-left: 8px;
+  }
+
+  .clock-time {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 22px;
+    color: var(--neon-cyan);
+    letter-spacing: 3px;
+    text-shadow: 0 0 20px rgba(0,212,255,0.5);
+    line-height: 1;
+  }
+
+  .clock-date {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    margin-top: 1px;
+    text-align: center;
+  }
+
+  /* ─── MAIN CONTENT ─── */
+  .content {
     flex: 1;
     padding: 24px 28px;
     overflow-y: auto;
   }
 
-  .page-header {
-    margin-bottom: 20px;
-    display: flex;
-    align-items: baseline;
-    gap: 14px;
-  }
-  .page-header h1 {
-    font-family: 'Caveat', cursive;
-    font-size: 30px;
-    font-weight: 700;
-    color: #4a3010;
-    border-bottom: 2.5px solid #c8a96e;
-    padding-bottom: 2px;
-  }
-  .page-header .greeting {
-    font-size: 14px;
-    color: #9a7a4a;
-    font-family: 'Patrick Hand', cursive;
-    font-style: italic;
-  }
-
-  /* WIDGET GRID */
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 18px;
-    margin-bottom: 24px;
-  }
-  .grid-wide {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-    margin-bottom: 24px;
-  }
-
-  /* KARTE */
-  .card {
-    background: #f8f2e2;
-    border: 1.5px solid #c8a96e;
-    border-radius: 6px;
-    padding: 16px 18px;
-    position: relative;
-    box-shadow: 2px 3px 0 #c8a96e, 3px 5px 12px rgba(100,70,20,0.08);
-    transition: transform 0.15s, box-shadow 0.15s;
-  }
-  .card::before {
-    content: '';
-    position: absolute;
-    top: -1px; left: 8px;
-    width: 36px; height: 8px;
-    background: rgba(200,169,110,0.35);
-    border-radius: 0 0 3px 3px;
-    border: 1px solid rgba(200,169,110,0.5);
-    border-top: none;
-  }
-  .card:hover {
-    transform: translateY(-2px) rotate(0.3deg);
-    box-shadow: 3px 5px 0 #c8a96e, 4px 8px 18px rgba(100,70,20,0.12);
-  }
-  /* Zufällig leicht rotiert — wie auf dem Tisch liegen */
-  .card:nth-child(2) { transform: rotate(-0.5deg); }
-  .card:nth-child(3) { transform: rotate(0.4deg); }
-  .card:nth-child(4) { transform: rotate(-0.3deg); }
-  .card:nth-child(2):hover { transform: rotate(-0.5deg) translateY(-2px); }
-  .card:nth-child(3):hover { transform: rotate(0.4deg) translateY(-2px); }
-  .card:nth-child(4):hover { transform: rotate(-0.3deg) translateY(-2px); }
-
-  .card-title {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: #9a7a4a;
-    margin-bottom: 10px;
-    font-family: 'Patrick Hand', cursive;
+  .section-header {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
+    margin-bottom: 18px;
+    margin-top: 8px;
   }
-  .card-title .icon { font-size: 14px; }
 
-  /* STAT KARTEN */
-  .stat-value {
-    font-family: 'Caveat', cursive;
-    font-size: 48px;
+  .section-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border-glow), transparent);
+  }
+
+  /* ─── WIDGET GRID ─── */
+  .widget-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .widget-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.25s;
+    cursor: pointer;
+  }
+
+  .widget-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent-color, var(--neon-cyan));
+    box-shadow: 0 0 12px var(--accent-color, var(--neon-cyan));
+  }
+
+  .widget-card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-glow);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 0 20px rgba(0,212,255,0.07);
+  }
+
+  .widget-card.cyan  { --accent-color: var(--neon-cyan); }
+  .widget-card.purple { --accent-color: var(--neon-purple); }
+  .widget-card.green { --accent-color: var(--neon-green); }
+  .widget-card.orange { --accent-color: var(--neon-orange); }
+  .widget-card.pink  { --accent-color: var(--neon-pink); }
+
+  .card-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .card-value {
+    font-size: 38px;
     font-weight: 700;
-    color: #4a3010;
     line-height: 1;
-    margin-bottom: 6px;
-  }
-  .stat-unit {
-    font-size: 20px;
-    color: #8a6a3a;
-  }
-  .stat-label {
-    font-size: 13px;
-    color: #7a6040;
-    font-family: 'Patrick Hand', cursive;
+    color: var(--accent-color, var(--neon-cyan));
+    text-shadow: 0 0 20px var(--accent-color, var(--neon-cyan));
+    margin-bottom: 4px;
   }
 
-  /* Progress Bar — handgemalt */
-  .progress-track {
-    height: 12px;
-    background: #ede3c8;
-    border-radius: 20px;
-    border: 1.5px solid #c8a96e;
-    margin: 10px 0 6px;
+  .card-unit {
+    font-size: 16px;
+    font-weight: 400;
+    opacity: 0.7;
+  }
+
+  .card-sub {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+  }
+
+  .card-icon {
+    position: absolute;
+    top: 16px; right: 16px;
+    font-size: 28px;
+    opacity: 0.12;
+    color: var(--accent-color, var(--neon-cyan));
+  }
+
+  /* ─── PROGRESS BAR ─── */
+  .prog-wrap {
+    margin-top: 12px;
+  }
+
+  .prog-bar {
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .prog-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--accent-color, var(--neon-cyan));
+    box-shadow: 0 0 8px var(--accent-color, var(--neon-cyan));
+    transition: width 1s ease;
+  }
+
+  .prog-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-bottom: 5px;
+  }
+
+  /* ─── BIG CONTENT ROW ─── */
+  .big-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .panel-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
     overflow: hidden;
     position: relative;
   }
-  .progress-fill {
-    height: 100%;
-    border-radius: 20px;
-    position: relative;
-    transition: width 0.5s ease;
-  }
-  .progress-fill::after {
+
+  .panel-card::before {
     content: '';
     position: absolute;
-    top: 2px; left: 4px; right: 6px;
-    height: 3px;
-    background: rgba(255,255,255,0.4);
-    border-radius: 10px;
-  }
-  .fill-green { background: linear-gradient(90deg, #7ab87a, #9acc80); }
-  .fill-blue  { background: linear-gradient(90deg, #7aaccf, #8ab8d4); }
-  .fill-amber { background: linear-gradient(90deg, #d4a85a, #e0bc70); }
-  .fill-red   { background: linear-gradient(90deg, #d4785a, #e0906a); }
-  .progress-pct {
-    font-size: 11px;
-    color: #9a7a4a;
-    text-align: right;
-    font-family: 'Patrick Hand', cursive;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent-color, var(--neon-cyan));
+    box-shadow: 0 0 12px var(--accent-color, var(--neon-cyan));
   }
 
-  /* MAIL KARTE */
-  .mail-list { list-style: none; }
-  .mail-item {
-    padding: 7px 0;
-    border-bottom: 1px dashed #d8c898;
+  .panel-card.cyan  { --accent-color: var(--neon-cyan); }
+  .panel-card.purple { --accent-color: var(--neon-purple); }
+  .panel-card.green { --accent-color: var(--neon-green); }
+  .panel-card.orange { --accent-color: var(--neon-orange); }
+
+  .panel-head {
+    padding: 14px 18px 10px;
+    border-bottom: 1px solid var(--border-subtle);
     display: flex;
+    align-items: center;
     gap: 8px;
-    align-items: flex-start;
   }
+
+  .panel-head-icon {
+    font-size: 16px;
+    color: var(--accent-color, var(--neon-cyan));
+  }
+
+  .panel-head-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+
+  .panel-head-badge {
+    margin-left: auto;
+    background: rgba(255,45,122,0.15);
+    border: 1px solid rgba(255,45,122,0.3);
+    color: var(--neon-pink);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .panel-body { padding: 14px 18px; }
+
+  /* ─── MAIL ITEMS ─── */
+  .mail-item {
+    display: flex;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
   .mail-item:last-child { border-bottom: none; }
-  .mail-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: #d4845a;
-    margin-top: 5px;
+  .mail-item:hover { opacity: 0.8; }
+
+  .mail-avatar {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
     flex-shrink: 0;
-    border: 1.5px solid #c07040;
   }
+
+  .mail-info { flex: 1; min-width: 0; }
+
   .mail-from {
     font-size: 13px;
     font-weight: 600;
-    color: #4a3010;
-    font-family: 'Patrick Hand', cursive;
-    white-space: nowrap;
-  }
-  .mail-subject {
-    font-size: 12px;
-    color: #7a6040;
-    font-family: 'Patrick Hand', cursive;
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 140px;
-  }
-  .mail-time {
-    margin-left: auto;
-    font-size: 11px;
-    color: #b89a60;
-    font-family: 'Patrick Hand', cursive;
-    flex-shrink: 0;
-  }
-  .mail-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: #d4845a;
-    color: #fff;
-    padding: 2px 10px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-family: 'Patrick Hand', cursive;
-    margin-bottom: 10px;
   }
 
-  /* WETTER KARTE */
+  .mail-subject {
+    font-size: 11px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mail-time {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .mail-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--neon-cyan);
+    box-shadow: 0 0 6px var(--neon-cyan);
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+
+  /* ─── WEATHER ─── */
   .weather-main {
     display: flex;
     align-items: center;
-    gap: 14px;
-    margin-bottom: 12px;
+    gap: 16px;
+    padding: 6px 0 12px;
   }
+
   .weather-icon { font-size: 52px; line-height: 1; }
+
   .weather-temp {
-    font-family: 'Caveat', cursive;
     font-size: 52px;
     font-weight: 700;
-    color: #4a3010;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 20px rgba(0,212,255,0.4);
     line-height: 1;
   }
-  .weather-temp span { font-size: 24px; color: #8a6a3a; }
-  .weather-info {
-    font-size: 13px;
-    color: #7a6040;
-    font-family: 'Patrick Hand', cursive;
-    line-height: 1.6;
-  }
-  .weather-forecast {
-    display: flex;
-    gap: 0;
-    border-top: 1px dashed #d8c898;
-    padding-top: 10px;
-    margin-top: 2px;
-  }
-  .forecast-day {
-    flex: 1;
-    text-align: center;
-    font-size: 12px;
-    font-family: 'Patrick Hand', cursive;
-    color: #7a6040;
-    padding: 4px;
-    border-right: 1px dashed #d8c898;
-  }
-  .forecast-day:last-child { border-right: none; }
-  .forecast-day .f-icon { font-size: 20px; display: block; margin: 3px 0; }
-  .forecast-day .f-temp { font-family: 'Caveat', cursive; font-size: 16px; color: #4a3010; font-weight: 600; }
 
-  /* BOLLA STATUS */
-  .bolla-status {
+  .weather-deg {
+    font-size: 24px;
+    font-weight: 300;
+    opacity: 0.7;
+    vertical-align: super;
+  }
+
+  .weather-meta { flex: 1; }
+  .weather-city { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+  .weather-desc { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+
+  .weather-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .w-stat {
+    background: rgba(255,255,255,0.04);
+    border-radius: 6px;
+    padding: 8px 10px;
+  }
+
+  .w-stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    margin-bottom: 2px;
+  }
+
+  .w-stat-val { font-size: 16px; font-weight: 600; color: var(--text-secondary); }
+
+  /* ─── BOLLA CHAT ─── */
+  .bolla-msg {
+    background: rgba(124,58,237,0.08);
+    border: 1px solid rgba(124,58,237,0.2);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+
+  .bolla-msg-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 0;
-    border-bottom: 1px dashed #d8c898;
-    font-size: 13px;
-    font-family: 'Patrick Hand', cursive;
-    color: #5a4020;
+    gap: 6px;
+    margin-bottom: 6px;
   }
-  .bolla-status:last-child { border-bottom: none; }
-  .status-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    border: 1.5px solid rgba(0,0,0,0.15);
-  }
-  .dot-green { background: #7ab87a; }
-  .dot-amber { background: #d4a85a; }
-  .dot-red   { background: #d4785a; }
 
-  /* NOTIZEN / AUFGABEN */
-  .task-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 7px 0;
-    border-bottom: 1px dashed #d8c898;
-    font-size: 13px;
-    font-family: 'Patrick Hand', cursive;
-    color: #5a4020;
-    line-height: 1.4;
-  }
-  .task-item:last-child { border-bottom: none; }
-  .task-check {
-    width: 14px; height: 14px;
-    border: 1.5px solid #c8a96e;
-    border-radius: 3px;
-    flex-shrink: 0;
-    margin-top: 1px;
-    background: transparent;
+  .bolla-avatar {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan));
     display: flex; align-items: center; justify-content: center;
-    font-size: 10px;
-    color: #7ab87a;
-  }
-  .task-check.done { background: rgba(122,184,122,0.15); }
-  .task-text.done { text-decoration: line-through; color: #b89a60; }
-  .tag {
-    display: inline-block;
-    padding: 0 6px;
-    border-radius: 3px;
-    font-size: 10px;
-    border: 1px solid;
-    margin-left: 4px;
-    vertical-align: middle;
-  }
-  .tag-schule { color: #7a9a5a; border-color: #9ab87a; background: rgba(122,154,90,0.1); }
-  .tag-bolla  { color: #7a7acc; border-color: #9a9acc; background: rgba(122,122,204,0.1); }
-
-  /* Ruled line texture auf Karten */
-  .card-lined {
-    background-image: repeating-linear-gradient(
-      180deg, transparent 0px, transparent 22px,
-      rgba(200,169,110,0.12) 22px, rgba(200,169,110,0.12) 23px
-    );
-  }
-
-  /* Heft-Loch Dekoration */
-  .hole {
-    position: absolute;
-    right: 14px; top: 14px;
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    background: #e8dcc8;
-    border: 1.5px solid rgba(200,169,110,0.5);
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-  }
-
-  /* SCHULE SCHNELLINFO */
-  .schule-block {
-    display: flex;
-    gap: 10px;
-    align-items: stretch;
-  }
-  .stunde-col {
-    flex: 1;
-    text-align: center;
-    background: rgba(200,169,110,0.1);
-    border: 1px dashed #c8a96e;
-    border-radius: 4px;
-    padding: 8px 6px;
-  }
-  .stunde-nr {
-    font-family: 'Caveat', cursive;
-    font-size: 26px;
-    font-weight: 700;
-    color: #7a5a2a;
-    line-height: 1;
-  }
-  .stunde-fach {
-    font-size: 12px;
-    color: #5a4020;
-    font-family: 'Patrick Hand', cursive;
-    margin-top: 2px;
-  }
-  .stunde-klasse {
     font-size: 11px;
-    color: #9a7a4a;
-    font-family: 'Patrick Hand', cursive;
+  }
+
+  .bolla-name { font-size: 11px; font-weight: 700; color: var(--neon-purple); letter-spacing: 1px; }
+  .bolla-time { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--text-dim); margin-left: auto; }
+  .bolla-text { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+  .bolla-input {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    align-items: center;
+  }
+
+  .bolla-inp-field {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    outline: none;
+    font-family: 'Rajdhani', sans-serif;
+  }
+
+  .bolla-inp-field:focus {
+    border-color: rgba(124,58,237,0.4);
+    background: rgba(124,58,237,0.05);
+  }
+
+  .bolla-send {
+    background: linear-gradient(135deg, var(--neon-purple), #9d4edd);
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(124,58,237,0.4);
+  }
+
+  /* ─── BOTTOM ROW ─── */
+  .bottom-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  /* ─── SYSTEM METRICS ─── */
+  .metric-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .metric-item {
+    background: rgba(255,255,255,0.03);
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+
+  .metric-head {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .metric-name {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+
+  .metric-pct {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--neon-cyan);
+  }
+
+  .metric-bar {
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .metric-fill {
+    height: 100%;
+    border-radius: 2px;
+  }
+
+  /* ─── MINI CALENDAR ─── */
+  .mini-cal { }
+
+  .cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .cal-month {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+  }
+
+  .cal-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color 0.15s;
+  }
+
+  .cal-btn:hover { color: var(--neon-cyan); }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+
+  .cal-day-header {
+    text-align: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    padding: 3px 0;
+  }
+
+  .cal-day {
+    text-align: center;
+    padding: 5px 2px;
+    font-size: 12px;
+    color: var(--text-dim);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .cal-day:hover { color: var(--text-secondary); background: rgba(255,255,255,0.05); }
+  .cal-day.other { opacity: 0.3; }
+  .cal-day.today {
+    background: rgba(0,212,255,0.15);
+    color: var(--neon-cyan);
+    font-weight: 700;
+    box-shadow: 0 0 8px rgba(0,212,255,0.2);
+  }
+
+  .cal-day.has-event { position: relative; }
+  .cal-day.has-event::after {
+    content: '';
+    position: absolute;
+    bottom: 2px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--neon-purple);
+  }
+
+  /* ─── SCAN LINE EFFECT ─── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
   }
 </style>
 </head>
 <body>
 
-<!-- TOPBAR -->
-<header class="topbar">
-  <div class="topbar-title">
-    <span class="paw">🐾</span>
-    Mission Control
-    <span class="subtitle">Chris' Dashboard</span>
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+  <div class="logo-block">
+    <div class="logo-label">SYS // v2.4.1</div>
+    <div class="logo-name">NEXUS OS</div>
+    <div class="logo-sub">MISSION CONTROL</div>
   </div>
-  <div class="topbar-time">20:14</div>
-</header>
 
-<!-- LAYOUT -->
-<div class="layout">
+  <nav class="nav-section">
+    <div class="nav-group-label">// NAVIGATION</div>
 
-  <!-- SIDEBAR -->
-  <nav class="sidebar">
-    <div class="sidebar-logo">
-      <span>Bolla</span>
-      <small>persönlicher Assistent</small>
+    <div class="nav-item active">
+      <div class="nav-icon">◈</div>
+      <div class="nav-label">Dashboard</div>
     </div>
 
-    <div class="nav-section">
-      <div class="nav-label">Hauptmenü</div>
-
-      <div class="nav-item active">
-        <span class="nav-icon">🏠</span> Dashboard
-      </div>
-      <div class="nav-item">
-        <span class="nav-icon">🐾</span> Bolla
-      </div>
-      <div class="nav-item">
-        <span class="nav-icon">📚</span> Schule
-      </div>
-      <div class="nav-item">
-        <span class="nav-icon">📅</span> Kalender
-      </div>
-      <div class="nav-item">
-        <span class="nav-icon">✉️</span> E-Mail
-        <span class="nav-badge">3</span>
-      </div>
+    <div class="nav-item">
+      <div class="nav-icon">🐾</div>
+      <div class="nav-label">Bolla</div>
     </div>
 
-    <div class="nav-section" style="margin-top:10px;">
-      <div class="nav-label">Infos</div>
-      <div class="nav-item">
-        <span class="nav-icon">🌤</span> Wetter
-      </div>
-      <div class="nav-item">
-        <span class="nav-icon">💻</span> System Info
-      </div>
+    <div class="nav-item">
+      <div class="nav-icon">▦</div>
+      <div class="nav-label">Schule</div>
     </div>
 
-    <div class="sidebar-footer">
-      Di, 19. Mai 2026<br>
-      WSL2 · Laufzeit 4h 22m<br>
-      Tunnel: aktiv ✓
+    <div class="nav-item">
+      <div class="nav-icon">◷</div>
+      <div class="nav-label">Kalender</div>
+    </div>
+
+    <div class="nav-item">
+      <div class="nav-icon">✉</div>
+      <div class="nav-label">E-Mail</div>
+      <div class="nav-badge">3</div>
+    </div>
+
+    <div class="nav-item">
+      <div class="nav-icon">◎</div>
+      <div class="nav-label">Wetter</div>
+    </div>
+
+    <div class="nav-group-label" style="margin-top:8px">// SYSTEM</div>
+
+    <div class="nav-item">
+      <div class="nav-icon">⬡</div>
+      <div class="nav-label">System Info</div>
     </div>
   </nav>
 
-  <!-- MAIN -->
-  <main class="main">
-    <div class="page-header">
-      <h1>Dashboard</h1>
-      <span class="greeting">Guten Abend, Chris — alles im Griff! 🐾</span>
+  <div class="sidebar-footer">
+    <div class="agent-status">
+      <div class="status-dot"></div>
+      <div class="agent-label"><span class="agent-name">BOLLA</span> online</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main-area">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-breadcrumb">
+      <div>
+        <div class="page-title">DASHBOARD</div>
+        <div class="page-subtitle">// SYSTEMÜBERSICHT</div>
+      </div>
     </div>
 
-    <!-- ZEILE 1: 4 STAT-KARTEN -->
-    <div class="grid">
+    <div class="topbar-spacer"></div>
+
+    <div class="topbar-pills">
+      <div class="alert-pill">
+        <span>⚠</span> 3 neue Mails
+      </div>
+      <div class="sys-pill">
+        <span>●</span> Alle Systeme OK
+      </div>
+    </div>
+
+    <div class="clock-block">
+      <div class="clock-time">20:14</div>
+      <div class="clock-date">MI · 2026-05-20</div>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <main class="content">
+
+    <!-- STAT WIDGETS -->
+    <div class="section-header">
+      <div class="section-title">// SYSTEM STATUS</div>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="widget-grid">
 
       <!-- RAM -->
-      <div class="card">
-        <div class="hole"></div>
-        <div class="card-title"><span class="icon">🧠</span> Arbeitsspeicher</div>
-        <div class="stat-value">34<span class="stat-unit">%</span></div>
-        <div class="progress-track">
-          <div class="progress-fill fill-green" style="width:34%"></div>
+      <div class="widget-card cyan">
+        <div class="card-icon">▣</div>
+        <div class="card-label">// RAM USAGE</div>
+        <div class="card-value">34<span class="card-unit">%</span></div>
+        <div class="card-sub">5.4 GB / 16 GB</div>
+        <div class="prog-wrap">
+          <div class="prog-labels"><span>AUSLASTUNG</span><span>34%</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:34%"></div></div>
         </div>
-        <div class="progress-pct">5,4 / 16 GB genutzt</div>
-        <div class="stat-label" style="margin-top:4px;">entspannt 😌</div>
       </div>
 
       <!-- CPU -->
-      <div class="card">
-        <div class="hole"></div>
-        <div class="card-title"><span class="icon">⚙️</span> CPU</div>
-        <div class="stat-value">12<span class="stat-unit">%</span></div>
-        <div class="progress-track">
-          <div class="progress-fill fill-blue" style="width:12%"></div>
+      <div class="widget-card green">
+        <div class="card-icon">⬡</div>
+        <div class="card-label">// CPU LOAD</div>
+        <div class="card-value">12<span class="card-unit">%</span></div>
+        <div class="card-sub">i7-11370H · 4 Kerne</div>
+        <div class="prog-wrap">
+          <div class="prog-labels"><span>AUSLASTUNG</span><span>12%</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:12%; background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green);"></div></div>
         </div>
-        <div class="progress-pct">Kern 1–8 · 3,2 GHz</div>
-        <div class="stat-label" style="margin-top:4px;">fast idle</div>
       </div>
 
       <!-- MAIL -->
-      <div class="card">
-        <div class="hole"></div>
-        <div class="card-title"><span class="icon">✉️</span> E-Mail</div>
-        <div class="stat-value" style="font-size:44px;">3</div>
-        <div class="stat-label">neue Nachrichten</div>
-        <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
-          <span style="font-size:12px; font-family:'Patrick Hand',cursive; color:#7a6040; background:rgba(200,169,110,0.15); border:1px dashed #c8a96e; padding:2px 8px; border-radius:3px;">Outlook: 2</span>
-          <span style="font-size:12px; font-family:'Patrick Hand',cursive; color:#7a6040; background:rgba(200,169,110,0.15); border:1px dashed #c8a96e; padding:2px 8px; border-radius:3px;">Gmail: 1</span>
+      <div class="widget-card pink">
+        <div class="card-icon">✉</div>
+        <div class="card-label">// NEUE MAILS</div>
+        <div class="card-value" style="color:var(--neon-pink);text-shadow:0 0 20px var(--neon-pink)">3</div>
+        <div class="card-sub">Ungelesene Nachrichten</div>
+        <div class="prog-wrap">
+          <div class="prog-labels"><span>POSTFACH</span><span>18 gesamt</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:100%; background: var(--neon-pink); box-shadow: 0 0 8px var(--neon-pink); opacity:0.6;"></div></div>
         </div>
       </div>
 
-      <!-- WETTER MINI -->
-      <div class="card">
-        <div class="hole"></div>
-        <div class="card-title"><span class="icon">🌤</span> Hamburg</div>
-        <div class="weather-main">
-          <div class="weather-icon">⛅</div>
-          <div>
-            <div class="weather-temp">18<span>°C</span></div>
-          </div>
-        </div>
-        <div class="weather-info">
-          Leicht bewölkt · Wind 14 km/h<br>
-          Luftf. 62% · Regen 5%
+      <!-- WETTER -->
+      <div class="widget-card orange">
+        <div class="card-icon">◎</div>
+        <div class="card-label">// WETTER HH</div>
+        <div class="card-value" style="color:var(--neon-orange);text-shadow:0 0 20px var(--neon-orange)">18<span class="card-unit">°C</span></div>
+        <div class="card-sub">Hamburg · Leicht bewölkt</div>
+        <div class="prog-wrap">
+          <div class="prog-labels"><span>LUFTFEUCHTE</span><span>62%</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:62%; background: var(--neon-orange); box-shadow: 0 0 8px var(--neon-orange);"></div></div>
         </div>
       </div>
+
     </div>
 
-    <!-- ZEILE 2: DETAILS -->
-    <div class="grid-wide">
+    <!-- BIG ROW -->
+    <div class="section-header">
+      <div class="section-title">// FEEDS &amp; ASSISTENT</div>
+      <div class="section-line"></div>
+    </div>
 
-      <!-- E-MAIL DETAIL -->
-      <div class="card card-lined">
-        <div class="hole"></div>
-        <div class="card-title"><span class="icon">📬</span> Posteingang</div>
-        <div class="mail-badge">● 3 ungelesen</div>
-        <ul class="mail-list">
-          <li class="mail-item">
-            <div class="mail-dot"></div>
-            <div style="flex:1; min-width:0;">
+    <div class="big-row">
+
+      <!-- MAIL PANEL -->
+      <div class="panel-card orange">
+        <div class="panel-head">
+          <span class="panel-head-icon">✉</span>
+          <span class="panel-head-title">E-Mail</span>
+          <span class="panel-head-badge">3 NEU</span>
+        </div>
+        <div class="panel-body">
+          <div class="mail-item">
+            <div class="mail-dot" style="margin-top:12px"></div>
+            <div class="mail-avatar" style="background:rgba(0,212,255,0.15);color:var(--neon-cyan)">KS</div>
+            <div class="mail-info">
+              <div class="mail-from">Kultusministerium</div>
+              <div class="mail-subject">Vertretungsplan KW21 — Änderungen</div>
+            </div>
+            <div class="mail-time">19:48</div>
+          </div>
+          <div class="mail-item">
+            <div class="mail-dot" style="margin-top:12px"></div>
+            <div class="mail-avatar" style="background:rgba(124,58,237,0.15);color:var(--neon-purple)">LG</div>
+            <div class="mail-info">
               <div class="mail-from">Lessing-Gymnasium</div>
-              <div class="mail-subject">Vertretungsplan KW21 — Änderung 3. Std.</div>
+              <div class="mail-subject">Elternabend 7a — Raumänderung</div>
             </div>
-            <div class="mail-time">18:52</div>
-          </li>
-          <li class="mail-item">
-            <div class="mail-dot"></div>
-            <div style="flex:1; min-width:0;">
-              <div class="mail-from">Petra Müller</div>
-              <div class="mail-subject">Re: Klassenarbeit Termin bestätigen?</div>
+            <div class="mail-time">17:23</div>
+          </div>
+          <div class="mail-item">
+            <div class="mail-dot" style="margin-top:12px"></div>
+            <div class="mail-avatar" style="background:rgba(0,255,157,0.12);color:var(--neon-green)">GH</div>
+            <div class="mail-info">
+              <div class="mail-from">GitHub Actions</div>
+              <div class="mail-subject">Build #148 erfolgreich — openclaw-bolla</div>
             </div>
-            <div class="mail-time">16:30</div>
-          </li>
-          <li class="mail-item">
-            <div class="mail-dot"></div>
-            <div style="flex:1; min-width:0;">
-              <div class="mail-from">Google</div>
-              <div class="mail-subject">Sicherheitshinweis für dein Konto</div>
-            </div>
-            <div class="mail-time">11:04</div>
-          </li>
-          <li class="mail-item" style="opacity:0.6;">
-            <div class="mail-dot" style="background:#c8a96e; border-color:#a88840;"></div>
-            <div style="flex:1; min-width:0;">
-              <div class="mail-from">Amazon</div>
-              <div class="mail-subject">Ihre Bestellung wurde versendet</div>
-            </div>
-            <div class="mail-time">Gestern</div>
-          </li>
-        </ul>
-      </div>
-
-      <!-- AUFGABEN -->
-      <div class="card card-lined">
-        <div class="hole"></div>
-        <div class="card-title"><span class="icon">📝</span> Offene Aufgaben</div>
-        <div class="task-item">
-          <div class="task-check">✓</div>
-          <span class="task-text done">Cloudflare Tunnel testen</span>
-          <span class="tag tag-bolla">Bolla</span>
-        </div>
-        <div class="task-item">
-          <div class="task-check"></div>
-          <span class="task-text">Korrektur 7b fertig machen <span class="tag tag-schule">Schule</span></span>
-        </div>
-        <div class="task-item">
-          <div class="task-check"></div>
-          <span class="task-text">Newsletter-Ausgabe reviewen <span class="tag tag-bolla">Bolla</span></span>
-        </div>
-        <div class="task-item">
-          <div class="task-check"></div>
-          <span class="task-text">Stundenvorbereitung KW22 <span class="tag tag-schule">Schule</span></span>
-        </div>
-        <div class="task-item">
-          <div class="task-check">✓</div>
-          <span class="task-text done">MC Watchdog-Fix deployen</span>
-          <span class="tag tag-bolla">Bolla</span>
+            <div class="mail-time">15:07</div>
+          </div>
         </div>
       </div>
 
-      <!-- SCHULE HEUTE -->
-      <div class="card">
-        <div class="hole"></div>
-        <div class="card-title"><span class="icon">📚</span> Schule — Morgen</div>
-        <div class="schule-block">
-          <div class="stunde-col">
-            <div class="stunde-nr">1</div>
-            <div class="stunde-fach">Deutsch</div>
-            <div class="stunde-klasse">Lessing I</div>
-          </div>
-          <div class="stunde-col">
-            <div class="stunde-nr">3</div>
-            <div class="stunde-fach">Deutsch</div>
-            <div class="stunde-klasse">Lessing II</div>
-          </div>
-          <div class="stunde-col">
-            <div class="stunde-nr">5</div>
-            <div class="stunde-fach">Geschichte</div>
-            <div class="stunde-klasse">8c</div>
-          </div>
-          <div class="stunde-col" style="opacity:0.5;">
-            <div class="stunde-nr">—</div>
-            <div class="stunde-fach">frei</div>
-            <div class="stunde-klasse"> </div>
-          </div>
+      <!-- WETTER PANEL -->
+      <div class="panel-card cyan">
+        <div class="panel-head">
+          <span class="panel-head-icon">◎</span>
+          <span class="panel-head-title">Wetter Hamburg</span>
         </div>
-        <div style="margin-top:10px; font-size:12px; color:#9a7a4a; font-family:'Patrick Hand',cursive; border-top:1px dashed #d8c898; padding-top:8px;">
-          ⚠️ Vertretung 3. Std. — Raum 204 statt 207
+        <div class="panel-body">
+          <div class="weather-main">
+            <div class="weather-icon">🌥️</div>
+            <div>
+              <div class="weather-temp">18<span class="weather-deg">°</span></div>
+              <div class="weather-desc" style="margin-top:4px">Leicht bewölkt</div>
+            </div>
+          </div>
+          <div class="weather-stats">
+            <div class="w-stat">
+              <div class="w-stat-label">// WIND</div>
+              <div class="w-stat-val">14 km/h</div>
+            </div>
+            <div class="w-stat">
+              <div class="w-stat-label">// FEUCHTE</div>
+              <div class="w-stat-val">62%</div>
+            </div>
+            <div class="w-stat">
+              <div class="w-stat-label">// MIN/MAX</div>
+              <div class="w-stat-val">12 / 21°</div>
+            </div>
+            <div class="w-stat">
+              <div class="w-stat-label">// UV-IDX</div>
+              <div class="w-stat-val">3 · Mäßig</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- BOLLA STATUS -->
-      <div class="card">
-        <div class="hole"></div>
-        <div class="card-title"><span class="icon">🐾</span> Bolla System</div>
-        <div class="bolla-status">
-          <div class="status-dot dot-green"></div>
-          Mission Control (lokal)
-          <span style="margin-left:auto; font-size:11px; color:#b89a60;">:18790</span>
+      <!-- BOLLA PANEL -->
+      <div class="panel-card purple">
+        <div class="panel-head">
+          <span class="panel-head-icon">🐾</span>
+          <span class="panel-head-title">Bolla</span>
         </div>
-        <div class="bolla-status">
-          <div class="status-dot dot-green"></div>
-          Cloudflare Tunnel
-          <span style="margin-left:auto; font-size:11px; color:#b89a60;">aktiv</span>
-        </div>
-        <div class="bolla-status">
-          <div class="status-dot dot-green"></div>
-          WSL2 / Ubuntu
-          <span style="margin-left:auto; font-size:11px; color:#b89a60;">läuft</span>
-        </div>
-        <div class="bolla-status">
-          <div class="status-dot dot-amber"></div>
-          Git Backup
-          <span style="margin-left:auto; font-size:11px; color:#b89a60;">5h alt</span>
-        </div>
-        <div class="bolla-status">
-          <div class="status-dot dot-green"></div>
-          OneDrive Sync
-          <span style="margin-left:auto; font-size:11px; color:#b89a60;">aktuell</span>
+        <div class="panel-body">
+          <div class="bolla-msg">
+            <div class="bolla-msg-header">
+              <div class="bolla-avatar">🐾</div>
+              <div class="bolla-name">BOLLA</div>
+              <div class="bolla-time">20:03</div>
+            </div>
+            <div class="bolla-text">Spotify-Sync abgeschlossen, 47 neue Tracks erkannt. Schule morgen: Klasse 7b 3. Std., keine offenen Noten. Alles grün. 🐾</div>
+          </div>
+          <div class="bolla-input">
+            <input class="bolla-inp-field" type="text" placeholder="Frag mich was…" />
+            <button class="bolla-send">▶</button>
+          </div>
         </div>
       </div>
 
     </div>
 
-    <!-- WETTER DETAIL -->
-    <div class="card" style="max-width:100%; transform:rotate(-0.2deg);">
-      <div class="hole"></div>
-      <div class="card-title"><span class="icon">🌦</span> Wettervorschau — Hamburg</div>
-      <div style="display:flex; gap:24px; align-items:center; margin-bottom:14px;">
-        <div class="weather-main" style="margin:0;">
-          <div class="weather-icon">⛅</div>
-          <div>
-            <div class="weather-temp">18<span>°C</span></div>
-            <div class="weather-info">Leicht bewölkt · Dienstag</div>
+    <!-- BOTTOM ROW -->
+    <div class="section-header">
+      <div class="section-title">// RESSOURCEN &amp; KALENDER</div>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="bottom-row">
+
+      <!-- SYSTEM METRICS -->
+      <div class="panel-card green">
+        <div class="panel-head">
+          <span class="panel-head-icon">⬡</span>
+          <span class="panel-head-title">System Info</span>
+        </div>
+        <div class="panel-body">
+          <div class="metric-row">
+            <div class="metric-item">
+              <div class="metric-head">
+                <span class="metric-name">// RAM</span>
+                <span class="metric-pct">34%</span>
+              </div>
+              <div class="metric-bar">
+                <div class="metric-fill" style="width:34%;background:var(--neon-cyan);box-shadow:0 0 6px var(--neon-cyan)"></div>
+              </div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-head">
+                <span class="metric-name">// CPU</span>
+                <span class="metric-pct" style="color:var(--neon-green)">12%</span>
+              </div>
+              <div class="metric-bar">
+                <div class="metric-fill" style="width:12%;background:var(--neon-green);box-shadow:0 0 6px var(--neon-green)"></div>
+              </div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-head">
+                <span class="metric-name">// DISK C:</span>
+                <span class="metric-pct" style="color:var(--neon-orange)">61%</span>
+              </div>
+              <div class="metric-bar">
+                <div class="metric-fill" style="width:61%;background:var(--neon-orange);box-shadow:0 0 6px var(--neon-orange)"></div>
+              </div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-head">
+                <span class="metric-name">// SWAP</span>
+                <span class="metric-pct">8%</span>
+              </div>
+              <div class="metric-bar">
+                <div class="metric-fill" style="width:8%;background:var(--neon-cyan);box-shadow:0 0 6px var(--neon-cyan)"></div>
+              </div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-head">
+                <span class="metric-name">// NETZ ↓</span>
+                <span class="metric-pct" style="color:var(--neon-purple)">4.2 MB/s</span>
+              </div>
+              <div class="metric-bar">
+                <div class="metric-fill" style="width:42%;background:var(--neon-purple);box-shadow:0 0 6px var(--neon-purple)"></div>
+              </div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-head">
+                <span class="metric-name">// NETZ ↑</span>
+                <span class="metric-pct" style="color:var(--neon-purple)">0.8 MB/s</span>
+              </div>
+              <div class="metric-bar">
+                <div class="metric-fill" style="width:8%;background:var(--neon-purple);box-shadow:0 0 6px var(--neon-purple)"></div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;">
+            <div style="background:rgba(0,255,157,0.08);border:1px solid rgba(0,255,157,0.2);border-radius:6px;padding:6px 12px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--neon-green)">● MC-Server OK</div>
+            <div style="background:rgba(0,255,157,0.08);border:1px solid rgba(0,255,157,0.2);border-radius:6px;padding:6px 12px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--neon-green)">● CF-Tunnel OK</div>
+            <div style="background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:6px;padding:6px 12px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--neon-cyan)">WSL2 · UP 6h 14m</div>
           </div>
         </div>
-        <div style="flex:1; font-size:13px; font-family:'Patrick Hand',cursive; color:#7a6040; line-height:1.9; border-left:1px dashed #d8c898; padding-left:18px;">
-          Luftfeuchtigkeit: 62%<br>
-          Wind: 14 km/h SW<br>
-          Regenwahrsch.: 5%<br>
-          Sonnenuntergang: 21:24
+      </div>
+
+      <!-- MINI CALENDAR -->
+      <div class="panel-card purple">
+        <div class="panel-head">
+          <span class="panel-head-icon">◷</span>
+          <span class="panel-head-title">Kalender</span>
+        </div>
+        <div class="panel-body">
+          <div class="mini-cal">
+            <div class="cal-nav">
+              <button class="cal-btn">‹</button>
+              <div class="cal-month">Mai 2026</div>
+              <button class="cal-btn">›</button>
+            </div>
+            <div class="cal-grid">
+              <div class="cal-day-header">Mo</div>
+              <div class="cal-day-header">Di</div>
+              <div class="cal-day-header">Mi</div>
+              <div class="cal-day-header">Do</div>
+              <div class="cal-day-header">Fr</div>
+              <div class="cal-day-header">Sa</div>
+              <div class="cal-day-header">So</div>
+
+              <div class="cal-day other">28</div>
+              <div class="cal-day other">29</div>
+              <div class="cal-day other">30</div>
+              <div class="cal-day other">1</div>
+              <div class="cal-day other">2</div>
+              <div class="cal-day other">3</div>
+              <div class="cal-day other">4</div>
+
+              <div class="cal-day">5</div>
+              <div class="cal-day has-event">6</div>
+              <div class="cal-day">7</div>
+              <div class="cal-day">8</div>
+              <div class="cal-day has-event">9</div>
+              <div class="cal-day">10</div>
+              <div class="cal-day">11</div>
+
+              <div class="cal-day has-event">12</div>
+              <div class="cal-day">13</div>
+              <div class="cal-day">14</div>
+              <div class="cal-day has-event">15</div>
+              <div class="cal-day">16</div>
+              <div class="cal-day">17</div>
+              <div class="cal-day">18</div>
+
+              <div class="cal-day">19</div>
+              <div class="cal-day today has-event">20</div>
+              <div class="cal-day">21</div>
+              <div class="cal-day has-event">22</div>
+              <div class="cal-day">23</div>
+              <div class="cal-day">24</div>
+              <div class="cal-day">25</div>
+
+              <div class="cal-day">26</div>
+              <div class="cal-day has-event">27</div>
+              <div class="cal-day">28</div>
+              <div class="cal-day">29</div>
+              <div class="cal-day">30</div>
+              <div class="cal-day">31</div>
+              <div class="cal-day other">1</div>
+            </div>
+
+            <div style="margin-top:12px;display:flex;flex-direction:column;gap:5px;">
+              <div style="background:rgba(124,58,237,0.1);border-left:2px solid var(--neon-purple);border-radius:0 4px 4px 0;padding:5px 10px;font-size:12px;color:var(--text-secondary)">
+                <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim)">HEUTE · 08:00</span><br>
+                Klasse 7b — Mathematik (R.214)
+              </div>
+              <div style="background:rgba(0,212,255,0.07);border-left:2px solid var(--neon-cyan);border-radius:0 4px 4px 0;padding:5px 10px;font-size:12px;color:var(--text-secondary)">
+                <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim)">HEUTE · 15:30</span><br>
+                Konferenz Lehrerzimmer
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="weather-forecast">
-        <div class="forecast-day">
-          <div>Mi</div>
-          <span class="f-icon">🌧</span>
-          <div class="f-temp">15°</div>
-        </div>
-        <div class="forecast-day">
-          <div>Do</div>
-          <span class="f-icon">⛅</span>
-          <div class="f-temp">17°</div>
-        </div>
-        <div class="forecast-day">
-          <div>Fr</div>
-          <span class="f-icon">☀️</span>
-          <div class="f-temp">22°</div>
-        </div>
-        <div class="forecast-day">
-          <div>Sa</div>
-          <span class="f-icon">☀️</span>
-          <div class="f-temp">24°</div>
-        </div>
-        <div class="forecast-day">
-          <div>So</div>
-          <span class="f-icon">🌤</span>
-          <div class="f-temp">21°</div>
-        </div>
-        <div class="forecast-day">
-          <div>Mo</div>
-          <span class="f-icon">🌧</span>
-          <div class="f-temp">16°</div>
-        </div>
-      </div>
+
     </div>
 
   </main>
