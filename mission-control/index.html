@@ -6856,9 +6856,17 @@ function wsStartFortschrittPoll() {
 function wsRenderAuftraege(list) {
   const el = document.getElementById('ws-auftraege-list');
   const offen = list.filter(a => a.status === 'offen');
-  if (!offen.length) { el.innerHTML = ''; return; }
-  el.innerHTML = '<div style="font-size:12px;color:var(--dim);margin-bottom:4px">Offene Aufträge in der Warteschlange:</div>' +
-    offen.map(a => `<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin-bottom:4px;font-size:13px"><span style="color:var(--dim)">${a.ts}</span> · ${a.text.replace(/</g,'&lt;')}</div>`).join('');
+  const erledigt = list.filter(a => a.status === 'erledigt');
+  let html = '';
+  if (offen.length) {
+    html += '<div style="font-size:12px;color:var(--dim);margin-bottom:4px">Offene Aufträge in der Warteschlange:</div>' +
+      offen.map(a => `<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin-bottom:4px;font-size:13px"><span style="color:var(--dim)">${a.ts}</span> · ${a.text.replace(/</g,'&lt;')}</div>`).join('');
+  }
+  if (erledigt.length) {
+    html += `<div style="font-size:12px;color:#4ade80;margin:10px 0 4px">✅ Erledigt (${erledigt.length}):</div>` +
+      erledigt.slice().reverse().map(a => `<div style="background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.2);border-radius:6px;padding:6px 10px;margin-bottom:4px;font-size:13px;color:var(--dim)">✓ <span style="opacity:0.7">${a.ts}</span> · ${a.text.replace(/</g,'&lt;')}</div>`).join('');
+  }
+  el.innerHTML = html;
 }
 
 function wsToggleEdit() {
