@@ -1,4 +1,4 @@
-# KI-Workshop für Lehrerkollegen — Ideen-Sammlung
+# KI-ShortTrack für Lehrerkollegen — Ideen-Sammlung
 
 > Zentraler Sammelplatz für Chris' Workshop in der Projektwoche am Lessing-Gymnasium.
 > Chris kippt laufend Einfälle ein, Bolla sortiert sie hier ein. Aus dieser Datei heraus
