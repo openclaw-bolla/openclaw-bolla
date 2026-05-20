@@ -1433,22 +1433,34 @@ def _fetch_kworb(kworb_slug, limit=10):
     except Exception as e:
         return [{"error": str(e)}]
 
+# Kuratierter Pool harmloser, sehr bekannter dt. Party-/Mitsing-Hits — familientauglich
+# für ~13-Jährige (Schul-Party). Keine anzüglichen/Alkohol-/skandalträchtigen Titel.
+# Wöchentliche Rotation: _fetch_party_charts() zieht per Wochen-Seed 10 davon.
 _PARTY_HITS = [
-    {"title": "Atemlos durch die Nacht",    "artist": "Helene Fischer",         "streams": "Partyklassiker"},
-    {"title": "Layla",                       "artist": "DJ Robin & Schürze",     "streams": "Partyklassiker"},
-    {"title": "Anita",                       "artist": "Mickie Krause",          "streams": "Partyklassiker"},
-    {"title": "Hulapalu",                    "artist": "Andreas Gabalier",       "streams": "Partyklassiker"},
-    {"title": "Cordula Grün",                "artist": "Josh.",                  "streams": "Partyklassiker"},
-    {"title": "Tequila",                     "artist": "Olaf Henning",           "streams": "Partyklassiker"},
-    {"title": "Ein Stern der deinen Namen trägt", "artist": "DJ Ötzi & Nik P.", "streams": "Partyklassiker"},
-    {"title": "Hey Baby",                    "artist": "DJ Ötzi",               "streams": "Partyklassiker"},
-    {"title": "Absolut geil",                "artist": "Almklausi",             "streams": "Partyklassiker"},
-    {"title": "Vamos a la playa",            "artist": "Righeira",              "streams": "Partyklassiker"},
-    {"title": "Schnappi das kleine Krokodil", "artist": "Schnappi",            "streams": "Kult"},
-    {"title": "Cowboy und Indianer",         "artist": "Truck Stop",            "streams": "Partyklassiker"},
-    {"title": "Schwarz auf Weiß",            "artist": "Voxxclub",             "streams": "Partyklassiker"},
-    {"title": "Geh mal Bier hol'n",          "artist": "Mickie Krause",         "streams": "Partyklassiker"},
-    {"title": "Schatzi schenk mir ein Foto", "artist": "Michael Wendler",       "streams": "Kult"},
+    {"title": "Atemlos durch die Nacht",          "artist": "Helene Fischer",        "streams": "Partyklassiker"},
+    {"title": "Ein Stern der deinen Namen trägt",  "artist": "DJ Ötzi & Nik P.",      "streams": "Partyklassiker"},
+    {"title": "Wahnsinn",                          "artist": "Wolfgang Petry",        "streams": "Partyklassiker"},
+    {"title": "Hey Baby",                          "artist": "DJ Ötzi",               "streams": "Partyklassiker"},
+    {"title": "Anton aus Tirol",                   "artist": "DJ Ötzi",               "streams": "Partyklassiker"},
+    {"title": "Cordula Grün",                      "artist": "Josh.",                 "streams": "Partyklassiker"},
+    {"title": "Schwarz auf Weiß",                  "artist": "voXXclub",              "streams": "Partyklassiker"},
+    {"title": "Hulapalu",                          "artist": "Andreas Gabalier",      "streams": "Partyklassiker"},
+    {"title": "Das rote Pferd",                    "artist": "Markus Becker",         "streams": "Partyklassiker"},
+    {"title": "Tage wie diese",                    "artist": "Die Toten Hosen",       "streams": "Mitsing-Hit"},
+    {"title": "Auf uns",                           "artist": "Andreas Bourani",       "streams": "Mitsing-Hit"},
+    {"title": "Applaus, Applaus",                  "artist": "Sportfreunde Stiller",  "streams": "Mitsing-Hit"},
+    {"title": "80 Millionen",                      "artist": "Max Giesinger",         "streams": "Mitsing-Hit"},
+    {"title": "Astronaut",                         "artist": "Sido & Andreas Bourani","streams": "Mitsing-Hit"},
+    {"title": "Lieder",                            "artist": "Adel Tawil",            "streams": "Mitsing-Hit"},
+    {"title": "99 Luftballons",                    "artist": "Nena",                  "streams": "Kult-Klassiker"},
+    {"title": "Major Tom (Völlig losgelöst)",      "artist": "Peter Schilling",       "streams": "Kult-Klassiker"},
+    {"title": "Marmor, Stein und Eisen bricht",    "artist": "Drafi Deutscher",       "streams": "Kult-Klassiker"},
+    {"title": "Westerland",                        "artist": "Die Ärzte",             "streams": "Kult-Klassiker"},
+    {"title": "Männer",                            "artist": "Herbert Grönemeyer",    "streams": "Kult-Klassiker"},
+    {"title": "Ich war noch niemals in New York",  "artist": "Udo Jürgens",           "streams": "Kult-Klassiker"},
+    {"title": "Aber bitte mit Sahne",              "artist": "Udo Jürgens",           "streams": "Kult-Klassiker"},
+    {"title": "Verdammt, ich lieb dich",           "artist": "Matthias Reim",         "streams": "Kult-Klassiker"},
+    {"title": "Cowboy und Indianer",              "artist": "Truck Stop",            "streams": "Partyklassiker"},
 ]
 
 def _fetch_party_charts():
