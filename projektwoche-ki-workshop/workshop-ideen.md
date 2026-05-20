@@ -70,8 +70,10 @@ Von Chris als "ganz wichtig" markiert.
 
 | # | Folie | Status | Notiz |
 |---|-------|--------|-------|
-| 1 | Titel | vorhanden | "KI-Unterstützung für Lehrerinnen und Lehrer" |
+| 1 | Titel/Infografik | vorhanden | "KI-Unterstützung für Lehrerinnen und Lehrer" |
 | 2 | Meilensteine IT (Timeline) | ✅ fertig | "④ Vom Buchdruck zur KI" — Zeitstrahl + Adoptions-Box |
+| 3 | Druck-Version Folie 1 | ✅ fertig | helle Print-Version (build_print_folien.py) |
+| 4 | Druck-Version Folie 2 | ✅ fertig | helle Print-Version (build_print_folien.py) |
 | – | Urheberrecht (Suno) | offen | siehe Block 2 |
 | – | Modell-Arten (Text/Bild/Video) | offen | siehe Block 3 |
 | – | Telli SH | offen | siehe Block 4 |
