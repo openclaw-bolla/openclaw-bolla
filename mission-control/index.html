@@ -834,12 +834,13 @@ html, body {
             <div class="nav-group-header" id="nav-group-header-projekte" onclick="event.stopPropagation();toggleNavGroup('projekte')">
               <span class="nav-group-grip">⠿</span><span class="icon">🗂️</span>
               <span>Projekte</span>
-              <span class="nav-group-count">2</span>
+              <span class="nav-group-count">3</span>
               <span class="nav-group-chevron" id="nav-chevron-projekte">▶</span>
             </div>
             <div class="nav-group-items" id="nav-group-items-projekte">
               <div class="nav-item nav-subitem" data-page="projekte"><span class="icon">🏡</span><span>Immobilienkauf Bayern</span></div>
               <div class="nav-item nav-subitem" data-page="urlaub"><span class="icon">✈️</span><span>Urlaubsplanung 2026</span></div>
+              <div class="nav-item nav-subitem" data-page="ki-workshop"><span class="icon">🎓</span><span>KI-Workshop</span></div>
             </div>
           </div>
         </div>
@@ -1988,6 +1989,47 @@ html, body {
       </div>
 
       <!-- BRAIN -->
+      <!-- KI-WORKSHOP -->
+      <div class="page" id="page-ki-workshop">
+        <div style="max-width:1000px;margin:0 auto">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="width:44px;height:44px;border-radius:11px;flex-shrink:0;background:linear-gradient(135deg,#8b5cf6,#ec4899);display:flex;align-items:center;justify-content:center;font-size:24px">🎓</div>
+              <div>
+                <div style="font-size:18px;font-weight:700;color:var(--bright)">KI-Workshop für Lehrerkollegen</div>
+                <div style="font-size:13px;color:var(--dim)" id="ws-subtitle">Projektwoche Lessing-Gymnasium · Ideen-Sammlung</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button id="ws-edit-btn" onclick="wsToggleEdit()" style="padding:7px 14px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.4);border-radius:7px;color:#c4b5fd;font-size:14px;cursor:pointer">✏️ Bearbeiten</button>
+              <button onclick="loadKiWorkshop()" title="Neu laden" style="padding:7px 12px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:7px;color:var(--dim);font-size:15px;cursor:pointer">↺</button>
+            </div>
+          </div>
+
+          <!-- Auftrag an Bolla -->
+          <div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.3);border-radius:12px;padding:14px 16px;margin-bottom:16px">
+            <div style="font-size:13px;font-weight:700;color:#c4b5fd;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">📤 Auftrag an Bolla</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <input id="ws-auftrag-input" type="text" placeholder="z.B. erzeuge die Meilenstein-Folie" style="flex:1;min-width:200px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 12px;font-size:14px;outline:none;font-family:inherit" onkeydown="if(event.key==='Enter')wsSendAuftrag()">
+              <button onclick="wsSendAuftrag()" style="padding:9px 18px;background:linear-gradient(135deg,#8b5cf6,#ec4899);border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:600;cursor:pointer">Senden</button>
+            </div>
+            <div style="font-size:12px;color:var(--dim);margin-top:6px">Landet in der Auftrags-Liste. Bolla arbeitet sie ab, sobald die nächste Session läuft.</div>
+            <div id="ws-auftraege-list" style="margin-top:10px"></div>
+          </div>
+
+          <!-- Inhalt: gerendert ODER Editor -->
+          <div id="ws-content" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;line-height:1.6;font-size:15px"><div class="loading">Lade…</div></div>
+          <div id="ws-editor-wrap" style="display:none">
+            <textarea id="ws-editor" style="width:100%;box-sizing:border-box;min-height:60vh;background:var(--card);border:1px solid rgba(139,92,246,0.4);border-radius:12px;color:var(--text);padding:16px;font-family:monospace;font-size:13px;line-height:1.5;outline:none;resize:vertical"></textarea>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button onclick="wsSave()" style="padding:9px 20px;background:linear-gradient(135deg,#8b5cf6,#ec4899);border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:600;cursor:pointer">💾 Speichern</button>
+              <button onclick="wsToggleEdit()" style="padding:9px 16px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--dim);font-size:14px;cursor:pointer">Abbrechen</button>
+              <span id="ws-save-status" style="font-size:13px;color:#4ade80;align-self:center"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- PROJEKTE -->
       <div class="page" id="page-projekte">
         <div style="max-width:1200px;margin:0 auto">
@@ -3528,6 +3570,7 @@ function showPage(page) {
   if (page === 'redesigns')  loadRedesigns();
   if (page === 'clipboard')  loadClipboard();
   if (page === 'projekte')   loadProjekte();
+  if (page === 'ki-workshop') loadKiWorkshop();
   if (page === 'urlaub')     loadTravel();
   if (page === 'fotoanalyse') loadFotoAnalyse();
   if (page === 'kiforum') kifLoad();
@@ -3593,7 +3636,7 @@ function toggleNavSection(name) {
 function openSectionForPage(page) {
   const sectionMap = {
     dashboard: 'uebersicht', bolla: 'uebersicht',
-    schule: 'arbeit', korrektur: 'arbeit', differenzierung: 'arbeit', kalender: 'arbeit', email: 'arbeit', clipboard: 'arbeit', projekte: 'arbeit', urlaub: 'arbeit',
+    schule: 'arbeit', korrektur: 'arbeit', differenzierung: 'arbeit', kalender: 'arbeit', email: 'arbeit', clipboard: 'arbeit', projekte: 'arbeit', 'ki-workshop': 'arbeit', urlaub: 'arbeit',
     robin: 'familie', geburtstage: 'familie',
     localserver: 'ki', redesigns: 'ki', bildgen: 'ki', suno: 'ki',
     wetter: 'info', system: 'info', claudecode: 'info', surface: 'info', brain: 'info'
@@ -6678,6 +6721,161 @@ function renderMarkdown(text) {
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\n/g, '<br>');
   return html;
+}
+
+// ============ KI-WORKSHOP PROJEKT-SEITE ============
+let _wsRawMd = '';
+
+function wsInline(s) {
+  // Inline-Formatierung auf bereits escaptem Text
+  s = s.replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.3);padding:1px 5px;border-radius:3px;font-size:0.9em">$1</code>');
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--bright)">$1</strong>');
+  s = s.replace(/~~(.+?)~~/g, '<span style="opacity:0.5;text-decoration:line-through">$1</span>');
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color:#c4b5fd">$1</a>');
+  return s;
+}
+
+function wsRenderMd(md) {
+  const lines = md.split('\n');
+  let html = '', i = 0;
+  const esc = t => t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  while (i < lines.length) {
+    let line = lines[i];
+    // Tabelle (Zeile mit | und Folgezeile mit ---)
+    if (/^\s*\|/.test(line) && i+1 < lines.length && /^\s*\|?[\s:|-]+\|/.test(lines[i+1])) {
+      const head = line.split('|').map(c=>c.trim()).filter((c,idx,a)=>idx>0&&idx<a.length-1);
+      i += 2;
+      let rows = '';
+      while (i < lines.length && /^\s*\|/.test(lines[i])) {
+        const cells = lines[i].split('|').map(c=>c.trim()).filter((c,idx,a)=>idx>0&&idx<a.length-1);
+        rows += '<tr>' + cells.map(c=>`<td style="padding:5px 10px;border-top:1px solid var(--border)">${wsInline(esc(c))}</td>`).join('') + '</tr>';
+        i++;
+      }
+      html += `<table style="border-collapse:collapse;margin:10px 0;width:100%;font-size:0.95em"><thead><tr>${head.map(h=>`<th style="padding:6px 10px;text-align:left;color:#c4b5fd;border-bottom:2px solid rgba(139,92,246,0.4)">${wsInline(esc(h))}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
+      continue;
+    }
+    // Headings
+    let m;
+    if (m = line.match(/^(#{1,4})\s+(.*)/)) {
+      const lv = m[1].length;
+      const sizes = {1:'1.5em',2:'1.25em',3:'1.08em',4:'1em'};
+      const mt = lv<=2 ? '18px':'12px';
+      html += `<div style="font-size:${sizes[lv]};font-weight:700;color:var(--bright);margin:${mt} 0 6px">${wsInline(esc(m[2]))}</div>`;
+      i++; continue;
+    }
+    // HR
+    if (/^\s*---+\s*$/.test(line)) { html += '<hr style="border:none;border-top:1px solid var(--border);margin:14px 0">'; i++; continue; }
+    // Blockquote
+    if (/^\s*>\s?/.test(line)) {
+      html += `<div style="border-left:3px solid rgba(139,92,246,0.5);padding:4px 12px;margin:6px 0;color:var(--dim);font-size:0.95em">${wsInline(esc(line.replace(/^\s*>\s?/,'')))}</div>`;
+      i++; continue;
+    }
+    // Listen (- * oder Checkbox)
+    if (/^\s*[-*]\s+/.test(line)) {
+      let items = '';
+      while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) {
+        let txt = lines[i].replace(/^\s*[-*]\s+/,'');
+        let box = '';
+        const cb = txt.match(/^\[([ xX])\]\s+(.*)/);
+        if (cb) { box = cb[1].trim() ? '☑ ' : '☐ '; txt = cb[2]; }
+        items += `<li style="margin:2px 0">${box}${wsInline(esc(txt))}</li>`;
+        i++;
+      }
+      html += `<ul style="margin:6px 0;padding-left:22px">${items}</ul>`;
+      continue;
+    }
+    // Nummerierte Liste
+    if (/^\s*\d+\.\s+/.test(line)) {
+      let items = '';
+      while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
+        items += `<li style="margin:2px 0">${wsInline(esc(lines[i].replace(/^\s*\d+\.\s+/,'')))}</li>`;
+        i++;
+      }
+      html += `<ol style="margin:6px 0;padding-left:22px">${items}</ol>`;
+      continue;
+    }
+    // Leerzeile
+    if (/^\s*$/.test(line)) { html += '<div style="height:6px"></div>'; i++; continue; }
+    // Normaler Absatz
+    html += `<div style="margin:3px 0">${wsInline(esc(line))}</div>`;
+    i++;
+  }
+  return html;
+}
+
+async function loadKiWorkshop() {
+  const content = document.getElementById('ws-content');
+  try {
+    const d = await fetch(API + '/api/workshop').then(r => r.json());
+    _wsRawMd = d.markdown || '';
+    content.innerHTML = wsRenderMd(_wsRawMd);
+    wsRenderAuftraege(d.auftraege || []);
+  } catch(e) {
+    content.innerHTML = `<div style="color:#f87171">Fehler: ${e.message}</div>`;
+  }
+}
+
+function wsRenderAuftraege(list) {
+  const el = document.getElementById('ws-auftraege-list');
+  const offen = list.filter(a => a.status === 'offen');
+  if (!offen.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div style="font-size:12px;color:var(--dim);margin-bottom:4px">Offene Aufträge in der Warteschlange:</div>' +
+    offen.map(a => `<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin-bottom:4px;font-size:13px"><span style="color:var(--dim)">${a.ts}</span> · ${a.text.replace(/</g,'&lt;')}</div>`).join('');
+}
+
+function wsToggleEdit() {
+  const content = document.getElementById('ws-content');
+  const editWrap = document.getElementById('ws-editor-wrap');
+  const editBtn = document.getElementById('ws-edit-btn');
+  if (editWrap.style.display === 'none') {
+    document.getElementById('ws-editor').value = _wsRawMd;
+    editWrap.style.display = 'block';
+    content.style.display = 'none';
+    editBtn.style.display = 'none';
+  } else {
+    editWrap.style.display = 'none';
+    content.style.display = 'block';
+    editBtn.style.display = 'inline-block';
+    document.getElementById('ws-save-status').textContent = '';
+  }
+}
+
+async function wsSave() {
+  const md = document.getElementById('ws-editor').value;
+  const status = document.getElementById('ws-save-status');
+  status.style.color = 'var(--dim)'; status.textContent = 'Speichere…';
+  try {
+    const r = await fetch(API + '/api/workshop/save', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({markdown: md})
+    }).then(r => r.json());
+    if (r.ok) {
+      _wsRawMd = md;
+      status.style.color = '#4ade80'; status.textContent = '✓ Gespeichert';
+      document.getElementById('ws-content').innerHTML = wsRenderMd(md);
+      setTimeout(wsToggleEdit, 600);
+    } else {
+      status.style.color = '#f87171'; status.textContent = r.error || 'Fehler';
+    }
+  } catch(e) {
+    status.style.color = '#f87171'; status.textContent = e.message;
+  }
+}
+
+async function wsSendAuftrag() {
+  const input = document.getElementById('ws-auftrag-input');
+  const text = input.value.trim();
+  if (!text) return;
+  try {
+    await fetch(API + '/api/workshop/auftrag', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({text})
+    });
+    input.value = '';
+    loadKiWorkshop();
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
 }
 
 // ============ BOLLA STREAMING + TOOL-CALL RENDERING ============

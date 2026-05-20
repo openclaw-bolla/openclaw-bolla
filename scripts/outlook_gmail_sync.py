@@ -212,6 +212,12 @@ def google_to_outlook_body(contact):
     return body
 
 # ── Index aufbauen ─────────────────────────────────────────────────────────────
+def name_key(s):
+    """Normalisierter Namens-Schlüssel: lowercase, Tokens sortiert.
+    So matchen 'Ingrid Lieb' und 'Lieb Ingrid' aufeinander (sonst Dubletten,
+    wenn ein System Vorname-Nachname und das andere Nachname-Vorname führt)."""
+    return " ".join(sorted(s.lower().split()))
+
 def build_google_index(contacts):
     """E-Mail/Name → (resourceName, etag)"""
     idx = {}
@@ -224,6 +230,7 @@ def build_google_index(contacts):
             dn = n.get("displayName", "").lower()
             if dn:
                 idx[dn] = (rn, etag)
+                idx[name_key(dn)] = (rn, etag)
     return idx
 
 def build_outlook_index(contacts):
@@ -235,6 +242,7 @@ def build_outlook_index(contacts):
         dn = c.get("displayName", "").lower()
         if dn:
             idx[dn] = c
+            idx[name_key(dn)] = c
     return idx
 
 # ── Sync Outlook → Gmail ──────────────────────────────────────────────────────
@@ -255,6 +263,8 @@ def sync_outlook_to_gmail(ms_token, g_token, outlook_contacts, google_index):
                 break
         if not resource_name and name.lower() in google_index:
             resource_name, etag = google_index[name.lower()]
+        if not resource_name and name_key(name) in google_index:
+            resource_name, etag = google_index[name_key(name)]
 
         headers = {"Authorization": f"Bearer {g_token}", "Content-Type": "application/json"}
 
@@ -317,6 +327,8 @@ def sync_gmail_to_outlook(ms_token, g_token, google_contacts, outlook_index):
                 break
         if not outlook_match and name.lower() in outlook_index:
             outlook_match = outlook_index[name.lower()]
+        if not outlook_match and name_key(name) in outlook_index:
+            outlook_match = outlook_index[name_key(name)]
 
         if outlook_match:
             # Bereits in Outlook → Foto sync (Gmail → Outlook) falls Outlook kein Foto hat

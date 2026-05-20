@@ -1312,6 +1312,61 @@ def get_sos_contacts():
             return json.load(f)
     return {"contacts": [], "medical": {}}
 
+# ── KI-Workshop Projekt-Seite ────────────────────────────────────────────────
+WORKSHOP_MD = os.path.join(WORKSPACE, "projektwoche-ki-workshop/workshop-ideen.md")
+WORKSHOP_AUFTRAEGE = os.path.join(WORKSPACE, "projektwoche-ki-workshop/auftraege.json")
+
+def get_workshop():
+    """Liefert Markdown-Inhalt der Workshop-Ideensammlung + offene Aufträge."""
+    md = ""
+    if os.path.exists(WORKSHOP_MD):
+        with open(WORKSHOP_MD, encoding="utf-8") as f:
+            md = f.read()
+    auftraege = []
+    if os.path.exists(WORKSHOP_AUFTRAEGE):
+        try:
+            with open(WORKSHOP_AUFTRAEGE, encoding="utf-8") as f:
+                auftraege = json.load(f)
+        except Exception:
+            auftraege = []
+    return {"markdown": md, "auftraege": auftraege}
+
+def save_workshop(markdown):
+    """Speichert den bearbeiteten Markdown-Inhalt zurück (mit .bak-Sicherung)."""
+    if not markdown or not isinstance(markdown, str):
+        return {"error": "Kein Inhalt"}
+    os.makedirs(os.path.dirname(WORKSHOP_MD), exist_ok=True)
+    # Backup der vorigen Version
+    if os.path.exists(WORKSHOP_MD):
+        import shutil
+        shutil.copy2(WORKSHOP_MD, WORKSHOP_MD + ".bak")
+    with open(WORKSHOP_MD, "w", encoding="utf-8") as f:
+        f.write(markdown)
+    return {"ok": True, "bytes": len(markdown.encode("utf-8"))}
+
+def add_workshop_auftrag(text):
+    """Hängt einen Auftrag an die Queue (Bolla arbeitet ihn bei nächster Session ab)."""
+    text = (text or "").strip()
+    if not text:
+        return {"error": "Leerer Auftrag"}
+    auftraege = []
+    if os.path.exists(WORKSHOP_AUFTRAEGE):
+        try:
+            with open(WORKSHOP_AUFTRAEGE, encoding="utf-8") as f:
+                auftraege = json.load(f)
+        except Exception:
+            auftraege = []
+    auftraege.append({
+        "id": int(datetime.now().timestamp()),
+        "ts": datetime.now().isoformat(timespec="minutes"),
+        "text": text,
+        "status": "offen"
+    })
+    os.makedirs(os.path.dirname(WORKSHOP_AUFTRAEGE), exist_ok=True)
+    with open(WORKSHOP_AUFTRAEGE, "w", encoding="utf-8") as f:
+        json.dump(auftraege, f, ensure_ascii=False, indent=2)
+    return {"ok": True, "count": len([a for a in auftraege if a.get("status") == "offen"])}
+
 # ── Charts ──────────────────────────────────────────────────────────────────
 GEMINI_CONFIG = Path(os.path.join(WORKSPACE, "config/gemini_api.json"))
 PARTY_CHARTS_CACHE = Path(os.path.join(WORKSPACE, "config/party_charts_cache.json"))
@@ -3994,6 +4049,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/quicknotes":     get_quicknotes,
                 "/api/sos/contacts":   get_sos_contacts,
                 "/api/charts":         get_charts,
+                "/api/workshop":       get_workshop,
             }
 
             # Chart Preview (iTunes)
@@ -4300,7 +4356,11 @@ class Handler(BaseHTTPRequestHandler):
             body = {}
 
         try:
-            if self.path == "/api/kosten/guthaben":
+            if self.path == "/api/workshop/save":
+                self._send_json(save_workshop(body.get("markdown", "")))
+            elif self.path == "/api/workshop/auftrag":
+                self._send_json(add_workshop_auftrag(body.get("text", "")))
+            elif self.path == "/api/kosten/guthaben":
                 self._send_json(kosten_update_guthaben(body.get("name",""), body.get("betrag", 0), body.get("info")))
             elif self.path == "/api/travel/recommendation":
                 uid = body.get("id", "sommer2026")
