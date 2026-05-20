@@ -392,25 +392,29 @@ body {
 
 <!-- NOTIZ (Sprachnotiz) -->
 <div class="page" id="p-notiz">
-  <div class="card" style="flex-direction:column;align-items:center;gap:16px;padding:24px 16px">
-    <div id="notiz-status-top" style="font-size:14px;color:var(--text3)">Aufnahme-Taste drücken und sprechen</div>
-    <button id="rec-btn" onclick="toggleRecording()"
-      style="width:90px;height:90px;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:36px;cursor:pointer;box-shadow:0 4px 20px rgba(255,59,48,0.35);transition:transform 0.1s,box-shadow 0.1s">
-      🎙️
-    </button>
-    <div id="rec-timer" style="font-size:24px;font-weight:200;color:var(--text3);font-variant-numeric:tabular-nums;min-height:32px"></div>
+  <div class="card" style="flex-direction:column;align-items:center;gap:14px;padding:22px 16px">
+    <div id="speech-status" style="font-size:14px;color:var(--text3);text-align:center">Auf „Sprechen" tippen und loslegen — Text erscheint sofort</div>
+    <button id="speech-btn" onclick="toggleSpeech()"
+      style="width:100px;height:100px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:42px;cursor:pointer;box-shadow:0 4px 24px rgba(10,132,255,0.4);transition:transform .1s,box-shadow .1s">🎤</button>
+    <div id="speech-live" style="font-size:14px;color:var(--text3);min-height:20px;text-align:center;font-style:italic"></div>
   </div>
-  <div id="notiz-result" style="display:none">
-    <div class="card" style="flex-direction:column;gap:10px">
-      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px">Erkannter Text</div>
-      <div id="notiz-text" style="font-size:17px;line-height:1.5;color:var(--text)"></div>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:10px">
+  <div class="card" style="flex-direction:column;gap:12px">
+    <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px">Erkannter Text</div>
+    <textarea id="notiz-input" class="clip-textarea" placeholder="Hier erscheint dein gesprochener Text — bei Bedarf korrigierbar…" style="min-height:90px;font-size:17px"></textarea>
+    <div style="display:flex;gap:8px">
       <button onclick="notizSenden()" class="clip-btn" title="Nur per Telegram an Chris">📩 Telegram</button>
       <button onclick="notizSpeichern()" class="clip-btn green" title="Nur in Letzte Notizen speichern">💾 Speichern</button>
       <button onclick="notizKopieren()" class="clip-btn" style="background:rgba(175,82,222,0.12);color:var(--purple)" title="Ins geräteübergreifende Clipboard">📋 Clipboard</button>
     </div>
-    <div id="notiz-action-status" style="text-align:center;font-size:14px;min-height:20px;margin-bottom:12px"></div>
+    <div id="notiz-action-status" style="text-align:center;font-size:14px;min-height:20px"></div>
+  </div>
+  <div class="card" style="flex-direction:column;align-items:center;gap:8px;padding:12px">
+    <div id="notiz-status-top" style="font-size:12px;color:var(--text3)">Fallback: Audio-Aufnahme (Whisper) — nur falls Live-Erkennung mal nicht geht</div>
+    <button id="rec-btn" onclick="toggleRecording()"
+      style="width:52px;height:52px;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(255,59,48,0.3)">
+      🎙️
+    </button>
+    <div id="rec-timer" style="font-size:16px;font-weight:200;color:var(--text3);font-variant-numeric:tabular-nums;min-height:20px"></div>
   </div>
   <div id="notiz-verlauf-wrap">
     <div class="section-head">Letzte Notizen</div>
@@ -1179,6 +1183,61 @@ async function loadNotiz() {
   loadNotizVerlauf();
 }
 
+// --- Live-Spracherkennung (Web Speech API, Google-Cloud — kein Upload, sofort) ---
+let _recog = null, _recogActive = false, _speechBase = '';
+function toggleSpeech() {
+  if (_recogActive) { if (_recog) _recog.stop(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const statusEl = document.getElementById('speech-status');
+  const liveEl = document.getElementById('speech-live');
+  const btn = document.getElementById('speech-btn');
+  const ta = document.getElementById('notiz-input');
+  if (!SR) {
+    statusEl.textContent = '⚠️ Live-Erkennung hier nicht verfügbar — nutze die Aufnahme unten';
+    return;
+  }
+  _recog = new SR();
+  _recog.lang = 'de-DE';
+  _recog.interimResults = true;
+  _recog.continuous = false;
+  _recog.maxAlternatives = 1;
+  _speechBase = ta.value.trim() ? ta.value.trim() + ' ' : '';
+  _recog.onstart = () => {
+    _recogActive = true;
+    btn.textContent = '⏹️';
+    btn.style.background = '#ff3b30';
+    btn.style.boxShadow = '0 0 0 8px rgba(255,59,48,0.2),0 4px 24px rgba(255,59,48,0.4)';
+    statusEl.textContent = '🎤 Sprich jetzt — nochmal tippen zum Stoppen';
+    liveEl.textContent = '';
+  };
+  _recog.onresult = (e) => {
+    let finalText = '', interim = '';
+    for (let i = 0; i < e.results.length; i++) {
+      const tr = e.results[i];
+      if (tr.isFinal) finalText += tr[0].transcript + ' ';
+      else interim += tr[0].transcript;
+    }
+    ta.value = (_speechBase + finalText + interim).replace(/\s+/g, ' ').trim();
+    liveEl.textContent = interim ? '… ' + interim : '';
+  };
+  _recog.onerror = (e) => {
+    if (e.error === 'no-speech') return;
+    statusEl.textContent = '⚠️ ' + (e.error === 'not-allowed' ? 'Mikrofon-Zugriff verweigert' : 'Fehler: ' + e.error);
+  };
+  _recog.onend = () => {
+    _recogActive = false;
+    btn.textContent = '🎤';
+    btn.style.background = 'var(--accent)';
+    btn.style.boxShadow = '0 4px 24px rgba(10,132,255,0.4)';
+    liveEl.textContent = '';
+    statusEl.textContent = ta.value.trim()
+      ? '✓ Fertig — prüfen und Aktion wählen'
+      : 'Auf „Sprechen" tippen und loslegen';
+  };
+  try { _recog.start(); }
+  catch (e) { statusEl.textContent = '⚠️ Start fehlgeschlagen: ' + e.message; }
+}
+
 function toggleRecording() {
   if (_mediaRec && _mediaRec.state === 'recording') {
     stopRecording(); return;
@@ -1204,7 +1263,6 @@ async function startRecording() {
     btn.textContent = '⏹️';
     btn.style.animation = 'recPulse 1.2s ease infinite';
     document.getElementById('notiz-status-top').textContent = 'Aufnahme läuft — Taste erneut drücken zum Stoppen';
-    document.getElementById('notiz-result').style.display = 'none';
     _recInterval = setInterval(() => {
       _recSecs++;
       const m = Math.floor(_recSecs / 60).toString().padStart(2, '0');
@@ -1252,9 +1310,9 @@ async function processRecording() {
     }
     if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
     const text = d.text || d.error || '🔇 Keine klare Sprache erkannt (näher ans Mic / lauter sprechen)';
-    document.getElementById('notiz-text').textContent = text;
-    document.getElementById('notiz-result').style.display = 'block';
-    statusEl.textContent = 'Fertig — was möchtest du tun?';
+    const ta = document.getElementById('notiz-input');
+    ta.value = ta.value.trim() ? (ta.value.trim() + ' ' + text) : text;
+    statusEl.textContent = 'Fertig — Text steht oben im Feld';
     btn.textContent = '🎙️';
     btn.style.background = 'var(--red)';
     btn.style.boxShadow = '0 4px 20px rgba(255,59,48,0.35)';
@@ -1266,7 +1324,7 @@ async function processRecording() {
 
 async function notizSenden() {
   // 📩 Telegram-Button: NUR Telegram, kein Speichern
-  const text = document.getElementById('notiz-text').textContent;
+  const text = document.getElementById('notiz-input').value.trim();
   if (!text) return;
   const st = document.getElementById('notiz-action-status');
   st.textContent = '📩 Wird gesendet…'; st.style.color = 'var(--text3)';
@@ -1280,7 +1338,7 @@ async function notizSenden() {
 
 async function notizSpeichern() {
   // 💾 Speichern-Button: NUR in "Letzte Notizen", kein Telegram
-  const text = document.getElementById('notiz-text').textContent;
+  const text = document.getElementById('notiz-input').value.trim();
   if (!text) return;
   const st = document.getElementById('notiz-action-status');
   st.textContent = '💾 Wird gespeichert…'; st.style.color = 'var(--text3)';
@@ -1295,7 +1353,7 @@ async function notizSpeichern() {
 
 async function notizKopieren() {
   // 📋 Kopieren-Button: ins gclip (geräteübergreifend, nicht Windows-Zwischenablage)
-  const text = document.getElementById('notiz-text').textContent;
+  const text = document.getElementById('notiz-input').value.trim();
   if (!text) return;
   const st = document.getElementById('notiz-action-status');
   st.textContent = '📋 Ins Clipboard…'; st.style.color = 'var(--text3)';
