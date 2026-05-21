@@ -2475,7 +2475,7 @@ html, body {
                        color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
             </div>
           </div>
-          <div id="suno-school-fields" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+          <div id="suno-school-fields" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">
             <div>
               <label style="font-size:13px;color:var(--dim);display:block;margin-bottom:3px">Klasse</label>
               <input id="suno-klasse" type="text" placeholder="z.B. 7b"
@@ -2491,6 +2491,12 @@ html, body {
             <div>
               <label style="font-size:13px;color:var(--dim);display:block;margin-bottom:3px">Geburtstag</label>
               <input id="suno-geburtstag" type="text" placeholder="z.B. 21.04."
+                style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
+                       color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:13px;color:var(--dim);display:block;margin-bottom:3px">Abspieltag <span style="color:var(--accent);font-style:italic">(optional)</span></label>
+              <input id="suno-abspieltag" type="text" placeholder="z.B. 27.05."
                 style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
                        color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
             </div>
@@ -2515,6 +2521,12 @@ html, body {
                      font-weight:700;font-size:14px;padding:9px 24px;cursor:pointer;
                      box-shadow:0 2px 12px rgba(124,58,237,0.4);transition:opacity .2s">
               ✨ Generieren
+            </button>
+            <button id="suno-retry-btn" onclick="sunoGenerate()" style="display:none;
+              background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);
+              font-weight:600;font-size:14px;padding:9px 20px;cursor:pointer;transition:all .2s"
+              onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+              🎲 Nochmal
             </button>
             <span id="suno-status" style="font-size:13px;color:var(--dim)"></span>
           </div>
@@ -2889,7 +2901,7 @@ html, body {
         /* Characters */
         .kif-char { position:absolute; bottom:0; z-index:10; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; transition:transform .2s; }
         .kif-char:hover { transform:scale(1.05) translateY(-4px); }
-        #kif-chris { left:4%; }
+        #kif-chris { left:4%; bottom:-20px; }
         #kif-bolla { right:4%; }
         .kif-char img { filter:drop-shadow(0 8px 24px rgba(0,0,0,0.8)); mix-blend-mode:multiply; }
         .kif-char-label { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.45); background:rgba(0,0,0,0.4); padding:2px 7px; border-radius:10px; }
@@ -3095,7 +3107,7 @@ html, body {
             <!-- Chris -->
             <div class="kif-char" id="kif-chris" onclick="kifShowInput()" title="These eingeben">
               <video autoplay loop muted playsinline height="230"
-                style="transform-origin:center bottom;display:block;mix-blend-mode:multiply">
+                style="transform-origin:center bottom;display:block">
                 <source src="/api/chris/avatar/shrug/webm" type="video/webm">
                 <img src="/api/kiforum/chris" height="230" alt="Chris">
               </video>
@@ -9915,6 +9927,7 @@ async function sunoGenerate(feedback = '', prevLyrics = '') {
         klasse: isDefault ? document.getElementById('suno-klasse').value.trim() : '',
         alter: isDefault ? document.getElementById('suno-alter').value.trim() : '',
         geburtstag: isDefault ? document.getElementById('suno-geburtstag').value.trim() : '',
+        abspieltag: isDefault ? document.getElementById('suno-abspieltag').value.trim() : '',
         hit: document.getElementById('suno-hit').value.trim(),
         feedback
       })
@@ -9928,6 +9941,7 @@ async function sunoGenerate(feedback = '', prevLyrics = '') {
     document.getElementById('suno-lyrics-placeholder').style.display = 'none';
     document.getElementById('suno-result-grid').style.display = 'grid';
     document.getElementById('suno-feedback').value = '';
+    document.getElementById('suno-retry-btn').style.display = '';
     status.textContent = '✅ Fertig!';
     sunoShowPopup();
   } catch(e) {
@@ -9954,11 +9968,13 @@ function sunoReset() {
   document.getElementById('suno-klasse').value = '';
   document.getElementById('suno-alter').value = '';
   document.getElementById('suno-geburtstag').value = '';
+  document.getElementById('suno-abspieltag').value = '';
   document.getElementById('suno-hit').value = '';
   document.getElementById('suno-feedback').value = '';
   sunoLastLyrics = '';
   sunoSetLang('de');
   sunoKontextChanged();
+  document.getElementById('suno-retry-btn').style.display = 'none';
   document.getElementById('suno-result-grid').style.display = 'none';
   document.getElementById('suno-lyrics-placeholder').style.display = 'block';
   document.getElementById('suno-status').textContent = '';
