@@ -5125,6 +5125,7 @@ Antworte NUR als reines JSON ohne Markdown:
                 klasse = body.get("klasse", "").strip()
                 alter = body.get("alter", "").strip()
                 geburtstag = body.get("geburtstag", "").strip()
+                abspieltag = body.get("abspieltag", "").strip()
                 sprache = body.get("sprache", "de")
                 hit = body.get("hit", "").strip()
                 kontext = body.get("kontext", "").strip()
@@ -5145,8 +5146,11 @@ Antworte NUR als reines JSON ohne Markdown:
                                  "English phonetic spelling that makes an English AI singer pronounce it exactly like a German "
                                  "speaker would. Rules: (1) Use hyphenated syllables if the name has multiple syllables "
                                  "(e.g. 'Jette' → 'Yet-teh', 'Jan' → 'Yahn', 'Jens' → 'Yens', 'Grete' → 'Greh-teh', "
-                                 "'Heinz' → 'Hynts'). (2) Every syllable must be pronounceable by an English singer. "
+                                 "'Heinz' → 'Hynts', 'Emilia' → 'Eh-MEE-lee-ah', 'Julia' → 'YOO-lee-ah', 'Maria' → 'Mah-REE-ah'). "
+                                 "(2) Every syllable must be pronounceable by an English singer. "
                                  "(3) Use 'eh' for short German e, 'ah' for long German a, 'oo' for German u, 'y' for German j. "
+                                 "CRITICAL: Never merge a consonant with 'y+vowel' into one syllable — always split: "
+                                 "'-lia' → '-lee-ah', '-ria' → '-ree-ah', '-nia' → '-nee-ah', '-mia' → '-mee-ah'. "
                                  "(4) Replace EVERY occurrence of the name in the lyrics with this phonetic spelling. "
                                  "(5) Do NOT use parenthetical hints or footnotes — only the phonetic spelling in the text.")
                 else:
@@ -5165,34 +5169,79 @@ Antworte NUR als reines JSON ohne Markdown:
                 else:
                     feedback_inst = ""
 
-                def gb_kontext(gb_str):
-                    """Berechnet zeitlichen Abstand zum Geburtstag und gibt klaren Kontext-Hinweis zurück."""
+                def _parse_date(s):
+                    from datetime import date as _date
+                    seg = [x.strip() for x in s.strip().rstrip(".").split(".") if x.strip()]
+                    day, month = int(seg[0]), int(seg[1])
+                    if len(seg) >= 3:
+                        y = int(seg[2]); year = 2000 + y if y < 100 else y
+                    else:
+                        year = _date.today().year
+                    return _date(year, month, day)
+
+                def gb_kontext(gb_str, ref=None):
                     if not gb_str:
                         return ""
                     from datetime import date as _date
-                    today = _date.today()
-                    seg = [s.strip() for s in gb_str.strip().rstrip(".").split(".") if s.strip()]
+                    ref = ref or _date.today()
                     try:
-                        day, month = int(seg[0]), int(seg[1])
-                        if len(seg) >= 3:
-                            y = int(seg[2]); year = 2000 + y if y < 100 else y
-                        else:
-                            year = today.year
-                        bd = _date(year, month, day)
-                        delta = (bd - today).days
-                        ds = f"{day:02d}.{month:02d}.{year}"
+                        bd = _parse_date(gb_str)
+                        delta = (bd - ref).days
+                        ds = bd.strftime("%d.%m.%Y")
+                        ref_info = f" (Abspieltag: {ref.strftime('%d.%m.%Y')})" if ref != _date.today() else ""
                         if delta == 0:
-                            return f"Geburtstag: heute ({ds})"
+                            return f"Geburtstag: heute ({ds}){ref_info}"
                         elif 1 <= delta <= 7:
-                            return f"Geburtstag: in {delta} Tagen ({ds}) — noch nicht heute"
+                            return f"Geburtstag: in {delta} Tagen ({ds}){ref_info}"
                         elif delta > 7:
-                            return f"Geburtstag: am {ds} (in {delta} Tagen) — noch nicht heute"
+                            return f"Geburtstag: am {ds} (in {delta} Tagen){ref_info}"
                         elif -7 <= delta < 0:
-                            return f"Geburtstag: vor {-delta} Tagen ({ds})"
+                            return f"Geburtstag: vor {-delta} Tagen ({ds}){ref_info}"
                         else:
-                            return f"Geburtstag: {ds} (schon vorbei)"
+                            return f"Geburtstag: {ds} (vor {-delta} Tagen){ref_info}"
                     except Exception:
                         return f"Geburtstag: {gb_str}"
+
+                def gb_lyrics_hint(gb_str, ref=None):
+                    if not gb_str:
+                        return ""
+                    from datetime import date as _date
+                    ref = ref or _date.today()
+                    try:
+                        bd = _parse_date(gb_str)
+                        delta = (bd - ref).days
+                        if delta == 0:
+                            timing = "Der Geburtstag ist heute (am Abspieltag)."
+                            tone = "Feier-Stimmung, Gegenwart."
+                        elif delta == 1:
+                            timing = "Der Geburtstag ist morgen (einen Tag nach dem Abspieltag)."
+                            tone = "Vorfreude, Spannung — kreativ umsetzen, NICHT als wäre es heute."
+                        elif 2 <= delta <= 7:
+                            timing = f"Der Geburtstag ist in {delta} Tagen (nach dem Abspieltag)."
+                            tone = "Vorfreude, Countdown-Gefühl — kreativ umsetzen, NICHT als wäre es heute."
+                        elif delta > 7:
+                            timing = f"Der Geburtstag ist in {delta} Tagen (nach dem Abspieltag)."
+                            tone = "Ankündigung, Vorgeschmack — kreativ umsetzen, NICHT als wäre es heute."
+                        elif delta == -1:
+                            timing = "Der Geburtstag war gestern (einen Tag vor dem Abspieltag)."
+                            tone = "Nachträgliche Gratulation, leicht selbstironisch — kreativ umsetzen, NICHT als wäre es heute."
+                        elif -7 <= delta < 0:
+                            timing = f"Der Geburtstag war vor {-delta} Tagen (vor dem Abspieltag)."
+                            tone = "Verspätete Gratulation, Humor über die Verspätung — kreativ umsetzen, NICHT als wäre es heute."
+                        else:
+                            timing = f"Der Geburtstag war vor {-delta} Tagen (vor dem Abspieltag)."
+                            tone = "Deutlich verspätete Gratulation, Augenzwinkern über die Verzögerung — NICHT als wäre es heute."
+                        return f"ZEITLICHER KONTEXT FÜR DIE LYRICS: {timing} Stimmung: {tone} Die sprachliche Umsetzung ist frei — Hauptsache der zeitliche Bezug stimmt."
+                    except Exception:
+                        return ""
+
+                from datetime import date as _dt_date
+                ref_date = None
+                if abspieltag:
+                    try:
+                        ref_date = _parse_date(abspieltag)
+                    except Exception:
+                        ref_date = None
 
                 lehrer = "Mister Mandel" if sprache != "de" else "Herrn Mandel"
                 STYLE_RULE = ("Suno style prompt in English, 15-25 words. STRICT RULE: NO artist names, NO band names, "
@@ -5202,6 +5251,26 @@ Antworte NUR als reines JSON ohne Markdown:
                               "powerful male vocals'")
                 TITLE_RULE = ("kreativer Songtitel mit passenden Emojis"
                               + (" — verwende im Titel immer die ORIGINAL-Schreibweise des Namens, nicht die phonetische" if is_personal else ""))
+
+                # Silbenanzahl grob berechnen (Vokalgruppen zählen)
+                def _syllables(word):
+                    return len(_re2.findall(r'[aeiouäöüyAEIOUÄÖÜY]+', word)) if word else 0
+
+                # Rhythmus-Hinweis für Namen mit ≥3 Silben
+                def _rhythm_hint(n):
+                    s = _syllables(n)
+                    if not n or s < 3:
+                        return ""
+                    return (f"RHYTHMUS-HINWEIS: '{n}' hat {s} Silben — passe den Namen so in die Verszeilen ein, "
+                            f"dass er natürlich klingt und den Takt nicht bricht. "
+                            f"Notfalls Kurzform oder Betonung anpassen.")
+
+                # Hinweis wenn Hit-Stil + Zeitkontext kombiniert werden
+                def _style_timing_hint(hit_str, gb_str, ref):
+                    if not hit_str or not gb_str:
+                        return ""
+                    return ("STIL-TIMING: Stelle sicher, dass der zeitliche Ton der Lyrics (Vorfreude/Rückblick) "
+                            "harmonisch mit dem Stil des Referenz-Songs zusammenpasst — kein Widerspruch zwischen Stimmung und Musik-Energie.")
 
                 # Pflichtinhalt-Zeile je nach Name-Typ
                 if is_personal:
@@ -5218,6 +5287,9 @@ Antworte NUR als reines JSON ohne Markdown:
                 else:
                     name_inst = ""  # kein Name: nur anlassbezogen
 
+                rhythm_hint = _rhythm_hint(name) if is_personal else ""
+                style_timing_hint = _style_timing_hint(hit, geburtstag, ref_date)
+
                 if is_school:
                     who = f"Schüler/in: {name}" if is_personal else (f"Gruppe/Klasse: {name}" if name else "Allgemeiner Klassen-Song")
                     prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Geburtstagssong {lang_inst}.
@@ -5225,8 +5297,11 @@ Antworte NUR als reines JSON ohne Markdown:
 {who}
 Klasse: {klasse}
 Alter: {alter}
-{gb_kontext(geburtstag)}
+{gb_kontext(geburtstag, ref_date)}
+{gb_lyrics_hint(geburtstag, ref_date)}
 {hit_inst}
+{rhythm_hint}
+{style_timing_hint}
 {feedback_inst}
 
 Pflichtinhalte im Liedtext:
@@ -5248,7 +5323,11 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
 
 {who_line}
 Anlass / Kontext: {kontext}
+{gb_kontext(geburtstag, ref_date)}
+{gb_lyrics_hint(geburtstag, ref_date)}
 {hit_inst}
+{rhythm_hint}
+{style_timing_hint}
 {feedback_inst}
 {('Pflichtinhalt: ' + name_inst) if name_inst else ''}
 
@@ -5262,13 +5341,18 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
 }}"""
                 import subprocess, shutil
                 claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
-                result = subprocess.run(
-                    [claude_bin, "-p", "--output-format", "json", prompt],
-                    capture_output=True, text=True, timeout=120,
-                    cwd=os.path.expanduser("~")
-                )
+                try:
+                    result = subprocess.run(
+                        [claude_bin, "-p", "--output-format", "json", prompt],
+                        capture_output=True, text=True, timeout=240,
+                        stdin=subprocess.DEVNULL,
+                        cwd=os.path.expanduser("~")
+                    )
+                except subprocess.TimeoutExpired:
+                    self._send_json({"error": "Song-Generierung hat zu lange gedauert (>240s). Bitte nochmal versuchen."}, status=500)
+                    return
                 if result.returncode != 0:
-                    self._send_json({"error": result.stderr[:200]}, status=500)
+                    self._send_json({"error": result.stderr[:300] or "claude Fehler (kein stderr)"}, status=500)
                     return
                 raw = json.loads(result.stdout).get("result", "")
                 raw = raw.strip()

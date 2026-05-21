@@ -36,7 +36,7 @@ monat = tomorrow.strftime("%B %Y").replace(
 text = (
     f"📸 *Aimor Foto-Push morgen früh!*\n\n"
     f"Morgen ({tomorrow.strftime('%d.%m.')}) um 08:00 Uhr schicke ich automatisch "
-    f"20 neue Fotos auf den Rahmen.\n\n"
+    f"50 neue Fotos auf den Rahmen.\n\n"
     f"📁 Aktueller Ordner: `{photo_folder}`\n\n"
     f"Falls du einen anderen Ordner willst (z.B. Urlaub-Fotos), "
     f"trag ihn in `~/.aimor\\_config` ein:\n"

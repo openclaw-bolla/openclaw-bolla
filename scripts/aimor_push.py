@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Aimor Photo Frame Auto-Push
-Lädt ~20 Fotos aus OneDrive (Mandels) auf den Aimor-Rahmen PF1007
+Lädt ~50 Fotos aus OneDrive (Mandels) auf den Aimor-Rahmen PF1007
 und löscht vorher alle vom letzten Run gesendeten Fotos.
 
 Verwendung: python3 aimor_push.py
@@ -25,7 +25,7 @@ log = logging.getLogger("aimor")
 
 # ─── Konfiguration ────────────────────────────────────────────────────────────
 ONEDRIVE_FOTOS  = Path("/mnt/d/OneDrive/Mandels")  # Ordner mit Familienfotos inkl. Unterordner
-FOTOS_PRO_RUN   = 20
+FOTOS_PRO_RUN   = 50
 
 FORMALKEY    = "3b28db17-152e-4038-b60e-8502ca7626e6"
 CHANNEL_ID   = "1002-2020-0001"
