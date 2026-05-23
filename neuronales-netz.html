@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neuronales Netz — Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #06091a;
+    color: #e2e8f0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+  #header {
+    text-align: center;
+    padding: 28px 20px 8px;
+    z-index: 10;
+    position: relative;
+  }
+  #header h1 {
+    font-size: clamp(22px, 3vw, 36px);
+    font-weight: 800;
+    background: linear-gradient(135deg, #a78bfa, #60a5fa, #a78bfa);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShift 4s ease infinite;
+    letter-spacing: -0.5px;
+  }
+  #header p {
+    font-size: 14px;
+    color: #64748b;
+    margin-top: 6px;
+  }
+  @keyframes gradientShift {
+    0%,100% { background-position: 0% center; }
+    50%      { background-position: 100% center; }
+  }
+  #canvas-wrap {
+    position: relative;
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  canvas { display: block; }
+  #controls {
+    padding: 20px 20px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    z-index: 10;
+    position: relative;
+  }
+  #btn-fire {
+    padding: 16px 56px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: #fff;
+    background: linear-gradient(135deg, #7c3aed, #2563eb);
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    box-shadow: 0 0 30px rgba(124, 58, 237, 0.5), 0 4px 20px rgba(0,0,0,0.4);
+    transition: transform .15s, box-shadow .15s;
+    position: relative;
+    overflow: hidden;
+  }
+  #btn-fire::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    border-radius: inherit;
+  }
+  #btn-fire:hover  { transform: translateY(-2px); box-shadow: 0 0 50px rgba(124, 58, 237, 0.7), 0 8px 28px rgba(0,0,0,0.5); }
+  #btn-fire:active { transform: translateY(0); }
+  #btn-fire:disabled { opacity: 0.5; cursor: default; transform: none; }
+  #status {
+    font-size: 13px;
+    color: #475569;
+    height: 18px;
+    transition: color .3s;
+  }
+  #status.active { color: #a78bfa; }
+  #legend {
+    display: flex;
+    gap: 24px;
+    font-size: 12px;
+    color: #475569;
+  }
+  #legend span { display: flex; align-items: center; gap: 5px; }
+  #legend .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: radial-gradient(circle, #a78bfa, #7c3aed);
+    box-shadow: 0 0 6px #7c3aed;
+  }
+  #legend .dot.blue { background: radial-gradient(circle, #93c5fd, #2563eb); box-shadow: 0 0 6px #2563eb; }
+  #legend .dot.green { background: radial-gradient(circle, #6ee7b7, #059669); box-shadow: 0 0 6px #059669; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>🧠 Neuronales Netz</h1>
+  <p>Wie Informationen durch ein KI-Modell fließen</p>
+</div>
+
+<div id="canvas-wrap">
+  <canvas id="canvas"></canvas>
+</div>
+
+<div id="controls">
+  <div id="legend">
+    <span><span class="dot"></span> Eingabe (4)</span>
+    <span><span class="dot blue"></span> Verarbeitung (6)</span>
+    <span><span class="dot green"></span> Ausgabe (3)</span>
+  </div>
+  <button id="btn-fire">⚡ Signal senden</button>
+  <div id="status">Bereit</div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d');
+const btn    = document.getElementById('btn-fire');
+const statusEl = document.getElementById('status');
+
+// ── Layout ────────────────────────────────────────────────────────────────────
+const LAYERS = [4, 6, 3];
+const LAYER_COLORS = [
+  { core: '#a78bfa', glow: '#7c3aed', line: 'rgba(167,139,250,' },
+  { core: '#93c5fd', glow: '#2563eb', line: 'rgba(147,197,253,' },
+  { core: '#6ee7b7', glow: '#059669', line: 'rgba(110,231,183,' },
+];
+const LAYER_LABELS = ['Eingabe', 'Verarbeitung', 'Ausgabe'];
+const NEURON_R = 18;
+
+let W, H, neurons, connections;
+let animating = false;
+let particles = [];
+let t0 = 0;
+
+// ── Resize / Init ─────────────────────────────────────────────────────────────
+function resize() {
+  const wrap = document.getElementById('canvas-wrap');
+  W = wrap.clientWidth;
+  H = wrap.clientHeight;
+  canvas.width  = W;
+  canvas.height = H;
+  buildNetwork();
+}
+
+function buildNetwork() {
+  neurons = [];
+  const marginX = W * 0.12;
+  const usableW  = W - 2 * marginX;
+  const usableH  = H - 60;
+  const topPad   = 30;
+
+  LAYERS.forEach((count, li) => {
+    const x = marginX + usableW * li / (LAYERS.length - 1);
+    for (let ni = 0; ni < count; ni++) {
+      const y = topPad + usableH * (ni + 0.5) / count;
+      neurons.push({
+        x, y, layer: li, idx: ni,
+        act: 0,      // 0..1 activation level
+        phase: Math.random() * Math.PI * 2  // idle breathing offset
+      });
+    }
+  });
+
+  // All-to-all connections between adjacent layers
+  connections = [];
+  for (let li = 0; li < LAYERS.length - 1; li++) {
+    const from = neurons.filter(n => n.layer === li);
+    const to   = neurons.filter(n => n.layer === li + 1);
+    from.forEach(f => to.forEach(t2 => {
+      connections.push({ from: f, to: t2, layer: li,
+        weight: Math.random() * 2 - 1  // -1 to 1
+      });
+    }));
+  }
+}
+
+// ── Animation state ───────────────────────────────────────────────────────────
+// Timeline (ms):
+//   0       - input neurons light up
+//   400     - particles travel input→hidden (staggered)
+//   1300    - hidden neurons fire
+//   1700    - particles travel hidden→output (staggered)
+//   2600    - output neurons fire
+//   4000    - fade out
+const TIMELINE = {
+  inputFire:  0,
+  travel1:    400,
+  hiddenFire: 1300,
+  travel2:    1700,
+  outputFire: 2600,
+  fadeStart:  3200,
+  done:       4500,
+};
+
+function fire() {
+  if (animating) return;
+  animating = true;
+  btn.disabled = true;
+  particles = [];
+  // Reset activations
+  neurons.forEach(n => n.act = 0);
+  t0 = performance.now();
+
+  // Schedule hidden fire
+  setTimeout(() => {
+    neurons.filter(n => n.layer === 1).forEach(n => n.act = 1);
+  }, TIMELINE.hiddenFire);
+
+  // Schedule output fire
+  setTimeout(() => {
+    neurons.filter(n => n.layer === 2).forEach(n => n.act = 1);
+    statusEl.textContent = '✅ Ausgabe aktiviert';
+    statusEl.className = 'active';
+  }, TIMELINE.outputFire);
+
+  // Schedule fade
+  setTimeout(() => {
+    statusEl.textContent = 'Bereit';
+    statusEl.className = '';
+  }, TIMELINE.done - 200);
+
+  setTimeout(() => {
+    animating = false;
+    btn.disabled = false;
+    particles = [];
+  }, TIMELINE.done);
+}
+
+// ── Particle class ────────────────────────────────────────────────────────────
+class Particle {
+  constructor(from, to, startMs, layerIdx) {
+    this.from  = from;
+    this.to    = to;
+    this.start = startMs;
+    this.dur   = 700 + Math.random() * 200;
+    this.layer = layerIdx;
+    this.prog  = 0;
+    this.trail = [];  // history of positions
+    this.done  = false;
+  }
+  update(now) {
+    const elapsed = now - this.start;
+    if (elapsed < 0) return;
+    this.prog = Math.min(elapsed / this.dur, 1);
+    const x = this.from.x + (this.to.x - this.from.x) * this.prog;
+    const y = this.from.y + (this.to.y - this.from.y) * this.prog;
+    this.trail.push({x, y, a: 1});
+    if (this.trail.length > 18) this.trail.shift();
+    if (this.prog >= 1) this.done = true;
+  }
+  draw() {
+    if (this.prog <= 0) return;
+    const x = this.from.x + (this.to.x - this.from.x) * this.prog;
+    const y = this.from.y + (this.to.y - this.from.y) * this.prog;
+    const c = LAYER_COLORS[this.layer];
+
+    // Trail
+    for (let i = 0; i < this.trail.length - 1; i++) {
+      const alpha = (i / this.trail.length) * 0.6;
+      const size  = 3 * (i / this.trail.length);
+      ctx.beginPath();
+      ctx.arc(this.trail[i].x, this.trail[i].y, size, 0, Math.PI * 2);
+      ctx.fillStyle = c.line + alpha + ')';
+      ctx.fill();
+    }
+
+    // Head glow
+    const grd = ctx.createRadialGradient(x, y, 0, x, y, 9);
+    grd.addColorStop(0, 'rgba(255,255,255,0.95)');
+    grd.addColorStop(0.4, c.line + '0.8)');
+    grd.addColorStop(1, c.line + '0)');
+    ctx.beginPath();
+    ctx.arc(x, y, 9, 0, Math.PI * 2);
+    ctx.fillStyle = grd;
+    ctx.fill();
+  }
+}
+
+// ── Spawn particles ───────────────────────────────────────────────────────────
+function spawnWave(fromLayer, baseDelay) {
+  const from = neurons.filter(n => n.layer === fromLayer);
+  const to   = neurons.filter(n => n.layer === fromLayer + 1);
+  from.forEach((f, fi) => {
+    to.forEach((t2, ti) => {
+      const stagger = fi * 60 + ti * 20;
+      particles.push(new Particle(f, t2, t0 + baseDelay + stagger, fromLayer));
+    });
+  });
+}
+
+// ── Draw ──────────────────────────────────────────────────────────────────────
+function drawConnection(conn) {
+  const {from: f, to, layer} = conn;
+  const c = LAYER_COLORS[layer];
+  const weight = conn.weight;
+  const alpha = 0.06 + Math.abs(weight) * 0.07;
+  ctx.beginPath();
+  ctx.moveTo(f.x, f.y);
+  ctx.lineTo(to.x, to.y);
+  ctx.strokeStyle = c.line + alpha + ')';
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+}
+
+function drawNeuron(n, now) {
+  const c = LAYER_COLORS[n.layer];
+  const breath = 0.5 + 0.5 * Math.sin(now * 0.001 * 1.4 + n.phase);
+  const glowR = NEURON_R + 6 + breath * 4 + n.act * 22;
+
+  // Outer glow
+  if (n.act > 0.01 || breath > 0.3) {
+    const grdG = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR * 2.5);
+    const a = (0.08 + n.act * 0.35) * (0.4 + breath * 0.6);
+    grdG.addColorStop(0, c.line + a + ')');
+    grdG.addColorStop(1, c.line + '0)');
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, glowR * 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = grdG;
+    ctx.fill();
+  }
+
+  // Core fill
+  const grdC = ctx.createRadialGradient(n.x - NEURON_R*0.3, n.y - NEURON_R*0.3, 0, n.x, n.y, NEURON_R);
+  if (n.act > 0.5) {
+    grdC.addColorStop(0, '#ffffff');
+    grdC.addColorStop(0.4, c.core);
+    grdC.addColorStop(1, c.glow);
+  } else {
+    grdC.addColorStop(0, c.line + (0.3 + breath * 0.15) + ')');
+    grdC.addColorStop(1, c.line + (0.08 + breath * 0.05) + ')');
+  }
+  ctx.beginPath();
+  ctx.arc(n.x, n.y, NEURON_R, 0, Math.PI * 2);
+  ctx.fillStyle = grdC;
+  ctx.fill();
+
+  // Border ring
+  ctx.beginPath();
+  ctx.arc(n.x, n.y, NEURON_R, 0, Math.PI * 2);
+  ctx.strokeStyle = c.line + (0.25 + n.act * 0.75 + breath * 0.1) + ')';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Active pulse ring
+  if (n.act > 0.5) {
+    const pulseR = NEURON_R + 8 + (1 - n.act) * 20;
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, pulseR, 0, Math.PI * 2);
+    ctx.strokeStyle = c.line + (n.act * 0.5) + ')';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Decay activation smoothly
+  if (n.act > 0) n.act = Math.max(0, n.act - 0.008);
+}
+
+function drawLayerLabels() {
+  const yBase = H - 14;
+  LAYERS.forEach((count, li) => {
+    const x = neurons.find(n => n.layer === li).x;
+    ctx.fillStyle = '#334155';
+    ctx.font = '13px Segoe UI, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(LAYER_LABELS[li], x, yBase);
+    ctx.fillStyle = '#1e293b';
+    ctx.font = '11px Segoe UI, system-ui, sans-serif';
+    ctx.fillText(LAYERS[li] + ' Neuronen', x, yBase + 14);
+  });
+}
+
+// Subtle background grid
+function drawGrid() {
+  ctx.strokeStyle = 'rgba(148,163,184,0.03)';
+  ctx.lineWidth = 1;
+  const step = 40;
+  for (let x = 0; x < W; x += step) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += step) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+}
+
+// ── Main loop ─────────────────────────────────────────────────────────────────
+let wave1Spawned = false, wave2Spawned = false;
+let inputFired = false;
+
+function loop(now) {
+  ctx.clearRect(0, 0, W, H);
+  drawGrid();
+
+  // Fire input neurons
+  if (animating && !inputFired && now - t0 >= TIMELINE.inputFire) {
+    neurons.filter(n => n.layer === 0).forEach(n => n.act = 1);
+    inputFired = true;
+    statusEl.textContent = '🔵 Eingabe aktiviert…';
+    statusEl.className = 'active';
+  }
+
+  // Spawn particle waves
+  if (animating && !wave1Spawned && now - t0 >= TIMELINE.travel1) {
+    spawnWave(0, TIMELINE.travel1);
+    wave1Spawned = true;
+    statusEl.textContent = '⚡ Signal reist durch Netz…';
+  }
+  if (animating && !wave2Spawned && now - t0 >= TIMELINE.travel2) {
+    spawnWave(1, TIMELINE.travel2);
+    wave2Spawned = true;
+    statusEl.textContent = '⚡ Zweite Welle…';
+  }
+
+  // Reset flags when animation ends
+  if (!animating) {
+    wave1Spawned = false;
+    wave2Spawned = false;
+    inputFired = false;
+  }
+
+  // Draw connections (background layer)
+  connections.forEach(drawConnection);
+
+  // Update + draw particles
+  particles.forEach(p => p.update(now));
+  particles = particles.filter(p => !p.done || p.trail.length > 0);
+  particles.forEach(p => p.draw());
+
+  // Draw neurons (top layer)
+  neurons.forEach(n => drawNeuron(n, now));
+
+  drawLayerLabels();
+
+  requestAnimationFrame(loop);
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+window.addEventListener('resize', resize);
+resize();
+requestAnimationFrame(loop);
+
+btn.addEventListener('click', fire);
+</script>
+</body>
+</html>
