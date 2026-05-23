@@ -597,6 +597,13 @@ html, body {
 #news-summary-body ul { padding-left:18px; margin-bottom:8px; }
 #news-summary-body li { margin-bottom:4px; }
 
+/* ── Bolla Verlauf Sidebar ── */
+.bolla-hist-item {
+  position:relative; padding:8px 28px 8px 12px; cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,0.05); transition:background .15s;
+}
+.bolla-hist-item:hover { background:rgba(124,58,237,0.1); }
+.bolla-hist-item:hover .hist-del-btn { opacity:1 !important; }
 /* ── Newsletter Panel ── */
 #nl-panel .card { margin-bottom:10px; }
 .nl-chip {
@@ -1774,7 +1781,8 @@ html, body {
                 <div id="bolla-model-line" style="font-size:13px;color:var(--dim)">Claude Opus 4.7 · Pro Plan · Live-Tools</div>
               </div>
               <div id="bolla-status" style="font-size:13px;color:var(--success)">🟢 Bereit</div>
-              <button onclick="bollaNewChat()" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;font-size:13px" title="Neuer Chat">🗑️ Neu</button>
+              <button onclick="bollaClear()" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:#f87171;cursor:pointer;font-size:13px" title="/clear — Session speichern &amp; neuen Chat">/clear</button>
+              <button onclick="bollaNewChat()" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer;font-size:13px" title="Neuer Chat (ohne Speichern)">🗑️ Neu</button>
               <a href="https://claude.ai" target="_blank" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--accent);cursor:pointer;font-size:13px;text-decoration:none" title="Vollversion im Browser">↗ Vollversion</a>
             </div>
             <!-- Voice Controls -->
@@ -1819,6 +1827,14 @@ html, body {
             <div style="font-size:13px;color:var(--dim);margin-top:6px;text-align:center">
               Lite-Chat via API — für Dateizugriff, Tools & volle Power: <a href="https://claude.ai" target="_blank" style="color:var(--accent)">Vollversion öffnen ↗</a>
             </div>
+          </div>
+          <!-- Verlauf-Sidebar rechts -->
+          <div id="bolla-history-sidebar" style="width:220px;border-left:1px solid var(--border);display:flex;flex-direction:column;background:var(--bg);flex-shrink:0">
+            <div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+              <span style="font-size:13px;font-weight:600;color:var(--bright)">📋 Verlauf</span>
+              <button onclick="bollaHistoryClear()" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:11px;padding:2px 4px" title="Gesamten Verlauf löschen">✕ Alle</button>
+            </div>
+            <div id="bolla-history-list" style="flex:1;overflow-y:auto;padding:6px 0"></div>
           </div>
         </div>
       </div>
@@ -6701,6 +6717,7 @@ function loadBollaChat() {
     document.getElementById('bolla-chat').innerHTML = html;
     bollaSessionId = sid || null;
   }
+  bollaHistoryRender();
 }
 function saveLmsChat() {
   const chat = document.getElementById('lms-chat');
@@ -6840,6 +6857,90 @@ function bollaRemoveImg() {
   document.getElementById('bolla-img-thumb').src = '';
 }
 
+// ===== VERLAUF =====
+const HISTORY_KEY = 'bolla-chat-history';
+const HISTORY_MAX = 30;
+
+function bollaHistoryLoad() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch(e) { return []; }
+}
+function bollaHistorySave(list) {
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch(e) {}
+}
+
+function bollaHistoryAdd(html) {
+  if (!html || html.length < 100) return;
+  const list = bollaHistoryLoad();
+  const title = (() => {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    const userMsg = tmp.querySelector('.chat-user');
+    const t = userMsg?.textContent?.trim() || '';
+    return t.length > 60 ? t.substring(0, 57) + '…' : (t || 'Session');
+  })();
+  list.unshift({ id: Date.now(), ts: new Date().toISOString(), title, html });
+  if (list.length > HISTORY_MAX) list.splice(HISTORY_MAX);
+  bollaHistorySave(list);
+  bollaHistoryRender();
+}
+
+function bollaHistoryRender() {
+  const el = document.getElementById('bolla-history-list');
+  if (!el) return;
+  const list = bollaHistoryLoad();
+  if (!list.length) {
+    el.innerHTML = '<div style="padding:16px 12px;font-size:12px;color:var(--dim);text-align:center">Noch keine gespeicherten Sessions</div>';
+    return;
+  }
+  el.innerHTML = list.map((s, i) => {
+    const d = new Date(s.ts);
+    const dateStr = d.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit'});
+    const timeStr = d.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'});
+    return `<div class="bolla-hist-item" onclick="bollaHistoryOpen(${i})" title="${s.title}">
+      <div style="font-size:11px;color:var(--dim);margin-bottom:2px">${dateStr} · ${timeStr}</div>
+      <div style="font-size:12px;color:var(--text);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${s.title}</div>
+      <button onclick="event.stopPropagation();bollaHistoryDelete(${i})" style="position:absolute;top:6px;right:6px;background:none;border:none;color:var(--dim);cursor:pointer;font-size:11px;opacity:0;transition:opacity .15s" class="hist-del-btn">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function bollaHistoryOpen(i) {
+  const list = bollaHistoryLoad();
+  const s = list[i];
+  if (!s) return;
+  const chat = document.getElementById('bolla-chat');
+  if (chat) chat.innerHTML = s.html;
+  bollaSessionId = null;
+  document.getElementById('bolla-status').innerHTML = `📂 ${new Date(s.ts).toLocaleDateString('de-DE')}`;
+  document.getElementById('bolla-status').style.color = 'var(--dim)';
+  chat?.scrollTo(0, chat.scrollHeight);
+  // Aktive Markierung
+  document.querySelectorAll('.bolla-hist-item').forEach((el, idx) => {
+    el.style.background = idx === i ? 'rgba(124,58,237,0.15)' : '';
+  });
+}
+
+function bollaHistoryDelete(i) {
+  const list = bollaHistoryLoad();
+  list.splice(i, 1);
+  bollaHistorySave(list);
+  bollaHistoryRender();
+}
+
+function bollaHistoryClear() {
+  if (!confirm('Gesamten Verlauf löschen?')) return;
+  localStorage.removeItem(HISTORY_KEY);
+  bollaHistoryRender();
+}
+
+function bollaClear() {
+  const chat = document.getElementById('bolla-chat');
+  const html = chat?.innerHTML || '';
+  const isEmpty = !html || html.length < 200 || html.includes('Schreib mir was');
+  if (!isEmpty) bollaHistoryAdd(html);
+  bollaNewChat();
+}
+
 function bollaNewChat() {
   bollaSessionId = null;
   bollaRemoveImg();
@@ -6848,6 +6949,7 @@ function bollaNewChat() {
   document.getElementById('bolla-status').innerHTML = '🟢 Bereit';
   document.getElementById('bolla-status').style.color = 'var(--success)';
   saveBollaChat();
+  document.querySelectorAll('.bolla-hist-item').forEach(el => el.style.background = '');
 }
 
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -7460,7 +7562,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ============ MIC / SPEECH-TO-TEXT (lokales Whisper large-v3 via GPU) ============
+// ============ MIC / SPEECH-TO-TEXT (Browser Web Speech API — kein F-Secure-Problem) ============
 let micActive = false;
 
 function micToast(msg, dur=3500) {
@@ -7489,77 +7591,64 @@ function micSetBtn(on) {
   }
 }
 
-async function micToggle() {
+function micToggle() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { micToast('⚠️ Browser unterstützt keine Spracheingabe (Edge/Chrome nötig)', 5000); return; }
+
   if (micActive) {
-    if (window._micMediaRec && window._micMediaRec.state === 'recording') window._micMediaRec.stop();
+    window._sr?.stop();
     return;
   }
   voiceStop();
-  try { if (kifMicActive) kifMicActive = false; } catch(e) {}
 
-  let stream;
-  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-  catch(e) { micToast('❌ Mikrofon gesperrt — Windows: Einstellungen → Datenschutz → Mikrofon → Edge erlauben', 6000); return; }
+  const sr = new SR();
+  sr.lang = 'de-DE';
+  sr.continuous = false;
+  sr.interimResults = true;
+  sr.maxAlternatives = 1;
+  window._sr = sr;
 
-  // Stille-Erkennung via AudioContext
-  const ctx = new AudioContext();
-  await ctx.resume(); // wichtig: Edge startet oft im suspended-Zustand
-  const src = ctx.createMediaStreamSource(stream);
-  const analyser = ctx.createAnalyser();
-  analyser.fftSize = 512;
-  src.connect(analyser);
-  const buf = new Uint8Array(analyser.frequencyBinCount);
-  let silenceTimer = null;
-  let hasSpeech = false;
-  let recordingMs = 0;
-  const silenceCheck = setInterval(() => {
-    recordingMs += 100;
-    analyser.getByteFrequencyData(buf);
-    const vol = buf.reduce((a, b) => a + b, 0) / buf.length;
-    if (vol > 5) {
-      hasSpeech = true;
-      clearTimeout(silenceTimer);
-      silenceTimer = null;
-    } else if (hasSpeech && !silenceTimer && recordingMs > 500) {
-      silenceTimer = setTimeout(() => {
-        if (window._micMediaRec && window._micMediaRec.state === 'recording') window._micMediaRec.stop();
-      }, 800);
+  let finalText = '';
+
+  sr.onstart = () => {
+    micActive = true; micSetBtn(true);
+    micToast('🎙️ Spreche… (stoppt automatisch bei Pause)', 30000);
+  };
+  sr.onresult = (e) => {
+    let interim = '';
+    finalText = '';
+    for (const r of e.results) {
+      if (r.isFinal) finalText += r[0].transcript;
+      else interim += r[0].transcript;
     }
-  }, 100);
-
-  const chunks = [];
-  const mr = new MediaRecorder(stream);
-  window._micMediaRec = mr;
-  mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-  mr.onstop = async () => {
-    clearInterval(silenceCheck); clearTimeout(silenceTimer);
-    ctx.close(); stream.getTracks().forEach(t => t.stop());
+    if (interim) micToast('🎙️ ' + interim.substring(0, 60), 5000);
+  };
+  sr.onend = () => {
     micActive = false; micSetBtn(false);
-    micToast('⏳ Wird erkannt…', 8000);
-    const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' });
-    try {
-      const resp = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': blob.type }, body: blob });
-      const data = await resp.json();
-      const text = (data.text || '').trim();
-      if (text) {
-        const input = document.getElementById('bolla-input');
-        if (input) input.value = (input.value ? input.value + ' ' : '') + text;
-        micToast('✅ ' + text.substring(0, 60), 3000);
-        if (document.getElementById('voice-toggle')?.checked) setTimeout(() => bollaSend(), 200);
-      } else {
-        micToast('🔇 Nichts erkannt', 2500);
-      }
-    } catch(e) { micToast('⚠️ ' + e.message, 4000); }
+    const text = finalText.trim();
+    if (text) {
+      const input = document.getElementById('bolla-input');
+      if (input) input.value = (input.value ? input.value + ' ' : '') + text;
+      micToast('✅ ' + text.substring(0, 60), 3000);
+      if (document.getElementById('voice-toggle')?.checked) setTimeout(() => bollaSend(), 200);
+    } else {
+      micToast('🔇 Nichts erkannt', 2500);
+    }
+  };
+  sr.onerror = (e) => {
+    micActive = false; micSetBtn(false);
+    const msgs = {
+      'not-allowed': '❌ Mikrofon gesperrt — Edge: Einstellungen → Datenschutz → Mikrofon → Edge erlauben',
+      'network': '⚠️ Netzwerkfehler (Web Speech API benötigt Internet)',
+      'no-speech': '🔇 Keine Sprache erkannt',
+    };
+    micToast(msgs[e.error] || '⚠️ ' + e.error, 5000);
   };
 
-  micActive = true; micSetBtn(true);
-  micToast('🎙️ Spreche… (stoppt automatisch)', 30000);
-  mr.start();
-  // Sicherheits-Timeout nach 30s
-  setTimeout(() => { if (mr.state === 'recording') mr.stop(); }, 30000);
+  sr.start();
 }
 
-// ── KI-FORUM MIC ──────────────────────────────────────────────────────────
+// ── KI-FORUM MIC (Web Speech API) ──────────────────────────────────────────
 let kifMicRec = null, kifMicActive = false;
 
 function kifMicToast(msg, dur=2200) {
@@ -7571,126 +7660,93 @@ function kifMicToast(msg, dur=2200) {
   t._timer = setTimeout(() => t.style.display = 'none', dur);
 }
 
-async function kifMicToggle() {
-  if (kifMicActive) {
-    if (window._kifMediaRec && window._kifMediaRec.state === 'recording') window._kifMediaRec.stop();
-    return;
-  }
-  kifMicActive = true;
+function _kifMicSetUI(on) {
   const stand = document.getElementById('kif-mic-stand');
-  if (stand) stand.classList.add('recording');
   const label = document.getElementById('kif-mic-label');
-  if (label) label.textContent = '● aufnahme';
   const mb = document.getElementById('kif-modal-mic');
-  if (mb) { mb.textContent = '🔴'; mb.style.borderColor='rgba(248,113,113,0.6)'; }
-
-  let stream;
-  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-  catch(e) {
-    kifMicToast('❌ Mikrofon-Zugriff verweigert', 4000);
-    kifMicActive = false;
+  if (on) {
+    if (stand) stand.classList.add('recording');
+    if (label) label.textContent = '● aufnahme';
+    if (mb) { mb.textContent = '🔴'; mb.style.borderColor='rgba(248,113,113,0.6)'; }
+  } else {
     if (stand) stand.classList.remove('recording');
-    if (mb) { mb.textContent = '🎙️'; mb.style.borderColor='rgba(255,255,255,0.15)'; }
     if (label) label.textContent = 'sprechen';
-    return;
+    if (mb) { mb.textContent = '🎙️'; mb.style.borderColor='rgba(255,255,255,0.15)'; }
   }
-
-  const ctx = new AudioContext(); await ctx.resume();
-  const analyser = ctx.createAnalyser(); analyser.fftSize = 512;
-  ctx.createMediaStreamSource(stream).connect(analyser);
-  const buf = new Uint8Array(analyser.frequencyBinCount);
-  let hasSpeech = false, silenceTimer = null, recMs = 0;
-  const silenceCheck = setInterval(() => {
-    recMs += 100;
-    analyser.getByteFrequencyData(buf);
-    const vol = buf.reduce((a, b) => a + b, 0) / buf.length;
-    if (vol > 5) { hasSpeech = true; clearTimeout(silenceTimer); silenceTimer = null; }
-    else if (hasSpeech && !silenceTimer && recMs > 500)
-      silenceTimer = setTimeout(() => { if (window._kifMediaRec?.state === 'recording') window._kifMediaRec.stop(); }, 800);
-  }, 100);
-
-  const chunks = [], mr = new MediaRecorder(stream);
-  window._kifMediaRec = mr;
-  mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-  mr.onstop = async () => {
-    clearInterval(silenceCheck); clearTimeout(silenceTimer);
-    ctx.close(); stream.getTracks().forEach(t => t.stop());
-    kifMicActive = false;
-    if (stand) stand.classList.remove('recording');
-    if (mb) { mb.textContent = '🎙️'; mb.style.borderColor='rgba(255,255,255,0.15)'; }
-    if (label) label.textContent = 'sprechen';
-    kifMicToast('⏳ Wird erkannt…', 8000);
-    const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' });
-    try {
-      const resp = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': blob.type }, body: blob });
-      const data = await resp.json();
-      const text = (data.text || '').trim();
-      if (text) {
-        const ta = document.getElementById('kif-user-input');
-        if (ta) ta.value = text;
-        kifMicToast(`✅ "${text.substring(0,40)}${text.length>40?'…':''}"`, 2500);
-        setTimeout(() => kifShowInput(), 150);
-      } else { kifMicToast('🔇 Nichts erkannt', 2500); }
-    } catch(e) { kifMicToast('⚠️ ' + e.message, 3000); }
-  };
-  mr.start();
-  setTimeout(() => { if (mr.state === 'recording') mr.stop(); }, 30000);
-  kifMicToast('🎙️ Spreche deine These…', 30000);
 }
 
-async function kifMicAber() {
+function kifMicToggle() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { kifMicToast('⚠️ Spracheingabe nicht verfügbar'); return; }
+
+  if (kifMicActive) { window._kifSr?.stop(); return; }
+
+  const sr = new SR();
+  sr.lang = 'de-DE'; sr.continuous = false; sr.interimResults = true;
+  window._kifSr = sr;
+  let finalText = '';
+
+  sr.onstart = () => { kifMicActive = true; _kifMicSetUI(true); kifMicToast('🎙️ Spreche deine These…', 30000); };
+  sr.onresult = (e) => {
+    finalText = '';
+    for (const r of e.results) {
+      if (r.isFinal) finalText += r[0].transcript;
+    }
+  };
+  sr.onend = () => {
+    kifMicActive = false; _kifMicSetUI(false);
+    const text = finalText.trim();
+    if (text) {
+      const ta = document.getElementById('kif-user-input');
+      if (ta) ta.value = text;
+      kifMicToast(`✅ "${text.substring(0,40)}${text.length>40?'…':''}"`, 2500);
+      setTimeout(() => kifShowInput(), 150);
+    } else { kifMicToast('🔇 Nichts erkannt', 2500); }
+  };
+  sr.onerror = (e) => { kifMicActive = false; _kifMicSetUI(false); kifMicToast('⚠️ ' + e.error, 3000); };
+  sr.start();
+}
+
+function kifMicAber() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { kifMicToast('⚠️ Spracheingabe nicht verfügbar'); return; }
   const btn = document.getElementById('kif-aber-mic');
   if (btn && btn.textContent === '🔴') return;
   if (btn) { btn.textContent = '🔴'; btn.style.borderColor = 'rgba(248,113,113,0.6)'; }
-  let stream;
-  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-  catch(e) { kifMicToast('❌ Mikrofon-Zugriff verweigert', 4000); if (btn) { btn.textContent = '🎙️'; btn.style.borderColor = 'rgba(255,255,255,0.15)'; } return; }
 
-  const ctx = new AudioContext();
-  await ctx.resume();
-  const analyser = ctx.createAnalyser();
-  analyser.fftSize = 512;
-  ctx.createMediaStreamSource(stream).connect(analyser);
-  const buf = new Uint8Array(analyser.frequencyBinCount);
-  let hasSpeech = false, silenceTimer = null, recMs = 0;
-  const silenceCheck = setInterval(() => {
-    recMs += 100;
-    analyser.getByteFrequencyData(buf);
-    const vol = buf.reduce((a, b) => a + b, 0) / buf.length;
-    if (vol > 5) { hasSpeech = true; clearTimeout(silenceTimer); silenceTimer = null; }
-    else if (hasSpeech && !silenceTimer && recMs > 500) silenceTimer = setTimeout(() => { if (rec.state === 'recording') rec.stop(); }, 800);
-  }, 100);
+  const sr = new SR();
+  sr.lang = 'de-DE'; sr.continuous = false; sr.interimResults = false;
+  let finalText = '';
 
-  const chunks = [], rec = new MediaRecorder(stream);
-  rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-  rec.onstop = async () => {
-    clearInterval(silenceCheck); clearTimeout(silenceTimer);
-    ctx.close(); stream.getTracks().forEach(t => t.stop());
-    if (btn) btn.textContent = '⏳';
-    const blob = new Blob(chunks, { type: rec.mimeType || 'audio/webm' });
-    try {
-      const resp = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': blob.type }, body: blob });
-      const data = await resp.json();
-      const text = (data.text || '').trim();
-      const ta = document.getElementById('kif-aber-input');
-      if (ta && text) ta.value = text;
-      kifMicToast(text ? `✅ "${text.substring(0,40)}${text.length>40?'…':''}"` : '🔇 Nichts erkannt', 2500);
-    } catch(e) { kifMicToast('⚠️ ' + e.message, 3000); }
+  sr.onresult = (e) => { for (const r of e.results) if (r.isFinal) finalText += r[0].transcript; };
+  sr.onend = () => {
     if (btn) { btn.textContent = '🎙️'; btn.style.borderColor = 'rgba(255,255,255,0.15)'; }
+    const text = finalText.trim();
+    const ta = document.getElementById('kif-aber-input');
+    if (ta && text) ta.value = text;
+    kifMicToast(text ? `✅ "${text.substring(0,40)}${text.length>40?'…':''}"` : '🔇 Nichts erkannt', 2500);
   };
-  rec.start();
-  setTimeout(() => { if (rec.state === 'recording') rec.stop(); }, 15000);
+  sr.onerror = (e) => {
+    if (btn) { btn.textContent = '🎙️'; btn.style.borderColor = 'rgba(255,255,255,0.15)'; }
+    kifMicToast('⚠️ ' + e.error, 3000);
+  };
+  sr.start();
   kifMicToast('🎙️ Spreche… (stoppt automatisch)', 15000);
 }
 
-// Stimmenliste beim ersten Öffnen der Bolla-Seite laden
+// Stimmenliste + Verlauf beim ersten Öffnen der Bolla-Seite laden
 document.querySelectorAll('.nav-item').forEach(el => {
   if (el.dataset.page === 'bolla') {
-    el.addEventListener('click', voiceLoadList, {once: false});
+    el.addEventListener('click', () => { voiceLoadList(); bollaHistoryRender(); }, {once: false});
   }
 });
 // Wenn Bolla-Seite beim Start aktiv ist, gleich laden
-setTimeout(() => { if (document.getElementById('page-bolla')?.classList.contains('active')) voiceLoadList(); }, 500);
+setTimeout(() => {
+  if (document.getElementById('page-bolla')?.classList.contains('active')) {
+    voiceLoadList();
+    bollaHistoryRender();
+  }
+}, 500);
 
 // ============ SURFACE / ADB ============
 const ADB_GROUPS = [
