@@ -827,6 +827,53 @@ def get_emails_recent_wtnet():
 NEWSLETTER_WATCHLIST = Path(os.path.join(WORKSPACE, "config/newsletter_watchlist.json"))
 NEWSLETTER_RESULTS   = Path(os.path.join(WORKSPACE, "cache/newsletter_results.json"))
 
+MARKTGURU_KEY = "8Kk+pmbf7TgJ9nVj2cXeA7P5zBGv8iuutVVMRfOfvNE="
+MARKTGURU_ZIP_FILE = Path(os.path.join(WORKSPACE, "config/marktguru_zip.txt"))
+
+def _marktguru_zip():
+    return MARKTGURU_ZIP_FILE.read_text().strip() if MARKTGURU_ZIP_FILE.exists() else "22844"
+
+def offers_search(q, limit=20):
+    import urllib.request as _ur
+    zip_code = _marktguru_zip()
+    url = (f"https://api.marktguru.de/api/v1/offers/search"
+           f"?as=web&limit={limit}&offset=0&q={urllib.parse.quote(q)}&zipCode={zip_code}")
+    req = _ur.Request(url, headers={
+        "x-apikey": MARKTGURU_KEY,
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0",
+    })
+    try:
+        with _ur.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read())
+    except Exception as e:
+        return {"error": str(e), "results": []}
+    out = []
+    for o in data.get("results", []):
+        vd = o.get("validityDates", [{}])
+        valid_from = vd[0].get("from", "")[:10] if vd else ""
+        valid_to   = vd[0].get("to",   "")[:10] if vd else ""
+        store = o["advertisers"][0]["name"] if o.get("advertisers") else "?"
+        out.append({
+            "store":      store,
+            "brand":      o.get("brand", {}).get("name", "") if o.get("brand") else "",
+            "name":       o.get("product", {}).get("name") or o.get("description", ""),
+            "desc":       o.get("description", ""),
+            "price":      o.get("price"),
+            "old_price":  o.get("oldPrice"),
+            "unit":       o.get("unit", {}).get("shortName", "") if o.get("unit") else "",
+            "valid_from": valid_from,
+            "valid_to":   valid_to,
+        })
+    return {"results": out, "total": data.get("filters", {}).get("retailers"), "zip": zip_code}
+
+def offers_set_zip(zip_code):
+    z = zip_code.strip()
+    if not z.isdigit() or len(z) != 5:
+        return {"error": "Ungültige PLZ"}
+    MARKTGURU_ZIP_FILE.write_text(z)
+    return {"ok": True, "zip": z}
+
 MAKLER_FILE = Path(os.path.join(WORKSPACE, "data/makler_status.json"))
 
 def get_travel():
@@ -4230,6 +4277,18 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(adb_ls(params.get("path", "/storage/emulated/0")))
                 return
 
+            if self.path.startswith("/api/offers/search"):
+                import urllib.parse as _up
+                qs = dict(_up.parse_qsl(_up.urlparse(self.path).query))
+                q = qs.get("q", "").strip()
+                limit = int(qs.get("limit", "20"))
+                if not q:
+                    self._send_json({"results": []}); return
+                self._send_json(offers_search(q, limit)); return
+
+            if self.path.startswith("/api/offers/zip"):
+                self._send_json({"zip": _marktguru_zip()}); return
+
             if self.path.startswith("/api/calendar/search"):
                 import urllib.parse as _up
                 qs = _up.urlparse(self.path).query
@@ -4714,6 +4773,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._handle_tts(body)
             elif self.path == "/api/mail-command":
                 self._send_json(mail_command(body))
+            elif self.path == "/api/offers/zip":
+                self._send_json(offers_set_zip(body.get("zip","")))
             elif self.path == "/api/newsletter/watchlist":
                 self._send_json(newsletter_watchlist_update(body))
             elif self.path == "/api/newsletter/scan":

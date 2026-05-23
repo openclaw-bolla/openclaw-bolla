@@ -4604,41 +4604,47 @@ async function composeBolla() {
   } catch(e) { if(status) status.textContent = '⚠ '+e.message; }
 }
 
-// ===== NEWSLETTER PANEL =====
-const NL_OFFER_PAGES = {
-  "Penny":     "https://www.penny.de/angebote",
-  "Aldi Nord": "https://www.aldi-nord.de/angebote-der-woche.html",
-  "Lidl":      "https://www.lidl.de/angebote",
-  "Edeka":     "https://www.edeka.de/angebote/",
-  "Rewe":      "https://www.rewe.de/angebote/",
-  "Famila":    "https://www.famila-nordost.de/angebote/",
+// ===== ANGEBOTE PANEL (marktguru.de) =====
+const STORE_COLORS = {
+  'Lidl':'#0050aa','REWE':'#cc0000','EDEKA':'#ffd700','PENNY':'#cc0000',
+  'Aldi Nord':'#00529f','ALDI SÜD':'#00529f','Kaufland':'#e30613',
+  'Netto Marken-Discount':'#e30613','budni':'#00a0af',
 };
-function nlStoreLink(store, artikel) {
-  const base = NL_OFFER_PAGES[store];
-  if (!base) return '';
-  const url = base + '#:~:text=' + encodeURIComponent(artikel);
-  return `<a href="${url}" target="_blank" rel="noopener" style="font-size:13px;color:#a78bfa;text-decoration:none;margin-top:4px;display:inline-block">↗ ${store}-Angebote</a>`;
-}
-function nlHitHtml(h) {
-  const bg = h.color||'#333', sc = bg==='#FFD100'?'#b8a000':bg;
-  const valid = h.gueltig_von&&h.gueltig_bis?`${h.gueltig_von} – ${h.gueltig_bis}`:(h.gueltig_von||h.gueltig_bis||'');
-  const preis = h.preis ? ` · ${h.preis}` : '';
-  return `<div class="nl-hit" style="background:${bg}22;border:1px solid ${bg}55">
-    <div class="nl-hit-store" style="color:${sc}">${h.store}</div>
-    <div class="nl-hit-item">${h.artikel}</div>
-    <div class="nl-hit-meta">${valid}${preis}${h.hinweis?' · '+h.hinweis:''}</div>
-    ${nlStoreLink(h.store, h.artikel)}
+function nlOfferHtml(o) {
+  const col = STORE_COLORS[o.store] || '#7c3aed';
+  const isYellow = col === '#ffd700';
+  const price = o.price != null ? `<span style="font-size:18px;font-weight:800;color:#4ade80">${o.price.toFixed(2).replace('.',',')} €</span>` : '';
+  const oldPrice = o.old_price ? `<span style="font-size:12px;color:var(--dim);text-decoration:line-through;margin-left:6px">${o.old_price.toFixed(2).replace('.',',')} €</span>` : '';
+  const valid = o.valid_to ? `<span style="font-size:11px;color:var(--dim)">bis ${o.valid_to}</span>` : '';
+  const brand = o.brand ? `<span style="font-size:11px;color:#a78bfa">${o.brand}</span>` : '';
+  const desc = o.desc && o.desc !== o.name ? `<div style="font-size:12px;color:var(--dim);margin-top:2px">${o.desc}</div>` : '';
+  return `<div class="nl-hit" style="background:var(--card2);border-left:4px solid ${col}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:700;color:${isYellow?'#b8a000':col};text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">${o.store}</div>
+        <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.name}</div>
+        ${desc}
+        <div style="margin-top:4px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">${brand}${valid}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">${price}${oldPrice}</div>
+    </div>
   </div>`;
 }
 
 let _nlData = {watchlist:[], scanned_at:null, results:[]};
+let _nlZip = '22844';
 
 async function loadNewsletterPanel() {
   const el = document.getElementById('nl-panel');
   if (!el) return;
   try {
-    const r = await fetch(API+'/api/newsletter');
-    _nlData = await r.json();
+    const [rNl, rZip] = await Promise.all([
+      fetch(API+'/api/newsletter'),
+      fetch(API+'/api/offers/zip'),
+    ]);
+    _nlData = await rNl.json();
+    const zd = await rZip.json();
+    _nlZip = zd.zip || '22844';
   } catch(e) { _nlData = {watchlist:[], scanned_at:null, results:[]}; }
   renderNewsletterPanel();
 }
@@ -4646,34 +4652,29 @@ async function loadNewsletterPanel() {
 function renderNewsletterPanel() {
   const el = document.getElementById('nl-panel');
   if (!el) return;
-  const {watchlist, scanned_at, results} = _nlData;
-
+  const {watchlist} = _nlData;
   const chips = watchlist.map(w =>
     `<span class="nl-chip">${w}<button class="nl-chip-x" onclick="nlRemove('${w}')">×</button></span>`
   ).join('');
 
-  const hitsHtml = (hits, emptyText) => hits.length
-    ? hits.map(nlHitHtml).join('')
-    : `<div class="nl-empty">${emptyText}</div>`;
-
-  const watchInfo = scanned_at ? `<div style="font-size:12px;color:var(--dim);margin-top:6px">Letzter Cron: ${scanned_at}</div>` : '';
-
   el.innerHTML = `
     <div class="card">
-      <div class="card-head"><span class="card-title">📰 Newsletter-Suche</span></div>
+      <div class="card-head">
+        <span class="card-title">🛒 Angebots-Suche</span>
+        <span style="font-size:12px;color:var(--dim)">PLZ: <span id="nl-zip-display" style="cursor:pointer;color:#a78bfa;text-decoration:underline dotted" onclick="nlEditZip()" title="PLZ ändern">${_nlZip}</span></span>
+      </div>
       <div class="nl-add-row">
-        <input class="nl-add-input" id="nl-input" placeholder="Begriff suchen…" onkeydown="if(event.key==='Enter')nlSearch()" oninput="document.getElementById('nl-clear').style.display=this.value?'block':'none'">
+        <input class="nl-add-input" id="nl-input" placeholder="z.B. Butter, Milch, Erdbeeren…" onkeydown="if(event.key==='Enter')nlSearch()" oninput="document.getElementById('nl-clear').style.display=this.value?'block':'none'">
         <button id="nl-clear" onclick="document.getElementById('nl-input').value='';this.style.display='none';document.getElementById('nl-search-results').innerHTML=''" style="display:none;background:none;border:none;color:rgba(255,255,255,0.4);font-size:16px;cursor:pointer;padding:0 2px;flex-shrink:0">✕</button>
         <button class="nl-add-btn" onclick="nlSearch()" title="Jetzt suchen" style="background:#4fc3f7">🔍</button>
-        <button class="nl-add-btn" onclick="nlSaveToWatch()" title="Zur Watchlist hinzufügen">+</button>
+        <button class="nl-add-btn" onclick="nlSaveToWatch()" title="Zur Watchlist hinzufügen" title="+">+</button>
       </div>
       <div id="nl-search-results" style="min-height:20px"></div>
     </div>
     <div class="card">
-      <div class="card-head"><span class="card-title">📌 Watchlist <span style="font-size:12px;font-weight:400;color:var(--dim)">(wöchentlich)</span></span></div>
-      <div style="margin-bottom:6px">${chips || '<span style="font-size:13px;color:var(--dim)">Noch keine Begriffe</span>'}</div>
-      ${hitsHtml(results, 'Nächster Scan: Montag 07:00')}
-      ${watchInfo}
+      <div class="card-head"><span class="card-title">📌 Watchlist</span></div>
+      <div style="margin-bottom:6px">${chips || '<span style="font-size:13px;color:var(--dim)">Noch keine Begriffe — mit + hinzufügen</span>'}</div>
+      <div id="nl-watch-results"></div>
     </div>`;
 }
 
@@ -4684,20 +4685,27 @@ async function nlSearch() {
   const res = document.getElementById('nl-search-results');
   if (res) res.innerHTML = '<div class="nl-empty">⏳ Suche läuft…</div>';
   try {
-    const r = await fetch(API+'/api/newsletter/search', {method:'POST',
-      headers:{'Content-Type':'application/json'}, body:JSON.stringify({term})});
+    const r = await fetch(API+'/api/offers/search?q='+encodeURIComponent(term)+'&limit=20');
     const d = await r.json();
     if (!res) return;
     if (d.error) { res.innerHTML = `<div class="nl-empty">⚠ ${d.error}</div>`; return; }
     const hits = d.results || [];
-    if (!hits.length) {
-      res.innerHTML = `<div class="nl-empty">Nichts gefunden in ${d.mails_checked||0} Newsletter(n).</div>`;
-    } else {
-      res.innerHTML = hits.map(nlHitHtml).join('');
-    }
+    res.innerHTML = hits.length
+      ? hits.map(nlOfferHtml).join('')
+      : `<div class="nl-empty">Keine Angebote gefunden für „${term}"</div>`;
   } catch(e) {
     if (res) res.innerHTML = `<div class="nl-empty">⚠ ${e.message}</div>`;
   }
+}
+
+async function nlEditZip() {
+  const z = prompt('PLZ eingeben:', _nlZip);
+  if (!z || !/^\d{5}$/.test(z.trim())) return;
+  await fetch(API+'/api/offers/zip', {method:'POST',
+    headers:{'Content-Type':'application/json'}, body:JSON.stringify({zip: z.trim()})});
+  _nlZip = z.trim();
+  const disp = document.getElementById('nl-zip-display');
+  if (disp) disp.textContent = _nlZip;
 }
 
 async function nlSaveToWatch() {
