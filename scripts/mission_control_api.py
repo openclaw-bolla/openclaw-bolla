@@ -1387,9 +1387,127 @@ def get_sos_contacts():
             return json.load(f)
     return {"contacts": [], "medical": {}}
 
-# ── KI-Workshop Projekt-Seite ────────────────────────────────────────────────
+# ── KI-Workshop Projekt-Seite (Legacy) ──────────────────────────────────────
 WORKSHOP_MD = os.path.join(WORKSPACE, "projektwoche-ki-workshop/workshop-ideen.md")
 WORKSHOP_AUFTRAEGE = os.path.join(WORKSPACE, "projektwoche-ki-workshop/auftraege.json")
+
+# ── Projekte-Workspace ───────────────────────────────────────────────────────
+PROJEKTE_FILE = os.path.join(WORKSPACE, "data/projekte.json")
+
+def _projekte_load():
+    if os.path.exists(PROJEKTE_FILE):
+        try:
+            with open(PROJEKTE_FILE, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    # Erste Migration: KI-Workshop-Daten übernehmen
+    md = ""
+    if os.path.exists(WORKSHOP_MD):
+        with open(WORKSHOP_MD, encoding="utf-8") as f:
+            md = f.read()
+    auftraege = []
+    if os.path.exists(WORKSHOP_AUFTRAEGE):
+        try:
+            with open(WORKSHOP_AUFTRAEGE, encoding="utf-8") as f:
+                auftraege = json.load(f)
+        except Exception:
+            pass
+    default = {
+        "current": "ki-shorttrack-2026",
+        "projects": [{
+            "id": "ki-shorttrack-2026",
+            "title": "KI-ShortTrack für Lehrerkollegen",
+            "icon": "🎓",
+            "created": "2026-05-20",
+            "updated": datetime.now().strftime("%Y-%m-%d"),
+            "content": md,
+            "auftraege": auftraege
+        }]
+    }
+    _projekte_save_raw(default)
+    return default
+
+def _projekte_save_raw(data):
+    os.makedirs(os.path.dirname(PROJEKTE_FILE), exist_ok=True)
+    with open(PROJEKTE_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def projekte_list():
+    data = _projekte_load()
+    return {
+        "current": data.get("current"),
+        "projects": [{"id": p["id"], "title": p["title"], "icon": p.get("icon","📁"),
+                       "created": p.get("created",""), "updated": p.get("updated","")}
+                     for p in data.get("projects", [])]
+    }
+
+def projekte_load(pid):
+    data = _projekte_load()
+    for p in data.get("projects", []):
+        if p["id"] == pid:
+            return p
+    return None
+
+def projekte_save(pid, title, icon, content, auftraege=None):
+    data = _projekte_load()
+    projects = data.get("projects", [])
+    now = datetime.now().strftime("%Y-%m-%d")
+    for p in projects:
+        if p["id"] == pid:
+            p["title"] = title
+            p["icon"] = icon
+            p["content"] = content
+            p["updated"] = now
+            if auftraege is not None:
+                p["auftraege"] = auftraege
+            data["current"] = pid
+            _projekte_save_raw(data)
+            return {"ok": True}
+    # Neu anlegen
+    projects.append({"id": pid, "title": title, "icon": icon,
+                     "created": now, "updated": now,
+                     "content": content, "auftraege": auftraege or []})
+    data["current"] = pid
+    _projekte_save_raw(data)
+    return {"ok": True, "new": True}
+
+def projekte_add_auftrag(pid, text):
+    data = _projekte_load()
+    for p in data.get("projects", []):
+        if p["id"] == pid:
+            if "auftraege" not in p:
+                p["auftraege"] = []
+            p["auftraege"].append({
+                "id": int(datetime.now().timestamp()),
+                "ts": datetime.now().isoformat(timespec="minutes"),
+                "text": text.strip(),
+                "status": "offen"
+            })
+            _projekte_save_raw(data)
+            return {"ok": True}
+    return {"error": "Projekt nicht gefunden"}
+
+def projekte_auftrag_status(pid, auftrag_id, status):
+    data = _projekte_load()
+    for p in data.get("projects", []):
+        if p["id"] == pid:
+            for a in p.get("auftraege", []):
+                if str(a["id"]) == str(auftrag_id):
+                    a["status"] = status
+                    if status == "erledigt":
+                        a["ts_done"] = datetime.now().isoformat(timespec="minutes")
+                    _projekte_save_raw(data)
+                    return {"ok": True}
+    return {"error": "Nicht gefunden"}
+
+def projekte_delete(pid):
+    data = _projekte_load()
+    data["projects"] = [p for p in data.get("projects", []) if p["id"] != pid]
+    if data.get("current") == pid:
+        data["current"] = data["projects"][0]["id"] if data["projects"] else ""
+    _projekte_save_raw(data)
+    return {"ok": True}
 WORKSHOP_FORTSCHRITT = os.path.join(WORKSPACE, "projektwoche-ki-workshop/fortschritt.json")
 
 def get_workshop_fortschritt():
@@ -4158,7 +4276,21 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/charts":         get_charts,
                 "/api/workshop":       get_workshop,
                 "/api/workshop/fortschritt": get_workshop_fortschritt,
+                "/api/projekte/list":  projekte_list,
             }
+
+            if self.path.startswith("/api/projekte/load"):
+                import urllib.parse as _up
+                pid = dict(_up.parse_qsl(_up.urlparse(self.path).query)).get("id","")
+                p = projekte_load(pid) if pid else None
+                if p is None:
+                    self._send_json({"error": "Nicht gefunden"}, status=404); return
+                self._send_json(p); return
+
+            if self.path.startswith("/api/projekte/delete"):
+                import urllib.parse as _up
+                pid = dict(_up.parse_qsl(_up.urlparse(self.path).query)).get("id","")
+                self._send_json(projekte_delete(pid) if pid else {"error": "Kein id"}); return
 
             # Chart Preview (iTunes)
             if self.path.startswith("/api/charts/preview"):
@@ -4468,6 +4600,19 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(save_workshop(body.get("markdown", "")))
             elif self.path == "/api/workshop/auftrag":
                 self._send_json(add_workshop_auftrag(body.get("text", "")))
+            elif self.path == "/api/projekte/save":
+                self._send_json(projekte_save(
+                    body.get("id",""), body.get("title","Neues Projekt"),
+                    body.get("icon","📁"), body.get("content",""),
+                    body.get("auftraege")))
+            elif self.path == "/api/projekte/new":
+                import uuid, time
+                new_id = "projekt-" + str(int(time.time()))
+                self._send_json(projekte_save(new_id, body.get("title","Neues Projekt"), body.get("icon","📁"), "", []))
+            elif self.path == "/api/projekte/auftrag/add":
+                self._send_json(projekte_add_auftrag(body.get("pid",""), body.get("text","")))
+            elif self.path == "/api/projekte/auftrag/status":
+                self._send_json(projekte_auftrag_status(body.get("pid",""), body.get("id",""), body.get("status","")))
             elif self.path == "/api/kosten/guthaben":
                 self._send_json(kosten_update_guthaben(body.get("name",""), body.get("betrag", 0), body.get("info")))
             elif self.path == "/api/travel/recommendation":
