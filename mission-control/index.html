@@ -2629,7 +2629,16 @@ html, body {
         <!-- Download + Cover Widget -->
         <div style="max-width:65%;margin:0 auto 20px auto">
           <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px">
-            <div style="font-size:13px;font-weight:700;color:var(--bright);margin-bottom:10px">🎵 Song herunterladen + Cover erstellen</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="font-size:13px;font-weight:700;color:var(--bright)">🎵 Song herunterladen + Cover erstellen</div>
+              <button onclick="sunoNewSong()"
+                style="background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);
+                       font-size:12px;padding:4px 12px;cursor:pointer;white-space:nowrap;transition:all .2s"
+                onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'"
+                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">
+                ✨ Neuer Song
+              </button>
+            </div>
             <div style="display:flex;gap:8px;align-items:center">
               <input id="suno-dl-title" type="text" placeholder="Suno-Song-Titel eingeben…"
                 style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;
@@ -10283,6 +10292,13 @@ function sunoRefresh() {
       setTimeout(() => btn.textContent = '🔄 Neu', 3000);
     }
   });
+}
+function sunoNewSong() {
+  document.getElementById('suno-dl-title').value = '';
+  document.getElementById('suno-dl-status').textContent = '';
+  document.getElementById('suno-dl-status').style.color = 'var(--dim)';
+  document.getElementById('suno-dl-title').focus();
+  sunoReset();
 }
 function sunoReset() {
   document.getElementById('suno-name').value = '';

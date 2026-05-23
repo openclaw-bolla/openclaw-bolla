@@ -5711,7 +5711,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 audio_url = found.get("audio_url") or found.get("mp3_url") or ""
                 if not audio_url:
                     self._send_json({"error": "Kein audio_url im Song-Objekt"}); return
-                # 3. MP3 herunterladen
+                # 3. MP3 herunterladen + auf 320kbps konvertieren (RouteNote-Anforderung)
                 SUNO_ROUTENOTE_DIR.mkdir(parents=True, exist_ok=True)
                 safe_title = "".join(c for c in title if c.isalnum() or c in " _-").strip()
                 mp3_path = SUNO_ROUTENOTE_DIR / f"{safe_title}.mp3"
@@ -5719,7 +5719,17 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     mp3_req = urllib.request.Request(audio_url, headers={"User-Agent": "BollaMC/1.0"})
                     with urllib.request.urlopen(mp3_req, timeout=60) as resp:
                         mp3_data = resp.read()
-                    mp3_path.write_bytes(mp3_data)
+                    tmp_path = SUNO_ROUTENOTE_DIR / f"{safe_title}_tmp.mp3"
+                    tmp_path.write_bytes(mp3_data)
+                    # ffmpeg: auf 320kbps konvertieren (Suno liefert nur 64kbps)
+                    import subprocess as _sp_ff
+                    _ff = _sp_ff.run(
+                        ["ffmpeg", "-y", "-i", str(tmp_path), "-b:a", "320k", "-ar", "44100", str(mp3_path)],
+                        capture_output=True, timeout=120
+                    )
+                    tmp_path.unlink(missing_ok=True)
+                    if _ff.returncode != 0 or not mp3_path.exists():
+                        raise Exception("ffmpeg Konvertierung fehlgeschlagen")
                 except Exception as e:
                     self._send_json({"error": f"MP3-Download Fehler: {e}"}); return
                 # 4. Bildprompt mit Claude Haiku generieren
@@ -5727,14 +5737,22 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     import subprocess as _sp2, shutil as _sh2
                     _claude_bin2 = _sh2.which("claude") or os.path.expanduser("~/.local/bin/claude")
                     _cover_prompt_instr = (
-                        f"Create a stunning, professional album cover image prompt in English for the song '{title}'. "
-                        f"IMPORTANT: The artist is an optimistic, life-affirming, cheerful person. "
-                        f"Always interpret the title in a POSITIVE, uplifting way — never dark, sad, hopeless or threatening. "
-                        f"Think: joy, energy, nature, light, celebration, adventure, warmth, hope, movement. "
-                        f"Describe a vivid, cinematic scene with specific lighting, vibrant colors, textures and uplifting atmosphere. "
-                        f"Be creative and visually specific — no generic descriptions. "
-                        f"3000x3000px, square format, photorealistic or high-quality illustration style. "
-                        f"End with: '— absolutely NO text, NO letters, NO words, NO typography in the image.' "
+                        f"Create an ULTRA-SPECTACULAR, eye-catching album cover image prompt in English for the song '{title}'. "
+                        f"This cover must be SO STUNNING that listeners STOP SCROLLING and MUST click play. "
+                        f"Think: award-winning photography, viral visual impact, magazine cover quality. "
+                        f"IMPORTANT: The artist is optimistic and life-affirming — always interpret the title POSITIVELY. "
+                        f"Choose ONE of these visual power styles that fits the title: "
+                        f"(1) EPIC GOLDEN HOUR — blazing sun rays, god rays through clouds, silhouettes, warm orange-gold atmosphere; "
+                        f"(2) NEON NOIR — glowing neon reflections in rain puddles, dramatic urban night, electric blues and purples; "
+                        f"(3) COSMIC WONDER — nebulas, galaxies, bioluminescent ocean meeting space, impossible scales; "
+                        f"(4) HYPERREAL NATURE — macro textures, impossibly vivid flowers or waves, saturated dream colors; "
+                        f"(5) CINEMATIC EXPLOSION — motion blur, particles, sparks, dust, dramatic action frozen in time. "
+                        f"Be EXTREMELY specific: name exact colors (e.g. 'burnt sienna', 'electric cyan'), lighting direction, "
+                        f"camera angle (low angle, bird's eye, extreme close-up), materials (chrome, glass, velvet, water droplets), "
+                        f"mood (euphoric, mysterious, triumphant), and a unique focal element that anchors the composition. "
+                        f"The result must look like it belongs on Spotify's editorial playlists. "
+                        f"3000x3000px, square format, ultra high detail, professional color grading. "
+                        f"End with: '— absolutely NO text, NO letters, NO words, NO typography anywhere in the image.' "
                         f"Reply with ONLY the image prompt, nothing else."
                     )
                     _cp_result = _sp2.run(
@@ -5745,7 +5763,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     if not img_prompt:
                         raise Exception("Kein Prompt")
                 except Exception:
-                    img_prompt = f"Cinematic album cover for '{title}': dramatic atmospheric scene, rich textures, professional studio lighting, bold colors, emotional depth — absolutely NO text, NO letters, NO words, NO typography in the image."
+                    img_prompt = f"Ultra-spectacular album cover for '{title}': epic golden hour light rays bursting through dramatic storm clouds over a vast landscape, god rays illuminating swirling particles of gold dust, deep burnt orange and electric violet sky, extreme low-angle shot, hyper-detailed textures, cinematic depth of field, Spotify editorial quality, viral visual impact, award-winning photography style — absolutely NO text, NO letters, NO words, NO typography in the image."
                 # 5. Cover generieren — Pollinations (default) oder Gemini
                 try:
                     import urllib.parse as _urlparse_cv, io as _io_cv
