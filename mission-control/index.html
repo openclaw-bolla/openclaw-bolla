@@ -4359,21 +4359,23 @@ async function kalSuchen() {
     hits.forEach(ev => {
       const rgb = ev.color || '120,144,156';
       const pastLabel = ev.past
-        ? `<span style="font-size:10px;background:rgba(${rgb},.18);color:rgba(${rgb},1);border-radius:4px;padding:1px 5px;margin-left:6px">vergangen</span>`
-        : `<span style="font-size:10px;background:rgba(96,165,250,.18);color:#60a5fa;border-radius:4px;padding:1px 5px;margin-left:6px">demnächst</span>`;
+        ? `<span style="font-size:10px;background:rgba(${rgb},.25);color:rgb(${rgb});border-radius:4px;padding:1px 6px;margin-left:6px;font-weight:600">vergangen</span>`
+        : `<span style="font-size:10px;background:rgba(96,165,250,.2);color:#93c5fd;border-radius:4px;padding:1px 6px;margin-left:6px;font-weight:600">demnächst</span>`;
       const loc = ev.location ? `<span style="color:var(--dim)"> · ${ev.location}</span>` : '';
-      h += `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:6px;
-                        background:rgba(${rgb},.1);border:1px solid rgba(${rgb},.35);border-radius:8px">
-        <div style="width:3px;align-self:stretch;background:rgb(${rgb});border-radius:2px;flex-shrink:0"></div>
-        <div style="min-width:100px;flex-shrink:0">
-          <div style="font-size:13px;font-weight:700;color:var(--bright)">${ev.weekday} ${ev.date}</div>
-          <div style="font-size:12px;color:var(--dim)">${ev.time}</div>
-        </div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-            ${ev.title}${pastLabel}
+      h += `<div style="display:flex;align-items:center;gap:0;margin-bottom:6px;
+                        background:var(--card2);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <div style="width:4px;align-self:stretch;background:rgb(${rgb});flex-shrink:0"></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;flex:1;min-width:0">
+          <div style="min-width:96px;flex-shrink:0">
+            <div style="font-size:13px;font-weight:700;color:var(--bright)">${ev.weekday} ${ev.date}</div>
+            <div style="font-size:12px;color:var(--dim)">${ev.time || 'ganztägig'}</div>
           </div>
-          <div style="font-size:12px;color:var(--dim)">${ev.category}${loc}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;color:var(--bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500">
+              ${ev.title}${pastLabel}
+            </div>
+            <div style="font-size:12px;color:var(--dim);margin-top:1px">${ev.category}${loc}</div>
+          </div>
         </div>
       </div>`;
     });
