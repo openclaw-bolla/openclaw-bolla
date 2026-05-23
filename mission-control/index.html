@@ -6871,14 +6871,21 @@ function bollaHistorySave(list) {
 function bollaHistoryAdd(html) {
   if (!html || html.length < 100) return;
   const list = bollaHistoryLoad();
-  const title = (() => {
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    const userMsg = tmp.querySelector('.chat-user');
-    const t = userMsg?.textContent?.trim() || '';
-    return t.length > 60 ? t.substring(0, 57) + '…' : (t || 'Session');
+  // Titel + Statistik aus HTML extrahieren
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  // User-Nachrichten haben "CHRIS" als Label
+  const userBlocks = [...tmp.querySelectorAll('div')].filter(d => d.textContent.includes('CHRIS'));
+  const firstUserText = (() => {
+    for (const b of userBlocks) {
+      const t = b.textContent.replace('CHRIS','').trim();
+      if (t.length > 3) return t;
+    }
+    return '';
   })();
-  list.unshift({ id: Date.now(), ts: new Date().toISOString(), title, html });
+  const title = firstUserText.length > 65 ? firstUserText.substring(0, 62) + '…' : (firstUserText || 'Session');
+  const msgCount = userBlocks.length;
+  list.unshift({ id: Date.now(), ts: new Date().toISOString(), title, msgCount, html });
   if (list.length > HISTORY_MAX) list.splice(HISTORY_MAX);
   bollaHistorySave(list);
   bollaHistoryRender();
@@ -6889,17 +6896,32 @@ function bollaHistoryRender() {
   if (!el) return;
   const list = bollaHistoryLoad();
   if (!list.length) {
-    el.innerHTML = '<div style="padding:16px 12px;font-size:12px;color:var(--dim);text-align:center">Noch keine gespeicherten Sessions</div>';
+    el.innerHTML = '<div style="padding:20px 12px;font-size:12px;color:var(--dim);text-align:center;line-height:1.6">/clear drücken um<br>Session zu speichern</div>';
     return;
   }
+  // Heute / Gestern / Datum-Gruppen
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1);
+  let lastGroup = '';
   el.innerHTML = list.map((s, i) => {
     const d = new Date(s.ts);
-    const dateStr = d.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit'});
+    const dayStart = new Date(d); dayStart.setHours(0,0,0,0);
+    const groupLabel = dayStart >= today ? 'Heute'
+      : dayStart >= yesterday ? 'Gestern'
+      : d.toLocaleDateString('de-DE', {weekday:'short', day:'2-digit', month:'2-digit'});
+    const groupHtml = groupLabel !== lastGroup
+      ? `<div style="padding:6px 12px 2px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)">${groupLabel}</div>`
+      : '';
+    lastGroup = groupLabel;
     const timeStr = d.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'});
-    return `<div class="bolla-hist-item" onclick="bollaHistoryOpen(${i})" title="${s.title}">
-      <div style="font-size:11px;color:var(--dim);margin-bottom:2px">${dateStr} · ${timeStr}</div>
-      <div style="font-size:12px;color:var(--text);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${s.title}</div>
-      <button onclick="event.stopPropagation();bollaHistoryDelete(${i})" style="position:absolute;top:6px;right:6px;background:none;border:none;color:var(--dim);cursor:pointer;font-size:11px;opacity:0;transition:opacity .15s" class="hist-del-btn">✕</button>
+    const msgs = s.msgCount ? `<span style="font-size:10px;color:var(--dim)">${s.msgCount} Nachrichten</span>` : '';
+    return `${groupHtml}<div class="bolla-hist-item" onclick="bollaHistoryOpen(${i})">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+        <span style="font-size:10px;color:var(--dim)">${timeStr}</span>
+        <button onclick="event.stopPropagation();bollaHistoryDelete(${i})" style="background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.3);border-radius:4px;color:#f87171;cursor:pointer;font-size:10px;padding:1px 5px;line-height:1.4" title="Löschen">✕</button>
+      </div>
+      <div style="font-size:12px;color:var(--text);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;margin-bottom:3px">${s.title}</div>
+      ${msgs}
     </div>`;
   }).join('');
 }
@@ -7596,56 +7618,70 @@ function micToggle() {
   if (!SR) { micToast('⚠️ Browser unterstützt keine Spracheingabe (Edge/Chrome nötig)', 5000); return; }
 
   if (micActive) {
-    window._sr?.stop();
+    try { window._sr?.abort(); } catch(e) {}
+    micActive = false; micSetBtn(false);
     return;
   }
+
+  // Vorherige Instanz sauber abräumen
+  if (window._sr) { try { window._sr.abort(); } catch(e) {} window._sr = null; }
   voiceStop();
 
-  const sr = new SR();
-  sr.lang = 'de-DE';
-  sr.continuous = false;
-  sr.interimResults = true;
-  sr.maxAlternatives = 1;
-  window._sr = sr;
+  // Edge braucht nach Ende einer SR-Session ~300ms bis er neue annimmt
+  const wait = window._srLastEnd ? Math.max(0, 300 - (Date.now() - window._srLastEnd)) : 0;
 
-  let finalText = '';
+  micToast('🎙️ …', 800);
+  setTimeout(() => {
+    const sr = new SR();
+    sr.lang = 'de-DE';
+    sr.continuous = false;
+    sr.interimResults = true;
+    sr.maxAlternatives = 1;
+    window._sr = sr;
+    let finalText = '', started = false;
 
-  sr.onstart = () => {
-    micActive = true; micSetBtn(true);
-    micToast('🎙️ Spreche… (stoppt automatisch bei Pause)', 30000);
-  };
-  sr.onresult = (e) => {
-    let interim = '';
-    finalText = '';
-    for (const r of e.results) {
-      if (r.isFinal) finalText += r[0].transcript;
-      else interim += r[0].transcript;
-    }
-    if (interim) micToast('🎙️ ' + interim.substring(0, 60), 5000);
-  };
-  sr.onend = () => {
-    micActive = false; micSetBtn(false);
-    const text = finalText.trim();
-    if (text) {
-      const input = document.getElementById('bolla-input');
-      if (input) input.value = (input.value ? input.value + ' ' : '') + text;
-      micToast('✅ ' + text.substring(0, 60), 3000);
-      if (document.getElementById('voice-toggle')?.checked) setTimeout(() => bollaSend(), 200);
-    } else {
-      micToast('🔇 Nichts erkannt', 2500);
-    }
-  };
-  sr.onerror = (e) => {
-    micActive = false; micSetBtn(false);
-    const msgs = {
-      'not-allowed': '❌ Mikrofon gesperrt — Edge: Einstellungen → Datenschutz → Mikrofon → Edge erlauben',
-      'network': '⚠️ Netzwerkfehler (Web Speech API benötigt Internet)',
-      'no-speech': '🔇 Keine Sprache erkannt',
+    sr.onstart = () => {
+      started = true;
+      micActive = true; micSetBtn(true);
+      micToast('🎙️ Spreche… (stoppt automatisch)', 30000);
     };
-    micToast(msgs[e.error] || '⚠️ ' + e.error, 5000);
-  };
+    sr.onresult = (e) => {
+      let interim = '';
+      finalText = '';
+      for (const r of e.results) {
+        if (r.isFinal) finalText += r[0].transcript;
+        else interim += r[0].transcript;
+      }
+      if (interim) micToast('🎙️ ' + interim.substring(0, 60), 5000);
+    };
+    sr.onend = () => {
+      window._srLastEnd = Date.now();
+      micActive = false; micSetBtn(false);
+      if (!started) return; // onend vor onstart = fehlgeschlagener Start, still ignorieren
+      const text = finalText.trim();
+      if (text) {
+        const input = document.getElementById('bolla-input');
+        if (input) input.value = (input.value ? input.value + ' ' : '') + text;
+        micToast('✅ ' + text.substring(0, 60), 3000);
+        if (document.getElementById('voice-toggle')?.checked) setTimeout(() => bollaSend(), 200);
+      } else {
+        micToast('🔇 Nichts erkannt', 2500);
+      }
+    };
+    sr.onerror = (e) => {
+      if (e.error === 'aborted') return; // vom eigenen abort() — ignorieren
+      micActive = false; micSetBtn(false);
+      const msgs = {
+        'not-allowed': '❌ Mikrofon gesperrt — Edge: Einstellungen → Datenschutz → Mikrofon → Edge erlauben',
+        'network': '⚠️ Netzwerkfehler (Web Speech API benötigt Internet)',
+        'no-speech': '🔇 Keine Sprache erkannt',
+      };
+      micToast(msgs[e.error] || '⚠️ ' + e.error, 5000);
+    };
 
-  sr.start();
+    try { sr.start(); }
+    catch(e) { micActive = false; micSetBtn(false); micToast('⚠️ Start fehlgeschlagen: ' + e.message, 4000); }
+  }, wait);
 }
 
 // ── KI-FORUM MIC (Web Speech API) ──────────────────────────────────────────
