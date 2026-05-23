@@ -1338,6 +1338,21 @@ html, body {
       <!-- KALENDER -->
       <div class="page" id="page-kalender">
         <div class="grid" id="kalender-content"><div class="loading">Lade...</div></div>
+        <div id="kalender-search-wrap" style="margin-top:18px;padding:0 2px">
+          <div style="position:relative;display:flex;align-items:center">
+            <span style="position:absolute;left:12px;font-size:16px;color:var(--dim);pointer-events:none">🔍</span>
+            <input id="kalender-search-input" type="text" placeholder="Termine suchen… z.B. Zahnarzt, Meeting, Elternsprechtag"
+              autocomplete="off" spellcheck="false"
+              style="width:100%;box-sizing:border-box;padding:10px 12px 10px 38px;
+                     background:var(--card2);border:1px solid var(--border);border-radius:10px;
+                     color:var(--text);font-size:14px;outline:none;font-family:inherit;
+                     transition:border-color .15s"
+              onfocus="this.style.borderColor='var(--accent)'"
+              onblur="this.style.borderColor='var(--border)'"
+              oninput="kalSuchDebounce()">
+          </div>
+          <div id="kalender-search-results" style="margin-top:10px"></div>
+        </div>
       </div>
 
       <!-- EMAIL -->
@@ -4316,6 +4331,56 @@ function loadCalendar() {
     h += '</div>';
   });
   document.getElementById('kalender-content').innerHTML = h;
+}
+
+// ===== KALENDER-SUCHE =====
+let _kalSuchTimer = null;
+function kalSuchDebounce() {
+  clearTimeout(_kalSuchTimer);
+  _kalSuchTimer = setTimeout(kalSuchen, 420);
+}
+
+async function kalSuchen() {
+  const q = document.getElementById('kalender-search-input').value.trim();
+  const box = document.getElementById('kalender-search-results');
+  if (!q) { box.innerHTML = ''; return; }
+  if (q.length < 2) { box.innerHTML = ''; return; }
+
+  box.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:6px 2px">⏳ Suche…</div>';
+  try {
+    const r = await fetch(API + '/api/calendar/search?q=' + encodeURIComponent(q));
+    const hits = await r.json();
+    if (!hits.length) {
+      box.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:6px 2px">Keine Treffer gefunden.</div>';
+      return;
+    }
+    let h = `<div style="font-size:11px;color:var(--dim);margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase">`
+           + `${hits.length} Treffer</div>`;
+    hits.forEach(ev => {
+      const rgb = ev.color || '120,144,156';
+      const pastLabel = ev.past
+        ? `<span style="font-size:10px;background:rgba(${rgb},.18);color:rgba(${rgb},1);border-radius:4px;padding:1px 5px;margin-left:6px">vergangen</span>`
+        : `<span style="font-size:10px;background:rgba(96,165,250,.18);color:#60a5fa;border-radius:4px;padding:1px 5px;margin-left:6px">demnächst</span>`;
+      const loc = ev.location ? `<span style="color:var(--dim)"> · ${ev.location}</span>` : '';
+      h += `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:6px;
+                        background:rgba(${rgb},.1);border:1px solid rgba(${rgb},.35);border-radius:8px">
+        <div style="width:3px;align-self:stretch;background:rgb(${rgb});border-radius:2px;flex-shrink:0"></div>
+        <div style="min-width:100px;flex-shrink:0">
+          <div style="font-size:13px;font-weight:700;color:var(--bright)">${ev.weekday} ${ev.date}</div>
+          <div style="font-size:12px;color:var(--dim)">${ev.time}</div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            ${ev.title}${pastLabel}
+          </div>
+          <div style="font-size:12px;color:var(--dim)">${ev.category}${loc}</div>
+        </div>
+      </div>`;
+    });
+    box.innerHTML = h;
+  } catch(e) {
+    box.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:6px 2px">Fehler beim Suchen.</div>';
+  }
 }
 
 // ===== EMAIL =====

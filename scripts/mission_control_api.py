@@ -521,6 +521,81 @@ def get_calendar():
 
     return events
 
+def search_calendar_events(q, limit=5):
+    from datetime import timezone, timedelta
+    import zoneinfo, urllib.parse as _up
+    berlin = zoneinfo.ZoneInfo("Europe/Berlin")
+    cat_colors = get_category_colors()
+    now_utc = datetime.now(timezone.utc)
+    q_lower = q.lower()
+
+    past2y = (now_utc - timedelta(days=730)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    fut3m  = (now_utc + timedelta(days=90)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    all_events = []
+    url = (
+        f"/me/calendarView?startDateTime={past2y}&endDateTime={fut3m}"
+        f"&$top=200&$select=subject,start,categories,location"
+    )
+    pages = 0
+    while url and pages < 3:
+        data = graph_get(url)
+        if not data:
+            break
+        all_events.extend(data.get("value", []))
+        nxt = data.get("@odata.nextLink", "")
+        # nextLink ist absolute URL — in relativen Pfad umwandeln
+        if nxt:
+            parsed = _up.urlparse(nxt)
+            url = parsed.path + ("?" + parsed.query if parsed.query else "")
+        else:
+            url = ""
+        pages += 1
+
+    results = []
+    for ev in all_events:
+        subj = ev.get("subject", "")
+        if q_lower not in subj.lower():
+            continue
+        start_raw = ev.get("start", {}).get("dateTime", "")
+        try:
+            dt_utc = datetime.fromisoformat(start_raw).replace(tzinfo=timezone.utc)
+            dt_local = dt_utc.astimezone(berlin)
+            date_str = dt_local.strftime("%d.%m.%Y")
+            time_str = dt_local.strftime("%H:%M")
+            weekday = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"][dt_local.weekday()]
+            sort_key = dt_utc
+        except Exception:
+            date_str = start_raw[:10]
+            time_str = ""
+            weekday = ""
+            sort_key = datetime.min.replace(tzinfo=timezone.utc)
+
+        cats = ev.get("categories", [])
+        cat = cats[0] if cats else ""
+        rgb = cat_colors.get(cat, PRESET_COLORS["none"])
+        past = sort_key < now_utc
+
+        results.append({
+            "title": subj,
+            "date": date_str,
+            "time": time_str,
+            "weekday": weekday,
+            "category": cat,
+            "color": rgb,
+            "location": ev.get("location", {}).get("displayName", ""),
+            "past": past,
+            "_sort": sort_key.timestamp()
+        })
+
+    # Vergangene: neueste zuerst — Zukünftige: nächste zuerst
+    past_sorted   = sorted([r for r in results if r["past"]],      key=lambda x: x["_sort"], reverse=True)
+    future_sorted = sorted([r for r in results if not r["past"]], key=lambda x: x["_sort"])
+    ordered = past_sorted[:limit] + future_sorted[:limit]
+    for r in ordered:
+        del r["_sort"]
+    return ordered[:limit]
+
 SPAM_SUBJECT = ["newsletter", "unsubscribe", "abbestellen", "rabatt", "sonderangebot",
                 "gutschein", "gewinnspiel", "angebot des tages", "% off", "% rabatt",
                 "jetzt kaufen", "nur heute", "limited offer", "act now",
@@ -4036,6 +4111,15 @@ class Handler(BaseHTTPRequestHandler):
                 params = dict(_up.parse_qsl(qs))
                 self._send_json(adb_ls(params.get("path", "/storage/emulated/0")))
                 return
+
+            if self.path.startswith("/api/calendar/search"):
+                import urllib.parse as _up
+                qs = _up.urlparse(self.path).query
+                params = dict(_up.parse_qsl(qs))
+                q = params.get("q", "").strip()
+                if not q:
+                    self._send_json([]); return
+                self._send_json(search_calendar_events(q)); return
 
             simple = {
                 "/api/calendar": get_calendar,
