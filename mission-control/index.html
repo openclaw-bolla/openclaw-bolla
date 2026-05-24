@@ -2574,6 +2574,12 @@ html, body {
                 style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
                        color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
             </div>
+            <div style="flex:1;min-width:180px">
+              <label style="font-size:13px;color:var(--dim);display:block;margin-bottom:3px">Stil-Hinweis <span style="color:var(--accent);font-style:italic">(bei neuen/unbekannten Songs)</span></label>
+              <input id="suno-style-hint" type="text" placeholder="z.B. soft synth-pop, dreamy, piano, melodic"
+                style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
+                       color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
+            </div>
             <div style="display:flex;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden">
               <button id="suno-lang-de" onclick="sunoSetLang('de')"
                 style="padding:8px 14px;border:none;cursor:pointer;font-size:13px;font-weight:600;
@@ -2714,7 +2720,7 @@ html, body {
                          padding:4px 12px;cursor:pointer;font-size:13px"
                   onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">📋 Kopieren</button>
               </div>
-              <div id="suno-popup-style" style="font-size:15px;color:var(--accent);font-style:italic;line-height:1.7"></div>
+              <textarea id="suno-popup-style" rows="3" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:14px;color:var(--accent);font-style:italic;line-height:1.7;resize:vertical;outline:none" placeholder="Style Prompt…" oninput="document.getElementById('suno-style-text').textContent=this.value"></textarea>
             </div>
             <!-- Lyrics -->
             <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px">
@@ -10277,6 +10283,7 @@ async function sunoGenerate(feedback = '', prevLyrics = '') {
         geburtstag: isDefault ? document.getElementById('suno-geburtstag').value.trim() : '',
         abspieltag: isDefault ? document.getElementById('suno-abspieltag').value.trim() : '',
         hit: document.getElementById('suno-hit').value.trim(),
+        style_hint: document.getElementById('suno-style-hint').value.trim(),
         feedback
       })
     });
@@ -10325,6 +10332,7 @@ function sunoReset() {
   document.getElementById('suno-geburtstag').value = '';
   document.getElementById('suno-abspieltag').value = '';
   document.getElementById('suno-hit').value = '';
+  document.getElementById('suno-style-hint').value = '';
   document.getElementById('suno-feedback').value = '';
   sunoLastLyrics = '';
   sunoSetLang('de');
@@ -10345,7 +10353,7 @@ function sunoCopy(id) {
 function sunoShowPopup() {
   document.getElementById('suno-popup-title').textContent =
     document.getElementById('suno-title-text').textContent || '';
-  document.getElementById('suno-popup-style').textContent =
+  document.getElementById('suno-popup-style').value =
     document.getElementById('suno-style-text').textContent || '';
   document.getElementById('suno-popup-lyrics').textContent =
     document.getElementById('suno-lyrics-text').textContent || '';
@@ -10359,7 +10367,8 @@ function sunoClosePopup() {
   document.body.style.overflow = '';
 }
 function sunoPopupCopy(sourceId) {
-  const text = document.getElementById(sourceId).textContent || '';
+  const el = document.getElementById(sourceId);
+  const text = (el.tagName === 'TEXTAREA' ? el.value : el.textContent) || '';
   navigator.clipboard.writeText(text).then(() => {
     const map = {
       'suno-title-text': '[onclick="sunoPopupCopy(\'suno-title-text\')"]',

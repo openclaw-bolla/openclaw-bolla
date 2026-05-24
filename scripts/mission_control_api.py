@@ -1628,6 +1628,25 @@ SUNO_ROUTENOTE_DIR = Path("/mnt/d/OneDrive/Dokumente/Bolla/Suno_RouteNote")
 _charts_cache = {"data": None, "ts": 0}
 CHARTS_TTL = 1800  # 30 Minuten
 
+def _daily_sample(pool, n=10):
+    """Täglich n Songs aus pool, Doppelungen mit Vortag vermeiden."""
+    import random as _rnd, time as _t
+    today = int(_t.time()) // 86400
+    # Gestrige Auswahl berechnen
+    rnd_y = _rnd.Random(today - 1)
+    pool_y = pool[:]
+    rnd_y.shuffle(pool_y)
+    yesterday_titles = {s['title'] for s in pool_y[:n]}
+    # Heutige Shufflefolge
+    rnd_t = _rnd.Random(today)
+    pool_t = pool[:]
+    rnd_t.shuffle(pool_t)
+    # Zuerst Songs nehmen, die gestern nicht drin waren
+    result = [s for s in pool_t if s['title'] not in yesterday_titles]
+    fallback = [s for s in pool_t if s['title'] in yesterday_titles]
+    result = (result + fallback)[:n]
+    return result
+
 def _gemini_key():
     try:
         return json.loads(GEMINI_CONFIG.read_text()).get("api_key", "")
@@ -1704,22 +1723,17 @@ _PARTY_HITS = [
 ]
 
 def _fetch_party_charts():
-    """Kuratierte Liste lustiger, fröhlicher deutscher Partyhits — rotiert wöchentlich."""
-    import time as _time, random as _rnd
-    week = int(_time.time()) // (7 * 86400)
-    _rnd.seed(week)
-    shuffled = _PARTY_HITS[:]
-    _rnd.shuffle(shuffled)
-    return shuffled[:10]
+    """Kuratierte dt. Partyhits — täglich 10 zufällige, Doppelungen zum Vortag vermieden."""
+    return _daily_sample(_PARTY_HITS, 10)
 
-def _fetch_kworb_alltime(limit=10):
-    """Meistgestreamte Songs aller Zeiten via kworb.net."""
+def _fetch_kworb_alltime(pick=10):
+    """Top 100 meistgestreamte Songs aller Zeiten via kworb.net — täglich 10 zufällige, keine Vortags-Doppelungen."""
     import urllib.request as _ur2, re as _re2
     req = _ur2.Request("https://kworb.net/spotify/songs.html", headers={"User-Agent": "Mozilla/5.0 BollaMC/1.0"})
     try:
         html = _ur2.urlopen(req, timeout=12).read().decode("utf-8", "ignore")
         rows = _re2.findall(r'<tr[^>]*>(.*?)</tr>', html, _re2.DOTALL)
-        results = []
+        pool = []
         for row in rows[1:]:
             cells = _re2.findall(r'<td[^>]*>(.*?)</td>', row, _re2.DOTALL)
             cells = [_re2.sub(r'<[^>]+>', '', c).strip() for c in cells]
@@ -1729,16 +1743,15 @@ def _fetch_kworb_alltime(limit=10):
                     artist, title = combined.split(' - ', 1)
                 else:
                     artist, title = '', combined
-                # Streams in Milliarden formatieren
                 try:
                     streams_raw = int(cells[1].replace(',', '').replace('.', ''))
                     streams = f"{streams_raw/1_000_000_000:.1f} Mrd."
                 except Exception:
                     streams = cells[1] if len(cells) > 1 else ''
-                results.append({"title": title.strip(), "artist": artist.strip(), "streams": streams})
-            if len(results) >= limit:
+                pool.append({"title": title.strip(), "artist": artist.strip(), "streams": streams})
+            if len(pool) >= 100:
                 break
-        return results
+        return _daily_sample(pool, pick) if len(pool) >= pick else pool
     except Exception as e:
         return [{"error": str(e)}]
 
@@ -5418,6 +5431,7 @@ Antworte NUR als reines JSON ohne Markdown:
                 abspieltag = body.get("abspieltag", "").strip()
                 sprache = body.get("sprache", "de")
                 hit = body.get("hit", "").strip()
+                style_hint = body.get("style_hint", "").strip()
                 kontext = body.get("kontext", "").strip()
                 feedback = body.get("feedback", "").strip()
                 prev_lyrics = body.get("prev_lyrics", "").strip()
@@ -5445,11 +5459,51 @@ Antworte NUR als reines JSON ohne Markdown:
                                  "(5) Do NOT use parenthetical hints or footnotes — only the phonetic spelling in the text.")
                 else:
                     lang_inst = "in English"
+                style_hint_inst = (f"ZUSÄTZLICHE STIL-HINWEISE (vom Nutzer, haben höchste Priorität): {style_hint}\n"
+                                   f"Diese Eigenschaften MÜSSEN den Style-Prompt dominieren — sie beschreiben den echten Sound des Songs.") if style_hint else ""
+
+                def _fetch_song_info(query):
+                    """Sucht im Web nach musikalischen Eigenschaften des Songs."""
+                    try:
+                        try:
+                            from ddgs import DDGS
+                        except ImportError:
+                            from duckduckgo_search import DDGS
+                        with DDGS() as ddgs:
+                            results = list(ddgs.text(
+                                f"{query} song genre tempo BPM instruments production style musical characteristics",
+                                max_results=4
+                            ))
+                        if results:
+                            snippets = []
+                            for r in results[:4]:
+                                body = r.get('body', '').strip()
+                                if body and len(body) > 40:
+                                    snippets.append(body[:300])
+                            return "\n".join(snippets[:3])
+                    except Exception:
+                        pass
+                    return ""
+
+                web_song_info = _fetch_song_info(hit) if hit else ""
+                web_song_inst = (f"SONG-RECHERCHE AUS DEM INTERNET (aktuell, verlässlich):\n{web_song_info}\n\n"
+                                 f"Nutze diese Informationen um den Sound DIESES spezifischen Songs zu verstehen "
+                                 f"und in einen präzisen Style-Prompt zu übersetzen.") if web_song_info else ""
+
                 if hit:
-                    hit_inst = (f"Orientiere dich am Stil und der Struktur des Songs '{hit}'. "
-                                f"WICHTIG für den Style-Prompt: Analysiere diesen Song und übersetze ihn in konkrete "
-                                f"Musikelemente (z.B. Tempo, Rhythmus, Instrumente, Produktion, Energie, Klangfarbe). "
-                                f"Keinen Künstlernamen und keinen Songtitel in den Style-Prompt schreiben — nur reine Stileigenschaften.")
+                    hit_inst = (f"REFERENZ-SONG: '{hit}'. "
+                                f"WICHTIG: Analysiere DIESEN SPEZIFISCHEN SONG — nicht den allgemeinen Stil des Künstlers. "
+                                f"Viele Künstler haben verschiedene Songs mit sehr unterschiedlichem Klang. "
+                                f"Extrahiere die konkreten Eigenschaften DIESES Songs: "
+                                f"Tempo, Rhythmik, welche Instrumente dominieren (akustisch/elektrisch/elektronisch), "
+                                f"Produktionscharakter (roh/weich/poliert/verzerrt), Energie (sanft/mittel/aggressiv), "
+                                f"Vers/Chorus-Dynamik, Vocal-Charakter (ton, Ausdruck, Stärke, Textur). "
+                                f"Falls du den Song gut kennst: bleib präzise. Falls unsicher: beschreibe was du weißt, "
+                                f"aber übertrage NICHT den Klischee-Sound des Künstlers auf diesen Song. "
+                                f"KRITISCH — LYRICS-STIL-HARMONIE: Ton und Energie der Lyrics MÜSSEN zum Song passen. "
+                                f"Weicher melodischer Song → warme, fließende Lyrics. "
+                                f"Aggressiver Beat → kraftvolle, pointierte Lyrics. "
+                                f"Style-Prompt: Ausschließlich reine Musik-Eigenschaften — KEIN Künstlername, KEIN Songtitel.")
                 else:
                     hit_inst = ""
                 if feedback and prev_lyrics:
@@ -5534,11 +5588,17 @@ Antworte NUR als reines JSON ohne Markdown:
                         ref_date = None
 
                 lehrer = "Mister Mandel" if sprache != "de" else "Herrn Mandel"
-                STYLE_RULE = ("Suno style prompt in English, 15-25 words. STRICT RULE: NO artist names, NO band names, "
-                              "NO song titles — only pure musical descriptors. Include: genre, tempo/BPM feel, key "
-                              "instruments, production style, energy/mood, vocal style. Example: 'upbeat synth-pop, "
-                              "pulsing bassline, 80s drum machine, euphoric, driving 128bpm feel, glossy production, "
-                              "powerful male vocals'")
+                STYLE_RULE = ("Suno style prompt in English, 40-70 words. STRICT RULE: NO artist names, NO band names, "
+                              "NO song titles — only pure musical descriptors. MUST cover ALL of these categories: "
+                              "(1) genre/subgenre, (2) tempo/BPM feel, (3) key instruments & their character, "
+                              "(4) production style & texture (raw/polished/distorted/clean/layered etc.), "
+                              "(5) energy level & dynamic feel (verse vs. chorus contrast), "
+                              "(6) vocal style & character (tone, delivery, attitude, range), "
+                              "(7) emotional mood & atmosphere. "
+                              "Example: 'alt-pop punk, driving distorted electric guitars, punchy tight drums, "
+                              "around 130bpm, raw powerful female lead vocals with sarcastic edge, "
+                              "dynamic quiet verses exploding into high-energy choruses, "
+                              "crisp modern production with gritty texture, emotionally charged, angsty attitude'")
                 TITLE_RULE = ("kreativer Songtitel mit passenden Emojis"
                               + (" — verwende im Titel immer die ORIGINAL-Schreibweise des Namens, nicht die phonetische" if is_personal else ""))
 
@@ -5590,6 +5650,8 @@ Alter: {alter}
 {gb_kontext(geburtstag, ref_date)}
 {gb_lyrics_hint(geburtstag, ref_date)}
 {hit_inst}
+{web_song_inst}
+{style_hint_inst}
 {rhythm_hint}
 {style_timing_hint}
 {feedback_inst}
@@ -5616,6 +5678,8 @@ Anlass / Kontext: {kontext}
 {gb_kontext(geburtstag, ref_date)}
 {gb_lyrics_hint(geburtstag, ref_date)}
 {hit_inst}
+{web_song_inst}
+{style_hint_inst}
 {rhythm_hint}
 {style_timing_hint}
 {feedback_inst}
