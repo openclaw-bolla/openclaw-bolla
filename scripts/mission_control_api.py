@@ -418,7 +418,7 @@ def graph_get(path):
     if '?' in path:
         base, query = path.split('?', 1)
         # Query-Parameter einzeln URL-encodieren (Leerzeichen → %20)
-        encoded_query = urllib.parse.quote(query, safe='=&$,/')
+        encoded_query = urllib.parse.quote(query, safe='=&$,/%')
         full_url = f"https://graph.microsoft.com/v1.0{base}?{encoded_query}"
     else:
         full_url = f"https://graph.microsoft.com/v1.0{path}"
@@ -4026,10 +4026,13 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json; charset=utf-8")
 
     def _send_json(self, data, status=200):
-        self.send_response(status)
-        self._cors_headers()
-        self.end_headers()
-        self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
+        try:
+            self.send_response(status)
+            self._cors_headers()
+            self.end_headers()
+            self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
     def _proxy_lms(self, method, body_bytes=None):
         import urllib.request, urllib.error
@@ -4621,6 +4624,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(simple[self.path]())
             else:
                 self._send_json({"error": "not found"}, status=404)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
         except Exception as e:
             tb = traceback.format_exc()
             print(f"GET Error: {tb}")
@@ -5697,7 +5702,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
                 try:
                     result = subprocess.run(
-                        [claude_bin, "-p", "--output-format", "json", prompt],
+                        [claude_bin, "-p", "--model", "claude-opus-4-7", "--output-format", "json", prompt],
                         capture_output=True, text=True, timeout=240,
                         stdin=subprocess.DEVNULL,
                         cwd=os.path.expanduser("~")
@@ -6117,6 +6122,8 @@ Antworte NUR als reines JSON:
 
             else:
                 self._send_json({"error": "not found"}, status=404)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
         except Exception as e:
             tb = traceback.format_exc()
             print(f"POST Error: {tb}")

@@ -7639,10 +7639,10 @@ function micSetBtn(on) {
 
 function micToggle() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { micToast('⚠️ Browser unterstützt keine Spracheingabe (Edge/Chrome nötig)', 5000); return; }
+  if (!SR) { micToast('⚠️ Edge/Chrome nötig', 5000); return; }
 
   if (micActive) {
-    try { window._sr?.abort(); } catch(e) {}
+    try { window._sr?.stop(); } catch(e) {}
     micActive = false; micSetBtn(false);
     return;
   }
@@ -7650,70 +7650,45 @@ function micToggle() {
   if (window._sr) { try { window._sr.abort(); } catch(e) {} window._sr = null; }
   voiceStop();
 
-  const wait = window._srLastEnd ? Math.max(0, 900 - (Date.now() - window._srLastEnd)) : 0;
+  const sr = new SR();
+  window._sr = sr;
+  sr.lang = 'de-DE';
+  sr.continuous = false;
+  sr.interimResults = false;
 
-  micToast(wait > 100 ? '🎙️ kurz warten…' : '🎙️ …', wait + 400);
-  setTimeout(() => {
-    const sr = new SR();
-    sr.lang = 'de-DE';
-    sr.continuous = true;
-    sr.interimResults = true;
-    sr.maxAlternatives = 1;
-    window._sr = sr;
-    let finalText = '', lastInterim = '', started = false, gotResult = false, retried = false;
+  sr.onstart = () => { micActive = true; micSetBtn(true); micToast('🎙️ Spreche…', 30000); };
 
-    sr.onstart = () => {
-      started = true;
-      micActive = true; micSetBtn(true);
-      micToast('🎙️ Spreche…', 30000);
-    };
-    sr.onresult = (e) => {
-      let interim = '';
-      finalText = '';
-      for (const r of e.results) {
-        if (r.isFinal) finalText += r[0].transcript;
-        else interim += r[0].transcript;
-      }
-      if (interim) { lastInterim = interim; micToast('🎙️ ' + interim.substring(0, 60), 5000); }
-      if (finalText && !gotResult) { gotResult = true; sr.stop(); }
-    };
-    sr.onend = () => {
-      window._srLastEnd = Date.now();
-      micActive = false; micSetBtn(false);
-      if (!started) return;
-      const srFix = {'ulla':'Bolla','Ulla':'Bolla','bolla':'Bolla','Wolla':'Bolla','Bola':'Bolla','Polla':'Bolla','Holla':'Bolla'};
-      const fixText = t => t.replace(/\b(Ulla|ulla|bolla|Wolla|Bola|Polla|Holla)\b/g, m => srFix[m] || m);
-      const text = fixText((finalText || lastInterim).trim());
-      if (text) {
-        const input = document.getElementById('bolla-input');
-        if (input) { input.value = (input.value ? input.value + ' ' : '') + text; const cb=document.getElementById('bolla-clear-btn');if(cb)cb.style.display='block'; }
-        micToast('✅ ' + text.substring(0, 60), 3000);
-        if (document.getElementById('voice-toggle')?.checked) setTimeout(() => bollaSend(), 200);
-      } else if (!retried) {
-        retried = true;
-        micToast('🔄 Nochmal…', 1200);
-        setTimeout(() => micToggle(), 950);
-      } else {
-        micToast('🔇 Nichts erkannt', 2500);
-      }
-    };
-    sr.onerror = (e) => {
-      if (e.error === 'aborted') return;
-      micActive = false; micSetBtn(false);
-      const msgs = {
-        'not-allowed':    '❌ Mikrofon gesperrt — Schloss-Symbol in Adressleiste prüfen',
-        'audio-capture':  '❌ Kein Mikrofon gefunden — Windows Soundeinstellungen prüfen',
-        'network':        '⚠️ Netzwerkfehler — Web Speech API benötigt Internet',
-        'no-speech':      '🔇 Keine Sprache erkannt — Mikrofon-Lautstärke prüfen',
-        'service-not-allowed': '❌ Dienst verweigert — Online-Spracherkennung in Windows aktivieren',
-      };
-      micToast((msgs[e.error] || '⚠️ Fehler: ' + e.error) + ' [' + e.error + ']', 7000);
-      console.warn('Speech recognition error:', e.error, e);
-    };
+  sr.onresult = (e) => {
+    const raw = Array.from(e.results).map(r => r[0].transcript).join('').trim();
+    const fix = {'Ulla':'Bolla','ulla':'Bolla','bolla':'Bolla','Wolla':'Bolla','Bola':'Bolla','Polla':'Bolla','Holla':'Bolla'};
+    const text = raw.replace(/\b(Ulla|ulla|bolla|Wolla|Bola|Polla|Holla)\b/g, m => fix[m] || m);
+    if (text) {
+      const input = document.getElementById('bolla-input');
+      if (input) { input.value = (input.value ? input.value + ' ' : '') + text; const cb = document.getElementById('bolla-clear-btn'); if(cb) cb.style.display='block'; }
+      micToast('✅ ' + text.substring(0, 60), 3000);
+      if (document.getElementById('voice-toggle')?.checked) setTimeout(() => bollaSend(), 200);
+    } else {
+      micToast('🔇 Nichts erkannt', 2500);
+    }
+  };
 
-    try { sr.start(); }
-    catch(e) { micActive = false; micSetBtn(false); micToast('⚠️ Start fehlgeschlagen: ' + e.message, 4000); }
-  }, wait);
+  sr.onend = () => { micActive = false; micSetBtn(false); };
+
+  sr.onerror = (e) => {
+    if (e.error === 'aborted') return;
+    micActive = false; micSetBtn(false);
+    const msgs = {
+      'not-allowed':         '❌ Mikrofon gesperrt — Schloss in Adressleiste prüfen',
+      'audio-capture':       '❌ Kein Mikrofon gefunden',
+      'network':             '⚠️ Netzwerkfehler — evtl. F-Secure blockiert',
+      'no-speech':           '🔇 Nichts erkannt',
+      'service-not-allowed': '❌ Sprachdienst verweigert',
+    };
+    micToast(msgs[e.error] || '⚠️ ' + e.error, 5000);
+  };
+
+  try { sr.start(); }
+  catch(e) { micActive = false; micSetBtn(false); micToast('⚠️ ' + e.message, 4000); }
 }
 
 // ── KI-FORUM MIC (Web Speech API) ──────────────────────────────────────────
@@ -11194,21 +11169,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Web Speech API vorwärmen — stille Session damit der Dienst beim ersten echten Klick sofort reagiert
-  setTimeout(() => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return;
-    try {
-      const warmup = new SR();
-      warmup.lang = 'de-DE';
-      warmup.continuous = false;
-      warmup.interimResults = false;
-      warmup.onerror = () => {};
-      warmup.onresult = () => { warmup.abort(); };
-      warmup.start();
-      setTimeout(() => { try { warmup.abort(); } catch(e) {} }, 2000);
-    } catch(e) {}
-  }, 3000);
 });
 </script>
 
