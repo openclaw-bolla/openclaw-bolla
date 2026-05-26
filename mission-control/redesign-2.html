@@ -5,840 +5,651 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mission Control</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --green: #00ff41;
-    --green-dim: #00b32d;
-    --green-dark: #003b00;
-    --green-glow: rgba(0,255,65,0.15);
-    --green-glow2: rgba(0,255,65,0.05);
-    --black: #000000;
-    --bg: #020d02;
-    --card-bg: #050f05;
-    --border: #00ff4133;
-    --border-bright: #00ff4166;
-    --font: 'Share Tech Mono', 'Courier New', monospace;
-  }
-
+  * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    background: var(--bg);
-    color: var(--green);
-    font-family: var(--font);
-    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+    background: #F2F2F7;
+    color: #1C1C1E;
+    display: flex;
     height: 100vh;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    position: relative;
   }
 
-  /* CRT scanlines overlay */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.07) 2px,
-      rgba(0,0,0,0.07) 4px
-    );
-    pointer-events: none;
-    z-index: 9999;
-  }
-
-  /* Screen flicker */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%);
-    pointer-events: none;
-    z-index: 9998;
-  }
-
-  /* ── TOPBAR ── */
-  .topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    height: 44px;
-    border-bottom: 1px solid var(--border-bright);
-    background: var(--black);
-    flex-shrink: 0;
-    box-shadow: 0 0 20px rgba(0,255,65,0.08);
-    position: relative;
-    z-index: 100;
-  }
-
-  .topbar-left {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .topbar-logo {
-    color: var(--green);
-    font-size: 16px;
-    letter-spacing: 4px;
-    text-shadow: 0 0 10px var(--green), 0 0 20px var(--green);
-    font-weight: bold;
-  }
-
-  .topbar-sep { color: var(--green-dim); opacity: 0.4; }
-
-  .topbar-title {
-    color: var(--green);
-    font-size: 13px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    opacity: 0.85;
-  }
-
-  .topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
-
-  .topbar-status {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: var(--green-dim);
-    letter-spacing: 1px;
-  }
-
-  .status-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green);
-    animation: blink 2s ease-in-out infinite;
-  }
-
-  .topbar-clock {
-    font-size: 22px;
-    color: var(--green);
-    letter-spacing: 3px;
-    text-shadow: 0 0 12px var(--green), 0 0 24px rgba(0,255,65,0.4);
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-
-  /* ── LAYOUT ── */
-  .layout {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-  }
-
-  /* ── SIDEBAR ── */
+  /* SIDEBAR */
   .sidebar {
-    width: 200px;
-    flex-shrink: 0;
-    background: var(--black);
-    border-right: 1px solid var(--border-bright);
+    width: 220px;
+    min-width: 220px;
+    background: #FFFFFF;
+    border-right: 1px solid #E5E5EA;
     display: flex;
     flex-direction: column;
-    padding: 16px 0;
-    gap: 2px;
-    overflow-y: auto;
+    padding: 28px 0;
   }
-
-  .sidebar-section {
-    padding: 4px 16px 8px;
-    font-size: 9px;
-    color: var(--green-dim);
-    letter-spacing: 3px;
-    opacity: 0.5;
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 20px 28px 20px;
+    border-bottom: 1px solid #F2F2F7;
+  }
+  .sidebar-logo .logo-icon {
+    width: 32px;
+    height: 32px;
+    background: #007AFF;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .sidebar-logo .logo-text {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1C1C1E;
+    letter-spacing: -0.3px;
+  }
+  .sidebar-logo .logo-sub {
+    font-size: 11px;
+    color: #8E8E93;
+    font-weight: 400;
+    margin-top: 1px;
+  }
+  .nav-section {
+    padding: 20px 12px 0 12px;
+    flex: 1;
+  }
+  .nav-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #8E8E93;
+    letter-spacing: 0.8px;
     text-transform: uppercase;
-    margin-top: 8px;
+    padding: 0 8px;
+    margin-bottom: 6px;
+    margin-top: 20px;
   }
-
+  .nav-label:first-child { margin-top: 0; }
   .nav-item {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 9px 16px;
+    padding: 9px 10px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.1s;
-    border-left: 2px solid transparent;
-    font-size: 12px;
-    letter-spacing: 1px;
-    color: var(--green-dim);
-    position: relative;
+    font-size: 14px;
+    font-weight: 500;
+    color: #3A3A3C;
+    transition: background 0.15s;
+    margin-bottom: 2px;
   }
-
-  .nav-item:hover {
-    background: var(--green-glow2);
-    color: var(--green);
-    border-left-color: var(--green-dim);
-  }
-
+  .nav-item:hover { background: #F2F2F7; }
   .nav-item.active {
-    background: var(--green-glow);
-    color: var(--green);
-    border-left-color: var(--green);
-    text-shadow: 0 0 8px rgba(0,255,65,0.5);
+    background: #EAF3FF;
+    color: #007AFF;
   }
-
-  .nav-item.active::before {
-    content: '▶';
-    font-size: 8px;
-    position: absolute;
-    left: 6px;
-    color: var(--green);
+  .nav-item .nav-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
   }
-
-  .nav-icon { width: 16px; text-align: center; font-size: 13px; }
-
+  .nav-item.active .nav-icon { background: #007AFF20; }
   .nav-badge {
     margin-left: auto;
-    background: var(--green);
-    color: var(--black);
-    font-size: 9px;
-    padding: 1px 5px;
-    border-radius: 2px;
-    font-weight: bold;
-  }
-
-  .sidebar-bottom {
-    margin-top: auto;
-    padding: 12px 16px;
-    border-top: 1px solid var(--border);
+    background: #FF3B30;
+    color: #fff;
     font-size: 10px;
-    color: var(--green-dim);
-    opacity: 0.5;
-    line-height: 1.6;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 20px;
+    min-width: 18px;
+    text-align: center;
   }
-
-  /* ── MAIN ── */
-  .main {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--green-dim) transparent;
-  }
-
-  .main::-webkit-scrollbar { width: 4px; }
-  .main::-webkit-scrollbar-thumb { background: var(--green-dim); opacity: 0.4; }
-
-  /* ── SECTION HEADER ── */
-  .section-header {
+  .sidebar-user {
+    padding: 16px 12px 0 12px;
+    border-top: 1px solid #F2F2F7;
+    margin-top: 12px;
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 4px;
+  }
+  .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #007AFF, #5AC8FA);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+  }
+  .user-info .user-name { font-size: 13px; font-weight: 600; }
+  .user-info .user-role { font-size: 11px; color: #8E8E93; }
+
+  /* MAIN */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid #E5E5EA;
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .page-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1C1C1E;
+    letter-spacing: -0.5px;
+  }
+  .topbar-tag {
+    background: #F2F2F7;
+    color: #8E8E93;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.2px;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 20px; }
+  .topbar-time {
+    font-size: 22px;
+    font-weight: 200;
+    color: #1C1C1E;
+    letter-spacing: -0.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .topbar-date { font-size: 12px; color: #8E8E93; text-align: right; }
+
+  /* CONTENT */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px;
   }
 
   .section-title {
-    font-size: 10px;
-    letter-spacing: 4px;
-    color: var(--green-dim);
+    font-size: 13px;
+    font-weight: 600;
+    color: #8E8E93;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
-    opacity: 0.7;
+    margin-bottom: 14px;
+    margin-top: 28px;
   }
+  .section-title:first-child { margin-top: 0; }
 
-  .section-line {
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(to right, var(--border-bright), transparent);
-  }
-
-  /* ── GRID ── */
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
-  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-
-  /* ── CARD ── */
-  .card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    padding: 14px 16px;
-    position: relative;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: 30px; height: 1px;
-    background: var(--green);
-    opacity: 0.6;
-  }
-
-  .card:hover {
-    border-color: var(--border-bright);
-    box-shadow: 0 0 16px rgba(0,255,65,0.08);
-  }
-
-  .card-label {
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: var(--green-dim);
-    text-transform: uppercase;
-    margin-bottom: 10px;
-    opacity: 0.7;
-  }
-
-  .card-value {
-    font-size: 32px;
-    color: var(--green);
-    letter-spacing: 2px;
-    line-height: 1;
-    text-shadow: 0 0 12px rgba(0,255,65,0.4);
-  }
-
-  .card-value.medium { font-size: 22px; }
-  .card-value.warn { color: #ffcc00; text-shadow: 0 0 12px rgba(255,204,0,0.4); }
-  .card-value.ok { color: var(--green); }
-
-  .card-sub {
-    font-size: 10px;
-    color: var(--green-dim);
-    margin-top: 6px;
-    opacity: 0.6;
-  }
-
-  /* ── PROGRESS BAR ── */
-  .progress-wrap {
-    margin-top: 10px;
-  }
-
-  .progress-track {
-    height: 4px;
-    background: rgba(0,255,65,0.1);
-    border: 1px solid var(--border);
-    overflow: hidden;
-  }
-
-  .progress-bar {
-    height: 100%;
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green);
-    transition: width 0.3s;
-  }
-
-  .progress-bar.warn { background: #ffcc00; box-shadow: 0 0 6px #ffcc00; }
-
-  .progress-label {
-    display: flex;
-    justify-content: space-between;
-    font-size: 9px;
-    color: var(--green-dim);
-    margin-bottom: 4px;
-    opacity: 0.6;
-  }
-
-  /* ── SPARKLINE ── */
-  .sparkline {
-    margin-top: 10px;
-    height: 30px;
-    display: flex;
-    align-items: flex-end;
-    gap: 2px;
-  }
-
-  .spark-bar {
-    flex: 1;
-    background: var(--green);
-    opacity: 0.5;
-    min-height: 2px;
-    transition: opacity 0.2s;
-  }
-
-  .spark-bar:last-child { opacity: 1; box-shadow: 0 0 4px var(--green); }
-
-  /* ── MAIL CARD ── */
-  .mail-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
-
-  .mail-item {
-    border-left: 2px solid var(--border-bright);
-    padding: 6px 10px;
-    background: rgba(0,255,65,0.03);
-  }
-
-  .mail-item.unread { border-left-color: var(--green); }
-
-  .mail-sender {
-    font-size: 11px;
-    color: var(--green);
-    margin-bottom: 2px;
-  }
-
-  .mail-subject {
-    font-size: 10px;
-    color: var(--green-dim);
-    opacity: 0.7;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .mail-time {
-    font-size: 9px;
-    color: var(--green-dim);
-    opacity: 0.4;
-    margin-top: 2px;
-  }
-
-  /* ── WETTER CARD ── */
-  .weather-main {
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    margin-bottom: 10px;
-  }
-
-  .weather-temp {
-    font-size: 38px;
-    color: var(--green);
-    text-shadow: 0 0 14px rgba(0,255,65,0.4);
-    line-height: 1;
-  }
-
-  .weather-icon { font-size: 28px; line-height: 1; }
-
-  .weather-details {
+  .grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4px 16px;
+    gap: 16px;
+  }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-2 { grid-template-columns: 2fr 1fr; }
+
+  /* CARDS */
+  .card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.04);
+    position: relative;
+    overflow: hidden;
+  }
+  .card-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #8E8E93;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .card-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: #1C1C1E;
+    letter-spacing: -1.5px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .card-unit {
+    font-size: 16px;
+    font-weight: 400;
+    color: #8E8E93;
+    letter-spacing: -0.3px;
+  }
+  .card-sub {
+    font-size: 12px;
+    color: #8E8E93;
     margin-top: 8px;
   }
 
-  .weather-detail {
-    font-size: 10px;
-    color: var(--green-dim);
-    opacity: 0.7;
+  /* PROGRESS BAR */
+  .progress-wrap { margin-top: 14px; }
+  .progress-bar {
+    height: 6px;
+    background: #F2F2F7;
+    border-radius: 99px;
+    overflow: hidden;
   }
-
-  .weather-detail span { color: var(--green); }
-
-  /* ── TERMINAL CARD ── */
-  .terminal-output {
-    font-size: 11px;
-    line-height: 1.7;
-    color: var(--green-dim);
-    margin-top: 4px;
+  .progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.4s ease;
   }
+  .fill-blue { background: #007AFF; }
+  .fill-green { background: #34C759; }
+  .fill-orange { background: #FF9500; }
+  .fill-red { background: #FF3B30; }
 
-  .terminal-line { display: flex; gap: 8px; }
-  .terminal-prompt { color: var(--green); opacity: 0.6; }
-  .terminal-cmd { color: var(--green); }
-  .terminal-out { color: var(--green-dim); opacity: 0.65; padding-left: 12px; }
-  .terminal-cursor { display: inline-block; width: 7px; height: 12px; background: var(--green); animation: blink 1s step-end infinite; vertical-align: middle; }
-
-  /* ── CALENDAR CARD ── */
-  .cal-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
-
-  .cal-item {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    font-size: 11px;
-  }
-
-  .cal-time { color: var(--green); min-width: 44px; opacity: 0.8; }
-  .cal-event { color: var(--green-dim); opacity: 0.75; }
-  .cal-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--green); margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 4px var(--green); }
-
-  /* ── STATUS ROW ── */
-  .status-row { display: flex; gap: 14px; }
-
-  .status-pill {
+  /* STAT CARDS */
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 10px;
-    color: var(--green-dim);
-    letter-spacing: 1px;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 14px;
   }
+  .bg-blue { background: #EAF3FF; }
+  .bg-green { background: #E8F9EF; }
+  .bg-orange { background: #FFF5E6; }
+  .bg-red { background: #FFE9E9; }
+  .bg-purple { background: #F3EEFF; }
 
-  .status-led {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-  }
-
-  .led-green { background: var(--green); box-shadow: 0 0 6px var(--green); animation: blink 3s ease-in-out infinite; }
-  .led-yellow { background: #ffcc00; box-shadow: 0 0 6px #ffcc00; }
-  .led-red { background: #ff3333; box-shadow: 0 0 6px #ff3333; animation: blink 0.8s ease-in-out infinite; }
-
-  /* ── UPTIME ── */
-  .uptime-bar {
+  /* MAIL CARD */
+  .mail-list { margin-top: 4px; }
+  .mail-item {
     display: flex;
-    gap: 2px;
-    margin-top: 8px;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #F2F2F7;
   }
-
-  .uptime-seg {
+  .mail-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .mail-dot {
+    width: 8px;
     height: 8px;
-    flex: 1;
-    background: var(--green);
-    opacity: 0.7;
+    border-radius: 50%;
+    background: #007AFF;
+    margin-top: 4px;
+    flex-shrink: 0;
   }
+  .mail-sender { font-size: 13px; font-weight: 600; color: #1C1C1E; }
+  .mail-subject { font-size: 12px; color: #8E8E93; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mail-time { font-size: 11px; color: #C7C7CC; margin-left: auto; flex-shrink: 0; }
 
-  .uptime-seg.down { background: #ff3333; opacity: 0.6; }
-  .uptime-seg.partial { background: #ffcc00; opacity: 0.6; }
-
-  /* ASCII BORDER CARD */
-  .card-corner-tl, .card-corner-tr, .card-corner-bl, .card-corner-br {
-    position: absolute;
-    font-size: 10px;
-    color: var(--green);
-    opacity: 0.3;
+  /* WEATHER */
+  .weather-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .weather-icon-big { font-size: 56px; line-height: 1; }
+  .weather-temp {
+    font-size: 52px;
+    font-weight: 700;
+    letter-spacing: -2px;
+    color: #1C1C1E;
     line-height: 1;
   }
+  .weather-desc { font-size: 13px; color: #8E8E93; margin-top: 4px; }
+  .weather-row {
+    display: flex;
+    gap: 0;
+    border-top: 1px solid #F2F2F7;
+    padding-top: 14px;
+  }
+  .weather-stat {
+    flex: 1;
+    text-align: center;
+  }
+  .weather-stat:not(:last-child) { border-right: 1px solid #F2F2F7; }
+  .weather-stat .ws-val { font-size: 15px; font-weight: 600; color: #1C1C1E; }
+  .weather-stat .ws-lbl { font-size: 11px; color: #8E8E93; margin-top: 2px; }
 
-  .card-corner-tl { top: 3px; left: 4px; }
-  .card-corner-tr { top: 3px; right: 4px; }
-  .card-corner-bl { bottom: 3px; left: 4px; }
-  .card-corner-br { bottom: 3px; right: 4px; }
+  /* BOLLA STATUS */
+  .status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #F2F2F7;
+  }
+  .status-row:last-child { border-bottom: none; }
+  .status-left { display: flex; align-items: center; gap: 10px; }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-green { background: #34C759; box-shadow: 0 0 0 3px #34C75930; }
+  .dot-gray { background: #C7C7CC; }
+  .dot-orange { background: #FF9500; box-shadow: 0 0 0 3px #FF950030; }
+  .status-name { font-size: 13px; font-weight: 500; color: #1C1C1E; }
+  .status-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+  .badge-green { background: #E8F9EF; color: #34C759; }
+  .badge-gray { background: #F2F2F7; color: #8E8E93; }
+  .badge-orange { background: #FFF5E6; color: #FF9500; }
+
+  /* QUICK ACTIONS */
+  .quick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .quick-btn {
+    background: #F2F2F7;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .quick-btn:hover { background: #E5E5EA; }
+  .quick-btn .qb-icon { font-size: 20px; margin-bottom: 8px; display: block; }
+  .quick-btn .qb-label { font-size: 12px; font-weight: 600; color: #3A3A3C; }
 </style>
 </head>
 <body>
 
-<!-- TOPBAR -->
-<div class="topbar">
-  <div class="topbar-left">
-    <div class="topbar-logo">BOLLA</div>
-    <div class="topbar-sep">//</div>
-    <div class="topbar-title">Dashboard</div>
-  </div>
-  <div class="topbar-right">
-    <div class="topbar-status">
-      <div class="status-dot"></div>
-      ONLINE
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">🐾</div>
+    <div>
+      <div class="logo-text">Mission Control</div>
+      <div class="logo-sub">Bolla · v2.4</div>
     </div>
-    <div class="topbar-status">SYS_OK</div>
-    <div class="topbar-clock">20:14</div>
   </div>
-</div>
 
-<!-- LAYOUT -->
-<div class="layout">
-
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sidebar-section">Navigation</div>
-
+  <nav class="nav-section">
+    <div class="nav-label">Übersicht</div>
     <div class="nav-item active">
-      <span class="nav-icon">⬡</span>
+      <div class="nav-icon">⊞</div>
       Dashboard
     </div>
     <div class="nav-item">
-      <span class="nav-icon">◈</span>
+      <div class="nav-icon">🐾</div>
       Bolla
     </div>
+
+    <div class="nav-label">Tools</div>
     <div class="nav-item">
-      <span class="nav-icon">▦</span>
+      <div class="nav-icon">🎓</div>
       Schule
     </div>
     <div class="nav-item">
-      <span class="nav-icon">◷</span>
+      <div class="nav-icon">📅</div>
       Kalender
     </div>
     <div class="nav-item">
-      <span class="nav-icon">✉</span>
+      <div class="nav-icon">✉️</div>
       E-Mail
       <span class="nav-badge">3</span>
     </div>
 
-    <div class="sidebar-section">Tools</div>
-
+    <div class="nav-label">Info</div>
     <div class="nav-item">
-      <span class="nav-icon">◌</span>
+      <div class="nav-icon">🌤</div>
       Wetter
     </div>
     <div class="nav-item">
-      <span class="nav-icon">⊞</span>
+      <div class="nav-icon">💻</div>
       System Info
     </div>
+  </nav>
 
-    <div class="sidebar-bottom">
-      BOLLA v2.4.1<br>
-      SESSION #0047<br>
-      25.05.2026
+  <div class="sidebar-user">
+    <div class="avatar">C</div>
+    <div class="user-info">
+      <div class="user-name">Chris M.</div>
+      <div class="user-role">Lehrer · Hamburg</div>
     </div>
   </div>
+</aside>
 
-  <!-- MAIN -->
-  <div class="main">
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="page-title">Dashboard</span>
+      <span class="topbar-tag">Dienstag, 26. Mai</span>
+    </div>
+    <div class="topbar-right">
+      <div>
+        <div class="topbar-time">20:14</div>
+        <div class="topbar-date">KW 22 · 2026</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="content">
 
     <!-- SYSTEM STATS -->
-    <div>
-      <div class="section-header">
-        <div class="section-title">// System</div>
-        <div class="section-line"></div>
+    <div class="section-title">System</div>
+    <div class="grid grid-4">
+
+      <!-- RAM -->
+      <div class="card">
+        <div class="stat-icon bg-blue">🧠</div>
+        <div class="card-label">RAM</div>
+        <div class="card-value">34<span class="card-unit">%</span></div>
+        <div class="card-sub">5.4 GB von 16 GB</div>
+        <div class="progress-wrap">
+          <div class="progress-bar">
+            <div class="progress-fill fill-blue" style="width:34%"></div>
+          </div>
+        </div>
       </div>
-      <div class="grid-4">
 
-        <div class="card">
-          <div class="card-corner-tl">┌</div><div class="card-corner-tr">┐</div>
-          <div class="card-corner-bl">└</div><div class="card-corner-br">┘</div>
-          <div class="card-label">RAM Usage</div>
-          <div class="card-value ok">34%</div>
-          <div class="card-sub">5.4 GB / 16 GB</div>
-          <div class="progress-wrap">
-            <div class="progress-label"><span>used</span><span>34%</span></div>
-            <div class="progress-track"><div class="progress-bar" style="width:34%"></div></div>
+      <!-- CPU -->
+      <div class="card">
+        <div class="stat-icon bg-green">⚡</div>
+        <div class="card-label">CPU</div>
+        <div class="card-value">12<span class="card-unit">%</span></div>
+        <div class="card-sub">i7 · 8 Kerne · 2,4 GHz</div>
+        <div class="progress-wrap">
+          <div class="progress-bar">
+            <div class="progress-fill fill-green" style="width:12%"></div>
           </div>
         </div>
-
-        <div class="card">
-          <div class="card-corner-tl">┌</div><div class="card-corner-tr">┐</div>
-          <div class="card-corner-bl">└</div><div class="card-corner-br">┘</div>
-          <div class="card-label">CPU Load</div>
-          <div class="card-value ok">12%</div>
-          <div class="card-sub">i7-11370H · 4T</div>
-          <div class="sparkline">
-            <div class="spark-bar" style="height:20%"></div>
-            <div class="spark-bar" style="height:35%"></div>
-            <div class="spark-bar" style="height:18%"></div>
-            <div class="spark-bar" style="height:55%"></div>
-            <div class="spark-bar" style="height:22%"></div>
-            <div class="spark-bar" style="height:15%"></div>
-            <div class="spark-bar" style="height:40%"></div>
-            <div class="spark-bar" style="height:12%"></div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-corner-tl">┌</div><div class="card-corner-tr">┐</div>
-          <div class="card-corner-bl">└</div><div class="card-corner-br">┘</div>
-          <div class="card-label">Disk C:</div>
-          <div class="card-value warn">67%</div>
-          <div class="card-sub">334 GB / 512 GB</div>
-          <div class="progress-wrap">
-            <div class="progress-label"><span>used</span><span>67%</span></div>
-            <div class="progress-track"><div class="progress-bar warn" style="width:67%"></div></div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-corner-tl">┌</div><div class="card-corner-tr">┐</div>
-          <div class="card-corner-bl">└</div><div class="card-corner-br">┘</div>
-          <div class="card-label">Uptime</div>
-          <div class="card-value medium ok">2d 14h</div>
-          <div class="card-sub">seit 22.05. 05:41</div>
-          <div class="uptime-bar">
-            <div class="uptime-seg"></div><div class="uptime-seg"></div>
-            <div class="uptime-seg"></div><div class="uptime-seg"></div>
-            <div class="uptime-seg"></div><div class="uptime-seg"></div>
-            <div class="uptime-seg"></div><div class="uptime-seg"></div>
-            <div class="uptime-seg"></div><div class="uptime-seg"></div>
-            <div class="uptime-seg"></div><div class="uptime-seg"></div>
-            <div class="uptime-seg partial"></div>
-          </div>
-        </div>
-
       </div>
+
+      <!-- DISK -->
+      <div class="card">
+        <div class="stat-icon bg-orange">💾</div>
+        <div class="card-label">Disk</div>
+        <div class="card-value">61<span class="card-unit">%</span></div>
+        <div class="card-sub">488 GB von 800 GB</div>
+        <div class="progress-wrap">
+          <div class="progress-bar">
+            <div class="progress-fill fill-orange" style="width:61%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- UPTIME -->
+      <div class="card">
+        <div class="stat-icon bg-purple">🕐</div>
+        <div class="card-label">Uptime</div>
+        <div class="card-value" style="font-size:28px; letter-spacing:-1px;">3d 14h</div>
+        <div class="card-sub">Seit 22. Mai, 05:52 Uhr</div>
+        <div class="progress-wrap" style="margin-top:20px">
+          <div class="progress-bar" style="height:4px">
+            <div class="progress-fill" style="width:100%; background: linear-gradient(90deg,#007AFF,#5AC8FA)"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
-    <!-- ROW 2: MAIL + WETTER + KALENDER -->
-    <div>
-      <div class="section-header">
-        <div class="section-title">// Übersicht</div>
-        <div class="section-line"></div>
-      </div>
-      <div class="grid-3">
+    <!-- MIDDLE ROW -->
+    <div class="section-title" style="margin-top:28px">Nachrichten & Wetter</div>
+    <div class="grid grid-2">
 
-        <!-- MAIL -->
-        <div class="card">
-          <div class="card-corner-tl">┌</div><div class="card-corner-tr">┐</div>
-          <div class="card-corner-bl">└</div><div class="card-corner-br">┘</div>
-          <div class="card-label">E-Mail ── 3 neu</div>
-          <div class="mail-list">
-            <div class="mail-item unread">
+      <!-- MAIL -->
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="stat-icon bg-blue" style="margin-bottom:0; width:36px; height:36px; font-size:18px;">✉️</div>
+            <div>
+              <div style="font-size:14px; font-weight:700;">E-Mail</div>
+              <div style="font-size:11px; color:#8E8E93;">ernstmandel@outlook.de</div>
+            </div>
+          </div>
+          <div style="background:#007AFF; color:#fff; font-size:12px; font-weight:700; padding:4px 12px; border-radius:20px;">3 neu</div>
+        </div>
+        <div class="mail-list">
+          <div class="mail-item">
+            <div class="mail-dot"></div>
+            <div style="flex:1; min-width:0;">
               <div class="mail-sender">Schulleitung</div>
-              <div class="mail-subject">Vertretungsplan KW22 — Änderung Freitag</div>
-              <div class="mail-time">14:37</div>
+              <div class="mail-subject">Vertretungsplan KW23 — Bitte prüfen</div>
             </div>
-            <div class="mail-item unread">
-              <div class="mail-sender">Microsoft 365</div>
-              <div class="mail-subject">Ihr monatlicher Speicherbericht</div>
-              <div class="mail-time">09:02</div>
+            <div class="mail-time">18:42</div>
+          </div>
+          <div class="mail-item">
+            <div class="mail-dot"></div>
+            <div style="flex:1; min-width:0;">
+              <div class="mail-sender">Schüler 7b</div>
+              <div class="mail-subject">Frage zur Hausaufgabe Seite 84</div>
             </div>
-            <div class="mail-item unread">
-              <div class="mail-sender">GitHub</div>
-              <div class="mail-subject">[bolla-workspace] New commit pushed</div>
-              <div class="mail-time">gestern</div>
+            <div class="mail-time">16:11</div>
+          </div>
+          <div class="mail-item">
+            <div class="mail-dot"></div>
+            <div style="flex:1; min-width:0;">
+              <div class="mail-sender">Lessing-Gymnasium</div>
+              <div class="mail-subject">Konferenz Do. 29.05. um 14:30 Uhr</div>
             </div>
+            <div class="mail-time">09:05</div>
           </div>
         </div>
-
-        <!-- WETTER -->
-        <div class="card">
-          <div class="card-corner-tl">┌</div><div class="card-corner-tr">┐</div>
-          <div class="card-corner-bl">└</div><div class="card-corner-br">┘</div>
-          <div class="card-label">Wetter ── Hamburg</div>
-          <div class="weather-main">
-            <div class="weather-temp">18°C</div>
-            <div class="weather-icon">⛅</div>
-          </div>
-          <div class="card-sub" style="margin-bottom:8px">Teilbewölkt · gefühlt 16°C</div>
-          <div class="weather-details">
-            <div class="weather-detail">Wind <span>14 km/h SW</span></div>
-            <div class="weather-detail">Regen <span>12%</span></div>
-            <div class="weather-detail">Luftf. <span>68%</span></div>
-            <div class="weather-detail">UV <span>3 (moderat)</span></div>
-          </div>
-          <div class="card-sub" style="margin-top:10px">Mo <span style="color:var(--green)">20°</span> · Di <span style="color:var(--green)">17°</span> · Mi <span style="color:var(--green)">15°</span></div>
-        </div>
-
-        <!-- KALENDER -->
-        <div class="card">
-          <div class="card-corner-tl">┌</div><div class="card-corner-tr">┐</div>
-          <div class="card-corner-bl">└</div><div class="card-corner-br">┘</div>
-          <div class="card-label">Kalender ── Heute</div>
-          <div class="cal-list">
-            <div class="cal-item">
-              <div class="cal-dot"></div>
-              <div class="cal-time">08:00</div>
-              <div class="cal-event">Lessing I — 7b Deutsch (R204)</div>
-            </div>
-            <div class="cal-item">
-              <div class="cal-dot"></div>
-              <div class="cal-time">10:00</div>
-              <div class="cal-event">Lessing II — 7a Mathe (R118)</div>
-            </div>
-            <div class="cal-item">
-              <div class="cal-dot"></div>
-              <div class="cal-time">13:30</div>
-              <div class="cal-event">Konferenz Lehrerzimmer</div>
-            </div>
-            <div class="cal-item">
-              <div class="cal-dot" style="opacity:0.3"></div>
-              <div class="cal-time" style="opacity:0.4">17:00</div>
-              <div class="cal-event" style="opacity:0.4">Elterngespräch (Zoom)</div>
-            </div>
-          </div>
-        </div>
-
       </div>
+
+      <!-- WEATHER -->
+      <div class="card">
+        <div class="card-label">Wetter · Hamburg</div>
+        <div class="weather-main">
+          <div class="weather-icon-big">⛅</div>
+          <div>
+            <div class="weather-temp">18°</div>
+            <div class="weather-desc">Teilweise bewölkt</div>
+          </div>
+        </div>
+        <div class="weather-row">
+          <div class="weather-stat">
+            <div class="ws-val">💧 72%</div>
+            <div class="ws-lbl">Luftfeuchte</div>
+          </div>
+          <div class="weather-stat">
+            <div class="ws-val">🌬 14 km/h</div>
+            <div class="ws-lbl">Wind NW</div>
+          </div>
+          <div class="weather-stat">
+            <div class="ws-val">☀️ 21°</div>
+            <div class="ws-lbl">Morgen</div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
-    <!-- ROW 3: TERMINAL + SERVICES -->
-    <div>
-      <div class="section-header">
-        <div class="section-title">// Services &amp; Log</div>
-        <div class="section-line"></div>
-      </div>
-      <div class="grid-2">
+    <!-- BOTTOM ROW -->
+    <div class="section-title">Bolla Status & Schnellzugriff</div>
+    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 16px;">
 
-        <!-- TERMINAL -->
-        <div class="card">
-          <div class="card-corner-tl">┌</div><div class="card-corner-tr">┐</div>
-          <div class="card-corner-bl">└</div><div class="card-corner-br">┘</div>
-          <div class="card-label">Terminal Log</div>
-          <div class="terminal-output">
-            <div class="terminal-line">
-              <span class="terminal-prompt">bolla@wsl2:~$</span>
-              <span class="terminal-cmd">systemctl status cloudflared</span>
-            </div>
-            <div class="terminal-line"><span class="terminal-out">● cloudflared.service: active (running)</span></div>
-            <div class="terminal-line"><span class="terminal-out">  since Mon 2026-05-25 05:41:12 CET</span></div>
-            <div class="terminal-line" style="margin-top:6px">
-              <span class="terminal-prompt">bolla@wsl2:~$</span>
-              <span class="terminal-cmd">git log --oneline -3</span>
-            </div>
-            <div class="terminal-line"><span class="terminal-out">4f1fdf3 Bolla Songs: Web-Suche</span></div>
-            <div class="terminal-line"><span class="terminal-out">34e7d6b Mic: Web Speech API fix</span></div>
-            <div class="terminal-line"><span class="terminal-out">448eb40 Automatische Nachtsicherung</span></div>
-            <div class="terminal-line" style="margin-top:6px">
-              <span class="terminal-prompt">bolla@wsl2:~$</span>
-              <span class="terminal-cursor"></span>
-            </div>
-          </div>
+      <!-- BOLLA STATUS -->
+      <div class="card">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+          <div class="stat-icon bg-blue" style="margin-bottom:0; width:36px; height:36px; font-size:18px;">🐾</div>
+          <div style="font-size:14px; font-weight:700;">Bolla Services</div>
         </div>
-
-        <!-- SERVICES STATUS -->
-        <div class="card">
-          <div class="card-corner-tl">┌</div><div class="card-corner-tr">┐</div>
-          <div class="card-corner-bl">└</div><div class="card-corner-br">┘</div>
-          <div class="card-label">Service Monitor</div>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
-
-            <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
-              <div style="display:flex;gap:8px;align-items:center">
-                <div class="status-led led-green"></div>
-                <span style="color:var(--green)">Mission Control</span>
-              </div>
-              <span style="color:var(--green-dim);opacity:0.6">:18790 · 2d 14h</span>
-            </div>
-
-            <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
-              <div style="display:flex;gap:8px;align-items:center">
-                <div class="status-led led-green"></div>
-                <span style="color:var(--green)">Cloudflare Tunnel</span>
-              </div>
-              <span style="color:var(--green-dim);opacity:0.6">bolla.chrismandel.de</span>
-            </div>
-
-            <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
-              <div style="display:flex;gap:8px;align-items:center">
-                <div class="status-led led-green"></div>
-                <span style="color:var(--green)">GitHub Sync</span>
-              </div>
-              <span style="color:var(--green-dim);opacity:0.6">openclaw-bolla · up-to-date</span>
-            </div>
-
-            <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
-              <div style="display:flex;gap:8px;align-items:center">
-                <div class="status-led led-yellow"></div>
-                <span style="color:#ffcc00">OneDrive Backup</span>
-              </div>
-              <span style="color:var(--green-dim);opacity:0.6">sync pending</span>
-            </div>
-
-            <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px">
-              <div style="display:flex;gap:8px;align-items:center">
-                <div class="status-led led-green"></div>
-                <span style="color:var(--green)">WSL2 Netzwerk</span>
-              </div>
-              <span style="color:var(--green-dim);opacity:0.6">172.30.144.1 · ok</span>
-            </div>
-
+        <div class="status-row">
+          <div class="status-left">
+            <div class="status-dot dot-green"></div>
+            <span class="status-name">Mission Control Server</span>
           </div>
-
-          <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);">
-            <div class="card-label" style="margin-bottom:6px">Network I/O</div>
-            <div class="sparkline" style="height:20px">
-              <div class="spark-bar" style="height:30%"></div>
-              <div class="spark-bar" style="height:60%"></div>
-              <div class="spark-bar" style="height:45%"></div>
-              <div class="spark-bar" style="height:80%"></div>
-              <div class="spark-bar" style="height:35%"></div>
-              <div class="spark-bar" style="height:55%"></div>
-              <div class="spark-bar" style="height:70%"></div>
-              <div class="spark-bar" style="height:40%"></div>
-              <div class="spark-bar" style="height:65%"></div>
-              <div class="spark-bar" style="height:50%"></div>
-              <div class="spark-bar" style="height:85%"></div>
-              <div class="spark-bar" style="height:48%"></div>
-            </div>
-          </div>
+          <span class="status-badge badge-green">Online</span>
         </div>
-
+        <div class="status-row">
+          <div class="status-left">
+            <div class="status-dot dot-green"></div>
+            <span class="status-name">Cloudflare Tunnel</span>
+          </div>
+          <span class="status-badge badge-green">Aktiv</span>
+        </div>
+        <div class="status-row">
+          <div class="status-left">
+            <div class="status-dot dot-orange"></div>
+            <span class="status-name">Spotify Sync</span>
+          </div>
+          <span class="status-badge badge-orange">Idle</span>
+        </div>
+        <div class="status-row">
+          <div class="status-left">
+            <div class="status-dot dot-green"></div>
+            <span class="status-name">Nachtsicherung</span>
+          </div>
+          <span class="status-badge badge-green">02:00 Uhr</span>
+        </div>
       </div>
+
+      <!-- QUICK ACTIONS -->
+      <div class="card">
+        <div style="font-size:14px; font-weight:700; margin-bottom:14px;">Schnellzugriff</div>
+        <div class="quick-grid">
+          <button class="quick-btn">
+            <span class="qb-icon">🎵</span>
+            <div class="qb-label">Song generieren</div>
+          </button>
+          <button class="quick-btn">
+            <span class="qb-icon">📧</span>
+            <div class="qb-label">Mail verfassen</div>
+          </button>
+          <button class="quick-btn">
+            <span class="qb-icon">📝</span>
+            <div class="qb-label">Notiz anlegen</div>
+          </button>
+          <button class="quick-btn">
+            <span class="qb-icon">🔄</span>
+            <div class="qb-label">Backup starten</div>
+          </button>
+        </div>
+      </div>
+
     </div>
 
-  </div><!-- /main -->
-</div><!-- /layout -->
+  </div>
+</div>
 
 </body>
 </html>

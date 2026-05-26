@@ -7649,16 +7649,21 @@ function micToggle() {
 
   if (window._sr) { try { window._sr.abort(); } catch(e) {} window._sr = null; }
   voiceStop();
+  _startSpeechRecognition(SR);
+}
 
+function _startSpeechRecognition(SR) {
   const sr = new SR();
   window._sr = sr;
   sr.lang = 'de-DE';
   sr.continuous = false;
   sr.interimResults = false;
+  let gotResult = false;
 
   sr.onstart = () => { micActive = true; micSetBtn(true); micToast('🎙️ Spreche…', 30000); };
 
   sr.onresult = (e) => {
+    gotResult = true;
     const raw = Array.from(e.results).map(r => r[0].transcript).join('').trim();
     const fix = {'Ulla':'Bolla','ulla':'Bolla','bolla':'Bolla','Wolla':'Bolla','Bola':'Bolla','Polla':'Bolla','Holla':'Bolla'};
     const text = raw.replace(/\b(Ulla|ulla|bolla|Wolla|Bola|Polla|Holla)\b/g, m => fix[m] || m);
@@ -7672,15 +7677,19 @@ function micToggle() {
     }
   };
 
-  sr.onend = () => { micActive = false; micSetBtn(false); };
+  sr.onend = () => {
+    micActive = false; micSetBtn(false);
+    if (!gotResult) micToast('🔇 Kein Ergebnis — Mikrofon oder Verbindung prüfen', 4000);
+  };
 
   sr.onerror = (e) => {
     if (e.error === 'aborted') return;
+    gotResult = true; // onerror zeigt eigene Meldung, onend soll nix mehr sagen
     micActive = false; micSetBtn(false);
     const msgs = {
       'not-allowed':         '❌ Mikrofon gesperrt — Schloss in Adressleiste prüfen',
       'audio-capture':       '❌ Kein Mikrofon gefunden',
-      'network':             '⚠️ Netzwerkfehler — F-Secure blockiert Speech API',
+      'network':             '⚠️ Netzwerkfehler — speech.googleapis.com nicht erreichbar',
       'no-speech':           '🔇 Nichts erkannt',
       'service-not-allowed': '❌ Sprachdienst verweigert',
     };
