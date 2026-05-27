@@ -811,11 +811,12 @@ html, body {
     </div>
     <nav id="sidebar-nav">
       <div id="sidebar-reset-banner" style="display:none;background:#dc3545;color:white;padding:10px;margin:0 0 8px 0;border-radius:6px;font-size:13px;cursor:pointer;text-align:center;font-weight:600" onclick="if(confirm('Sidebar-Reihenfolge zurücksetzen?')){Object.keys(localStorage).filter(k=>k.startsWith('nav-')).forEach(k=>localStorage.removeItem(k));location.reload()}">⚠️ Sidebar reparieren (Reset)</div>
-      <div class="nav-block" id="navblock-uebersicht">
-        <div class="nav-section open" onclick="toggleNavSection('uebersicht')" id="nav-sec-uebersicht"><span class="nav-section-grip">⠿</span>Übersicht <span class="nav-section-chevron">▶</span></div>
-        <div class="nav-section-items" id="nav-section-items-uebersicht">
+      <div class="nav-block" id="navblock-start">
+        <div class="nav-section open" onclick="toggleNavSection('start')" id="nav-sec-start"><span class="nav-section-grip">⠿</span>Start <span class="nav-section-chevron">▶</span></div>
+        <div class="nav-section-items" id="nav-section-items-start">
           <div class="nav-item active" data-page="dashboard"><span class="icon">📊</span><span>Dashboard</span></div>
           <div class="nav-item" data-page="bolla"><span class="icon"><img src="/api/bolla/avatar" style="width:18px;height:18px;border-radius:50%;vertical-align:middle"></span><span>Bolla</span></div>
+          <div class="nav-item" data-page="wetter"><span class="icon">🌤️</span><span>Wetter</span></div>
         </div>
       </div>
 
@@ -863,11 +864,9 @@ html, body {
         </div>
       </div>
 
-      <div class="nav-block" id="navblock-ki">
-        <div class="nav-section" onclick="toggleNavSection('ki')" id="nav-sec-ki"><span class="nav-section-grip">⠿</span>KI <span class="nav-section-chevron">▶</span></div>
-        <div class="nav-section-items" id="nav-section-items-ki" style="max-height:0">
-          <div class="nav-item" data-page="localserver"><span class="icon">🖧</span><span>Local Server</span></div>
-          <div class="nav-item" data-page="redesigns"><span class="icon">🎨</span><span>Redesigns</span></div>
+      <div class="nav-block" id="navblock-kreativ">
+        <div class="nav-section" onclick="toggleNavSection('kreativ')" id="nav-sec-kreativ"><span class="nav-section-grip">⠿</span>KI & Kreativ <span class="nav-section-chevron">▶</span></div>
+        <div class="nav-section-items" id="nav-section-items-kreativ" style="max-height:0">
           <div class="nav-item" data-page="bildgen"><span class="icon">🍌</span><span>BildGen</span></div>
           <div class="nav-item" data-page="suno"><span class="icon">🎵</span><span>Bolla Songs</span></div>
           <div class="nav-item" data-page="fotoanalyse"><span class="icon">🔍</span><span>Foto-Analyse</span></div>
@@ -875,23 +874,14 @@ html, body {
         </div>
       </div>
 
-      <div class="nav-block" id="navblock-info">
-        <div class="nav-section" onclick="toggleNavSection('info')" id="nav-sec-info"><span class="nav-section-grip">⠿</span>Info <span class="nav-section-chevron">▶</span></div>
-        <div class="nav-section-items" id="nav-section-items-info" style="max-height:0">
-          <div class="nav-item" data-page="wetter"><span class="icon">🌤️</span><span>Wetter</span></div>
-          <div id="nav-group-system">
-            <div class="nav-group-header" id="nav-group-header-system" onclick="event.stopPropagation();toggleNavGroup('system')">
-              <span class="nav-group-grip">⠿</span><span class="icon">🖥️</span>
-              <span>System Info</span>
-              <span class="nav-group-count">3</span>
-              <span class="nav-group-chevron" id="nav-chevron-system">▶</span>
-            </div>
-            <div class="nav-group-items" id="nav-group-items-system">
-              <div class="nav-item nav-subitem" data-page="system"><span class="icon">📊</span><span>Überblick</span></div>
-              <div class="nav-item nav-subitem" data-page="claudecode"><span class="icon">🤖</span><span>Claude Code</span></div>
-              <div class="nav-item nav-subitem" data-page="surface"><span class="icon">💻</span><span>Surfaces</span></div>
-            </div>
-          </div>
+      <div class="nav-block" id="navblock-system">
+        <div class="nav-section" onclick="toggleNavSection('system')" id="nav-sec-system"><span class="nav-section-grip">⠿</span>System <span class="nav-section-chevron">▶</span></div>
+        <div class="nav-section-items" id="nav-section-items-system" style="max-height:0">
+          <div class="nav-item" data-page="localserver"><span class="icon">🖧</span><span>Local Server</span></div>
+          <div class="nav-item" data-page="system"><span class="icon">📊</span><span>Überblick</span></div>
+          <div class="nav-item" data-page="claudecode"><span class="icon">🤖</span><span>Claude Code</span></div>
+          <div class="nav-item" data-page="surface"><span class="icon">💻</span><span>Surfaces</span></div>
+          <div class="nav-item" data-page="redesigns"><span class="icon">🎨</span><span>Redesigns</span></div>
           <div class="nav-item" data-page="brain"><span class="icon">🧠</span><span>Bolla's Brain</span></div>
         </div>
       </div>
@@ -1591,14 +1581,15 @@ html, body {
             <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid var(--accent)">
               <div style="font-size:13px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">⚙️ CLAUDE.md — Bollas Regeln</div>
               <div style="font-size:12px;color:var(--dim);margin-bottom:12px">/home/bolla/.claude/CLAUDE.md · wird bei jedem Start geladen</div>
+              <!-- BOLLA-CLAUDEMD-START -->
               <div style="display:flex;flex-direction:column;gap:7px;font-size:13px">
-                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:14px">🗣</span><div><span style="color:var(--bright);font-weight:600">Sprache & Stil</span><br><span style="color:var(--dim)">Deutsch, locker & humorvoll — kein Corporate-Drone</span></div></div>
-                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:14px">📧</span><div><span style="color:var(--bright);font-weight:600">E-Mail Absender</span><br><span style="color:var(--dim)">ernstmandel@outlook.de · anderes Konto → erst rückfragen</span></div></div>
-                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:14px">🔑</span><div><span style="color:var(--bright);font-weight:600">Tokens & Passwörter</span><br><span style="color:var(--dim)">Nie in Config, Logs, Git oder Chat</span></div></div>
-                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:14px">💾</span><div><span style="color:var(--bright);font-weight:600">Vor großen Eingriffen</span><br><span style="color:var(--dim)">Backup als JSON → backups/ (Outlook, OneDrive, Kalender)</span></div></div>
-                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:14px">🌙</span><div><span style="color:var(--bright);font-weight:600">Session-Ende</span><br><span style="color:var(--dim)">Notizen → Git Push → OneDrive Backup</span></div></div>
-                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:14px">🧠</span><div><span style="color:var(--bright);font-weight:600">Erst selbst suchen</span><br><span style="color:var(--dim)">Fragen erst wenn wirklich feststeckend</span></div></div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:14px">🗣</span><div><span style="color:var(--bright);font-weight:600">Sprache & Stil</span><br><span style="color:var(--dim)">Deutsch ist unsere Sprache · Leicht humorvoll, fröhlich, ein bisschen lustig — aber nicht übertreiben</span></div></div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:14px">📧</span><div><span style="color:var(--bright);font-weight:600">E-Mail-Versand:</span><br><span style="color:var(--dim)">Standard-Absender ist ernstmandel@outlook.de. Bei anderen Konten IMMER erst rück…</span></div></div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:14px">🔑</span><div><span style="color:var(--bright);font-weight:600">Tokens/Passwörter:</span><br><span style="color:var(--dim)">Niemals manuell in Config-Dateien eintragen, niemals in Logs/Git/Chat wiedergebe…</span></div></div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:14px">💾</span><div><span style="color:var(--bright);font-weight:600">Vor großen Eingriffen</span><br><span style="color:var(--dim)">(Outlook, OneDrive, Kalender): Erst Backup als JSON nach backups/</span></div></div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--accent);font-size:14px">🔑</span><div><span style="color:var(--bright);font-weight:600">Passwort-Dateien:</span><br><span style="color:var(--dim)">Immer chmod 600</span></div></div>
               </div>
+              <!-- BOLLA-CLAUDEMD-END -->
             </div>
 
             <!-- Pfade & Links -->
@@ -1653,6 +1644,43 @@ html, body {
           <div style="margin-bottom:14px">
             <div id="cron-jobs-container" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #f59e0b">
               <div style="color:var(--dim);font-size:13px">Lade Cron Jobs…</div>
+            </div>
+          </div>
+
+          <!-- ═══ ZEILE 4b: Memory-Übersicht ═══ -->
+          <div style="margin-bottom:14px">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #818cf8">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                <div style="font-size:13px;font-weight:700;color:#818cf8;text-transform:uppercase;letter-spacing:1px">🧠 Memory-Dateien</div>
+                <!-- BOLLA-UPDATED-START -->
+              <span style="font-size:11px;color:var(--dim)">Aktualisiert: 27.05.2026</span>
+              <!-- BOLLA-UPDATED-END -->
+              </div>
+              <div style="font-size:12px;color:var(--dim);margin-bottom:12px">~/.claude/projects/.../memory/ — wöchentlich automatisch aktualisiert</div>
+              <!-- BOLLA-MEMORY-START -->
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:13px">
+                <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #a78bfa"><div style="font-size:12px;font-weight:600;color:var(--bright)">👤 Chris Mandel Profil</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Persönliche Daten, Familie, Beruf (Rentner, EDV-Lehrer Lessing Gym)</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #f59e0b"><div style="font-size:12px;font-weight:600;color:var(--bright)">💬 Kommunikationsstil</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Humorvoll, nicht steif; Sicherheitsregeln für Tokens/Passwörter/E-Mail</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #06b6d4"><div style="font-size:12px;font-weight:600;color:var(--bright)">📋 Schule und Unterricht</div><div style="font-size:11px;color:var(--dim);margin-top:2px">EDV-Kurse 7a/7b/7c, Stundenplan, PowerPoint-Schwerpunkt</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #22c55e"><div style="font-size:12px;font-weight:600;color:var(--bright)">📌 Technisches Setup</div><div style="font-size:11px;color:var(--dim);margin-top:2px">SSH Book:2222/Pro:2223; Azure Speech Key in config/azure_speech.json; MC nur auf Studio; E-Mail, Telegram, GitHub</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #06b6d4"><div style="font-size:12px;font-weight:600;color:var(--bright)">📋 Migration OpenClaw-&gt;Claude Code</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Umstieg April 2026, was übertragen wurde</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #f59e0b"><div style="font-size:12px;font-weight:600;color:var(--bright)">💬 Modellwahl Sonnet/Opus</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Default Sonnet; Opus nur bei komplexen Aufgaben vorschlagen</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #06b6d4"><div style="font-size:12px;font-weight:600;color:var(--bright)">📋 Plan-Downgrade Max→Pro</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Wechsel auf Pro ab 10.05.2026, Verhalten anpassen</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #06b6d4"><div style="font-size:12px;font-weight:600;color:var(--bright)">📋 Aimor Fotorahmen Projekt</div><div style="font-size:11px;color:var(--dim);margin-top:2px">PF1007 @ 192.168.178.75, OneDrive→Rahmen automatisieren, APK-Analyse via jadx</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #06b6d4"><div style="font-size:12px;font-weight:600;color:var(--bright)">📋 OneDrive Foto-Organisation</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Beide Handys → Eigene Aufnahmen; Kameraimporte redundant; Aufräumen nur nach grünem Licht</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #06b6d4"><div style="font-size:12px;font-weight:600;color:var(--bright)">📋 Surface Book Akku-Fix</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Akku 1 (ACPI\PNP0C0A\1) defekt+deaktiviert; HiberbootEnabled=0; SSH-Diagnosecheckliste</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #22c55e"><div style="font-size:12px;font-weight:600;color:var(--bright)">📌 WSL2 Setup & Limits</div><div style="font-size:11px;color:var(--dim);margin-top:2px">.wslconfig memory=4GB, vmmem-Absturz 01.05.2026 dokumentiert</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #f59e0b"><div style="font-size:12px;font-weight:600;color:var(--bright)">💬 Ablageort für Dateien</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Technisches → Bolla/claud code - openclaw Doku + Telegram; Sonstiges → nachfragen</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #f59e0b"><div style="font-size:12px;font-weight:600;color:var(--bright)">💬 Aufräum-Regel</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Gescheiterte Versuche sofort löschen, kurzer Kommentar reicht als Doku</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #f59e0b"><div style="font-size:12px;font-weight:600;color:var(--bright)">💬 Memory-Disziplin</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Nach gelösten Problemen sofort Memory anlegen, ohne dass Chris erinnern muss</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #f59e0b"><div style="font-size:12px;font-weight:600;color:var(--bright)">💬 Token-Warnung Wochenende</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Do/Fr Abend: vor tokenintensiven Aktionen Budget prüfen und warnen</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #f59e0b"><div style="font-size:12px;font-weight:600;color:var(--bright)">💬 Word-Ausgaben Layout</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Ziel: 1 Seite; 2 Spalten wenn sinnvoll; Ausnahme technische Doku</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #22c55e"><div style="font-size:12px;font-weight:600;color:var(--bright)">📌 Bolla Songs</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Schüler-Geburtstagslieder → "Bolla Songs"-Site, nicht Claude</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #22c55e"><div style="font-size:12px;font-weight:600;color:var(--bright)">📌 RouteNote Upload-Formate</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Audio: MP3 320kbps + 44.1kHz (Suno=64kbps→ffmpeg nötig!); Cover: JPEG 3000×3000px</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #f59e0b"><div style="font-size:12px;font-weight:600;color:var(--bright)">💬 Mic-Lösung</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Azure Speech SDK (seit 27.05.2026) ✅; Whisper + Web Speech API (Google) → beide verboten/kaputt</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #f59e0b"><div style="font-size:12px;font-weight:600;color:var(--bright)">💬 Windows UI veraltet</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Keine fixen Menüpfade behaupten; Registry/PowerShell bevorzugen; Win-Suche empfehlen</div></div>
+              </div>
+              <!-- BOLLA-MEMORY-END -->
             </div>
           </div>
 
@@ -3696,7 +3724,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
 
 // ── Nav-Gruppen ──
 function _refreshOpenSections() {
-  ['uebersicht', 'arbeit', 'familie', 'ki', 'info'].forEach(name => {
+  ['start', 'arbeit', 'familie', 'kreativ', 'system'].forEach(name => {
     const sec = document.getElementById('nav-sec-' + name);
     const items = document.getElementById('nav-section-items-' + name);
     if (sec && items && sec.classList.contains('open')) {
@@ -3741,11 +3769,11 @@ function toggleNavSection(name) {
 // Nav-Section beim Navigieren zur richtigen Section automatisch öffnen
 function openSectionForPage(page) {
   const sectionMap = {
-    dashboard: 'uebersicht', bolla: 'uebersicht',
-    schule: 'arbeit', korrektur: 'arbeit', differenzierung: 'arbeit', kalender: 'arbeit', email: 'arbeit', clipboard: 'arbeit', projekte: 'arbeit', 'ki-workshop': 'arbeit', urlaub: 'arbeit',
+    dashboard: 'start', bolla: 'start', wetter: 'start',
+    schule: 'arbeit', korrektur: 'arbeit', differenzierung: 'arbeit', entschaerfer: 'arbeit', kalender: 'arbeit', email: 'arbeit', clipboard: 'arbeit', projekte: 'arbeit', 'ki-workshop': 'arbeit', urlaub: 'arbeit',
     robin: 'familie', geburtstage: 'familie',
-    localserver: 'ki', redesigns: 'ki', bildgen: 'ki', suno: 'ki',
-    wetter: 'info', system: 'info', claudecode: 'info', surface: 'info', brain: 'info'
+    bildgen: 'kreativ', suno: 'kreativ', fotoanalyse: 'kreativ', kiforum: 'kreativ',
+    localserver: 'system', system: 'system', claudecode: 'system', surface: 'system', redesigns: 'system', brain: 'system'
   };
   const sec = sectionMap[page];
   if (sec) {
@@ -3780,13 +3808,13 @@ function toggleNavGroup(name) {
   });
 
   // Nav-Sections: max-height korrekt setzen
-  ['uebersicht', 'arbeit', 'familie', 'ki', 'info'].forEach(name => {
+  ['start', 'arbeit', 'familie', 'kreativ', 'system'].forEach(name => {
     const sec = document.getElementById('nav-sec-' + name);
     const items = document.getElementById('nav-section-items-' + name);
     if (!sec || !items) return;
     const saved = localStorage.getItem('nav-sec-' + name);
-    // Standard: uebersicht, arbeit, familie offen — ki und info zu
-    const defaultOpen = ['uebersicht', 'arbeit', 'familie'].includes(name);
+    // Standard: start, arbeit, familie offen — kreativ und system zu
+    const defaultOpen = ['start', 'arbeit', 'familie'].includes(name);
     const isOpen = saved !== null ? saved === '1' : defaultOpen;
     if (isOpen) {
       sec.classList.add('open');
@@ -3851,8 +3879,9 @@ function initNavDrag() {
   // hat, packen wir es zurück in die ursprüngliche Sektion gemäß data-original-section/HTML-Default.
   // Original-Mapping aus dem statischen HTML: data-page → default Sektion
   const DEFAULT_SECTION = {
-    'dashboard': 'nav-section-items-uebersicht',
-    'bolla': 'nav-section-items-uebersicht',
+    'dashboard': 'nav-section-items-start',
+    'bolla': 'nav-section-items-start',
+    'wetter': 'nav-section-items-start',
     'schule': 'nav-section-items-arbeit',
     'korrektur': 'nav-section-items-arbeit',
     'differenzierung': 'nav-section-items-arbeit',
@@ -3862,6 +3891,19 @@ function initNavDrag() {
     'clipboard': 'nav-section-items-arbeit',
     'projekte': 'nav-section-items-arbeit',
     'urlaub': 'nav-section-items-arbeit',
+    'ki-workshop': 'nav-section-items-arbeit',
+    'robin': 'nav-section-items-familie',
+    'geburtstage': 'nav-section-items-familie',
+    'bildgen': 'nav-section-items-kreativ',
+    'suno': 'nav-section-items-kreativ',
+    'fotoanalyse': 'nav-section-items-kreativ',
+    'kiforum': 'nav-section-items-kreativ',
+    'localserver': 'nav-section-items-system',
+    'system': 'nav-section-items-system',
+    'claudecode': 'nav-section-items-system',
+    'surface': 'nav-section-items-system',
+    'redesigns': 'nav-section-items-system',
+    'brain': 'nav-section-items-system',
   };
   let _healed = 0;
   nav.querySelectorAll('.nav-item, .nav-group').forEach(item => {
@@ -7609,7 +7651,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ============ MIC / SPEECH-TO-TEXT (Browser Web Speech API) ============
+// ============ MIC / SPEECH-TO-TEXT (Azure Speech SDK) ============
 let micActive = false;
 
 function micToast(msg, dur=3500) {
@@ -7702,7 +7744,7 @@ async function _startAzureRecognition() {
   });
 }
 
-// ── KI-FORUM MIC (Web Speech API) ──────────────────────────────────────────
+// ── KI-FORUM MIC (Azure Speech SDK) ─────────────────────────────────────────
 let kifMicRec = null, kifMicActive = false;
 
 function kifMicToast(msg, dur=2200) {
@@ -7729,63 +7771,56 @@ function _kifMicSetUI(on) {
   }
 }
 
-function kifMicToggle() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { kifMicToast('⚠️ Spracheingabe nicht verfügbar'); return; }
+async function _kifAzureRecognizeOnce(onResult) {
+  const cfg = await _getAzureSpeechCfg();
+  if (!cfg || cfg.error) { kifMicToast('❌ Azure Speech nicht konfiguriert', 5000); return; }
+  if (!window.SpeechSDK) { kifMicToast('❌ Azure Speech SDK nicht geladen', 5000); return; }
+  const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(cfg.key, cfg.region);
+  speechConfig.speechRecognitionLanguage = 'de-DE';
+  const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+  const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+  recognizer.recognizeOnceAsync(
+    result => {
+      recognizer.close();
+      if (result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
+        const text = result.text.replace(/\b(Bolland|Bolan|Bullar|Wolla|Ulla)\b/gi, 'Bolla').trim();
+        onResult(text || null);
+      } else { onResult(null); }
+    },
+    err => { recognizer.close(); kifMicToast('❌ ' + err, 5000); onResult(null); }
+  );
+}
 
-  if (kifMicActive) { window._kifSr?.stop(); return; }
-
-  const sr = new SR();
-  sr.lang = 'de-DE'; sr.continuous = false; sr.interimResults = true;
-  window._kifSr = sr;
-  let finalText = '';
-
-  sr.onstart = () => { kifMicActive = true; _kifMicSetUI(true); kifMicToast('🎙️ Spreche deine These…', 30000); };
-  sr.onresult = (e) => {
-    finalText = '';
-    for (const r of e.results) {
-      if (r.isFinal) finalText += r[0].transcript;
-    }
-  };
-  sr.onend = () => {
+async function kifMicToggle() {
+  if (kifMicActive) {
+    if (window._kifAzureRec) { try { window._kifAzureRec.close(); } catch(e) {} window._kifAzureRec = null; }
+    kifMicActive = false; _kifMicSetUI(false); return;
+  }
+  kifMicActive = true; _kifMicSetUI(true); kifMicToast('🎙️ Spreche deine These…', 30000);
+  await _kifAzureRecognizeOnce(text => {
     kifMicActive = false; _kifMicSetUI(false);
-    const text = finalText.trim();
     if (text) {
       const ta = document.getElementById('kif-user-input');
       if (ta) ta.value = text;
       kifMicToast(`✅ "${text.substring(0,40)}${text.length>40?'…':''}"`, 2500);
       setTimeout(() => kifShowInput(), 150);
     } else { kifMicToast('🔇 Nichts erkannt', 2500); }
-  };
-  sr.onerror = (e) => { kifMicActive = false; _kifMicSetUI(false); kifMicToast('⚠️ ' + e.error, 3000); };
-  sr.start();
+  });
 }
 
-function kifMicAber() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { kifMicToast('⚠️ Spracheingabe nicht verfügbar'); return; }
+async function kifMicAber() {
   const btn = document.getElementById('kif-aber-mic');
   if (btn && btn.textContent === '🔴') return;
   if (btn) { btn.textContent = '🔴'; btn.style.borderColor = 'rgba(248,113,113,0.6)'; }
-
-  const sr = new SR();
-  sr.lang = 'de-DE'; sr.continuous = false; sr.interimResults = false;
-  let finalText = '';
-
-  sr.onresult = (e) => { for (const r of e.results) if (r.isFinal) finalText += r[0].transcript; };
-  sr.onend = () => {
-    if (btn) { btn.textContent = '🎙️'; btn.style.borderColor = 'rgba(255,255,255,0.15)'; }
-    const text = finalText.trim();
-    const ta = document.getElementById('kif-aber-input');
-    if (ta && text) ta.value = text;
-    kifMicToast(text ? `✅ "${text.substring(0,40)}${text.length>40?'…':''}"` : '🔇 Nichts erkannt', 2500);
-  };
-  sr.onerror = (e) => {
-    if (btn) { btn.textContent = '🎙️'; btn.style.borderColor = 'rgba(255,255,255,0.15)'; }
-    kifMicToast('⚠️ ' + e.error, 3000);
-  };
-  sr.start();
   kifMicToast('🎙️ Spreche… (stoppt automatisch)', 15000);
+  await _kifAzureRecognizeOnce(text => {
+    if (btn) { btn.textContent = '🎙️'; btn.style.borderColor = 'rgba(255,255,255,0.15)'; }
+    if (text) {
+      const ta = document.getElementById('kif-aber-input');
+      if (ta) ta.value = text;
+      kifMicToast(`✅ "${text.substring(0,40)}${text.length>40?'…':''}"`, 2500);
+    } else { kifMicToast('🔇 Nichts erkannt', 2500); }
+  });
 }
 
 // Stimmenliste + Verlauf beim ersten Öffnen der Bolla-Seite laden
