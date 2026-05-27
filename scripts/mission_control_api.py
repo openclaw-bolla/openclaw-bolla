@@ -4242,6 +4242,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(azure_list_voices())
                 return
 
+            if self.path == "/api/speech/config":
+                cfg = azure_speech_config()
+                if cfg:
+                    self._send_json({"key": cfg["key"], "region": cfg["region"]})
+                else:
+                    self._send_json({"error": "Azure Speech nicht konfiguriert"}, 503)
+                return
+
             if self.path == "/api/adb/devices":
                 self._send_json(adb_devices())
                 return

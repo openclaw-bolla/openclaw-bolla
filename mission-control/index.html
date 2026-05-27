@@ -793,6 +793,7 @@ html, body {
   .nav-group-header { min-height: 38px; display: flex; align-items: center; }
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"></script>
 </head>
 <body>
 
@@ -1820,7 +1821,7 @@ html, body {
                 📎<input type="file" accept="image/*" onchange="bollaFileSelect(event)" style="display:none">
               </label>
               <button id="bolla-cam-btn" onclick="camToggle()" style="padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:16px;color:var(--dim)" title="Webcam-Foto an Bolla senden">📷</button>
-              <button id="bolla-mic-btn" onclick="micToggle()" style="padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:16px;color:var(--dim)" title="Mit Bolla sprechen (lokal via Whisper, kein F-Secure-Block)">🎤</button>
+              <button id="bolla-mic-btn" onclick="micToggle()" style="padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:16px;color:var(--dim)" title="Mit Bolla sprechen (Azure Speech Services)">🎤</button>
               <input id="bolla-input" placeholder="Nachricht an Bolla... (Strg+V für Screenshot · 🎤 für Spracheingabe)" style="flex:1;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-size:14px;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();bollaSend()}" oninput="const cb=document.getElementById('bolla-clear-btn');if(cb)cb.style.display=this.value?'block':'none'">
               <button id="bolla-clear-btn" onclick="const i=document.getElementById('bolla-input');i.value='';this.style.display='none';i.focus()" style="display:none;padding:10px 12px;background:transparent;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:15px;color:var(--dim);line-height:1" title="Eingabe löschen">✕</button>
               <button onclick="bollaSend()" id="bolla-send-btn" style="padding:12px 24px;background:var(--accent2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:opacity 0.2s">Senden</button>
@@ -7637,67 +7638,68 @@ function micSetBtn(on) {
   }
 }
 
-function micToggle() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { micToast('⚠️ Edge/Chrome nötig', 5000); return; }
+let _azureSpeechCfg = null;
+async function _getAzureSpeechCfg() {
+  if (_azureSpeechCfg) return _azureSpeechCfg;
+  try {
+    const r = await fetch('/api/speech/config');
+    _azureSpeechCfg = await r.json();
+    return _azureSpeechCfg;
+  } catch(e) { return null; }
+}
 
+function micToggle() {
   if (micActive) {
-    try { window._sr?.stop(); } catch(e) {}
+    if (window._azureRecognizer) {
+      try { window._azureRecognizer.stopContinuousRecognitionAsync(); } catch(e) {}
+      window._azureRecognizer = null;
+    }
     micActive = false; micSetBtn(false);
     return;
   }
-
-  if (window._sr) { try { window._sr.abort(); } catch(e) {} window._sr = null; }
   voiceStop();
-  _startSpeechRecognition(SR);
+  _startAzureRecognition();
 }
 
-function _startSpeechRecognition(SR) {
-  const sr = new SR();
-  window._sr = sr;
-  sr.lang = 'de-DE';
-  sr.continuous = false;
-  sr.interimResults = false;
-  let gotResult = false;
+async function _startAzureRecognition() {
+  const cfg = await _getAzureSpeechCfg();
+  if (!cfg || cfg.error) { micToast('❌ Azure Speech nicht konfiguriert', 5000); return; }
+  if (!window.SpeechSDK) { micToast('❌ Azure Speech SDK nicht geladen', 5000); return; }
 
-  sr.onstart = () => { micActive = true; micSetBtn(true); micToast('🎙️ Spreche…', 30000); };
+  const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(cfg.key, cfg.region);
+  speechConfig.speechRecognitionLanguage = 'de-DE';
+  speechConfig.setProperty('SpeechServiceConnection_EndSilenceTimeoutMs', '2000');
+  speechConfig.setProperty('Speech_SegmentationSilenceTimeoutMs', '2000');
+  const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+  const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+  window._azureRecognizer = recognizer;
 
-  sr.onresult = (e) => {
-    gotResult = true;
-    const raw = Array.from(e.results).map(r => r[0].transcript).join('').trim();
-    const fix = {'Ulla':'Bolla','ulla':'Bolla','bolla':'Bolla','Wolla':'Bolla','Bola':'Bolla','Polla':'Bolla','Holla':'Bolla'};
-    const text = raw.replace(/\b(Ulla|ulla|bolla|Wolla|Bola|Polla|Holla)\b/g, m => fix[m] || m);
-    if (text) {
-      const input = document.getElementById('bolla-input');
-      if (input) { input.value = (input.value ? input.value + ' ' : '') + text; const cb = document.getElementById('bolla-clear-btn'); if(cb) cb.style.display='block'; }
-      micToast('✅ ' + text.substring(0, 60), 3000);
-      if (document.getElementById('voice-toggle')?.checked) setTimeout(() => bollaSend(), 200);
-    } else {
+  micActive = true; micSetBtn(true); micToast('🎙️ Spreche…', 30000);
+
+  recognizer.recognizeOnceAsync(result => {
+    recognizer.close(); window._azureRecognizer = null;
+    micActive = false; micSetBtn(false);
+    const fix = {'Ulla':'Bolla','ulla':'Bolla','bolla':'Bolla','Wolla':'Bolla','Bola':'Bolla','Polla':'Bolla','Holla':'Bolla','Bolland':'Bolla','bolland':'Bolla','Bolan':'Bolla','bolan':'Bolla','Bolla.':'Bolla','Bullar':'Bolla','bullar':'Bolla'};
+    if (result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
+      const text = (result.text || '').trim().replace(/\b(Ulla|ulla|bolla|Wolla|Bola|Polla|Holla|Bolland|bolland|Bolan|bolan|Bullar|bullar)\b/g, m => fix[m] || m);
+      if (text) {
+        const input = document.getElementById('bolla-input');
+        if (input) { input.value = (input.value ? input.value + ' ' : '') + text; const cb = document.getElementById('bolla-clear-btn'); if(cb) cb.style.display='block'; }
+        micToast('✅ ' + text.substring(0, 60), 3000);
+        if (document.getElementById('voice-toggle')?.checked) setTimeout(() => bollaSend(), 200);
+      } else { micToast('🔇 Nichts erkannt', 2500); }
+    } else if (result.reason === SpeechSDK.ResultReason.NoMatch) {
       micToast('🔇 Nichts erkannt', 2500);
+    } else if (result.reason === SpeechSDK.ResultReason.Canceled) {
+      const c = SpeechSDK.CancellationDetails.fromResult(result);
+      micToast('❌ ' + (c.errorDetails || 'Abgebrochen'), 5000);
     }
-  };
-
-  sr.onend = () => {
+  }, err => {
+    try { recognizer.close(); } catch(e) {}
+    window._azureRecognizer = null;
     micActive = false; micSetBtn(false);
-    if (!gotResult) micToast('🔇 Kein Ergebnis — Mikrofon oder Verbindung prüfen', 4000);
-  };
-
-  sr.onerror = (e) => {
-    if (e.error === 'aborted') return;
-    gotResult = true; // onerror zeigt eigene Meldung, onend soll nix mehr sagen
-    micActive = false; micSetBtn(false);
-    const msgs = {
-      'not-allowed':         '❌ Mikrofon gesperrt — Schloss in Adressleiste prüfen',
-      'audio-capture':       '❌ Kein Mikrofon gefunden',
-      'network':             '⚠️ Netzwerkfehler — speech.googleapis.com nicht erreichbar',
-      'no-speech':           '🔇 Nichts erkannt',
-      'service-not-allowed': '❌ Sprachdienst verweigert',
-    };
-    micToast(msgs[e.error] || '⚠️ ' + e.error, 5000);
-  };
-
-  try { sr.start(); }
-  catch(e) { micActive = false; micSetBtn(false); micToast('⚠️ ' + e.message, 4000); }
+    micToast('❌ ' + err, 5000);
+  });
 }
 
 // ── KI-FORUM MIC (Web Speech API) ──────────────────────────────────────────
