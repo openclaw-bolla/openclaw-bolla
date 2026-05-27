@@ -43,6 +43,9 @@ KORREKTUR_DIR        = os.path.join(WORKSPACE, "korrektur")
 # Foto-Analyse Job-Status (global, threadsafe via GIL für einfache dict-ops)
 _photo_job = {"running": False, "total": 0, "done": 0, "errors": 0, "stop": False, "folder": ""}
 
+# Glücksrad Lehrer-Lösung (in-memory, reset bei Server-Neustart)
+_gluecksrad_state = {"stil": None, "nummer": None}
+
 # Whisper Spracherkennung (lokal, kein F-Secure-Problem)
 _whisper_model = None
 def _get_whisper(force_cpu=False):
@@ -4463,6 +4466,86 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(data)
                 return
 
+            elif self.path == "/api/gluecksrad/stile":
+                MUSIK_DIR = "/mnt/d/OneDrive/Dokumente/Office/Powerpoint/Beispiele/Spiele/Songs zum Glücksrad Musikstile"
+                STIL_MAP = {
+                    "Blues": "Blues - Lonely Echoes.mp3",
+                    "Rock'n'Roll": "Rock´n´Roll - School of No Rules.mp3",
+                    "Jazz": "Jazz - Night Whispers.mp3",
+                    "Pop": "Pop - School Bells Ringing.mp3",
+                    "Hip-Hop": "Hip-Hop - School Rules.mp3",
+                    "Klassik": "Klassik - The Forgotten Star.mp3",
+                    "Reggae": "Reggae - School Vibes.mp3",
+                    "Metal": "Metal - Hellish Hallways.mp3",
+                    "Country": "Country - Schoolhouse Days.mp3",
+                    "Techno": "Techno - Classroom Chaos.mp3",
+                    "Soul": "Soul - School of Life.mp3",
+                    "Punk": "Punk - Classroom Chaos.mp3",
+                    "Swing": "Swing - Schoolyard Swing.mp3",
+                    "R&B": "Rythm & Blues - School Days Groove.mp3",
+                    "Disco": "Dsico - Fever in the Classroom.mp3",
+                    "Gospel": "Gospel - Faith in the Classroom.mp3",
+                    "Rap": "Rap - Class in Session.mp3",
+                    "Boogie-Woogie": "Boogie-Woogie - Shake It Loose.mp3",
+                    "K-Pop": "K-Pop - Classroom Dreams.mp3",
+                    "Latin": "Latin - Escuela de Vida.mp3",
+                    "Indie": "Indie&Alternative - Classroom Daydreams.mp3",
+                    "Bluegrass": "Bluegrass - Back to the Chalkboard.mp3",
+                    "Hard-Rock": "Hard-Rock - Classroom Chaos.mp3",
+                    "Choral": "Choral - Echoes of Eternity.mp3",
+                }
+                stile = [{"name": k, "datei": v, "vorhanden": os.path.isfile(os.path.join(MUSIK_DIR, v))} for k, v in STIL_MAP.items()]
+                self._send_json({"stile": stile, "dir": MUSIK_DIR})
+
+            elif self.path.startswith("/api/gluecksrad/music"):
+                import urllib.parse as _up
+                qs = _up.parse_qs(self.path.split("?",1)[1] if "?" in self.path else "")
+                stil = qs.get("stil", [""])[0]
+                MUSIK_DIR = "/mnt/d/OneDrive/Dokumente/Office/Powerpoint/Beispiele/Spiele/Songs zum Glücksrad Musikstile"
+                STIL_MAP = {
+                    "Blues": "Blues - Lonely Echoes.mp3",
+                    "Rock'n'Roll": "Rock´n´Roll - School of No Rules.mp3",
+                    "Jazz": "Jazz - Night Whispers.mp3",
+                    "Pop": "Pop - School Bells Ringing.mp3",
+                    "Hip-Hop": "Hip-Hop - School Rules.mp3",
+                    "Klassik": "Klassik - The Forgotten Star.mp3",
+                    "Reggae": "Reggae - School Vibes.mp3",
+                    "Metal": "Metal - Hellish Hallways.mp3",
+                    "Country": "Country - Schoolhouse Days.mp3",
+                    "Techno": "Techno - Classroom Chaos.mp3",
+                    "Soul": "Soul - School of Life.mp3",
+                    "Punk": "Punk - Classroom Chaos.mp3",
+                    "Swing": "Swing - Schoolyard Swing.mp3",
+                    "R&B": "Rythm & Blues - School Days Groove.mp3",
+                    "Disco": "Dsico - Fever in the Classroom.mp3",
+                    "Gospel": "Gospel - Faith in the Classroom.mp3",
+                    "Rap": "Rap - Class in Session.mp3",
+                    "Boogie-Woogie": "Boogie-Woogie - Shake It Loose.mp3",
+                    "K-Pop": "K-Pop - Classroom Dreams.mp3",
+                    "Latin": "Latin - Escuela de Vida.mp3",
+                    "Indie": "Indie&Alternative - Classroom Daydreams.mp3",
+                    "Bluegrass": "Bluegrass - Back to the Chalkboard.mp3",
+                    "Hard-Rock": "Hard-Rock - Classroom Chaos.mp3",
+                    "Choral": "Choral - Echoes of Eternity.mp3",
+                }
+                fname = STIL_MAP.get(stil)
+                if not fname:
+                    self._send_json({"error": "Stil nicht gefunden"}, status=404); return
+                fpath = os.path.join(MUSIK_DIR, fname)
+                if not os.path.isfile(fpath):
+                    self._send_json({"error": "Datei nicht gefunden"}, status=404); return
+                with open(fpath, "rb") as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "audio/mpeg")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(body)
+
+            elif self.path == "/api/gluecksrad/state":
+                self._send_json(_gluecksrad_state)
+
             elif self.path == "/api/dokumente":
                 BOLLA_DOCS = "/mnt/d/OneDrive/Dokumente/Bolla/claud code - openclaw Doku"
                 ALLOWED_EXT = {".pdf", ".docx", ".html", ".txt", ".md"}
@@ -4681,7 +4764,11 @@ class Handler(BaseHTTPRequestHandler):
             body = {}
 
         try:
-            if self.path == "/api/workshop/save":
+            if self.path == "/api/gluecksrad/state":
+                _gluecksrad_state["stil"] = body.get("stil")
+                _gluecksrad_state["nummer"] = body.get("nummer")
+                self._send_json({"ok": True})
+            elif self.path == "/api/workshop/save":
                 self._send_json(save_workshop(body.get("markdown", "")))
             elif self.path == "/api/workshop/auftrag":
                 self._send_json(add_workshop_auftrag(body.get("text", "")))
@@ -5351,6 +5438,7 @@ Konkret:
 - Kein gleichmaessiger Rhythmus — kurze und laengere Saetze mischen
 - Keine Aufzaehlung von Punkten mit gleichem Satzbau
 - Nicht entschuldigend, aber auch nicht arrogant — klar und auf Augenhoehe
+- Eine persoenliche, warme Note darf durchscheinen — man soll merken dass du es gut meinst
 - Einen konkreten naechsten Schritt nennen (Gespraechstermin o.ae.)
 - Abschluss darf ruhig unkonventionell sein, kein "stehe Ihnen jederzeit zur Verfuegung"
 - Zufallsseed fuer Variation: {_seed}
@@ -5372,6 +5460,7 @@ Konkret:
 - Kein "Darüber hinaus", "Abschliessend", "In diesem Sinne"
 - Das Kind beim Namen nennen, nicht "Ihr Kind"
 - Partnerschaftlich, aber nicht weichgespuelt — Dinge klar benennen
+- Eine persoenliche, warme Note darf durchscheinen — man soll merken dass du das Kind magst und es gut meinst
 - Schluss ohne "Ich stehe Ihnen jederzeit zur Verfuegung"
 - Zufallsseed fuer Variation: {_seed}
 

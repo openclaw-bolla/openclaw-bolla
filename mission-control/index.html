@@ -154,7 +154,7 @@ html, body {
   background: rgba(37,99,235,0.08);
   transition: all 0.15s;
   user-select: none;
-  margin: 2px 6px 2px 10px;
+  margin: 2px 6px 2px 0;
   border-radius: 8px;
 }
 .nav-group-header:hover { background: rgba(37,99,235,0.16); border-left-color: rgba(96,165,250,0.7); }
@@ -827,7 +827,7 @@ html, body {
             <div class="nav-group-header" id="nav-group-header-schule" onclick="event.stopPropagation();toggleNavGroup('schule')">
               <span class="nav-group-grip">⠿</span><span class="icon">🏫</span>
               <span>Schule</span>
-              <span class="nav-group-count">4</span>
+              <span class="nav-group-count">5</span>
               <span class="nav-group-chevron" id="nav-chevron-schule">▶</span>
             </div>
             <div class="nav-group-items" id="nav-group-items-schule">
@@ -835,22 +835,23 @@ html, body {
               <div class="nav-item nav-subitem" data-page="korrektur"><span class="icon">✏️</span><span>KI-Korrektur</span></div>
               <div class="nav-item nav-subitem" data-page="differenzierung"><span class="icon">🎯</span><span>Differenzierung</span></div>
               <div class="nav-item nav-subitem" data-page="entschaerfer"><span class="icon">🕊️</span><span>Elternbrief-Entschärfer</span></div>
+              <div class="nav-item nav-subitem" data-page="gluecksrad"><span class="icon">🎡</span><span>Musik-Quiz Glücksrad</span></div>
             </div>
           </div>
           <div class="nav-item" data-page="kalender"><span class="icon">📅</span><span>Kalender</span></div>
           <div class="nav-item" data-page="email"><span class="icon">📧</span><span>E-Mail</span><span class="badge" id="mail-badge" style="display:none">0</span></div>
           <div class="nav-item" data-page="clipboard"><span class="icon">📋</span><span>Clipboard</span></div>
+          <div class="nav-item" data-page="ki-workshop"><span class="icon">🗒️</span><span>Projekte-Workspace</span></div>
           <div id="nav-group-projekte">
             <div class="nav-group-header" id="nav-group-header-projekte" onclick="event.stopPropagation();toggleNavGroup('projekte')">
               <span class="nav-group-grip">⠿</span><span class="icon">🗂️</span>
               <span>Projekte</span>
-              <span class="nav-group-count">3</span>
+              <span class="nav-group-count">2</span>
               <span class="nav-group-chevron" id="nav-chevron-projekte">▶</span>
             </div>
             <div class="nav-group-items" id="nav-group-items-projekte">
               <div class="nav-item nav-subitem" data-page="projekte"><span class="icon">🏡</span><span>Immobilienkauf Bayern</span></div>
               <div class="nav-item nav-subitem" data-page="urlaub"><span class="icon">✈️</span><span>Urlaubsplanung 2026</span></div>
-              <div class="nav-item nav-subitem" data-page="ki-workshop"><span class="icon">🗒️</span><span>Projekte-Workspace</span></div>
             </div>
           </div>
         </div>
@@ -1330,6 +1331,76 @@ html, body {
                      border-left:4px solid #10b981;min-height:200px"></div>
           </div>
 
+        </div>
+      </div>
+
+      <!-- MUSIK-QUIZ GLÜCKSRAD -->
+      <div class="page" id="page-gluecksrad">
+        <style>
+          #gw-canvas { cursor: pointer; border-radius: 50%; box-shadow: 0 0 40px rgba(124,58,237,0.3); }
+          #gw-canvas:hover { box-shadow: 0 0 60px rgba(124,58,237,0.5); }
+          .gw-stil-chip { display:inline-block; padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600; margin:3px; cursor:default; transition:opacity 0.3s; }
+          .gw-stil-chip.played { opacity:0.25; text-decoration:line-through; }
+          #gw-result { transition: all 0.4s; }
+        </style>
+        <div style="max-width:1100px;margin:0 auto;padding:16px">
+
+          <!-- Header -->
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+            <div style="width:48px;height:48px;border-radius:12px;flex-shrink:0;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;font-size:26px">🎡</div>
+            <div>
+              <div style="font-size:20px;font-weight:700;color:var(--bright)">Musik-Quiz Glücksrad</div>
+              <div style="font-size:13px;color:var(--dim)">24 Musikstile · Leertaste = drehen/stoppen · R = zurücksetzen</div>
+            </div>
+            <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+              <span id="gw-counter" style="font-size:13px;color:var(--dim)">0 / 24 gespielt</span>
+              <button onclick="gwReset()" style="padding:6px 14px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);border-radius:8px;color:#f59e0b;font-size:13px;cursor:pointer">↺ Reset</button>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:start">
+
+            <!-- Rad + Zeiger -->
+            <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:16px">
+              <!-- Zeiger -->
+              <div style="position:relative;width:500px;height:500px">
+                <canvas id="gw-canvas" width="500" height="500" onclick="gwToggle()" title="Klicken oder Leertaste"></canvas>
+                <!-- Zeiger oben -->
+                <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:28px solid #f59e0b;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5))"></div>
+              </div>
+
+              <!-- Ergebnis-Box -->
+              <div id="gw-result" style="width:500px;min-height:80px;background:var(--card);border:2px solid var(--border);border-radius:16px;padding:16px 20px;display:flex;align-items:center;gap:16px">
+                <div style="font-size:32px">🎵</div>
+                <div>
+                  <div id="gw-result-stil" style="font-size:22px;font-weight:700;color:var(--bright)">Drück Start!</div>
+                  <div id="gw-result-hint" style="font-size:13px;color:var(--dim);margin-top:2px">Klicke auf das Rad oder drücke Leertaste</div>
+                </div>
+                <div style="margin-left:auto;display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+                  <button id="gw-play-btn" onclick="gwPlayMusic()" style="display:none;padding:8px 16px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);border-radius:8px;color:#22c55e;font-size:13px;cursor:pointer;font-weight:600">▶ Musik</button>
+                  <button id="gw-reveal-btn" onclick="gwReveal()" style="display:none;padding:8px 16px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.4);border-radius:8px;color:#a78bfa;font-size:13px;cursor:pointer">👁 Auflösen</button>
+                </div>
+              </div>
+              <audio id="gw-audio" style="display:none"></audio>
+            </div>
+
+            <!-- Rechte Spalte: Stile-Übersicht -->
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Musikstile</div>
+              <div id="gw-chips" style="line-height:2"></div>
+
+              <!-- Anleitung -->
+              <div style="margin-top:20px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px">
+                <div style="font-size:13px;font-weight:700;color:var(--dim);margin-bottom:8px">Tastenkürzel</div>
+                <div style="font-size:13px;color:var(--text);line-height:2">
+                  <span style="font-family:monospace;background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:4px;color:var(--accent)">Leertaste</span> Drehen / Stoppen<br>
+                  <span style="font-family:monospace;background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:4px;color:var(--accent)">R</span> Alles zurücksetzen<br>
+                  <span style="font-family:monospace;background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:4px;color:var(--accent)">M</span> Musik abspielen / stoppen<br>
+                  <span style="font-family:monospace;background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:4px;color:var(--accent)">A</span> Stil aufdecken
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1852,6 +1923,7 @@ html, body {
               <button id="bolla-mic-btn" onclick="micToggle()" style="padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:16px;color:var(--dim)" title="Mit Bolla sprechen (Azure Speech Services)">🎤</button>
               <input id="bolla-input" placeholder="Nachricht an Bolla... (Strg+V für Screenshot · 🎤 für Spracheingabe)" style="flex:1;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-size:14px;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();bollaSend()}" oninput="const cb=document.getElementById('bolla-clear-btn');if(cb)cb.style.display=this.value?'block':'none'">
               <button id="bolla-clear-btn" onclick="const i=document.getElementById('bolla-input');i.value='';this.style.display='none';i.focus()" style="display:none;padding:10px 12px;background:transparent;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:15px;color:var(--dim);line-height:1" title="Eingabe löschen">✕</button>
+              <button id="bolla-tts-stop-btn" onclick="voiceStop()" style="display:none;padding:12px 16px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;font-size:18px;font-weight:700;transition:opacity 0.2s" title="Sprachausgabe stoppen">⏹</button>
               <button onclick="bollaSend()" id="bolla-send-btn" style="padding:12px 24px;background:var(--accent2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:opacity 0.2s">Senden</button>
             </div>
             <div style="font-size:13px;color:var(--dim);margin-top:6px;text-align:center">
@@ -3770,7 +3842,7 @@ function toggleNavSection(name) {
 function openSectionForPage(page) {
   const sectionMap = {
     dashboard: 'start', bolla: 'start', wetter: 'start',
-    schule: 'arbeit', korrektur: 'arbeit', differenzierung: 'arbeit', entschaerfer: 'arbeit', kalender: 'arbeit', email: 'arbeit', clipboard: 'arbeit', projekte: 'arbeit', 'ki-workshop': 'arbeit', urlaub: 'arbeit',
+    schule: 'arbeit', korrektur: 'arbeit', differenzierung: 'arbeit', entschaerfer: 'arbeit', gluecksrad: 'arbeit', kalender: 'arbeit', email: 'arbeit', clipboard: 'arbeit', projekte: 'arbeit', 'ki-workshop': 'arbeit', urlaub: 'arbeit',
     robin: 'familie', geburtstage: 'familie',
     bildgen: 'kreativ', suno: 'kreativ', fotoanalyse: 'kreativ', kiforum: 'kreativ',
     localserver: 'system', system: 'system', claudecode: 'system', surface: 'system', redesigns: 'system', brain: 'system'
@@ -3868,7 +3940,12 @@ function initNavDrag() {
         if (!container) return;
         ids.forEach(id => {
           const el = document.getElementById(id);
-          if (el) container.appendChild(el); // cross-section: auch aus anderem Container
+          if (!el) return;
+          container.appendChild(el); // cross-section: auch aus anderem Container
+          // nav-subitem-Klasse an Ziel-Container anpassen (verhindert falsche Einrückung nach Reload)
+          if (el.classList.contains('nav-item')) {
+            el.classList.toggle('nav-subitem', container.classList.contains('nav-group-items'));
+          }
         });
       });
     } catch(e) {}
@@ -3886,6 +3963,7 @@ function initNavDrag() {
     'korrektur': 'nav-section-items-arbeit',
     'differenzierung': 'nav-section-items-arbeit',
     'entschaerfer': 'nav-section-items-arbeit',
+    'gluecksrad': 'nav-section-items-arbeit',
     'kalender': 'nav-section-items-arbeit',
     'email': 'nav-section-items-arbeit',
     'clipboard': 'nav-section-items-arbeit',
@@ -7592,6 +7670,8 @@ function voiceStop() {
     currentAudio = null;
   }
   document.getElementById('voice-stop-btn').style.display = 'none';
+  const b = document.getElementById('bolla-tts-stop-btn');
+  if (b) b.style.display = 'none';
 }
 
 async function voiceSpeak(text) {
@@ -7628,9 +7708,11 @@ async function voiceSpeak(text) {
     const url = URL.createObjectURL(blob);
     currentAudio = new Audio(url);
     currentAudio.volume = volume;
-    currentAudio.onended = () => { URL.revokeObjectURL(url); document.getElementById('voice-stop-btn').style.display='none'; currentAudio=null; };
+    currentAudio.onended = () => { URL.revokeObjectURL(url); voiceStop(); };
     currentAudio.onerror = currentAudio.onended;
     document.getElementById('voice-stop-btn').style.display = 'inline-block';
+    const b = document.getElementById('bolla-tts-stop-btn');
+    if (b) b.style.display = 'inline-block';
     currentAudio.play().catch(e => console.warn('Audio play blockiert:', e));
   } catch(e) {
     console.warn('TTS:', e);
@@ -7721,14 +7803,14 @@ async function _startAzureRecognition() {
   recognizer.recognizeOnceAsync(result => {
     recognizer.close(); window._azureRecognizer = null;
     micActive = false; micSetBtn(false);
-    const fix = {'Ulla':'Bolla','ulla':'Bolla','bolla':'Bolla','Wolla':'Bolla','Bola':'Bolla','Polla':'Bolla','Holla':'Bolla','Bolland':'Bolla','bolland':'Bolla','Bolan':'Bolla','bolan':'Bolla','Bolla.':'Bolla','Bullar':'Bolla','bullar':'Bolla'};
+    const fix = {'Ulla':'Bolla','ulla':'Bolla','bolla':'Bolla','Wolla':'Bolla','Bola':'Bolla','Polla':'Bolla','Holla':'Bolla','Bolland':'Bolla','bolland':'Bolla','Bolan':'Bolla','bolan':'Bolla','Bolla.':'Bolla','Bullar':'Bolla','bullar':'Bolla','Borna':'Bolla','borna':'Bolla','Polar':'Bolla','polar':'Bolla'};
     if (result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
-      const text = (result.text || '').trim().replace(/\b(Ulla|ulla|bolla|Wolla|Bola|Polla|Holla|Bolland|bolland|Bolan|bolan|Bullar|bullar)\b/g, m => fix[m] || m);
+      const text = (result.text || '').trim().replace(/\b(Ulla|ulla|bolla|Wolla|Bola|Polla|Holla|Bolland|bolland|Bolan|bolan|Bullar|bullar|Borna|borna|Polar|polar)\b/g, m => fix[m] || m);
       if (text) {
         const input = document.getElementById('bolla-input');
         if (input) { input.value = (input.value ? input.value + ' ' : '') + text; const cb = document.getElementById('bolla-clear-btn'); if(cb) cb.style.display='block'; }
         micToast('✅ ' + text.substring(0, 60), 3000);
-        if (document.getElementById('voice-toggle')?.checked) setTimeout(() => bollaSend(), 200);
+        setTimeout(() => bollaSend(), 200);
       } else { micToast('🔇 Nichts erkannt', 2500); }
     } else if (result.reason === SpeechSDK.ResultReason.NoMatch) {
       micToast('🔇 Nichts erkannt', 2500);
@@ -7783,7 +7865,7 @@ async function _kifAzureRecognizeOnce(onResult) {
     result => {
       recognizer.close();
       if (result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
-        const text = result.text.replace(/\b(Bolland|Bolan|Bullar|Wolla|Ulla)\b/gi, 'Bolla').trim();
+        const text = result.text.replace(/\b(Bolland|Bolan|Bullar|Wolla|Ulla|Borna|Polar)\b/gi, 'Bolla').trim();
         onResult(text || null);
       } else { onResult(null); }
     },
@@ -11216,6 +11298,299 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 });
+
+// ══════════════════════════════════════════════════════════
+// MUSIK-QUIZ GLÜCKSRAD
+// ══════════════════════════════════════════════════════════
+(function() {
+  const STILE = [
+    "Blues","Rock'n'Roll","Jazz","Pop",
+    "Hip-Hop","Klassik","Reggae","Metal",
+    "Country","Techno","Soul","Punk",
+    "Swing","R&B","Disco","Gospel",
+    "Rap","Boogie-Woogie","K-Pop","Latin",
+    "Indie","Bluegrass","Hard-Rock","Choral"
+  ];
+  const N = STILE.length;
+  const SEKTOR_DEG = 360 / N;
+  const FARBEN = [
+    '#7c3aed','#ec4899','#06b6d4','#f59e0b',
+    '#22c55e','#ef4444','#8b5cf6','#f97316',
+    '#14b8a6','#a855f7','#3b82f6','#84cc16'
+  ];
+
+  let angle = 0;          // aktueller Winkel in Grad
+  let speed = 0;          // Grad pro Frame
+  let spinning = false;
+  let stopping = false;
+  let targetAngle = null;
+  let played = new Set();
+  let currentStil = null;
+  let revealed = false;
+  let rafId = null;
+
+  function getSektorAt(deg) {
+    // Zeiger oben: Sektor 0 ist oben wenn angle=0
+    // Rad dreht im Uhrzeigersinn → angle steigt → Sektor 0 wandert nach rechts
+    const normalized = ((deg % 360) + 360) % 360;
+    const idx = Math.floor(((-normalized + 360) % 360) / SEKTOR_DEG);
+    return ((idx % N) + N) % N;
+  }
+
+  function nextUnplayed(fromIdx, direction=1) {
+    for (let i = 1; i <= N; i++) {
+      const idx = ((fromIdx + i * direction) % N + N) % N;
+      if (!played.has(idx)) return idx;
+    }
+    return null; // alle gespielt
+  }
+
+  function angleForSektor(sektorIdx) {
+    // Winkel so dass Sektor sektorIdx oben ist
+    return ((-sektorIdx * SEKTOR_DEG) % 360 + 360) % 360;
+  }
+
+  function draw() {
+    const canvas = document.getElementById('gw-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const cx = canvas.width / 2, cy = canvas.height / 2;
+    const r = cx - 4;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let i = 0; i < N; i++) {
+      const startAngle = (angle + i * SEKTOR_DEG - 90) * Math.PI / 180;
+      const endAngle = startAngle + SEKTOR_DEG * Math.PI / 180;
+      const farbe = FARBEN[i % FARBEN.length];
+      const isPlayed = played.has(i);
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, r, startAngle, endAngle);
+      ctx.closePath();
+      ctx.fillStyle = isPlayed ? '#2a2a2a' : farbe;
+      ctx.fill();
+      ctx.strokeStyle = '#1a1a2e';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Text
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate((startAngle + endAngle) / 2);
+      const textR = r * 0.68;
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillStyle = isPlayed ? '#555' : 'rgba(255,255,255,0.95)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${i + 1} 🎵`, textR, 0);
+      ctx.restore();
+    }
+
+    // Mittelpunkt
+    ctx.beginPath();
+    ctx.arc(cx, cy, 22, 0, 2 * Math.PI);
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fill();
+    ctx.strokeStyle = '#7c3aed';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = '#a78bfa';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🎵', cx, cy);
+  }
+
+  function animate() {
+    if (!spinning) return;
+
+    if (stopping && targetAngle !== null) {
+      const diff = ((targetAngle - angle % 360) + 360) % 360;
+      const dist = diff < 1 ? diff + 360 : diff;
+      if (dist < 60) {
+        speed = Math.max(0.3, speed * 0.93);
+      }
+      if (dist < 3 && speed < 1) {
+        angle = targetAngle + Math.floor(angle / 360) * 360;
+        speed = 0;
+        spinning = false;
+        stopping = false;
+        rafId = null;
+        draw();
+        onStopped();
+        return;
+      }
+    }
+
+    angle = (angle + speed) % 3600;
+    draw();
+    rafId = requestAnimationFrame(animate);
+  }
+
+  function onStopped() {
+    const idx = getSektorAt(angle);
+    currentStil = STILE[idx];
+    revealed = false;
+
+    // Lehrer-Lösung auf Server speichern (für mobile /loesung)
+    fetch('/api/gluecksrad/state', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({stil: currentStil, nummer: idx + 1})
+    }).catch(() => {});
+
+    const resultEl = document.getElementById('gw-result');
+    const stilEl = document.getElementById('gw-result-stil');
+    const hintEl = document.getElementById('gw-result-hint');
+    const playBtn = document.getElementById('gw-play-btn');
+    const revealBtn = document.getElementById('gw-reveal-btn');
+
+    if (resultEl) resultEl.style.borderColor = FARBEN[idx % FARBEN.length];
+    if (stilEl) { stilEl.textContent = '❓ ???'; stilEl.style.color = 'var(--dim)'; }
+    if (hintEl) hintEl.textContent = 'Musik abspielen und Stil erraten!';
+    if (playBtn) playBtn.style.display = 'block';
+    if (revealBtn) revealBtn.style.display = 'block';
+
+    // Audio stoppen
+    const audio = document.getElementById('gw-audio');
+    if (audio) { audio.pause(); audio.src = ''; }
+
+    gwUpdateChips();
+  }
+
+  window.gwReveal = function() {
+    if (!currentStil) return;
+    revealed = true;
+    const idx = STILE.indexOf(currentStil);
+    played.add(idx);
+
+    const stilEl = document.getElementById('gw-result-stil');
+    const hintEl = document.getElementById('gw-result-hint');
+    const revealBtn = document.getElementById('gw-reveal-btn');
+    if (stilEl) { stilEl.textContent = currentStil; stilEl.style.color = 'var(--bright)'; }
+    if (hintEl) hintEl.textContent = `Gespielt: ${played.size} von ${N}`;
+    if (revealBtn) revealBtn.style.display = 'none';
+
+    draw();
+    gwUpdateChips();
+    gwUpdateCounter();
+  };
+
+  window.gwPlayMusic = function() {
+    if (!currentStil) return;
+    const audio = document.getElementById('gw-audio');
+    if (!audio) return;
+    if (audio.src && !audio.paused) { audio.pause(); return; }
+    const url = `/api/gluecksrad/music?stil=${encodeURIComponent(currentStil)}`;
+    audio.src = url;
+    audio.play().catch(e => console.warn('Audio:', e));
+    const btn = document.getElementById('gw-play-btn');
+    if (btn) btn.textContent = '⏸ Stop';
+    audio.onended = () => { if (btn) btn.textContent = '▶ Musik'; };
+    audio.onpause = () => { if (btn) btn.textContent = '▶ Musik'; };
+  };
+
+  window.gwToggle = function() {
+    if (played.size >= N) { gwReset(); return; }
+
+    if (!spinning) {
+      // Start
+      speed = 8 + Math.random() * 4;
+      spinning = true;
+      stopping = false;
+      targetAngle = null;
+      currentStil = null;
+      const stilEl = document.getElementById('gw-result-stil');
+      const hintEl = document.getElementById('gw-result-hint');
+      const playBtn = document.getElementById('gw-play-btn');
+      const revealBtn = document.getElementById('gw-reveal-btn');
+      const resultEl = document.getElementById('gw-result');
+      if (stilEl) { stilEl.textContent = 'Dreht...'; stilEl.style.color = 'var(--dim)'; }
+      if (hintEl) hintEl.textContent = 'Leertaste drücken zum Stoppen';
+      if (playBtn) playBtn.style.display = 'none';
+      if (revealBtn) revealBtn.style.display = 'none';
+      if (resultEl) resultEl.style.borderColor = 'var(--border)';
+      const audio = document.getElementById('gw-audio');
+      if (audio) { audio.pause(); audio.src = ''; }
+      rafId = requestAnimationFrame(animate);
+    } else if (!stopping) {
+      // Stop — nächsten ungespielten Sektor berechnen
+      const currentIdx = getSektorAt(angle);
+      let targetIdx = played.has(currentIdx) ? nextUnplayed(currentIdx) : currentIdx;
+      if (targetIdx === null) { gwReset(); return; }
+
+      // Zielwinkel: Sektor sauber mittig unter Zeiger (Mitte des Sektors = 7.5° Offset)
+      const base = angleForSektor(targetIdx);
+      targetAngle = (base + SEKTOR_DEG / 2 + 360) % 360;
+      stopping = true;
+    }
+  };
+
+  window.gwReset = function() {
+    played.clear();
+    currentStil = null;
+    revealed = false;
+    spinning = false;
+    stopping = false;
+    speed = 0;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    const audio = document.getElementById('gw-audio');
+    if (audio) { audio.pause(); audio.src = ''; }
+    const stilEl = document.getElementById('gw-result-stil');
+    const hintEl = document.getElementById('gw-result-hint');
+    const playBtn = document.getElementById('gw-play-btn');
+    const revealBtn = document.getElementById('gw-reveal-btn');
+    const resultEl = document.getElementById('gw-result');
+    if (stilEl) { stilEl.textContent = 'Drück Start!'; stilEl.style.color = 'var(--bright)'; }
+    if (hintEl) hintEl.textContent = 'Klicke auf das Rad oder drücke Leertaste';
+    if (playBtn) playBtn.style.display = 'none';
+    if (revealBtn) revealBtn.style.display = 'none';
+    if (resultEl) resultEl.style.borderColor = 'var(--border)';
+    draw();
+    gwUpdateChips();
+    gwUpdateCounter();
+  };
+
+  function gwUpdateChips() {
+    const el = document.getElementById('gw-chips');
+    if (!el) return;
+    el.innerHTML = STILE.map((s, i) => {
+      const cls = played.has(i) ? 'gw-stil-chip played' : 'gw-stil-chip';
+      const bg = played.has(i) ? 'rgba(100,100,100,0.2)' : `${FARBEN[i % FARBEN.length]}33`;
+      const col = played.has(i) ? '#555' : FARBEN[i % FARBEN.length];
+      return `<span class="${cls}" style="background:${bg};color:${col};border:1px solid ${col}55">${s}</span>`;
+    }).join('');
+  }
+
+  function gwUpdateCounter() {
+    const el = document.getElementById('gw-counter');
+    if (el) el.textContent = `${played.size} / ${N} gespielt`;
+  }
+
+  // Tastatursteuerung
+  document.addEventListener('keydown', e => {
+    if (document.getElementById('page-gluecksrad')?.style.display === 'none') return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.code === 'Space') { e.preventDefault(); gwToggle(); }
+    if (e.key === 'r' || e.key === 'R') gwReset();
+    if (e.key === 'm' || e.key === 'M') gwPlayMusic();
+    if (e.key === 'a' || e.key === 'A') gwReveal();
+  });
+
+  // Init wenn Seite geöffnet wird
+  document.querySelectorAll('.nav-item').forEach(el => {
+    if (el.dataset.page === 'gluecksrad') {
+      el.addEventListener('click', () => {
+        setTimeout(() => { draw(); gwUpdateChips(); gwUpdateCounter(); }, 50);
+      });
+    }
+  });
+
+  // Erstzeichnung
+  setTimeout(() => { draw(); gwUpdateChips(); gwUpdateCounter(); }, 100);
+})();
 </script>
 
 <!-- ── Mail Befehlsleiste (fixed) ── -->
