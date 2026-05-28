@@ -4354,6 +4354,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/immo-criteria":  get_immo_criteria,
                 "/api/crontab":        get_crontab,
                 "/api/travel":         get_travel,
+                "/api/amadeus/config": amadeus_get_config,
                 "/api/photos/status":  lambda: dict(_photo_job),
                 "/api/photos/results": lambda: {"results": _photo_load_results()},
                 "/api/photos/config":  get_lmstudio_config,
@@ -4546,6 +4547,14 @@ class Handler(BaseHTTPRequestHandler):
             elif self.path == "/api/gluecksrad/state":
                 self._send_json(_gluecksrad_state)
 
+            elif self.path == "/api/sidebar-state":
+                sf = os.path.join(WORKSPACE, "data/sidebar_state.json")
+                if os.path.isfile(sf):
+                    with open(sf) as f:
+                        self._send_json(json.load(f))
+                else:
+                    self._send_json({})
+
             elif self.path == "/api/dokumente":
                 BOLLA_DOCS = "/mnt/d/OneDrive/Dokumente/Bolla/claud code - openclaw Doku"
                 ALLOWED_EXT = {".pdf", ".docx", ".html", ".txt", ".md"}
@@ -4713,6 +4722,12 @@ class Handler(BaseHTTPRequestHandler):
                     self._send_json(get_chargers(float(lat), float(lon), radius))
             elif self.path in simple:
                 self._send_json(simple[self.path]())
+            elif self.path.startswith("/api/amadeus/flights"):
+                qs = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(self.path).query))
+                self._send_json(amadeus_search_flights(
+                    qs.get("origin",""), qs.get("dest",""), qs.get("date",""),
+                    qs.get("return_date",""), int(qs.get("adults",2))
+                ))
             else:
                 self._send_json({"error": "not found"}, status=404)
         except (BrokenPipeError, ConnectionResetError):
@@ -4767,6 +4782,12 @@ class Handler(BaseHTTPRequestHandler):
             if self.path == "/api/gluecksrad/state":
                 _gluecksrad_state["stil"] = body.get("stil")
                 _gluecksrad_state["nummer"] = body.get("nummer")
+                self._send_json({"ok": True})
+            elif self.path == "/api/sidebar-state":
+                sf = os.path.join(WORKSPACE, "data/sidebar_state.json")
+                os.makedirs(os.path.dirname(sf), exist_ok=True)
+                with open(sf, "w") as f:
+                    json.dump(body, f)
                 self._send_json({"ok": True})
             elif self.path == "/api/workshop/save":
                 self._send_json(save_workshop(body.get("markdown", "")))
@@ -5545,7 +5566,20 @@ Antworte NUR als reines JSON ohne Markdown:
                 # Keine Einzelperson: Klassen, Gruppen oder leer
                 is_personal = bool(name) and not is_class
 
-                if sprache == "de":
+                if sprache == "de" and is_personal:
+                    lang_inst = ("auf Deutsch. WICHTIG — AUSSPRACHE DEUTSCHER NAMEN: Suno betont Vornamen oft englisch "
+                                 "(Betonung auf letzter Silbe statt erster). Bevor du den Liedtext schreibst, prüfe '{name}': "
+                                 "Wenn der Name auf -in, -en, -on, -an, -el, -er, -ig, -iv endet oder fremdsprachlich klingt, "
+                                 "ersetze ihn im gesamten Liedtext durch eine lautgerechte Schreibweise die Suno zwingt, "
+                                 "die erste Silbe zu betonen. Methoden (wähle die natürlichste): "
+                                 "(a) Doppelvokal in der Betonungssilbe: 'Levin' → 'Leevin', 'Kevin' → 'Keevin' "
+                                 "(b) Phonetische Umschreibung: 'Levin' → 'Lewien', 'Jason' → 'Jaison' "
+                                 "(c) Trennung mit Bindestrich wenn Suno dadurch die erste Silbe betont. "
+                                 "Beispiele: 'Levin' → 'Lewien' (LE-vin), 'Kevin' → 'Keewin', 'Justin' → 'Jussten', "
+                                 "'Leon' → 'Leeon', 'Jason' → 'Jaison', 'Elias' → 'Eelias'. "
+                                 "REGEL: Verwende im Liedtext NUR die phonetische Form. "
+                                 "Im Titel und in allen Metadaten IMMER die originale Schreibweise.")
+                elif sprache == "de":
                     lang_inst = "auf Deutsch"
                 elif is_personal:
                     lang_inst = ("in English. IMPORTANT: Before writing the lyrics, analyze the name and find the single best "
@@ -5690,17 +5724,11 @@ Antworte NUR als reines JSON ohne Markdown:
                         ref_date = None
 
                 lehrer = "Mister Mandel" if sprache != "de" else "Herrn Mandel"
-                STYLE_RULE = ("Suno style prompt in English, 40-70 words. STRICT RULE: NO artist names, NO band names, "
-                              "NO song titles — only pure musical descriptors. MUST cover ALL of these categories: "
-                              "(1) genre/subgenre, (2) tempo/BPM feel, (3) key instruments & their character, "
-                              "(4) production style & texture (raw/polished/distorted/clean/layered etc.), "
-                              "(5) energy level & dynamic feel (verse vs. chorus contrast), "
-                              "(6) vocal style & character (tone, delivery, attitude, range), "
-                              "(7) emotional mood & atmosphere. "
-                              "Example: 'alt-pop punk, driving distorted electric guitars, punchy tight drums, "
-                              "around 130bpm, raw powerful female lead vocals with sarcastic edge, "
-                              "dynamic quiet verses exploding into high-energy choruses, "
-                              "crisp modern production with gritty texture, emotionally charged, angsty attitude'")
+                STYLE_RULE = ("Suno style tags in English, comma-separated short tags only, MAX 120 characters total. "
+                              "STRICT: NO artist names, NO song titles, NO full sentences — ONLY concise music tags. "
+                              "Cover: genre, tempo feel, main instruments, energy, vocal style, production texture. "
+                              "LESS IS MORE — 5-8 precise tags beat a long description. "
+                              "Example: 'synth-pop, 80s, pulsing bassline, electronic drums, 120bpm, smooth male vocals, polished'")
                 TITLE_RULE = ("kreativer Songtitel mit passenden Emojis"
                               + (" — verwende im Titel immer die ORIGINAL-Schreibweise des Namens, nicht die phonetische" if is_personal else ""))
 
@@ -6217,6 +6245,33 @@ Antworte NUR als reines JSON:
                 self.end_headers()
                 self.wfile.write(data)
 
+            elif self.path == "/api/trip/plan":
+                self._send_json(trip_plan(
+                    body.get("ziel",""), body.get("startort",""),
+                    body.get("tage",2), body.get("datum",""),
+                    body.get("fahrzeug","Auto"), body.get("interessen",""),
+                    body.get("sprache","de")
+                ))
+            elif self.path == "/api/trip/docx":
+                trip_data = body.get("trip")
+                if not trip_data:
+                    self._send_json({"error":"trip fehlt"}, status=400); return
+                docx_bytes = trip_generate_docx(trip_data, body.get("sprache","de"))
+                title = (trip_data.get("title") or "Trip").replace("/","_")[:60]
+                fname = title + ".docx"
+                self.send_response(200)
+                self.send_header("Content-Type","application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                self.send_header("Content-Disposition",f'attachment; filename="{fname}"')
+                self.send_header("Content-Length", str(len(docx_bytes)))
+                self.end_headers()
+                self.wfile.write(docx_bytes)
+            elif self.path == "/api/amadeus/config":
+                cid = body.get("client_id","").strip()
+                sec = body.get("client_secret","").strip()
+                if cid and sec:
+                    self._send_json(amadeus_save_config(cid, sec))
+                else:
+                    self._send_json({"error":"client_id und client_secret erforderlich"}, status=400)
             else:
                 self._send_json({"error": "not found"}, status=404)
         except (BrokenPipeError, ConnectionResetError):
@@ -6292,6 +6347,303 @@ Antworte NUR als reines JSON:
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "*")
         self.end_headers()
+
+
+# ── Kurztrip-Planer ──────────────────────────────────────────────────────────
+
+def trip_plan(ziel, startort, tage, datum, fahrzeug, interessen, sprache):
+    if not ziel:
+        return {"error": "Zielort fehlt"}
+    import shutil, subprocess as _sp
+    claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
+    tage = max(1, min(3, int(tage) if str(tage).isdigit() else 2))
+    lang_inst = "in German" if sprache == "de" else "in English"
+    interessen_inst = f"Interests: {interessen}" if interessen else ""
+    datum_str = datum or datetime.now().strftime("%Y-%m-%d")
+    color_guide = (
+        'Colors by category: parking/start: "#6366f1", sightseeing/culture: "#f59e0b", '
+        'viewpoint/nature: "#16a34a", break/cafe/restaurant: "#0ea5e9", museum: "#8b5cf6", '
+        'end/return: "#ef4444"'
+    )
+    prompt = f"""You are an expert travel guide. Create a detailed {tage}-day trip plan for {ziel}.
+Starting point: {startort or 'not specified (assume typical travel hub)'}
+Vehicle: {fahrzeug}
+Date: {datum_str}
+{interessen_inst}
+Language for output: {lang_inst}
+
+IMPORTANT RULES:
+- Provide PRECISE GPS coordinates (WGS84 decimal degrees) for every stop. Verify accuracy.
+- Create a logical walking/driving route that minimizes backtracking.
+- For {tage} day(s): distribute stops evenly across days with a logical daily theme.
+- Each stop: realistic walking/driving distance and time from previous stop.
+- Include 1 parking/start stop, at least 1 café/break stop per day, end back at start.
+- {color_guide}
+
+Return ONLY this exact JSON (no markdown, no extra text):
+{{
+  "title": "CityName — {tage}-Day Trip",
+  "subtitle": "Vehicle · Date · N stops · ~X km total · ~Y hours with breaks",
+  "tage": [
+    {{
+      "tag": 1,
+      "label": "Day 1 — Theme (e.g. Old Town & Harbor)",
+      "stops": [
+        {{
+          "nr": 1,
+          "name": "Parking / Start Point",
+          "lat": 00.0000,
+          "lon": 00.0000,
+          "color": "#6366f1",
+          "dist": "Start",
+          "zeit": "",
+          "kurz": "Short description (10-15 words)",
+          "detail": "Detailed description with practical tips (3-5 sentences)",
+          "kategorie": "parking"
+        }}
+      ]
+    }}
+  ],
+  "gesamt_km": "~X km",
+  "gesamt_zeit": "~Y hours including breaks and museums"
+}}"""
+
+    try:
+        res = _sp.run(
+            [claude_bin, "-p", "--model", "claude-opus-4-7", "--output-format", "json", prompt],
+            capture_output=True, text=True, timeout=120, stdin=_sp.DEVNULL,
+            cwd=os.path.expanduser("~")
+        )
+        if res.returncode != 0:
+            return {"error": res.stderr[:300] or "Claude Fehler"}
+        raw = json.loads(res.stdout).get("result", "").strip()
+        if raw.startswith("```"): raw = "\n".join(raw.split("\n")[1:])
+        if raw.endswith("```"): raw = raw.rsplit("```",1)[0]
+        raw = raw.strip()
+        idx = raw.find('{')
+        if idx < 0: raise ValueError("Kein JSON")
+        data, _ = json.JSONDecoder().raw_decode(raw, idx)
+        return data
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def trip_generate_docx(trip_data, sprache="de"):
+    from docx import Document
+    from docx.shared import Inches, Pt, RGBColor, Cm
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
+    from PIL import Image, ImageDraw, ImageFont
+    import io, tempfile
+
+    all_stops = [s for t in trip_data.get("tage", []) for s in t.get("stops", [])]
+
+    def hex2rgb(h):
+        h = h.lstrip('#')
+        return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+
+    def set_bg(cell, hex_color):
+        tc = cell._tc; tcPr = tc.get_or_add_tcPr()
+        shd = OxmlElement('w:shd')
+        shd.set(qn('w:val'),'clear'); shd.set(qn('w:color'),'auto'); shd.set(qn('w:fill'), hex_color.lstrip('#'))
+        tcPr.append(shd)
+
+    def set_cell_text(cell, text, size=10, bold=False, color=None, italic=False,
+                      space_before=2, space_after=2, align=WD_ALIGN_PARAGRAPH.LEFT):
+        p = cell.paragraphs[0]
+        p.paragraph_format.space_before = Pt(space_before)
+        p.paragraph_format.space_after  = Pt(space_after)
+        p.alignment = align
+        run = p.runs[0] if p.runs else p.add_run(text)
+        if p.runs: run.text = text
+        run.font.size = Pt(size); run.font.bold = bold; run.font.italic = italic
+        if color: run.font.color.rgb = color
+
+    # Karte generieren
+    map_path = None
+    try:
+        from staticmap import StaticMap, CircleMarker
+        from staticmap.staticmap import _lon_to_x, _lat_to_y
+        m = StaticMap(900, 700, url_template="https://tile.openstreetmap.org/{z}/{x}/{y}.png")
+        for s in all_stops:
+            m.add_marker(CircleMarker((s["lon"], s["lat"]), "#ffffff", 2))
+        img = m.render(zoom=14)
+        draw = ImageDraw.Draw(img)
+        try:
+            font_nr = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 17)
+            font_sm = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11)
+            font_hd = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 12)
+        except Exception:
+            font_nr = font_sm = font_hd = ImageFont.load_default()
+        for s in all_stops:
+            tx = _lon_to_x(s["lon"], m.zoom); ty = _lat_to_y(s["lat"], m.zoom)
+            px = m._x_to_px(tx); py = m._y_to_px(ty)
+            rgb = hex2rgb(s.get("color","#6366f1")); r = 16
+            draw.ellipse([px-r-2,py-r-2,px+r+2,py+r+2], fill=(10,10,10))
+            draw.ellipse([px-r,py-r,px+r,py+r], fill=rgb)
+            txt = str(s["nr"]); bb = draw.textbbox((0,0),txt,font=font_nr)
+            draw.text((px-(bb[2]-bb[0])//2-bb[0], py-(bb[3]-bb[1])//2-bb[1]), txt, font=font_nr, fill="white")
+        # Legende
+        lx, ly = 8, 8; lh = 28 + len(all_stops)*20 + 6
+        draw.rectangle([lx,ly,lx+250,ly+lh], fill=(255,255,255,220), outline=(160,160,160))
+        draw.text((lx+7,ly+6), trip_data.get("title","RUNDGANG")[:30], font=font_hd, fill=(20,20,20))
+        for i, s in enumerate(all_stops):
+            ry = ly+26+i*20; rgb = hex2rgb(s.get("color","#6366f1")); r2=8
+            draw.ellipse([lx+7,ry+2,lx+7+r2*2,ry+2+r2*2], fill=rgb)
+            draw.text((lx+30,ry+3), s["name"][:32], font=font_sm, fill=(20,20,20))
+        tf = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+        img.save(tf.name, quality=92); map_path = tf.name
+    except Exception as e:
+        print(f"Karte fehlgeschlagen: {e}")
+
+    doc = Document()
+    for sec in doc.sections:
+        sec.top_margin=Cm(1.5); sec.bottom_margin=Cm(1.5)
+        sec.left_margin=Cm(1.8); sec.right_margin=Cm(1.8)
+
+    t = doc.add_heading(trip_data.get("title","Reiseplan"), 0)
+    t.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    t.runs[0].font.size = Pt(20); t.runs[0].font.color.rgb = RGBColor(0x1e,0x40,0xaf)
+    t.paragraph_format.space_before = Pt(0); t.paragraph_format.space_after = Pt(4)
+
+    sub = doc.add_paragraph(trip_data.get("subtitle",""))
+    sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    sub.runs[0].font.size = Pt(10); sub.runs[0].font.color.rgb = RGBColor(0x64,0x74,0x8b)
+    sub.paragraph_format.space_after = Pt(8)
+
+    if map_path:
+        try:
+            doc.add_picture(map_path, width=Inches(6.0))
+            doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+            doc.paragraphs[-1].paragraph_format.space_after = Pt(8)
+        except Exception: pass
+
+    BLUE = RGBColor(0x1e,0x40,0xaf)
+    COL_W = [Cm(0.8), Cm(5.0), Cm(2.6), Cm(8.8)]
+
+    for tag in trip_data.get("tage", []):
+        if len(trip_data.get("tage",[])) > 1:
+            lbl = doc.add_paragraph(tag.get("label",""))
+            lbl.runs[0].font.size = Pt(12); lbl.runs[0].font.bold = True
+            lbl.runs[0].font.color.rgb = BLUE; lbl.paragraph_format.space_after = Pt(4)
+
+        tbl = doc.add_table(rows=1, cols=4); tbl.style = 'Table Grid'
+        tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+        hdr = tbl.rows[0].cells
+        for i,(txt,w) in enumerate(zip(["#","Station","Weg/Zeit","Highlight"],COL_W)):
+            hdr[i].width=w
+            set_cell_text(hdr[i],txt,size=10,bold=True,color=RGBColor(0xff,0xff,0xff),align=WD_ALIGN_PARAGRAPH.CENTER)
+            set_bg(hdr[i],"1e40af")
+        for si, s in enumerate(tag.get("stops",[])):
+            dist_txt = s.get("dist","") if s.get("dist")=="Start" else (s.get("dist","") + (" / "+s.get("zeit","") if s.get("zeit") else ""))
+            row = tbl.add_row().cells
+            for j,w in enumerate(COL_W): row[j].width=w
+            set_cell_text(row[0],str(s["nr"]),size=10,bold=True,align=WD_ALIGN_PARAGRAPH.CENTER)
+            set_cell_text(row[1],s.get("name",""),size=10,bold=True)
+            set_cell_text(row[2],dist_txt,size=9,color=RGBColor(0x44,0x55,0x6b),align=WD_ALIGN_PARAGRAPH.CENTER)
+            set_cell_text(row[3],s.get("kurz",""),size=9)
+            if si % 2 == 1:
+                for c in row: set_bg(c,"eef2ff")
+        row = tbl.add_row().cells
+        for j,w in enumerate(COL_W): row[j].width=w
+        set_cell_text(row[0],"∑",size=10,bold=True,align=WD_ALIGN_PARAGRAPH.CENTER)
+        set_cell_text(row[1],"Gesamt",size=10,bold=True)
+        set_cell_text(row[2],trip_data.get("gesamt_km",""),size=10,bold=True,align=WD_ALIGN_PARAGRAPH.CENTER)
+        set_cell_text(row[3],trip_data.get("gesamt_zeit",""),size=9,bold=True)
+        for c in row: set_bg(c,"dbeafe")
+        doc.add_paragraph("").paragraph_format.space_after = Pt(6)
+
+    # Seite 2: Details
+    doc.add_page_break()
+    lbl2 = doc.add_paragraph("Stationen im Detail")
+    lbl2.runs[0].font.size=Pt(14); lbl2.runs[0].font.bold=True
+    lbl2.runs[0].font.color.rgb=BLUE; lbl2.paragraph_format.space_after=Pt(8)
+    COL_W2=[Cm(0.8),Cm(4.4),Cm(12.0)]
+    tbl2 = doc.add_table(rows=1, cols=3); tbl2.style='Table Grid'
+    tbl2.alignment = WD_TABLE_ALIGNMENT.CENTER
+    h2 = tbl2.rows[0].cells
+    for i,(txt,w) in enumerate(zip(["#","Station","Beschreibung & Tipps"],COL_W2)):
+        h2[i].width=w
+        set_cell_text(h2[i],txt,size=10,bold=True,color=RGBColor(0xff,0xff,0xff),align=WD_ALIGN_PARAGRAPH.CENTER)
+        set_bg(h2[i],"1e40af")
+    for si, s in enumerate(all_stops):
+        row=tbl2.add_row().cells
+        for j,w in enumerate(COL_W2): row[j].width=w
+        set_cell_text(row[0],str(s["nr"]),size=11,bold=True,align=WD_ALIGN_PARAGRAPH.CENTER)
+        p=row[1].paragraphs[0]; p.paragraph_format.space_before=Pt(3); p.paragraph_format.space_after=Pt(2)
+        nr=p.add_run(s.get("name","")); nr.font.size=Pt(10); nr.font.bold=True
+        if s.get("dist") and s["dist"]!="Start":
+            dr=p.add_run(f"\n{s.get('dist','')} / {s.get('zeit','')}"); dr.font.size=Pt(8); dr.font.italic=True; dr.font.color.rgb=RGBColor(0x64,0x74,0x8b)
+        dp=row[2].paragraphs[0]; dp.paragraph_format.space_before=Pt(3); dp.paragraph_format.space_after=Pt(3)
+        dr2=dp.add_run(s.get("detail","")); dr2.font.size=Pt(10)
+        if si % 2 == 1:
+            for c in row: set_bg(c,"eef2ff")
+
+    foot=doc.add_paragraph("🐾  Bolla · Viel Spaß und gutes Wetter!")
+    foot.alignment=WD_ALIGN_PARAGRAPH.CENTER; foot.runs[0].font.size=Pt(9)
+    foot.runs[0].font.color.rgb=RGBColor(0x94,0xa3,0xb8); foot.paragraph_format.space_before=Pt(10)
+
+    buf = io.BytesIO(); doc.save(buf)
+    if map_path:
+        try: os.unlink(map_path)
+        except Exception: pass
+    return buf.getvalue()
+
+
+# ── Amadeus API ──────────────────────────────────────────────────────────────
+
+AMADEUS_CONFIG_FILE = Path(os.path.join(WORKSPACE, "config/amadeus_config.json"))
+_amadeus_token_cache = {"token": None, "expires": 0}
+
+def amadeus_get_config():
+    if AMADEUS_CONFIG_FILE.exists():
+        d = json.loads(AMADEUS_CONFIG_FILE.read_text())
+        return {"client_id": d.get("client_id",""), "configured": bool(d.get("client_id"))}
+    return {"client_id": "", "configured": False}
+
+def amadeus_save_config(client_id, client_secret):
+    AMADEUS_CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    AMADEUS_CONFIG_FILE.write_text(json.dumps({"client_id": client_id, "client_secret": client_secret}, indent=2))
+    AMADEUS_CONFIG_FILE.chmod(0o600)
+    _amadeus_token_cache["token"] = None
+    return {"ok": True}
+
+def _amadeus_token():
+    import time, urllib.request as _ur, urllib.parse as _up2
+    if _amadeus_token_cache["token"] and time.time() < _amadeus_token_cache["expires"] - 30:
+        return _amadeus_token_cache["token"]
+    if not AMADEUS_CONFIG_FILE.exists():
+        raise ValueError("Amadeus API-Key nicht konfiguriert. Bitte ⚙️ API-Key klicken.")
+    cfg = json.loads(AMADEUS_CONFIG_FILE.read_text())
+    data = _up2.urlencode({"grant_type":"client_credentials","client_id":cfg["client_id"],"client_secret":cfg["client_secret"]}).encode()
+    req = _ur.Request("https://test.api.amadeus.com/v1/security/oauth2/token",
+                      data=data, headers={"Content-Type":"application/x-www-form-urlencoded"})
+    with _ur.urlopen(req, timeout=15) as r:
+        tok = json.loads(r.read())
+    _amadeus_token_cache["token"] = tok["access_token"]
+    _amadeus_token_cache["expires"] = time.time() + tok.get("expires_in", 1800)
+    return _amadeus_token_cache["token"]
+
+def amadeus_search_flights(origin, dest, date, return_date, adults=2):
+    if not origin or not dest or not date:
+        return {"error": "origin, dest und date sind Pflichtfelder"}
+    import urllib.request as _ur, urllib.parse as _up2
+    try:
+        token = _amadeus_token()
+        params = {"originLocationCode": origin, "destinationLocationCode": dest,
+                  "departureDate": date, "adults": str(adults), "max": "15", "currencyCode": "EUR"}
+        if return_date:
+            params["returnDate"] = return_date
+        url = "https://test.api.amadeus.com/v2/shopping/flight-offers?" + _up2.urlencode(params)
+        req = _ur.Request(url, headers={"Authorization": f"Bearer {token}"})
+        with _ur.urlopen(req, timeout=20) as r:
+            data = json.loads(r.read())
+        flights = data.get("data", [])
+        return {"flights": flights, "meta": data.get("meta", {})}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 if __name__ == "__main__":

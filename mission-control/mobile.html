@@ -467,6 +467,16 @@ body {
   </div>
 </div>
 
+<!-- GLÜCKSRAD LÖSUNG -->
+<div class="page" id="p-gluecksrad">
+  <div id="gw-loesung-wrap" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:24px;padding:24px 16px">
+    <div id="gw-loesung-nummer" style="font-size:72px;font-weight:900;color:var(--accent);line-height:1">—</div>
+    <div id="gw-loesung-stil" style="font-size:28px;font-weight:700;color:var(--text);text-align:center">Noch kein Stil gewählt</div>
+    <div id="gw-loesung-hint" style="font-size:14px;color:var(--text3);text-align:center">Rad auf dem Beamer drehen — Lösung erscheint hier automatisch</div>
+    <div id="gw-loesung-status" style="font-size:12px;color:var(--text3)"></div>
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <nav class="tabbar" id="tabbar">
   <button class="tabbtn" data-tab="sos" style="color:#ff3b30"><span class="ic">🆘</span>SOS</button>
@@ -479,6 +489,7 @@ body {
   <button class="tabbtn" data-tab="laden"><span class="ic">🔋</span>Laden</button>
   <button class="tabbtn" data-tab="robin"><span class="ic">🩺</span>Robin</button>
   <button class="tabbtn" data-tab="notiz"><span class="ic">🎙️</span>Notiz</button>
+  <button class="tabbtn" data-tab="gluecksrad"><span class="ic">🎡</span>Lösung</button>
 </nav>
 
 <!-- Floating Mic Button — auf jeder Seite außer Notiz selbst -->
@@ -508,22 +519,24 @@ function getInitials(name) {
 const pageTitle = document.getElementById('page-title');
 const pageSub   = document.getElementById('page-sub');
 const TITLES = {
-  cal:    ['Kalender',     'Kommende Termine'],
-  mail:   ['Mails',        'Ungelesen'],
-  wx:     ['Wetter',       'Norderstedt'],
-  rezept: ['Rezept',       'Rezept des Tages'],
-  laden:  ['Ladestopp',    'Nächste EnBW-Säulen'],
-  notiz:  ['Sprachnotiz',  'Aufnehmen · Senden · Speichern'],
-  bd:     ['Geburtstage',  'Nächste Anlässe'],
-  robin:  ['Robin',        'Medizinstudium Uni Ulm'],
-  clip:   ['Clipboard',    'Geräteübergreifend teilen'],
-  sos:    ['🆘 Notfall',   'Notruf & Standort']
+  cal:         ['Kalender',       'Kommende Termine'],
+  mail:        ['Mails',          'Ungelesen'],
+  wx:          ['Wetter',         'Norderstedt'],
+  rezept:      ['Rezept',         'Rezept des Tages'],
+  laden:       ['Ladestopp',      'Nächste EnBW-Säulen'],
+  notiz:       ['Sprachnotiz',    'Aufnehmen · Senden · Speichern'],
+  bd:          ['Geburtstage',    'Nächste Anlässe'],
+  robin:       ['Robin',          'Medizinstudium Uni Ulm'],
+  clip:        ['Clipboard',      'Geräteübergreifend teilen'],
+  sos:         ['🆘 Notfall',     'Notruf & Standort'],
+  gluecksrad:  ['🎡 Lösung',      'Aktueller Musikstil — live']
 };
 
 let activeTab = 'cal';
 const loaded = {};
 
 let _clipAutoTimer = null;
+let _gwLoesungTimer = null;
 function switchTab(tab) {
   if (tab === activeTab) { refreshTab(); return; }
   const btn = document.querySelector('.tabbtn[data-tab="' + tab + '"]');
@@ -544,6 +557,9 @@ function switchTab(tab) {
   // Auto-Refresh des gclip wenn der Clip-Tab aktiv ist (alle 8 Sek)
   if (_clipAutoTimer) { clearInterval(_clipAutoTimer); _clipAutoTimer = null; }
   if (tab === 'clip') _clipAutoTimer = setInterval(loadClipboard, 8000);
+  // Auto-Refresh Glücksrad-Lösung alle 2 Sek
+  if (_gwLoesungTimer) { clearInterval(_gwLoesungTimer); _gwLoesungTimer = null; }
+  if (tab === 'gluecksrad') _gwLoesungTimer = setInterval(loadGluecksradLoesung, 2000);
 }
 
 // Beim Zurück auf den Tab (App in den Vordergrund) → einmal sofort neu laden
@@ -569,7 +585,7 @@ function refreshTab() {
     cal: 'cal-list', mail: 'mail-list', wx: 'wx-content',
     rezept: 'rezept-content', laden: 'laden-content',
     notiz: null, bd: 'bd-list', robin: 'robin-timeline',
-    clip: null, sos: null
+    clip: null, sos: null, gluecksrad: null
   };
   const cid = containers[activeTab];
   if (cid) document.getElementById(cid).innerHTML = '<div class="loading">Lade</div>';
@@ -590,8 +606,9 @@ async function loadTab(tab) {
     else if (tab === 'notiz')  await loadNotiz();
     else if (tab === 'bd')     await loadBirthdays();
     else if (tab === 'robin')  loadRobinTimeline();
-    else if (tab === 'clip')   await loadClipboard();
-    else if (tab === 'sos')    await loadSOS();
+    else if (tab === 'clip')        await loadClipboard();
+    else if (tab === 'sos')         await loadSOS();
+    else if (tab === 'gluecksrad')  await loadGluecksradLoesung();
   } catch (e) {
     console.error(tab, e);
   }
@@ -1469,6 +1486,37 @@ async function sosSend() {
   } catch (e) {
     st.textContent = '⚠️ ' + e.message; st.style.color = 'var(--red)';
   }
+}
+
+// ===== GLÜCKSRAD LÖSUNG =====
+let _gwLoesungLast = null;
+async function loadGluecksradLoesung() {
+  try {
+    const d = await fetch('/api/gluecksrad/state').then(r => r.json());
+    const key = d.stil + '|' + d.nummer;
+    if (key === _gwLoesungLast) return; // keine Änderung
+    _gwLoesungLast = key;
+
+    const numEl  = document.getElementById('gw-loesung-nummer');
+    const stilEl = document.getElementById('gw-loesung-stil');
+    const hintEl = document.getElementById('gw-loesung-hint');
+    const statEl = document.getElementById('gw-loesung-status');
+
+    if (!d.stil) {
+      numEl.textContent  = '—';
+      stilEl.textContent = 'Noch kein Stil gewählt';
+      hintEl.textContent = 'Rad auf dem Beamer drehen — Lösung erscheint hier automatisch';
+      statEl.textContent = '';
+    } else {
+      numEl.textContent  = `Nr. ${d.nummer}`;
+      stilEl.textContent = d.stil;
+      hintEl.textContent = '';
+      statEl.textContent = '🔄 Aktualisiert automatisch';
+      // Kurzes Blink-Feedback bei neuer Lösung
+      stilEl.style.color = 'var(--accent)';
+      setTimeout(() => { stilEl.style.color = 'var(--text)'; }, 600);
+    }
+  } catch (e) { /* ignore wenn Rad gerade nicht läuft */ }
 }
 
 // ===== INIT =====
