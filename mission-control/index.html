@@ -851,7 +851,7 @@ html, body {
             </div>
             <div class="nav-group-items" id="nav-group-items-projekte">
               <div class="nav-item nav-subitem" data-page="projekte"><span class="icon">🏡</span><span>Immobilienkauf Bayern</span></div>
-              <div class="nav-item nav-subitem" data-page="urlaub"><span class="icon">✈️</span><span>Urlaubsplanung 2026</span></div>
+              <div class="nav-item nav-subitem" data-page="urlaub"><span class="icon">✈️</span><span>Reiseplaner</span></div>
             </div>
           </div>
         </div>
@@ -1724,7 +1724,7 @@ html, body {
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
                 <div style="font-size:13px;font-weight:700;color:#818cf8;text-transform:uppercase;letter-spacing:1px">🧠 Memory-Dateien</div>
                 <!-- BOLLA-UPDATED-START -->
-              <span style="font-size:11px;color:var(--dim)">Aktualisiert: 27.05.2026</span>
+              <span style="font-size:11px;color:var(--dim)">Aktualisiert: 29.05.2026</span>
               <!-- BOLLA-UPDATED-END -->
               </div>
               <div style="font-size:12px;color:var(--dim);margin-bottom:12px">~/.claude/projects/.../memory/ — wöchentlich automatisch aktualisiert</div>
@@ -1750,6 +1750,7 @@ html, body {
               <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #22c55e"><div style="font-size:12px;font-weight:600;color:var(--bright)">📌 RouteNote Upload-Formate</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Audio: MP3 320kbps + 44.1kHz (Suno=64kbps→ffmpeg nötig!); Cover: JPEG 3000×3000px</div></div>
               <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #f59e0b"><div style="font-size:12px;font-weight:600;color:var(--bright)">💬 Mic-Lösung</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Azure Speech SDK (seit 27.05.2026) ✅; Whisper + Web Speech API (Google) → beide verboten/kaputt</div></div>
               <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #f59e0b"><div style="font-size:12px;font-weight:600;color:var(--bright)">💬 Windows UI veraltet</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Keine fixen Menüpfade behaupten; Registry/PowerShell bevorzugen; Win-Suche empfehlen</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #06b6d4"><div style="font-size:12px;font-weight:600;color:var(--bright)">📋 Immobilienkauf Bayern</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Suche frühestens Herbst 2027; 8 Regionen inkl. Germering/Puchheim; 37 Makler; Kriterien in config/immo_criteria.json</div></div>
               </div>
               <!-- BOLLA-MEMORY-END -->
             </div>
@@ -2366,7 +2367,7 @@ html, body {
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
             <div>
               <div style="font-size:20px;font-weight:700;color:var(--text)">✈️ Reiseplaner</div>
-              <div style="font-size:13px;color:var(--dim);margin-top:2px">Kurztrip-Guide · Pauschalreise-Suche (Amadeus)</div>
+              <div style="font-size:13px;color:var(--dim);margin-top:2px">Kurztrip-Guide · Flug &amp; Hotel Deeplinks</div>
             </div>
           </div>
 
@@ -9543,6 +9544,8 @@ function initUrlaub() {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', reiseBuildLinks);
   });
+  // Portale sofort anzeigen (ohne Eingabe als Einstiegslinks)
+  reiseBuildLinks();
 }
 
 function reiseBuildLinks() {
@@ -9554,7 +9557,8 @@ function reiseBuildLinks() {
   const linksEl = document.getElementById('rs-links');
   const hintEl  = document.getElementById('rs-hint');
   if (!linksEl) return;
-  if (!dest && !date) { linksEl.innerHTML = ''; if (hintEl) hintEl.textContent = ''; return; }
+  const hasInput = !!(dest || date);
+  if (!hasInput && hintEl) hintEl.textContent = '💡 Daten eingeben für direkte Suchergebnisse';
 
   const nights = (date && ret)
     ? Math.max(1, Math.round((new Date(ret) - new Date(date)) / 86400000))

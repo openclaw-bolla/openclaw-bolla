@@ -4813,16 +4813,6 @@ class Handler(BaseHTTPRequestHandler):
                 typ = body.get("typ", "pauschal")
                 self._send_json(save_travel_recommendation(uid, typ, body.get("empfehlung")))
             elif self.path == "/api/travel/request-refresh":
-                try:
-                    cfg = json.load(open(os.path.join(WORKSPACE, "config/telegram_bot.json")))
-                    import urllib.request as _ur
-                    msg = ("✈️ *Reiseplaner-Update angefordert!*\n\n"
-                           "Im MC wurde 'Neu suchen' gedrückt.\n"
-                           "Bitte Bolla fragen:\n→ _'Such beste Pauschalreise Sommer 2026 ab Hamburg'_")
-                    qs = urllib.parse.urlencode({"chat_id": cfg["chris_id"], "text": msg, "parse_mode": "Markdown"})
-                    _ur.urlopen(f"https://api.telegram.org/bot{cfg['bot_token']}/sendMessage?{qs}", timeout=5)
-                except Exception:
-                    pass
                 self._send_json({"ok": True})
             elif self.path == "/api/recipe/save":
                 try:
@@ -6410,7 +6400,7 @@ Return ONLY this exact JSON (no markdown, no extra text):
 
     try:
         res = _sp.run(
-            [claude_bin, "-p", "--model", "claude-opus-4-7", "--output-format", "json", prompt],
+            [claude_bin, "-p", "--model", "claude-sonnet-4-6", "--output-format", "json", prompt],
             capture_output=True, text=True, timeout=120, stdin=_sp.DEVNULL,
             cwd=os.path.expanduser("~")
         )
