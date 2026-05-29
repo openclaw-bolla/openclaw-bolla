@@ -4491,7 +4491,7 @@ class Handler(BaseHTTPRequestHandler):
                     "K-Pop": "K-Pop - Classroom Dreams.mp3",
                     "Latin": "Latin - Escuela de Vida.mp3",
                     "Indie": "Indie&Alternative - Classroom Daydreams.mp3",
-                    "Bluegrass": "Bluegrass - Back to the Chalkboard.mp3",
+                    "Funk": "Funk  -  School's Got Soul.mp3",
                     "Hard-Rock": "Hard-Rock - Classroom Chaos.mp3",
                     "Choral": "Choral - Echoes of Eternity.mp3",
                 }
@@ -4525,7 +4525,7 @@ class Handler(BaseHTTPRequestHandler):
                     "K-Pop": "K-Pop - Classroom Dreams.mp3",
                     "Latin": "Latin - Escuela de Vida.mp3",
                     "Indie": "Indie&Alternative - Classroom Daydreams.mp3",
-                    "Bluegrass": "Bluegrass - Back to the Chalkboard.mp3",
+                    "Funk": "Funk  -  School's Got Soul.mp3",
                     "Hard-Rock": "Hard-Rock - Classroom Chaos.mp3",
                     "Choral": "Choral - Echoes of Eternity.mp3",
                 }

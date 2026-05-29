@@ -1354,6 +1354,7 @@ html, body {
             </div>
             <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
               <span id="gw-counter" style="font-size:13px;color:var(--dim)">0 / 24 gespielt</span>
+              <button onclick="gwShuffle()" style="padding:6px 14px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.4);border-radius:8px;color:#818cf8;font-size:13px;cursor:pointer">🔀 Shuffle</button>
               <button onclick="gwReset()" style="padding:6px 14px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);border-radius:8px;color:#f59e0b;font-size:13px;cursor:pointer">↺ Reset</button>
             </div>
           </div>
@@ -1363,18 +1364,19 @@ html, body {
             <!-- Rad + Zeiger -->
             <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:16px">
               <!-- Zeiger -->
-              <div style="position:relative;width:500px;height:500px">
-                <canvas id="gw-canvas" width="500" height="500" onclick="gwToggle()" title="Klicken oder Leertaste"></canvas>
+              <div style="position:relative;width:650px;height:650px">
+                <canvas id="gw-canvas" width="650" height="650" onclick="gwToggle()" title="Klicken oder Leertaste"></canvas>
                 <!-- Zeiger oben -->
-                <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:28px solid #f59e0b;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5))"></div>
+                <div style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:32px solid #f59e0b;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5))"></div>
               </div>
 
               <!-- Ergebnis-Box -->
-              <div id="gw-result" style="width:500px;min-height:80px;background:var(--card);border:2px solid var(--border);border-radius:16px;padding:16px 20px;display:flex;align-items:center;gap:16px">
-                <div style="font-size:32px">🎵</div>
-                <div>
-                  <div id="gw-result-stil" style="font-size:22px;font-weight:700;color:var(--bright)">Drück Start!</div>
-                  <div id="gw-result-hint" style="font-size:13px;color:var(--dim);margin-top:2px">Klicke auf das Rad oder drücke Leertaste</div>
+              <div id="gw-result" style="width:650px;min-height:90px;background:var(--card);border:2px solid var(--border);border-radius:16px;padding:18px 24px;display:flex;align-items:center;gap:16px">
+                <div style="font-size:38px">🎵</div>
+                <div style="flex:1">
+                  <div id="gw-result-stil" style="font-size:28px;font-weight:700;color:var(--bright)">Drück Start!</div>
+                  <div id="gw-result-desc" style="font-size:14px;color:#a78bfa;margin-top:4px;display:none"></div>
+                  <div id="gw-result-hint" style="font-size:14px;color:var(--dim);margin-top:2px">Klicke auf das Rad oder drücke Leertaste</div>
                 </div>
                 <div style="margin-left:auto;display:flex;flex-direction:column;gap:6px;align-items:flex-end">
                   <button id="gw-play-btn" onclick="gwPlayMusic()" style="display:none;padding:8px 16px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);border-radius:8px;color:#22c55e;font-size:13px;cursor:pointer;font-weight:600">▶ Musik</button>
@@ -11683,8 +11685,34 @@ document.addEventListener('DOMContentLoaded', () => {
     "Country","Techno","Soul","Punk",
     "Swing","R&B","Disco","Gospel",
     "Rap","Boogie-Woogie","K-Pop","Latin",
-    "Indie","Bluegrass","Hard-Rock","Choral"
+    "Indie","Funk","Hard-Rock","Choral"
   ];
+  const STILE_BESCHREIBUNG = {
+    "Blues":         "Melancholisch, rhythmisch, emotional · Call-and-Response (12-Takt-Schema) · B.B. King",
+    "Rock'n'Roll":   "Schneller 4/4-Takt, harte Beats, Backbeats, eingängige Riffs · Elvis Presley, Little Richard",
+    "Jazz":          "Improvisation, synkopierte Rhythmen, Saxofon",
+    "Pop":           "Eingängige Melodien, einfache wiederholte Refrains",
+    "Hip-Hop":       "Rhythmisch, basslastig, urban · entstanden in New York · 50 Cent",
+    "Klassik":       "Großes Orchester, keine elektronischen Instrumente",
+    "Reggae":        "One-Drop-Rhythmus · Bob Marley",
+    "Metal":         "Laut, kraftvoll, episch · Gesang oft Screaming · Metallica",
+    "Country":       "„Three chords and the truth“ · Banjo, Mandoline, Fiddle · Johnny Cash",
+    "Techno":        "Mechanischer Rhythmus, synthetisch, hypnotisch · Scooter",
+    "Soul":          "Emotionaler Gesang, kraftvoll und ausdrucksstark · Stevie Wonder",
+    "Punk":          "Schnell, einfache Akkorde, verzerrte Gitarren, rauer Stil, kritisch · Sex Pistols",
+    "Swing":         "Gleichmäßiger Rhythmus, Big Band, tanzbar, Swing-Feeling · Glenn Miller",
+    "R&B":           "Emotional · vereint Soul, Jazz und Blues · Michael Jackson, R. Kelly",
+    "Disco":         "Verwandt mit Funk & Soul · tanzbarer Groove, gleichmäßiger Rhythmus · Bee Gees",
+    "Gospel":        "Christlich, Afro-Amerikanisch, mehrstimmige kraftvolle Chöre",
+    "Rap":           "Gesungenes Sprechen mit Reimen und Flow · Flow = Wörter passen perfekt zum Beat",
+    "Boogie-Woogie": "Rhythmisch, energetisch, schwingend · Klavierstil",
+    "K-Pop":         "Genre-Mix, Idol-Kultur · aufwendige Musikvideos, Choreografie · BTS",
+    "Latin":         "Afrikanische Rhythmen, spanische Melodien · Congas, Bongos, Maracas · Shakira",
+    "Indie":         "Independent, experimentell, authentisch, oft Gitarren · Coldplay",
+    "Funk":          "Starker Groove, Slap-Bass, Wah-Wah-Gitarre, Bläser · synkopierter Rhythmus · James Brown",
+    "Hard-Rock":     "Kraftvoll, verzerrt, energetisch · Deep Purple",
+    "Choral":        "Einfache Melodien, fehlender Rhythmus, Kirchenmusik"
+  };
   const N = STILE.length;
   const SEKTOR_DEG = 360 / N;
   const FARBEN = [
@@ -11754,7 +11782,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.translate(cx, cy);
       ctx.rotate((startAngle + endAngle) / 2);
       const textR = r * 0.68;
-      ctx.font = 'bold 13px sans-serif';
+      ctx.font = 'bold 16px sans-serif';
       ctx.fillStyle = isPlayed ? '#555' : 'rgba(255,255,255,0.95)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -11764,14 +11792,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Mittelpunkt
     ctx.beginPath();
-    ctx.arc(cx, cy, 22, 0, 2 * Math.PI);
+    ctx.arc(cx, cy, 28, 0, 2 * Math.PI);
     ctx.fillStyle = '#1a1a2e';
     ctx.fill();
     ctx.strokeStyle = '#7c3aed';
     ctx.lineWidth = 3;
     ctx.stroke();
     ctx.fillStyle = '#a78bfa';
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = 'bold 18px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('🎵', cx, cy);
@@ -11841,9 +11869,11 @@ document.addEventListener('DOMContentLoaded', () => {
     played.add(idx);
 
     const stilEl = document.getElementById('gw-result-stil');
+    const descEl = document.getElementById('gw-result-desc');
     const hintEl = document.getElementById('gw-result-hint');
     const revealBtn = document.getElementById('gw-reveal-btn');
     if (stilEl) { stilEl.textContent = currentStil; stilEl.style.color = 'var(--bright)'; }
+    if (descEl) { descEl.textContent = STILE_BESCHREIBUNG[currentStil] || ''; descEl.style.display = 'block'; }
     if (hintEl) hintEl.textContent = `Gespielt: ${played.size} von ${N}`;
     if (revealBtn) revealBtn.style.display = 'none';
 
@@ -11902,6 +11932,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  window.gwShuffle = function() {
+    for (let i = STILE.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [STILE[i], STILE[j]] = [STILE[j], STILE[i]];
+    }
+    gwReset();
+  };
+
   window.gwReset = function() {
     played.clear();
     currentStil = null;
@@ -11931,10 +11969,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById('gw-chips');
     if (!el) return;
     el.innerHTML = STILE.map((s, i) => {
-      const cls = played.has(i) ? 'gw-stil-chip played' : 'gw-stil-chip';
-      const bg = played.has(i) ? 'rgba(100,100,100,0.2)' : `${FARBEN[i % FARBEN.length]}33`;
-      const col = played.has(i) ? '#555' : FARBEN[i % FARBEN.length];
-      return `<span class="${cls}" style="background:${bg};color:${col};border:1px solid ${col}55">${s}</span>`;
+      if (!played.has(i)) return '';
+      const col = FARBEN[i % FARBEN.length];
+      return `<span class="gw-stil-chip" style="background:${col}33;color:${col};border:1px solid ${col}55">${s}</span>`;
     }).join('');
   }
 
