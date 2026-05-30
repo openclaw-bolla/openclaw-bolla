@@ -2375,42 +2375,35 @@ html, body {
 
           <!-- ═══ BEREICH 0: Sommerreise 2026 ═══ -->
           <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px;border-top:3px solid #f59e0b">
-            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+
+            <!-- Header -->
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
               <div>
                 <div style="font-size:15px;font-weight:700;color:#fbbf24">🌲 Sommerreise 2026 — Schwarzwald &amp; Bodensee</div>
-                <div style="font-size:12px;color:var(--dim);margin-top:2px">Route wählen · Orte anpassen · Klick für Details · Word-Export</div>
+                <div style="font-size:12px;color:var(--dim);margin-top:2px">Norderstedt → 14 Stationen → 01.08. Kaufering · ~13 Tage · ~1.300 km</div>
               </div>
-              <button onclick="srDownloadWord()" style="padding:7px 16px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);border-radius:8px;color:#fbbf24;font-size:13px;cursor:pointer;font-weight:600">📄 Reiseplan als Word</button>
-            </div>
-
-            <!-- Routenvorschläge -->
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px" id="sr-routen">
-              <div class="sr-route-card" id="sr-r0" onclick="srSelectRoute(0)"
-                style="border:2px solid rgba(251,191,36,0.5);border-radius:10px;padding:12px;cursor:pointer;background:rgba(251,191,36,0.08);transition:all .2s">
-                <div style="font-size:14px;font-weight:700;color:#fbbf24;margin-bottom:4px">🌲 Schwarzwald-Highlights</div>
-                <div style="font-size:11px;color:var(--dim);line-height:1.5">5–6 Tage · ~650 km<br>Baden-Baden · Triberg · Titisee · Freiburg</div>
-              </div>
-              <div class="sr-route-card" id="sr-r1" onclick="srSelectRoute(1)"
-                style="border:2px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;cursor:pointer;transition:all .2s">
-                <div style="font-size:14px;font-weight:700;color:#60a5fa;margin-bottom:4px">🌊 Bodensee-Runde</div>
-                <div style="font-size:11px;color:var(--dim);line-height:1.5">6–7 Tage · ~800 km<br>Konstanz · Mainau · Lindau · Bregenz</div>
-              </div>
-              <div class="sr-route-card" id="sr-r2" onclick="srSelectRoute(2)"
-                style="border:2px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;cursor:pointer;transition:all .2s">
-                <div style="font-size:14px;font-weight:700;color:#a78bfa;margin-bottom:4px">🗺️ Große Südrunde</div>
-                <div style="font-size:11px;color:var(--dim);line-height:1.5">10–12 Tage · ~1.100 km<br>Alles: Schwarzwald + Bodensee + Bregenz</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button onclick="srDownloadWord('schwarzwald')" style="padding:6px 13px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.4);border-radius:7px;color:#34d399;font-size:12px;cursor:pointer;font-weight:600">📄 Schwarzwald</button>
+                <button onclick="srDownloadWord('bodensee')" style="padding:6px 13px;background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.4);border-radius:7px;color:#60a5fa;font-size:12px;cursor:pointer;font-weight:600">📄 Bodensee</button>
+                <button onclick="srDownloadWord('gesamt')" style="padding:6px 13px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);border-radius:7px;color:#fbbf24;font-size:12px;cursor:pointer;font-weight:600">📄 Gesamtplan</button>
               </div>
             </div>
 
-            <!-- Hauptlayout: Orte-Liste + Karte -->
-            <div style="display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start">
-              <!-- Linke Spalte: Orte-Checkboxen -->
-              <div style="display:flex;flex-direction:column;gap:6px" id="sr-orte-liste">
-                <div style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">Orte auswählen</div>
+            <!-- Bregenz-Hinweis -->
+            <div style="background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.35);border-radius:8px;padding:9px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px">🎭</span>
+              <div style="font-size:12px;color:#fca5a5"><b>Bregenzer Festspiele — Tickets jetzt buchen!</b> Seebühne-Aufführungen sind Monate im Voraus ausverkauft. → <a href="https://bregenzerfestspiele.com" target="_blank" style="color:#fca5a5;text-decoration:underline">bregenzerfestspiele.com</a></div>
+            </div>
+
+            <!-- Hauptlayout -->
+            <div style="display:grid;grid-template-columns:240px 1fr;gap:16px;align-items:start">
+              <!-- Linke Spalte: Stationsliste -->
+              <div style="display:flex;flex-direction:column;gap:2px" id="sr-stationen">
+                <div style="font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">14 Stationen</div>
               </div>
               <!-- Rechte Spalte: Karte + Detail -->
               <div style="display:flex;flex-direction:column;gap:12px">
-                <div id="sr-map" style="height:380px;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:rgba(255,255,255,0.03)"></div>
+                <div id="sr-map" style="height:420px;border-radius:10px;overflow:hidden;border:1px solid var(--border)"></div>
                 <div id="sr-detail" style="display:none;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px"></div>
               </div>
             </div>
@@ -9743,11 +9736,314 @@ async function tripDownloadDocx() {
 
 // ── Sommerreise 2026 ─────────────────────────────────────────────────────────
 
-const SR_ORTE = [
-  { id:'bb',   name:'Baden-Baden',    region:'Schwarzwald',  emoji:'♨️',  farbe:'#f59e0b',
-    lat:48.7614, lon:8.2385, tage:1,
-    beschreibung:'Baden-Baden ist das elegante Tor zum Schwarzwald — weltberühmte Thermen, Spielbank und die herrliche Lichtentaler Allee am Ufer der Oos. Die Stadt verbindet Belle-Époque-Charme mit moderner Wellness-Kultur. Wer nach der langen Anreise aus Hamburg ankommen will, findet hier perfekte Entspannung.',
-    highlights:['Caracalla Therme & Friedrichsbad','Spielbank (älteste Deutschlands)','Lichtentaler Allee','Stadtmuseum','Weinberge & Rebland'] },
+const SR_ROUTE = [
+  { nr:1,  id:'bb',   name:'Baden-Baden',     region:'Schwarzwald', farbe:'#f59e0b',
+    lat:48.7614, lon:8.2385,
+    tag:'Tag 1', datum:'20.07.', aufenthalt:'1 Übernachtung',
+    anfahrt:'Norderstedt → ~700 km · ca. 6½ Std. · Ankunft ~14:00',
+    tipp:'Anreise früh starten! Nachmittags Lichtentaler Allee, abends Caracalla-Therme zur Erholung.',
+    beschreibung:'Baden-Baden ist das elegante Tor zum Schwarzwald — weltberühmte Thermen, die älteste Spielbank Deutschlands und die herrliche Lichtentaler Allee am Ufer der Oos. Nach der langen Anreise aus Norderstedt ideal zum Ankommen und Entspannen. Das Stadtbild ist geprägt von Belle-Époque-Architektur und einem mondänen Flair, das früher russische Zaren und europäische Könige anzog.',
+    highlights:['♨️ Caracalla Therme (Wellness, Pools, Sauna)','🏛️ Friedrichsbad (römisch-irisches Bad, 19. Jh.)','🎰 Spielbank Baden-Baden (älteste Deutschlands)','🌳 Lichtentaler Allee (2,4 km Parkpromenade)','🍇 Weinberge & Rebland (Spätburgunder)','🖼️ Kunstmuseum Baden-Baden'] },
+
+  { nr:2,  id:'gen',  name:'Gengenbach',       region:'Schwarzwald', farbe:'#f97316',
+    lat:48.4022, lon:7.9821,
+    tag:'Tag 2', datum:'21.07.', aufenthalt:'Halbtag (~2–3 Std.)',
+    anfahrt:'Baden-Baden → ~55 km · ca. 50 Min.',
+    tipp:'Perfekter Zwischenstopp auf dem Weg nach Freudenstadt. Altstadt zu Fuß in 1–2h komplett erkundbar.',
+    beschreibung:'Gengenbach gehört zu den schönsten Fachwerkstädtchen Deutschlands — Mittelalter zum Anfassen mit perfekt erhaltenen Stadtmauern, bunten Bürgerhäusern und einem idyllischen Marktplatz. Im Advent ist Gengenbach weltbekannt für seinen "lebenden Adventskalender" am Rathaus. Im Sommer ist es angenehm ruhig und sehr fotogen.',
+    highlights:['🏰 Mittelalterliche Altstadt & Marktplatz','🗼 Niggelturm & Stadtmauer','🏛️ Kaisersaal im Rathaus','🍷 Weinbau im Kinzigtal','📸 Fotomotiv-Paradies'] },
+
+  { nr:3,  id:'fd',   name:'Freudenstadt',     region:'Schwarzwald', farbe:'#10b981',
+    lat:48.4645, lon:8.4125,
+    tag:'Tag 2', datum:'21.07.', aufenthalt:'1 Übernachtung',
+    anfahrt:'Gengenbach → ~55 km · ca. 55 Min.',
+    tipp:'Freudenstadt liegt auf 730 m — angenehm kühl auch im Hochsommer. Guter Ausgangspunkt für Schwarzwald-Wanderungen am nächsten Morgen.',
+    beschreibung:'Freudenstadt liegt auf einem Hochplateau und besitzt den größten Marktplatz Deutschlands — über 200 m lang, umgeben von Arkadengängen aus dem 17. Jahrhundert. Die Stadt wurde im Zweiten Weltkrieg fast vollständig zerstört und danach rekonstruiert. Heute ist sie idealer Ausgangspunkt für Wanderungen auf dem Schwarzwald-Panoramaweg.',
+    highlights:['🏛️ Größter Marktplatz Deutschlands (216×216 m)','🏔️ Schwarzwaldmuseum','🥾 Panoramaweg & Murgtäler Wanderwege','🌲 Schwarzwald-Hochstraße (Panoramastraße)','🧖 Vital-Therme Freudenstadt'] },
+
+  { nr:4,  id:'tri',  name:'Triberg',           region:'Schwarzwald', farbe:'#3b82f6',
+    lat:48.1295, lon:8.2340,
+    tag:'Tag 3', datum:'22.07.', aufenthalt:'Halbtag (~3–4 Std.)',
+    anfahrt:'Freudenstadt → ~65 km · ca. 1 Std.',
+    tipp:'Die Wasserfälle sind morgens bei weniger Besuchern am schönsten. Danach unbedingt Schwarzwälder Kirschtorte essen!',
+    beschreibung:'Triberg ist die unbestrittene Kuckucksuhr-Hauptstadt der Welt und beherbergt die höchsten Wasserfälle Deutschlands. Sieben Kaskaden stürzen insgesamt 163 Meter in die Tiefe — beeindruckend fotogen und gut erreichbar über beleuchtete Waldwege. Die Guinness-Weltrekord-Kuckucksuhr ist ein Pflichtfoto.',
+    highlights:['💧 Triberger Wasserfälle (163 m, höchste in D)','🕐 Weltgrößte Kuckucksuhr (Guinness-Rekord)','🏛️ Schwarzwälder Heimatmuseum','🍰 Schwarzwälder Kirschtorte (original!)','🛍️ Kuckucksuhren-Läden'] },
+
+  { nr:5,  id:'titi', name:'Titisee',            region:'Schwarzwald', farbe:'#06b6d4',
+    lat:47.8932, lon:8.1469,
+    tag:'Tag 3–4', datum:'22.–23.07.', aufenthalt:'1 Übernachtung',
+    anfahrt:'Triberg → ~55 km · ca. 55 Min.',
+    tipp:'Boot mieten und auf den See — herrliche Ruhe und Blick auf die Schwarzwald-Wälder. Abends gut Essen direkt am Seeufer.',
+    beschreibung:'Der Titisee ist der bekannteste Bergsee des Schwarzwalds, entstanden durch einen Gletscherwall nach der letzten Eiszeit. Mit 1,5 km Länge und bis 40 m Tiefe ist er überraschend groß. Der Ort drumherum ist zwar touristisch, aber der See selbst ist wunderschön — Bootverleih, Badestrand und Wanderwege rund um den See.',
+    highlights:['⛵ Titisee (Bootverleih, Baden)','🥾 Seerundweg (7,5 km)','🌲 Schwarzwälder Freilichtmuseum Vogtsbauernhof (30 km)','🏔️ Feldberg Tagesausflug (15 Min.)','🛍️ Titisee-Promenade'] },
+
+  { nr:6,  id:'fel',  name:'Feldberg',           region:'Schwarzwald', farbe:'#8b5cf6',
+    lat:47.8737, lon:8.0043,
+    tag:'Tag 4', datum:'23.07.', aufenthalt:'Ausflug (~3 Std.)',
+    anfahrt:'Titisee → ~15 km · ca. 20 Min.',
+    tipp:'Frühmorgens fahren — Aussicht bei Nebel im Tal ist magisch. Festes Schuhwerk empfohlen. Rückkehr nach Titisee zum Auschecken, dann weiter Freiburg.',
+    beschreibung:'Mit 1.493 m ist der Feldberg der höchste Gipfel des Schwarzwalds und der höchste Punkt Baden-Württembergs nördlich der Alpen. An klaren Tagen sieht man die gesamten Schweizer Alpen bis hin zum Mont Blanc. Der Feldbergturm bietet ein 360°-Panorama. Rund um den Gipfel verlaufen gut ausgeschilderte Wanderwege.',
+    highlights:['⛰️ Feldbergturm (1.493 m, Panorama bis Alpen)','🥾 Feldberg-Steig Wanderung (2–3 h)','🦅 Naturschutzgebiet & Wildtiere','❄️ Bismarckdenkmal','🌄 Alpenblick bei gutem Wetter'] },
+
+  { nr:7,  id:'fre',  name:'Freiburg',            region:'Schwarzwald', farbe:'#ef4444',
+    lat:47.9990, lon:7.8421,
+    tag:'Tag 4–6', datum:'23.–25.07.', aufenthalt:'2 Übernachtungen',
+    anfahrt:'Titisee/Feldberg → ~25–30 km · ca. 30 Min.',
+    tipp:'Münster-Turmbesteigung morgens — Weitsicht auf Schwarzwald und Vogesen. Abends im Studentenviertel auf dem Platz vor dem Münster: Straßenmarkt, lebendige Atmosphäre.',
+    beschreibung:'Freiburg im Breisgau ist die sonnigste Großstadt Deutschlands und die inoffizielle Hauptstadt des Schwarzwalds. Das gotische Münster mit seinem durchbrochenen Sandsteinturm zählt zu den schönsten mittelalterlichen Kathedralen. Die Bächle — kleine Wasserrinnen entlang der Altstadt-Gassen — sind einzigartig in Deutschland. Freiburg hat eine lebendige Universität, exzellente Küche und das Dreisamtal als Ausflugsziel direkt vor der Tür.',
+    highlights:['⛪ Freiburger Münster (Gotik, 116 m — Turmbesteigung!)','💧 Bächle in der Altstadt (einzigartig in DE)','🏔️ Schlossberg mit Aussichtsturm (Seilbahn)','🚡 Schauinsland Gondelbahn (1.284 m)','🖼️ Augustinermuseum (mittelalterliche Kunst)','🛒 Münstermarkt (tägl. außer So)','🍽️ Markthalle (Feinschmecker-Paradies)','🌿 Botanischer Garten Universität'] },
+
+  { nr:8,  id:'kon',  name:'Konstanz',            region:'Bodensee',    farbe:'#0ea5e9',
+    lat:47.6607, lon:9.1755,
+    tag:'Tag 7', datum:'26.07.', aufenthalt:'1 Übernachtung',
+    anfahrt:'Freiburg → ~130 km · ca. 1½ Std.',
+    tipp:'Vom Bahnhof direkt zur Imperia-Statue am Hafen — perfektes erstes Bild vom Bodensee. Abends Altstadt-Bummel bis zur Schweizer Grenze.',
+    beschreibung:'Konstanz ist die größte Stadt am Bodensee und liegt als einzige deutsche Großstadt direkt an der Schweizer Grenze — was ihr im Zweiten Weltkrieg die Bombardierung ersparte und die mittelalterliche Altstadt erhielt. Das Konzilgebäude von 1388 war Schauplatz des größten Kirchenkongresses des Mittelalters. Die Imperia-Statue am Hafen — eine provokante Rotunde von Peter Lenk — ist ein Pflichtfoto.',
+    highlights:['🏛️ Konzilgebäude (Papstwahl 1417, Welterbe-Anwärter)','⛪ Münster Unserer Lieben Frau','💃 Imperia-Statue am Hafen (Peter Lenk)','🌉 Rheinbrücke — Blick in die Schweiz','🚢 Fähre nach Meersburg (direkt vom Zentrum)','🌸 Mainau per Rad (7 km)','🍷 Altstadt & Weinstuben'] },
+
+  { nr:9,  id:'mai',  name:'Mainau',               region:'Bodensee',    farbe:'#ec4899',
+    lat:47.7026, lon:9.1945,
+    tag:'Tag 8', datum:'27.07.', aufenthalt:'Halbtag (~4 Std.)',
+    anfahrt:'Konstanz → ~15 km · ca. 15 Min. (oder Rad)',
+    tipp:'Im Juli blühen Dahlien und Seerosen. Früh kommen (9 Uhr) — nachmittags sehr voll. Danach direkt zur Fähre nach Meersburg.',
+    beschreibung:'Die Blumeninsel Mainau im Bodensee gehört der schwedischen Grafenfamilie Bernadotte und ist eine der meistbesuchten Sehenswürdigkeiten Deutschlands. Über 45 Hektar Schloss- und Gartenanlage mit einem atemberaubenden Blütenkalender das ganze Jahr. Das Barockschloss thront malerisch über dem See. Im Juli ein Farbenmeer aus Dahlien, Seerosen und tropischen Gewächsen.',
+    highlights:['🌸 Barockschloss & Schlosskirche','🦋 Schmetterlingshaus (über 120 Arten)','🌹 Dahlien- & Rosengarten (Juli-Highlight)','🌳 Baumkronenpfad (12 m Höhe)','🌅 Panoramablick auf Konstanzer Bucht','🍽️ Schlossrestaurant'] },
+
+  { nr:10, id:'mee',  name:'Meersburg',             region:'Bodensee',    farbe:'#d97706',
+    lat:47.6935, lon:9.2724,
+    tag:'Tag 8', datum:'27.07.', aufenthalt:'1 Übernachtung',
+    anfahrt:'Mainau/Konstanz → Fähre ~20 Min. (Konstanz–Meersburg)',
+    tipp:'Fähre Konstanz–Meersburg dauert nur 20 Min. — malerische Überfahrt! In Meersburg eine Weinprobe in der Staatsweinkellerei unbedingt einplanen.',
+    beschreibung:'Meersburg ist das romantischste und steilste Städtchen am gesamten Bodensee. Das Alte Schloss aus dem 7. Jahrhundert ist die älteste dauerhaft bewohnte Burg Deutschlands. Zwischen Ober- und Unterstadt ziehen sich enge Weinbergs-Gassen am Seehang entlang — der Blick über den See auf die Schweizer Alpen ist unvergesslich. Exzellente Weine von der Staatsweinkellerei.',
+    highlights:['🏰 Altes Schloss (älteste bewohnte Burg DE, 7. Jh.)','🏛️ Neues Schloss (ehem. Bischofsresidenz)','🍷 Staatsweinkellerei Meersburg (Weinprobe)','⛴️ Fähre Konstanz–Meersburg','✍️ Annette-von-Droste-Hülshoff-Museum','🌄 Seesterrasse mit Alpenblick','🛍️ Steile Altstadt-Gassen'] },
+
+  { nr:11, id:'uel',  name:'Überlingen',             region:'Bodensee',    farbe:'#059669',
+    lat:47.7710, lon:9.1633,
+    tag:'Tag 9', datum:'28.07.', aufenthalt:'~2 Std.',
+    anfahrt:'Meersburg → ~22 km · ca. 20 Min.',
+    tipp:'Promenade am See entlang spazieren, Münster anschauen, Kaffee in der Altstadt — dann weiter nach Friedrichshafen.',
+    beschreibung:'Überlingen gilt als heimliche Schönheit am Bodensee — eine der besterhaltenen mittelalterlichen Städte, die weniger bekannt ist als ihre Nachbarn. Das gotische Münster St. Nikolaus besitzt einen der bedeutendsten Schnitzaltäre Deutschlands. Die Seepromenade mit dem Lindengarten bietet traumhafte Aussicht auf die Schweizer Alpen.',
+    highlights:['⛪ Münster St. Nikolaus (Marienaltar, Meisterwerk)','🌳 Seepromenade & Lindengarten','🏛️ Stadtmauer mit Türmen','🛒 Wochenmarkt (Sa)','🌅 Alpenblick von der Promenade'] },
+
+  { nr:12, id:'fn',   name:'Friedrichshafen',        region:'Bodensee',    farbe:'#7c3aed',
+    lat:47.6549, lon:9.4782,
+    tag:'Tag 9', datum:'28.07.', aufenthalt:'~3 Std.',
+    anfahrt:'Überlingen → ~35 km · ca. 30 Min.',
+    tipp:'Das Zeppelin Museum ist wirklich außergewöhnlich — 3 Stunden einplanen! Originalteile des Hindenburg-Zeppelins sind zu sehen.',
+    beschreibung:'Friedrichshafen ist die Stadt des Zeppelins — hier startete Graf Ferdinand von Zeppelin am 2. Juli 1900 seinen ersten Luftschiffflug über den Bodensee. Das Zeppelin Museum direkt am See gehört zu den bedeutendsten technischen Museen Europas und zeigt eine originalgetreue Rekonstruktion des Luftschiffs "Hindenburg". Außerdem: Dornier Museum und wunderschöne Seepromenade.',
+    highlights:['🚁 Zeppelin Museum (Weltklasse, Hindenburg-Gondel)','✈️ Dornier Museum','🏰 Schloss Friedrichshafen','🌊 Seepromenade (3 km)','⛴️ Fähre nach Romanshorn (CH)','🛁 Bodensee-Therme'] },
+
+  { nr:13, id:'lin',  name:'Lindau',                 region:'Bodensee',    farbe:'#2563eb',
+    lat:47.5456, lon:9.6872,
+    tag:'Tag 9–10', datum:'28.–29.07.', aufenthalt:'1 Übernachtung',
+    anfahrt:'Friedrichshafen → ~30 km · ca. 25 Min.',
+    tipp:'Abends auf dem Hafen-Steg stehen wenn die Berge in der Abendsonne leuchten — eines der schönsten Bilder der ganzen Reise!',
+    beschreibung:'Lindau liegt auf einer kleinen Insel im Bodensee, verbunden durch einen Damm mit dem Festland. Der Hafen mit dem bayerischen Löwen (6 m hoch) und dem alten Leuchtturm ist das bekannteste Postkartenmotiv vom Bodensee. Die Altstadtinsel ist kompakt und zu Fuß in 1–2 Stunden vollständig zu erkunden — Altes Rathaus, Diebsturm, Maximilianstraße.',
+    highlights:['🦁 Hafen mit Bayerischem Löwe & Leuchtturm','🏛️ Altes Rathaus (15. Jh.)','🗼 Diebsturm (Stadtturm)','🛍️ Maximilianstraße (Flaniermeile)','🏊 Strandbad Eichwald','🌅 Alpenblick über den See (Abendstimmung)','🇦🇹 Bregenz direkt sichtbar (15 Min.)'] },
+
+  { nr:14, id:'bre',  name:'Bregenz',                region:'Österreich',  farbe:'#dc2626',
+    lat:47.5031, lon:9.7471,
+    tag:'Tag 10–12', datum:'29.–31.07.', aufenthalt:'2–3 Übernachtungen',
+    anfahrt:'Lindau → ~15 km · ca. 15 Min.',
+    tipp:'🎭 SEEBÜHNE: Tickets unbedingt Monate im Voraus buchen! Die Aufführung beginnt bei Dämmerung (~21:00) — Sitzplatz mit Seeblick reservieren. Pfänder-Gondelbahn morgens für Alpenblick.',
+    beschreibung:'Bregenz ist die Hauptstadt Vorarlbergs und weltweit bekannt für die Bregenzer Festspiele mit der größten Seebühne der Welt. Jährlich im Juli/August finden hier Opernaufführungen mit Bühnenbildern statt, die Maßstäbe setzen — der Bodensee selbst ist der Hintergrund. Der Pfänder (1.064 m) ist mit der Gondelbahn in 8 Minuten erreichbar und bietet das wohl spektakulärste Alpenpanorama dieser Reise. Die Oberstadt mit dem Martinsturm, dem Wahrzeichen Vorarlbergs, lohnt einen ausgiebigen Bummel.',
+    highlights:['🎭 Seebühne Bregenzer Festspiele (OPER — PFLICHT!)','🚡 Pfänder-Gondelbahn (1.064 m, Alpenpanorama)','🐺 Alpenwildpark auf dem Pfänder','🗼 Martinsturm (Vorarlberger Wahrzeichen)','🏛️ Vorarlberg Museum','⛵ Hafenpromenade & Seeblick','🇦🇹 Österreichisches Flair, Vorarlberger Küche'] },
+];
+
+let _srMap = null;
+let _srMarkers = {};
+
+function initSommerreise() {
+  srRenderStationen();
+  srInitMap();
+}
+
+function srRenderStationen() {
+  const el = document.getElementById('sr-stationen');
+  if (!el) return;
+  const swFarbe = '#10b981', bsFarbe = '#0ea5e9', atFarbe = '#dc2626';
+  let html = '<div style="font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">14 Stationen</div>';
+  let lastRegion = '';
+  SR_ROUTE.forEach(o => {
+    if (o.region !== lastRegion) {
+      const rc = o.region === 'Schwarzwald' ? swFarbe : o.region === 'Bodensee' ? bsFarbe : atFarbe;
+      html += `<div style="font-size:10px;font-weight:700;color:${rc};text-transform:uppercase;letter-spacing:.6px;margin:8px 0 3px 2px">${o.region}</div>`;
+      lastRegion = o.region;
+    }
+    html += `<div onclick="srShowDetail('${o.id}')" style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:4px 6px;border-radius:6px;transition:background .15s"
+      onmouseenter="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background='transparent'">
+      <div style="width:20px;height:20px;border-radius:50%;background:${o.farbe};display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;flex-shrink:0">${o.nr}</div>
+      <div style="min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.name}</div>
+        <div style="font-size:10px;color:var(--dim)">${o.datum} · ${o.aufenthalt.split('(')[0].trim()}</div>
+      </div>
+    </div>`;
+  });
+  html += `<div style="margin-top:10px;padding:8px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3);border-radius:7px;font-size:11px;color:#fbbf24;line-height:1.5">
+    📍 <b>Weiterfahrt 01.08.</b><br>Bregenz → Kaufering<br>~160 km · ~1½ Std.<br><span style="color:var(--dim)">Steffi + 4 Enkel 🥰</span></div>`;
+  el.innerHTML = html;
+}
+
+function srInitMap() {
+  if (!document.getElementById('leaflet-css-trip')) {
+    const l = document.createElement('link'); l.id='leaflet-css-trip'; l.rel='stylesheet';
+    l.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(l);
+  }
+  function _doInit() {
+    if (_srMap) { _srMap.remove(); _srMap = null; }
+    _srMap = L.map('sr-map').setView([48.0, 8.8], 7);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:'© OpenStreetMap', maxZoom:19
+    }).addTo(_srMap);
+    srUpdateMap();
+  }
+  if (!window.L) {
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s.onload = () => setTimeout(_doInit, 100);
+    document.head.appendChild(s);
+  } else { setTimeout(_doInit, 100); }
+}
+
+function srUpdateMap() {
+  if (!_srMap || !window.L) return;
+  Object.values(_srMarkers).forEach(m => _srMap.removeLayer(m));
+  _srMarkers = {};
+  SR_ROUTE.forEach(o => {
+    const icon = L.divIcon({
+      className:'',
+      html:`<div style="width:28px;height:28px;border-radius:50%;background:${o.farbe};border:2px solid #fff;
+            box-shadow:0 2px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;
+            color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:sans-serif">${o.nr}</div>`,
+      iconSize:[28,28], iconAnchor:[14,14]
+    });
+    const m = L.marker([o.lat, o.lon], {icon})
+      .addTo(_srMap)
+      .bindPopup(`<b>${o.nr}. ${o.name}</b><br><span style="font-size:11px;color:#555">${o.datum} · ${o.aufenthalt}</span><br><span style="font-size:11px;color:#888">${o.anfahrt}</span>`)
+      .on('click', () => srShowDetail(o.id));
+    _srMarkers[o.id] = m;
+  });
+  const linie = L.polyline(SR_ROUTE.map(o => [o.lat, o.lon]), {color:'rgba(251,191,36,0.6)', weight:2.5, dashArray:'7,5'}).addTo(_srMap);
+  _srMarkers['__line__'] = linie;
+  _srMap.fitBounds(linie.getBounds(), {padding:[30,30]});
+}
+
+function srShowDetail(id) {
+  const o = SR_ROUTE.find(x => x.id === id);
+  if (!o) return;
+  const el = document.getElementById('sr-detail');
+  if (!el) return;
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap">
+      <div style="flex:1;min-width:260px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:${o.farbe};display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;flex-shrink:0">${o.nr}</div>
+          <div>
+            <div style="font-size:17px;font-weight:700;color:${o.farbe}">${o.name}</div>
+            <div style="font-size:11px;color:var(--dim)">${o.region} · ${o.datum} · ${o.aufenthalt}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div style="background:rgba(255,255,255,0.04);border-radius:7px;padding:8px">
+            <div style="font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">🚗 Anfahrt</div>
+            <div style="font-size:12px;color:var(--text)">${o.anfahrt}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04);border-radius:7px;padding:8px">
+            <div style="font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">🏨 Aufenthalt</div>
+            <div style="font-size:12px;color:var(--text)">${o.aufenthalt}</div>
+          </div>
+        </div>
+        ${o.tipp ? `<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3);border-radius:7px;padding:8px;margin-bottom:10px;font-size:12px;color:#fbbf24"><b>💡 Tipp:</b> ${o.tipp}</div>` : ''}
+        <div style="font-size:13px;color:var(--text);line-height:1.65;margin-bottom:10px">${o.beschreibung}</div>
+        <div style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Highlights</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          ${o.highlights.map(h => `<span style="font-size:11px;background:${o.farbe}22;color:${o.farbe};border:1px solid ${o.farbe}44;border-radius:5px;padding:2px 8px">${h}</span>`).join('')}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button onclick="if(_srMap&&_srMarkers['${id}']){_srMap.setView([${o.lat},${o.lon}],13);_srMarkers['${id}'].openPopup();}"
+          style="padding:6px 12px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;cursor:pointer">🗺️ Auf Karte</button>
+        <button onclick="document.getElementById('sr-detail').style.display='none'"
+          style="padding:6px 12px;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--dim);font-size:12px;cursor:pointer">✕ Schließen</button>
+      </div>
+    </div>`;
+  el.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function srDownloadWord(teil) {
+  const stationen = teil === 'schwarzwald' ? SR_ROUTE.filter(o => o.region === 'Schwarzwald')
+                  : teil === 'bodensee'    ? SR_ROUTE.filter(o => o.region !== 'Schwarzwald')
+                  : SR_ROUTE;
+  const titel = teil === 'schwarzwald' ? '🌲 Teil 1: Schwarzwald'
+              : teil === 'bodensee'    ? '🌊 Teil 2: Bodensee & Bregenz'
+              : '🗺️ Gesamtplan Schwarzwald & Bodensee';
+  const datei = teil === 'schwarzwald' ? 'Sommerreise-2026-Schwarzwald'
+              : teil === 'bodensee'    ? 'Sommerreise-2026-Bodensee-Bregenz'
+              : 'Sommerreise-2026-Gesamtplan';
+
+  const gmUrl = 'https://www.google.com/maps/dir/' +
+    SR_ROUTE.map(o => `${o.lat},${o.lon}`).join('/');
+
+  const stationHtml = stationen.map(o => `
+    <h2 style="color:${o.farbe};border-bottom:2px solid ${o.farbe};padding-bottom:4px;margin-top:24pt">
+      Station ${o.nr}: ${o.name}
+      <span style="font-size:12pt;color:#666;font-weight:normal"> — ${o.datum} · ${o.aufenthalt}</span>
+    </h2>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:8pt;font-size:10pt">
+      <tr>
+        <td style="padding:4pt 8pt;background:#f5f5f5;border:1px solid #ddd;font-weight:bold;width:30%">🚗 Anfahrt</td>
+        <td style="padding:4pt 8pt;border:1px solid #ddd">${o.anfahrt}</td>
+      </tr>
+      <tr>
+        <td style="padding:4pt 8pt;background:#f5f5f5;border:1px solid #ddd;font-weight:bold">🏨 Aufenthalt</td>
+        <td style="padding:4pt 8pt;border:1px solid #ddd">${o.aufenthalt}</td>
+      </tr>
+      ${o.tipp ? `<tr><td style="padding:4pt 8pt;background:#fff8e1;border:1px solid #ddd;font-weight:bold">💡 Tipp</td><td style="padding:4pt 8pt;border:1px solid #ddd;background:#fff8e1">${o.tipp}</td></tr>` : ''}
+    </table>
+    <p style="font-size:11pt;line-height:1.7;color:#333;margin-bottom:8pt">${o.beschreibung}</p>
+    <p style="font-weight:bold;color:#444;font-size:10pt;margin-bottom:4pt">Highlights &amp; Sehenswürdigkeiten:</p>
+    <ul style="font-size:11pt;color:#333;line-height:1.8;margin-bottom:4pt">${o.highlights.map(h=>`<li>${h}</li>`).join('')}</ul>
+  `).join('');
+
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+<head><meta charset="utf-8"><style>
+body{font-family:Calibri,Arial,sans-serif;margin:2.5cm;color:#1a1a1a;font-size:11pt}
+h1{color:#1a3a6b;font-size:20pt;margin-bottom:6pt}
+h2{font-size:14pt;margin-top:20pt;page-break-after:avoid}
+p{line-height:1.6;margin:4pt 0}ul{margin:4pt 0}
+table{margin-bottom:10pt}
+</style></head><body>
+<h1>${titel}</h1>
+<table style="width:100%;border-collapse:collapse;margin-bottom:16pt;font-size:10pt">
+  <tr>
+    <td style="padding:5pt 10pt;background:#1a3a6b;color:#fff;font-weight:bold">Start</td>
+    <td style="padding:5pt 10pt;border:1px solid #ddd">Norderstedt (Buchenweg 67a)</td>
+    <td style="padding:5pt 10pt;background:#1a3a6b;color:#fff;font-weight:bold">Ende</td>
+    <td style="padding:5pt 10pt;border:1px solid #ddd">01.08.2026 → Kaufering (Steffi &amp; Familie)</td>
+  </tr>
+  <tr>
+    <td style="padding:5pt 10pt;background:#f5f5f5;font-weight:bold">Stationen</td>
+    <td style="padding:5pt 10pt;border:1px solid #ddd">${stationen.length} (gesamt 14)</td>
+    <td style="padding:5pt 10pt;background:#f5f5f5;font-weight:bold">Erstellt</td>
+    <td style="padding:5pt 10pt;border:1px solid #ddd">${new Date().toLocaleDateString('de-DE')}</td>
+  </tr>
+</table>
+${teil === 'bodensee' || teil === 'gesamt' ? `<p style="background:#fff0f0;border:1px solid #fca5a5;padding:8pt;border-radius:4pt;font-size:10pt">🎭 <b>Wichtig: Bregenzer Festspiele Tickets!</b> Seebühne-Aufführungen sind Monate im Voraus ausverkauft — sofort buchen auf bregenzerfestspiele.com</p>` : ''}
+<p style="font-size:10pt;color:#666">🗺️ <a href="${gmUrl}">Gesamte Route in Google Maps öffnen</a></p>
+<hr style="margin:12pt 0">
+${stationHtml}
+<hr style="margin:16pt 0">
+<p style="font-size:10pt;color:#666;margin-top:8pt">🚗 <b>Weiterfahrt 01.08.:</b> Bregenz → Kaufering (Steffi Garschagen, Thomas-Morus-Str. 12b) · ~160 km · ~1½ Std.</p>
+<p style="font-size:9pt;color:#aaa;margin-top:12pt"><i>Erstellt mit Bolla Mission Control · Reiseplaner 2026</i></p>
+</body></html>`;
+
+  const blob = new Blob([html], {type:'application/msword'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=datei+'.doc'; a.click(); URL.revokeObjectURL(url);
+}
+
   { id:'fd',   name:'Freudenstadt',   region:'Schwarzwald',  emoji:'🏔️', farbe:'#10b981',
     lat:48.4645, lon:8.4125, tage:1,
     beschreibung:'Freudenstadt liegt auf einem Hochplateau auf 730 m und bietet den größten Marktplatz Deutschlands — über 200 m lang, umgeben von Arkadengängen. Die Stadt ist idealer Ausgangspunkt für Schwarzwald-Wanderungen und Radtouren auf dem Panoramaweg.',
