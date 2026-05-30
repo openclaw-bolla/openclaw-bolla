@@ -6569,120 +6569,283 @@ function initBrain() {
   brainInitialized = true;
   const container = document.getElementById('brain-container');
   const canvas = document.createElement('canvas');
-  canvas.width = container.clientWidth; canvas.height = container.clientHeight;
+  canvas.style.cssText = 'width:100%;height:100%;display:block';
+  canvas.width = container.clientWidth || 1200;
+  canvas.height = container.clientHeight || 720;
   container.appendChild(canvas);
   const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const COLORS = {
+    core:'#4fc3f7', memory:'#ff9800', soul:'#e040fb',
+    family:'#ef5350', infra:'#42a5f5', device:'#26c6da',
+    service:'#ab47bc', topic:'#66bb6a', project:'#fbbf24'
+  };
+
   const nodes = [
-    // Core
-    {id:'BOLLA',group:'core',label:'🐾 Bolla',size:26},
-    {id:'CHRIS',group:'core',label:'👤 Chris',size:20},
-    {id:'MEMORY',group:'memory',label:'🧠 Memory',size:16},
-    {id:'SOUL',group:'soul',label:'💜 Soul',size:14},
-    // Familie
-    {id:'FAMILIE',group:'family',label:'👨‍👩‍👧 Familie',size:16},
-    {id:'RENATE',group:'family',label:'💑 Renate',size:11},
-    {id:'ROBIN',group:'family',label:'👨‍⚕️ Robin',size:13},
-    {id:'STEPHANIE',group:'family',label:'👩 Stephanie',size:11},
-    {id:'ENKEL',group:'family',label:'👧👦 Enkel',size:10},
-    // Infra — Kommunikation
-    {id:'MC',group:'infra',label:'🖥️ Mission Control',size:16},
-    {id:'TELEGRAM',group:'infra',label:'💬 Telegram Bot',size:14},
-    {id:'TUNNEL',group:'infra',label:'☁️ Cloudflare Tunnel',size:11},
-    {id:'AZURE',group:'infra',label:'🔊 Azure Speech',size:10},
-    // Infra — Geräte
-    {id:'DUO',group:'device',label:'📱 Surface Duo 2',size:12},
-    {id:'SURFACE',group:'device',label:'💻 Surface Laptop',size:11},
-    {id:'PRO',group:'device',label:'💻 Surface Pro (Reni)',size:10},
-    {id:'HUAWEI',group:'device',label:'📱 Huawei P20',size:9},
-    // Infra — Backup & Code
-    {id:'GITHUB',group:'infra',label:'📦 GitHub',size:10},
-    {id:'ONEDRIVE',group:'infra',label:'💾 OneDrive',size:10},
-    {id:'OBSIDIAN',group:'infra',label:'📓 Obsidian Vault',size:10},
-    // APIs & Services
-    {id:'OUTLOOK',group:'service',label:'📧 Outlook',size:12},
-    {id:'GMAIL',group:'service',label:'📧 Gmail',size:9},
-    {id:'WTNET',group:'service',label:'📧 wtnet',size:9},
-    {id:'GRAPH',group:'service',label:'🔗 MS Graph API',size:9},
-    {id:'KALENDER',group:'service',label:'📅 Kalender',size:11},
-    {id:'WETTER',group:'service',label:'🌤️ Wetter',size:10},
-    {id:'FOTOS',group:'service',label:'📸 Reisefotos',size:10},
-    {id:'LMS',group:'service',label:'🧪 LM Studio',size:10},
-    // Themen
-    {id:'SCHULE',group:'topic',label:'🏫 Lessing Gymnasium',size:13},
-    {id:'WP',group:'topic',label:'🌐 chrismandel.de',size:10},
-    {id:'GEBURTSTAGE',group:'topic',label:'🎂 Geburtstage',size:9},
-    {id:'SPAM',group:'topic',label:'🛡️ Spam Watcher',size:9},
-    {id:'CRON',group:'topic',label:'⏰ Cron Jobs',size:9},
+    {id:'BOLLA',   group:'core',    label:'🐾 Bolla',             size:30},
+    {id:'CHRIS',   group:'core',    label:'👤 Chris',             size:22},
+    {id:'MEMORY',  group:'memory',  label:'🧠 Memory',            size:17},
+    {id:'SOUL',    group:'soul',    label:'💜 Soul',              size:15},
+    {id:'FAMILIE', group:'family',  label:'👨‍👩‍👧 Familie',         size:17},
+    {id:'RENATE',  group:'family',  label:'💑 Renate',            size:12},
+    {id:'ROBIN',   group:'family',  label:'👨‍⚕️ Robin',            size:14},
+    {id:'STEPHANIE',group:'family', label:'👩 Steffi',            size:12},
+    {id:'ENKEL',   group:'family',  label:'👧👦 Enkel ×4',        size:11},
+    {id:'MC',      group:'infra',   label:'🖥️ Mission Control',  size:18},
+    {id:'TELEGRAM',group:'infra',   label:'💬 Telegram',         size:15},
+    {id:'TUNNEL',  group:'infra',   label:'☁️ CF Tunnel',        size:12},
+    {id:'AZURE',   group:'infra',   label:'🔊 Azure Speech',     size:11},
+    {id:'SURFACE', group:'device',  label:'💻 Surface Laptop',   size:12},
+    {id:'DUO',     group:'device',  label:'📱 Surface Duo 2',    size:13},
+    {id:'PRO',     group:'device',  label:'💻 Surface Pro',      size:11},
+    {id:'ID3',     group:'device',  label:'⚡ VW ID.3',          size:12},
+    {id:'GITHUB',  group:'infra',   label:'📦 GitHub',           size:11},
+    {id:'ONEDRIVE',group:'infra',   label:'💾 OneDrive',         size:11},
+    {id:'OBSIDIAN',group:'infra',   label:'📓 Obsidian',         size:11},
+    {id:'OUTLOOK', group:'service', label:'📧 Outlook',          size:13},
+    {id:'GMAIL',   group:'service', label:'📧 Gmail',            size:10},
+    {id:'GRAPH',   group:'service', label:'🔗 MS Graph',         size:10},
+    {id:'KALENDER',group:'service', label:'📅 Kalender',         size:12},
+    {id:'WETTER',  group:'service', label:'🌤️ Wetter',           size:11},
+    {id:'LMS',     group:'service', label:'🧪 LM Studio',        size:11},
+    {id:'SCHULE',  group:'topic',   label:'🏫 Lessing Gym',      size:14},
+    {id:'WP',      group:'topic',   label:'🌐 chrismandel.de',   size:11},
+    {id:'GEBURTSTAGE',group:'topic',label:'🎂 Geburtstage',      size:10},
+    {id:'CRON',    group:'topic',   label:'⏰ Cron Jobs',        size:10},
+    {id:'GLUECKSRAD',group:'project',label:'🎡 Glücksrad',       size:12},
+    {id:'AIMOR',   group:'project', label:'🖼️ Aimor Rahmen',     size:11},
+    {id:'SOMMERREISE',group:'project',label:'🌲 Sommerreise 26', size:12},
+    {id:'IMMO',    group:'project', label:'🏠 Immo-Suche 27',   size:11},
   ];
+
   const links = [
-    // Core-Verbindungen
     {s:'BOLLA',t:'CHRIS'},{s:'BOLLA',t:'MEMORY'},{s:'BOLLA',t:'SOUL'},
     {s:'BOLLA',t:'MC'},{s:'BOLLA',t:'TELEGRAM'},
-    {s:'CHRIS',t:'FAMILIE'},{s:'CHRIS',t:'DUO'},{s:'CHRIS',t:'SURFACE'},{s:'CHRIS',t:'SCHULE'},
-    {s:'FAMILIE',t:'PRO'},{s:'PRO',t:'TUNNEL'},
-    // Familie
+    {s:'CHRIS',t:'FAMILIE'},{s:'CHRIS',t:'DUO'},{s:'CHRIS',t:'SURFACE'},
+    {s:'CHRIS',t:'SCHULE'},{s:'CHRIS',t:'ID3'},
     {s:'FAMILIE',t:'RENATE'},{s:'FAMILIE',t:'ROBIN'},{s:'FAMILIE',t:'STEPHANIE'},
-    {s:'STEPHANIE',t:'ENKEL'},{s:'ROBIN',t:'TELEGRAM'},
-    // Mission Control
+    {s:'STEPHANIE',t:'ENKEL'},{s:'ROBIN',t:'TELEGRAM'},{s:'FAMILIE',t:'PRO'},
     {s:'MC',t:'TUNNEL'},{s:'MC',t:'OUTLOOK'},{s:'MC',t:'WETTER'},{s:'MC',t:'KALENDER'},
-    {s:'MC',t:'FOTOS'},{s:'MC',t:'AZURE'},{s:'MC',t:'LMS'},{s:'MC',t:'GEBURTSTAGE'},
-    // Telegram & Geräte
+    {s:'MC',t:'AZURE'},{s:'MC',t:'LMS'},{s:'MC',t:'GEBURTSTAGE'},
+    {s:'MC',t:'GLUECKSRAD'},{s:'MC',t:'SCHULE'},
     {s:'TELEGRAM',t:'DUO'},{s:'TELEGRAM',t:'FAMILIE'},
-    {s:'DUO',t:'HUAWEI'},
-    // E-Mail
-    {s:'OUTLOOK',t:'GRAPH'},{s:'OUTLOOK',t:'GMAIL'},{s:'OUTLOOK',t:'WTNET'},
-    {s:'OUTLOOK',t:'KALENDER'},{s:'OUTLOOK',t:'GEBURTSTAGE'},
-    {s:'WTNET',t:'SPAM'},
-    // Backup & Memory
+    {s:'OUTLOOK',t:'GRAPH'},{s:'OUTLOOK',t:'GMAIL'},{s:'OUTLOOK',t:'KALENDER'},
+    {s:'OUTLOOK',t:'GEBURTSTAGE'},
     {s:'MEMORY',t:'GITHUB'},{s:'MEMORY',t:'ONEDRIVE'},{s:'MEMORY',t:'OBSIDIAN'},
     {s:'MEMORY',t:'FAMILIE'},{s:'MEMORY',t:'SCHULE'},
-    // Tunnel-Verbindungen
     {s:'TUNNEL',t:'WP'},{s:'TUNNEL',t:'LMS'},
-    // Automatisierung
-    {s:'CRON',t:'SPAM'},{s:'CRON',t:'OBSIDIAN'},{s:'CRON',t:'TELEGRAM'},
-    {s:'CRON',t:'MC'},{s:'CRON',t:'TUNNEL'},
+    {s:'CRON',t:'TELEGRAM'},{s:'CRON',t:'MC'},{s:'CRON',t:'TUNNEL'},
+    {s:'CHRIS',t:'SOMMERREISE'},{s:'ID3',t:'SOMMERREISE'},
+    {s:'CHRIS',t:'IMMO'},{s:'AIMOR',t:'ONEDRIVE'},
+    {s:'BOLLA',t:'AIMOR'},{s:'BOLLA',t:'IMMO'},
   ];
-  const colors = {core:'#4fc3f7',memory:'#ff9800',soul:'#e040fb',family:'#ef5350',infra:'#42a5f5',device:'#26c6da',service:'#ab47bc',topic:'#66bb6a'};
-  const W = canvas.width, H = canvas.height;
-  nodes.forEach(n => { n.x=W/2+(Math.random()-.5)*W*0.7; n.y=H/2+(Math.random()-.5)*H*0.7; n.vx=0; n.vy=0; });
-  const nm = {}; nodes.forEach(n => nm[n.id]=n);
+
+  // Physics init
+  nodes.forEach(n => {
+    n.x = W/2 + (Math.random()-0.5)*W*0.65;
+    n.y = H/2 + (Math.random()-0.5)*H*0.65;
+    n.vx = 0; n.vy = 0;
+    n.phase = Math.random() * Math.PI * 2;
+  });
+  const nm = {}; nodes.forEach(n => nm[n.id] = n);
+
+  // Starfield
+  const stars = Array.from({length:220}, () => ({
+    x: Math.random()*W, y: Math.random()*H,
+    r: Math.random()*1.4+0.2,
+    alpha: Math.random()*0.6+0.1,
+    phase: Math.random()*Math.PI*2,
+    twinkle: Math.random()*0.03+0.008
+  }));
+
+  // Nebula blobs
+  const nebulas = [
+    {x:W*0.2, y:H*0.3, r:180, c:'#1a0a3a'},
+    {x:W*0.8, y:H*0.6, r:150, c:'#0a1a3a'},
+    {x:W*0.5, y:H*0.8, r:130, c:'#0a2a1a'},
+  ];
+
+  // Flowing particles per link
+  const particles = links.flatMap(l => [
+    {link:l, progress:Math.random(), speed:0.0025+Math.random()*0.003}
+  ]);
+
+  let t = 0;
+  let hoveredNode = null;
+  let drag = null;
+
+  // roundRect polyfill
+  function roundRect(cx, x, y, w, h, r) {
+    cx.beginPath();
+    cx.moveTo(x+r,y); cx.lineTo(x+w-r,y); cx.quadraticCurveTo(x+w,y,x+w,y+r);
+    cx.lineTo(x+w,y+h-r); cx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    cx.lineTo(x+r,y+h); cx.quadraticCurveTo(x,y+h,x,y+h-r);
+    cx.lineTo(x,y+r); cx.quadraticCurveTo(x,y,x+r,y);
+    cx.closePath();
+  }
+
   function tick() {
-    nodes.forEach(n => { n.vx+=(W/2-n.x)*0.001; n.vy+=(H/2-n.y)*0.001; });
+    t += 0.016;
+
+    // Physics
+    nodes.forEach(n => { n.vx += (W/2-n.x)*0.0004; n.vy += (H/2-n.y)*0.0004; });
     for (let i=0;i<nodes.length;i++) for (let j=i+1;j<nodes.length;j++) {
-      const dx=nodes[j].x-nodes[i].x, dy=nodes[j].y-nodes[i].y, d=Math.sqrt(dx*dx+dy*dy)||1, f=1500/(d*d);
-      nodes[i].vx-=dx/d*f; nodes[i].vy-=dy/d*f; nodes[j].vx+=dx/d*f; nodes[j].vy+=dy/d*f;
+      const dx=nodes[j].x-nodes[i].x, dy=nodes[j].y-nodes[i].y;
+      const d=Math.sqrt(dx*dx+dy*dy)||1, f=2200/(d*d);
+      nodes[i].vx-=dx/d*f; nodes[i].vy-=dy/d*f;
+      nodes[j].vx+=dx/d*f; nodes[j].vy+=dy/d*f;
     }
-    links.forEach(l => { const s=nm[l.s],t=nm[l.t]; if(!s||!t)return; const dx=t.x-s.x,dy=t.y-s.y,d=Math.sqrt(dx*dx+dy*dy)||1,f=(d-150)*0.004; s.vx+=dx/d*f; s.vy+=dy/d*f; t.vx-=dx/d*f; t.vy-=dy/d*f; });
-    nodes.forEach(n => { n.vx*=0.9; n.vy*=0.9; n.x=Math.max(50,Math.min(W-50,n.x+n.vx)); n.y=Math.max(50,Math.min(H-50,n.y+n.vy)); });
-    ctx.clearRect(0,0,W,H);
-    ctx.strokeStyle='rgba(79,195,247,0.2)'; ctx.lineWidth=1.5;
-    links.forEach(l => { const s=nm[l.s],t=nm[l.t]; if(!s||!t)return; ctx.beginPath(); ctx.moveTo(s.x,s.y); ctx.lineTo(t.x,t.y); ctx.stroke(); });
-    nodes.forEach(n => {
-      const c=colors[n.group]||'#4fc3f7';
-      const fontSize = Math.max(11, n.size*0.65);
-      const labelY = n.y + n.size/2 + 18;
-      ctx.font=`${fontSize}px Segoe UI`;
-      const textW = ctx.measureText(n.label).width;
-      ctx.fillStyle='rgba(10,22,40,0.75)';
-      const rx=n.x-textW/2-6, ry=labelY-fontSize+1, rw=textW+12, rh=fontSize+6, rad=4;
-      ctx.beginPath();
-      ctx.moveTo(rx+rad,ry); ctx.lineTo(rx+rw-rad,ry); ctx.quadraticCurveTo(rx+rw,ry,rx+rw,ry+rad);
-      ctx.lineTo(rx+rw,ry+rh-rad); ctx.quadraticCurveTo(rx+rw,ry+rh,rx+rw-rad,ry+rh);
-      ctx.lineTo(rx+rad,ry+rh); ctx.quadraticCurveTo(rx,ry+rh,rx,ry+rh-rad);
-      ctx.lineTo(rx,ry+rad); ctx.quadraticCurveTo(rx,ry,rx+rad,ry);
-      ctx.closePath(); ctx.fill();
-      ctx.shadowColor=c; ctx.shadowBlur=18; ctx.fillStyle=c; ctx.beginPath(); ctx.arc(n.x,n.y,n.size/2+3,0,Math.PI*2); ctx.fill();
-      ctx.shadowBlur=0; ctx.fillStyle='#0a1628'; ctx.beginPath(); ctx.arc(n.x,n.y,n.size/2,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle=c; ctx.globalAlpha=0.85; ctx.beginPath(); ctx.arc(n.x,n.y,n.size/2-1,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
-      ctx.fillStyle='#e8ecf2'; ctx.font=`${fontSize}px Segoe UI`; ctx.textAlign='center'; ctx.fillText(n.label,n.x,labelY);
+    links.forEach(l => {
+      const s=nm[l.s], tt=nm[l.t]; if(!s||!tt) return;
+      const dx=tt.x-s.x, dy=tt.y-s.y, d=Math.sqrt(dx*dx+dy*dy)||1;
+      const f=(d-145)*0.003;
+      s.vx+=dx/d*f; s.vy+=dy/d*f; tt.vx-=dx/d*f; tt.vy-=dy/d*f;
     });
+    nodes.forEach(n => {
+      n.vx*=0.88; n.vy*=0.88;
+      if (drag === n) return;
+      n.x = Math.max(60, Math.min(W-60, n.x+n.vx));
+      n.y = Math.max(60, Math.min(H-60, n.y+n.vy));
+    });
+
+    // ── Draw ──────────────────────────────────────────
+    ctx.fillStyle = '#04091a';
+    ctx.fillRect(0,0,W,H);
+
+    // Nebula
+    nebulas.forEach(nb => {
+      const g = ctx.createRadialGradient(nb.x,nb.y,0,nb.x,nb.y,nb.r);
+      g.addColorStop(0, nb.c+'99');
+      g.addColorStop(1, 'transparent');
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,W,H);
+    });
+
+    // Stars
+    stars.forEach(s => {
+      ctx.globalAlpha = s.alpha*(0.5+0.5*Math.sin(t*s.twinkle*60+s.phase));
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    // Links
+    links.forEach(l => {
+      const s=nm[l.s], tt=nm[l.t]; if(!s||!tt) return;
+      const sc = COLORS[s.group]||'#4fc3f7', tc = COLORS[tt.group]||'#4fc3f7';
+      const g = ctx.createLinearGradient(s.x,s.y,tt.x,tt.y);
+      g.addColorStop(0, sc+'55'); g.addColorStop(1, tc+'55');
+      ctx.strokeStyle = g; ctx.lineWidth = 1.2;
+      ctx.shadowColor = sc; ctx.shadowBlur = 5;
+      ctx.beginPath(); ctx.moveTo(s.x,s.y); ctx.lineTo(tt.x,tt.y); ctx.stroke();
+      ctx.shadowBlur = 0;
+    });
+
+    // Flowing particles
+    particles.forEach(p => {
+      p.progress = (p.progress + p.speed) % 1;
+      const s=nm[p.link.s], tt=nm[p.link.t]; if(!s||!tt) return;
+      const px=s.x+(tt.x-s.x)*p.progress, py=s.y+(tt.y-s.y)*p.progress;
+      const c = COLORS[s.group]||'#4fc3f7';
+      ctx.shadowColor=c; ctx.shadowBlur=12;
+      ctx.globalAlpha = 0.85*(1-Math.abs(p.progress-0.5)*1.5);
+      ctx.fillStyle='#ffffff';
+      ctx.beginPath(); ctx.arc(px,py,2.2,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha=1; ctx.shadowBlur=0;
+    });
+
+    // Nodes
+    nodes.forEach(n => {
+      const c = COLORS[n.group]||'#4fc3f7';
+      const r = n.size/2 + 3;
+      const pulse = Math.sin(t*2.2+n.phase)*2.5;
+      const isHov = n === hoveredNode;
+      const isBolla = n.id === 'BOLLA';
+
+      // BOLLA extra rings
+      if (isBolla) {
+        for (let ring=3;ring>=1;ring--) {
+          const rr = r + ring*14 + Math.sin(t*1.2+ring*1.1)*4;
+          ctx.globalAlpha = 0.06*(4-ring);
+          ctx.strokeStyle=c; ctx.lineWidth=1.5;
+          ctx.shadowColor=c; ctx.shadowBlur=20;
+          ctx.beginPath(); ctx.arc(n.x,n.y,rr,0,Math.PI*2); ctx.stroke();
+        }
+        ctx.globalAlpha=1; ctx.shadowBlur=0;
+      }
+
+      // Outer glow halo
+      const haloR = r + pulse + (isHov?8:0);
+      const halo = ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,haloR+10);
+      halo.addColorStop(0, c+'44'); halo.addColorStop(1,'transparent');
+      ctx.fillStyle=halo; ctx.shadowBlur=0;
+      ctx.beginPath(); ctx.arc(n.x,n.y,haloR+10,0,Math.PI*2); ctx.fill();
+
+      // Ring border
+      ctx.shadowColor=c; ctx.shadowBlur = isBolla?40:(isHov?30:16);
+      ctx.strokeStyle = isHov ? '#ffffff' : c;
+      ctx.lineWidth = isBolla ? 2.5 : 1.8;
+      ctx.beginPath(); ctx.arc(n.x,n.y,haloR,0,Math.PI*2); ctx.stroke();
+
+      // Node body gradient
+      const g2 = ctx.createRadialGradient(n.x-r*0.35,n.y-r*0.35,0,n.x,n.y,r);
+      g2.addColorStop(0, c+'dd'); g2.addColorStop(0.5, c+'55'); g2.addColorStop(1,'#050d1a');
+      ctx.fillStyle=g2; ctx.shadowBlur=0;
+      ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2); ctx.fill();
+
+      // Label
+      const fs = Math.max(10, n.size*0.58);
+      ctx.font = `bold ${fs}px Segoe UI,sans-serif`;
+      ctx.textAlign='center';
+      const ly = n.y + haloR + 15;
+      const tw = ctx.measureText(n.label).width;
+      ctx.fillStyle='rgba(4,9,26,0.88)';
+      roundRect(ctx, n.x-tw/2-6, ly-fs+1, tw+12, fs+6, 3); ctx.fill();
+      ctx.shadowColor=c; ctx.shadowBlur=8;
+      ctx.fillStyle = isHov?'#ffffff':c;
+      ctx.globalAlpha = isHov?1:0.92;
+      ctx.fillText(n.label, n.x, ly);
+      ctx.globalAlpha=1; ctx.shadowBlur=0;
+    });
+
+    // Hover tooltip (group-Beschriftung)
+    if (hoveredNode) {
+      const n = hoveredNode;
+      const c = COLORS[n.group]||'#4fc3f7';
+      const groupNames = {core:'Kern',memory:'Gedächtnis',soul:'Seele',family:'Familie',
+        infra:'Infrastruktur',device:'Gerät',service:'Service',topic:'Thema',project:'Projekt'};
+      const tip = `${n.label}  ·  ${groupNames[n.group]||n.group}`;
+      ctx.font='bold 12px Segoe UI,sans-serif';
+      const tw2=ctx.measureText(tip).width+24;
+      const tx=Math.max(8, Math.min(n.x-tw2/2, W-tw2-8));
+      const ty=Math.max(8, n.y-n.size/2-42);
+      ctx.fillStyle='rgba(4,9,26,0.95)';
+      ctx.strokeStyle=c; ctx.lineWidth=1;
+      roundRect(ctx, tx, ty, tw2, 26, 7); ctx.fill(); ctx.stroke();
+      ctx.shadowColor=c; ctx.shadowBlur=6;
+      ctx.fillStyle=c; ctx.textAlign='left';
+      ctx.fillText(tip, tx+12, ty+17);
+      ctx.shadowBlur=0;
+    }
+
     requestAnimationFrame(tick);
   }
   tick();
-  let drag=null;
-  canvas.addEventListener('mousedown',e=>{const r=canvas.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;drag=nodes.find(n=>Math.hypot(n.x-mx,n.y-my)<n.size+10);});
-  canvas.addEventListener('mousemove',e=>{if(!drag)return;const r=canvas.getBoundingClientRect();drag.x=e.clientX-r.left;drag.y=e.clientY-r.top;drag.vx=drag.vy=0;});
-  canvas.addEventListener('mouseup',()=>drag=null);
+
+  canvas.addEventListener('mousemove', e => {
+    const r=canvas.getBoundingClientRect();
+    const mx=e.clientX-r.left, my=e.clientY-r.top;
+    if (drag) { drag.x=mx; drag.y=my; drag.vx=drag.vy=0; return; }
+    hoveredNode = nodes.find(n=>Math.hypot(n.x-mx,n.y-my)<n.size+16)||null;
+    canvas.style.cursor = hoveredNode?'pointer':'default';
+  });
+  canvas.addEventListener('mousedown', e => {
+    const r=canvas.getBoundingClientRect();
+    drag=nodes.find(n=>Math.hypot(n.x-(e.clientX-r.left),n.y-(e.clientY-r.top))<n.size+16)||null;
+  });
+  canvas.addEventListener('mouseup', ()=>drag=null);
+  canvas.addEventListener('mouseleave', ()=>{ drag=null; hoveredNode=null; });
 }
 
 // ===== CLIPBOARD =====
