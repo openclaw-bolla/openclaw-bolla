@@ -469,9 +469,10 @@ body {
 
 <!-- GLÜCKSRAD LÖSUNG -->
 <div class="page" id="p-gluecksrad">
-  <div id="gw-loesung-wrap" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:24px;padding:24px 16px">
+  <div id="gw-loesung-wrap" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;padding:24px 16px">
     <div id="gw-loesung-nummer" style="font-size:72px;font-weight:900;color:var(--accent);line-height:1">—</div>
     <div id="gw-loesung-stil" style="font-size:28px;font-weight:700;color:var(--text);text-align:center">Noch kein Stil gewählt</div>
+    <div id="gw-loesung-beschreibung" style="display:none;max-width:340px;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);border-radius:12px;padding:12px 16px;font-size:15px;color:var(--text);text-align:center;line-height:1.5"></div>
     <div id="gw-loesung-hint" style="font-size:14px;color:var(--text3);text-align:center">Rad auf dem Beamer drehen — Lösung erscheint hier automatisch</div>
     <div id="gw-loesung-status" style="font-size:12px;color:var(--text3)"></div>
   </div>
@@ -1489,6 +1490,33 @@ async function sosSend() {
 }
 
 // ===== GLÜCKSRAD LÖSUNG =====
+const GW_BESCHREIBUNG = {
+  "Blues":         "Melancholisch, rhythmisch, emotional · Call-and-Response (12-Takt-Schema) · B.B. King",
+  "Rock'n'Roll":   "Schneller 4/4-Takt, harte Beats, Backbeats, eingängige Riffs · Elvis Presley, Little Richard",
+  "Jazz":          "Improvisation, synkopierte Rhythmen, Saxofon",
+  "Pop":           "Eingängige Melodien, einfache wiederholte Refrains",
+  "Hip-Hop":       "Rhythmisch, basslastig, urban · entstanden in New York · 50 Cent",
+  "Klassik":       "Großes Orchester, keine elektronischen Instrumente",
+  "Reggae":        "One-Drop-Rhythmus · Bob Marley",
+  "Metal":         "Laut, kraftvoll, episch · Gesang oft Screaming · Metallica",
+  "Country":       "„Three chords and the truth“ · Banjo, Mandoline, Fiddle · Johnny Cash",
+  "Techno":        "Mechanischer Rhythmus, synthetisch, hypnotisch · Scooter",
+  "Soul":          "Emotionaler Gesang, kraftvoll und ausdrucksstark · Stevie Wonder",
+  "Punk":          "Schnell, einfache Akkorde, verzerrte Gitarren, rauer Stil, kritisch · Sex Pistols",
+  "Swing":         "Gleichmäßiger Rhythmus, Big Band, tanzbar, Swing-Feeling · Glenn Miller",
+  "R&B":           "Emotional · vereint Soul, Jazz und Blues · Michael Jackson, R. Kelly",
+  "Disco":         "Verwandt mit Funk & Soul · tanzbarer Groove, gleichmäßiger Rhythmus · Bee Gees",
+  "Gospel":        "Christlich, Afro-Amerikanisch, mehrstimmige kraftvolle Chöre",
+  "Rap":           "Gesungenes Sprechen mit Reimen und Flow · Flow = Wörter passen perfekt zum Beat",
+  "Boogie-Woogie": "Rhythmisch, energetisch, schwingend · Klavierstil",
+  "K-Pop":         "Genre-Mix, Idol-Kultur · aufwendige Musikvideos, Choreografie · BTS",
+  "Latin":         "Afrikanische Rhythmen, spanische Melodien · Congas, Bongos, Maracas · Shakira",
+  "Indie":         "Independent, experimentell, authentisch, oft Gitarren · Coldplay",
+  "Bluegrass":     "Subgenre Country – nur Saiteninstrumente, viel schneller · The Osborne Brothers",
+  "Hard-Rock":     "Kraftvoll, verzerrt, energetisch · Deep Purple",
+  "Choral":        "Einfache Melodien, fehlender Rhythmus, Kirchenmusik"
+};
+
 let _gwLoesungLast = null;
 async function loadGluecksradLoesung() {
   try {
@@ -1499,20 +1527,26 @@ async function loadGluecksradLoesung() {
 
     const numEl  = document.getElementById('gw-loesung-nummer');
     const stilEl = document.getElementById('gw-loesung-stil');
+    const descEl = document.getElementById('gw-loesung-beschreibung');
     const hintEl = document.getElementById('gw-loesung-hint');
     const statEl = document.getElementById('gw-loesung-status');
 
     if (!d.stil) {
       numEl.textContent  = '—';
       stilEl.textContent = 'Noch kein Stil gewählt';
+      if (descEl) { descEl.style.display = 'none'; descEl.textContent = ''; }
       hintEl.textContent = 'Rad auf dem Beamer drehen — Lösung erscheint hier automatisch';
       statEl.textContent = '';
     } else {
       numEl.textContent  = `Nr. ${d.nummer}`;
       stilEl.textContent = d.stil;
+      if (descEl) {
+        const beschr = GW_BESCHREIBUNG[d.stil] || '';
+        descEl.textContent = beschr;
+        descEl.style.display = beschr ? 'block' : 'none';
+      }
       hintEl.textContent = '';
       statEl.textContent = '🔄 Aktualisiert automatisch';
-      // Kurzes Blink-Feedback bei neuer Lösung
       stilEl.style.color = 'var(--accent)';
       setTimeout(() => { stilEl.style.color = 'var(--text)'; }, 600);
     }

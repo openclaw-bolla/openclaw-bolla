@@ -3,560 +3,440 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Control</title>
+<title>Mission Control — Feldnotizen</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: #0a0a0a;
-    color: #00ff41;
-    font-family: 'Courier New', Courier, monospace;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  /* CRT scanline overlay */
-  body::after {
-    content: '';
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.08) 2px,
-      rgba(0,0,0,0.08) 4px
+:root {
+  --paper:        #FDF8EE;
+  --paper-warm:   #F2E8CE;
+  --sidebar-bg:   #EAD9B0;
+  --sidebar-bdr:  #C0A06A;
+  --ink:          #231F10;
+  --ink-soft:     #5C4A28;
+  --ink-faint:    #9E8A60;
+  --ink-ghost:    #D8CCAA;
+  --accent:       #8B5E1A;
+  --accent-lt:    #C4922A;
+  --rule:         #DDD0AA;
+  --margin:       rgba(180,60,40,.22);
+  --tape:         rgba(222,196,80,.52);
+  --blue:         #2E5878;
+  --green:        #3A6640;
+  --red:          #962418;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe Print','Bradley Hand','Comic Sans MS',cursive,sans-serif;
+  background: #B8A07A;
+  min-height: 100vh;
+  display: flex;
+  align-items: stretch;
+}
+
+/* ── NOTEBOOK SHELL ── */
+.notebook {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  box-shadow: 0 0 60px rgba(0,0,0,.35);
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 214px;
+  flex-shrink: 0;
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  border-right: 3px solid var(--sidebar-bdr);
+  position: relative;
+}
+/* spiral holes */
+.sidebar::after {
+  content: '';
+  position: absolute;
+  top: 12px; right: -11px; bottom: 12px;
+  width: 20px;
+  background:
+    repeating-radial-gradient(circle at 10px center,
+      var(--paper-warm) 0 7px,
+      transparent 7px 8px,
+      var(--sidebar-bdr) 8px 10px,
+      transparent 10px 34px
     );
-    pointer-events: none;
-    z-index: 9999;
-  }
-  .glow { text-shadow: 0 0 6px #00ff41, 0 0 12px #00ff41; }
-  .glow-dim { text-shadow: 0 0 4px #00cc33; }
+  z-index: 5;
+  pointer-events: none;
+}
 
-  /* TOPBAR */
-  .topbar {
-    height: 48px;
-    background: #050505;
-    border-bottom: 1px solid #00ff41;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    flex-shrink: 0;
-    box-shadow: 0 2px 10px rgba(0,255,65,0.2);
-  }
-  .topbar-left { display: flex; align-items: center; gap: 16px; }
-  .topbar-logo {
-    font-size: 18px;
-    font-weight: bold;
-    letter-spacing: 3px;
-    color: #00ff41;
-    text-shadow: 0 0 8px #00ff41, 0 0 20px #00ff41;
-  }
-  .topbar-title {
-    font-size: 12px;
-    color: #00cc33;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-  .topbar-right { display: flex; align-items: center; gap: 24px; font-size: 12px; color: #00cc33; }
-  .topbar-time {
-    font-size: 22px;
-    font-weight: bold;
-    color: #00ff41;
-    text-shadow: 0 0 8px #00ff41;
-    letter-spacing: 2px;
-  }
-  .status-dot {
-    display: inline-block;
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: #00ff41;
-    box-shadow: 0 0 6px #00ff41;
-    animation: blink 1.4s infinite;
-  }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-  .topbar-status { display: flex; align-items: center; gap: 6px; font-size: 11px; letter-spacing: 1px; }
+.sidebar-header {
+  padding: 18px 16px 14px;
+  border-bottom: 1.5px dashed var(--sidebar-bdr);
+  margin-bottom: 6px;
+}
+.sidebar-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.4;
+}
+.sidebar-sub {
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  margin-top: 3px;
+}
 
-  /* LAYOUT */
-  .layout {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-  }
+nav { flex: 1; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 16px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  position: relative;
+  border-left: 3px solid transparent;
+  transition: background .1s;
+}
+.nav-item:hover { background: rgba(139,94,26,.08); }
+.nav-item.active {
+  color: var(--accent);
+  background: rgba(139,94,26,.14);
+  border-left-color: var(--accent);
+  font-weight: 700;
+}
+.nav-icon { font-size: 14px; width: 18px; text-align: center; }
 
-  /* SIDEBAR */
-  .sidebar {
-    width: 200px;
-    background: #050505;
-    border-right: 1px solid #003b00;
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-    padding: 16px 0;
-  }
-  .sidebar-section-label {
-    font-size: 9px;
-    color: #005500;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    padding: 0 16px 8px;
-    margin-top: 12px;
-  }
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 16px;
-    font-size: 12px;
-    color: #009922;
-    cursor: pointer;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    transition: all 0.1s;
-    border-left: 2px solid transparent;
-    text-decoration: none;
-  }
-  .nav-item:hover {
-    color: #00ff41;
-    background: #001800;
-    border-left-color: #00ff41;
-    text-shadow: 0 0 6px #00ff41;
-  }
-  .nav-item.active {
-    color: #00ff41;
-    background: #001800;
-    border-left: 2px solid #00ff41;
-    text-shadow: 0 0 6px #00ff41;
-  }
-  .nav-icon { width: 14px; text-align: center; font-size: 13px; }
-  .nav-badge {
-    margin-left: auto;
-    background: #00ff41;
-    color: #000;
-    font-size: 9px;
-    font-weight: bold;
-    padding: 1px 5px;
-    border-radius: 2px;
-  }
-  .sidebar-footer {
-    margin-top: auto;
-    padding: 12px 16px;
-    border-top: 1px solid #002200;
-    font-size: 9px;
-    color: #004400;
-    letter-spacing: 1px;
-    line-height: 1.6;
-  }
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px dashed var(--sidebar-bdr);
+  font-size: 10px;
+  color: var(--ink-faint);
+  text-align: center;
+  line-height: 1.6;
+}
 
-  /* MAIN */
-  .main {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: auto auto auto;
-    gap: 16px;
-    align-content: start;
-  }
-  .main::-webkit-scrollbar { width: 6px; }
-  .main::-webkit-scrollbar-track { background: #050505; }
-  .main::-webkit-scrollbar-thumb { background: #003b00; border-radius: 3px; }
+/* ── MAIN AREA ── */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 27px,
+      var(--rule) 27px,
+      var(--rule) 28px
+    );
+}
 
-  /* CARDS */
-  .card {
-    background: #050505;
-    border: 1px solid #003b00;
-    padding: 16px;
-    position: relative;
-    overflow: hidden;
-  }
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, #00ff41, transparent);
-    opacity: 0.4;
-  }
-  .card:hover { border-color: #00ff41; box-shadow: 0 0 12px rgba(0,255,65,0.1); }
-  .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 14px;
-  }
-  .card-title {
-    font-size: 10px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: #007722;
-  }
-  .card-icon { font-size: 16px; }
-  .card-value {
-    font-size: 36px;
-    font-weight: bold;
-    color: #00ff41;
-    text-shadow: 0 0 10px #00ff41;
-    line-height: 1;
-  }
-  .card-value.warn { color: #ffaa00; text-shadow: 0 0 10px #ffaa00; }
-  .card-value.alert { color: #ff3333; text-shadow: 0 0 10px #ff3333; }
-  .card-unit { font-size: 14px; color: #00aa33; margin-left: 4px; }
-  .card-sub { font-size: 11px; color: #006622; margin-top: 6px; letter-spacing: 1px; }
+/* ── TOPBAR ── */
+.topbar {
+  height: 56px;
+  flex-shrink: 0;
+  background: var(--paper-warm);
+  border-bottom: 2px solid var(--sidebar-bdr);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+}
+.topbar-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 1.5px;
+}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.date-block { text-align: right; }
+.date-day  { font-size: 12px; color: var(--ink-soft); }
+.date-full { font-size: 10px; color: var(--ink-faint); }
+.clock {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 3px;
+  font-variant-numeric: tabular-nums;
+}
 
-  /* PROGRESS BAR */
-  .progress-bar {
-    height: 6px;
-    background: #001800;
-    border: 1px solid #003b00;
-    margin-top: 10px;
-    position: relative;
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%;
-    background: #00ff41;
-    box-shadow: 0 0 6px #00ff41;
-    transition: width 0.3s;
-  }
-  .progress-fill.warn { background: #ffaa00; box-shadow: 0 0 6px #ffaa00; }
-  .progress-fill.alert { background: #ff3333; box-shadow: 0 0 6px #ff3333; }
+/* ── CONTENT ── */
+.content {
+  padding: 26px 28px 28px 54px;
+  flex: 1;
+  position: relative;
+}
+.content::before {   /* red margin line */
+  content: '';
+  position: absolute;
+  top: 0; left: 34px; bottom: 0;
+  width: 1.5px;
+  background: var(--margin);
+}
 
-  /* WIDE CARDS */
-  .card-wide { grid-column: span 2; }
-  .card-full { grid-column: span 3; }
+/* Status pills row */
+.pills { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--paper);
+  border: 1.5px solid var(--sidebar-bdr);
+  border-radius: 20px;
+  padding: 4px 13px;
+  font-size: 11px;
+  color: var(--ink-soft);
+  box-shadow: 1px 2px 0 var(--ink-ghost);
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+.dot.amber { background: var(--accent-lt); }
+.dot.red   { background: var(--red); }
 
-  /* MAIL CARD */
-  .mail-list { margin-top: 4px; }
-  .mail-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 7px 0;
-    border-bottom: 1px solid #002200;
-    font-size: 11px;
-  }
-  .mail-item:last-child { border-bottom: none; }
-  .mail-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: #00ff41;
-    box-shadow: 0 0 4px #00ff41;
-    margin-top: 3px;
-    flex-shrink: 0;
-  }
-  .mail-from { color: #00ff41; font-weight: bold; min-width: 80px; }
-  .mail-subject { color: #007722; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .mail-time { color: #004422; font-size: 10px; flex-shrink: 0; }
+/* Section label */
+.sec-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--ink-faint);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sec-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
 
-  /* WETTER CARD */
-  .weather-main { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
-  .weather-temp { font-size: 48px; font-weight: bold; color: #00ff41; text-shadow: 0 0 12px #00ff41; line-height: 1; }
-  .weather-unit { font-size: 20px; color: #00aa33; }
-  .weather-city { font-size: 11px; color: #006622; letter-spacing: 2px; margin-bottom: 4px; }
-  .weather-desc { font-size: 12px; color: #009933; letter-spacing: 1px; }
-  .weather-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
-  .weather-stat { font-size: 10px; color: #005522; }
-  .weather-stat span { color: #00cc33; }
+/* ── WIDGET GRID ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+  margin-bottom: 34px;
+}
 
-  /* SYSTEM INFO CARD */
-  .sys-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
-  .sys-item { font-size: 11px; }
-  .sys-label { color: #005522; letter-spacing: 1px; text-transform: uppercase; font-size: 9px; margin-bottom: 2px; }
-  .sys-value { color: #00cc33; }
+/* ── CARDS ── */
+.card {
+  background: var(--paper);
+  border: 1.5px solid var(--sidebar-bdr);
+  border-radius: 4px 8px 5px 7px;
+  padding: 14px 14px 15px;
+  position: relative;
+  box-shadow: 2px 3px 0 var(--ink-ghost), 4px 5px 0 rgba(0,0,0,.05);
+  overflow: visible;
+}
+/* tape strip */
+.card::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1.5deg);
+  width: 46px; height: 18px;
+  background: var(--tape);
+  border-top:    1px solid rgba(170,140,30,.35);
+  border-bottom: 1px solid rgba(170,140,30,.35);
+  border-radius: 1px;
+  z-index: 2;
+}
+.card:nth-child(1) { transform: rotate(-0.3deg); }
+.card:nth-child(2) { transform: rotate( 0.4deg); }
+.card:nth-child(2)::before { left: 38%; transform: translateX(-50%) rotate(2.5deg); }
+.card:nth-child(3) { transform: rotate(-0.5deg); }
+.card:nth-child(3)::before { left: 62%; transform: translateX(-50%) rotate(-1deg); }
+.card:nth-child(4) { transform: rotate( 0.3deg); }
+.card:nth-child(4)::before { transform: translateX(-50%) rotate(3deg); }
 
-  /* TERMINAL CARD */
-  .terminal-output {
-    background: #020202;
-    border: 1px solid #002200;
-    padding: 10px;
-    font-size: 11px;
-    line-height: 1.7;
-    color: #007722;
-    margin-top: 4px;
-    max-height: 100px;
-    overflow: hidden;
-  }
-  .terminal-line-prompt { color: #00ff41; }
-  .terminal-line-out { color: #006622; }
-  .terminal-cursor {
-    display: inline-block;
-    width: 7px; height: 12px;
-    background: #00ff41;
-    animation: cursor-blink 0.8s step-end infinite;
-    vertical-align: text-bottom;
-    margin-left: 2px;
-  }
-  @keyframes cursor-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.card-ico   { font-size: 22px; display: block; margin-bottom: 7px; }
+.card-lbl   { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--ink-faint); margin-bottom: 5px; }
+.card-val   { font-size: 30px; font-weight: 700; color: var(--ink); line-height: 1; }
+.card-val.blue  { color: var(--blue); }
+.card-val.green { color: var(--green); }
+.card-val.amber { color: var(--accent-lt); }
+.card-sub   { font-size: 11px; color: var(--ink-soft); margin-top: 5px; }
 
-  /* ASCII deco */
-  .ascii-corner {
-    position: absolute;
-    bottom: 6px; right: 8px;
-    font-size: 9px;
-    color: #002200;
-    letter-spacing: 0;
-  }
+/* progress bar */
+.bar-wrap {
+  height: 7px;
+  background: var(--ink-ghost);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+.bar-fill { height: 100%; border-radius: 2px; }
+.bar-fill.blue  { background: var(--blue); }
+.bar-fill.green { background: var(--green); }
+
+/* mail list */
+.mail-list { margin-top: 9px; }
+.mail-row {
+  font-size: 11px;
+  color: var(--ink-soft);
+  padding: 2px 0;
+  border-bottom: 1px dotted var(--rule);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mail-row:last-child { border-bottom: none; }
+
+/* weather */
+.temp-row { display: flex; align-items: flex-end; gap: 3px; margin-top: 3px; }
+.temp-big { font-size: 34px; font-weight: 700; color: var(--blue); line-height: 1; }
+.temp-unit { font-size: 18px; color: var(--blue); margin-bottom: 3px; }
+
+/* ── NOTEPAD ── */
+.notepad {
+  background: var(--paper);
+  border: 1.5px solid var(--sidebar-bdr);
+  border-radius: 5px 7px 4px 6px;
+  box-shadow: 2px 3px 0 var(--ink-ghost);
+  overflow: hidden;
+}
+.notepad-hdr {
+  background: var(--paper-warm);
+  padding: 7px 16px;
+  border-bottom: 1.5px solid var(--sidebar-bdr);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--ink-faint);
+}
+.note-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 16px;
+  min-height: 28px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 13px;
+  color: var(--ink);
+}
+.note-row:last-child { border-bottom: none; }
+.note-row.done { color: var(--ink-faint); text-decoration: line-through; }
+.chk { font-size: 13px; flex-shrink: 0; }
 </style>
 </head>
 <body>
+<div class="notebook">
 
-<!-- TOPBAR -->
-<div class="topbar">
-  <div class="topbar-left">
-    <div class="topbar-logo glow">[ BOLLA ]</div>
-    <div class="topbar-title">// MISSION CONTROL v2.6</div>
-  </div>
-  <div class="topbar-right">
-    <div class="topbar-status">
-      <span class="status-dot"></span>
-      <span>SYSTEM ONLINE</span>
+  <!-- ░░ SIDEBAR ░░ -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">📋 Mission<br>Control</div>
+      <div class="sidebar-sub">🐾 Bolla's Zentrale</div>
     </div>
-    <div style="color:#004422; font-size:11px;">WED 2026-05-27</div>
-    <div class="topbar-time glow">20:14</div>
-  </div>
-</div>
-
-<!-- LAYOUT -->
-<div class="layout">
-
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sidebar-section-label">// NAV</div>
-
-    <a class="nav-item active">
-      <span class="nav-icon">▣</span> Dashboard
-    </a>
-    <a class="nav-item">
-      <span class="nav-icon">◈</span> Bolla
-    </a>
-
-    <div class="sidebar-section-label">// TOOLS</div>
-
-    <a class="nav-item">
-      <span class="nav-icon">✎</span> Schule
-    </a>
-    <a class="nav-item">
-      <span class="nav-icon">◷</span> Kalender
-    </a>
-    <a class="nav-item">
-      <span class="nav-icon">✉</span> E-Mail
-      <span class="nav-badge">3</span>
-    </a>
-
-    <div class="sidebar-section-label">// INFO</div>
-
-    <a class="nav-item">
-      <span class="nav-icon">⛅</span> Wetter
-    </a>
-    <a class="nav-item">
-      <span class="nav-icon">⌨</span> System Info
-    </a>
-
+    <nav>
+      <div class="nav-item active"><span class="nav-icon">🏠</span> Dashboard</div>
+      <div class="nav-item"><span class="nav-icon">🐾</span> Bolla</div>
+      <div class="nav-item"><span class="nav-icon">📚</span> Schule</div>
+      <div class="nav-item"><span class="nav-icon">📅</span> Kalender</div>
+      <div class="nav-item"><span class="nav-icon">✉️</span> E-Mail</div>
+      <div class="nav-item"><span class="nav-icon">🌤️</span> Wetter</div>
+      <div class="nav-item"><span class="nav-icon">🖥️</span> System Info</div>
+    </nav>
     <div class="sidebar-footer">
-      BOLLA AGENT v2.6<br>
-      HOST: WSL2-SURFACE<br>
-      UPTIME: 14h 32m<br>
-      SESSION: ACTIVE
+      ·  ·  ·  ·  ·  ·<br>
+      Zuletzt aktiv: 20:14
     </div>
-  </div>
+  </aside>
 
-  <!-- MAIN GRID -->
+  <!-- ░░ MAIN ░░ -->
   <div class="main">
 
-    <!-- RAM -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">// RAM</div>
-        <div class="card-icon">▤</div>
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-title">✦ Dashboard</div>
+      <div class="topbar-right">
+        <div class="date-block">
+          <div class="date-day">Freitag</div>
+          <div class="date-full">30. Mai 2026</div>
+        </div>
+        <div class="clock">20:14</div>
       </div>
-      <div>
-        <span class="card-value">34</span><span class="card-unit">%</span>
-      </div>
-      <div class="card-sub">5.4 GB / 16 GB USED</div>
-      <div class="progress-bar"><div class="progress-fill" style="width:34%"></div></div>
-      <div class="ascii-corner">MEM_OK</div>
-    </div>
+    </header>
 
-    <!-- CPU -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">// CPU</div>
-        <div class="card-icon">◎</div>
-      </div>
-      <div>
-        <span class="card-value">12</span><span class="card-unit">%</span>
-      </div>
-      <div class="card-sub">i7-1185G7 · 8 CORES · 42°C</div>
-      <div class="progress-bar"><div class="progress-fill" style="width:12%"></div></div>
-      <div class="ascii-corner">CPU_OK</div>
-    </div>
+    <!-- Content -->
+    <div class="content">
 
-    <!-- WETTER -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">// WETTER</div>
-        <div class="card-icon">⛅</div>
+      <!-- Status pills -->
+      <div class="pills">
+        <div class="pill"><div class="dot"></div> MC-Server online</div>
+        <div class="pill"><div class="dot"></div> CF-Tunnel aktiv</div>
+        <div class="pill"><div class="dot amber"></div> Backup: gestern</div>
+        <div class="pill"><div class="dot"></div> WSL2 läuft</div>
       </div>
-      <div class="weather-city">HAMBURG, DE</div>
-      <div class="weather-main">
-        <div class="weather-temp">18</div>
-        <div class="weather-unit">°C</div>
-      </div>
-      <div class="weather-desc">BEWÖLKT MIT AUFHEITERUNGEN</div>
-      <div class="weather-grid">
-        <div class="weather-stat">WIND: <span>12 km/h SW</span></div>
-        <div class="weather-stat">REGEN: <span>18%</span></div>
-        <div class="weather-stat">FEUCHTE: <span>68%</span></div>
-        <div class="weather-stat">UV-IDX: <span>3 / 10</span></div>
-      </div>
-    </div>
 
-    <!-- E-MAIL -->
-    <div class="card card-wide">
-      <div class="card-header">
-        <div class="card-title">// INBOX — NEUE MAILS</div>
-        <div style="font-size:11px; color:#00ff41; text-shadow:0 0 4px #00ff41;">3 UNREAD</div>
-      </div>
-      <div class="mail-list">
-        <div class="mail-item">
-          <div class="mail-dot"></div>
-          <div class="mail-from">Schule-SekR</div>
-          <div class="mail-subject">Vertretungsplan KW22 — Donnerstag Änderung Raum 204</div>
-          <div class="mail-time">19:41</div>
-        </div>
-        <div class="mail-item">
-          <div class="mail-dot"></div>
-          <div class="mail-from">GitHub</div>
-          <div class="mail-subject">[openclaw-bolla] Workflow run completed: backup-push ✓</div>
-          <div class="mail-time">18:03</div>
-        </div>
-        <div class="mail-item">
-          <div class="mail-dot"></div>
-          <div class="mail-from">Cloudflare</div>
-          <div class="mail-subject">Your tunnel bolla-mc has been active for 30 days</div>
-          <div class="mail-time">07:15</div>
-        </div>
-      </div>
-    </div>
+      <!-- Widgets -->
+      <div class="sec-label">System &amp; Übersicht</div>
+      <div class="grid">
 
-    <!-- SYSTEM INFO -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">// SYSTEM</div>
-        <div class="card-icon">⌨</div>
-      </div>
-      <div class="sys-grid">
-        <div class="sys-item">
-          <div class="sys-label">OS</div>
-          <div class="sys-value">WSL2 Ubuntu 22</div>
+        <!-- RAM -->
+        <div class="card">
+          <span class="card-ico">💾</span>
+          <div class="card-lbl">Arbeitsspeicher</div>
+          <div class="card-val blue">34%</div>
+          <div class="card-sub">5,4 GB / 16 GB</div>
+          <div class="bar-wrap"><div class="bar-fill blue" style="width:34%"></div></div>
         </div>
-        <div class="sys-item">
-          <div class="sys-label">DISK</div>
-          <div class="sys-value">142 GB free</div>
-        </div>
-        <div class="sys-item">
-          <div class="sys-label">TUNNEL</div>
-          <div class="sys-value" style="color:#00ff41;">● AKTIV</div>
-        </div>
-        <div class="sys-item">
-          <div class="sys-label">MC-SERVER</div>
-          <div class="sys-value" style="color:#00ff41;">● ONLINE</div>
-        </div>
-        <div class="sys-item">
-          <div class="sys-label">BACKUP</div>
-          <div class="sys-value">03:00 ✓</div>
-        </div>
-        <div class="sys-item">
-          <div class="sys-label">AGENTS</div>
-          <div class="sys-value">2 ACTIVE</div>
-        </div>
-      </div>
-    </div>
 
-    <!-- DISK -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">// DISK I/O</div>
-        <div class="card-icon">◫</div>
-      </div>
-      <div>
-        <span class="card-value warn">67</span><span class="card-unit">%</span>
-      </div>
-      <div class="card-sub">LAUFWERK C: · 358 GB / 512 GB</div>
-      <div class="progress-bar"><div class="progress-fill warn" style="width:67%"></div></div>
-      <div class="ascii-corner">DISK_WARN</div>
-    </div>
+        <!-- CPU -->
+        <div class="card">
+          <span class="card-ico">⚙️</span>
+          <div class="card-lbl">CPU-Last</div>
+          <div class="card-val green">12%</div>
+          <div class="card-sub">i7-11370H · idle</div>
+          <div class="bar-wrap"><div class="bar-fill green" style="width:12%"></div></div>
+        </div>
 
-    <!-- NETZ -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">// NETZWERK</div>
-        <div class="card-icon">⇅</div>
-      </div>
-      <div style="display:flex; gap:16px; margin-top:4px;">
-        <div>
-          <div style="font-size:9px;color:#005522;letter-spacing:2px;margin-bottom:4px;">UPLOAD</div>
-          <div style="font-size:22px;font-weight:bold;color:#00ff41;text-shadow:0 0 8px #00ff41;">2.3<span style="font-size:11px;color:#00aa33;"> MB/s</span></div>
+        <!-- E-Mail -->
+        <div class="card">
+          <span class="card-ico">✉️</span>
+          <div class="card-lbl">E-Mail</div>
+          <div class="card-val amber">3 neu</div>
+          <div class="mail-list">
+            <div class="mail-row">📌 Lessing-Gymnasium Info</div>
+            <div class="mail-row">📌 Elternbrief 7b</div>
+            <div class="mail-row">📌 KI-Workshop Updates</div>
+          </div>
         </div>
-        <div style="width:1px;background:#002200;"></div>
-        <div>
-          <div style="font-size:9px;color:#005522;letter-spacing:2px;margin-bottom:4px;">DOWNLOAD</div>
-          <div style="font-size:22px;font-weight:bold;color:#00ff41;text-shadow:0 0 8px #00ff41;">8.7<span style="font-size:11px;color:#00aa33;"> MB/s</span></div>
-        </div>
-      </div>
-      <div class="card-sub" style="margin-top:10px;">PING: 14ms · VODAFONE DSL · ↑↓ OK</div>
-    </div>
 
-    <!-- TERMINAL -->
-    <div class="card card-wide">
-      <div class="card-header">
-        <div class="card-title">// TERMINAL — LETZTE AKTIVITÄT</div>
-        <div style="font-size:10px;color:#004422;letter-spacing:1px;">READ-ONLY</div>
-      </div>
-      <div class="terminal-output">
-        <div><span class="terminal-line-prompt">bolla@wsl2:~$</span> git push origin master</div>
-        <div class="terminal-line-out">  → Branch 'master' → github.com/openclaw-bolla [OK]</div>
-        <div><span class="terminal-line-prompt">bolla@wsl2:~$</span> systemctl status cloudflared</div>
-        <div class="terminal-line-out">  ● bolla-tunnel.service: active (running) since 05:30</div>
-        <div><span class="terminal-line-prompt">bolla@wsl2:~$</span> <span class="terminal-cursor"></span></div>
-      </div>
-    </div>
+        <!-- Wetter -->
+        <div class="card">
+          <span class="card-ico">🌤️</span>
+          <div class="card-lbl">Wetter Hamburg</div>
+          <div class="temp-row">
+            <div class="temp-big">18</div>
+            <div class="temp-unit">°C</div>
+          </div>
+          <div class="card-sub">Leicht bewölkt · SW 12 km/h</div>
+          <div class="card-sub" style="margin-top:4px">↓ 14° &nbsp; ↑ 21° &nbsp; 💧 15%</div>
+        </div>
 
-    <!-- KALENDER PREVIEW -->
-    <div class="card card-full">
-      <div class="card-header">
-        <div class="card-title">// KALENDER — NÄCHSTE TERMINE</div>
-        <div style="font-size:10px;color:#007722;letter-spacing:1px;">MAI 2026</div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px;">
-        <div style="border:1px solid #003b00;padding:10px;font-size:11px;">
-          <div style="color:#004422;font-size:9px;letter-spacing:2px;margin-bottom:6px;">HEUTE · MI 27.05</div>
-          <div style="color:#00cc33;margin-bottom:4px;">▸ 20:14 — JETZT</div>
-          <div style="color:#006622;">▸ Mission Control aktiv</div>
-        </div>
-        <div style="border:1px solid #003b00;padding:10px;font-size:11px;">
-          <div style="color:#004422;font-size:9px;letter-spacing:2px;margin-bottom:6px;">DO 28.05</div>
-          <div style="color:#00cc33;margin-bottom:4px;">▸ 08:00 — Lessing I</div>
-          <div style="color:#006622;">▸ 11:30 — Konferenz</div>
-        </div>
-        <div style="border:1px solid #003b00;padding:10px;font-size:11px;">
-          <div style="color:#004422;font-size:9px;letter-spacing:2px;margin-bottom:6px;">FR 29.05</div>
-          <div style="color:#00cc33;margin-bottom:4px;">▸ 09:45 — Lessing II</div>
-          <div style="color:#006622;">▸ 13:00 — FREI</div>
-        </div>
-        <div style="border:1px solid #003b00;padding:10px;font-size:11px;">
-          <div style="color:#004422;font-size:9px;letter-spacing:2px;margin-bottom:6px;">MO 02.06</div>
-          <div style="color:#00cc33;margin-bottom:4px;">▸ 08:00 — Schulstart</div>
-          <div style="color:#006622;">▸ Neue Woche</div>
-        </div>
-      </div>
-    </div>
 
+      <!-- Notes -->
+      <div class="sec-label">Aufgaben &amp; Notizen</div>
+      <div class="notepad">
+        <div class="notepad-hdr">Heute — 30. Mai</div>
+        <div class="note-row"><span class="chk">☐</span> KI-Workshop Folien fertigstellen</div>
+        <div class="note-row"><span class="chk">☐</span> Klausur 7a korrigieren (bis Montag)</div>
+        <div class="note-row"><span class="chk">☐</span> Spotify-Playlist für Fahrradtour cutten</div>
+        <div class="note-row done"><span class="chk">☑</span> Mission Control Redesign — fertig!</div>
+        <div class="note-row done"><span class="chk">☑</span> Elternmail 7b versenden</div>
+      </div>
+
+    </div>
   </div>
-</div>
 
+</div>
 </body>
 </html>
