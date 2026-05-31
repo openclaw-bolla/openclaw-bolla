@@ -458,7 +458,7 @@ body {
       onclick="document.getElementById('clip-file-input').click()"
       style="border:2px dashed var(--sep);border-radius:10px;padding:22px 16px;text-align:center;cursor:pointer;color:var(--text3);font-size:14px;transition:border-color 0.2s,background 0.2s">
       <div style="font-size:30px;margin-bottom:6px">📂</div>
-      <div>Tippen zum Auswählen</div>
+      <div>Tippen zum Auswählen oder <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:3px;padding:1px 5px;font-size:11px">Strg+V</kbd></div>
       <div style="font-size:12px;margin-top:2px">PNG, JPG, GIF, WebP, BMP</div>
     </div>
     <input type="file" id="clip-file-input" accept="image/*" style="display:none" onchange="clipImgFileSelected(event)">
@@ -1071,6 +1071,24 @@ function clipImgDragLeave(e) {
 }
 function clipImgDrop(e) { e.preventDefault(); clipImgDragLeave(e); _clipImgUpload(e.dataTransfer.files[0]); }
 function clipImgFileSelected(e) { _clipImgUpload(e.target.files[0]); e.target.value = ''; }
+
+document.addEventListener('paste', e => {
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (file) {
+        const z = document.getElementById('clip-drop-zone');
+        if (z) { z.style.borderColor = 'var(--accent)'; z.style.background = 'rgba(0,122,255,0.07)'; setTimeout(() => { z.style.borderColor = ''; z.style.background = ''; }, 800); }
+        _clipImgUpload(file);
+      }
+      break;
+    }
+  }
+});
 async function clipboardDeleteImage(filename) {
   await fetch('/api/clipboard/image/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({filename})});
   loadClipboardImages();
