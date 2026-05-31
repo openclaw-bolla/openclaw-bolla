@@ -2130,84 +2130,80 @@ html, body {
       <!-- KI-WORKSHOP -->
       <!-- PROJEKTE-WORKSPACE -->
       <div class="page" id="page-ki-workshop">
-        <div style="max-width:960px;margin:0 auto">
+        <div style="max-width:900px;margin:0 auto">
 
           <!-- ── Topbar ── -->
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-            <span id="pj-icon-display" style="font-size:28px;cursor:pointer;line-height:1" title="Icon ändern" onclick="pjIconPicker()">📁</span>
+            <span id="pj-icon-display" style="font-size:26px;cursor:pointer;line-height:1" title="Icon ändern" onclick="pjIconPicker()">📁</span>
             <input id="pj-title-input" type="text" value=""
-              style="flex:1;min-width:180px;background:transparent;border:none;border-bottom:1px solid var(--border);
-                     color:var(--bright);font-size:20px;font-weight:700;outline:none;padding:4px 2px;font-family:inherit"
-              onfocus="this.style.borderBottomColor='var(--accent)'"
-              onblur="this.style.borderBottomColor='var(--border)'">
+              style="flex:1;min-width:160px;background:transparent;border:none;border-bottom:1px solid var(--border);
+                     color:var(--bright);font-size:19px;font-weight:700;outline:none;padding:4px 2px;font-family:inherit"
+              onfocus="this.style.borderBottomColor='var(--accent)'" onblur="this.style.borderBottomColor='var(--border)'">
+            <span id="pj-save-hint" style="font-size:11px;color:var(--dim)"></span>
             <div style="display:flex;gap:6px;flex-shrink:0">
-              <button onclick="pjSave()" title="Projekt speichern"
-                style="padding:7px 14px;background:rgba(139,92,246,0.18);border:1px solid rgba(139,92,246,0.45);
-                       border-radius:7px;color:#c4b5fd;font-size:13px;font-weight:600;cursor:pointer">💾 Speichern</button>
-              <button onclick="pjNew()" title="Neues Projekt"
-                style="padding:7px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);
-                       border-radius:7px;color:var(--dim);font-size:13px;cursor:pointer">➕ Neu</button>
-              <!-- Projekt-Auswahl -->
+              <button onclick="pjSave()" style="padding:6px 13px;background:rgba(139,92,246,0.18);border:1px solid rgba(139,92,246,0.45);border-radius:7px;color:#c4b5fd;font-size:13px;font-weight:600;cursor:pointer">💾 Speichern</button>
+              <button onclick="pjNew()" style="padding:6px 13px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:7px;color:var(--dim);font-size:13px;cursor:pointer">➕ Neu</button>
               <div style="position:relative">
-                <button onclick="pjToggleList()" id="pj-list-btn"
-                  style="padding:7px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);
-                         border-radius:7px;color:var(--dim);font-size:13px;cursor:pointer">📂 Alle ▾</button>
-                <div id="pj-list-dropdown" style="display:none;position:absolute;right:0;top:calc(100% + 4px);
-                     min-width:240px;background:var(--card2);border:1px solid var(--border);border-radius:10px;
-                     box-shadow:0 8px 24px rgba(0,0,0,0.5);z-index:200;padding:6px 0"></div>
+                <button onclick="pjToggleList()" id="pj-list-btn" style="padding:6px 13px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:7px;color:var(--dim);font-size:13px;cursor:pointer">📂 Alle ▾</button>
+                <div id="pj-list-dropdown" style="display:none;position:absolute;right:0;top:calc(100%+4px);min-width:240px;background:var(--card2);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.5);z-index:200;padding:6px 0"></div>
               </div>
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
-            <span id="pj-save-hint" style="font-size:12px;color:var(--dim)"></span>
-          </div>
 
-          <!-- ── Aufgaben an Bolla ── -->
-          <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-              <span style="font-size:13px;font-weight:700;color:#c4b5fd;letter-spacing:.5px">📤 AUFGABEN AN BOLLA</span>
-              <span id="pj-aufgaben-count" style="font-size:11px;color:var(--dim)"></span>
-            </div>
-            <!-- Neue Aufgabe -->
+          <!-- ── Stichwortliste ── -->
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px">
+            <div style="font-size:12px;font-weight:700;color:#c4b5fd;letter-spacing:.6px;text-transform:uppercase;margin-bottom:10px">📝 Stichwortliste</div>
+            <!-- Eingabe -->
             <div style="display:flex;gap:8px;margin-bottom:10px">
-              <input id="pj-auftrag-input" type="text" placeholder="Aufgabe beschreiben und Enter…"
-                style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;
-                       color:var(--text);padding:8px 12px;font-size:14px;outline:none;font-family:inherit"
+              <input id="pj-item-input" type="text" placeholder="Stichwort, Idee oder Aufgabe eingeben…"
+                style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 11px;font-size:14px;outline:none;font-family:inherit"
                 onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
-                onkeydown="if(event.key==='Enter')pjAddAuftrag()">
-              <button onclick="pjAddAuftrag()"
-                style="padding:8px 16px;background:linear-gradient(135deg,#8b5cf6,#ec4899);border:none;
-                       border-radius:8px;color:#fff;font-size:14px;font-weight:600;cursor:pointer">+</button>
+                onkeydown="if(event.key==='Enter')pjAddItem()">
+              <button onclick="pjAddItem()" style="padding:7px 16px;background:linear-gradient(135deg,#8b5cf6,#ec4899);border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:600;cursor:pointer">+</button>
             </div>
             <!-- Liste -->
-            <div id="pj-auftraege-list"></div>
+            <div id="pj-items-list" style="display:flex;flex-direction:column;gap:3px;min-height:20px"></div>
+            <!-- Aktionsleiste -->
+            <div style="display:flex;gap:7px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap">
+              <button onclick="pjCopySelected()" style="padding:5px 12px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;cursor:pointer">📋 Kopieren</button>
+              <button onclick="pjDownloadWord()" style="padding:5px 12px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;cursor:pointer">📄 Word</button>
+              <button onclick="pjDeleteSelected()" style="padding:5px 12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:#f87171;font-size:12px;cursor:pointer">🗑️ Löschen</button>
+              <span id="pj-sel-count" style="font-size:11px;color:var(--dim);margin-left:4px"></span>
+              <span id="pj-save-status" style="font-size:12px;color:#4ade80;margin-left:auto"></span>
+            </div>
           </div>
 
-          <!-- ── Notizen / Brainstorming ── -->
-          <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)">
-              <span style="font-size:13px;font-weight:700;color:var(--dim);letter-spacing:.5px">📝 NOTIZEN & BRAINSTORMING</span>
-              <button id="pj-edit-btn" onclick="pjToggleEdit()"
-                style="padding:5px 12px;background:transparent;border:1px solid var(--border);border-radius:6px;
-                       color:var(--dim);font-size:12px;cursor:pointer">✏️ Bearbeiten</button>
+          <!-- ── Prompt an Bolla ── -->
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px">
+            <div style="font-size:12px;font-weight:700;color:#c4b5fd;letter-spacing:.6px;text-transform:uppercase;margin-bottom:10px">🤖 Prompt an Bolla</div>
+            <textarea id="pj-prompt-input" rows="4" placeholder="Prompt eingeben — z.B. 'Erstelle mir eine Liste mit…' oder 'Erkläre mir…'"
+              style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:14px;font-family:inherit;outline:none;resize:vertical;line-height:1.55"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+              onkeydown="if(event.ctrlKey&&event.key==='Enter')pjSendPrompt()"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+              <button onclick="pjSendPrompt()" id="pj-send-btn" style="padding:7px 18px;background:linear-gradient(135deg,#8b5cf6,#ec4899);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;cursor:pointer">🚀 Abschicken <span style="opacity:.7;font-size:11px">(Strg+Enter)</span></button>
+              <button onclick="pjCopyPromptAsAuftrag()" style="padding:7px 13px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--dim);font-size:12px;cursor:pointer" title="Prompt in Zwischenablage für Chat">📋 In Clipboard</button>
+              <span id="pj-prompt-status" style="font-size:12px;color:var(--dim)"></span>
             </div>
-            <div id="pj-content" style="padding:20px 24px;line-height:1.65;font-size:14px;min-height:120px"></div>
-            <div id="pj-editor-wrap" style="display:none;padding:0">
-              <textarea id="pj-editor"
-                style="width:100%;box-sizing:border-box;min-height:50vh;background:var(--card);
-                       border:none;border-top:1px solid rgba(139,92,246,0.3);color:var(--text);
-                       padding:16px 20px;font-family:monospace;font-size:13px;line-height:1.55;
-                       outline:none;resize:vertical;display:block"></textarea>
-              <div style="display:flex;gap:8px;padding:10px 16px;background:var(--card);border-top:1px solid var(--border)">
-                <button onclick="pjSave()"
-                  style="padding:7px 18px;background:linear-gradient(135deg,#8b5cf6,#ec4899);border:none;
-                         border-radius:7px;color:#fff;font-size:13px;font-weight:600;cursor:pointer">💾 Speichern</button>
-                <button onclick="pjToggleEdit()"
-                  style="padding:7px 14px;background:transparent;border:1px solid var(--border);
-                         border-radius:7px;color:var(--dim);font-size:13px;cursor:pointer">Abbrechen</button>
-                <span id="pj-save-status" style="font-size:12px;color:#4ade80;align-self:center"></span>
+            <!-- Antwort-Bereich -->
+            <div id="pj-prompt-antwort" style="display:none;margin-top:12px;background:rgba(139,92,246,0.07);border:1px solid rgba(139,92,246,0.25);border-radius:8px;padding:12px 14px">
+              <div style="font-size:11px;font-weight:700;color:#c4b5fd;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Bolla antwortet</div>
+              <div id="pj-prompt-antwort-text" style="font-size:13px;color:var(--text);line-height:1.65;white-space:pre-wrap"></div>
+              <div style="display:flex;gap:7px;margin-top:10px">
+                <button onclick="pjArchivePrompt()" style="padding:5px 13px;background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.3);border-radius:6px;color:#4ade80;font-size:12px;cursor:pointer">✅ Archivieren</button>
+                <button onclick="document.getElementById('pj-prompt-antwort').style.display='none'" style="padding:5px 11px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--dim);font-size:12px;cursor:pointer">✕</button>
               </div>
             </div>
+          </div>
+
+          <!-- ── Archiv ── -->
+          <div id="pj-archiv-wrap" style="background:var(--card2);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:none">
+            <div onclick="document.getElementById('pj-archiv-body').style.display=document.getElementById('pj-archiv-body').style.display==='none'?'block':'none'"
+              style="padding:11px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.6px">📦 Archivierte Prompts</span>
+              <span id="pj-archiv-count" style="font-size:11px;color:var(--dim)"></span>
+            </div>
+            <div id="pj-archiv-body" style="display:none;padding:0 16px 14px;display:flex;flex-direction:column;gap:8px"></div>
           </div>
 
         </div>
@@ -7546,82 +7542,67 @@ function wsRenderMd(md) {
   return html;
 }
 
-// Lädt Projekt-Liste und aktuelles Projekt
+// ── Projektwerkspace ────────────────────────────────────────────────────────
+
+let _pjCurrent = null;
+let _pjDragItem = null;
+let _pjCurrentPrompt = null; // {prompt, antwort} aktuell angezeigter Prompt
+
 async function loadKiWorkshop() {
   try {
     const meta = await fetch(API + '/api/projekte/list').then(r => r.json());
     const currentId = meta.current || (meta.projects[0] && meta.projects[0].id);
     if (currentId) await pjLoadById(currentId);
-  } catch(e) {
-    document.getElementById('pj-content').innerHTML = `<div style="color:#f87171">Fehler: ${e.message}</div>`;
-  }
+  } catch(e) { console.warn('loadKiWorkshop:', e); }
 }
 
 async function pjLoadById(id) {
   try {
     const p = await fetch(API + '/api/projekte/load?id=' + encodeURIComponent(id)).then(r => r.json());
     _pjCurrent = p;
+    if (!_pjCurrent.items) _pjCurrent.items = [];
+    if (!_pjCurrent.prompts) _pjCurrent.prompts = [];
     document.getElementById('pj-title-input').value = p.title || '';
     document.getElementById('pj-icon-display').textContent = p.icon || '📁';
-    document.getElementById('pj-content').innerHTML = wsRenderMd(p.content || '');
-    document.getElementById('pj-save-hint').textContent = p.updated ? 'Zuletzt gespeichert: ' + p.updated : '';
-    pjRenderAuftraege(p.auftraege || []);
-    // Editor schließen falls offen
-    document.getElementById('pj-editor-wrap').style.display = 'none';
-    document.getElementById('pj-content').style.display = 'block';
-    document.getElementById('pj-edit-btn').textContent = '✏️ Bearbeiten';
-  } catch(e) {
-    document.getElementById('pj-content').innerHTML = `<div style="color:#f87171">Fehler: ${e.message}</div>`;
-  }
+    document.getElementById('pj-save-hint').textContent = p.updated ? 'Gespeichert: ' + p.updated : '';
+    pjRenderItems();
+    pjRenderArchiv();
+    document.getElementById('pj-prompt-antwort').style.display = 'none';
+    document.getElementById('pj-prompt-input').value = '';
+  } catch(e) { console.warn('pjLoadById:', e); }
 }
 
-async function pjSave() {
+async function pjSave(silent) {
   if (!_pjCurrent) return;
-  const md = document.getElementById('pj-editor-wrap').style.display !== 'none'
-    ? document.getElementById('pj-editor').value
-    : (_pjCurrent.content || '');
   const title = document.getElementById('pj-title-input').value.trim() || 'Neues Projekt';
   const icon  = document.getElementById('pj-icon-display').textContent.trim() || '📁';
   const status = document.getElementById('pj-save-status');
-  if (status) { status.style.color = 'var(--dim)'; status.textContent = 'Speichere…'; }
+  if (!silent && status) { status.style.color = 'var(--dim)'; status.textContent = 'Speichere…'; }
   try {
-    const r = await fetch(API + '/api/projekte/save', {
+    await fetch(API + '/api/projekte/save', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({id: _pjCurrent.id, title, icon, content: md,
-                            auftraege: _pjCurrent.auftraege || []})
-    }).then(r => r.json());
-    _pjCurrent.content = md; _pjCurrent.title = title; _pjCurrent.icon = icon;
-    document.getElementById('pj-content').innerHTML = wsRenderMd(md);
+      body: JSON.stringify({id: _pjCurrent.id, title, icon,
+        content: _pjCurrent.content || '',
+        items: _pjCurrent.items || [],
+        prompts: _pjCurrent.prompts || [],
+        auftraege: _pjCurrent.auftraege || []})
+    });
+    _pjCurrent.title = title; _pjCurrent.icon = icon;
     const now = new Date().toISOString().slice(0,10);
-    document.getElementById('pj-save-hint').textContent = 'Zuletzt gespeichert: ' + now;
-    if (status) { status.style.color = '#4ade80'; status.textContent = '✓ Gespeichert'; setTimeout(()=>status.textContent='', 2000); }
-    // Editor schließen
-    document.getElementById('pj-editor-wrap').style.display = 'none';
-    document.getElementById('pj-content').style.display = 'block';
-    document.getElementById('pj-edit-btn').textContent = '✏️ Bearbeiten';
+    document.getElementById('pj-save-hint').textContent = 'Gespeichert: ' + now;
+    if (!silent && status) { status.style.color = '#4ade80'; status.textContent = '✓'; setTimeout(()=>status.textContent='', 2000); }
   } catch(e) {
-    if (status) { status.style.color = '#f87171'; status.textContent = e.message; }
+    if (!silent && status) { status.style.color = '#f87171'; status.textContent = e.message; }
   }
 }
 
 async function pjNew() {
-  if (_pjCurrent) {
-    // Aktuelles Projekt auto-speichern
-    const md = document.getElementById('pj-editor-wrap').style.display !== 'none'
-      ? document.getElementById('pj-editor').value : (_pjCurrent.content || '');
-    await fetch(API + '/api/projekte/save', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({id:_pjCurrent.id,
-        title: document.getElementById('pj-title-input').value.trim() || _pjCurrent.title,
-        icon: document.getElementById('pj-icon-display').textContent.trim(),
-        content: md, auftraege: _pjCurrent.auftraege || []})
-    });
-  }
+  if (_pjCurrent) await pjSave(true);
   const title = prompt('Titel des neuen Projekts:');
   if (!title) return;
   const r = await fetch(API + '/api/projekte/new', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({title, icon: '📁'})
+    body: JSON.stringify({title, icon:'📁'})
   }).then(r => r.json());
   await loadKiWorkshop();
 }
@@ -7637,138 +7618,248 @@ async function pjToggleList() {
       const isCurrent = _pjCurrent && _pjCurrent.id === p.id;
       return `<div onclick="pjLoadById('${p.id}');document.getElementById('pj-list-dropdown').style.display='none'"
         style="display:flex;align-items:center;gap:8px;padding:8px 14px;cursor:pointer;font-size:13px;
-               ${isCurrent ? 'background:rgba(139,92,246,0.15);color:var(--bright)' : 'color:var(--text)'}">
+               ${isCurrent?'background:rgba(139,92,246,0.15);color:var(--bright)':'color:var(--text)'}">
         <span style="font-size:16px">${p.icon||'📁'}</span>
         <div style="flex:1;min-width:0">
           <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.title.replace(/</g,'&lt;')}</div>
           <div style="font-size:11px;color:var(--dim)">${p.updated||''}</div>
-        </div>
-        ${isCurrent ? '<span style="color:#c4b5fd;font-size:11px">●</span>' : ''}
+        </div>${isCurrent?'<span style="color:#c4b5fd;font-size:11px">●</span>':''}
       </div>`;
     }).join('') || '<div style="padding:8px 14px;color:var(--dim);font-size:13px">Keine Projekte</div>';
   } catch(e) { dd.innerHTML = '<div style="padding:8px;color:#f87171;font-size:12px">Fehler</div>'; }
 }
 
-function pjToggleEdit() {
-  const wrap = document.getElementById('pj-editor-wrap');
-  const view = document.getElementById('pj-content');
-  const btn  = document.getElementById('pj-edit-btn');
-  if (wrap.style.display === 'none') {
-    document.getElementById('pj-editor').value = _pjCurrent ? (_pjCurrent.content || '') : '';
-    wrap.style.display = 'block';
-    view.style.display = 'none';
-    btn.textContent = '👁 Ansicht';
-  } else {
-    wrap.style.display = 'none';
-    view.style.display = 'block';
-    btn.textContent = '✏️ Bearbeiten';
-    document.getElementById('pj-save-status').textContent = '';
-  }
-}
-
-function pjRenderAuftraege(list) {
-  const el = document.getElementById('pj-auftraege-list');
-  const pid = _pjCurrent ? _pjCurrent.id : '';
-  const offen   = list.filter(a => a.status === 'offen');
-  const laufend = list.filter(a => a.status === 'in_progress');
-  const done    = list.filter(a => a.status === 'erledigt');
-  let h = '';
-  // Offen
-  offen.forEach(a => {
-    const result = a.result ? `<div style="margin-top:4px;padding:6px 8px;background:rgba(74,222,128,0.07);border-radius:5px;font-size:12px;color:#86efac">${a.result.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>` : '';
-    h += `<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:6px">
-      <div style="display:flex;align-items:flex-start;gap:8px">
-        <span style="font-size:16px;margin-top:1px">📋</span>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;color:var(--bright)">${a.text.replace(/</g,'&lt;')}</div>
-          <div style="font-size:11px;color:var(--dim);margin-top:2px">${a.ts} · <span style="color:#fbbf24">offen</span></div>
-          ${result}
-        </div>
-        <button onclick="pjAuftragStart('${a.id}')" title="Jetzt starten"
-          style="padding:4px 10px;background:linear-gradient(135deg,#8b5cf6,#ec4899);border:none;
-                 border-radius:6px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">▶ Start</button>
-        <button onclick="pjAuftragErledigt('${a.id}')" title="Als erledigt markieren"
-          style="padding:4px 8px;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.25);
-                 border-radius:6px;color:#4ade80;font-size:12px;cursor:pointer;flex-shrink:0">✓</button>
-      </div>
-    </div>`;
-  });
-  laufend.forEach(a => {
-    h += `<div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.35);border-radius:8px;padding:8px 12px;margin-bottom:6px">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="animation:kif-pulse 1s infinite;font-size:16px">🔄</span>
-        <div style="flex:1"><div style="font-size:13px;color:#c4b5fd">${a.text.replace(/</g,'&lt;')}</div>
-          <div style="font-size:11px;color:var(--dim)">In Bearbeitung</div></div>
-        <button onclick="pjAuftragErledigt('${a.id}')"
-          style="padding:4px 8px;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.25);
-                 border-radius:6px;color:#4ade80;font-size:12px;cursor:pointer">✓</button>
-      </div>
-    </div>`;
-  });
-  if (done.length) {
-    h += `<details style="margin-top:6px"><summary style="font-size:12px;color:var(--dim);cursor:pointer;user-select:none">✅ ${done.length} erledigte Aufgabe${done.length>1?'n':''}</summary>
-    <div style="margin-top:6px">` +
-    done.slice().reverse().map(a => {
-      const result = a.result ? `<div style="margin-top:3px;font-size:11px;color:#86efac;padding:4px 6px;background:rgba(74,222,128,0.06);border-radius:4px">${a.result.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>` : '';
-      return `<div style="background:rgba(74,222,128,0.04);border:1px solid rgba(74,222,128,0.12);border-radius:7px;padding:7px 10px;margin-bottom:4px">
-        <div style="font-size:13px;color:var(--dim);text-decoration:line-through">${a.text.replace(/</g,'&lt;')}</div>
-        <div style="font-size:11px;color:var(--dim);margin-top:1px">${a.ts_done||a.ts}</div>${result}</div>`;
-    }).join('') + '</div></details>';
-  }
-  el.innerHTML = h || '<div style="font-size:13px;color:var(--dim);padding:4px 0">Keine Aufgaben — oben eingeben.</div>';
-  document.getElementById('pj-aufgaben-count').textContent =
-    `${offen.length} offen${laufend.length ? ' · '+laufend.length+' laufend' : ''}`;
-}
-
-async function pjAddAuftrag() {
-  const input = document.getElementById('pj-auftrag-input');
-  const text = input.value.trim();
-  if (!text || !_pjCurrent) return;
-  input.value = '';
-  await fetch(API + '/api/projekte/auftrag/add', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({pid: _pjCurrent.id, text})
-  });
-  const p = await fetch(API + '/api/projekte/load?id=' + encodeURIComponent(_pjCurrent.id)).then(r => r.json());
-  _pjCurrent.auftraege = p.auftraege || [];
-  pjRenderAuftraege(_pjCurrent.auftraege);
-}
-
-async function pjAuftragStart(auftragId) {
-  if (!_pjCurrent) return;
-  await fetch(API + '/api/projekte/auftrag/status', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({pid: _pjCurrent.id, id: auftragId, status: 'in_progress'})
-  });
-  const p = await fetch(API + '/api/projekte/load?id=' + encodeURIComponent(_pjCurrent.id)).then(r => r.json());
-  _pjCurrent.auftraege = p.auftraege || [];
-  pjRenderAuftraege(_pjCurrent.auftraege);
-}
-
-async function pjAuftragErledigt(auftragId) {
-  if (!_pjCurrent) return;
-  await fetch(API + '/api/projekte/auftrag/status', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({pid: _pjCurrent.id, id: auftragId, status: 'erledigt'})
-  });
-  const p = await fetch(API + '/api/projekte/load?id=' + encodeURIComponent(_pjCurrent.id)).then(r => r.json());
-  _pjCurrent.auftraege = p.auftraege || [];
-  pjRenderAuftraege(_pjCurrent.auftraege);
-}
-
 function pjIconPicker() {
-  const icons = ['📁','🎓','🏡','✈️','💡','🔬','🎯','🏆','🛠️','📊','🌍','🎨','💻','📚','🔧'];
-  const current = document.getElementById('pj-icon-display').textContent.trim();
-  const chosen = icons[(icons.indexOf(current)+1) % icons.length];
-  document.getElementById('pj-icon-display').textContent = chosen;
+  const icons = ['📁','🎓','🏡','✈️','💡','🔬','🎯','🏆','🛠️','📊','🌍','🎨','💻','📚','🔧','🗒️','⭐','🚀'];
+  const cur = document.getElementById('pj-icon-display').textContent.trim();
+  document.getElementById('pj-icon-display').textContent = icons[(icons.indexOf(cur)+1)%icons.length];
 }
 
-// Klick außerhalb schließt Dropdown
+// ── Items ──────────────────────────────────────────────────────────────────
+
+function pjAddItem() {
+  const inp = document.getElementById('pj-item-input');
+  const text = inp.value.trim();
+  if (!text || !_pjCurrent) return;
+  inp.value = '';
+  const id = 'i' + Date.now();
+  _pjCurrent.items.push({id, text, checked: false});
+  pjRenderItems();
+  pjSave(true);
+  inp.focus();
+}
+
+function pjRenderItems() {
+  const el = document.getElementById('pj-items-list');
+  if (!el || !_pjCurrent) return;
+  const items = _pjCurrent.items || [];
+  if (!items.length) { el.innerHTML = '<div style="font-size:13px;color:var(--dim);padding:4px 2px">Noch keine Einträge — oben eingeben.</div>'; pjUpdateSelCount(); return; }
+  el.innerHTML = items.map((it, idx) => `
+    <div id="pj-item-${it.id}" draggable="true"
+      ondragstart="pjDragStart(event,'${it.id}')"
+      ondragover="pjDragOver(event,'${it.id}')"
+      ondrop="pjDrop(event,'${it.id}')"
+      ondragleave="pjDragLeave(event)"
+      style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;background:${it.checked?'rgba(139,92,246,0.07)':'transparent'};border:1px solid ${it.checked?'rgba(139,92,246,0.2)':'transparent'};transition:background .15s"
+      onmouseenter="this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.background='${it.checked?'rgba(139,92,246,0.07)':'transparent'}'">
+      <span style="cursor:grab;color:var(--dim);font-size:14px;flex-shrink:0;user-select:none">⠿</span>
+      <input type="checkbox" ${it.checked?'checked':''} onchange="pjToggleCheck('${it.id}',this.checked)"
+        style="accent-color:#8b5cf6;width:14px;height:14px;cursor:pointer;flex-shrink:0">
+      <div id="pj-item-text-${it.id}" ondblclick="pjEditItemInline('${it.id}')"
+        style="flex:1;font-size:13px;color:${it.checked?'#c4b5fd':'var(--bright)'};cursor:text;line-height:1.4;${it.checked?'text-decoration:line-through;opacity:.7':''}">${escHtml(it.text)}</div>
+      <button onclick="pjMoveItem('${it.id}',-1)" title="Nach oben" style="background:none;border:none;color:var(--dim);font-size:13px;cursor:pointer;padding:0 2px;line-height:1" ${idx===0?'style="opacity:.2"':''}>▲</button>
+      <button onclick="pjMoveItem('${it.id}',1)" title="Nach unten" style="background:none;border:none;color:var(--dim);font-size:13px;cursor:pointer;padding:0 2px;line-height:1" ${idx===items.length-1?'style="opacity:.2"':''}>▼</button>
+      <button onclick="pjDeleteItem('${it.id}')" style="background:none;border:none;color:var(--dim);font-size:13px;cursor:pointer;padding:0 3px;line-height:1" title="Löschen">✕</button>
+    </div>`).join('');
+  pjUpdateSelCount();
+}
+
+function pjEditItemInline(id) {
+  const it = _pjCurrent.items.find(i => i.id === id);
+  if (!it) return;
+  const div = document.getElementById('pj-item-text-' + id);
+  if (!div) return;
+  div.innerHTML = `<input type="text" value="${escHtml(it.text)}" onblur="pjCommitEdit('${id}',this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value='${escHtml(it.text)}';this.blur();}"
+    style="width:100%;background:var(--card);border:1px solid var(--accent);border-radius:4px;color:var(--bright);font-size:13px;padding:2px 6px;outline:none;font-family:inherit">`;
+  div.querySelector('input').focus();
+}
+
+function pjCommitEdit(id, val) {
+  const it = _pjCurrent.items.find(i => i.id === id);
+  if (it && val.trim()) { it.text = val.trim(); pjSave(true); }
+  pjRenderItems();
+}
+
+function pjToggleCheck(id, checked) {
+  const it = _pjCurrent.items.find(i => i.id === id);
+  if (it) { it.checked = checked; pjRenderItems(); }
+}
+
+function pjMoveItem(id, dir) {
+  const items = _pjCurrent.items;
+  const idx = items.findIndex(i => i.id === id);
+  if (idx < 0) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= items.length) return;
+  [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
+  pjRenderItems();
+  pjSave(true);
+}
+
+function pjDeleteItem(id) {
+  _pjCurrent.items = _pjCurrent.items.filter(i => i.id !== id);
+  pjRenderItems();
+  pjSave(true);
+}
+
+function pjDeleteSelected() {
+  const sel = _pjCurrent.items.filter(i => i.checked);
+  if (!sel.length) return;
+  if (!confirm(`${sel.length} markierte Einträge löschen?`)) return;
+  _pjCurrent.items = _pjCurrent.items.filter(i => !i.checked);
+  pjRenderItems();
+  pjSave(true);
+}
+
+function pjUpdateSelCount() {
+  const n = (_pjCurrent?.items||[]).filter(i => i.checked).length;
+  const el = document.getElementById('pj-sel-count');
+  if (el) el.textContent = n ? `${n} ausgewählt` : '';
+}
+
+function pjCopySelected() {
+  const items = (_pjCurrent?.items||[]).filter(i => i.checked);
+  if (!items.length) { alert('Nichts ausgewählt.'); return; }
+  const text = items.map(i => '• ' + i.text).join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    const el = document.getElementById('pj-sel-count');
+    if (el) { const old = el.textContent; el.textContent = '✓ Kopiert!'; setTimeout(()=>el.textContent=old, 1500); }
+  });
+}
+
+function pjDownloadWord() {
+  const items = (_pjCurrent?.items||[]).filter(i => i.checked);
+  if (!items.length) { alert('Nichts ausgewählt.'); return; }
+  const title = _pjCurrent.title || 'Projekt';
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+<head><meta charset="utf-8"><style>body{font-family:Calibri,Arial,sans-serif;margin:2cm}h1{color:#1a3a6b;font-size:18pt}li{font-size:12pt;line-height:1.8}</style></head>
+<body><h1>${escHtml(title)}</h1><p style="color:#666;font-size:10pt">Erstellt: ${new Date().toLocaleDateString('de-DE')}</p><ul>
+${items.map(i=>`<li>${escHtml(i.text)}</li>`).join('')}</ul>
+</body></html>`;
+  const blob = new Blob([html], {type:'application/msword'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=title.replace(/[^a-zA-Z0-9äöüÄÖÜ ]/g,'_')+'.doc'; a.click(); URL.revokeObjectURL(url);
+}
+
+// Drag & Drop
+function pjDragStart(e, id) { _pjDragItem = id; e.dataTransfer.effectAllowed = 'move'; }
+function pjDragOver(e, id) { e.preventDefault(); document.getElementById('pj-item-'+id)?.style.setProperty('border-color','var(--accent)'); }
+function pjDragLeave(e) { e.currentTarget?.style.setProperty('border-color','transparent'); }
+function pjDrop(e, targetId) {
+  e.preventDefault();
+  e.currentTarget?.style.setProperty('border-color','transparent');
+  if (!_pjDragItem || _pjDragItem === targetId) return;
+  const items = _pjCurrent.items;
+  const fromIdx = items.findIndex(i => i.id === _pjDragItem);
+  const toIdx   = items.findIndex(i => i.id === targetId);
+  if (fromIdx < 0 || toIdx < 0) return;
+  const [moved] = items.splice(fromIdx, 1);
+  items.splice(toIdx, 0, moved);
+  _pjDragItem = null;
+  pjRenderItems();
+  pjSave(true);
+}
+
+// ── Prompt ──────────────────────────────────────────────────────────────────
+
+async function pjSendPrompt() {
+  const inp = document.getElementById('pj-prompt-input');
+  const prompt = inp.value.trim();
+  if (!prompt) return;
+  const btn = document.getElementById('pj-send-btn');
+  const status = document.getElementById('pj-prompt-status');
+  const antwortEl = document.getElementById('pj-prompt-antwort');
+  const antwortText = document.getElementById('pj-prompt-antwort-text');
+  btn.disabled = true; btn.textContent = '⏳ Bolla antwortet…';
+  status.textContent = ''; antwortEl.style.display = 'block'; antwortText.textContent = '';
+  _pjCurrentPrompt = {prompt, antwort: ''};
+
+  try {
+    const resp = await fetch(API + '/api/bolla/chat', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message: prompt})
+    });
+    if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status);
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream:true});
+      let nl;
+      while ((nl = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, nl).trim(); buffer = buffer.slice(nl+1);
+        if (!line) continue;
+        let ev; try { ev = JSON.parse(line); } catch(e) { continue; }
+        if (ev.type === 'result' && ev.result) {
+          _pjCurrentPrompt.antwort = ev.result;
+          antwortText.textContent = ev.result;
+        } else if (ev.type === 'assistant' && ev.message) {
+          const txt = (ev.message.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('');
+          if (txt) { _pjCurrentPrompt.antwort = txt; antwortText.textContent = txt; }
+        }
+      }
+    }
+  } catch(e) {
+    antwortText.textContent = 'Fehler: ' + e.message;
+  }
+  btn.disabled = false; btn.innerHTML = '🚀 Abschicken <span style="opacity:.7;font-size:11px">(Strg+Enter)</span>';
+}
+
+function pjArchivePrompt() {
+  if (!_pjCurrentPrompt || !_pjCurrent) return;
+  const id = 'p' + Date.now();
+  _pjCurrent.prompts.push({
+    id, prompt: _pjCurrentPrompt.prompt, antwort: _pjCurrentPrompt.antwort,
+    ts: new Date().toLocaleString('de-DE', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+  });
+  document.getElementById('pj-prompt-antwort').style.display = 'none';
+  document.getElementById('pj-prompt-input').value = '';
+  _pjCurrentPrompt = null;
+  pjRenderArchiv();
+  pjSave(true);
+}
+
+function pjCopyPromptAsAuftrag() {
+  const text = document.getElementById('pj-prompt-input').value.trim();
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const el = document.getElementById('pj-prompt-status');
+    el.textContent = '✓ In Zwischenablage'; setTimeout(()=>el.textContent='', 1500);
+  });
+}
+
+function pjRenderArchiv() {
+  const wrap = document.getElementById('pj-archiv-wrap');
+  const body = document.getElementById('pj-archiv-body');
+  const count = document.getElementById('pj-archiv-count');
+  const prompts = (_pjCurrent?.prompts || []).slice().reverse();
+  if (!prompts.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  count.textContent = prompts.length + ' Einträge';
+  body.innerHTML = prompts.map(p => `
+    <div style="background:rgba(74,222,128,0.04);border:1px solid rgba(74,222,128,0.12);border-radius:8px;padding:10px 12px">
+      <div style="font-size:11px;color:var(--dim);margin-bottom:4px">${p.ts}</div>
+      <div style="font-size:13px;color:#c4b5fd;margin-bottom:5px;font-weight:600">${escHtml(p.prompt)}</div>
+      <div style="font-size:12px;color:var(--text);white-space:pre-wrap;line-height:1.5">${escHtml(p.antwort||'')}</div>
+    </div>`).join('');
+}
+
 document.addEventListener('click', e => {
   const dd = document.getElementById('pj-list-dropdown');
   const btn = document.getElementById('pj-list-btn');
-  if (dd && !dd.contains(e.target) && btn && !btn.contains(e.target))
-    dd.style.display = 'none';
+  if (dd && !dd.contains(e.target) && btn && !btn.contains(e.target)) dd.style.display = 'none';
 });
 
 // ============ BOLLA STREAMING + TOOL-CALL RENDERING ============

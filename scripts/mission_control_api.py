@@ -1499,7 +1499,7 @@ def projekte_load(pid):
             return p
     return None
 
-def projekte_save(pid, title, icon, content, auftraege=None):
+def projekte_save(pid, title, icon, content, auftraege=None, items=None, prompts=None):
     data = _projekte_load()
     projects = data.get("projects", [])
     now = datetime.now().strftime("%Y-%m-%d")
@@ -1511,13 +1511,17 @@ def projekte_save(pid, title, icon, content, auftraege=None):
             p["updated"] = now
             if auftraege is not None:
                 p["auftraege"] = auftraege
+            if items is not None:
+                p["items"] = items
+            if prompts is not None:
+                p["prompts"] = prompts
             data["current"] = pid
             _projekte_save_raw(data)
             return {"ok": True}
-    # Neu anlegen
     projects.append({"id": pid, "title": title, "icon": icon,
                      "created": now, "updated": now,
-                     "content": content, "auftraege": auftraege or []})
+                     "content": content, "auftraege": auftraege or [],
+                     "items": items or [], "prompts": prompts or []})
     data["current"] = pid
     _projekte_save_raw(data)
     return {"ok": True, "new": True}
@@ -4797,7 +4801,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(projekte_save(
                     body.get("id",""), body.get("title","Neues Projekt"),
                     body.get("icon","📁"), body.get("content",""),
-                    body.get("auftraege")))
+                    body.get("auftraege"), body.get("items"), body.get("prompts")))
             elif self.path == "/api/projekte/new":
                 import uuid, time
                 new_id = "projekt-" + str(int(time.time()))
