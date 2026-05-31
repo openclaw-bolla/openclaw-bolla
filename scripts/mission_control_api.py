@@ -4169,6 +4169,26 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header("Content-Type","image/png"); self.send_header("Content-Length",str(len(data)))
                 self.end_headers(); self.wfile.write(data); return
 
+            if self.path == "/api/memory":
+                import re as _re
+                mem_file = os.path.expanduser("~/.claude/projects/-home-bolla/memory/MEMORY.md")
+                try:
+                    with open(mem_file) as f:
+                        lines = f.read().splitlines()
+                    entries, section = [], None
+                    for line in lines:
+                        line = line.strip()
+                        if line.startswith("## "):
+                            section = line[3:]
+                        elif line.startswith("- ["):
+                            m = _re.match(r'- \[([^\]]+)\]\(([^)]+)\)(?:\s+[—–-]+\s+(.+))?', line)
+                            if m:
+                                entries.append({"title": m.group(1), "file": m.group(2), "desc": m.group(3) or "", "section": section})
+                    self._send_json({"entries": entries, "count": len(entries)})
+                except Exception as e:
+                    self._send_json({"error": str(e)}, status=500)
+                return
+
             if self.path == "/api/kiforum/bg":
                 p = Path(os.path.join(WORKSPACE, "data/kif_room_bg.jpg"))
                 if not p.exists(): self._send_json({"error":"not found"},status=404); return
