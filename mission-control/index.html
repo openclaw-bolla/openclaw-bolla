@@ -7659,16 +7659,37 @@ function pjRenderItems() {
       ondragover="pjDragOver(event,'${it.id}')"
       ondrop="pjDrop(event,'${it.id}')"
       ondragleave="pjDragLeave(event)"
-      style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;background:${it.checked?'rgba(139,92,246,0.07)':'transparent'};border:1px solid ${it.checked?'rgba(139,92,246,0.2)':'transparent'};transition:background .15s"
-      onmouseenter="this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.background='${it.checked?'rgba(139,92,246,0.07)':'transparent'}'">
-      <span style="cursor:grab;color:var(--dim);font-size:14px;flex-shrink:0;user-select:none">⠿</span>
-      <input type="checkbox" ${it.checked?'checked':''} onchange="pjToggleCheck('${it.id}',this.checked)"
-        style="accent-color:#8b5cf6;width:14px;height:14px;cursor:pointer;flex-shrink:0">
-      <div id="pj-item-text-${it.id}" ondblclick="pjEditItemInline('${it.id}')"
-        style="flex:1;font-size:13px;color:${it.checked?'#c4b5fd':'var(--bright)'};cursor:text;line-height:1.4;${it.checked?'text-decoration:line-through;opacity:.7':''}">${escHtml(it.text)}</div>
-      <button onclick="pjMoveItem('${it.id}',-1)" title="Nach oben" style="background:none;border:none;color:var(--dim);font-size:13px;cursor:pointer;padding:0 2px;line-height:1" ${idx===0?'style="opacity:.2"':''}>▲</button>
-      <button onclick="pjMoveItem('${it.id}',1)" title="Nach unten" style="background:none;border:none;color:var(--dim);font-size:13px;cursor:pointer;padding:0 2px;line-height:1" ${idx===items.length-1?'style="opacity:.2"':''}>▼</button>
-      <button onclick="pjDeleteItem('${it.id}')" style="background:none;border:none;color:var(--dim);font-size:13px;cursor:pointer;padding:0 3px;line-height:1" title="Löschen">✕</button>
+      style="border-radius:8px;border:1px solid ${it.ergebnis?'rgba(139,92,246,0.25)':'rgba(255,255,255,0.05)'};background:${it.ergebnis?'rgba(139,92,246,0.05)':'transparent'};margin-bottom:3px;overflow:hidden">
+      <!-- Hauptzeile -->
+      <div style="display:flex;align-items:center;gap:7px;padding:6px 8px"
+        onmouseenter="this.style.background='rgba(255,255,255,0.03)'" onmouseleave="this.style.background='transparent'">
+        <span draggable="true" style="cursor:grab;color:var(--dim);font-size:13px;flex-shrink:0;user-select:none">⠿</span>
+        <input type="checkbox" ${it.checked?'checked':''} onchange="pjToggleCheck('${it.id}',this.checked)"
+          style="accent-color:#8b5cf6;width:13px;height:13px;cursor:pointer;flex-shrink:0">
+        <div id="pj-item-text-${it.id}" onclick="pjEditItemInline('${it.id}')"
+          style="flex:1;font-size:13px;color:var(--bright);cursor:text;line-height:1.4;min-width:0">${escHtml(it.text)}</div>
+        <button onclick="pjStartItem('${it.id}')" title="Als Prompt an Bolla schicken"
+          style="padding:3px 10px;background:linear-gradient(135deg,#8b5cf6,#ec4899);border:none;border-radius:5px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap">▶ Start</button>
+        <button onclick="pjMoveItem('${it.id}',-1)" style="background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;padding:0 2px" title="Nach oben">▲</button>
+        <button onclick="pjMoveItem('${it.id}',1)"  style="background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;padding:0 2px" title="Nach unten">▼</button>
+        <button onclick="pjDeleteItem('${it.id}')"  style="background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;padding:0 3px" title="Löschen">✕</button>
+      </div>
+      <!-- Ergebnis-Feld -->
+      ${it.ergebnis ? `
+      <div style="padding:8px 12px 10px 36px;border-top:1px solid rgba(139,92,246,0.15)">
+        <div style="font-size:11px;color:#c4b5fd;margin-bottom:4px">🤖 Ergebnis ${it.ergebnis_ts?'· '+it.ergebnis_ts:''}</div>
+        <div style="font-size:12px;color:var(--text);white-space:pre-wrap;line-height:1.55">${escHtml(it.ergebnis)}</div>
+        <button onclick="pjClearItemResult('${it.id}')" style="margin-top:6px;padding:2px 8px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:var(--dim);font-size:11px;cursor:pointer">✕ Ergebnis löschen</button>
+      </div>` : ''}
+      <!-- Laufendes Ergebnis (Streaming) -->
+      <div id="pj-stream-${it.id}" style="display:none;padding:8px 12px 10px 36px;border-top:1px solid rgba(139,92,246,0.15)">
+        <div style="font-size:11px;color:#c4b5fd;margin-bottom:4px">🤖 Bolla antwortet…</div>
+        <div id="pj-stream-text-${it.id}" style="font-size:12px;color:var(--text);white-space:pre-wrap;line-height:1.55"></div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button onclick="pjSaveItemResult('${it.id}')" style="padding:3px 10px;background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.3);border-radius:4px;color:#4ade80;font-size:11px;cursor:pointer">💾 Speichern</button>
+          <button onclick="document.getElementById('pj-stream-${it.id}').style.display='none'" style="padding:3px 8px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:var(--dim);font-size:11px;cursor:pointer">✕</button>
+        </div>
+      </div>
     </div>`).join('');
   pjUpdateSelCount();
 }
@@ -7677,16 +7698,74 @@ function pjEditItemInline(id) {
   const it = _pjCurrent.items.find(i => i.id === id);
   if (!it) return;
   const div = document.getElementById('pj-item-text-' + id);
-  if (!div) return;
-  div.innerHTML = `<input type="text" value="${escHtml(it.text)}" onblur="pjCommitEdit('${id}',this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value='${escHtml(it.text)}';this.blur();}"
+  if (!div || div.querySelector('input')) return;
+  const oldText = it.text;
+  div.innerHTML = `<input type="text" value="${escHtml(it.text)}"
+    onblur="pjCommitEdit('${id}',this.value)"
+    onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){pjCommitEdit('${id}','${escHtml(oldText)}')}"
     style="width:100%;background:var(--card);border:1px solid var(--accent);border-radius:4px;color:var(--bright);font-size:13px;padding:2px 6px;outline:none;font-family:inherit">`;
   div.querySelector('input').focus();
 }
 
 function pjCommitEdit(id, val) {
   const it = _pjCurrent.items.find(i => i.id === id);
-  if (it && val.trim()) { it.text = val.trim(); pjSave(true); }
+  if (it) { it.text = val.trim() || it.text; pjSave(true); }
   pjRenderItems();
+}
+
+async function pjStartItem(id) {
+  const it = _pjCurrent.items.find(i => i.id === id);
+  if (!it) return;
+  const streamWrap = document.getElementById('pj-stream-' + id);
+  const streamText = document.getElementById('pj-stream-text-' + id);
+  if (!streamWrap || !streamText) return;
+  streamWrap.style.display = 'block';
+  streamText.textContent = '';
+  let antwort = '';
+  try {
+    const resp = await fetch(API + '/api/bolla/chat', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message: it.text})
+    });
+    if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status);
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream:true});
+      let nl;
+      while ((nl = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, nl).trim(); buffer = buffer.slice(nl+1);
+        if (!line) continue;
+        let ev; try { ev = JSON.parse(line); } catch(e) { continue; }
+        if (ev.type === 'result' && ev.result) { antwort = ev.result; streamText.textContent = ev.result; }
+        else if (ev.type === 'assistant' && ev.message) {
+          const txt = (ev.message.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('');
+          if (txt) { antwort = txt; streamText.textContent = txt; }
+        }
+      }
+    }
+  } catch(e) { streamText.textContent = 'Fehler: ' + e.message; }
+  // Antwort im Item zwischenspeichern für "Speichern"-Button
+  it._pendingAntwort = antwort;
+}
+
+function pjSaveItemResult(id) {
+  const it = _pjCurrent.items.find(i => i.id === id);
+  if (!it) return;
+  const streamText = document.getElementById('pj-stream-text-' + id);
+  it.ergebnis = it._pendingAntwort || (streamText ? streamText.textContent : '');
+  it.ergebnis_ts = new Date().toLocaleString('de-DE', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  delete it._pendingAntwort;
+  pjSave(true);
+  pjRenderItems();
+}
+
+function pjClearItemResult(id) {
+  const it = _pjCurrent.items.find(i => i.id === id);
+  if (it) { delete it.ergebnis; delete it.ergebnis_ts; pjSave(true); pjRenderItems(); }
 }
 
 function pjToggleCheck(id, checked) {
