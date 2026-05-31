@@ -982,7 +982,7 @@ html, body {
                           cursor:pointer;transition:border-color .2s;background:var(--card)">
                 <div id="korr-drop-hint" style="color:var(--dim);font-size:14px">
                   <span style="font-size:32px;display:block;margin-bottom:6px">📂</span>
-                  Datei hier reinziehen oder <span style="color:var(--accent)">klicken zum Auswählen</span><br>
+                  Datei hier reinziehen · klicken · oder <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:3px;padding:1px 5px;font-size:12px">Strg+V</kbd><br>
                   <span style="font-size:13px">JPG · PNG · PDF</span>
                 </div>
                 <div id="korr-preview-wrap" style="display:none">
@@ -7017,19 +7017,37 @@ function clipboardFileSelected(e) {
 }
 
 document.addEventListener('paste', e => {
-  if (document.getElementById('page-clipboard')?.style.display === 'none') return;
+  // Nicht feuern wenn in einem Eingabefeld getippt wird
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
   const items = e.clipboardData?.items;
   if (!items) return;
+  let file = null;
   for (const item of items) {
-    if (item.type.startsWith('image/')) {
-      const file = item.getAsFile();
-      if (file) {
-        const z = document.getElementById('clipboard-drop-zone');
-        if (z) { z.style.borderColor = 'var(--accent)'; z.style.background = 'color-mix(in srgb, var(--accent) 8%, transparent)'; setTimeout(() => { z.style.borderColor = ''; z.style.background = ''; }, 800); }
-        _clipboardUpload(file);
-      }
-      break;
-    }
+    if (item.type.startsWith('image/')) { file = item.getAsFile(); break; }
+  }
+  if (!file) return;
+
+  const pageVisible = id => document.getElementById(id)?.style.display !== 'none';
+
+  if (pageVisible('page-clipboard')) {
+    const z = document.getElementById('clipboard-drop-zone');
+    if (z) { z.style.borderColor = 'var(--accent)'; z.style.background = 'color-mix(in srgb, var(--accent) 8%, transparent)'; setTimeout(() => { z.style.borderColor = ''; z.style.background = ''; }, 800); }
+    _clipboardUpload(file);
+  } else if (pageVisible('page-korrektur')) {
+    korrHandleFile(file);
+    const z = document.getElementById('korr-dropzone');
+    if (z) { z.style.borderColor = 'var(--accent)'; setTimeout(() => z.style.borderColor = 'var(--border)', 800); }
+  } else if (pageVisible('page-bildgen')) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      document.getElementById('bildgen-upload-img').src = ev.target.result;
+      document.getElementById('bildgen-upload-preview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+    // File ins Input schreiben damit bildgenGenerate() es findet
+    const dt = new DataTransfer(); dt.items.add(file);
+    document.getElementById('bildgen-file').files = dt.files;
   }
 });
 
