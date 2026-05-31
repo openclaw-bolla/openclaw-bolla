@@ -7674,12 +7674,16 @@ function pjRenderItems() {
         <button onclick="pjMoveItem('${it.id}',1)"  style="background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;padding:0 2px" title="Nach unten">▼</button>
         <button onclick="pjDeleteItem('${it.id}')"  style="background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;padding:0 3px" title="Löschen">✕</button>
       </div>
-      <!-- Ergebnis-Feld -->
+      <!-- Ergebnis-Feld (eingeklappbar) -->
       ${it.ergebnis ? `
-      <div style="padding:8px 12px 10px 36px;border-top:1px solid rgba(139,92,246,0.15)">
-        <div style="font-size:11px;color:#c4b5fd;margin-bottom:4px">🤖 Ergebnis ${it.ergebnis_ts?'· '+it.ergebnis_ts:''}</div>
-        <div style="font-size:12px;color:var(--text);white-space:pre-wrap;line-height:1.55">${escHtml(it.ergebnis)}</div>
-        <button onclick="pjClearItemResult('${it.id}')" style="margin-top:6px;padding:2px 8px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:var(--dim);font-size:11px;cursor:pointer">✕ Ergebnis löschen</button>
+      <div style="border-top:1px solid rgba(139,92,246,0.15)">
+        <button onclick="pjToggleResult('${it.id}')" style="width:100%;text-align:left;background:none;border:none;padding:5px 12px 5px 36px;color:#c4b5fd;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:5px">
+          <span id="pj-result-arrow-${it.id}">▸</span> 🤖 Ergebnis ${it.ergebnis_ts?'· '+it.ergebnis_ts:''}
+        </button>
+        <div id="pj-result-${it.id}" style="display:none;padding:0 12px 10px 36px">
+          <div style="font-size:12px;color:var(--text);white-space:pre-wrap;line-height:1.55">${escHtml(it.ergebnis)}</div>
+          <button onclick="pjClearItemResult('${it.id}')" style="margin-top:6px;padding:2px 8px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:var(--dim);font-size:11px;cursor:pointer">✕ Ergebnis löschen</button>
+        </div>
       </div>` : ''}
       <!-- Laufendes Ergebnis (Streaming) -->
       <div id="pj-stream-${it.id}" style="display:none;padding:8px 12px 10px 36px;border-top:1px solid rgba(139,92,246,0.15)">
@@ -7692,6 +7696,15 @@ function pjRenderItems() {
       </div>
     </div>`).join('');
   pjUpdateSelCount();
+}
+
+function pjToggleResult(id) {
+  const div = document.getElementById('pj-result-' + id);
+  const arrow = document.getElementById('pj-result-arrow-' + id);
+  if (!div) return;
+  const open = div.style.display !== 'none';
+  div.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.textContent = open ? '▸' : '▾';
 }
 
 function pjEditItemInline(id) {

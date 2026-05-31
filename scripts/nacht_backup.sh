@@ -15,7 +15,7 @@ log "=== Backup gestartet (heute: $TODAY) ==="
 cd "$WORKSPACE" || { log "ERROR: cd workspace fehlgeschlagen"; exit 1; }
 
 if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
-    git add mission-control/index.html scripts/mission_control_api.py scripts/ memory/ korrektur/ 2>>"$LOG"
+    git add -A 2>>"$LOG"
     git commit -m "Automatische Nachtsicherung $TODAY" 2>>"$LOG" \
         && log "git commit OK" || log "git commit: nichts Neues oder Fehler (OK)"
 fi
@@ -41,7 +41,7 @@ mkdir -p "$DEST" 2>>"$LOG"
 if nice -n 19 ionice -c 3 rsync -rt --delete --no-perms --no-owner --no-group -q \
         --exclude 'cache/' \
         --exclude 'file-history/' \
-        --exclude 'projects/-mnt-c-Users-ernst/' \
+        --exclude 'projects/-home-bolla/*.jsonl' \
         --exclude '.credentials.json' \
         /home/bolla/.claude/ "$DEST/" 2>>"$LOG"; then
     log "OneDrive-Backup OK (rsync, ohne aktive Session)"
