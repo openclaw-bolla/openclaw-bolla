@@ -1480,7 +1480,7 @@ html, body {
               style="border:2px dashed var(--border);border-radius:8px;padding:32px 20px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;color:var(--dim);font-size:14px"
               onclick="document.getElementById('clipboard-file-input').click()">
               <div style="font-size:32px;margin-bottom:8px">📂</div>
-              <div>Bild hierher ziehen oder klicken zum Auswählen</div>
+              <div>Bild hierher ziehen · klicken · oder <kbd style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:3px;padding:1px 5px;font-size:12px">Strg+V</kbd></div>
               <div style="font-size:12px;margin-top:4px">PNG, JPG, GIF, WebP, BMP</div>
             </div>
             <input type="file" id="clipboard-file-input" accept="image/*" style="display:none" onchange="clipboardFileSelected(event)">
@@ -1726,7 +1726,7 @@ html, body {
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
                 <div style="font-size:13px;font-weight:700;color:#818cf8;text-transform:uppercase;letter-spacing:1px">🧠 Memory-Dateien</div>
                 <!-- BOLLA-UPDATED-START -->
-              <span style="font-size:11px;color:var(--dim)">Aktualisiert: 29.05.2026</span>
+              <span style="font-size:11px;color:var(--dim)">Aktualisiert: 31.05.2026</span>
               <!-- BOLLA-UPDATED-END -->
               </div>
               <div style="font-size:12px;color:var(--dim);margin-bottom:12px">~/.claude/projects/.../memory/ — wöchentlich automatisch aktualisiert</div>
@@ -1748,6 +1748,7 @@ html, body {
               <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #f59e0b"><div style="font-size:12px;font-weight:600;color:var(--bright)">💬 Memory-Disziplin</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Nach gelösten Problemen sofort Memory anlegen, ohne dass Chris erinnern muss</div></div>
               <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #f59e0b"><div style="font-size:12px;font-weight:600;color:var(--bright)">💬 Token-Warnung Wochenende</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Do/Fr Abend: vor tokenintensiven Aktionen Budget prüfen und warnen</div></div>
               <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #f59e0b"><div style="font-size:12px;font-weight:600;color:var(--bright)">💬 Word-Ausgaben Layout</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Ziel: 1 Seite; 2 Spalten wenn sinnvoll; Ausnahme technische Doku</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #22c55e"><div style="font-size:12px;font-weight:600;color:var(--bright)">📌 AIS.chat SH</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Früher Telli; kostenlose KI für SH-Lehrer; GPT-4o+Claude+Gemini; ais.chat</div></div>
               <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #22c55e"><div style="font-size:12px;font-weight:600;color:var(--bright)">📌 Bolla Songs</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Schüler-Geburtstagslieder → "Bolla Songs"-Site, nicht Claude</div></div>
               <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #22c55e"><div style="font-size:12px;font-weight:600;color:var(--bright)">📌 RouteNote Upload-Formate</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Audio: MP3 320kbps + 44.1kHz (Suno=64kbps→ffmpeg nötig!); Cover: JPEG 3000×3000px</div></div>
               <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #f59e0b"><div style="font-size:12px;font-weight:600;color:var(--bright)">💬 Mic-Lösung</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Azure Speech SDK (seit 27.05.2026) ✅; Whisper + Web Speech API (Google) → beide verboten/kaputt</div></div>
@@ -7014,6 +7015,23 @@ function clipboardFileSelected(e) {
   _clipboardUpload(e.target.files[0]);
   e.target.value = '';
 }
+
+document.addEventListener('paste', e => {
+  if (document.getElementById('page-clipboard')?.style.display === 'none') return;
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (file) {
+        const z = document.getElementById('clipboard-drop-zone');
+        if (z) { z.style.borderColor = 'var(--accent)'; z.style.background = 'color-mix(in srgb, var(--accent) 8%, transparent)'; setTimeout(() => { z.style.borderColor = ''; z.style.background = ''; }, 800); }
+        _clipboardUpload(file);
+      }
+      break;
+    }
+  }
+});
 
 async function clipboardDeleteImage(filename) {
   await fetch('/api/clipboard/image/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({filename})});
