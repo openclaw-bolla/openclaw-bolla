@@ -7739,9 +7739,11 @@ function pjRenderItems() {
         </button>
         <div id="pj-result-${it.id}" style="display:none;padding:4px 12px 10px 36px">
           <textarea id="pj-result-ta-${it.id}"
-            style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(139,92,246,0.3);border-radius:6px;color:var(--text);font-size:12px;padding:7px 10px;font-family:inherit;resize:vertical;outline:none;line-height:1.55;min-height:60px"
+            style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(139,92,246,0.3);border-radius:6px;color:var(--text);font-size:12px;padding:7px 10px;font-family:inherit;resize:none;outline:none;line-height:1.55;min-height:60px;overflow:hidden"
             placeholder="Ergebnis, Notizen oder Prompt-Output hier eintragen…"
-            onfocus="this.style.borderColor='var(--accent)'" onblur="pjSaveResultFromTA('${it.id}')"
+            onfocus="this.style.borderColor='var(--accent)'"
+            oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+            onblur="pjSaveResultFromTA('${it.id}')"
           >${escHtml(it.ergebnis||'')}</textarea>
           ${it.ergebnis ? `<button onclick="pjClearItemResult('${it.id}')" style="margin-top:4px;padding:2px 8px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:var(--dim);font-size:11px;cursor:pointer">✕ Löschen</button>` : ''}
         </div>
@@ -7795,7 +7797,10 @@ function pjToggleResult(id) {
   const open = div.style.display !== 'none';
   div.style.display = open ? 'none' : 'block';
   if (arrow) arrow.textContent = open ? '▸' : '▾';
-  if (!open) setTimeout(() => document.getElementById('pj-result-ta-' + id)?.focus(), 50);
+  if (!open) setTimeout(() => {
+    const ta = document.getElementById('pj-result-ta-' + id);
+    if (ta) { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; ta.focus(); }
+  }, 50);
 }
 
 function pjSaveResultFromTA(id) {
@@ -7962,7 +7967,7 @@ function pjDownloadWord() {
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
 <head><meta charset="utf-8">
 <style>
-  body{font-family:Aptos,Calibri,sans-serif;margin:2.5cm 3cm;font-size:11pt}
+  body{font-family:Aptos,Calibri,sans-serif;margin:2cm;font-size:11pt}
   h1{font-family:Aptos,Calibri,sans-serif;color:#1e3a5f;font-size:18pt;margin:0 0 4pt}
   table{width:100%;border-collapse:collapse}
   th{font-family:Aptos,Calibri,sans-serif;font-size:10pt;background:#1e3a5f;color:#fff;padding:6pt 8pt;text-align:left}
