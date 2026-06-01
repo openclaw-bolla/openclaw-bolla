@@ -2782,6 +2782,19 @@ html, body {
               <div id="suno-hit-warning" style="display:none;margin-top:5px;padding:5px 10px;background:rgba(251,191,36,0.1);border-radius:6px;border:1px solid rgba(251,191,36,0.35);font-size:12px;color:#fbbf24">
                 ⚠️ Schwieriger Song für Suno — Sound kann stark abweichen. Stil-Hinweis unten empfohlen.
               </div>
+              <!-- Voice-Tipps -->
+              <div style="margin-top:6px">
+                <button onclick="const b=document.getElementById('suno-voice-tips');const a=document.getElementById('suno-voice-arrow');const open=b.style.display!=='none';b.style.display=open?'none':'block';a.textContent=open?'▸':'▾'"
+                  style="background:none;border:none;color:#818cf8;font-size:11px;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px">
+                  <span id="suno-voice-arrow">▸</span> 💡 Tipps wenn du deine eigene Stimme auf Suno nutzt
+                </button>
+                <div id="suno-voice-tips" style="display:none;margin-top:6px;padding:10px 12px;background:rgba(129,140,248,0.07);border:1px solid rgba(129,140,248,0.2);border-radius:8px;font-size:12px;line-height:1.7;color:var(--text)">
+                  <div style="margin-bottom:4px">🎤 <b>Strophen:</b> Rhythmisch <b>sprechen</b>, nicht singen — trocken und abgehackt wie der Originalkünstler. Kein Schlenker, kein Vibrato.</div>
+                  <div style="margin-bottom:4px">🎵 <b>Refrain:</b> Kurz und knackig singen, kein langer getragener Melodiebogen — sonst klingt alles schlagerig.</div>
+                  <div style="margin-bottom:4px">🚫 <b>Kein Kinderlied</b> als Basis (Hänschen Klein etc.) — das überschreibt jeden Style-Prompt egal wie gut.</div>
+                  <div>💾 <b>Gut gelungen?</b> Sofort herunterladen — Suno hat keinen Papierkorb!</div>
+                </div>
+              </div>
             </div>
             <div style="flex:1;min-width:180px">
               <label style="font-size:13px;color:var(--dim);display:block;margin-bottom:3px">Stil-Hinweis <span style="color:var(--accent);font-style:italic">(bei neuen/unbekannten Songs)</span></label>
@@ -7716,24 +7729,21 @@ function pjRenderItems() {
         <button onclick="pjMoveItem('${it.id}',1)"  style="background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;padding:0 2px" title="Nach unten">▼</button>
         <button onclick="pjDeleteItem('${it.id}')"  style="background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;padding:0 3px" title="Löschen">✕</button>
       </div>
-      <!-- Notiz-Zeile -->
-      <div style="padding:0 8px 6px 36px">
-        <div id="pj-note-${it.id}" onclick="pjEditNote('${it.id}')"
-          style="font-size:11px;color:var(--dim);cursor:text;line-height:1.4;min-height:14px;border-radius:4px;padding:2px 4px"
-          onmouseenter="this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.background=''"
-          title="Klicken zum Bearbeiten">${it.note ? escHtml(it.note) : '<span style="opacity:.35;font-style:italic">Notiz hinzufügen…</span>'}</div>
-      </div>
-      <!-- Ergebnis-Feld (eingeklappbar) -->
-      ${it.ergebnis ? `
-      <div style="border-top:1px solid rgba(139,92,246,0.15)">
-        <button onclick="pjToggleResult('${it.id}')" style="width:100%;text-align:left;background:none;border:none;padding:5px 12px 5px 36px;color:#c4b5fd;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:5px">
-          <span id="pj-result-arrow-${it.id}">▸</span> 🤖 Ergebnis ${it.ergebnis_ts?'· '+it.ergebnis_ts:''}
+      <!-- Ergebnis-Feld (immer da, ausklappbar, editierbar) -->
+      <div style="border-top:1px solid rgba(255,255,255,0.05)">
+        <button onclick="pjToggleResult('${it.id}')" style="width:100%;text-align:left;background:none;border:none;padding:4px 12px 4px 36px;color:${it.ergebnis?'#c4b5fd':'#555'};font-size:11px;cursor:pointer;display:flex;align-items:center;gap:5px">
+          <span id="pj-result-arrow-${it.id}">▸</span>
+          <span>${it.ergebnis ? ('🤖 Ergebnis'+(it.ergebnis_ts?' · '+it.ergebnis_ts:'')) : '📝 Ergebnis / Notiz'}</span>
         </button>
-        <div id="pj-result-${it.id}" style="display:none;padding:0 12px 10px 36px">
-          <div style="font-size:12px;color:var(--text);white-space:pre-wrap;line-height:1.55">${escHtml(it.ergebnis)}</div>
-          <button onclick="pjClearItemResult('${it.id}')" style="margin-top:6px;padding:2px 8px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:var(--dim);font-size:11px;cursor:pointer">✕ Ergebnis löschen</button>
+        <div id="pj-result-${it.id}" style="display:none;padding:4px 12px 10px 36px">
+          <textarea id="pj-result-ta-${it.id}"
+            style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(139,92,246,0.3);border-radius:6px;color:var(--text);font-size:12px;padding:7px 10px;font-family:inherit;resize:vertical;outline:none;line-height:1.55;min-height:60px"
+            placeholder="Ergebnis, Notizen oder Prompt-Output hier eintragen…"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="pjSaveResultFromTA('${it.id}')"
+          >${escHtml(it.ergebnis||'')}</textarea>
+          ${it.ergebnis ? `<button onclick="pjClearItemResult('${it.id}')" style="margin-top:4px;padding:2px 8px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:var(--dim);font-size:11px;cursor:pointer">✕ Löschen</button>` : ''}
         </div>
-      </div>` : ''}
+      </div>
       <!-- Laufendes Ergebnis (Streaming) -->
       <div id="pj-stream-${it.id}" style="display:none;padding:8px 12px 10px 36px;border-top:1px solid rgba(139,92,246,0.15)">
         <div style="font-size:11px;color:#c4b5fd;margin-bottom:4px">🤖 Bolla antwortet…</div>
@@ -7783,6 +7793,23 @@ function pjToggleResult(id) {
   const open = div.style.display !== 'none';
   div.style.display = open ? 'none' : 'block';
   if (arrow) arrow.textContent = open ? '▸' : '▾';
+  if (!open) setTimeout(() => document.getElementById('pj-result-ta-' + id)?.focus(), 50);
+}
+
+function pjSaveResultFromTA(id) {
+  const ta = document.getElementById('pj-result-ta-' + id);
+  const it = _pjCurrent?.items?.find(i => i.id === id);
+  if (!it || !ta) return;
+  const val = ta.value.trim();
+  if (val === (it.ergebnis || '')) return;
+  if (val) {
+    it.ergebnis = val;
+    it.ergebnis_ts = new Date().toLocaleDateString('de-DE');
+    if (!it.status || it.status === 'offen') { it.status = 'in-arbeit'; }
+  } else {
+    delete it.ergebnis; delete it.ergebnis_ts;
+  }
+  pjSave(true); pjRenderItems();
 }
 
 function pjEditItemInline(id) {
