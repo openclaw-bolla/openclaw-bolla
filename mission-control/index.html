@@ -2776,7 +2776,7 @@ html, body {
             <div style="flex:1;min-width:180px">
               <label style="font-size:13px;color:var(--dim);display:block;margin-bottom:3px">Hit-Orientierung (optional)</label>
               <input id="suno-hit" type="text" placeholder="z.B. Blinding Lights von The Weeknd"
-                oninput="sunoCheckDifficulty(this.value)"
+                oninput="sunoCheckDifficulty(this.value);sunoUpdateVoiceTips(this.value)"
                 style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
                        color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
               <div id="suno-hit-warning" style="display:none;margin-top:5px;padding:5px 10px;background:rgba(251,191,36,0.1);border-radius:6px;border:1px solid rgba(251,191,36,0.35);font-size:12px;color:#fbbf24">
@@ -2786,13 +2786,15 @@ html, body {
               <div style="margin-top:6px">
                 <button onclick="const b=document.getElementById('suno-voice-tips');const a=document.getElementById('suno-voice-arrow');const open=b.style.display!=='none';b.style.display=open?'none':'block';a.textContent=open?'▸':'▾'"
                   style="background:none;border:none;color:#818cf8;font-size:11px;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px">
-                  <span id="suno-voice-arrow">▸</span> 💡 Tipps wenn du deine eigene Stimme auf Suno nutzt
+                  <span id="suno-voice-arrow">▸</span> 💡 <span id="suno-voice-tip-label">Tipps wenn du deine eigene Stimme auf Suno nutzt</span>
                 </button>
                 <div id="suno-voice-tips" style="display:none;margin-top:6px;padding:10px 12px;background:rgba(129,140,248,0.07);border:1px solid rgba(129,140,248,0.2);border-radius:8px;font-size:12px;line-height:1.7;color:var(--text)">
-                  <div style="margin-bottom:4px">🎤 <b>Strophen:</b> Rhythmisch <b>sprechen</b>, nicht singen — trocken und abgehackt wie der Originalkünstler. Kein Schlenker, kein Vibrato.</div>
-                  <div style="margin-bottom:4px">🎵 <b>Refrain:</b> Kurz und knackig singen, kein langer getragener Melodiebogen — sonst klingt alles schlagerig.</div>
-                  <div style="margin-bottom:4px">🚫 <b>Kein Kinderlied</b> als Basis (Hänschen Klein etc.) — das überschreibt jeden Style-Prompt egal wie gut.</div>
-                  <div>💾 <b>Gut gelungen?</b> Sofort herunterladen — Suno hat keinen Papierkorb!</div>
+                  <div id="suno-voice-tip-body">
+                    <div style="margin-bottom:4px">🎤 <b>Strophen:</b> Singe im Stil des Songs — angepasst an das gewählte Genre.</div>
+                    <div style="margin-bottom:4px">🎵 <b>Refrain:</b> Kurz und knackig, kein langer getragener Melodiebogen — sonst klingt alles schlagerig.</div>
+                    <div style="margin-bottom:4px">🚫 <b>Keine Kinderlieder</b> als Basis — die Melodiekontur überschreibt jeden Style-Prompt.</div>
+                    <div>💾 <b>Gut gelungen?</b> Sofort herunterladen — Suno hat keinen Papierkorb!</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -11835,6 +11837,59 @@ function sunoCheckDifficulty(text) {
   const warn = document.getElementById('suno-hit-warning');
   if (!warn) return;
   warn.style.display = _SUNO_DIFFICULT.some(p => p.test(text)) ? '' : 'none';
+}
+
+function sunoUpdateVoiceTips(text) {
+  const body = document.getElementById('suno-voice-tip-body');
+  const label = document.getElementById('suno-voice-tip-label');
+  if (!body) return;
+  const t = text.toLowerCase();
+  const isRap = /\b(rap|hip.?hop|eminem|sido|montez|capital.?bra|bonez|ufo|farid|bushido|kollegah|drake|kendrick|kanye|snoop|lil |jay.z|2pac|tupac|biggie|cro\b|summer.?cem|rin\b|haiyti|ssio|gzuz|geldgott|04|187|haftbefehl|xatar|samy|kool|saz)\b/.test(t);
+  const isRock = /\b(rock|metal|rammstein|nirvana|acdc|ac.dc|guns.?n|foo.?fighters|linkin|greenday|punk|hardrock|heavy)\b/.test(t);
+  const isBallad = /\b(ballad|ballade|slow|langsam|adele|ed.?sheeran|james.?blunt|phil.?collins|celine|whitney|power.?ballad)\b/.test(t);
+  const isElectro = /\b(edm|techno|house|dance|electronic|dj|trance|dubstep|david.?guetta|tiesto|avicii|martin.?garrix|flume)\b/.test(t);
+
+  let tipLabel, tipHtml;
+
+  if (isRap) {
+    tipLabel = '🎤 Rap-Tipps für deine Stimme auf Suno';
+    tipHtml = `
+      <div style="margin-bottom:4px">🎤 <b>Strophen sprechen, nicht singen</b> — trocken, abgehackt, direkt im Beat-Rhythmus. Kein Vibrato, kein Schlenker.</div>
+      <div style="margin-bottom:4px">🎵 <b>Refrain:</b> Wenn melodisch — kurz und knackig singen, nicht getragen. Langer Melodiebogen = klingt automatisch schlagerig.</div>
+      <div style="margin-bottom:4px">🚫 <b>Kein Kinderlied</b> einsingen — Hänschen Klein & Co. überschreiben jeden Rap-Prompt.</div>
+      <div>💾 <b>Sofort herunterladen</b> wenn's gut ist — Suno hat keinen Papierkorb!</div>`;
+  } else if (isRock) {
+    tipLabel = '🎸 Rock-Tipps für deine Stimme auf Suno';
+    tipHtml = `
+      <div style="margin-bottom:4px">🎤 <b>Roh und mit Druck singen</b> — kein Hauch, kein Kinderlied-Charakter. Eher schreien als flüstern.</div>
+      <div style="margin-bottom:4px">🎵 <b>Refrain:</b> Laut und hoch ansetzen — das signalisiert Suno die Energie.</div>
+      <div style="margin-bottom:4px">🚫 <b>Nicht zu sauber singen</b> — etwas Rauheit ist gut, Perfektion klingt wie Schlager.</div>
+      <div>💾 <b>Sofort herunterladen</b> wenn's gut ist — Suno hat keinen Papierkorb!</div>`;
+  } else if (isBallad) {
+    tipLabel = '🎶 Balladen-Tipps für deine Stimme auf Suno';
+    tipHtml = `
+      <div style="margin-bottom:4px">🎤 <b>Langsam und emotional singen</b> — hier darf die Melodie lang sein, das ist der Stil.</div>
+      <div style="margin-bottom:4px">🎵 <b>Refrain:</b> Etwas mehr Volumen als Strophe, aber nicht übertreiben.</div>
+      <div style="margin-bottom:4px">🚫 <b>Kein Kinderlied-Charakter</b> — auch bei Balladen auf Emotion achten, nicht auf Simplizität.</div>
+      <div>💾 <b>Sofort herunterladen</b> wenn's gut ist — Suno hat keinen Papierkorb!</div>`;
+  } else if (isElectro) {
+    tipLabel = '🎛️ Electronic-Tipps für deine Stimme auf Suno';
+    tipHtml = `
+      <div style="margin-bottom:4px">🎤 <b>Klar und präzise singen</b> — Suno nutzt die Stimme als Melodie-Linie über dem Beat.</div>
+      <div style="margin-bottom:4px">🎵 <b>Refrain:</b> Einfache, wiederholbare Melodie — das funktioniert gut bei Electronic.</div>
+      <div style="margin-bottom:4px">🎯 <b>Tipp:</b> Wenige Silben, klarer Rhythmus — Suno kann das gut interpretieren.</div>
+      <div>💾 <b>Sofort herunterladen</b> wenn's gut ist — Suno hat keinen Papierkorb!</div>`;
+  } else {
+    tipLabel = '💡 Tipps wenn du deine eigene Stimme auf Suno nutzt';
+    tipHtml = `
+      <div style="margin-bottom:4px">🎤 <b>Im Stil des Songs singen</b> — Energie und Tempo der Referenz imitieren, nicht einfach ruhig drauflosingen.</div>
+      <div style="margin-bottom:4px">🎵 <b>Refrain:</b> Kurz und knackig, kein langer getragener Melodiebogen — sonst klingt alles schlagerig.</div>
+      <div style="margin-bottom:4px">🚫 <b>Keine Kinderlieder</b> als Basis — die Melodiekontur überschreibt jeden Style-Prompt.</div>
+      <div>💾 <b>Sofort herunterladen</b> wenn's gut ist — Suno hat keinen Papierkorb!</div>`;
+  }
+
+  body.innerHTML = tipHtml;
+  if (label) label.textContent = tipLabel;
 }
 
 // ── Suno Token ─────────────────────────────────────────────────
