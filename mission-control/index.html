@@ -3870,9 +3870,9 @@ function showPage(page) {
   if (page !== 'email') { if (cmdBar) cmdBar.style.display='none'; closeMailResult(); _selectedMails=[]; }
   if (page === 'system')     { tbInit(); kostenLoad(); }
   if (page === 'brain')      initBrain();
-  if (page === 'bolla')      { loadBollaModel(); loadBollaMemory(); }
+  if (page === 'bolla')      loadBollaModel();
   if (page === 'system')     loadSystem();
-  if (page === 'claudecode') loadClaudeCode();
+  if (page === 'claudecode') { loadClaudeCode(); loadBollaMemory(); }
   if (page === 'korrektur')       initKorrektur();
   if (page === 'differenzierung') initDiff();
   if (page === 'robin')      loadRobin();
@@ -5777,13 +5777,43 @@ async function loadBollaMemory() {
     const d = await r.json();
     if (!d.entries || !d.entries.length) { el.innerHTML = '<div style="color:var(--dim);font-size:12px">Keine Einträge</div>'; return; }
     const colors = {'Verhalten & Feedback':'#f59e0b','Chris & Familie':'#a78bfa','Referenzen':'#22c55e','Projekte':'#06b6d4'};
-    el.innerHTML = d.entries.map(e => {
-      const col = colors[e.section] || '#818cf8';
-      return `<div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid ${col}">
-        <div style="font-size:12px;font-weight:600;color:var(--bright)">${escHtml(e.title)}</div>
-        ${e.desc ? `<div style="font-size:11px;color:var(--dim);margin-top:2px">${escHtml(e.desc)}</div>` : ''}
+    // Nach Sektionen gruppieren
+    const sections = {};
+    const noSection = [];
+    for (const e of d.entries) {
+      if (!e.section) { noSection.push(e); continue; }
+      if (!sections[e.section]) sections[e.section] = [];
+      sections[e.section].push(e);
+    }
+    let html = '';
+    // Oben: unsektionierte Einträge (kritische Regeln etc.) als kompakte Chips
+    if (noSection.length) {
+      html += `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">` +
+        noSection.map(e => `<div title="${escHtml(e.desc)}" style="padding:3px 10px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.4);border-radius:20px;font-size:11px;font-weight:600;color:#c4b5fd;cursor:default">${escHtml(e.title)}</div>`).join('') +
+        `</div>`;
+    }
+    // Sektionen als klappbare Panels
+    Object.entries(sections).forEach(([sec, items], i) => {
+      const col = colors[sec] || '#818cf8';
+      const sid = 'mem-sec-' + i;
+      html += `<div style="border:1px solid rgba(255,255,255,0.07);border-radius:8px;margin-bottom:5px;overflow:hidden">
+        <div onclick="const b=document.getElementById('${sid}');const a=document.getElementById('${sid}-a');b.style.display=b.style.display==='none'?'block':'none';a.textContent=b.style.display==='none'?'▸':'▾'"
+          style="display:flex;align-items:center;gap:7px;padding:6px 10px;cursor:pointer;background:rgba(255,255,255,0.03)">
+          <span id="${sid}-a" style="color:${col};font-size:11px">▸</span>
+          <span style="font-size:12px;font-weight:600;color:var(--bright)">${escHtml(sec)}</span>
+          <span style="font-size:11px;color:var(--dim);margin-left:auto">${items.length}</span>
+        </div>
+        <div id="${sid}" style="display:none;padding:6px 10px 8px;display:none">
+          ${items.map(e => `<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;gap:6px;align-items:baseline">
+            <span style="color:${col};font-size:10px;flex-shrink:0">▸</span>
+            <span style="font-size:12px;font-weight:600;color:var(--bright);flex-shrink:0">${escHtml(e.title)}</span>
+            ${e.desc ? `<span style="font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(e.desc)}</span>` : ''}
+          </div>`).join('')}
+        </div>
       </div>`;
-    }).join('');
+    });
+    el.style.gridTemplateColumns = '1fr';
+    el.innerHTML = html;
     if (ct) ct.textContent = d.entries.length + ' Einträge';
   } catch(e) { el.innerHTML = '<div style="color:var(--dim);font-size:12px">Fehler beim Laden</div>'; }
 }
@@ -6326,7 +6356,7 @@ async function docsLoad() {
   el.innerHTML = '<div style="color:var(--dim);font-size:13px">Lade…</div>';
   const GROUPS = [
     { label: '🤖 Bolla & Setup', color: '#f472b6', files: ['was_ist_bolla.docx','mein_ki_setup.docx','bolla_recovery.docx','Bolla-Notfallplan.pdf','accounts_overview.pdf','00_DOKUMENTATIONS_INDEX.docx'] },
-    { label: '⚙️ Claude Code & Skills', color: '#a78bfa', files: ['Claude Code Skills.docx','Bolla Skill bolla-status.docx','Bolla-MD-Erklaerung.pdf','Tokens-Erklaerung.docx'] },
+    { label: '⚙️ Claude Code & Skills', color: '#a78bfa', files: ['Claude Code Skills und Hooks.docx','Bolla-MD-Erklaerung.pdf','Tokens-Erklaerung.docx'] },
     { label: '🔧 Technik & Infrastruktur', color: '#34d399', files: ['WSL_Crash_Erklaerung.docx','ssh-tunnel-erklaerung.pdf','Cloudflare-IONOS-Erklaerung.docx','ADB-Erklaerung.pdf'] },
     { label: '🧠 KI Allgemein', color: '#60a5fa', files: ['KI-Modelle-Jarvis-Bolla optimiert.pdf','ki-modelle-erklaerung.html','openclaw-zusammenfassung.pdf'] },
     { label: '🎵 Musik & Streaming', color: '#fb923c', files: ['Suno_RouteNote_Anleitung.docx'] },
@@ -7178,6 +7208,7 @@ setInterval(loadWeather, 30*60*1000);
 setInterval(loadSystem, 30*1000);
 setInterval(()=>{loadBirthdays();loadRobin();loadSchule();loadPhoto();loadRecipe();}, 10*60*1000);
 setInterval(loadClaudeCode, 2*60*1000);
+if (document.getElementById('page-claudecode')?.classList.contains('active')) loadBollaMemory();
 
 // === CHAT PERSISTENCE ===
 function saveBollaChat() {
@@ -7652,26 +7683,45 @@ function pjRenderItems() {
   if (!el || !_pjCurrent) return;
   const items = _pjCurrent.items || [];
   if (!items.length) { el.innerHTML = '<div style="font-size:13px;color:var(--dim);padding:4px 2px">Noch keine Einträge — oben eingeben.</div>'; pjUpdateSelCount(); return; }
-  el.innerHTML = items.map((it, idx) => `
+  const statusCfg = {
+    'offen':      {label:'Offen',       col:'rgba(255,255,255,0.12)', txt:'#888'},
+    'in-arbeit':  {label:'In Arbeit',   col:'rgba(251,191,36,0.15)',  txt:'#fbbf24'},
+    'fertig':     {label:'✓ Fertig',    col:'rgba(74,222,128,0.15)',  txt:'#4ade80'},
+  };
+  el.innerHTML = items.map((it, idx) => {
+    const st = statusCfg[it.status||'offen'] || statusCfg['offen'];
+    const borderCol = it.ergebnis ? 'rgba(139,92,246,0.25)' : it.status==='fertig' ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.05)';
+    const bgCol = it.ergebnis ? 'rgba(139,92,246,0.05)' : it.status==='fertig' ? 'rgba(74,222,128,0.03)' : 'transparent';
+    return `
     <div id="pj-item-${it.id}" draggable="true"
       ondragstart="pjDragStart(event,'${it.id}')"
       ondragover="pjDragOver(event,'${it.id}')"
       ondrop="pjDrop(event,'${it.id}')"
       ondragleave="pjDragLeave(event)"
-      style="border-radius:8px;border:1px solid ${it.ergebnis?'rgba(139,92,246,0.25)':'rgba(255,255,255,0.05)'};background:${it.ergebnis?'rgba(139,92,246,0.05)':'transparent'};margin-bottom:3px;overflow:hidden">
+      style="border-radius:8px;border:1px solid ${borderCol};background:${bgCol};margin-bottom:3px;overflow:hidden">
       <!-- Hauptzeile -->
       <div style="display:flex;align-items:center;gap:7px;padding:6px 8px"
-        onmouseenter="this.style.background='rgba(255,255,255,0.03)'" onmouseleave="this.style.background='transparent'">
+        onmouseenter="this.style.background='rgba(255,255,255,0.03)'" onmouseleave="this.style.background=''">
         <span draggable="true" style="cursor:grab;color:var(--dim);font-size:13px;flex-shrink:0;user-select:none">⠿</span>
         <input type="checkbox" ${it.checked?'checked':''} onchange="pjToggleCheck('${it.id}',this.checked)"
           style="accent-color:#8b5cf6;width:13px;height:13px;cursor:pointer;flex-shrink:0">
         <div id="pj-item-text-${it.id}" onclick="pjEditItemInline('${it.id}')"
-          style="flex:1;font-size:13px;color:var(--bright);cursor:text;line-height:1.4;min-width:0">${escHtml(it.text)}</div>
+          style="flex:1;font-size:13px;color:var(--bright);cursor:text;line-height:1.4;min-width:0;${it.status==='fertig'?'text-decoration:line-through;opacity:.65':''}">${escHtml(it.text)}</div>
+        <!-- Status-Badge (klickbar) -->
+        <span onclick="pjCycleStatus('${it.id}')" title="Status ändern"
+          style="padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;cursor:pointer;flex-shrink:0;background:${st.col};color:${st.txt};white-space:nowrap">${st.label}</span>
         <button onclick="pjStartItem('${it.id}')" title="Als Prompt an Bolla schicken"
           style="padding:3px 10px;background:linear-gradient(135deg,#8b5cf6,#ec4899);border:none;border-radius:5px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap">▶ Start</button>
         <button onclick="pjMoveItem('${it.id}',-1)" style="background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;padding:0 2px" title="Nach oben">▲</button>
         <button onclick="pjMoveItem('${it.id}',1)"  style="background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;padding:0 2px" title="Nach unten">▼</button>
         <button onclick="pjDeleteItem('${it.id}')"  style="background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;padding:0 3px" title="Löschen">✕</button>
+      </div>
+      <!-- Notiz-Zeile -->
+      <div style="padding:0 8px 6px 36px">
+        <div id="pj-note-${it.id}" onclick="pjEditNote('${it.id}')"
+          style="font-size:11px;color:var(--dim);cursor:text;line-height:1.4;min-height:14px;border-radius:4px;padding:2px 4px"
+          onmouseenter="this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.background=''"
+          title="Klicken zum Bearbeiten">${it.note ? escHtml(it.note) : '<span style="opacity:.35;font-style:italic">Notiz hinzufügen…</span>'}</div>
       </div>
       <!-- Ergebnis-Feld (eingeklappbar) -->
       ${it.ergebnis ? `
@@ -7693,8 +7743,37 @@ function pjRenderItems() {
           <button onclick="document.getElementById('pj-stream-${it.id}').style.display='none'" style="padding:3px 8px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:var(--dim);font-size:11px;cursor:pointer">✕</button>
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   pjUpdateSelCount();
+}
+
+function pjCycleStatus(id) {
+  const it = _pjCurrent.items.find(i => i.id === id);
+  if (!it) return;
+  const cycle = ['offen','in-arbeit','fertig'];
+  const cur = cycle.indexOf(it.status || 'offen');
+  it.status = cycle[(cur + 1) % cycle.length];
+  pjSave(true); pjRenderItems();
+}
+
+function pjEditNote(id) {
+  const it = _pjCurrent.items.find(i => i.id === id);
+  if (!it) return;
+  const div = document.getElementById('pj-note-' + id);
+  if (!div || div.querySelector('textarea')) return;
+  const old = it.note || '';
+  div.innerHTML = `<textarea style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--accent);border-radius:4px;color:var(--text);font-size:11px;padding:3px 6px;font-family:inherit;resize:vertical;outline:none;line-height:1.4" rows="2"
+    onblur="pjCommitNote('${id}',this.value)"
+    onkeydown="if(event.key==='Escape'){pjCommitNote('${id}','${old.replace(/'/g,'\\')}')}"
+    >${escHtml(old)}</textarea>`;
+  div.querySelector('textarea').focus();
+}
+
+function pjCommitNote(id, val) {
+  const it = _pjCurrent.items.find(i => i.id === id);
+  if (it) { it.note = val.trim(); pjSave(true); }
+  pjRenderItems();
 }
 
 function pjToggleResult(id) {
@@ -7828,17 +7907,49 @@ function pjCopySelected() {
 }
 
 function pjDownloadWord() {
-  const items = (_pjCurrent?.items||[]).filter(i => i.checked);
-  if (!items.length) { alert('Nichts ausgewählt.'); return; }
+  const allItems = _pjCurrent?.items || [];
+  const items = allItems.filter(i => i.checked).length ? allItems.filter(i => i.checked) : allItems;
+  if (!items.length) { alert('Keine Einträge.'); return; }
   const title = _pjCurrent.title || 'Projekt';
+  const today = new Date().toLocaleDateString('de-DE');
+  const statusLabel = {offen:'Offen', 'in-arbeit':'In Arbeit', fertig:'Fertig'};
+  const statusColor = {offen:'#888888', 'in-arbeit':'#b45309', fertig:'#166534'};
+  const rows = items.map(i => {
+    const st = i.status || 'offen';
+    const stLabel = statusLabel[st] || st;
+    const stCol = statusColor[st] || '#888';
+    let row = `<tr>
+      <td style="padding:6pt 8pt;vertical-align:top;border-bottom:1pt solid #e5e7eb">
+        <p style="font-family:Aptos,Calibri,sans-serif;font-size:12pt;font-weight:bold;margin:0 0 3pt">${escHtml(i.text)}</p>
+        ${i.note ? `<p style="font-family:Aptos,Calibri,sans-serif;font-size:10pt;color:#555;margin:0 0 3pt">${escHtml(i.note)}</p>` : ''}
+        ${i.ergebnis ? `<p style="font-family:Aptos,Calibri,sans-serif;font-size:10pt;color:#1e40af;margin:3pt 0 0;background:#eff6ff;padding:4pt 6pt;border-left:3pt solid #3b82f6"><b>🤖 Ergebnis:</b> ${escHtml(i.ergebnis)}</p>` : ''}
+      </td>
+      <td style="padding:6pt 8pt;vertical-align:top;border-bottom:1pt solid #e5e7eb;white-space:nowrap">
+        <span style="font-family:Aptos,Calibri,sans-serif;font-size:9pt;color:${stCol};font-weight:bold">${stLabel}</span>
+      </td>
+    </tr>`;
+    return row;
+  }).join('');
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
-<head><meta charset="utf-8"><style>body{font-family:Calibri,Arial,sans-serif;margin:2cm}h1{color:#1a3a6b;font-size:18pt}li{font-size:12pt;line-height:1.8}</style></head>
-<body><h1>${escHtml(title)}</h1><p style="color:#666;font-size:10pt">Erstellt: ${new Date().toLocaleDateString('de-DE')}</p><ul>
-${items.map(i=>`<li>${escHtml(i.text)}</li>`).join('')}</ul>
+<head><meta charset="utf-8">
+<style>
+  body{font-family:Aptos,Calibri,sans-serif;margin:2.5cm 3cm;font-size:11pt}
+  h1{font-family:Aptos,Calibri,sans-serif;color:#1e3a5f;font-size:18pt;margin:0 0 4pt}
+  table{width:100%;border-collapse:collapse}
+  th{font-family:Aptos,Calibri,sans-serif;font-size:10pt;background:#1e3a5f;color:#fff;padding:6pt 8pt;text-align:left}
+</style>
+</head>
+<body>
+<h1>${escHtml(title)}</h1>
+<p style="color:#888;font-size:9pt;margin:0 0 16pt">Erstellt: ${today} · ${items.length} Einträge</p>
+<table>
+  <tr><th>Stichpunkt / Notiz / Ergebnis</th><th style="width:90pt">Status</th></tr>
+  ${rows}
+</table>
 </body></html>`;
-  const blob = new Blob([html], {type:'application/msword'});
+  const blob = new Blob(['﻿'+html], {type:'application/msword;charset=utf-8'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download=title.replace(/[^a-zA-Z0-9äöüÄÖÜ ]/g,'_')+'.doc'; a.click(); URL.revokeObjectURL(url);
+  const a = document.createElement('a'); a.href=url; a.download=title.replace(/[^a-zA-Z0-9äöüÄÖÜß ]/g,'_')+'.doc'; a.click(); URL.revokeObjectURL(url);
 }
 
 // Drag & Drop
