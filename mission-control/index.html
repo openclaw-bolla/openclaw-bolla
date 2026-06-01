@@ -7713,7 +7713,7 @@ function pjRenderItems() {
       ondragover="pjDragOver(event,'${it.id}')"
       ondrop="pjDrop(event,'${it.id}')"
       ondragleave="pjDragLeave(event)"
-      style="border-radius:8px;border:1px solid ${borderCol};background:${bgCol};margin-bottom:3px;overflow:hidden">
+      style="border-radius:8px;border:1px solid ${borderCol};background:${bgCol};margin-bottom:3px">
       <!-- Hauptzeile -->
       <div style="display:flex;align-items:center;gap:7px;padding:6px 8px"
         onmouseenter="this.style.background='rgba(255,255,255,0.03)'" onmouseleave="this.style.background=''">
@@ -7797,10 +7797,10 @@ function pjToggleResult(id) {
   const open = div.style.display !== 'none';
   div.style.display = open ? 'none' : 'block';
   if (arrow) arrow.textContent = open ? '▸' : '▾';
-  if (!open) setTimeout(() => {
+  if (!open) requestAnimationFrame(() => requestAnimationFrame(() => {
     const ta = document.getElementById('pj-result-ta-' + id);
     if (ta) { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; ta.focus(); }
-  }, 50);
+  }));
 }
 
 function pjSaveResultFromTA(id) {
