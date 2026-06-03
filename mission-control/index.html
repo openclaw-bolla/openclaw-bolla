@@ -12701,7 +12701,7 @@ document.addEventListener('DOMContentLoaded', () => {
   ];
 
   let angle = 0;          // aktueller Winkel in Grad
-  let speed = 0;          // Grad pro Frame
+  let speed = 0;          // Grad pro Frame (normiert auf 60fps)
   let spinning = false;
   let stopping = false;
   let targetAngle = null;
@@ -12709,6 +12709,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentStil = null;
   let revealed = false;
   let rafId = null;
+  let lastTimestamp = null;
+  let stoppingTotalDist = 0;
+  let stoppingTraveled = 0;
+  let stoppingInitialSpeed = 0;
 
   function getSektorAt(deg) {
     // Zeiger oben: Sektor 0 ist oben wenn angle=0
@@ -12734,11 +12738,30 @@ document.addEventListener('DOMContentLoaded', () => {
   function draw() {
     const canvas = document.getElementById('gw-canvas');
     if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const cssSize = 650;
+
+    // Canvas auf physische Pixel hochskalieren (verhindert Unschärfe bei Windows-Skalierung)
+    if (canvas.width !== Math.round(cssSize * dpr)) {
+      canvas.width  = Math.round(cssSize * dpr);
+      canvas.height = Math.round(cssSize * dpr);
+      canvas.style.width  = cssSize + 'px';
+      canvas.style.height = cssSize + 'px';
+    }
+
     const ctx = canvas.getContext('2d');
-    const cx = canvas.width / 2, cy = canvas.height / 2;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.scale(dpr, dpr); // ab hier alle Koordinaten in CSS-Pixel (0..650)
+
+    const cx = cssSize / 2, cy = cssSize / 2;
     const r = cx - 4;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Kreisförmiger Clip — alle Segmente bleiben INNERHALB des perfekten Kreises
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
 
     for (let i = 0; i < N; i++) {
       const startAngle = (angle + i * SEKTOR_DEG - 90) * Math.PI / 180;
@@ -12746,12 +12769,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const farbe = FARBEN[i % FARBEN.length];
       const isPlayed = played.has(i);
 
+      // Füllfarbe
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.arc(cx, cy, r, startAngle, endAngle);
       ctx.closePath();
       ctx.fillStyle = isPlayed ? '#2a2a2a' : farbe;
       ctx.fill();
+
+      // Trennlinien nur zwischen Segmenten (keine Außenkante mehr → saubererer Kreis)
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + r * Math.cos(startAngle), cy + r * Math.sin(startAngle));
       ctx.strokeStyle = '#1a1a2e';
       ctx.lineWidth = 1.5;
       ctx.stroke();
@@ -12769,6 +12798,15 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.restore();
     }
 
+    ctx.restore(); // Clip aufheben
+
+    // Sauberer Außenring über allem — garantiert perfekt runde Kontur
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = '#1a1a2e';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
     // Mittelpunkt
     ctx.beginPath();
     ctx.arc(cx, cy, 28, 0, 2 * Math.PI);
@@ -12782,30 +12820,43 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('🎵', cx, cy);
+
+    ctx.restore(); // DPR-Scale aufheben
   }
 
-  function animate() {
+  function animate(timestamp) {
     if (!spinning) return;
 
-    if (stopping && targetAngle !== null) {
-      const diff = ((targetAngle - angle % 360) + 360) % 360;
-      const dist = diff < 1 ? diff + 360 : diff;
-      if (dist < 60) {
-        speed = Math.max(0.3, speed * 0.93);
-      }
-      if (dist < 3 && speed < 1) {
+    if (lastTimestamp === null) lastTimestamp = timestamp;
+    const dt = Math.min(timestamp - lastTimestamp, 50); // max 50ms (Tab war versteckt o.ä.)
+    lastTimestamp = timestamp;
+    const frames = dt / 16.667; // normiert auf 60fps
+
+    if (stopping) {
+      const step = speed * frames;
+      stoppingTraveled += step;
+
+      if (stoppingTraveled >= stoppingTotalDist) {
+        // Exakt am Ziel einrasten
         angle = targetAngle + Math.floor(angle / 360) * 360;
         speed = 0;
         spinning = false;
         stopping = false;
+        lastTimestamp = null;
         rafId = null;
         draw();
         onStopped();
         return;
       }
+
+      // Quadratische Ease-Out: speed nimmt proportional zur Restdistanz ab → kein Überschuss
+      const progress = stoppingTraveled / stoppingTotalDist;
+      speed = Math.max(0.05, stoppingInitialSpeed * (1 - progress));
+      angle = (angle + step) % 3600;
+    } else {
+      angle = (angle + speed * frames) % 3600;
     }
 
-    angle = (angle + speed) % 3600;
     draw();
     rafId = requestAnimationFrame(animate);
   }
@@ -12885,6 +12936,7 @@ document.addEventListener('DOMContentLoaded', () => {
       stopping = false;
       targetAngle = null;
       currentStil = null;
+      lastTimestamp = null;
       const stilEl = document.getElementById('gw-result-stil');
       const hintEl = document.getElementById('gw-result-hint');
       const playBtn = document.getElementById('gw-play-btn');
@@ -12904,9 +12956,17 @@ document.addEventListener('DOMContentLoaded', () => {
       let targetIdx = played.has(currentIdx) ? nextUnplayed(currentIdx) : currentIdx;
       if (targetIdx === null) { gwReset(); return; }
 
-      // Zielwinkel: Sektor sauber mittig unter Zeiger (Mitte des Sektors = 7.5° Offset)
+      // Zielwinkel: Sektor sauber mittig unter Zeiger
       const base = angleForSektor(targetIdx);
       targetAngle = (base + SEKTOR_DEG / 2 + 360) % 360;
+
+      // Bremsdistanz: mind. 1 volle Umdrehung Extra → wirkt natürlich
+      const curAngle360 = angle % 360;
+      const diff = ((targetAngle - curAngle360) + 360) % 360;
+      const extraRotations = Math.max(1, Math.ceil(speed / 4));
+      stoppingTotalDist = diff + extraRotations * 360;
+      stoppingTraveled = 0;
+      stoppingInitialSpeed = speed;
       stopping = true;
     }
   };
@@ -12926,6 +12986,7 @@ document.addEventListener('DOMContentLoaded', () => {
     spinning = false;
     stopping = false;
     speed = 0;
+    lastTimestamp = null;
     if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
     const audio = document.getElementById('gw-audio');
     if (audio) { audio.pause(); audio.src = ''; }
