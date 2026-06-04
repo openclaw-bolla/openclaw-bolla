@@ -868,6 +868,8 @@ html, body {
       <div class="nav-block" id="navblock-kreativ">
         <div class="nav-section" onclick="toggleNavSection('kreativ')" id="nav-sec-kreativ"><span class="nav-section-grip">⠿</span>KI & Kreativ <span class="nav-section-chevron">▶</span></div>
         <div class="nav-section-items" id="nav-section-items-kreativ" style="max-height:0">
+          <div class="nav-item" data-page="ki-news"><span class="icon">🧠</span><span>KI-News & Events</span></div>
+          <div class="nav-item" data-page="ki-buch"><span class="icon">📖</span><span>Thriller-Projekt</span></div>
           <div class="nav-item" data-page="bildgen"><span class="icon">🍌</span><span>BildGen</span></div>
           <div class="nav-item" data-page="suno"><span class="icon">🎵</span><span>Bolla Songs</span></div>
           <div class="nav-item" data-page="fotoanalyse"><span class="icon">🔍</span><span>Foto-Analyse</span></div>
@@ -1337,8 +1339,9 @@ html, body {
       <!-- MUSIK-QUIZ GLÜCKSRAD -->
       <div class="page" id="page-gluecksrad">
         <style>
-          #gw-canvas { cursor: pointer; border-radius: 50%; box-shadow: 0 0 40px rgba(124,58,237,0.3); }
-          #gw-canvas:hover { box-shadow: 0 0 60px rgba(124,58,237,0.5); }
+          #gw-canvas { display: block; cursor: pointer; width: 650px; height: 650px; }
+          #gw-ring { width: 650px; height: 650px; border-radius: 50%; overflow: hidden; filter: drop-shadow(0 0 18px rgba(124,58,237,0.45)); transition: filter 0.2s; }
+          #gw-ring:hover { filter: drop-shadow(0 0 28px rgba(124,58,237,0.7)); }
           .gw-stil-chip { display:inline-block; padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600; margin:3px; cursor:default; transition:opacity 0.3s; }
           .gw-stil-chip.played { opacity:0.25; text-decoration:line-through; }
           #gw-result { transition: all 0.4s; }
@@ -1365,7 +1368,9 @@ html, body {
             <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:16px">
               <!-- Zeiger -->
               <div style="position:relative;width:650px;height:650px">
-                <canvas id="gw-canvas" width="650" height="650" onclick="gwToggle()" title="Klicken oder Leertaste"></canvas>
+                <div id="gw-ring">
+                  <canvas id="gw-canvas" width="650" height="650" onclick="gwToggle()" title="Klicken oder Leertaste"></canvas>
+                </div>
                 <!-- Zeiger oben -->
                 <div style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:32px solid #f59e0b;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5))"></div>
               </div>
@@ -2522,6 +2527,101 @@ html, body {
         </div>
       </div>
 
+      <!-- KI-NEWS & EVENTS -->
+      <div class="page" id="page-ki-news">
+        <div style="max-width:1100px;margin:0 auto;padding:4px 0">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+            <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🧠</div>
+            <div>
+              <div style="font-size:20px;font-weight:700;color:var(--bright)">KI-News & Events</div>
+              <div style="font-size:13px;color:var(--dim)" id="ki-news-update">Lade…</div>
+            </div>
+            <button onclick="loadKiNews()" style="margin-left:auto;padding:7px 16px;background:rgba(6,182,212,0.15);border:1px solid rgba(6,182,212,0.4);border-radius:8px;color:#06b6d4;font-size:13px;cursor:pointer">↻ Aktualisieren</button>
+          </div>
+
+          <!-- Events -->
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 22px;margin-bottom:20px">
+            <div style="font-size:13px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">📅 Kommende Events</div>
+            <div id="ki-events-list" style="display:flex;flex-direction:column;gap:10px"><div class="loading">Lade…</div></div>
+          </div>
+
+          <!-- Featured News -->
+          <div id="ki-news-list" style="display:flex;flex-direction:column;gap:16px"><div class="loading">Lade…</div></div>
+        </div>
+      </div>
+
+      <!-- KI-BUCH / THRILLER-PROJEKT -->
+      <div class="page" id="page-ki-buch">
+        <div style="max-width:1200px;margin:0 auto;padding:4px 0">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+            <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#ec4899,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📖</div>
+            <div style="flex:1">
+              <div id="ki-buch-titel" style="font-size:20px;font-weight:700;color:var(--bright)">Thriller-Projekt</div>
+              <div id="ki-buch-status-line" style="font-size:13px;color:var(--dim)">Lade…</div>
+            </div>
+            <button onclick="loadKiBuch()" style="padding:7px 16px;background:rgba(236,72,153,0.15);border:1px solid rgba(236,72,153,0.4);border-radius:8px;color:#ec4899;font-size:13px;cursor:pointer">↻ Laden</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start">
+            <!-- Linke Spalte: Kriterien + Kapitel -->
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px">
+                <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Buchkriterien</div>
+                <div id="ki-buch-kriterien" style="font-size:13px;color:var(--text);line-height:1.8">Lade…</div>
+              </div>
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px">
+                <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Protagonisten</div>
+                <div id="ki-buch-protagonisten" style="font-size:13px;color:var(--text)">Noch keine definiert</div>
+              </div>
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px">
+                <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Kapitel</div>
+                <div id="ki-buch-kapitel-liste" style="font-size:13px;color:var(--dim)">Noch keine Kapitel</div>
+              </div>
+            </div>
+
+            <!-- Rechte Spalte: Inhalt + Kommentar -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <!-- Nächster Schritt -->
+              <div style="background:rgba(236,72,153,0.08);border:1px solid rgba(236,72,153,0.3);border-radius:12px;padding:14px 18px;display:flex;align-items:flex-start;gap:12px">
+                <span style="font-size:22px">🎯</span>
+                <div>
+                  <div style="font-size:12px;font-weight:700;color:#ec4899;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Nächster Schritt</div>
+                  <div id="ki-buch-naechster-schritt" style="font-size:14px;color:var(--text)">…</div>
+                </div>
+              </div>
+
+              <!-- Lese-/Bearbeitungsansicht des gewählten Kapitels -->
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 22px">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+                  <div id="ki-buch-inhalt-titel" style="font-size:15px;font-weight:700;color:var(--bright)">Kapitel auswählen</div>
+                  <span id="ki-buch-inhalt-meta" style="font-size:12px;color:var(--dim)"></span>
+                </div>
+                <div id="ki-buch-inhalt" style="font-size:15px;color:var(--text);line-height:1.85;white-space:pre-wrap;max-height:480px;overflow-y:auto">← Klicke links auf ein Kapitel um es hier zu lesen.</div>
+              </div>
+
+              <!-- Kommentar für nächste Session -->
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 22px">
+                <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">💬 Anweisung <span id="ki-buch-kommentar-ziel" style="color:#ec4899"></span></div>
+                <textarea id="ki-buch-kommentar-input" rows="4"
+                  style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:14px;font-family:inherit;resize:vertical;line-height:1.6;outline:none"
+                  placeholder="z.B. 'Schreibe Kapitel 1' oder (bei gewähltem Kapitel) 'überarbeite dieses Kapitel mit mehr Gefühl'…"></textarea>
+                <div style="display:flex;gap:10px;margin-top:10px;align-items:center;flex-wrap:wrap">
+                  <button onclick="kiBuchKommentarSenden()" style="background:rgba(236,72,153,0.15);color:#ec4899;border:1px solid rgba(236,72,153,0.4);border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;font-weight:600">💾 Speichern</button>
+                  <button id="ki-buch-generiere-btn" onclick="kiBuchGeneriere()" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff;border:none;border-radius:8px;padding:9px 22px;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 2px 12px rgba(124,58,237,0.4)">🐾 Bolla schreibt jetzt…</button>
+                  <span id="ki-buch-kommentar-status" style="font-size:13px;color:var(--dim)"></span>
+                </div>
+              </div>
+
+              <!-- Kommentar-Verlauf -->
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 22px">
+                <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Kommentar-Verlauf</div>
+                <div id="ki-buch-kommentare" style="font-size:13px;color:var(--dim)">Keine bisherigen Kommentare</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- BILDGEN -->
       <div class="page" id="page-bildgen">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1100px;margin:0 auto">
@@ -2812,6 +2912,10 @@ html, body {
                 style="padding:8px 14px;border:none;cursor:pointer;font-size:13px;font-weight:600;
                        background:transparent;color:var(--dim);transition:all .2s">🇬🇧 English</button>
             </div>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:7px 12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:8px;user-select:none" title="Verhindert zweideutige Formulierungen im Songtext">
+              <input type="checkbox" id="suno-jugendfrei" checked style="width:16px;height:16px;accent-color:#22c55e;cursor:pointer">
+              <span style="font-size:13px;color:#22c55e;font-weight:600">🛡️ Jugendfrei</span>
+            </label>
             <button id="suno-btn" onclick="sunoGenerate()"
               style="background:linear-gradient(135deg,#7c3aed,#ff6699);border:none;border-radius:8px;color:white;
                      font-weight:700;font-size:14px;padding:9px 24px;cursor:pointer;
@@ -3900,6 +4004,8 @@ function showPage(page) {
   if (page === 'clipboard')  loadClipboard();
   if (page === 'projekte')   loadProjekte();
   if (page === 'ki-workshop') loadKiWorkshop();
+  if (page === 'ki-news')    loadKiNews();
+  if (page === 'ki-buch')    loadKiBuch();
   if (page === 'urlaub')     { initUrlaub(); initSommerreise(); }
   if (page === 'fotoanalyse') loadFotoAnalyse();
   if (page === 'kiforum') kifLoad();
@@ -3967,7 +4073,7 @@ function openSectionForPage(page) {
     dashboard: 'start', bolla: 'start', wetter: 'start',
     schule: 'arbeit', korrektur: 'arbeit', differenzierung: 'arbeit', entschaerfer: 'arbeit', gluecksrad: 'arbeit', kalender: 'arbeit', email: 'arbeit', clipboard: 'arbeit', projekte: 'arbeit', 'ki-workshop': 'arbeit', urlaub: 'arbeit',
     robin: 'familie', geburtstage: 'familie',
-    bildgen: 'kreativ', suno: 'kreativ', fotoanalyse: 'kreativ', kiforum: 'kreativ',
+    'ki-news': 'kreativ', 'ki-buch': 'kreativ', bildgen: 'kreativ', suno: 'kreativ', fotoanalyse: 'kreativ', kiforum: 'kreativ',
     localserver: 'system', system: 'system', claudecode: 'system', surface: 'system', redesigns: 'system', brain: 'system'
   };
   const sec = sectionMap[page];
@@ -7646,6 +7752,232 @@ let _pjCurrent = null;
 let _pjDragItem = null;
 let _pjCurrentPrompt = null; // {prompt, antwort} aktuell angezeigter Prompt
 
+// ===== KI-NEWS =====
+async function loadKiNews() {
+  try {
+    const data = await fetch(API + '/api/ki-news').then(r => r.json());
+    const upd = document.getElementById('ki-news-update');
+    if (upd) upd.textContent = data.letztesUpdate ? 'Stand: ' + data.letztesUpdate : 'Kein Datum';
+
+    // Events
+    const evEl = document.getElementById('ki-events-list');
+    if (evEl && data.events) {
+      const tagColors = { Apple:'#3b82f6', Konferenz:'#7c3aed', NVIDIA:'#22c55e', Google:'#f59e0b', Microsoft:'#06b6d4' };
+      evEl.innerHTML = data.events.map(e => {
+        const d = new Date(e.datum);
+        const tagC = tagColors[e.tag] || '#a78bfa';
+        const today = new Date(); const diff = Math.round((d - today) / 86400000);
+        const badge = diff <= 0 ? 'Heute/gestern' : diff === 1 ? 'Morgen' : `in ${diff} Tagen`;
+        return `<div style="display:flex;align-items:flex-start;gap:14px;padding:10px 12px;background:var(--card2);border:1px solid var(--border);border-radius:10px">
+          <div style="min-width:52px;text-align:center">
+            <div style="font-size:11px;font-weight:700;color:${tagC};text-transform:uppercase">${e.datum.slice(5).replace('-','.')}</div>
+            <div style="font-size:10px;color:var(--dim);margin-top:2px">${badge}</div>
+          </div>
+          <div style="flex:1">
+            <div style="font-weight:600;color:var(--bright);font-size:14px">${e.titel}</div>
+            <div style="font-size:12px;color:var(--dim);margin-top:3px">${e.beschreibung}</div>
+          </div>
+          <a href="${e.link}" target="_blank" style="font-size:12px;color:${tagC};white-space:nowrap;text-decoration:none;padding:4px 10px;border:1px solid ${tagC}44;border-radius:6px;flex-shrink:0">→ Link</a>
+        </div>`;
+      }).join('');
+    }
+
+    // News / Featured
+    const newsEl = document.getElementById('ki-news-list');
+    if (newsEl && data.news) {
+      newsEl.innerHTML = data.news.map(n => {
+        const yt = n.youtube_id ? `<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:10px;overflow:hidden;margin-bottom:16px">
+          <iframe src="https://www.youtube.com/embed/${n.youtube_id}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen loading="lazy"></iframe>
+        </div>` : '';
+        const punkte = (n.punkte||[]).map(p => `<li style="margin-bottom:6px">${p}</li>`).join('');
+        const tags = (n.tags||[]).map(t => `<span style="font-size:11px;background:rgba(124,58,237,0.2);color:#a78bfa;padding:2px 8px;border-radius:12px">${t}</span>`).join(' ');
+        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 24px">
+          <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px">
+            <div style="flex:1">
+              <div style="font-size:16px;font-weight:700;color:var(--bright);margin-bottom:4px">${n.titel}</div>
+              <div style="font-size:12px;color:var(--dim)">${n.datum} · ${n.quelle} &nbsp; ${tags}</div>
+            </div>
+            ${n.link ? `<a href="${n.link}" target="_blank" style="font-size:12px;color:#06b6d4;text-decoration:none;border:1px solid rgba(6,182,212,0.35);padding:5px 12px;border-radius:8px;white-space:nowrap">→ Artikel</a>` : ''}
+          </div>
+          ${yt}
+          <div style="font-size:14px;color:var(--text);margin-bottom:12px">${n.zusammenfassung}</div>
+          ${punkte ? `<ul style="font-size:13px;color:var(--text);line-height:1.8;padding-left:18px">${punkte}</ul>` : ''}
+        </div>`;
+      }).join('');
+    }
+  } catch(e) {
+    const el = document.getElementById('ki-news-list');
+    if (el) el.innerHTML = '<div style="color:#ef4444">Fehler beim Laden</div>';
+  }
+}
+
+// ===== KI-BUCH =====
+let _kiBuchData = null;          // komplette Buchdaten (Cache)
+let _kiBuchAktivIdx = null;      // aktuell gewähltes Kapitel (Index)
+
+async function loadKiBuch() {
+  try {
+    const data = await fetch(API + '/api/ki-buch').then(r => r.json());
+    _kiBuchData = data;
+    const k = data.kriterien || {};
+    document.getElementById('ki-buch-titel').textContent = data.titel || 'Thriller-Projekt';
+    document.getElementById('ki-buch-status-line').textContent =
+      `Status: ${data.status} · ${data.statistik?.kapitel_gesamt||0} Kapitel · ${(data.statistik?.woerter_gesamt||0).toLocaleString()} Wörter`;
+    document.getElementById('ki-buch-naechster-schritt').textContent = data.naechsterSchritt || '—';
+
+    // Kriterien
+    const kr = document.getElementById('ki-buch-kriterien');
+    if (kr) kr.innerHTML = [
+      ['Genre', k.genre], ['Sprache', k.sprache],
+      ['Umfang', (k.umfang_seiten||'?') + '+ Seiten'],
+      ['Protagonisten', 'mind. ' + (k.protagonisten_min||5)],
+      ['Themen', (k.themen||[]).join(', ')],
+      ['Stil', k.stil]
+    ].filter(([,v]) => v).map(([l,v]) => `<div><span style="color:var(--dim)">${l}:</span> <strong>${v}</strong></div>`).join('');
+
+    // Protagonisten + Antagonist
+    const pr = document.getElementById('ki-buch-protagonisten');
+    if (pr) {
+      let html = (data.protagonisten||[]).map(p => `<div style="padding:5px 0;border-bottom:1px solid var(--border)"><strong>${p.name}</strong>${p.rolle?` <span style="font-size:11px;color:#a78bfa">· ${p.rolle}</span>`:''}<div style="font-size:12px;color:var(--dim)">${p.beschreibung||''}</div></div>`).join('');
+      if (data.antagonist && data.antagonist.name) {
+        const a = data.antagonist;
+        html += `<div style="padding:5px 0;border-bottom:1px solid var(--border);border-left:3px solid #ef4444;padding-left:8px;margin-top:6px"><strong style="color:#ef4444">${a.name}</strong> <span style="font-size:11px;color:#ef4444">· ${a.rolle||'Antagonistin'} ⚔️</span><div style="font-size:12px;color:var(--dim)">${a.beschreibung||''}</div></div>`;
+      }
+      pr.innerHTML = html || '<span style="color:var(--dim)">Noch keine definiert</span>';
+    }
+
+    // Kapitel-Liste (klickbar, aktives hervorgehoben)
+    kiBuchRenderKapitelListe();
+
+    // Welches Kapitel anzeigen? Bisheriges behalten, sonst letztes (neuestes)
+    const anzahl = (data.kapitel||[]).length;
+    if (anzahl > 0) {
+      if (_kiBuchAktivIdx === null || _kiBuchAktivIdx >= anzahl) _kiBuchAktivIdx = anzahl - 1;
+      kiBuchZeigeKapitel(_kiBuchAktivIdx);
+    } else {
+      _kiBuchAktivIdx = null;
+      const inhalt = document.getElementById('ki-buch-inhalt');
+      const it = document.getElementById('ki-buch-inhalt-titel');
+      const im = document.getElementById('ki-buch-inhalt-meta');
+      if (it) it.textContent = 'Noch kein Kapitel';
+      if (im) im.textContent = '';
+      if (inhalt) inhalt.innerHTML = `<span style="color:var(--dim)">Noch kein Inhalt. Schreibe unten eine Anweisung (z.B. "Schreibe Kapitel 1") und klick auf 🐾 Bolla schreibt.</span>`;
+    }
+
+    // Kommentar-Verlauf
+    const komEl = document.getElementById('ki-buch-kommentare');
+    if (komEl) {
+      const koms = (data.kommentare||[]).slice(-6).reverse();
+      komEl.innerHTML = koms.length
+        ? koms.map(k => `<div style="padding:7px 0;border-bottom:1px solid var(--border)"><div style="font-size:11px;color:var(--dim)">${k.datum||''} ${k.erledigt?'· ✓ erledigt':'· ⏳ offen'}</div><div style="font-size:13px;color:var(--text)">${k.text}</div></div>`).join('')
+        : '<span style="color:var(--dim)">Keine bisherigen Kommentare</span>';
+    }
+  } catch(e) {
+    console.error('KI-Buch laden:', e);
+  }
+}
+
+function kiBuchRenderKapitelListe() {
+  const kl = document.getElementById('ki-buch-kapitel-liste');
+  if (!kl || !_kiBuchData) return;
+  const kapitel = _kiBuchData.kapitel || [];
+  kl.innerHTML = kapitel.length
+    ? kapitel.map((kap,i) => {
+        const aktiv = i === _kiBuchAktivIdx;
+        return `<div onclick="kiBuchZeigeKapitel(${i})" style="padding:7px 9px;cursor:pointer;font-size:13px;border-radius:7px;margin-bottom:3px;${aktiv?'background:rgba(236,72,153,0.18);color:#ec4899;font-weight:600;border:1px solid rgba(236,72,153,0.4)':'color:var(--text);border:1px solid transparent'}" onmouseover="if(${i}!==_kiBuchAktivIdx)this.style.background='rgba(255,255,255,0.04)'" onmouseout="if(${i}!==_kiBuchAktivIdx)this.style.background=''">📄 ${kap.titel||'Kapitel '+(i+1)}</div>`;
+      }).join('')
+    : '<span style="color:var(--dim)">Noch keine Kapitel</span>';
+}
+
+function kiBuchZeigeKapitel(idx) {
+  if (!_kiBuchData || !_kiBuchData.kapitel) return;
+  const kap = _kiBuchData.kapitel[idx];
+  if (!kap) return;
+  _kiBuchAktivIdx = idx;
+  const inhalt = document.getElementById('ki-buch-inhalt');
+  const it = document.getElementById('ki-buch-inhalt-titel');
+  const im = document.getElementById('ki-buch-inhalt-meta');
+  if (it) it.textContent = kap.titel || 'Kapitel ' + (idx+1);
+  if (im) im.textContent = `${(kap.text||'').split(/\s+/).length} Wörter${kap.datum?' · '+kap.datum:''}`;
+  if (inhalt) inhalt.textContent = kap.text || '(Kein Text)';
+  // Kommentar-Ziel anzeigen
+  const ziel = document.getElementById('ki-buch-kommentar-ziel');
+  if (ziel) ziel.textContent = `→ bezieht sich auf "${kap.titel||'Kapitel '+(idx+1)}"`;
+  kiBuchRenderKapitelListe();
+}
+
+function kiBuchZeigeKapitel(idx) {
+  fetch(API + '/api/ki-buch').then(r => r.json()).then(data => {
+    const kap = (data.kapitel||[])[idx];
+    if (!kap) return;
+    const el = document.getElementById('ki-buch-inhalt');
+    if (el) el.textContent = kap.text || '(Kein Text)';
+  });
+}
+
+let _kiBuchPollTimer = null;
+async function kiBuchGeneriere() {
+  const btn = document.getElementById('ki-buch-generiere-btn');
+  const status = document.getElementById('ki-buch-kommentar-status');
+  // Falls Text im Eingabefeld steht: erst automatisch als Kommentar speichern
+  const input = document.getElementById('ki-buch-kommentar-input');
+  const text = (input?.value || '').trim();
+  if (text) {
+    try {
+      await fetch(API + '/api/ki-buch/kommentar', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({text}) });
+      if (input) input.value = '';
+    } catch(e) { /* weiter trotzdem */ }
+  }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Bolla schreibt…'; btn.style.opacity = '0.7'; }
+  if (status) status.textContent = '🖊 Gestartet — warte auf Bolla…';
+  try {
+    const res = await fetch(API + '/api/ki-buch/generiere', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+    const data = await res.json();
+    if (data.status === 'running') { if (status) status.textContent = '⏳ Läuft schon — warte…'; }
+    // Starte Polling
+    if (_kiBuchPollTimer) clearInterval(_kiBuchPollTimer);
+    _kiBuchPollTimer = setInterval(async () => {
+      try {
+        const poll = await fetch(API + '/api/ki-buch/generiere-status').then(r => r.json());
+        if (poll.status === 'done') {
+          clearInterval(_kiBuchPollTimer); _kiBuchPollTimer = null;
+          if (status) status.textContent = '✓ ' + (poll.antwort || 'Fertig!');
+          if (poll.inhalt) { const el = document.getElementById('ki-buch-inhalt'); if (el) el.textContent = poll.inhalt; }
+          if (btn) { btn.disabled = false; btn.textContent = '🐾 Bolla schreibt jetzt…'; btn.style.opacity = '1'; }
+          setTimeout(() => { if (status) status.textContent = ''; loadKiBuch(); }, 3000);
+        } else if (poll.status === 'error') {
+          clearInterval(_kiBuchPollTimer); _kiBuchPollTimer = null;
+          if (status) status.textContent = '✗ Fehler: ' + poll.error;
+          if (btn) { btn.disabled = false; btn.textContent = '🐾 Bolla schreibt jetzt…'; btn.style.opacity = '1'; }
+        }
+        // 'running' → weiter warten
+      } catch(pe) { /* Netzwerkfehler beim Pollen — ignorieren */ }
+    }, 3000);
+  } catch(e) {
+    if (status) status.textContent = '✗ Start-Fehler: ' + e.message;
+    if (btn) { btn.disabled = false; btn.textContent = '🐾 Bolla schreibt jetzt…'; btn.style.opacity = '1'; }
+  }
+}
+
+async function kiBuchKommentarSenden() {
+  const input = document.getElementById('ki-buch-kommentar-input');
+  const status = document.getElementById('ki-buch-kommentar-status');
+  const text = (input?.value||'').trim();
+  if (!text) return;
+  try {
+    await fetch(API + '/api/ki-buch/kommentar', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text})
+    });
+    if (status) status.textContent = '✓ Gespeichert!';
+    if (input) input.value = '';
+    setTimeout(() => { if (status) status.textContent = ''; loadKiBuch(); }, 1500);
+  } catch(e) {
+    if (status) status.textContent = '✗ Fehler beim Speichern';
+  }
+}
+
 async function loadKiWorkshop() {
   try {
     const meta = await fetch(API + '/api/projekte/list').then(r => r.json());
@@ -7775,7 +8107,7 @@ function pjRenderItems() {
         <input type="checkbox" ${it.checked?'checked':''} onchange="pjToggleCheck('${it.id}',this.checked)"
           style="accent-color:#8b5cf6;width:13px;height:13px;cursor:pointer;flex-shrink:0">
         <div id="pj-item-text-${it.id}" onclick="pjEditItemInline('${it.id}')"
-          style="flex:1;font-size:13px;color:var(--bright);cursor:text;line-height:1.4;min-width:0;${it.status==='fertig'?'text-decoration:line-through;opacity:.65':''}">${escHtml(it.text)}</div>
+          style="flex:1;font-size:13px;color:${it.status==='fertig'?'var(--dim)':'var(--bright)'};cursor:text;line-height:1.4;min-width:0">${escHtml(it.text)}</div>
         <!-- Status-Badge (klickbar) -->
         <span onclick="pjCycleStatus('${it.id}')" title="Status ändern"
           style="padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;cursor:pointer;flex-shrink:0;background:${st.col};color:${st.txt};white-space:nowrap">${st.label}</span>
@@ -11674,6 +12006,7 @@ async function sunoGenerate(feedback = '', prevLyrics = '') {
         abspieltag: isDefault ? document.getElementById('suno-abspieltag').value.trim() : '',
         hit: document.getElementById('suno-hit').value.trim(),
         style_hint: document.getElementById('suno-style-hint').value.trim(),
+        jugendfrei: document.getElementById('suno-jugendfrei')?.checked ?? true,
         feedback
       })
     });
@@ -12738,26 +13071,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function draw() {
     const canvas = document.getElementById('gw-canvas');
     if (!canvas) return;
-    const dpr = window.devicePixelRatio || 1;
-    const cssSize = 650;
-
-    // Canvas auf physische Pixel hochskalieren (verhindert Unschärfe bei Windows-Skalierung)
-    if (canvas.width !== Math.round(cssSize * dpr)) {
-      canvas.width  = Math.round(cssSize * dpr);
-      canvas.height = Math.round(cssSize * dpr);
-      canvas.style.width  = cssSize + 'px';
-      canvas.style.height = cssSize + 'px';
-    }
-
     const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-    ctx.scale(dpr, dpr); // ab hier alle Koordinaten in CSS-Pixel (0..650)
+    const W = canvas.width, H = canvas.height;
+    const cx = W / 2, cy = H / 2;
+    const r = cx - 2;
 
-    const cx = cssSize / 2, cy = cssSize / 2;
-    const r = cx - 4;
+    ctx.clearRect(0, 0, W, H);
 
-    // Kreisförmiger Clip — alle Segmente bleiben INNERHALB des perfekten Kreises
+    // Clip auf perfekten Kreis
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -12769,7 +13090,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const farbe = FARBEN[i % FARBEN.length];
       const isPlayed = played.has(i);
 
-      // Füllfarbe
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.arc(cx, cy, r, startAngle, endAngle);
@@ -12777,7 +13097,6 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.fillStyle = isPlayed ? '#2a2a2a' : farbe;
       ctx.fill();
 
-      // Trennlinien nur zwischen Segmenten (keine Außenkante mehr → saubererer Kreis)
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(cx + r * Math.cos(startAngle), cy + r * Math.sin(startAngle));
@@ -12785,29 +13104,25 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // Text
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate((startAngle + endAngle) / 2);
-      const textR = r * 0.68;
       ctx.font = 'bold 16px sans-serif';
       ctx.fillStyle = isPlayed ? '#555' : 'rgba(255,255,255,0.95)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${i + 1} 🎵`, textR, 0);
+      ctx.fillText(`${i + 1} 🎵`, r * 0.68, 0);
       ctx.restore();
     }
 
-    ctx.restore(); // Clip aufheben
+    ctx.restore();
 
-    // Sauberer Außenring über allem — garantiert perfekt runde Kontur
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.strokeStyle = '#1a1a2e';
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Mittelpunkt
     ctx.beginPath();
     ctx.arc(cx, cy, 28, 0, 2 * Math.PI);
     ctx.fillStyle = '#1a1a2e';
@@ -12820,8 +13135,6 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('🎵', cx, cy);
-
-    ctx.restore(); // DPR-Scale aufheben
   }
 
   function animate(timestamp) {
@@ -12849,9 +13162,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Quadratische Ease-Out: speed nimmt proportional zur Restdistanz ab → kein Überschuss
+      // Quadratische Ease-Out — Mindestgeschwindigkeit 2 deg/frame damit kein ewiges Kriechen
       const progress = stoppingTraveled / stoppingTotalDist;
-      speed = Math.max(0.05, stoppingInitialSpeed * (1 - progress));
+      speed = Math.max(2, stoppingInitialSpeed * (1 - progress));
       angle = (angle + step) % 3600;
     } else {
       angle = (angle + speed * frames) % 3600;
@@ -12963,8 +13276,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Bremsdistanz: mind. 1 volle Umdrehung Extra → wirkt natürlich
       const curAngle360 = angle % 360;
       const diff = ((targetAngle - curAngle360) + 360) % 360;
-      const extraRotations = Math.max(1, Math.ceil(speed / 4));
-      stoppingTotalDist = diff + extraRotations * 360;
+      stoppingTotalDist = (diff < 10 ? diff + 360 : diff) + 360; // genau 1 Extra-Umdrehung
       stoppingTraveled = 0;
       stoppingInitialSpeed = speed;
       stopping = true;
@@ -13034,7 +13346,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav-item').forEach(el => {
     if (el.dataset.page === 'gluecksrad') {
       el.addEventListener('click', () => {
-        setTimeout(() => { draw(); gwUpdateChips(); gwUpdateCounter(); }, 50);
+        setTimeout(() => { draw(); gwUpdateChips(); gwUpdateCounter(); }, 80);
       });
     }
   });

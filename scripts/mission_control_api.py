@@ -46,6 +46,9 @@ _photo_job = {"running": False, "total": 0, "done": 0, "errors": 0, "stop": Fals
 # Glücksrad Lehrer-Lösung (in-memory, reset bei Server-Neustart)
 _gluecksrad_state = {"stil": None, "nummer": None}
 
+# KI-Buch Async-Job (Hintergrund-Thread für Claude-Aufruf)
+_ki_buch_job = {"status": "idle", "antwort": "", "inhalt": "", "inhalt_titel": "", "error": ""}
+
 # Whisper Spracherkennung (lokal, kein F-Secure-Problem)
 _whisper_model = None
 def _get_whisper(force_cpu=False):
@@ -4571,6 +4574,25 @@ class Handler(BaseHTTPRequestHandler):
             elif self.path == "/api/gluecksrad/state":
                 self._send_json(_gluecksrad_state)
 
+            elif self.path == "/api/ki-news":
+                f = os.path.join(WORKSPACE, "data/ki_news.json")
+                if os.path.isfile(f):
+                    with open(f) as fh:
+                        self._send_json(json.load(fh))
+                else:
+                    self._send_json({"events": [], "news": [], "letztesUpdate": None})
+
+            elif self.path == "/api/ki-buch/generiere-status":
+                self._send_json(_ki_buch_job)
+
+            elif self.path == "/api/ki-buch":
+                f = os.path.join(WORKSPACE, "data/ki_buch.json")
+                if os.path.isfile(f):
+                    with open(f) as fh:
+                        self._send_json(json.load(fh))
+                else:
+                    self._send_json({"titel": "Thriller-Projekt", "status": "Planung", "kriterien": {}, "kapitel": [], "kommentare": [], "naechsterSchritt": ""})
+
             elif self.path == "/api/sidebar-state":
                 sf = os.path.join(WORKSPACE, "data/sidebar_state.json")
                 if os.path.isfile(sf):
@@ -4806,6 +4828,139 @@ class Handler(BaseHTTPRequestHandler):
             if self.path == "/api/gluecksrad/state":
                 _gluecksrad_state["stil"] = body.get("stil")
                 _gluecksrad_state["nummer"] = body.get("nummer")
+                self._send_json({"ok": True})
+            elif self.path == "/api/ki-buch/generiere":
+                global _ki_buch_job
+                if _ki_buch_job["status"] == "running":
+                    self._send_json({"status": "running"}); return
+                import threading as _thr3, shutil as _sh3, subprocess as _sp3, re as _re3, datetime as _dt3
+                bf = os.path.join(WORKSPACE, "data/ki_buch.json")
+                with open(bf) as fh:
+                    buch = json.load(fh)
+                kommentare = buch.get("kommentare", [])
+                offene = [k for k in kommentare if not k.get("erledigt")]
+                anweisung = offene[-1]["text"] if offene else "Schreibe das nächste Kapitel."
+                prots = json.dumps(buch.get("protagonisten", []), ensure_ascii=False, indent=2)
+                if buch.get("antagonist"):
+                    prots += "\n\nANTAGONIST:\n" + json.dumps(buch["antagonist"], ensure_ascii=False, indent=2)
+                krit = json.dumps(buch.get("kriterien", {}), ensure_ascii=False, indent=2)
+                # Vollständige Kapiteltexte für Konsistenz-Prüfung (Rückwirkungen erkennen)
+                kap_voll = "\n\n".join([f"=== {k['titel']} ===\n{k['text']}" for k in buch.get("kapitel", [])])
+                # Prüfen ob Chris eine Rückwirkungs-Änderung bereits bestätigt hat
+                bestaetigt = any(w in anweisung.lower() for w in ["ja, ändere alle", "ja ändere alle", "bestätigt", "ja, alle anpassen", "ja alle anpassen", "ja bitte alle"])
+                prompt = f"""Du bist Bolla, KI-Assistent von Chris Mandel, und schreibst gemeinsam einen deutschen KI-Thriller.
+
+BUCH: {buch.get("titel","AURORA")} — {buch.get("untertitel","")}
+
+BUCHKRITERIEN (UNBEDINGT BEACHTEN):
+{krit}
+
+PROTAGONISTEN:
+{prots}
+
+BISHERIGE KAPITEL (vollständig):
+{kap_voll if kap_voll else "Noch keine Kapitel — fange frisch an."}
+
+ANWEISUNG VON CHRIS:
+{anweisung}
+
+WICHTIGE REGEL ZU RÜCKWIRKUNGEN:
+Wenn die Anweisung eine Änderung verlangt, die ZWINGEND auch in FRÜHEREN Kapiteln berücksichtigt werden müsste (z.B. ein Charakterzug, ein Handlungsdetail, ein neuer Name, eine geänderte Beziehung, die schon vorher vorkam), dann führe die Änderung NICHT sofort komplett aus. Stattdessen:
+- Beschreibe im ANTWORT-Feld klar, WELCHE früheren Kapitel betroffen wären und WARUM.
+- Stelle die Rückfrage: "Soll ich diese Änderung in allen betroffenen Kapiteln umsetzen? Antworte mit 'Ja, ändere alle'."
+- Lass INHALT und TITEL_ABSCHNITT in diesem Fall LEER.
+{"AUSNAHME: Chris hat mit 'Ja, ändere alle' bestätigt — setze die Änderung jetzt durchgängig in ALLEN betroffenen Kapiteln um und gib das/die überarbeitete(n) Kapitel zurück (bei mehreren: das wichtigste zuerst, erwähne im ANTWORT-Feld welche weiteren du noch anpasst)." if bestaetigt else ""}
+
+Wenn die Anweisung KEINE Rückwirkung auf frühere Kapitel hat (z.B. neues Kapitel schreiben, aktuelles Kapitel isoliert überarbeiten), führe sie normal aus.
+
+Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, kein Markdown). Lass Felder leer wenn nicht zutreffend:
+
+###ANTWORT###
+(Kurze Rückmeldung ODER Rückfrage bei Rückwirkungen, 1-3 Sätze)
+###TITEL_ABSCHNITT###
+(Titel des neuen/überarbeiteten Abschnitts, z.B. "Prolog" oder "Kapitel 1: ..." — exakt wie bestehendes Kapitel wenn überarbeitet)
+###INHALT###
+(Der vollständige generierte Text — frei schreiben, Anführungszeichen, Absätze erlaubt. LEER bei Rückfrage.)
+###BUCHTITEL_NEU###
+(Nur wenn Buchtitel geändert werden soll, sonst leer)
+###NAECHSTER_SCHRITT###
+(Was als nächstes sinnvoll wäre)
+###ENDE###"""
+                _ki_buch_job = {"status": "running", "antwort": "", "inhalt": "", "inhalt_titel": "", "error": ""}
+                def _run():
+                    global _ki_buch_job
+                    try:
+                        cl = _sh3.which("claude") or os.path.expanduser("~/.local/bin/claude")
+                        r = _sp3.run([cl, "-p", "--output-format", "json", "--model", "claude-sonnet-4-6", prompt],
+                                     capture_output=True, text=True, timeout=300, stdin=_sp3.DEVNULL,
+                                     cwd=os.path.expanduser("~"))
+                        if r.returncode != 0:
+                            _ki_buch_job = {"status": "error", "error": r.stderr[:200] or "Claude-Fehler", "antwort":"","inhalt":"","inhalt_titel":""}
+                            return
+                        raw = json.loads(r.stdout).get("result", "")
+                        def _extract(tag_start, tag_end):
+                            mm = _re3.search(_re3.escape(tag_start) + r'(.*?)' + _re3.escape(tag_end), raw, _re3.DOTALL)
+                            return mm.group(1).strip() if mm else ""
+                        gen = {
+                            "antwort_text": _extract("###ANTWORT###", "###TITEL_ABSCHNITT###"),
+                            "neuer_inhalt_titel": _extract("###TITEL_ABSCHNITT###", "###INHALT###"),
+                            "neuer_inhalt": _extract("###INHALT###", "###BUCHTITEL_NEU###"),
+                            "titel_update": _extract("###BUCHTITEL_NEU###", "###NAECHSTER_SCHRITT###"),
+                            "naechster_schritt": _extract("###NAECHSTER_SCHRITT###", "###ENDE###"),
+                        }
+                        # Fallback wenn Format nicht erkannt
+                        if not gen["antwort_text"] and not gen["neuer_inhalt"]:
+                            gen["antwort_text"] = raw[:300]
+                        with open(bf) as fh2: buch2 = json.load(fh2)
+                        now = _dt3.datetime.now().strftime("%Y-%m-%d %H:%M")
+                        if gen.get("titel_update"): buch2["titel"] = gen["titel_update"]
+                        if gen.get("neuer_inhalt") and gen.get("neuer_inhalt_titel"):
+                            neuer_titel = gen["neuer_inhalt_titel"]
+                            # Überschreiben wenn Kapitel mit gleichem Titel existiert ODER Anweisung "nochmal/überarbeite" enthält
+                            ueberschreibe_keywords = ["nochmal","noch einmal","überarbeit","ersetze","rewrite","verbessere kapitel"]
+                            ist_ueberarbeitung = any(kw in anweisung.lower() for kw in ueberschreibe_keywords)
+                            existing_idx = next((i for i,k in enumerate(buch2.get("kapitel",[])) if k["titel"]==neuer_titel), None)
+                            kap_eintrag = {"titel":neuer_titel,"text":gen["neuer_inhalt"],"datum":now}
+                            if existing_idx is not None:
+                                buch2["kapitel"][existing_idx] = kap_eintrag
+                            elif ist_ueberarbeitung:
+                                # Findet das zuletzt erwähnte Kapitel und ersetzt es
+                                import re as _re4
+                                m4 = _re4.search(r'kapitel\s*(\d+)', anweisung.lower())
+                                if m4:
+                                    knum = int(m4.group(1))
+                                    cidx = next((i for i,k in enumerate(buch2.get("kapitel",[])) if f"kapitel {knum}" in k["titel"].lower()), None)
+                                    if cidx is not None: buch2["kapitel"][cidx] = kap_eintrag
+                                    else: buch2.setdefault("kapitel",[]).append(kap_eintrag)
+                                else:
+                                    buch2.setdefault("kapitel",[]).append(kap_eintrag)
+                            else:
+                                buch2.setdefault("kapitel",[]).append(kap_eintrag)
+                            buch2.setdefault("statistik",{})["kapitel_gesamt"] = len(buch2["kapitel"])
+                            buch2["statistik"]["woerter_gesamt"] = sum(len(k["text"].split()) for k in buch2["kapitel"])
+                            buch2["statistik"]["letzte_session"] = now
+                        buch2["letzteAktion"] = now
+                        if gen.get("naechster_schritt"): buch2["naechsterSchritt"] = gen["naechster_schritt"]
+                        for k in [x for x in buch2.get("kommentare",[]) if not x.get("erledigt")]:
+                            k["erledigt"]=True; k["erledigt_am"]=now; k["antwort"]=gen.get("antwort_text","")
+                        with open(bf,"w") as fh2: json.dump(buch2, fh2, ensure_ascii=False, indent=2)
+                        _ki_buch_job = {"status":"done","antwort":gen.get("antwort_text",""),"inhalt":gen.get("neuer_inhalt",""),"inhalt_titel":gen.get("neuer_inhalt_titel",""),"error":""}
+                    except Exception as ex:
+                        _ki_buch_job = {"status":"error","error":str(ex),"antwort":"","inhalt":"","inhalt_titel":""}
+                _thr3.Thread(target=_run, daemon=True).start()
+                self._send_json({"status": "started"})
+
+            elif self.path == "/api/ki-buch/kommentar":
+                bf = os.path.join(WORKSPACE, "data/ki_buch.json")
+                with open(bf) as fh:
+                    buch = json.load(fh)
+                import datetime as _dt
+                buch.setdefault("kommentare", []).append({
+                    "text": body.get("text", ""),
+                    "datum": _dt.datetime.now().strftime("%Y-%m-%d %H:%M")
+                })
+                with open(bf, "w") as fh:
+                    json.dump(buch, fh, ensure_ascii=False, indent=2)
                 self._send_json({"ok": True})
             elif self.path == "/api/sidebar-state":
                 sf = os.path.join(WORKSPACE, "data/sidebar_state.json")
@@ -5572,6 +5727,10 @@ Antworte NUR als reines JSON ohne Markdown:
                 kontext = body.get("kontext", "").strip()
                 feedback = body.get("feedback", "").strip()
                 prev_lyrics = body.get("prev_lyrics", "").strip()
+                jugendfrei = body.get("jugendfrei", True)
+                jugendfrei_inst = ("WICHTIG: Songtext muss absolut jugendfrei und familienfreundlich sein. "
+                                   "Keine zweideutigen Formulierungen, keine Anspielungen, keine suggestiven Ausdrücke. "
+                                   "Clean lyrics, appropriate for all ages, family-friendly.\n") if jugendfrei else ""
                 SCHOOL_KONTEXT = "Geburtstagssong für Schüler · Computerkurs Herrn Mandel · Lessing-Gymnasium"
                 is_school = not kontext or kontext == SCHOOL_KONTEXT
                 import re as _re2
@@ -5788,7 +5947,7 @@ Antworte NUR als reines JSON ohne Markdown:
                     who = f"Schüler/in: {name}" if is_personal else (f"Gruppe/Klasse: {name}" if name else "Allgemeiner Klassen-Song")
                     prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Geburtstagssong {lang_inst}.
 
-{who}
+{jugendfrei_inst}{who}
 Klasse: {klasse}
 Alter: {alter}
 {gb_kontext(geburtstag, ref_date)}
@@ -5817,7 +5976,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     who_line = f"Person/Gruppe: {name}" if name else "Kein spezifischer Adressat (nur Anlass)"
                     prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Song {lang_inst}.
 
-{who_line}
+{jugendfrei_inst}{who_line}
 Anlass / Kontext: {kontext}
 {gb_kontext(geburtstag, ref_date)}
 {gb_lyrics_hint(geburtstag, ref_date)}
