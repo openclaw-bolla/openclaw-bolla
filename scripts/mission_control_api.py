@@ -2966,21 +2966,89 @@ def get_token_budget():
 
 _claude_quota_cache = {"ts": 0, "data": None}
 
-def get_claude_quota():
-    """Ruft echte Claude Pro Usage direkt von Anthropic API ab (OAuth)."""
+# Öffentliche Claude-Code OAuth client_id (für Token-Refresh)
+_CLAUDE_OAUTH_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
+_CLAUDE_CRED_PATH = os.path.expanduser("~/.claude/.credentials.json")
+
+
+def _refresh_claude_token():
+    """Erneuert den abgelaufenen OAuth-Token via refreshToken und speichert atomar.
+    Gibt den neuen accessToken zurück oder None bei Fehler."""
     import time as _t
     import urllib.request as _ur
+    try:
+        creds = json.load(open(_CLAUDE_CRED_PATH))
+        o = creds["claudeAiOauth"]
+        rt = o.get("refreshToken")
+        if not rt:
+            return None
+        body = json.dumps({
+            "grant_type": "refresh_token",
+            "refresh_token": rt,
+            "client_id": _CLAUDE_OAUTH_CLIENT_ID,
+        }).encode()
+        req = _ur.Request(
+            "https://console.anthropic.com/v1/oauth/token",
+            data=body,
+            headers={"Content-Type": "application/json", "Accept": "application/json",
+                     "User-Agent": "claude-cli/1.0 (external, cli)"},
+        )
+        with _ur.urlopen(req, timeout=15) as r:
+            tok = json.loads(r.read().decode())
+        new_access = tok.get("access_token")
+        if not new_access:
+            return None
+        o["accessToken"] = new_access
+        o["refreshToken"] = tok.get("refresh_token", rt)
+        if tok.get("expires_in"):
+            o["expiresAt"] = int((_t.time() + tok["expires_in"]) * 1000)
+        creds["claudeAiOauth"] = o
+        # Sicherheitskopie + atomares Schreiben (chmod 600)
+        try:
+            import shutil
+            shutil.copy2(_CLAUDE_CRED_PATH, _CLAUDE_CRED_PATH + ".bak-autorefresh")
+        except Exception:
+            pass
+        tmp = _CLAUDE_CRED_PATH + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(creds, f, indent=2)
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, _CLAUDE_CRED_PATH)
+        return new_access
+    except Exception:
+        return None
+
+
+def get_claude_quota():
+    """Ruft echte Claude Pro Usage direkt von Anthropic API ab (OAuth).
+    Erneuert bei 401 (abgelaufener Token) automatisch via refreshToken."""
+    import time as _t
+    import urllib.request as _ur
+    import urllib.error as _ue
     if _claude_quota_cache["data"] and _t.time() - _claude_quota_cache["ts"] < 300:
         return _claude_quota_cache["data"]
-    try:
-        creds = json.load(open(os.path.expanduser("~/.claude/.credentials.json")))
-        token = creds["claudeAiOauth"]["accessToken"]
+
+    def _fetch(token):
         req = _ur.Request(
             "https://api.anthropic.com/api/oauth/usage",
             headers={"Authorization": f"Bearer {token}", "anthropic-beta": "oauth-2025-04-20", "Accept": "application/json"}
         )
         with _ur.urlopen(req, timeout=10) as r:
-            raw = json.loads(r.read().decode())
+            return json.loads(r.read().decode())
+
+    try:
+        creds = json.load(open(_CLAUDE_CRED_PATH))
+        token = creds["claudeAiOauth"]["accessToken"]
+        try:
+            raw = _fetch(token)
+        except _ue.HTTPError as he:
+            if he.code != 401:
+                raise
+            # Token abgelaufen -> erneuern und einmal erneut versuchen
+            new_token = _refresh_claude_token()
+            if not new_token:
+                raise
+            raw = _fetch(new_token)
 
         fh = raw.get("five_hour") or {}
         sd = raw.get("seven_day") or {}
@@ -4589,7 +4657,10 @@ class Handler(BaseHTTPRequestHandler):
                 f = os.path.join(WORKSPACE, "data/ki_buch.json")
                 if os.path.isfile(f):
                     with open(f) as fh:
-                        self._send_json(json.load(fh))
+                        _buch_pub = json.load(fh)
+                    # SPOILER-SCHUTZ: geheime Wendung NIE ans Frontend senden
+                    _buch_pub.pop("geheim", None)
+                    self._send_json(_buch_pub)
                 else:
                     self._send_json({"titel": "Thriller-Projekt", "status": "Planung", "kriterien": {}, "kapitel": [], "kommentare": [], "naechsterSchritt": ""})
 
@@ -4844,6 +4915,27 @@ class Handler(BaseHTTPRequestHandler):
                 if buch.get("antagonist"):
                     prots += "\n\nANTAGONIST:\n" + json.dumps(buch["antagonist"], ensure_ascii=False, indent=2)
                 krit = json.dumps(buch.get("kriterien", {}), ensure_ascii=False, indent=2)
+                # Produzenten-Steuerung (Rote Linien, Wunsch-Briefkasten, Richtungsimpuls)
+                _st = buch.get("steuerung", {})
+                _rl = _st.get("rote_linien", [])
+                _wb = _st.get("wunsch_briefkasten", [])
+                _ri = (_st.get("richtungsimpuls") or "").strip()
+                steuer_txt = ""
+                if _rl:
+                    steuer_txt += "\nROTE LINIEN (unbedingt einhalten — Dinge die NICHT passieren dürfen / Vorgaben):\n" + "\n".join(f"- {x}" for x in _rl) + "\n"
+                if _wb:
+                    steuer_txt += "\nWUNSCH-BRIEFKASTEN (darfst du erfüllen WANN es dramaturgisch zündet — nicht sofort, nicht alle auf einmal; Timing ist deine Kunst):\n" + "\n".join(f"- {x}" for x in _wb) + "\n"
+                if _ri:
+                    steuer_txt += f"\nRICHTUNGSIMPULS fürs nächste Kapitel (Strömung, die Chris vorgibt — Wendungen bleiben deine Sache):\n{_ri}\n"
+                # GEHEIME WENDUNG — nur intern, NIE im Überblick/Antwort verraten
+                _gw = (buch.get("geheim", {}).get("wendung") or "").strip()
+                geheim_txt = ""
+                if _gw:
+                    geheim_txt = f"""
+GEHEIME MASTER-WENDUNG (NUR FÜR DICH — Chris darf sie NIEMALS erfahren, auch nicht andeutungsweise im ###ANTWORT### oder ###UEBERBLICK###):
+{_gw}
+Arbeite konsequent auf diese Wendung hin. Säe unauffällige Hinweise/Saatkörner, die sie später glaubwürdig und rückwirkend stimmig machen — aber so subtil, dass ein Erstleser sie nicht als Hinweis erkennt. Der ###UEBERBLICK### bleibt strikt pointenfrei.
+"""
                 # Vollständige Kapiteltexte für Konsistenz-Prüfung (Rückwirkungen erkennen)
                 kap_voll = "\n\n".join([f"=== {k['titel']} ===\n{k['text']}" for k in buch.get("kapitel", [])])
                 # Prüfen ob Chris eine Rückwirkungs-Änderung bereits bestätigt hat
@@ -4857,7 +4949,7 @@ BUCHKRITERIEN (UNBEDINGT BEACHTEN):
 
 PROTAGONISTEN:
 {prots}
-
+{steuer_txt}{geheim_txt}
 BISHERIGE KAPITEL (vollständig):
 {kap_voll if kap_voll else "Noch keine Kapitel — fange frisch an."}
 
@@ -4879,6 +4971,8 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
 (Kurze Rückmeldung ODER Rückfrage bei Rückwirkungen, 1-3 Sätze)
 ###TITEL_ABSCHNITT###
 (Titel des neuen/überarbeiteten Abschnitts, z.B. "Prolog" oder "Kapitel 1: ..." — exakt wie bestehendes Kapitel wenn überarbeitet)
+###UEBERBLICK###
+(STRIKT POINTENFREIER Kurz-Überblick des Kapitels, 3-5 Zeilen: wer, wo, welche Beziehung/Stimmung bewegt sich, welcher Strang kommt voran. NIEMALS Twists, Enthüllungen, Cliffhanger-Clou oder die geheime Wendung verraten. Dies liest Chris zum Steuern, OHNE sich zu spoilern. LEER bei Rückfrage.)
 ###INHALT###
 (Der vollständige generierte Text — frei schreiben, Anführungszeichen, Absätze erlaubt. LEER bei Rückfrage.)
 ###BUCHTITEL_NEU###
@@ -4903,7 +4997,8 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                             return mm.group(1).strip() if mm else ""
                         gen = {
                             "antwort_text": _extract("###ANTWORT###", "###TITEL_ABSCHNITT###"),
-                            "neuer_inhalt_titel": _extract("###TITEL_ABSCHNITT###", "###INHALT###"),
+                            "neuer_inhalt_titel": _extract("###TITEL_ABSCHNITT###", "###UEBERBLICK###"),
+                            "ueberblick": _extract("###UEBERBLICK###", "###INHALT###"),
                             "neuer_inhalt": _extract("###INHALT###", "###BUCHTITEL_NEU###"),
                             "titel_update": _extract("###BUCHTITEL_NEU###", "###NAECHSTER_SCHRITT###"),
                             "naechster_schritt": _extract("###NAECHSTER_SCHRITT###", "###ENDE###"),
@@ -4920,7 +5015,7 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                             ueberschreibe_keywords = ["nochmal","noch einmal","überarbeit","ersetze","rewrite","verbessere kapitel"]
                             ist_ueberarbeitung = any(kw in anweisung.lower() for kw in ueberschreibe_keywords)
                             existing_idx = next((i for i,k in enumerate(buch2.get("kapitel",[])) if k["titel"]==neuer_titel), None)
-                            kap_eintrag = {"titel":neuer_titel,"text":gen["neuer_inhalt"],"datum":now}
+                            kap_eintrag = {"titel":neuer_titel,"text":gen["neuer_inhalt"],"ueberblick":gen.get("ueberblick",""),"datum":now}
                             if existing_idx is not None:
                                 buch2["kapitel"][existing_idx] = kap_eintrag
                             elif ist_ueberarbeitung:
@@ -4962,6 +5057,31 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 with open(bf, "w") as fh:
                     json.dump(buch, fh, ensure_ascii=False, indent=2)
                 self._send_json({"ok": True})
+
+            elif self.path == "/api/ki-buch/steuerung":
+                # Produzenten-Hebel: Wunsch-Briefkasten, Rote Linien, Richtungsimpuls
+                bf = os.path.join(WORKSPACE, "data/ki_buch.json")
+                with open(bf) as fh:
+                    buch = json.load(fh)
+                st = buch.setdefault("steuerung", {})
+                st.setdefault("rote_linien", []); st.setdefault("wunsch_briefkasten", []); st.setdefault("richtungsimpuls", "")
+                aktion = body.get("aktion", "")
+                if aktion == "wunsch_add" and body.get("text", "").strip():
+                    st["wunsch_briefkasten"].append(body["text"].strip())
+                elif aktion == "wunsch_del":
+                    i = body.get("index", -1)
+                    if 0 <= i < len(st["wunsch_briefkasten"]): st["wunsch_briefkasten"].pop(i)
+                elif aktion == "linie_add" and body.get("text", "").strip():
+                    st["rote_linien"].append(body["text"].strip())
+                elif aktion == "linie_del":
+                    i = body.get("index", -1)
+                    if 0 <= i < len(st["rote_linien"]): st["rote_linien"].pop(i)
+                elif aktion == "richtung_set":
+                    st["richtungsimpuls"] = body.get("text", "").strip()
+                with open(bf, "w") as fh:
+                    json.dump(buch, fh, ensure_ascii=False, indent=2)
+                self._send_json({"ok": True, "steuerung": st})
+
             elif self.path == "/api/sidebar-state":
                 sf = os.path.join(WORKSPACE, "data/sidebar_state.json")
                 os.makedirs(os.path.dirname(sf), exist_ok=True)

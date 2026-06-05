@@ -3,1193 +3,261 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Control</title>
+<title>Mission Control — Aurora Deck</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap');
-
-  :root {
-    --bg-primary: #050810;
-    --bg-secondary: #090d1a;
-    --bg-card: #0c1220;
-    --bg-card-hover: #0f1830;
-    --neon-cyan: #00f5ff;
-    --neon-purple: #7b2fff;
-    --neon-green: #00ff88;
-    --neon-orange: #ff6b35;
-    --neon-pink: #ff2d78;
-    --text-primary: #c8e0ff;
-    --text-dim: #4a6080;
-    --text-bright: #e8f4ff;
-    --border: #1a2840;
-    --border-glow: rgba(0, 245, 255, 0.15);
-    --scan-line: rgba(0, 245, 255, 0.03);
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    font-family: 'Rajdhani', 'Share Tech Mono', monospace;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    height: 100vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-  }
-
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      var(--scan-line) 2px,
-      var(--scan-line) 4px
-    );
-    pointer-events: none;
-    z-index: 1000;
-  }
-
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(ellipse at 20% 50%, rgba(123,47,255,0.04) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 20%, rgba(0,245,255,0.04) 0%, transparent 60%);
-    pointer-events: none;
-    z-index: 999;
-  }
-
-  /* ── TOPBAR ────────────────────────────────────────── */
-  .topbar {
-    height: 52px;
-    background: linear-gradient(90deg, #060a14 0%, #08101e 50%, #060a14 100%);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    position: relative;
-    z-index: 100;
-    flex-shrink: 0;
-  }
-
-  .topbar::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--neon-cyan), var(--neon-purple), transparent);
-    opacity: 0.6;
-  }
-
-  .topbar-left {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .logo-mark {
-    width: 30px;
-    height: 30px;
-    border: 1.5px solid var(--neon-cyan);
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    color: var(--neon-cyan);
-    text-shadow: 0 0 8px var(--neon-cyan);
-    box-shadow: inset 0 0 8px rgba(0,245,255,0.1), 0 0 10px rgba(0,245,255,0.15);
-    font-weight: 700;
-    letter-spacing: -1px;
-  }
-
-  .page-title {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--text-bright);
-  }
-
-  .page-title span {
-    color: var(--neon-cyan);
-    text-shadow: 0 0 12px var(--neon-cyan);
-  }
-
-  .breadcrumb {
-    font-size: 11px;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-    font-family: 'Share Tech Mono', monospace;
-  }
-
-  .breadcrumb span { color: var(--neon-cyan); opacity: 0.7; }
-
-  .topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-  }
-
-  .status-indicators {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-  }
-
-  .status-dot {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 10px;
-    font-family: 'Share Tech Mono', monospace;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-  }
-
-  .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    animation: pulse-dot 2s infinite;
-  }
-
-  .dot.online { background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); }
-  .dot.warn { background: var(--neon-orange); box-shadow: 0 0 6px var(--neon-orange); animation: none; }
-
-  @keyframes pulse-dot {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-
-  .clock {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 22px;
-    color: var(--neon-cyan);
-    text-shadow: 0 0 16px var(--neon-cyan), 0 0 32px rgba(0,245,255,0.3);
-    letter-spacing: 3px;
-    line-height: 1;
-  }
-
-  .clock-date {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 9px;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-    text-align: right;
-    margin-top: 2px;
-  }
-
-  .user-badge {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 5px 10px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: rgba(0,245,255,0.03);
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .user-badge:hover {
-    border-color: rgba(0,245,255,0.3);
-    background: rgba(0,245,255,0.06);
-  }
-
-  .avatar {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 700;
-    color: white;
-    box-shadow: 0 0 8px rgba(123,47,255,0.5);
-  }
-
-  .user-name {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-primary);
-    letter-spacing: 1px;
-  }
-
-  /* ── MAIN LAYOUT ───────────────────────────────────── */
-  .layout {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-  }
-
-  /* ── SIDEBAR ───────────────────────────────────────── */
-  .sidebar {
-    width: 210px;
-    background: linear-gradient(180deg, #070b15 0%, #060a12 100%);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    padding: 16px 0;
-    flex-shrink: 0;
-    position: relative;
-  }
-
-  .sidebar::after {
-    content: '';
-    position: absolute;
-    top: 0; right: 0; bottom: 0;
-    width: 1px;
-    background: linear-gradient(180deg, transparent, var(--neon-cyan), var(--neon-purple), transparent);
-    opacity: 0.2;
-  }
-
-  .sidebar-section-label {
-    font-size: 9px;
-    font-family: 'Share Tech Mono', monospace;
-    color: var(--text-dim);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    padding: 0 18px 8px;
-    margin-top: 8px;
-  }
-
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 18px;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    color: var(--text-dim);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    border-left: 2px solid transparent;
-    margin: 1px 0;
-  }
-
-  .nav-item:hover {
-    color: var(--text-primary);
-    background: rgba(0,245,255,0.04);
-    border-left-color: rgba(0,245,255,0.3);
-  }
-
-  .nav-item.active {
-    color: var(--neon-cyan);
-    background: rgba(0,245,255,0.06);
-    border-left-color: var(--neon-cyan);
-    text-shadow: 0 0 8px rgba(0,245,255,0.5);
-  }
-
-  .nav-item.active .nav-icon {
-    color: var(--neon-cyan);
-    text-shadow: 0 0 10px var(--neon-cyan);
-    filter: drop-shadow(0 0 4px var(--neon-cyan));
-  }
-
-  .nav-icon {
-    width: 18px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 15px;
-    flex-shrink: 0;
-  }
-
-  .nav-badge {
-    margin-left: auto;
-    background: var(--neon-pink);
-    color: white;
-    font-size: 9px;
-    font-weight: 700;
-    padding: 2px 5px;
-    border-radius: 8px;
-    box-shadow: 0 0 8px rgba(255,45,120,0.5);
-    animation: badge-pulse 2s infinite;
-  }
-
-  @keyframes badge-pulse {
-    0%, 100% { box-shadow: 0 0 8px rgba(255,45,120,0.5); }
-    50% { box-shadow: 0 0 14px rgba(255,45,120,0.9); }
-  }
-
-  .sidebar-divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--border), transparent);
-    margin: 10px 18px;
-  }
-
-  .sidebar-bottom {
-    margin-top: auto;
-    padding: 0 18px 8px;
-  }
-
-  .system-health {
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 10px 12px;
-    background: rgba(0,245,255,0.02);
-  }
-
-  .health-label {
-    font-size: 9px;
-    font-family: 'Share Tech Mono', monospace;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-    margin-bottom: 6px;
-  }
-
-  .health-bar-wrap {
-    height: 3px;
-    background: rgba(255,255,255,0.05);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .health-bar-fill {
-    height: 100%;
-    width: 92%;
-    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-green));
-    border-radius: 2px;
-    box-shadow: 0 0 6px var(--neon-cyan);
-  }
-
-  .health-value {
-    font-size: 10px;
-    font-family: 'Share Tech Mono', monospace;
-    color: var(--neon-green);
-    text-shadow: 0 0 6px var(--neon-green);
-    margin-top: 4px;
-    text-align: right;
-  }
-
-  /* ── MAIN CONTENT ──────────────────────────────────── */
-  .main {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-  }
-
-  .main::-webkit-scrollbar { width: 4px; }
-  .main::-webkit-scrollbar-track { background: var(--bg-primary); }
-  .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-  .main::-webkit-scrollbar-thumb:hover { background: var(--neon-cyan); box-shadow: 0 0 6px var(--neon-cyan); }
-
-  /* ── SECTION HEADER ────────────────────────────────── */
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 4px;
-  }
-
-  .section-title {
-    font-size: 10px;
-    font-family: 'Share Tech Mono', monospace;
-    color: var(--text-dim);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-  }
-
-  .section-line {
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, var(--border), transparent);
-  }
-
-  /* ── WIDGET GRID ───────────────────────────────────── */
-  .widget-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-  }
-
-  .widget-grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
-
-  .widget-grid-3 {
-    display: grid;
-    grid-template-columns: 1.5fr 1fr 1fr;
-    gap: 14px;
-  }
-
-  /* ── CARD BASE ─────────────────────────────────────── */
-  .card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.25s;
-  }
-
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--card-accent, var(--neon-cyan)), transparent);
-    opacity: 0.5;
-  }
-
-  .card:hover {
-    background: var(--bg-card-hover);
-    border-color: rgba(0,245,255,0.2);
-    box-shadow: 0 0 20px rgba(0,245,255,0.05);
-    transform: translateY(-1px);
-  }
-
-  .card-corner {
-    position: absolute;
-    top: 8px; right: 8px;
-    width: 14px; height: 14px;
-    border-top: 1.5px solid var(--card-accent, var(--neon-cyan));
-    border-right: 1.5px solid var(--card-accent, var(--neon-cyan));
-    opacity: 0.4;
-    border-radius: 0 2px 0 0;
-  }
-
-  .card-label {
-    font-size: 9px;
-    font-family: 'Share Tech Mono', monospace;
-    color: var(--text-dim);
-    letter-spacing: 2.5px;
-    text-transform: uppercase;
-    margin-bottom: 10px;
-  }
-
-  /* ── STAT CARD ─────────────────────────────────────── */
-  .stat-card .stat-value {
-    font-size: 38px;
-    font-weight: 700;
-    font-family: 'Share Tech Mono', monospace;
-    color: var(--card-accent, var(--neon-cyan));
-    text-shadow: 0 0 20px var(--card-accent, var(--neon-cyan));
-    line-height: 1;
-    margin-bottom: 6px;
-  }
-
-  .stat-card .stat-unit {
-    font-size: 16px;
-    opacity: 0.6;
-  }
-
-  .stat-card .stat-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-primary);
-    letter-spacing: 1px;
-    margin-bottom: 10px;
-  }
-
-  .progress-bar {
-    height: 4px;
-    background: rgba(255,255,255,0.05);
-    border-radius: 2px;
-    overflow: hidden;
-    margin-top: 8px;
-  }
-
-  .progress-fill {
-    height: 100%;
-    border-radius: 2px;
-    background: linear-gradient(90deg, var(--card-accent, var(--neon-cyan)), color-mix(in srgb, var(--card-accent, var(--neon-cyan)) 70%, white));
-    box-shadow: 0 0 6px var(--card-accent, var(--neon-cyan));
-    transition: width 0.5s ease;
-  }
-
-  .stat-delta {
-    font-size: 10px;
-    font-family: 'Share Tech Mono', monospace;
-    color: var(--neon-green);
-    margin-top: 6px;
-  }
-
-  .stat-delta.warn { color: var(--neon-orange); }
-
-  /* ── MINI SPARK ─────────────────────────────────────── */
-  .spark-container {
-    position: absolute;
-    bottom: 14px; right: 14px;
-  }
-
-  .spark-bars {
-    display: flex;
-    gap: 2px;
-    align-items: flex-end;
-    height: 28px;
-  }
-
-  .spark-bar {
-    width: 4px;
-    border-radius: 1px 1px 0 0;
-    background: var(--card-accent, var(--neon-cyan));
-    opacity: 0.3;
-    transition: opacity 0.2s;
-  }
-
-  .spark-bar.active { opacity: 0.9; }
-  .card:hover .spark-bar { opacity: 0.5; }
-  .card:hover .spark-bar.active { opacity: 1; }
-
-  /* ── MAIL CARD ─────────────────────────────────────── */
-  .mail-card { --card-accent: var(--neon-pink); }
-
-  .mail-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    background: rgba(255,45,120,0.1);
-    border: 1.5px solid rgba(255,45,120,0.4);
-    font-size: 22px;
-    font-family: 'Share Tech Mono', monospace;
-    font-weight: 700;
-    color: var(--neon-pink);
-    text-shadow: 0 0 12px var(--neon-pink);
-    box-shadow: 0 0 14px rgba(255,45,120,0.2);
-    margin-bottom: 8px;
-  }
-
-  .mail-preview {
-    margin-top: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .mail-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 5px 6px;
-    border-radius: 4px;
-    background: rgba(255,45,120,0.04);
-    border: 1px solid rgba(255,45,120,0.1);
-  }
-
-  .mail-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--neon-pink); flex-shrink: 0; box-shadow: 0 0 5px var(--neon-pink); }
-  .mail-sender { font-size: 10px; font-weight: 700; color: var(--text-primary); letter-spacing: 0.5px; }
-  .mail-subject { font-size: 9px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
-
-  /* ── WEATHER CARD ──────────────────────────────────── */
-  .weather-card { --card-accent: var(--neon-purple); }
-
-  .weather-main {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 12px;
-  }
-
-  .weather-icon {
-    font-size: 40px;
-    filter: drop-shadow(0 0 10px rgba(123,47,255,0.6));
-  }
-
-  .weather-temp {
-    font-size: 42px;
-    font-family: 'Share Tech Mono', monospace;
-    font-weight: 400;
-    color: var(--neon-purple);
-    text-shadow: 0 0 18px var(--neon-purple);
-    line-height: 1;
-  }
-
-  .weather-temp span { font-size: 20px; opacity: 0.6; }
-
-  .weather-city {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-
-  .weather-desc {
-    font-size: 11px;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-    margin-top: 2px;
-  }
-
-  .weather-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-  }
-
-  .wx-stat {
-    padding: 5px 8px;
-    background: rgba(123,47,255,0.06);
-    border: 1px solid rgba(123,47,255,0.12);
-    border-radius: 4px;
-  }
-
-  .wx-stat-label { font-size: 9px; color: var(--text-dim); letter-spacing: 1.5px; font-family: 'Share Tech Mono', monospace; }
-  .wx-stat-val { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-top: 2px; }
-
-  /* ── ACTIVITY FEED ─────────────────────────────────── */
-  .activity-card { --card-accent: var(--neon-green); }
-
-  .activity-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
-
-  .activity-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 8px;
-    border-radius: 5px;
-    border: 1px solid rgba(255,255,255,0.03);
-    background: rgba(255,255,255,0.01);
-    transition: all 0.2s;
-  }
-
-  .activity-item:hover { background: rgba(0,255,136,0.04); border-color: rgba(0,255,136,0.1); }
-
-  .activity-icon {
-    width: 28px; height: 28px;
-    border-radius: 5px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px;
-    flex-shrink: 0;
-  }
-
-  .activity-icon.success { background: rgba(0,255,136,0.1); }
-  .activity-icon.info { background: rgba(0,245,255,0.1); }
-  .activity-icon.warn { background: rgba(255,107,53,0.1); }
-
-  .activity-body { flex: 1; }
-  .activity-title { font-size: 12px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.5px; }
-  .activity-time { font-size: 10px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace; margin-top: 2px; }
-
-  /* ── QUICK STATS ROW ───────────────────────────────── */
-  .mini-stat-row {
-    display: flex;
-    gap: 10px;
-  }
-
-  .mini-stat {
-    flex: 1;
-    padding: 8px 10px;
-    background: rgba(255,255,255,0.02);
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    text-align: center;
-    transition: all 0.2s;
-  }
-
-  .mini-stat:hover { background: rgba(0,245,255,0.04); border-color: rgba(0,245,255,0.2); }
-  .mini-stat-val { font-size: 16px; font-weight: 700; font-family: 'Share Tech Mono', monospace; color: var(--text-bright); }
-  .mini-stat-lbl { font-size: 9px; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; }
-
-  /* ── BOLLA STATUS ──────────────────────────────────── */
-  .bolla-card { --card-accent: var(--neon-cyan); }
-
-  .bolla-status-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 14px;
-  }
-
-  .bolla-avatar {
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #0f2040 0%, #1a0830 100%);
-    border: 1.5px solid var(--neon-cyan);
-    box-shadow: 0 0 16px rgba(0,245,255,0.3), inset 0 0 10px rgba(0,245,255,0.05);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
-    position: relative;
-  }
-
-  .bolla-online {
-    position: absolute;
-    bottom: 2px; right: 2px;
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--neon-green);
-    box-shadow: 0 0 6px var(--neon-green);
-    border: 1px solid var(--bg-card);
-    animation: pulse-dot 2s infinite;
-  }
-
-  .bolla-info .bolla-name {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--neon-cyan);
-    text-shadow: 0 0 10px rgba(0,245,255,0.5);
-    letter-spacing: 2px;
-  }
-
-  .bolla-info .bolla-state {
-    font-size: 10px;
-    color: var(--neon-green);
-    font-family: 'Share Tech Mono', monospace;
-    letter-spacing: 1px;
-    margin-top: 2px;
-  }
-
-  .bolla-metrics {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 6px;
-  }
-
-  .bolla-metric {
-    text-align: center;
-    padding: 6px;
-    background: rgba(0,245,255,0.03);
-    border: 1px solid rgba(0,245,255,0.08);
-    border-radius: 4px;
-  }
-
-  .bolla-metric-val { font-size: 14px; font-weight: 700; font-family: 'Share Tech Mono', monospace; color: var(--neon-cyan); }
-  .bolla-metric-lbl { font-size: 9px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; }
-
-  /* ── CALENDAR ──────────────────────────────────────── */
-  .cal-card { --card-accent: var(--neon-orange); }
-
-  .cal-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 5px;
-    border-left: 2px solid transparent;
-    transition: all 0.2s;
-    margin-bottom: 6px;
-  }
-
-  .cal-item:hover { background: rgba(255,107,53,0.05); }
-  .cal-item.today { border-left-color: var(--neon-orange); }
-  .cal-item.soon { border-left-color: var(--neon-cyan); }
-
-  .cal-time {
-    font-size: 11px;
-    font-family: 'Share Tech Mono', monospace;
-    color: var(--neon-orange);
-    width: 38px;
-    flex-shrink: 0;
-    text-shadow: 0 0 6px rgba(255,107,53,0.5);
-  }
-
-  .cal-item.soon .cal-time { color: var(--neon-cyan); text-shadow: 0 0 6px rgba(0,245,255,0.5); }
-
-  .cal-event { font-size: 12px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.5px; }
-  .cal-loc { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
-
-  /* ── GLOW EFFECTS ──────────────────────────────────── */
-  .glow-cyan { color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); }
-  .glow-green { color: var(--neon-green); text-shadow: 0 0 10px var(--neon-green); }
-  .glow-orange { color: var(--neon-orange); }
-
-  /* ── CORNER DECORATIONS ────────────────────────────── */
-  .hud-corner {
-    position: fixed;
-    width: 40px;
-    height: 40px;
-    opacity: 0.25;
-    pointer-events: none;
-  }
-
-  .hud-corner.tl { top: 60px; left: 220px; border-top: 1px solid var(--neon-cyan); border-left: 1px solid var(--neon-cyan); }
-  .hud-corner.tr { top: 60px; right: 8px; border-top: 1px solid var(--neon-cyan); border-right: 1px solid var(--neon-cyan); }
-  .hud-corner.bl { bottom: 8px; left: 220px; border-bottom: 1px solid var(--neon-cyan); border-left: 1px solid var(--neon-cyan); }
-  .hud-corner.br { bottom: 8px; right: 8px; border-bottom: 1px solid var(--neon-cyan); border-right: 1px solid var(--neon-cyan); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --cyan:#00f0ff; --mag:#ff2d9b; --bg:#05070f; --panel:#0b1020;
+    --line:rgba(0,240,255,.14); --txt:#cfe6ff; --dim:#6f86a8;
+  }
+  body{
+    font-family:"Segoe UI",system-ui,sans-serif;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(255,45,155,.10), transparent 60%),
+      radial-gradient(1000px 700px at -10% 110%, rgba(0,240,255,.10), transparent 55%),
+      var(--bg);
+    color:var(--txt); min-height:100vh; display:flex;
+    font-size:15px;
+  }
+  /* subtle grid overlay */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:46px 46px; opacity:.5;
+    mask-image:radial-gradient(circle at 50% 40%, #000 40%, transparent 90%);
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    width:236px; flex-shrink:0; position:relative; z-index:2;
+    background:linear-gradient(180deg, rgba(11,16,32,.96), rgba(5,7,15,.96));
+    border-right:1px solid var(--line);
+    display:flex; flex-direction:column; padding:22px 16px;
+  }
+  .brand{ display:flex; align-items:center; gap:12px; padding:6px 8px 22px; }
+  .logo{
+    width:38px; height:38px; border-radius:11px; flex-shrink:0;
+    background:radial-gradient(circle at 30% 30%, var(--cyan), #003a4d 70%);
+    box-shadow:0 0 18px rgba(0,240,255,.55), inset 0 0 8px rgba(255,255,255,.4);
+    position:relative;
+  }
+  .logo::after{ content:"🐾"; position:absolute; inset:0; display:grid; place-items:center; font-size:18px; }
+  .brand h1{ font-size:17px; letter-spacing:1.5px; font-weight:700; }
+  .brand h1 span{ color:var(--cyan); }
+  .brand small{ display:block; color:var(--dim); font-size:11px; letter-spacing:2px; }
+
+  nav{ margin-top:6px; display:flex; flex-direction:column; gap:5px; }
+  .nav-item{
+    display:flex; align-items:center; gap:13px; padding:12px 14px;
+    border-radius:11px; color:var(--dim); text-decoration:none; font-size:15px;
+    border:1px solid transparent; transition:.18s; cursor:pointer; letter-spacing:.4px;
+  }
+  .nav-item .ic{ font-size:19px; width:22px; text-align:center; }
+  .nav-item:hover{ color:var(--txt); background:rgba(0,240,255,.06); border-color:var(--line); }
+  .nav-item.active{
+    color:#fff; background:linear-gradient(90deg, rgba(0,240,255,.18), rgba(255,45,155,.06));
+    border-color:rgba(0,240,255,.45);
+    box-shadow:0 0 16px rgba(0,240,255,.18), inset 3px 0 0 var(--cyan);
+  }
+  .side-foot{ margin-top:auto; padding:14px 10px 4px; border-top:1px solid var(--line); }
+  .status-pill{ display:flex; align-items:center; gap:9px; color:var(--dim); font-size:13px; }
+  .dot{ width:9px; height:9px; border-radius:50%; background:var(--cyan); box-shadow:0 0 10px var(--cyan); animation:pulse 1.8s infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  /* ---------- Main ---------- */
+  .main{ flex:1; position:relative; z-index:1; padding:24px 30px 40px; overflow-y:auto; }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 24px; margin-bottom:26px; border-radius:16px;
+    background:rgba(11,16,32,.7); border:1px solid var(--line);
+    backdrop-filter:blur(6px);
+  }
+  .topbar .title h2{ font-size:23px; letter-spacing:1px; font-weight:700; }
+  .topbar .title p{ color:var(--dim); font-size:13px; letter-spacing:2px; margin-top:3px; }
+  .clock{ text-align:right; }
+  .clock .time{
+    font-size:34px; font-weight:700; letter-spacing:3px; font-variant-numeric:tabular-nums;
+    background:linear-gradient(90deg,var(--cyan),var(--mag));
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    text-shadow:0 0 22px rgba(0,240,255,.25);
+  }
+  .clock .date{ color:var(--dim); font-size:13px; letter-spacing:2px; }
+
+  .grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
+  .card{
+    background:linear-gradient(160deg, rgba(11,16,32,.92), rgba(7,10,22,.92));
+    border:1px solid var(--line); border-radius:16px; padding:20px;
+    position:relative; overflow:hidden; transition:.2s;
+  }
+  .card:hover{ border-color:rgba(0,240,255,.4); box-shadow:0 0 26px rgba(0,240,255,.12); transform:translateY(-2px); }
+  .card::before{ content:""; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg,var(--cyan),var(--mag)); opacity:.85; }
+  .card .ch{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .card .ch h3{ font-size:13px; letter-spacing:2px; color:var(--dim); text-transform:uppercase; font-weight:600; }
+  .card .ch .badge{ font-size:11px; color:var(--cyan); border:1px solid var(--line); padding:3px 8px; border-radius:20px; letter-spacing:1px; }
+
+  /* gauge */
+  .gauge{ display:flex; align-items:center; gap:18px; }
+  .ring{ width:96px; height:96px; border-radius:50%; flex-shrink:0; display:grid; place-items:center; position:relative; }
+  .ring::after{ content:""; position:absolute; inset:9px; border-radius:50%; background:var(--panel); box-shadow:inset 0 0 14px rgba(0,0,0,.7); }
+  .ring .val{ position:relative; z-index:1; font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .ring.cyan{ background:conic-gradient(var(--cyan) calc(34%*3.6deg*1), rgba(255,255,255,.05) 0); box-shadow:0 0 22px rgba(0,240,255,.3); }
+  .ring.mag{ background:conic-gradient(var(--mag) calc(12%*3.6deg*1), rgba(255,255,255,.05) 0); box-shadow:0 0 22px rgba(255,45,155,.3); }
+  .gauge .meta p{ color:var(--dim); font-size:13px; margin-bottom:5px; }
+  .gauge .meta b{ color:var(--txt); }
+
+  /* mails */
+  .bignum{ font-size:46px; font-weight:700; line-height:1;
+    background:linear-gradient(90deg,var(--cyan),var(--mag)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .mail-row{ display:flex; align-items:center; gap:11px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.05); font-size:13px; }
+  .mail-row:last-child{ border-bottom:none; }
+  .mail-row .av{ width:30px; height:30px; border-radius:9px; flex-shrink:0; display:grid; place-items:center; font-size:13px; font-weight:700; color:#04121a; background:var(--cyan); }
+  .mail-row .av.m{ background:var(--mag); }
+  .mail-row small{ color:var(--dim); display:block; }
+
+  /* weather */
+  .weather{ display:flex; align-items:center; justify-content:space-between; }
+  .weather .temp{ font-size:48px; font-weight:700; }
+  .weather .ico{ font-size:50px; filter:drop-shadow(0 0 14px rgba(0,240,255,.5)); }
+  .weather small{ color:var(--dim); display:block; margin-top:6px; font-size:13px; letter-spacing:1px; }
+  .wbars{ display:flex; gap:6px; margin-top:18px; }
+  .wbars span{ flex:1; text-align:center; font-size:12px; color:var(--dim); }
+  .wbars b{ display:block; color:var(--txt); font-size:15px; margin-top:4px; }
+
+  .wide{ grid-column:span 2; }
+  .full{ grid-column:span 4; }
+  .sys-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .stat{ text-align:center; padding:12px; border-radius:12px; border:1px solid var(--line); background:rgba(0,0,0,.2); }
+  .stat .n{ font-size:22px; font-weight:700; color:var(--cyan); }
+  .stat .l{ font-size:12px; color:var(--dim); letter-spacing:1px; margin-top:4px; }
+
+  /* spark line */
+  .spark{ display:flex; align-items:flex-end; gap:5px; height:60px; margin-top:14px; }
+  .spark i{ flex:1; background:linear-gradient(180deg,var(--cyan),transparent); border-radius:3px 3px 0 0; opacity:.8; }
 </style>
 </head>
 <body>
 
-<!-- HUD corner decorations -->
-<div class="hud-corner tl"></div>
-<div class="hud-corner tr"></div>
-<div class="hud-corner bl"></div>
-<div class="hud-corner br"></div>
-
-<!-- ── TOPBAR ─────────────────────────────────── -->
-<div class="topbar">
-  <div class="topbar-left">
-    <div class="logo-mark">MC</div>
-    <div>
-      <div class="page-title">MISSION <span>CONTROL</span></div>
-      <div class="breadcrumb"><span>▸</span> ÜBERSICHT <span>/</span> DASHBOARD</div>
-    </div>
-  </div>
-  <div class="topbar-right">
-    <div class="status-indicators">
-      <div class="status-dot"><div class="dot online"></div>BOLLA ONLINE</div>
-      <div class="status-dot"><div class="dot online"></div>TUNNEL OK</div>
-      <div class="status-dot"><div class="dot warn"></div>2 UPDATES</div>
-    </div>
-    <div>
-      <div class="clock">20:14</div>
-      <div class="clock-date">DO 04.06.2026</div>
-    </div>
-    <div class="user-badge">
-      <div class="avatar">CM</div>
-      <span class="user-name">CHRIS</span>
-    </div>
-  </div>
-</div>
-
-<!-- ── LAYOUT ─────────────────────────────────── -->
-<div class="layout">
-
-  <!-- ── SIDEBAR ──────────────────────────────── -->
-  <nav class="sidebar">
-    <div class="sidebar-section-label">Navigation</div>
-
-    <div class="nav-item active">
-      <div class="nav-icon">⬡</div>
-      Dashboard
-    </div>
-    <div class="nav-item">
-      <div class="nav-icon">🐾</div>
-      Bolla
-    </div>
-    <div class="nav-item">
-      <div class="nav-icon">◈</div>
-      Schule
-    </div>
-
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section-label">Dienste</div>
-
-    <div class="nav-item">
-      <div class="nav-icon">◫</div>
-      Kalender
-    </div>
-    <div class="nav-item">
-      <div class="nav-icon">✉</div>
-      E-Mail
-      <div class="nav-badge">3</div>
-    </div>
-    <div class="nav-item">
-      <div class="nav-icon">◎</div>
-      Wetter
-    </div>
-
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section-label">System</div>
-
-    <div class="nav-item">
-      <div class="nav-icon">▣</div>
-      System Info
-    </div>
-
-    <div class="sidebar-bottom">
-      <div class="system-health">
-        <div class="health-label">SYSTEM-GESUNDHEIT</div>
-        <div class="health-bar-wrap">
-          <div class="health-bar-fill"></div>
-        </div>
-        <div class="health-value">92%</div>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <h1>MISSION<span>·</span>CTRL</h1>
+        <small>AURORA DECK</small>
       </div>
     </div>
-  </nav>
+    <nav>
+      <a class="nav-item active"><span class="ic">▣</span> Dashboard</a>
+      <a class="nav-item"><span class="ic">🐾</span> Bolla</a>
+      <a class="nav-item"><span class="ic">🎓</span> Schule</a>
+      <a class="nav-item"><span class="ic">📅</span> Kalender</a>
+      <a class="nav-item"><span class="ic">✉️</span> E-Mail</a>
+      <a class="nav-item"><span class="ic">🌦️</span> Wetter</a>
+      <a class="nav-item"><span class="ic">⚙️</span> System Info</a>
+    </nav>
+    <div class="side-foot">
+      <div class="status-pill"><span class="dot"></span> Alle Systeme nominal</div>
+    </div>
+  </aside>
 
-  <!-- ── MAIN CONTENT ──────────────────────────── -->
+  <!-- Main -->
   <main class="main">
-
-    <!-- Bolla + Schnellzugriff -->
-    <div>
-      <div class="section-header">
-        <div class="section-title">▸ AGENTEN-STATUS</div>
-        <div class="section-line"></div>
+    <div class="topbar">
+      <div class="title">
+        <h2>Dashboard</h2>
+        <p>COMMAND DECK · ÜBERSICHT</p>
       </div>
-      <div class="widget-grid-3">
-
-        <!-- Bolla Card -->
-        <div class="card bolla-card">
-          <div class="card-corner"></div>
-          <div class="card-label">KI-ASSISTENT</div>
-          <div class="bolla-status-row">
-            <div class="bolla-avatar">🐾<div class="bolla-online"></div></div>
-            <div class="bolla-info">
-              <div class="bolla-name">BOLLA</div>
-              <div class="bolla-state">● BEREIT · SESSION #47</div>
-            </div>
-          </div>
-          <div class="bolla-metrics">
-            <div class="bolla-metric">
-              <div class="bolla-metric-val">47</div>
-              <div class="bolla-metric-lbl">Sessions</div>
-            </div>
-            <div class="bolla-metric">
-              <div class="bolla-metric-val">128</div>
-              <div class="bolla-metric-lbl">Tasks</div>
-            </div>
-            <div class="bolla-metric">
-              <div class="bolla-metric-val">99%</div>
-              <div class="bolla-metric-lbl">Uptime</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- RAM Card -->
-        <div class="card stat-card" style="--card-accent: #00f5ff;">
-          <div class="card-corner"></div>
-          <div class="card-label">ARBEITSSPEICHER</div>
-          <div class="stat-value">34<span class="stat-unit">%</span></div>
-          <div class="stat-name">RAM Auslastung</div>
-          <div class="progress-bar">
-            <div class="progress-fill" style="width:34%"></div>
-          </div>
-          <div class="stat-delta">▾ 5.4 GB / 16 GB</div>
-          <div class="spark-container">
-            <div class="spark-bars">
-              <div class="spark-bar" style="height:8px"></div>
-              <div class="spark-bar" style="height:14px"></div>
-              <div class="spark-bar" style="height:10px"></div>
-              <div class="spark-bar" style="height:18px"></div>
-              <div class="spark-bar" style="height:11px"></div>
-              <div class="spark-bar" style="height:9px"></div>
-              <div class="spark-bar active" style="height:12px"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- CPU Card -->
-        <div class="card stat-card" style="--card-accent: #00ff88;">
-          <div class="card-corner"></div>
-          <div class="card-label">PROZESSOR</div>
-          <div class="stat-value" style="color:var(--neon-green);text-shadow:0 0 20px var(--neon-green)">12<span class="stat-unit">%</span></div>
-          <div class="stat-name">CPU Auslastung</div>
-          <div class="progress-bar">
-            <div class="progress-fill" style="width:12%;background:linear-gradient(90deg,var(--neon-green),#80ffcc);box-shadow:0 0 6px var(--neon-green)"></div>
-          </div>
-          <div class="stat-delta" style="color:var(--neon-green)">● KERNE: 8 / TEMP: 42°C</div>
-          <div class="spark-container">
-            <div class="spark-bars">
-              <div class="spark-bar" style="height:20px;background:var(--neon-green)"></div>
-              <div class="spark-bar" style="height:8px;background:var(--neon-green)"></div>
-              <div class="spark-bar" style="height:15px;background:var(--neon-green)"></div>
-              <div class="spark-bar" style="height:5px;background:var(--neon-green)"></div>
-              <div class="spark-bar" style="height:18px;background:var(--neon-green)"></div>
-              <div class="spark-bar" style="height:7px;background:var(--neon-green)"></div>
-              <div class="spark-bar active" style="height:5px;background:var(--neon-green)"></div>
-            </div>
-          </div>
-        </div>
-
+      <div class="clock">
+        <div class="time">20:14</div>
+        <div class="date">FREITAG · 05. JUNI 2026</div>
       </div>
     </div>
 
-    <!-- Mail + Wetter -->
-    <div>
-      <div class="section-header">
-        <div class="section-title">▸ KOMMUNIKATION & UMWELT</div>
-        <div class="section-line"></div>
-      </div>
-      <div class="widget-grid-2">
+    <div class="grid">
 
-        <!-- Mail Card -->
-        <div class="card mail-card">
-          <div class="card-corner"></div>
-          <div class="card-label">E-MAIL EINGANG</div>
-          <div style="display:flex;align-items:center;gap:14px;margin-bottom:4px;">
-            <div class="mail-badge">3</div>
-            <div>
-              <div style="font-size:15px;font-weight:700;color:var(--text-bright);letter-spacing:1px;">NEUE NACHRICHTEN</div>
-              <div style="font-size:10px;color:var(--text-dim);font-family:'Share Tech Mono',monospace;margin-top:2px;">ernstmandel@outlook.de</div>
-            </div>
-          </div>
-          <div class="mail-preview">
-            <div class="mail-item">
-              <div class="mail-dot"></div>
-              <div>
-                <div class="mail-sender">Robin Mandel</div>
-                <div class="mail-subject">Doktorarbeit — Feedback zu Kapitel 3</div>
-              </div>
-            </div>
-            <div class="mail-item">
-              <div class="mail-dot"></div>
-              <div>
-                <div class="mail-sender">LG Norderstedt</div>
-                <div class="mail-subject">Vertretungsplan KW 23 aktualisiert</div>
-              </div>
-            </div>
-            <div class="mail-item">
-              <div class="mail-dot"></div>
-              <div>
-                <div class="mail-sender">Sparkasse</div>
-                <div class="mail-subject">Kontoauszug Mai 2026 bereit</div>
-              </div>
-            </div>
+      <!-- RAM -->
+      <div class="card">
+        <div class="ch"><h3>RAM</h3><span class="badge">LIVE</span></div>
+        <div class="gauge">
+          <div class="ring cyan"><span class="val">34%</span></div>
+          <div class="meta">
+            <p>Belegt: <b>5,4 GB</b></p>
+            <p>Frei: <b>10,6 GB</b></p>
+            <p>Gesamt: <b>16 GB</b></p>
           </div>
         </div>
+      </div>
 
-        <!-- Weather Card -->
-        <div class="card weather-card">
-          <div class="card-corner"></div>
-          <div class="card-label">WETTERLAGE</div>
-          <div class="weather-main">
-            <div class="weather-icon">🌤</div>
-            <div>
-              <div class="weather-temp">18<span>°C</span></div>
-            </div>
-            <div style="margin-left:4px;">
-              <div class="weather-city">Hamburg</div>
-              <div class="weather-desc">Teilweise bewölkt</div>
-            </div>
-          </div>
-          <div class="weather-stats">
-            <div class="wx-stat">
-              <div class="wx-stat-label">LUFTF.</div>
-              <div class="wx-stat-val">72%</div>
-            </div>
-            <div class="wx-stat">
-              <div class="wx-stat-label">WIND</div>
-              <div class="wx-stat-val">14 km/h</div>
-            </div>
-            <div class="wx-stat">
-              <div class="wx-stat-label">GEFÜHLT</div>
-              <div class="wx-stat-val">16°C</div>
-            </div>
-            <div class="wx-stat">
-              <div class="wx-stat-label">UV-INDEX</div>
-              <div class="wx-stat-val glow-green">3</div>
-            </div>
+      <!-- CPU -->
+      <div class="card">
+        <div class="ch"><h3>CPU</h3><span class="badge">LIVE</span></div>
+        <div class="gauge">
+          <div class="ring mag"><span class="val">12%</span></div>
+          <div class="meta">
+            <p>Last: <b>0,38</b></p>
+            <p>Kerne: <b>8</b></p>
+            <p>Temp: <b>46 °C</b></p>
           </div>
         </div>
-
       </div>
+
+      <!-- Mails -->
+      <div class="card">
+        <div class="ch"><h3>E-Mail</h3><span class="badge">3 NEU</span></div>
+        <div class="bignum">3</div>
+        <div style="margin-top:14px">
+          <div class="mail-row"><span class="av">LG</span><div>Lessing Gymnasium<small>Stundenplan-Update KW 24</small></div></div>
+          <div class="mail-row"><span class="av m">RM</span><div>Robin<small>Re: Doktorarbeit Feedback</small></div></div>
+          <div class="mail-row"><span class="av">VW</span><div>VW We Connect<small>ID.3 Laden abgeschlossen</small></div></div>
+        </div>
+      </div>
+
+      <!-- Weather -->
+      <div class="card">
+        <div class="ch"><h3>Wetter</h3><span class="badge">HAMBURG</span></div>
+        <div class="weather">
+          <div>
+            <div class="temp">18°</div>
+            <small>Leicht bewölkt</small>
+          </div>
+          <div class="ico">⛅</div>
+        </div>
+        <div class="wbars">
+          <span>Sa<b>20°</b></span>
+          <span>So<b>22°</b></span>
+          <span>Mo<b>19°</b></span>
+          <span>Di<b>17°</b></span>
+        </div>
+      </div>
+
+      <!-- System overview wide -->
+      <div class="card wide">
+        <div class="ch"><h3>System Aktivität · 24h</h3><span class="badge">NETZ</span></div>
+        <div class="spark">
+          <i style="height:30%"></i><i style="height:45%"></i><i style="height:38%"></i>
+          <i style="height:60%"></i><i style="height:52%"></i><i style="height:72%"></i>
+          <i style="height:48%"></i><i style="height:66%"></i><i style="height:40%"></i>
+          <i style="height:80%"></i><i style="height:58%"></i><i style="height:34%"></i>
+          <i style="height:70%"></i><i style="height:50%"></i>
+        </div>
+      </div>
+
+      <!-- Quick stats wide -->
+      <div class="card wide">
+        <div class="ch"><h3>System Info</h3><span class="badge">WSL2</span></div>
+        <div class="sys-grid">
+          <div class="stat"><div class="n">42d</div><div class="l">UPTIME</div></div>
+          <div class="stat"><div class="n">118 GB</div><div class="l">DISK FREI</div></div>
+          <div class="stat"><div class="n">↓ 24</div><div class="l">MBIT/S</div></div>
+          <div class="stat"><div class="n">7</div><div class="l">PROZESSE</div></div>
+        </div>
+      </div>
+
     </div>
-
-    <!-- Kalender + Aktivitäten -->
-    <div>
-      <div class="section-header">
-        <div class="section-title">▸ ZEITPLAN & AKTIVITÄTEN</div>
-        <div class="section-line"></div>
-      </div>
-      <div class="widget-grid-2">
-
-        <!-- Calendar -->
-        <div class="card cal-card">
-          <div class="card-corner"></div>
-          <div class="card-label">HEUTE — DO 04.06.2026</div>
-          <div class="cal-item today">
-            <div class="cal-time">09:00</div>
-            <div>
-              <div class="cal-event">Unterricht — LG Norderstedt</div>
-              <div class="cal-loc">Informatik, Raum 214</div>
-            </div>
-          </div>
-          <div class="cal-item today">
-            <div class="cal-time">11:30</div>
-            <div>
-              <div class="cal-event">Makler-Gespräch Telefon</div>
-              <div class="cal-loc">Kaufering — Steffi betreffend</div>
-            </div>
-          </div>
-          <div class="cal-item soon">
-            <div class="cal-time">20:30</div>
-            <div>
-              <div class="cal-event">Abend-Planung mit Renate</div>
-              <div class="cal-loc">Zuhause</div>
-            </div>
-          </div>
-          <div class="cal-item" style="border-left-color:rgba(123,47,255,0.5)">
-            <div class="cal-time" style="color:var(--neon-purple);text-shadow:0 0 6px rgba(123,47,255,0.5)">Fr.</div>
-            <div>
-              <div class="cal-event">VW ID.3 Inspektion</div>
-              <div class="cal-loc">Autohaus Norderstedt, 10:00</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Activity Feed -->
-        <div class="card activity-card">
-          <div class="card-corner"></div>
-          <div class="card-label">LETZTE AKTIVITÄTEN</div>
-          <div class="activity-list">
-            <div class="activity-item">
-              <div class="activity-icon success">✓</div>
-              <div class="activity-body">
-                <div class="activity-title">Nacht-Backup abgeschlossen</div>
-                <div class="activity-time">02:14 · Git Push · 23 Dateien</div>
-              </div>
-            </div>
-            <div class="activity-item">
-              <div class="activity-icon info">⬡</div>
-              <div class="activity-body">
-                <div class="activity-title">Spotify — 2 neue Songs erkannt</div>
-                <div class="activity-time">19:52 · known_tracks.json aktualisiert</div>
-              </div>
-            </div>
-            <div class="activity-item">
-              <div class="activity-icon info">◎</div>
-              <div class="activity-body">
-                <div class="activity-title">Makler-Liste aktualisiert</div>
-                <div class="activity-time">18:30 · Tutzing, Gauting, Germering</div>
-              </div>
-            </div>
-            <div class="activity-item">
-              <div class="activity-icon warn">▲</div>
-              <div class="activity-body">
-                <div class="activity-title">2 System-Updates verfügbar</div>
-                <div class="activity-time">08:00 · apt list --upgradable</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- Mini-Stats Footer -->
-    <div class="mini-stat-row">
-      <div class="mini-stat">
-        <div class="mini-stat-val glow-cyan">↑ 99</div>
-        <div class="mini-stat-lbl">Uptime (Tage)</div>
-      </div>
-      <div class="mini-stat">
-        <div class="mini-stat-val" style="color:var(--neon-green)">18 GB</div>
-        <div class="mini-stat-lbl">Disk frei</div>
-      </div>
-      <div class="mini-stat">
-        <div class="mini-stat-val" style="color:var(--neon-purple)">7</div>
-        <div class="mini-stat-lbl">Offene Tasks</div>
-      </div>
-      <div class="mini-stat">
-        <div class="mini-stat-val" style="color:var(--neon-orange)">342 km</div>
-        <div class="mini-stat-lbl">ID.3 Reichweite</div>
-      </div>
-      <div class="mini-stat">
-        <div class="mini-stat-val" style="color:var(--neon-pink)">3</div>
-        <div class="mini-stat-lbl">Neue Mails</div>
-      </div>
-      <div class="mini-stat">
-        <div class="mini-stat-val glow-cyan">OK</div>
-        <div class="mini-stat-lbl">Tunnel Status</div>
-      </div>
-    </div>
-
   </main>
-</div>
 
 </body>
 </html>
