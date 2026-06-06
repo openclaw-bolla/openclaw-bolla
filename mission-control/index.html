@@ -2376,6 +2376,12 @@ html, body {
               <div style="font-size:12px;color:#fca5a5"><b>Bregenzer Festspiele — Tickets jetzt buchen!</b> Seebühne-Aufführungen sind Monate im Voraus ausverkauft. → <a href="https://bregenzerfestspiele.com" target="_blank" style="color:#fca5a5;text-decoration:underline">bregenzerfestspiele.com</a></div>
             </div>
 
+            <!-- ID.3-Hinweis: Fahrzeiten EV-gerecht -->
+            <div style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.35);border-radius:8px;padding:9px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px">⚡</span>
+              <div style="font-size:12px;color:#7dd3fc">Fahrzeiten gelten für den <b>VW ID.3</b> (~200 km pro Ladung im Sommer, mit Puffer; Erfahrung Norderstedt↔Ulm ~720 km: Sommer ~9 h, Winter ~10 h). Nur die lange Anreise braucht Ladestopps — alle Etappen vor Ort liegen unter einer Akkuladung. Heimweg Bregenz → Kaufering (~160 km) ohne Stopp machbar.</div>
+            </div>
+
             <!-- Hauptlayout -->
             <div style="display:grid;grid-template-columns:240px 1fr;gap:16px;align-items:start">
               <!-- Linke Spalte: Stationsliste -->
@@ -10712,8 +10718,8 @@ const SR_ROUTE = [
   { nr:1,  id:'bb',   name:'Baden-Baden',     region:'Schwarzwald', farbe:'#f59e0b',
     lat:48.7614, lon:8.2385,
     tag:'Tag 1', datum:'20.07.', aufenthalt:'1 Übernachtung',
-    anfahrt:'Norderstedt → ~700 km · ca. 6½ Std. · Ankunft ~14:00',
-    tipp:'Anreise früh starten! Nachmittags Lichtentaler Allee, abends Caracalla-Therme zur Erholung.',
+    anfahrt:'Norderstedt → ~700 km · ca. 9 Std. (inkl. 3–4 Ladestopps · ID.3, Erfahrungswert) · Ankunft ~16:00',
+    tipp:'⚡ Mit dem ID.3 3–4 Schnelllade-Stopps einplanen (~200 km pro Ladung im Sommer, mit Puffer) — Ionity/EnBW entlang A7/A5 gut ausgebaut. Erfahrung Norderstedt→Ulm: Sommer ~9 h, Winter ~10 h. Daher früh starten (~7:00)! Nachmittags Lichtentaler Allee, abends Caracalla-Therme zur Erholung.',
     beschreibung:'Baden-Baden ist das elegante Tor zum Schwarzwald — weltberühmte Thermen, die älteste Spielbank Deutschlands und die herrliche Lichtentaler Allee am Ufer der Oos. Nach der langen Anreise aus Norderstedt ideal zum Ankommen und Entspannen. Das Stadtbild ist geprägt von Belle-Époque-Architektur und einem mondänen Flair, das früher russische Zaren und europäische Könige anzog.',
     highlights:['♨️ Caracalla Therme (Wellness, Pools, Sauna)','🏛️ Friedrichsbad (römisch-irisches Bad, 19. Jh.)','🎰 Spielbank Baden-Baden (älteste Deutschlands)','🌳 Lichtentaler Allee (2,4 km Parkpromenade)','🍇 Weinberge & Rebland (Spätburgunder)','🖼️ Kunstmuseum Baden-Baden'] },
 
@@ -10980,12 +10986,15 @@ function srDownloadWord(teil) {
 
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
 <head><meta charset="utf-8"><style>
-body{font-family:Calibri,Arial,sans-serif;margin:2.5cm;color:#1a1a1a;font-size:11pt}
+@page WordSection1 { size:21cm 29.7cm; margin:2cm 2cm 2cm 2cm; mso-page-orientation:portrait; }
+div.WordSection1 { page:WordSection1; }
+body{font-family:Calibri,Arial,sans-serif;color:#1a1a1a;font-size:11pt}
 h1{color:#1a3a6b;font-size:20pt;margin-bottom:6pt}
 h2{font-size:14pt;margin-top:20pt;page-break-after:avoid}
 p{line-height:1.6;margin:4pt 0}ul{margin:4pt 0}
 table{margin-bottom:10pt}
 </style></head><body>
+<div class="WordSection1">
 <h1>${titel}</h1>
 <table style="width:100%;border-collapse:collapse;margin-bottom:16pt;font-size:10pt">
   <tr>
@@ -11008,6 +11017,7 @@ ${stationHtml}
 <hr style="margin:16pt 0">
 <p style="font-size:10pt;color:#666;margin-top:8pt">🚗 <b>Weiterfahrt 01.08.:</b> Bregenz → Kaufering (Steffi Garschagen, Thomas-Morus-Str. 12b) · ~160 km · ~1½ Std.</p>
 <p style="font-size:9pt;color:#aaa;margin-top:12pt"><i>Erstellt mit Bolla Mission Control · Reiseplaner 2026</i></p>
+</div>
 </body></html>`;
 
   const blob = new Blob([html], {type:'application/msword'});

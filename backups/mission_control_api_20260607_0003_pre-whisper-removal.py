@@ -17,6 +17,11 @@ from datetime import datetime, timezone, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# CUDA-Bibliotheken für faster-whisper GPU-Betrieb
+_cuda_lib = os.path.expanduser("~/.local/lib/python3.12/site-packages/nvidia/cublas/lib")
+if os.path.isdir(_cuda_lib):
+    os.environ["LD_LIBRARY_PATH"] = _cuda_lib + ":" + os.environ.get("LD_LIBRARY_PATH", "")
+
 # Sicherstellen dass ~/.local/bin im PATH ist (fehlt im Cron-Job-Kontext)
 _local_bin = os.path.expanduser("~/.local/bin")
 if _local_bin not in os.environ.get("PATH", ""):
@@ -43,6 +48,152 @@ _gluecksrad_state = {"stil": None, "nummer": None}
 
 # KI-Buch Async-Job (Hintergrund-Thread für Claude-Aufruf)
 _ki_buch_job = {"status": "idle", "antwort": "", "inhalt": "", "inhalt_titel": "", "error": ""}
+
+# Whisper Spracherkennung (lokal, kein F-Secure-Problem)
+_whisper_model = None
+def _get_whisper(force_cpu=False):
+    global _whisper_model
+    if _whisper_model is None or force_cpu:
+        from faster_whisper import WhisperModel
+        if not force_cpu:
+            try:
+                m = WhisperModel("large-v3", device="cuda", compute_type="float16")
+                # CUDA-Libs werden lazy geladen — kurzen Test-Inference machen
+                import numpy as np, tempfile, wave
+                tmp = tempfile.mktemp(suffix=".wav")
+                with wave.open(tmp, 'w') as wf:
+                    wf.setnchannels(1); wf.setsampwidth(2); wf.setframerate(16000)
+                    wf.writeframes(np.zeros(16000, dtype=np.int16).tobytes())
+                list(m.transcribe(tmp, language="de")[0])
+                import os; os.unlink(tmp)
+                _whisper_model = m
+                print("[whisper] CUDA OK")
+            except Exception as e:
+                print(f"[whisper] CUDA fehlgeschlagen ({e}), verwende CPU")
+                _whisper_model = WhisperModel("large-v3", device="cpu", compute_type="int8")
+        else:
+            _whisper_model = WhisperModel("large-v3", device="cpu", compute_type="int8")
+    return _whisper_model
+
+def transcribe_audio(audio_bytes: bytes, content_type: str = "audio/webm") -> str:
+    import tempfile, subprocess, time
+    t_start = time.monotonic()
+    print(f"[transcribe] {len(audio_bytes)} bytes, type={content_type}")
+    suffix = ".webm" if "webm" in content_type else ".ogg" if "ogg" in content_type else ".wav"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+        f.write(audio_bytes)
+        tmp_in = f.name
+    tmp_wav = tmp_in + ".wav"
+    try:
+        t_ffmpeg_start = time.monotonic()
+        # Statischer Boost +12dB + Soft-Limiter (alimiter, kein hartes Clipping).
+        # Lessons learned:
+        #   - dynaudnorm machte "blechern + abgehackt" (Pumping) → Whisper halluziniert
+        #   - kein Filter → bei -32/-37 dB P20-Mic-Audio versteht Whisper nichts → halluziniert auch
+        #   - Static-Boost + Soft-Limiter ist der Mittelweg: lauter ohne pumping
+        r = subprocess.run(
+            ["ffmpeg", "-y", "-i", tmp_in, "-af", "volume=12dB,alimiter=limit=0.95",
+             "-ar", "16000", "-ac", "1", "-f", "wav", tmp_wav],
+            capture_output=True, timeout=30
+        )
+        t_ffmpeg = time.monotonic() - t_ffmpeg_start
+        wav_size = os.path.getsize(tmp_wav) if os.path.exists(tmp_wav) else 0
+        print(f"[transcribe] ffmpeg rc={r.returncode}, wav={wav_size} bytes, t={t_ffmpeg*1000:.0f}ms")
+        model = _get_whisper()
+        import shutil; shutil.copy(tmp_wav, "/tmp/debug_voice.wav")
+        # Balance Speed vs. Genauigkeit (gemessen im Bench, large-v3 CUDA):
+        # - beam_size=5: robust gegen Halluzinationen
+        # - vad_filter=True mit min_silence=600ms: schneidet Stille raus aber nicht zu aggressiv
+        # - no_speech_threshold=0.8: aggressiv strikt → bei unklarem Audio lieber leer als erfunden
+        # - compression_ratio_threshold=2.0: erkennt repetitive Halluzinationen
+        # - log_prob_threshold=-1.0: erkennt unsichere Vorhersagen
+        # - initial_prompt: gibt Whisper deutschen Kontext, reduziert Halluzinationen
+        _transcribe_kwargs = dict(
+            language="de", beam_size=5,
+            vad_filter=True,
+            vad_parameters=dict(min_silence_duration_ms=600),
+            no_speech_threshold=0.7,
+            condition_on_previous_text=False,
+            initial_prompt="Sprachnotiz auf Deutsch.",
+        )
+        try:
+            segs_gen, info = model.transcribe(tmp_wav, **_transcribe_kwargs)
+            segs = list(segs_gen)
+            for s in segs:
+                print(f"[seg] [{s.start:.1f}-{s.end:.1f}s] p={s.no_speech_prob:.2f} '{s.text.strip()}'")
+            text = " ".join(s.text.strip() for s in segs).strip()
+        except Exception as cuda_err:
+            if "cuda" in str(cuda_err).lower() or "cublas" in str(cuda_err).lower() or "libcublas" in str(cuda_err).lower():
+                print(f"[whisper] CUDA-Fehler beim Transkribieren, wechsle zu CPU: {cuda_err}")
+                global _whisper_model
+                _whisper_model = None
+                model = _get_whisper(force_cpu=True)
+                segs_gen, info = model.transcribe(tmp_wav, **_transcribe_kwargs)
+                segs = list(segs_gen)
+                for s in segs:
+                    print(f"[seg] [{s.start:.1f}-{s.end:.1f}s] p={s.no_speech_prob:.2f} '{s.text.strip()}'")
+                text = " ".join(s.text.strip() for s in segs).strip()
+            else:
+                raise
+        t_total = time.monotonic() - t_start
+        rtf = t_total / info.duration if info.duration > 0 else 0
+        # Letzte Aufnahme automatisch als p20_letzte.wav verfügbar machen → direkter Player im gclip.
+        # Mit sanftem +8dB Boost + Soft-Limiter damit Chris die Aufnahme gut hört
+        # (Whisper bekommt das Original ungeboostet — kein Filter-Bias bei Transkription).
+        try:
+            subprocess.run(
+                ["ffmpeg", "-y", "-i", tmp_wav, "-af", "volume=8dB,alimiter=limit=0.95",
+                 "/home/bolla/workspace/mission-control/p20_letzte.wav"],
+                capture_output=True, timeout=10
+            )
+        except Exception:
+            pass
+        # Halluzinations-Filter: bekannte Whisper-False-Positives bei Audios ohne klare Sprache
+        # Diese Phrasen kommen direkt aus Whispers Training-Daten (YouTube-Outros, Untertitel-Credits etc.)
+        WHISPER_HALLUCINATIONS = [
+            # YouTube-Outros (deutsch)
+            "vielen dank fürs zuschauen", "vielen dank fur's zuschauen", "danke fürs zuschauen",
+            "vielen dank fürs zuhören", "vielen dank für's zuhören", "danke fürs zuhören",
+            "vielen dank für ihre aufmerksamkeit", "vielen dank für eure aufmerksamkeit",
+            "danke für ihre aufmerksamkeit", "danke für eure aufmerksamkeit",
+            "das war's für heute", "das wars für heute", "bis zum nächsten mal",
+            "bis zum nächsten video", "ich hoffe, es hat euch gefallen",
+            "wenn euch das video gefallen hat", "abonniert den kanal",
+            # YouTube-Outros (englisch)
+            "thank you for watching", "thanks for watching", "see you next time",
+            "subscribe and like", "thanks for listening",
+            # Whisper-Klassiker (sinnlose Filler)
+            "ich bin froh, dass ich hier bin", "ich bin froh dass ich hier bin",
+            "ich freue mich, dass ihr hier seid", "schön, dass du da bist",
+            # Untertitel-Credits
+            "untertitel im auftrag", "untertitelung", "untertitel",
+            "untertitel der amara.org", "untertitel von stephanie geiges",
+            "kommentare und untertitel von amara.org",
+            # Sound-Tags
+            "[musik]", "[applaus]", "[gelächter]", "♪", "♫",
+        ]
+        text_lower = text.lower().strip(".!?, ")
+        # Treffer wenn: exakte Übereinstimmung ODER lange Phrase als Substring drin
+        is_halluc = (text_lower in WHISPER_HALLUCINATIONS or
+                     any(h in text_lower for h in WHISPER_HALLUCINATIONS if len(h) > 15))
+        # Zusätzlich: sehr kurze Texte mit "Untertitel"/"Zuschauen"-Kern als Halluzination werten
+        if not is_halluc and len(text_lower) < 80:
+            for hint in ["zuschauen", "zuhören", "zuhoeren", "aufmerksamkeit",
+                         "untertitel", "amara.org", "abonniert", "abonnieren",
+                         "vielen dank für"]:
+                if hint in text_lower:
+                    is_halluc = True; break
+        if is_halluc:
+            print(f"[transcribe] HALLUZINATION erkannt, verworfen: '{text}'")
+            text = ""
+        print(f"[transcribe] result: '{text}' (audio={info.duration:.1f}s, total={t_total*1000:.0f}ms, rtf={rtf:.2f})")
+        return text
+    finally:
+        try: os.unlink(tmp_in)
+        except: pass
+        try: os.unlink(tmp_wav)
+        except: pass
+
 
 def get_clipboard():
     try:
@@ -4713,6 +4864,20 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             raw = b""
 
+        if self.path == "/api/transcribe":
+            ct = self.headers.get("Content-Type", "audio/webm")
+            if not raw:
+                self._send_json({"error": "no audio data"}, status=400)
+                return
+            try:
+                text = transcribe_audio(raw, ct)
+                # KEIN automatisches Append ins gclip mehr — Frontend entscheidet explizit
+                # (verhinderte doppelte Einträge wenn User auf "📋 Clipboard"-Button klickt)
+                self._send_json({"text": text})
+            except Exception as e:
+                self._send_json({"error": str(e)}, status=500)
+            return
+
         if self.path.startswith("/api/lms/"):
             try:
                 self._proxy_lms("POST", raw)
@@ -6802,8 +6967,8 @@ def amadeus_search_flights(origin, dest, date, return_date, adults=2):
 
 
 if __name__ == "__main__":
-    # Spracherkennung läuft komplett im Handy-Browser (Web Speech API) — kein Whisper mehr,
-    # kein /api/transcribe, kein Modell auf dem Server (2026-06-07 restlos entfernt).
+    # Whisper wird NICHT mehr beim Start vorgeladen — spart ~3 GB RAM (Überbleibsel aus Mai).
+    # Falls /api/transcribe doch genutzt wird, lädt das Modell lazy bei Bedarf.
 
     port = 18790
     # SO_REUSEADDR + SO_REUSEPORT damit Port-Bindung sofort nach Neustart klappt

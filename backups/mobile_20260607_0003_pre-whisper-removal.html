@@ -83,6 +83,7 @@ body {
 .header-refresh:active { opacity: 0.4; }
 .header-refresh.spinning { animation: spin 0.6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+@keyframes recPulse { 0%,100% { box-shadow: 0 0 0 8px rgba(255,59,48,0.2), 0 4px 20px rgba(255,59,48,0.35); } 50% { box-shadow: 0 0 0 14px rgba(255,59,48,0.08), 0 4px 20px rgba(255,59,48,0.35); } }
 
 /* CONTENT */
 .page { display: none; padding: 12px 16px 20px; }
@@ -406,6 +407,14 @@ body {
       <button onclick="notizKopieren()" class="clip-btn" style="background:rgba(175,82,222,0.12);color:var(--purple)" title="Ins geräteübergreifende Clipboard">📋 Clipboard</button>
     </div>
     <div id="notiz-action-status" style="text-align:center;font-size:14px;min-height:20px"></div>
+  </div>
+  <div class="card" style="flex-direction:column;align-items:center;gap:8px;padding:12px">
+    <div id="notiz-status-top" style="font-size:12px;color:var(--text3)">Fallback: Audio-Aufnahme (Whisper) — nur falls Live-Erkennung mal nicht geht</div>
+    <button id="rec-btn" onclick="toggleRecording()"
+      style="width:52px;height:52px;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(255,59,48,0.3)">
+      🎙️
+    </button>
+    <div id="rec-timer" style="font-size:16px;font-weight:200;color:var(--text3);font-variant-numeric:tabular-nums;min-height:20px"></div>
   </div>
   <div id="notiz-verlauf-wrap">
     <div class="section-head">Letzte Notizen</div>
@@ -1296,7 +1305,9 @@ function ladenFallback(lat, lon, errMsg) {
     </a>`;
 }
 
-// ===== SPRACHNOTIZ (komplett Web Speech API — kein Whisper/Server mehr) =====
+// ===== SPRACHNOTIZ =====
+let _mediaRec = null, _chunks = [], _recInterval = null, _recSecs = 0;
+
 async function loadNotiz() {
   loadNotizVerlauf();
 }
@@ -1354,6 +1365,90 @@ function toggleSpeech() {
   };
   try { _recog.start(); }
   catch (e) { statusEl.textContent = '⚠️ Start fehlgeschlagen: ' + e.message; }
+}
+
+function toggleRecording() {
+  if (_mediaRec && _mediaRec.state === 'recording') {
+    stopRecording(); return;
+  }
+  startRecording();
+}
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    _chunks = [];
+    _mediaRec = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg' });
+    _mediaRec.ondataavailable = e => { if (e.data.size > 0) _chunks.push(e.data); };
+    _mediaRec.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      await processRecording();
+    };
+    _mediaRec.start(200);
+    _recSecs = 0;
+    const btn = document.getElementById('rec-btn');
+    btn.style.background = '#ff3b30';
+    btn.style.boxShadow = '0 0 0 8px rgba(255,59,48,0.2), 0 4px 20px rgba(255,59,48,0.35)';
+    btn.textContent = '⏹️';
+    btn.style.animation = 'recPulse 1.2s ease infinite';
+    document.getElementById('notiz-status-top').textContent = 'Aufnahme läuft — Taste erneut drücken zum Stoppen';
+    _recInterval = setInterval(() => {
+      _recSecs++;
+      const m = Math.floor(_recSecs / 60).toString().padStart(2, '0');
+      const s = (_recSecs % 60).toString().padStart(2, '0');
+      document.getElementById('rec-timer').textContent = `${m}:${s}`;
+    }, 1000);
+  } catch (e) {
+    document.getElementById('notiz-status-top').textContent = '⚠️ Kein Mikrofon-Zugriff';
+  }
+}
+
+function stopRecording() {
+  if (_mediaRec) _mediaRec.stop();
+  clearInterval(_recInterval);
+  const btn = document.getElementById('rec-btn');
+  btn.textContent = '⏳';
+  btn.style.animation = '';
+  btn.style.background = '#8e8e93';
+  btn.style.boxShadow = 'none';
+  document.getElementById('notiz-status-top').textContent = 'Wird transkribiert…';
+  document.getElementById('rec-timer').textContent = '';
+}
+
+async function processRecording() {
+  const statusEl = document.getElementById('notiz-status-top');
+  const btn = document.getElementById('rec-btn');
+  try {
+    const blob = new Blob(_chunks, { type: _chunks[0]?.type || 'audio/webm' });
+    statusEl.textContent = `⏳ Upload (${Math.round(blob.size/1024)} KB)…`;
+    const r = await fetch('/api/transcribe', {
+      method: 'POST',
+      headers: { 'Content-Type': blob.type },
+      body: blob
+    });
+    // Robuster Response-Handler: erst Text lesen, dann JSON-Parse mit Fallback
+    const rawText = await r.text();
+    let d;
+    try {
+      d = JSON.parse(rawText);
+    } catch (parseErr) {
+      // Backend hat kein JSON geliefert — vermutlich Cloudflare-Error-HTML oder Server-Crash
+      const preview = rawText.substring(0, 200).replace(/<[^>]+>/g, ' ').trim().substring(0, 120);
+      console.error('Transkription: kein JSON. Status=' + r.status + ' Body=', rawText.substring(0, 500));
+      throw new Error(`HTTP ${r.status} — kein JSON: ${preview || '(leer)'}`);
+    }
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    const text = d.text || d.error || '🔇 Keine klare Sprache erkannt (näher ans Mic / lauter sprechen)';
+    const ta = document.getElementById('notiz-input');
+    ta.value = ta.value.trim() ? (ta.value.trim() + ' ' + text) : text;
+    statusEl.textContent = 'Fertig — Text steht oben im Feld';
+    btn.textContent = '🎙️';
+    btn.style.background = 'var(--red)';
+    btn.style.boxShadow = '0 4px 20px rgba(255,59,48,0.35)';
+  } catch (e) {
+    statusEl.textContent = '⚠️ ' + e.message;
+    btn.textContent = '🎙️'; btn.style.background = 'var(--red)';
+  }
 }
 
 async function notizSenden() {
