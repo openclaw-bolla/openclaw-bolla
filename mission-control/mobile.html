@@ -468,6 +468,10 @@ body {
 </div>
 
 <!-- GLÜCKSRAD LÖSUNG -->
+<div class="page" id="p-thriller">
+  <div id="thriller-content"><div style="text-align:center;color:var(--text3);padding:40px 0">Lade…</div></div>
+</div>
+
 <div class="page" id="p-gluecksrad">
   <div id="gw-loesung-wrap" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;padding:24px 16px">
     <div id="gw-loesung-nummer" style="font-size:72px;font-weight:900;color:var(--accent);line-height:1">—</div>
@@ -490,6 +494,7 @@ body {
   <button class="tabbtn" data-tab="laden"><span class="ic">🔋</span>Laden</button>
   <button class="tabbtn" data-tab="robin"><span class="ic">🩺</span>Robin</button>
   <button class="tabbtn" data-tab="notiz"><span class="ic">🎙️</span>Notiz</button>
+  <button class="tabbtn" data-tab="thriller"><span class="ic">📖</span>Thriller</button>
   <button class="tabbtn" data-tab="gluecksrad"><span class="ic">🎡</span>Lösung</button>
 </nav>
 
@@ -530,7 +535,8 @@ const TITLES = {
   robin:       ['Robin',          'Medizinstudium Uni Ulm'],
   clip:        ['Clipboard',      'Geräteübergreifend teilen'],
   sos:         ['🆘 Notfall',     'Notruf & Standort'],
-  gluecksrad:  ['🎡 Lösung',      'Aktueller Musikstil — live']
+  gluecksrad:  ['🎡 Lösung',      'Aktueller Musikstil — live'],
+  thriller:    ['📖 AURORA',      'Kapitel & Vorschau']
 };
 
 let activeTab = 'cal';
@@ -610,9 +616,96 @@ async function loadTab(tab) {
     else if (tab === 'clip')        await loadClipboard();
     else if (tab === 'sos')         await loadSOS();
     else if (tab === 'gluecksrad')  await loadGluecksradLoesung();
+    else if (tab === 'thriller')    await loadThriller();
   } catch (e) {
     console.error(tab, e);
   }
+}
+
+// ===== THRILLER (AURORA) =====
+async function loadThriller() {
+  const el = document.getElementById('thriller-content');
+  try {
+    const d = await fetch('/api/ki-buch').then(r => r.json());
+    const kapitel = d.kapitel || [];
+    const esc = s => { const x=document.createElement('div'); x.textContent=s==null?'':s; return x.innerHTML; };
+    let html = `<div style="background:var(--card);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:14px">
+      <div style="font-weight:700;font-size:17px">${esc(d.titel||'AURORA')}</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:3px">${esc(d.status||'')}</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:5px">${kapitel.length} Kapitel · ${(d.statistik?.woerter_gesamt||0).toLocaleString('de-DE')} Wörter</div>
+    </div>`;
+    html += kiMobilFiguren(d, esc);
+    if (!kapitel.length) {
+      html += `<div style="text-align:center;color:var(--text3);padding:30px 0">Noch keine Kapitel.</div>`;
+    } else {
+      kapitel.forEach((k, i) => {
+        const wc = (k.text||'').split(/\s+/).filter(Boolean).length;
+        const ueb = (k.ueberblick||'').trim();
+        html += `<div style="background:var(--card);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:12px">
+          <div style="font-weight:700;font-size:16px;margin-bottom:8px">📄 ${esc(k.titel||('Kapitel '+(i+1)))}</div>`;
+        if (ueb) {
+          html += `<div style="background:rgba(175,82,222,0.08);border:1px solid rgba(175,82,222,0.22);border-radius:10px;padding:11px 13px;margin-bottom:11px">
+            <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:5px">🗺️ Vorschau — spoilerfrei</div>
+            <div style="font-size:15px;line-height:1.55;color:var(--text)">${esc(ueb)}</div></div>`;
+        } else {
+          html += `<div style="font-size:14px;color:var(--text3);margin-bottom:11px;font-style:italic">(Noch keine Vorschau hinterlegt)</div>`;
+        }
+        html += `<button onclick="thrillerToggle(${i})" id="thriller-btn-${i}" style="width:100%;background:rgba(0,122,255,0.1);color:var(--accent);border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:600;cursor:pointer">📖 Ganzes Kapitel lesen · ${wc} Wörter ⚠️</button>
+          <div id="thriller-full-${i}" style="display:none;font-size:16px;line-height:1.75;white-space:pre-wrap;margin-top:12px;color:var(--text)">${esc(k.text||'')}</div>
+        </div>`;
+      });
+    }
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div style="text-align:center;color:var(--red);padding:30px 0">Fehler beim Laden</div>`;
+  }
+}
+function thrillerToggle(i) {
+  const full = document.getElementById('thriller-full-'+i);
+  const btn = document.getElementById('thriller-btn-'+i);
+  if (!full) return;
+  full.style.display = 'block';
+  if (btn) btn.style.display = 'none';
+}
+function kiMobilFiguren(d, esc) {
+  const prot = d.protagonisten||[];
+  const nf = d.nebenfiguren||[];
+  if (!prot.length && !(d.antagonist && d.antagonist.name)) return '';
+  let gi = 0;
+  const feld = (ic,lb,v) => v ? `<div style="margin-top:7px"><div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px">${ic} ${lb}</div><div style="font-size:15px;line-height:1.5;color:var(--text)">${esc(v)}</div></div>` : '';
+  const card = (f, farbe, tag) => {
+    const i = gi++;
+    const alter = (f.alter!==null&&f.alter!==undefined&&f.alter!=='')?', '+f.alter:'';
+    const det = [feld('👤','Aussehen',f.aussehen),feld('✨','Detail',f.detail),feld('🎭','Macke',f.macke),feld('💔','Wunde',f.wunde),feld('🗣️','Stimme',f.stimme),feld('❤️','Beziehung',f.liebesbeziehung),feld('⭐','Besonderheit',f.besonderheit)].join('');
+    return `<div style="background:var(--card);border-radius:12px;padding:13px 15px;box-shadow:var(--shadow);margin-bottom:9px;border-left:4px solid ${farbe}">
+      <div onclick="thrillerFigToggle(${i})" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <span id="tfig-arr-${i}" style="color:var(--text3);font-size:13px">▸</span>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:16px;color:${farbe}">${esc(f.name)}${tag||''}</div>
+          <div style="font-size:13px;color:var(--text2)">${esc(f.rolle||'')}${alter}</div>
+        </div>
+      </div>
+      <div style="font-size:14px;color:var(--text2);margin-top:6px;line-height:1.5">${esc(f.beschreibung||'')}</div>
+      <div id="tfig-det-${i}" style="display:none;margin-top:4px">${det}</div>
+    </div>`;
+  };
+  let h = `<div style="font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin:18px 2px 8px">👥 Figuren</div>`;
+  prot.forEach(p => h += card(p, '#af52de', ''));
+  if (d.antagonist && d.antagonist.name) h += card(d.antagonist, '#ff3b30', ' ⚔️');
+  if (nf.length) {
+    h += `<div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;margin:14px 2px 6px">Nebenfiguren</div>`;
+    nf.forEach(n => h += card(n, '#34c759', ''));
+  }
+  h += `<div style="font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin:20px 2px 8px">📖 Kapitel</div>`;
+  return h;
+}
+function thrillerFigToggle(i) {
+  const det = document.getElementById('tfig-det-'+i);
+  const arr = document.getElementById('tfig-arr-'+i);
+  if (!det) return;
+  const open = det.style.display === 'none';
+  det.style.display = open ? 'block' : 'none';
+  if (arr) arr.textContent = open ? '▾' : '▸';
 }
 
 // ===== KALENDER =====

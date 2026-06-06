@@ -4914,19 +4914,23 @@ class Handler(BaseHTTPRequestHandler):
                 prots = json.dumps(buch.get("protagonisten", []), ensure_ascii=False, indent=2)
                 if buch.get("antagonist"):
                     prots += "\n\nANTAGONIST:\n" + json.dumps(buch["antagonist"], ensure_ascii=False, indent=2)
+                if buch.get("nebenfiguren"):
+                    prots += "\n\nNEBENFIGUREN (konsistent halten, plastisch einsetzen):\n" + json.dumps(buch["nebenfiguren"], ensure_ascii=False, indent=2)
                 krit = json.dumps(buch.get("kriterien", {}), ensure_ascii=False, indent=2)
                 # Produzenten-Steuerung (Rote Linien, Wunsch-Briefkasten, Richtungsimpuls)
                 _st = buch.get("steuerung", {})
                 _rl = _st.get("rote_linien", [])
-                _wb = _st.get("wunsch_briefkasten", [])
-                _ri = (_st.get("richtungsimpuls") or "").strip()
+                _eintraege = _st.get("eintraege", [])
                 steuer_txt = ""
                 if _rl:
                     steuer_txt += "\nROTE LINIEN (unbedingt einhalten — Dinge die NICHT passieren dürfen / Vorgaben):\n" + "\n".join(f"- {x}" for x in _rl) + "\n"
-                if _wb:
-                    steuer_txt += "\nWUNSCH-BRIEFKASTEN (darfst du erfüllen WANN es dramaturgisch zündet — nicht sofort, nicht alle auf einmal; Timing ist deine Kunst):\n" + "\n".join(f"- {x}" for x in _wb) + "\n"
-                if _ri:
-                    steuer_txt += f"\nRICHTUNGSIMPULS fürs nächste Kapitel (Strömung, die Chris vorgibt — Wendungen bleiben deine Sache):\n{_ri}\n"
+                # Steuerung & Wünsche — alle außer denen, von denen abgeraten wurde
+                _aktive = [e for e in _eintraege if e.get("status") != "nicht_empfohlen"]
+                if _aktive:
+                    steuer_txt += "\nSTEUERUNG & WÜNSCHE (vom Autor; wo nicht anders vermerkt, liegt das Timing bei dir — nicht alles auf einmal, dramaturgisch einsetzen):\n"
+                    _mark = {"in_arbeit": "[JETZT einbauen]", "umgesetzt": "[bereits umgesetzt — konsistent halten]", "geheim": "[umsetzen, dezent/unauffällig]", "vorgemerkt": "[für später vormerken]"}
+                    for e in _aktive:
+                        steuer_txt += f"- {_mark.get(e.get('status'),'')} {e.get('text','')}\n"
                 # GEHEIME WENDUNG — nur intern, NIE im Überblick/Antwort verraten
                 _gw = (buch.get("geheim", {}).get("wendung") or "").strip()
                 geheim_txt = ""
@@ -4949,6 +4953,8 @@ BUCHKRITERIEN (UNBEDINGT BEACHTEN):
 
 PROTAGONISTEN:
 {prots}
+
+FIGURENFÜHRUNG (Ken-Follett-Prinzip): Nutze die Profile aktiv — zeige aussehen, detail, macke, wunde und stimme in Handlung und Dialog, statt sie nur zu kennen. Jede Figur (auch Neben- und Randfiguren, selbst die Antagonistin) soll ein klares, authentisches, interessantes Bild ergeben und konsistent zu ihrem Profil sprechen und handeln. Figuren wachsen durch konkrete Gesten und eigene Sprache, nicht durch Behauptungen.
 {steuer_txt}{geheim_txt}
 BISHERIGE KAPITEL (vollständig):
 {kap_voll if kap_voll else "Noch keine Kapitel — fange frisch an."}
@@ -4986,7 +4992,7 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     try:
                         cl = _sh3.which("claude") or os.path.expanduser("~/.local/bin/claude")
                         r = _sp3.run([cl, "-p", "--output-format", "json", "--model", "claude-sonnet-4-6", prompt],
-                                     capture_output=True, text=True, timeout=300, stdin=_sp3.DEVNULL,
+                                     capture_output=True, text=True, timeout=900, stdin=_sp3.DEVNULL,
                                      cwd=os.path.expanduser("~"))
                         if r.returncode != 0:
                             _ki_buch_job = {"status": "error", "error": r.stderr[:200] or "Claude-Fehler", "antwort":"","inhalt":"","inhalt_titel":""}
@@ -6658,6 +6664,26 @@ def trip_plan(ziel, startort, tage, datum, fahrzeug, interessen, sprache):
         'viewpoint/nature: "#16a34a", break/cafe/restaurant: "#0ea5e9", museum: "#8b5cf6", '
         'end/return: "#ef4444"'
     )
+    # E-Auto (VW ID.3): saison-abhängige Reichweite + Ladestopps in die Reisezeit einrechnen.
+    ev_inst = ""
+    fz_low = (fahrzeug or "").lower()
+    if "id.3" in fz_low or "id3" in fz_low or "e-auto" in fz_low or "elektro" in fz_low:
+        try:
+            _month = int(datum_str[5:7])
+        except Exception:
+            _month = datetime.now().month
+        _summer = 4 <= _month <= 9
+        _range = 220 if _summer else 180
+        _season = "summer" if _summer else "winter"
+        ev_inst = f"""
+
+ELECTRIC VEHICLE — CHARGING (CRITICAL for time/distance estimates):
+- The vehicle is a VW ID.3. Realistic range on ONE charge is ~{_range} km in {_season}.
+- After roughly every {_range} km of driving, the car MUST stop ~30 minutes to charge.
+- For any leg or total route longer than ~{_range} km, insert charging stop(s) of ~30 min each
+  at sensible locations with fast chargers (color "#0ea5e9", kategorie "break", name e.g. "Ladestopp ...").
+- ADD the charging time (~30 min per stop) to "gesamt_zeit" and to per-leg times, and mention the charging
+  stops in the route. Make the estimated travel times realistic for an EV, not for a combustion car."""
     prompt = f"""You are an expert travel guide. Create a detailed {tage}-day trip plan for {ziel}.
 Starting point: {startort or 'not specified (assume typical travel hub)'}
 Vehicle: {fahrzeug}
@@ -6940,12 +6966,8 @@ def amadeus_search_flights(origin, dest, date, return_date, adults=2):
 
 
 if __name__ == "__main__":
-    import threading
-    def _warmup_whisper():
-        import time; time.sleep(5)
-        try: _get_whisper(); print("Whisper small model vorgeladen.")
-        except Exception as e: print(f"Whisper warmup: {e}")
-    threading.Thread(target=_warmup_whisper, daemon=True).start()
+    # Whisper wird NICHT mehr beim Start vorgeladen — spart ~3 GB RAM (Überbleibsel aus Mai).
+    # Falls /api/transcribe doch genutzt wird, lädt das Modell lazy bei Bedarf.
 
     port = 18790
     # SO_REUSEADDR + SO_REUSEPORT damit Port-Bindung sofort nach Neustart klappt

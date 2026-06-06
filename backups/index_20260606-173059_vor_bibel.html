@@ -2614,11 +2614,27 @@ html, body {
 
               <!-- Produzenten-Steuerung -->
               <div style="background:var(--card);border:1px solid rgba(124,58,237,0.45);border-radius:14px;padding:18px 22px">
-                <div style="font-size:13px;font-weight:700;color:#a78bfa;margin-bottom:4px">🎬 Steuerung & Wünsche</div>
-                <div style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.5">Du gibst mir Steuerung & Wünsche im Chat — hier siehst du, was ich daraus mache. 🐾</div>
+                <div style="font-size:13px;font-weight:700;color:#a78bfa;margin-bottom:4px">🎬 Produzenten-Steuerung</div>
+                <div style="font-size:13px;color:var(--dim);margin-bottom:16px;line-height:1.5">Du lenkst die Strömung — die Wendungen bleiben meine Überraschung für dich. 🐾</div>
 
-                <!-- Statustafel (read-only, von Bolla gepflegt) -->
-                <div id="ki-buch-eintraege" style="margin-bottom:18px"></div>
+                <!-- Richtungsimpuls -->
+                <div style="margin-bottom:18px">
+                  <div style="font-size:12px;font-weight:700;color:var(--bright);margin-bottom:6px">🧭 Richtungsimpuls fürs nächste Kapitel</div>
+                  <textarea id="ki-buch-richtung-input" rows="2" style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:14px;font-family:inherit;resize:vertical;line-height:1.5;outline:none" placeholder="z.B. 'Mehr Leni', 'die Bedrohung soll näher rücken', 'Liebesebene langsamer'…"></textarea>
+                  <button onclick="kiBuchRichtungSpeichern()" style="margin-top:7px;background:rgba(124,58,237,0.15);color:#a78bfa;border:1px solid rgba(124,58,237,0.4);border-radius:8px;padding:7px 15px;font-size:13px;cursor:pointer;font-weight:600">💾 Richtung speichern</button>
+                  <span id="ki-buch-richtung-status" style="font-size:12px;color:var(--dim);margin-left:8px"></span>
+                </div>
+
+                <!-- Wunsch-Briefkasten -->
+                <div style="margin-bottom:18px">
+                  <div style="font-size:12px;font-weight:700;color:var(--bright);margin-bottom:3px">💌 Wunsch-Briefkasten</div>
+                  <div style="font-size:12px;color:var(--dim);margin-bottom:7px">Wünsche, die ich erfülle — wann es dramaturgisch zündet. Du weißt nie, in welchem Kapitel es dich erwischt.</div>
+                  <div id="ki-buch-wuensche" style="margin-bottom:8px"></div>
+                  <div style="display:flex;gap:7px">
+                    <input id="ki-buch-wunsch-input" type="text" style="flex:1;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit;outline:none" placeholder="z.B. 'Irgendwann ein Verrat von jemandem, dem man vertraut'">
+                    <button onclick="kiBuchWunschAdd()" style="background:rgba(124,58,237,0.15);color:#a78bfa;border:1px solid rgba(124,58,237,0.4);border-radius:8px;padding:9px 15px;font-size:14px;cursor:pointer;font-weight:600">+ Wunsch</button>
+                  </div>
+                </div>
 
                 <!-- Rote Linien -->
                 <div>
@@ -7927,8 +7943,16 @@ async function loadKiBuch() {
       ['Stil', k.stil]
     ].filter(([,v]) => v).map(([l,v]) => `<div><span style="color:var(--dim)">${l}:</span> <strong>${v}</strong></div>`).join('');
 
-    // Protagonisten + Antagonist + Nebenfiguren (reiche Profile, aufklappbar)
-    kiBuchRenderFiguren(data);
+    // Protagonisten + Antagonist
+    const pr = document.getElementById('ki-buch-protagonisten');
+    if (pr) {
+      let html = (data.protagonisten||[]).map(p => `<div style="padding:5px 0;border-bottom:1px solid var(--border)"><strong>${p.name}</strong>${p.rolle?` <span style="font-size:11px;color:#a78bfa">· ${p.rolle}</span>`:''}<div style="font-size:12px;color:var(--dim)">${p.beschreibung||''}</div></div>`).join('');
+      if (data.antagonist && data.antagonist.name) {
+        const a = data.antagonist;
+        html += `<div style="padding:5px 0;border-bottom:1px solid var(--border);border-left:3px solid #ef4444;padding-left:8px;margin-top:6px"><strong style="color:#ef4444">${a.name}</strong> <span style="font-size:11px;color:#ef4444">· ${a.rolle||'Antagonistin'} ⚔️</span><div style="font-size:12px;color:var(--dim)">${a.beschreibung||''}</div></div>`;
+      }
+      pr.innerHTML = html || '<span style="color:var(--dim)">Noch keine definiert</span>';
+    }
 
     // Kapitel-Liste (klickbar, aktives hervorgehoben)
     kiBuchRenderKapitelListe();
@@ -7965,31 +7989,20 @@ async function loadKiBuch() {
 }
 
 function kiBuchRenderSteuerung(st) {
-  // Steuerung & Wünsche — read-only Statustafel, von Bolla gepflegt
-  const STATUS = {
-    in_arbeit:       {icon:'🔵', label:'dran',               farbe:'#3b82f6', bg:'rgba(59,130,246,0.08)',  bd:'rgba(59,130,246,0.3)'},
-    umgesetzt:       {icon:'✅', label:'umgesetzt',          farbe:'#22c55e', bg:'rgba(34,197,94,0.08)',   bd:'rgba(34,197,94,0.3)'},
-    geheim:          {icon:'🤫', label:'umgesetzt · geheim', farbe:'#a78bfa', bg:'rgba(167,139,250,0.10)', bd:'rgba(167,139,250,0.32)'},
-    vorgemerkt:      {icon:'📋', label:'vorgemerkt',         farbe:'#9ca3af', bg:'rgba(156,163,175,0.07)', bd:'rgba(156,163,175,0.28)'},
-    nicht_empfohlen: {icon:'⚠️', label:'rate ich ab',        farbe:'#f59e0b', bg:'rgba(245,158,11,0.08)',  bd:'rgba(245,158,11,0.3)'}
-  };
-  const el = document.getElementById('ki-buch-eintraege');
-  if (el) {
-    const items = st.eintraege || [];
-    el.innerHTML = items.length
-      ? items.map(e => {
-          const s = STATUS[e.status] || STATUS.vorgemerkt;
-          const notiz = (e.notiz||'').trim();
-          return `<div style="background:${s.bg};border:1px solid ${s.bd};border-radius:9px;padding:10px 12px;margin-bottom:7px">
-            <div style="font-size:11px;font-weight:700;color:${s.farbe};text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px">${s.icon} ${s.label}</div>
-            <div style="font-size:13px;color:var(--text);line-height:1.5">${kiBuchEsc(e.text||'')}</div>
-            ${notiz ? `<div style="font-size:12px;color:var(--dim);line-height:1.45;margin-top:5px;border-top:1px dashed var(--border);padding-top:5px">🐾 ${kiBuchEsc(notiz)}</div>` : ''}
-          </div>`;
-        }).join('')
-      : '<div style="font-size:13px;color:var(--dim);font-style:italic">Noch nichts — gib mir im Chat eine Steuerung oder einen Wunsch.</div>';
+  // Richtungsimpuls (nur setzen wenn Feld nicht gerade bearbeitet wird)
+  const ri = document.getElementById('ki-buch-richtung-input');
+  if (ri && document.activeElement !== ri) ri.value = st.richtungsimpuls || '';
+
+  // Wunsch-Briefkasten
+  const wb = document.getElementById('ki-buch-wuensche');
+  if (wb) {
+    const items = st.wunsch_briefkasten || [];
+    wb.innerHTML = items.length
+      ? items.map((w,i) => `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:5px"><span style="flex:1;font-size:13px;color:var(--text);line-height:1.5">💌 ${kiBuchEsc(w)}</span><span onclick="kiBuchSteuerAktion('wunsch_del',${i})" style="cursor:pointer;color:var(--dim);font-size:15px;line-height:1;flex-shrink:0" title="Wunsch entfernen">✕</span></div>`).join('')
+      : '<div style="font-size:13px;color:var(--dim);font-style:italic">Noch keine Wünsche eingeworfen.</div>';
   }
 
-  // Rote Linien (bleibt, mit Eingabe)
+  // Rote Linien
   const ll = document.getElementById('ki-buch-linien');
   if (ll) {
     const items = st.rote_linien || [];
@@ -8034,52 +8047,6 @@ async function kiBuchLinieAdd() {
   if (!t) return;
   if (inp) inp.value = '';
   await kiBuchSteuerAktion('linie_add', t);
-}
-
-function kiBuchRenderFiguren(data) {
-  const pr = document.getElementById('ki-buch-protagonisten');
-  if (!pr) return;
-  const esc = s => { const d=document.createElement('div'); d.textContent=s==null?'':s; return d.innerHTML; };
-  const feld = (icon,label,val) => val ? `<div style="margin-top:6px"><span style="font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:0.4px">${icon} ${label}</span><div style="font-size:13px;color:var(--text);line-height:1.5">${esc(val)}</div></div>` : '';
-  let idx = 0;
-  const card = (f, farbe, tag) => {
-    const i = idx++;
-    const alter = (f.alter!==null && f.alter!==undefined && f.alter!=='') ? ', '+f.alter : '';
-    const details = [
-      feld('👤','Aussehen',f.aussehen), feld('✨','Detail',f.detail),
-      feld('🎭','Macke',f.macke), feld('💔','Wunde',f.wunde),
-      feld('🗣️','Stimme',f.stimme), feld('❤️','Beziehung',f.liebesbeziehung),
-      feld('⭐','Besonderheit',f.besonderheit)
-    ].join('');
-    return `<div style="border-left:3px solid ${farbe};padding:8px 0 8px 9px;margin-bottom:7px">
-      <div onclick="kiFigurToggle(${i})" style="cursor:pointer;display:flex;align-items:center;gap:6px">
-        <span style="font-size:11px;color:var(--dim);flex-shrink:0" id="kifig-arr-${i}">▸</span>
-        <strong style="color:${farbe}">${esc(f.name)}</strong>${tag||''}
-      </div>
-      <div style="font-size:11px;color:#a78bfa;margin-left:17px">${esc(f.rolle||'')}${alter}</div>
-      <div style="font-size:13px;color:var(--dim);margin-left:17px;margin-top:3px">${esc(f.beschreibung||'')}</div>
-      <div id="kifig-det-${i}" style="display:none;margin-left:17px">${details}</div>
-    </div>`;
-  };
-  let html = '';
-  (data.protagonisten||[]).forEach(p => html += card(p, '#a78bfa', ''));
-  if (data.antagonist && data.antagonist.name) {
-    html += card(data.antagonist, '#ef4444', ' <span style="font-size:10px;color:#ef4444">⚔️ Antagonistin</span>');
-  }
-  const nf = data.nebenfiguren||[];
-  if (nf.length) {
-    html += `<div style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin:12px 0 5px">Nebenfiguren</div>`;
-    nf.forEach(n => html += card(n, '#22c55e', ''));
-  }
-  pr.innerHTML = html || '<span style="color:var(--dim)">Noch keine definiert</span>';
-}
-function kiFigurToggle(i) {
-  const det = document.getElementById('kifig-det-'+i);
-  const arr = document.getElementById('kifig-arr-'+i);
-  if (!det) return;
-  const open = det.style.display === 'none';
-  det.style.display = open ? 'block' : 'none';
-  if (arr) arr.textContent = open ? '▾' : '▸';
 }
 
 function kiBuchRenderKapitelListe() {

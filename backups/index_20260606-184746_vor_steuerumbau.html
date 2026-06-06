@@ -2614,11 +2614,27 @@ html, body {
 
               <!-- Produzenten-Steuerung -->
               <div style="background:var(--card);border:1px solid rgba(124,58,237,0.45);border-radius:14px;padding:18px 22px">
-                <div style="font-size:13px;font-weight:700;color:#a78bfa;margin-bottom:4px">🎬 Steuerung & Wünsche</div>
-                <div style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.5">Du gibst mir Steuerung & Wünsche im Chat — hier siehst du, was ich daraus mache. 🐾</div>
+                <div style="font-size:13px;font-weight:700;color:#a78bfa;margin-bottom:4px">🎬 Produzenten-Steuerung</div>
+                <div style="font-size:13px;color:var(--dim);margin-bottom:16px;line-height:1.5">Du lenkst die Strömung — die Wendungen bleiben meine Überraschung für dich. 🐾</div>
 
-                <!-- Statustafel (read-only, von Bolla gepflegt) -->
-                <div id="ki-buch-eintraege" style="margin-bottom:18px"></div>
+                <!-- Richtungsimpuls -->
+                <div style="margin-bottom:18px">
+                  <div style="font-size:12px;font-weight:700;color:var(--bright);margin-bottom:6px">🧭 Richtungsimpuls fürs nächste Kapitel</div>
+                  <textarea id="ki-buch-richtung-input" rows="2" style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:14px;font-family:inherit;resize:vertical;line-height:1.5;outline:none" placeholder="z.B. 'Mehr Leni', 'die Bedrohung soll näher rücken', 'Liebesebene langsamer'…"></textarea>
+                  <button onclick="kiBuchRichtungSpeichern()" style="margin-top:7px;background:rgba(124,58,237,0.15);color:#a78bfa;border:1px solid rgba(124,58,237,0.4);border-radius:8px;padding:7px 15px;font-size:13px;cursor:pointer;font-weight:600">💾 Richtung speichern</button>
+                  <span id="ki-buch-richtung-status" style="font-size:12px;color:var(--dim);margin-left:8px"></span>
+                </div>
+
+                <!-- Wunsch-Briefkasten -->
+                <div style="margin-bottom:18px">
+                  <div style="font-size:12px;font-weight:700;color:var(--bright);margin-bottom:3px">💌 Wunsch-Briefkasten</div>
+                  <div style="font-size:12px;color:var(--dim);margin-bottom:7px">Wünsche, die ich erfülle — wann es dramaturgisch zündet. Du weißt nie, in welchem Kapitel es dich erwischt.</div>
+                  <div id="ki-buch-wuensche" style="margin-bottom:8px"></div>
+                  <div style="display:flex;gap:7px">
+                    <input id="ki-buch-wunsch-input" type="text" style="flex:1;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit;outline:none" placeholder="z.B. 'Irgendwann ein Verrat von jemandem, dem man vertraut'">
+                    <button onclick="kiBuchWunschAdd()" style="background:rgba(124,58,237,0.15);color:#a78bfa;border:1px solid rgba(124,58,237,0.4);border-radius:8px;padding:9px 15px;font-size:14px;cursor:pointer;font-weight:600">+ Wunsch</button>
+                  </div>
+                </div>
 
                 <!-- Rote Linien -->
                 <div>
@@ -7965,31 +7981,20 @@ async function loadKiBuch() {
 }
 
 function kiBuchRenderSteuerung(st) {
-  // Steuerung & Wünsche — read-only Statustafel, von Bolla gepflegt
-  const STATUS = {
-    in_arbeit:       {icon:'🔵', label:'dran',               farbe:'#3b82f6', bg:'rgba(59,130,246,0.08)',  bd:'rgba(59,130,246,0.3)'},
-    umgesetzt:       {icon:'✅', label:'umgesetzt',          farbe:'#22c55e', bg:'rgba(34,197,94,0.08)',   bd:'rgba(34,197,94,0.3)'},
-    geheim:          {icon:'🤫', label:'umgesetzt · geheim', farbe:'#a78bfa', bg:'rgba(167,139,250,0.10)', bd:'rgba(167,139,250,0.32)'},
-    vorgemerkt:      {icon:'📋', label:'vorgemerkt',         farbe:'#9ca3af', bg:'rgba(156,163,175,0.07)', bd:'rgba(156,163,175,0.28)'},
-    nicht_empfohlen: {icon:'⚠️', label:'rate ich ab',        farbe:'#f59e0b', bg:'rgba(245,158,11,0.08)',  bd:'rgba(245,158,11,0.3)'}
-  };
-  const el = document.getElementById('ki-buch-eintraege');
-  if (el) {
-    const items = st.eintraege || [];
-    el.innerHTML = items.length
-      ? items.map(e => {
-          const s = STATUS[e.status] || STATUS.vorgemerkt;
-          const notiz = (e.notiz||'').trim();
-          return `<div style="background:${s.bg};border:1px solid ${s.bd};border-radius:9px;padding:10px 12px;margin-bottom:7px">
-            <div style="font-size:11px;font-weight:700;color:${s.farbe};text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px">${s.icon} ${s.label}</div>
-            <div style="font-size:13px;color:var(--text);line-height:1.5">${kiBuchEsc(e.text||'')}</div>
-            ${notiz ? `<div style="font-size:12px;color:var(--dim);line-height:1.45;margin-top:5px;border-top:1px dashed var(--border);padding-top:5px">🐾 ${kiBuchEsc(notiz)}</div>` : ''}
-          </div>`;
-        }).join('')
-      : '<div style="font-size:13px;color:var(--dim);font-style:italic">Noch nichts — gib mir im Chat eine Steuerung oder einen Wunsch.</div>';
+  // Richtungsimpuls (nur setzen wenn Feld nicht gerade bearbeitet wird)
+  const ri = document.getElementById('ki-buch-richtung-input');
+  if (ri && document.activeElement !== ri) ri.value = st.richtungsimpuls || '';
+
+  // Wunsch-Briefkasten
+  const wb = document.getElementById('ki-buch-wuensche');
+  if (wb) {
+    const items = st.wunsch_briefkasten || [];
+    wb.innerHTML = items.length
+      ? items.map((w,i) => `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:5px"><span style="flex:1;font-size:13px;color:var(--text);line-height:1.5">💌 ${kiBuchEsc(w)}</span><span onclick="kiBuchSteuerAktion('wunsch_del',${i})" style="cursor:pointer;color:var(--dim);font-size:15px;line-height:1;flex-shrink:0" title="Wunsch entfernen">✕</span></div>`).join('')
+      : '<div style="font-size:13px;color:var(--dim);font-style:italic">Noch keine Wünsche eingeworfen.</div>';
   }
 
-  // Rote Linien (bleibt, mit Eingabe)
+  // Rote Linien
   const ll = document.getElementById('ki-buch-linien');
   if (ll) {
     const items = st.rote_linien || [];
