@@ -28,8 +28,6 @@ WORKSPACE = os.path.expanduser("~/workspace")
 TOKEN_FILE = os.path.join(WORKSPACE, "config/ms_token.json")
 AZURE_SPEECH_FILE = os.path.join(WORKSPACE, "config/azure_speech.json")
 CLIPBOARD_FILE = os.path.join(WORKSPACE, "config/clipboard.json")
-CLIPBOARD_TRASH_FILE = os.path.join(WORKSPACE, "config/clipboard_trash.json")
-CLIPBOARD_TRASH_DAYS = 14  # so lange bleiben gelöschte Einträge im Papierkorb
 CLIPBOARD_IMAGES_DIR = os.path.join(WORKSPACE, "config/clipboard_images")
 IMMO_BOOKMARKS_FILE  = Path(os.path.join(WORKSPACE, "config/immo_bookmarks.json"))
 IMMO_CRITERIA_FILE   = Path(os.path.join(WORKSPACE, "config/immo_criteria.json"))
@@ -80,86 +78,17 @@ def append_clipboard(text, source="voice"):
         json.dump(data, f, ensure_ascii=False)
     return data
 
-def _load_clipboard_trash():
-    try:
-        with open(CLIPBOARD_TRASH_FILE, encoding="utf-8") as f:
-            raw = json.load(f)
-        return raw.get("entries", [])
-    except Exception:
-        return []
-
-def _save_clipboard_trash(entries):
-    with open(CLIPBOARD_TRASH_FILE, "w", encoding="utf-8") as f:
-        json.dump({"entries": entries}, f, ensure_ascii=False)
-
-def _purge_clipboard_trash(entries):
-    """Entfernt Papierkorb-Einträge, die älter als CLIPBOARD_TRASH_DAYS sind."""
-    cutoff = datetime.now() - timedelta(days=CLIPBOARD_TRASH_DAYS)
-    kept = []
-    for e in entries:
-        try:
-            if datetime.fromisoformat(e.get("deleted_ts", "")) >= cutoff:
-                kept.append(e)
-        except Exception:
-            kept.append(e)  # ohne gültigen Zeitstempel lieber behalten
-    return kept
-
 def delete_clipboard_entry(idx):
-    """Soft-Delete: Eintrag wandert in den Papierkorb statt sofort verloren zu gehen."""
     try:
         with open(CLIPBOARD_FILE, encoding="utf-8") as f:
             raw = json.load(f)
         entries = raw.get("entries", [])
         if 0 <= idx < len(entries):
-            removed = entries.pop(idx)
-            removed = dict(removed)
-            removed["deleted_ts"] = datetime.now().isoformat()
-            trash = _purge_clipboard_trash(_load_clipboard_trash())
-            trash.append(removed)
-            _save_clipboard_trash(trash)
+            entries.pop(idx)
         data = {"entries": entries}
         with open(CLIPBOARD_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False)
         return data
-    except Exception as e:
-        return {"error": str(e)}
-
-def get_clipboard_trash():
-    """Liefert den (automatisch bereinigten) Papierkorb, neueste zuerst."""
-    trash = _purge_clipboard_trash(_load_clipboard_trash())
-    _save_clipboard_trash(trash)
-    return {"entries": trash, "retention_days": CLIPBOARD_TRASH_DAYS}
-
-def restore_clipboard_entry(idx):
-    """Holt einen Eintrag aus dem Papierkorb zurück ins Clipboard."""
-    try:
-        trash = _purge_clipboard_trash(_load_clipboard_trash())
-        if not (0 <= idx < len(trash)):
-            return {"error": "Index ungültig"}
-        item = dict(trash.pop(idx))
-        item.pop("deleted_ts", None)
-        _save_clipboard_trash(trash)
-        try:
-            with open(CLIPBOARD_FILE, encoding="utf-8") as f:
-                raw = json.load(f)
-            entries = raw.get("entries", [])
-        except Exception:
-            entries = []
-        entries.append(item)
-        with open(CLIPBOARD_FILE, "w", encoding="utf-8") as f:
-            json.dump({"entries": entries}, f, ensure_ascii=False)
-        return {"entries": entries}
-    except Exception as e:
-        return {"error": str(e)}
-
-def delete_clipboard_trash_entry(idx):
-    """Löscht einen Eintrag endgültig aus dem Papierkorb."""
-    try:
-        trash = _purge_clipboard_trash(_load_clipboard_trash())
-        if 0 <= idx < len(trash):
-            trash.pop(idx)
-        _save_clipboard_trash(trash)
-        return {"entries": trash}
     except Exception as e:
         return {"error": str(e)}
 
@@ -4361,7 +4290,6 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/status": lambda: {"ok": True, "ts": datetime.now().isoformat()},
                 "/api/redesigns-meta": get_redesigns_meta,
                 "/api/clipboard": get_clipboard,
-                "/api/clipboard/trash": get_clipboard_trash,
                 "/api/clipboard/images": get_clipboard_images,
                 "/api/newsletter": get_newsletter,
                 "/api/makler": get_makler,
@@ -5228,12 +5156,6 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
             elif self.path == "/api/clipboard/delete":
                 idx = body.get("idx", -1)
                 self._send_json(delete_clipboard_entry(int(idx)))
-            elif self.path == "/api/clipboard/restore":
-                idx = body.get("idx", -1)
-                self._send_json(restore_clipboard_entry(int(idx)))
-            elif self.path == "/api/clipboard/trash/delete":
-                idx = body.get("idx", -1)
-                self._send_json(delete_clipboard_trash_entry(int(idx)))
             elif self.path == "/api/clipboard/image":
                 img_b64 = body.get("image_b64", "")
                 mime = body.get("mime", "image/png")

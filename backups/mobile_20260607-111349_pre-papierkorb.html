@@ -456,16 +456,6 @@ body {
     <span id="clip-img-status" style="display:block;font-size:13px;min-height:18px;text-align:center"></span>
     <div id="clip-img-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px"></div>
   </div>
-  <div class="card" style="flex-direction:column;gap:10px">
-    <div onclick="clipTrashToggle()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
-      <h3 style="margin:0;font-size:16px;font-weight:700">🗑️ Papierkorb</h3>
-      <span id="clip-trash-caret" style="font-size:14px;color:var(--text3)">▸</span>
-    </div>
-    <div id="clip-trash-wrap" style="display:none;flex-direction:column;gap:8px">
-      <div style="font-size:12px;color:var(--text3)">Gelöschte Einträge bleiben 14 Tage erhalten und können wiederhergestellt werden.</div>
-      <div id="clip-trash" style="display:flex;flex-direction:column;gap:8px"></div>
-    </div>
-  </div>
 </div>
 
 <!-- GLÜCKSRAD LÖSUNG -->
@@ -1096,7 +1086,6 @@ async function loadClipboard() {
     showClipStatus('⚠️ ' + e.message, false);
   }
   loadClipboardImages();
-  if (document.getElementById('clip-trash-wrap')?.style.display === 'flex') loadClipboardTrash();
 }
 async function clipboardAppend() {
   const ta = document.getElementById('clip-text');
@@ -1128,59 +1117,6 @@ function showClipStatus(msg, ok) {
   const el = document.getElementById('clip-status');
   el.textContent = msg; el.style.color = ok ? 'var(--green)' : 'var(--red)';
   if (msg) setTimeout(() => { el.textContent = ''; }, 2500);
-}
-function clipTrashToggle() {
-  const wrap = document.getElementById('clip-trash-wrap');
-  const caret = document.getElementById('clip-trash-caret');
-  const open = wrap.style.display !== 'flex';
-  wrap.style.display = open ? 'flex' : 'none';
-  if (caret) caret.textContent = open ? '▾' : '▸';
-  if (open) loadClipboardTrash();
-}
-async function loadClipboardTrash() {
-  const list = document.getElementById('clip-trash');
-  try {
-    const r = await fetch('/api/clipboard/trash');
-    const d = await r.json();
-    const entries = d.entries || [];
-    if (entries.length === 0) {
-      list.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px 0">Papierkorb ist leer</div>';
-      return;
-    }
-    const srcIcon = s => s==='voice'?'🎤':s==='bolla-anweisung'?'🤖':'✏️';
-    list.innerHTML = entries.slice().reverse().map((e, revI) => {
-      const i = entries.length - 1 - revI;
-      const del = e.deleted_ts ? new Date(e.deleted_ts).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-      const txt = (e.text||'').replace(/</g,'&lt;');
-      return `<div style="border:1px solid var(--sep);border-radius:8px;padding:10px;background:var(--bg2);opacity:0.85">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${srcIcon(e.source)} gelöscht ${del}</div>
-        <div style="font-size:14px;line-height:1.5;word-break:break-word">${txt}</div>
-        <div style="display:flex;gap:6px;margin-top:6px">
-          <button onclick="clipRestore(${i})" class="clip-btn green" style="font-size:12px;padding:4px 8px">↩️ Wiederherstellen</button>
-          <button onclick="clipTrashDelete(${i})" class="clip-btn red" style="font-size:12px;padding:4px 8px">✕ Endgültig</button>
-        </div>
-      </div>`;
-    }).join('');
-  } catch (e) {
-    list.innerHTML = '<div style="color:var(--red);font-size:13px;padding:8px 0">Fehler beim Laden</div>';
-  }
-}
-async function clipRestore(idx) {
-  try {
-    await fetch('/api/clipboard/restore', {method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({idx})});
-    showClipStatus('✓ Wiederhergestellt', true);
-    loadClipboard();
-    loadClipboardTrash();
-  } catch (e) { showClipStatus('⚠️ ' + e.message, false); }
-}
-async function clipTrashDelete(idx) {
-  if (!confirm('Eintrag endgültig löschen? Das kann nicht rückgängig gemacht werden.')) return;
-  try {
-    await fetch('/api/clipboard/trash/delete', {method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({idx})});
-    loadClipboardTrash();
-  } catch (e) { showClipStatus('⚠️ ' + e.message, false); }
 }
 async function loadClipboardImages() {
   const grid = document.getElementById('clip-img-grid');
