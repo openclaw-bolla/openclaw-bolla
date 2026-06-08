@@ -91,10 +91,10 @@ def build(out, kapitel, untertitel_zeile):
 build(f"{DESK}/AURORA_Buch_komplett.pdf", ALLK, "Prolog &ndash; Kapitel 18")
 
 # 2) Zuletzt geschriebene Kapitel (13-18)
-neu_titles = ["Kapitel 13: Was man nicht begraebt",
+neu_titles = ["Kapitel 13: Was man nicht begräbt",
               "Kapitel 14: Was man nicht teilt",
               "Kapitel 15: Was man nicht laut sagt",
-              "Kapitel 16: Was man nicht zuruecknimmt",
+              "Kapitel 16: Was man nicht zurücknimmt",
               "Kapitel 17: Was man nicht wiederfindet",
               "Kapitel 18: Was man nicht verzeiht"]
 neu = [k for k in ALLK if k.get('titel') in neu_titles]
