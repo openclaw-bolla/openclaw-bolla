@@ -88,14 +88,11 @@ def build(out, kapitel, untertitel_zeile):
     print("PDF:", out)
 
 # 1) Komplettes Buch
-build(f"{DESK}/AURORA_Buch_komplett.pdf", ALLK, "Prolog &ndash; Kapitel 18")
+build(f"{DESK}/AURORA_Buch_komplett.pdf", ALLK, "Prolog &ndash; Kapitel 21")
 
-# 2) Zuletzt geschriebene Kapitel (13-18)
-neu_titles = ["Kapitel 13: Was man nicht begräbt",
-              "Kapitel 14: Was man nicht teilt",
-              "Kapitel 15: Was man nicht laut sagt",
-              "Kapitel 16: Was man nicht zurücknimmt",
-              "Kapitel 17: Was man nicht wiederfindet",
-              "Kapitel 18: Was man nicht verzeiht"]
+# 2) Zuletzt geschriebene Kapitel (19-21)
+neu_titles = ["Kapitel 19: Was man nicht aufhält",
+              "Kapitel 20: Was man nicht benennt",
+              "Kapitel 21: Was man nicht zurücklässt"]
 neu = [k for k in ALLK if k.get('titel') in neu_titles]
-build(f"{DESK}/AURORA_Kapitel_13-18.pdf", neu, "Kapitel 13 &ndash; 18")
+build(f"{DESK}/AURORA_Kapitel_19-21.pdf", neu, "Kapitel 19 &ndash; 21")

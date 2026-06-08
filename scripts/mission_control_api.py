@@ -2808,8 +2808,28 @@ def get_token_usage():
             return f"Claude {p[1].capitalize()} {p[2]}.{p[3]}"
         return m
 
+    # Konfigurierter Default aus settings.json (z.B. "sonnet")
+    _alias = {"sonnet": "Sonnet 4.6", "opus": "Opus 4.8", "haiku": "Haiku 4.5"}
+    default_raw = ""
+    try:
+        with open("/home/bolla/.claude/settings.json", encoding="utf-8") as _sf:
+            default_raw = (json.load(_sf).get("model") or "").strip()
+    except Exception:
+        default_raw = ""
+    default_pretty = _alias.get(default_raw.lower(), _pretty(default_raw) if default_raw else "")
+
+    # Kurzname des Live-Modells fürs Frontend (z.B. "Opus 4.8")
+    live_short = _pretty(latest_model).replace("Claude ", "")
+    # Mismatch nur melden, wenn beide bekannt sind und Familie abweicht
+    mismatch = False
+    if default_raw and latest_model:
+        mismatch = default_raw.lower() not in latest_model.lower()
+
     data = {
         "model": f"{_pretty(latest_model)} (Pro Plan)",
+        "model_live": live_short,
+        "model_default": default_pretty,
+        "model_mismatch": mismatch,
         "today": {"input": t_in, "output": t_out, "cache_read": t_cr, "cache_creation": t_ce},
         "total": {"input": a_in, "output": a_out, "cache_read": a_cr, "cache_creation": a_ce},
         "note": "Pro Plan — keine Kosten"
@@ -2981,16 +3001,22 @@ def get_claude_quota():
         from datetime import timezone as _tz
         berlin = pytz.timezone("Europe/Berlin")
         now_berlin = datetime.now(berlin)
-        reset_h, reset_m = 0, 0
-        reset_label = "–"
-        resets_at_str = sd.get("resets_at") or fh.get("resets_at")
-        if resets_at_str:
-            from datetime import datetime as _dt
+        from datetime import datetime as _dt
+
+        def _parse_reset(resets_at_str):
+            if not resets_at_str:
+                return 0, 0, "–"
             rt = _dt.fromisoformat(resets_at_str.replace("Z", "+00:00")).astimezone(berlin)
             diff_s = max(0, int((rt - now_berlin).total_seconds()))
-            reset_h, r2 = divmod(diff_s, 3600)
-            reset_m = r2 // 60
-            reset_label = rt.strftime("%a %d.%m. %H:%M")
+            h, r2 = divmod(diff_s, 3600)
+            m = r2 // 60
+            label = rt.strftime("%a %d.%m. %H:%M")
+            return h, m, label
+
+        # 7-Tage Reset
+        reset_h, reset_m, reset_label = _parse_reset(sd.get("resets_at"))
+        # 5h-Fenster Reset
+        fh_reset_h, fh_reset_m, fh_reset_label = _parse_reset(fh.get("resets_at"))
 
         if sd_pct < 50:
             tip = "Entspannt — alles möglich."
@@ -3007,6 +3033,9 @@ def get_claude_quota():
 
         data = {
             "five_hour_pct": fh_pct,
+            "five_hour_reset_hours": fh_reset_h,
+            "five_hour_reset_minutes": fh_reset_m,
+            "five_hour_reset_label": fh_reset_label,
             "seven_day_pct": sd_pct,
             "seven_day_rem": sd_rem,
             "reset_hours": reset_h,

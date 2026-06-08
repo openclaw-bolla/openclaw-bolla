@@ -1509,7 +1509,8 @@ html, body {
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
             <div>
               <div style="font-size:13px;font-weight:700;color:#f97316;text-transform:uppercase;letter-spacing:1px">⚡ Anthropic Wochenbudget</div>
-              <div style="font-size:11px;color:var(--dim);margin-top:2px">Echte Daten von Anthropic · <span id="tb-5h-label" style="color:#a78bfa">5h: …%</span></div>
+              <div style="font-size:11px;color:var(--dim);margin-top:2px">Echte Daten von Anthropic · <span id="tb-5h-label" style="color:#a78bfa">5h: …%</span> · <span id="tb-5h-reset" style="color:var(--dim)">5h-Reset: …</span></div>
+              <div id="tb-model-line" style="font-size:12px;color:var(--dim);margin-top:3px">Claude · Pro Plan · Live-Tools</div>
             </div>
             <div style="display:flex;align-items:center;gap:12px">
               <div style="text-align:center">
@@ -4026,7 +4027,7 @@ function showPage(page) {
   if (item) document.getElementById('page-title').textContent = item.querySelector('span:nth-child(2)')?.textContent || '';
   const cmdBar = document.getElementById('mail-cmd-bar');
   if (page !== 'email') { if (cmdBar) cmdBar.style.display='none'; closeMailResult(); _selectedMails=[]; }
-  if (page === 'system')     { tbInit(); kostenLoad(); }
+  if (page === 'system')     { tbInit(); kostenLoad(); loadBollaModel(); }
   if (page === 'brain')      initBrain();
   if (page === 'bolla')      loadBollaModel();
   if (page === 'system')     loadSystem();
@@ -6036,8 +6037,23 @@ async function loadBollaModel() {
   try {
     const r = await fetch(API + '/api/tokenusage');
     const t = await r.json();
-    const el = document.getElementById('bolla-model-line');
-    if (el && t.model) el.textContent = `${t.model.replace(/\s*\(.*\)$/, '')} · Pro Plan · Live-Tools`;
+    const def = t.model_default || '';
+    const live = t.model_live || (t.model || '').replace(/\s*\(.*\)$/, '').replace('Claude ', '');
+
+    function renderModelLine(el) {
+      if (!el) return;
+      if (t.model_mismatch && def && live) {
+        el.innerHTML = `Default: <b style="color:var(--bright)">${def}</b> · läuft gerade: ` +
+          `<b style="color:#f0c040">${live}</b> <span title="Aktive Session weicht vom Default ab — mit /model umschalten">⚠️</span>`;
+      } else if (def) {
+        el.innerHTML = `<b style="color:var(--bright)">${live || def}</b> · Default ✓ · Pro Plan`;
+      } else {
+        el.textContent = `${live} · Pro Plan · Live-Tools`;
+      }
+    }
+
+    renderModelLine(document.getElementById('bolla-model-line'));
+    renderModelLine(document.getElementById('tb-model-line'));
   } catch (e) {}
 }
 
@@ -6410,6 +6426,14 @@ async function tbLoad() {
     const rlEl = document.getElementById('tb-reset-label');
     if (rlEl && d.reset_label) rlEl.textContent = d.reset_label;
     if (fhLbl) fhLbl.textContent = '5h: ' + d.five_hour_pct + '%';
+    const fhReset = document.getElementById('tb-5h-reset');
+    if (fhReset) {
+      if (d.five_hour_reset_hours != null && d.five_hour_reset_label && d.five_hour_reset_label !== '–') {
+        fhReset.textContent = '5h-Reset: ' + d.five_hour_reset_hours + 'h ' + String(d.five_hour_reset_minutes).padStart(2,'0') + 'm (' + d.five_hour_reset_label + ')';
+      } else {
+        fhReset.textContent = '';
+      }
+    }
     if (upd)   upd.textContent = 'Anthropic live · ' + new Date().toLocaleString('de-DE', {timeZone:'Europe/Berlin', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) + ' Uhr';
 
     if (!bar || !label) return;
