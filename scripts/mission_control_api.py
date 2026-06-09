@@ -1360,6 +1360,45 @@ def get_sos_contacts():
             return json.load(f)
     return {"contacts": [], "medical": {}}
 
+# ── Bolla Chat-Verlauf ───────────────────────────────────────────────────────
+CHAT_HISTORY_FILE = os.path.join(WORKSPACE, "data/chat_history.json")
+CHAT_HISTORY_MAX = 30
+
+def _chat_history_load():
+    if os.path.exists(CHAT_HISTORY_FILE):
+        try:
+            with open(CHAT_HISTORY_FILE, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return []
+
+def _chat_history_save(lst):
+    with open(CHAT_HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(lst, f, ensure_ascii=False, indent=2)
+
+def get_chat_history():
+    return _chat_history_load()
+
+def chat_history_add(entry):
+    lst = _chat_history_load()
+    lst = [e for e in lst if e.get("id") != entry.get("id")]
+    lst.insert(0, entry)
+    if len(lst) > CHAT_HISTORY_MAX:
+        lst = lst[:CHAT_HISTORY_MAX]
+    _chat_history_save(lst)
+    return {"ok": True}
+
+def chat_history_delete(entry_id):
+    lst = _chat_history_load()
+    lst = [e for e in lst if e.get("id") != entry_id]
+    _chat_history_save(lst)
+    return {"ok": True}
+
+def chat_history_clear():
+    _chat_history_save([])
+    return {"ok": True}
+
 # ── KI-Workshop Projekt-Seite (Legacy) ──────────────────────────────────────
 WORKSHOP_MD = os.path.join(WORKSPACE, "projektwoche-ki-workshop/workshop-ideen.md")
 WORKSHOP_AUFTRAEGE = os.path.join(WORKSPACE, "projektwoche-ki-workshop/auftraege.json")
@@ -4405,6 +4444,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/photos/config":  get_lmstudio_config,
                 "/api/quicknotes":     get_quicknotes,
                 "/api/sos/contacts":   get_sos_contacts,
+                "/api/chat-history":   get_chat_history,
                 "/api/charts":         get_charts,
                 "/api/workshop":       get_workshop,
                 "/api/workshop/fortschritt": get_workshop_fortschritt,
@@ -5132,6 +5172,12 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     self._send_json({"ok": True})
                 except Exception as e:
                     self._send_json({"error": str(e)}, status=500)
+            elif self.path == "/api/chat-history/add":
+                self._send_json(chat_history_add(body))
+            elif self.path == "/api/chat-history/delete":
+                self._send_json(chat_history_delete(body.get("id")))
+            elif self.path == "/api/chat-history/clear":
+                self._send_json(chat_history_clear())
             elif self.path == "/api/bolla/chat":
                 self._handle_bolla_stream(body)
             elif self.path == "/api/bolla/tts":

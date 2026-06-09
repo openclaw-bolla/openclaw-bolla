@@ -7603,24 +7603,13 @@ function bollaRemoveImg() {
   document.getElementById('bolla-img-thumb').src = '';
 }
 
-// ===== VERLAUF =====
-const HISTORY_KEY = 'bolla-chat-history';
-const HISTORY_MAX = 30;
+// ===== VERLAUF (serverseitig via /api/chat-history) =====
+let _bollaHistoryCache = [];
 
-function bollaHistoryLoad() {
-  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch(e) { return []; }
-}
-function bollaHistorySave(list) {
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch(e) {}
-}
-
-function bollaHistoryAdd(html) {
+async function bollaHistoryAdd(html) {
   if (!html || html.length < 100) return;
-  const list = bollaHistoryLoad();
-  // Titel + Statistik aus HTML extrahieren
   const tmp = document.createElement('div');
   tmp.innerHTML = html;
-  // User-Nachrichten haben "CHRIS" als Label
   const userBlocks = [...tmp.querySelectorAll('div')].filter(d => d.textContent.includes('CHRIS'));
   const firstUserText = (() => {
     for (const b of userBlocks) {
@@ -7630,22 +7619,21 @@ function bollaHistoryAdd(html) {
     return '';
   })();
   const title = firstUserText.length > 65 ? firstUserText.substring(0, 62) + '…' : (firstUserText || 'Session');
-  const msgCount = userBlocks.length;
-  list.unshift({ id: Date.now(), ts: new Date().toISOString(), title, msgCount, html });
-  if (list.length > HISTORY_MAX) list.splice(HISTORY_MAX);
-  bollaHistorySave(list);
+  const entry = { id: Date.now(), ts: new Date().toISOString(), title, msgCount: userBlocks.length, html, sessionId: bollaSessionId || null };
+  try { await fetch(API + '/api/chat-history/add', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(entry)}); } catch(e) {}
   bollaHistoryRender();
 }
 
-function bollaHistoryRender() {
+async function bollaHistoryRender() {
   const el = document.getElementById('bolla-history-list');
   if (!el) return;
-  const list = bollaHistoryLoad();
+  let list = [];
+  try { const r = await fetch(API + '/api/chat-history'); list = await r.json(); } catch(e) {}
+  _bollaHistoryCache = list;
   if (!list.length) {
-    el.innerHTML = '<div style="padding:20px 12px;font-size:12px;color:var(--dim);text-align:center;line-height:1.6">Neu drücken um<br>Session zu speichern</div>';
+    el.innerHTML = '<div style="padding:20px 12px;font-size:12px;color:var(--dim);text-align:center;line-height:1.6">Noch keine Sessions gespeichert</div>';
     return;
   }
-  // Heute / Gestern / Datum-Gruppen
   const today = new Date(); today.setHours(0,0,0,0);
   const yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1);
   let lastGroup = '';
@@ -7661,10 +7649,11 @@ function bollaHistoryRender() {
     lastGroup = groupLabel;
     const timeStr = d.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'});
     const msgs = s.msgCount ? `<span style="font-size:10px;color:var(--dim)">${s.msgCount} Nachrichten</span>` : '';
+    const resumable = s.sessionId ? `<span style="font-size:10px;color:#a78bfa;margin-left:4px" title="Fortsetzbar">▶</span>` : '';
     return `${groupHtml}<div class="bolla-hist-item" onclick="bollaHistoryOpen(${i})">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
-        <span style="font-size:10px;color:var(--dim)">${timeStr}</span>
-        <button onclick="event.stopPropagation();bollaHistoryDelete(${i})" style="background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.3);border-radius:4px;color:#f87171;cursor:pointer;font-size:10px;padding:1px 5px;line-height:1.4" title="Löschen">✕</button>
+        <span style="font-size:10px;color:var(--dim)">${timeStr}${resumable}</span>
+        <button onclick="event.stopPropagation();bollaHistoryDelete(${s.id})" style="background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.3);border-radius:4px;color:#f87171;cursor:pointer;font-size:10px;padding:1px 5px;line-height:1.4" title="Löschen">✕</button>
       </div>
       <div style="font-size:12px;color:var(--text);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;margin-bottom:3px">${s.title}</div>
       ${msgs}
@@ -7673,31 +7662,35 @@ function bollaHistoryRender() {
 }
 
 function bollaHistoryOpen(i) {
-  const list = bollaHistoryLoad();
-  const s = list[i];
+  const s = _bollaHistoryCache[i];
   if (!s) return;
   const chat = document.getElementById('bolla-chat');
   if (chat) chat.innerHTML = s.html;
-  bollaSessionId = null;
-  document.getElementById('bolla-status').innerHTML = `📂 ${new Date(s.ts).toLocaleDateString('de-DE')}`;
-  document.getElementById('bolla-status').style.color = 'var(--dim)';
+  bollaSessionId = s.sessionId || null;
+  const statusEl = document.getElementById('bolla-status');
+  if (bollaSessionId) {
+    statusEl.innerHTML = `▶ ${new Date(s.ts).toLocaleDateString('de-DE')} · fortsetzbar`;
+    statusEl.style.color = '#a78bfa';
+  } else {
+    statusEl.innerHTML = `📂 ${new Date(s.ts).toLocaleDateString('de-DE')}`;
+    statusEl.style.color = 'var(--dim)';
+  }
   chat?.scrollTo(0, chat.scrollHeight);
-  // Aktive Markierung
-  document.querySelectorAll('.bolla-hist-item').forEach((el, idx) => {
-    el.style.background = idx === i ? 'rgba(124,58,237,0.15)' : '';
+  bollaHistoryRender().then(() => {
+    document.querySelectorAll('.bolla-hist-item').forEach((el, idx) => {
+      el.style.background = idx === i ? 'rgba(124,58,237,0.15)' : '';
+    });
   });
 }
 
-function bollaHistoryDelete(i) {
-  const list = bollaHistoryLoad();
-  list.splice(i, 1);
-  bollaHistorySave(list);
+async function bollaHistoryDelete(id) {
+  try { await fetch(API + '/api/chat-history/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id})}); } catch(e) {}
   bollaHistoryRender();
 }
 
-function bollaHistoryClear() {
+async function bollaHistoryClear() {
   if (!confirm('Gesamten Verlauf löschen?')) return;
-  localStorage.removeItem(HISTORY_KEY);
+  try { await fetch(API + '/api/chat-history/clear', {method:'POST', headers:{'Content-Type':'application/json'}, body: '{}'}); } catch(e) {}
   bollaHistoryRender();
 }
 
