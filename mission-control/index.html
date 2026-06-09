@@ -7610,10 +7610,10 @@ async function bollaHistoryAdd(html) {
   if (!html || html.length < 100) return;
   const tmp = document.createElement('div');
   tmp.innerHTML = html;
-  const userBlocks = [...tmp.querySelectorAll('div')].filter(d => d.textContent.includes('CHRIS'));
+  const userBlocks = tmp.querySelectorAll('.bolla-user-msg');
   const firstUserText = (() => {
     for (const b of userBlocks) {
-      const t = b.textContent.replace('CHRIS','').trim();
+      const t = b.textContent.trim();
       if (t.length > 3) return t;
     }
     return '';
@@ -7701,7 +7701,9 @@ function bollaClear() {
 function bollaNewChat() {
   const chat = document.getElementById('bolla-chat');
   const html = chat?.innerHTML || '';
-  const isEmpty = !html || html.length < 200 || html.includes('Schreib mir was');
+  const tmp = document.createElement('div'); tmp.innerHTML = html;
+  const hasMessages = tmp.querySelector('.bolla-user-msg') !== null;
+  const isEmpty = !hasMessages;
   if (!isEmpty) bollaHistoryAdd(html);
   bollaSessionId = null;
   bollaRemoveImg();
@@ -8832,6 +8834,7 @@ async function bollaSend() {
   // User-Nachricht rechtsbündig einblenden
   if (sendText) {
     const userDiv = document.createElement('div');
+    userDiv.className = 'bolla-user-msg';
     userDiv.style.cssText = 'margin:12px 0;display:flex;justify-content:flex-end';
     userDiv.innerHTML = `<div style="max-width:75%;padding:10px 14px;background:rgba(255,102,153,0.18);border:1px solid rgba(255,102,153,0.28);border-radius:12px 12px 2px 12px;color:var(--bright);font-size:14px;line-height:1.6;word-break:break-word">${escHtml(sendText)}</div>`;
     chat.appendChild(userDiv);

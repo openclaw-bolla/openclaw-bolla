@@ -30,6 +30,14 @@
 - /mnt/d/OneDrive/Desktop/AURORA_Buch_komplett.pdf (neu, 187 S.)
 - /mnt/d/OneDrive/Desktop/AURORA_Kapitel_19-21.pdf (neu)
 
+### Offen / nächste Session (Stand 2026-06-10)
+
+#### Amazon Kieselerde-Rückgabe (24,90 €)
+- Bestellnummer: 306-6616120-2543506, bestellt 06.06., geliefert 08.06.
+- Widerruf schriftlich erklärt am 06.06. ✅
+- Alle Amazon-Kanäle blockiert: Mail (Auto-Reply), Rückgabe-Button (Endlosschleife), Chat (leitet wieder zur Schleife), Telefon (existiert nicht mehr)
+- **Nächster Schritt:** SEPA-Lastschrift über Deutsche Bank zurückbuchen lassen — 8-Wochen-Frist läuft noch bis August. Einfach im Online-Banking oder per Anruf: "Lastschrift von Amazon vom 06.06., 24,90 € zurückbuchen, Widerruf wurde erklärt."
+
 ### Offen / nächste Session
 - **Kap 22–25 schreiben**: Lenis Erkenntnis vertieft, Maria/Vogt-Eskalation, erste öffentliche Reaktion
 - Ggf. Kap 19–21 auf 2200+ Wörter ausbauen falls Chris es beim Lesen zu knapp findet (aktuell 1882/1869/1958W — okay per Kriterium, aber etwas kurz für wichtige Enthüllungs-Kapitel)
@@ -38,3 +46,6 @@
 ### Backup-Status
 - ki_buch.json gesichert (pre-halbzeit-check)
 - Git + OneDrive nach dieser Notiz
+
+## Wichtige Aufgabe (aus Qualitätscheck 2026-06-09)
+- **2. Drittel STRAFFEN (Kap 12–19):** Zu lang für das was es erzählt. Aurora=Mensch-Enthüllung kommt gestreckt über 4 Kapitel (12/13/18/20) statt in 2 scharfen Schlägen. Kap 14 und Teile von 16 sind Kandidaten zum Kürzen. → Spätestens vor Kap 22 angehen.
