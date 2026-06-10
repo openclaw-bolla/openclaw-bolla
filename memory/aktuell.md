@@ -32,11 +32,19 @@
 
 ### Offen / nächste Session (Stand 2026-06-10)
 
-#### Amazon Kieselerde-Rückgabe (24,90 €)
+#### Amazon Kieselerde-Rückgabe (24,90 €) — Nachverfolgung aktiv
 - Bestellnummer: 306-6616120-2543506, bestellt 06.06., geliefert 08.06.
-- Widerruf schriftlich erklärt am 06.06. ✅
+- Widerruf schriftlich erklärt am 06.06. ✅ — Mail im Outlook-Gesendet bestätigt ✅ (10.06.)
+- Mail an **Founderholics GmbH** (Hersteller!) gesendet ✅ — friends@founderholics.de, Tel. 06131-6236029
 - Alle Amazon-Kanäle blockiert: Mail (Auto-Reply), Rückgabe-Button (Endlosschleife), Chat (leitet wieder zur Schleife), Telefon (existiert nicht mehr)
-- **Nächster Schritt:** SEPA-Lastschrift über Deutsche Bank zurückbuchen lassen — 8-Wochen-Frist läuft noch bis August. Einfach im Online-Banking oder per Anruf: "Lastschrift von Amazon vom 06.06., 24,90 € zurückbuchen, Widerruf wurde erklärt."
+- **Fristen:**
+  - Widerruf 14-Tage-Frist: bis 20.06. Ware zurücksenden (oder Nachweis)
+  - SEPA-Rückbuchungsfrist: 8 Wochen ab Lastschrift-Datum 06.06. = **bis ca. 01.08.2026**
+- **Nächste Schritte (Priorität):**
+  1. **SOFORT:** Ware per Paket zurückschicken (Sendungsverfolgung aufbewahren!) — Absender-Nachweis schützt die SEPA-Rückbuchung
+  2. Falls Founderholics nicht antwortet (Frist 3-5 Werktage): anrufen: 06131-6236029
+  3. Falls Amazon bis 01.07. keine Erstattung: Deutsche Bank — "Lastschrift von Amazon vom 06.06., 24,90 €, Widerruf erklärt, zurückbuchen"
+  4. Widerruf-Mail-Nachweis aus Outlook-Gesendet als Screenshot/PDF sichern
 
 ### Offen / nächste Session
 - **Kap 22–25 schreiben**: Lenis Erkenntnis vertieft, Maria/Vogt-Eskalation, erste öffentliche Reaktion

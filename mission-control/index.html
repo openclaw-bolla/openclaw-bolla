@@ -1910,7 +1910,7 @@ html, body {
               </label>
               <button id="bolla-cam-btn" onclick="camToggle()" style="padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:16px;color:var(--dim)" title="Webcam-Foto an Bolla senden">📷</button>
               <button id="bolla-mic-btn" onclick="micToggle()" style="padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:16px;color:var(--dim)" title="Mit Bolla sprechen (Azure Speech Services)">🎤</button>
-              <input id="bolla-input" placeholder="Nachricht an Bolla... (Strg+V für Screenshot · 🎤 für Spracheingabe)" style="flex:1;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-size:14px;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();bollaSend()}" oninput="const cb=document.getElementById('bolla-clear-btn');if(cb)cb.style.display=this.value?'block':'none'">
+              <input id="bolla-input" placeholder="Nachricht an Bolla... (Strg+V für Screenshot · 🎤 für Spracheingabe)" style="flex:1;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--bright);font-size:14px;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();bollaSend()}" oninput="const cb=document.getElementById('bolla-clear-btn');if(cb)cb.style.display=this.value?'block':'none'" onpaste="bollaInputPaste(event)">
               <button id="bolla-clear-btn" onclick="const i=document.getElementById('bolla-input');i.value='';this.style.display='none';i.focus()" style="display:none;padding:10px 12px;background:transparent;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:15px;color:var(--dim);line-height:1" title="Eingabe löschen">✕</button>
               <button id="bolla-tts-stop-btn" onclick="voiceStop()" style="display:none;padding:12px 16px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;font-size:18px;font-weight:700;transition:opacity 0.2s" title="Sprachausgabe stoppen">⏹</button>
               <button onclick="bollaSend()" id="bolla-send-btn" style="padding:12px 24px;background:var(--accent2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:opacity 0.2s">Senden</button>
@@ -5335,6 +5335,54 @@ const WMO_BG = {
   // Gewitter
   95:'radial-gradient(ellipse 200% 60% at 50% 100%,rgba(80,40,120,0.4) 0%,transparent 55%),linear-gradient(180deg,#0a0f18 0%,#0f1826 40%,#16202e 100%)',
 };
+// ── Bright Sky (DWD) → Foto-Hintergrund ──────────────────────────────────
+const BS_PHOTO = {
+  'clear-day':          'img/weather/clear-day.jpg',
+  'clear-night':        'img/weather/clear-night.jpg',
+  'partly-cloudy-day':  'img/weather/partly-cloudy.jpg',
+  'partly-cloudy-night':'img/weather/night-cloudy.jpg',
+  'cloudy':             null, // Tag/Nacht unten aufgelöst
+  'fog':                'img/weather/fog.jpg',
+  'wind':               null,
+  'rain':               'img/weather/rain.jpg',
+  'sleet':              'img/weather/rain.jpg',
+  'snow':               'img/weather/overcast.jpg',
+  'hail':               'img/weather/rain.jpg',
+  'thunderstorm':       'img/weather/thunderstorm.jpg',
+};
+const BS_DESC = {
+  'clear-day':'Klar','clear-night':'Klar',
+  'partly-cloudy-day':'Teils bewölkt','partly-cloudy-night':'Teils bewölkt',
+  'cloudy':'Bewölkt','fog':'Nebel','wind':'Windig',
+  'rain':'Regen','sleet':'Schneeregen','snow':'Schnee',
+  'hail':'Hagel','thunderstorm':'Gewitter'
+};
+const BS_EMOJI = {
+  'clear-day':'☀️','clear-night':'🌙',
+  'partly-cloudy-day':'🌤️','partly-cloudy-night':'🌤️',
+  'cloudy':'☁️','fog':'🌫️','wind':'💨',
+  'rain':'🌧️','sleet':'🌨️','snow':'❄️',
+  'hail':'🌨️','thunderstorm':'⛈️'
+};
+// Gibt [fotoDatei, overlayStärke] zurück — overlayStärke je nach Situation
+function getWeatherPhoto(icon, isDay) {
+  const useNight = !isDay || (icon && icon.includes('night'));
+  if (!icon) return useNight ? ['img/weather/overcast.jpg', 0.68] : ['img/weather/overcast.jpg', 0.18];
+  if (icon === 'clear-day'  || (icon === 'clear' && isDay))   return ['img/weather/clear-day.jpg',   0.18];
+  if (icon === 'clear-night'|| (icon === 'clear' && !isDay))  return ['img/weather/clear-night.jpg', 0.12];
+  if (icon.startsWith('partly-cloudy-day'))                   return ['img/weather/partly-cloudy.jpg', 0.20];
+  if (icon.startsWith('partly-cloudy-night'))                 return ['img/weather/clear-night.jpg',  0.40]; // Sterne durch Wolken
+  // Bewölkt/Nacht: overcast.jpg stark abdunkeln → wirkt wie bedeckter Nachthimmel
+  if (icon === 'cloudy' || icon === 'wind')
+    return useNight ? ['img/weather/overcast.jpg', 0.68] : ['img/weather/overcast.jpg', 0.18];
+  if (icon === 'fog')           return ['img/weather/fog.jpg',         useNight ? 0.50 : 0.18];
+  if (icon === 'rain'  || icon === 'sleet' || icon === 'hail')
+    return ['img/weather/rain.jpg', useNight ? 0.50 : 0.28];
+  if (icon === 'thunderstorm')  return ['img/weather/thunderstorm.jpg', useNight ? 0.45 : 0.28];
+  if (icon === 'snow')          return ['img/weather/overcast.jpg',     useNight ? 0.60 : 0.10];
+  return useNight ? ['img/weather/overcast.jpg', 0.68] : ['img/weather/overcast.jpg', 0.18];
+}
+
 const WIND_DIR = ['N','NO','O','SO','S','SW','W','NW'];
 
 function windDir(deg) { return WIND_DIR[Math.round(deg/45)%8]; }
@@ -5347,13 +5395,18 @@ function uvLabel(uv) {
 
 async function loadWeather() {
   try {
-    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=53.69&longitude=9.98&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m,apparent_temperature,uv_index,precipitation&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,uv_index_max,wind_speed_10m_max&timezone=Europe/Berlin&forecast_days=8');
+    const [r, bsR] = await Promise.all([
+      fetch('https://api.open-meteo.com/v1/forecast?latitude=53.69&longitude=9.98&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m,apparent_temperature,uv_index,precipitation&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,uv_index_max,wind_speed_10m_max&timezone=Europe/Berlin&forecast_days=8'),
+      fetch('https://api.brightsky.dev/current_weather?lat=53.69&lon=9.98').catch(()=>null)
+    ]);
     const d = await r.json();
     window._weather = d;
+    if (bsR) { try { const bsJ = await bsR.json(); window._brightsky = bsJ.weather || null; } catch(e){} }
     const c = d.current;
-    const temp = Math.round(c.temperature_2m);
-    const icon = WMO_ICONS[c.weather_code] || '🌤️';
-    const desc = WMO_DESC[c.weather_code] || '';
+    const bs = window._brightsky;
+    const temp = bs && bs.temperature != null ? Math.round(bs.temperature) : Math.round(c.temperature_2m);
+    const icon = bs ? (BS_EMOJI[bs.icon] || WMO_ICONS[c.weather_code] || '🌤️') : (WMO_ICONS[c.weather_code] || '🌤️');
+    const desc = bs ? (BS_DESC[bs.icon] || WMO_DESC[c.weather_code] || '') : (WMO_DESC[c.weather_code] || '');
     const daily = d.daily;
     let forecastHtml = '';
     for (let i = 1; i <= 3; i++) {
@@ -5465,9 +5518,19 @@ function loadWeatherFull() {
   const d = window._weather;
   if (!d) { loadWeather().then(loadWeatherFull); return; }
   const c = d.current;
-  const icon = WMO_ICONS[c.weather_code] || '🌤️';
-  const desc = WMO_DESC[c.weather_code] || '';
-  const bg   = WMO_BG[c.weather_code] || WMO_BG[0];
+  const bs   = window._brightsky;
+  // Tag/Nacht aus Sonnenauf-/-untergang bestimmen
+  const nowMs = Date.now();
+  const srMs  = new Date(d.daily.sunrise[0]).getTime();
+  const ssMs  = new Date(d.daily.sunset[0]).getTime();
+  const isDay = nowMs > srMs && nowMs < ssMs;
+  const icon = bs ? (BS_EMOJI[bs.icon] || WMO_ICONS[c.weather_code] || '🌤️') : (WMO_ICONS[c.weather_code] || '🌤️');
+  const desc = bs ? (BS_DESC[bs.icon] || WMO_DESC[c.weather_code] || '') : (WMO_DESC[c.weather_code] || '');
+  const [photo, overlayA] = bs ? getWeatherPhoto(bs.icon, isDay) : getWeatherPhoto(null, isDay);
+  // Overlay direkt ins background einbacken → kein z-index-Konflikt mit Content
+  const bg = photo
+    ? `linear-gradient(rgba(0,0,0,${overlayA}),rgba(0,0,0,${overlayA})), url('${photo}') center/cover no-repeat`
+    : (WMO_BG[c.weather_code] || WMO_BG[0]);
   const uv   = uvLabel(c.uv_index || 0);
   const temp = Math.round(c.temperature_2m);
   const nowDate = new Date(c.time);
@@ -5507,8 +5570,8 @@ function loadWeatherFull() {
     <path d="M${arcCX-arcR},${arcCY} A${arcR},${arcR} 0 0 1 ${arcCX+arcR},${arcCY}" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="3"/>
     <path d="M${arcCX-arcR},${arcCY} A${arcR},${arcR} 0 0 1 ${arcPt(prog)[0]},${arcPt(prog)[1]}" fill="none" stroke="rgba(255,200,80,0.6)" stroke-width="3"/>
     ${prog>0&&prog<1?`<circle cx="${sunX}" cy="${sunY}" r="8" fill="#fbbf24" style="filter:drop-shadow(0 0 8px #fbbf24)"/>`:``}
-    <text x="${arcCX-arcR}" y="${arcCY+16}" fill="rgba(255,255,255,0.5)" font-size="11" text-anchor="middle">☀️${sr}</text>
-    <text x="${arcCX+arcR}" y="${arcCY+16}" fill="rgba(255,255,255,0.5)" font-size="11" text-anchor="middle">🌙${ss}</text>
+    <text x="${arcCX-arcR}" y="${arcCY+16}" fill="rgba(255,255,255,0.88)" font-size="11" text-anchor="middle" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.8))">☀️${sr}</text>
+    <text x="${arcCX+arcR}" y="${arcCY+16}" fill="rgba(255,255,255,0.88)" font-size="11" text-anchor="middle" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.8))">🌙${ss}</text>
   </svg>`;
 
   // ── HERO ──
@@ -5517,37 +5580,39 @@ function loadWeatherFull() {
   const particles = wettAnimParticles(c.weather_code);
   let h = `<div style="background:${bg};border-radius:22px;padding:32px;margin-bottom:22px;position:relative;overflow:hidden;min-height:200px">
     ${particles}
-    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.15);border-radius:22px"></div>
-    <div style="position:relative;z-index:1;display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:center">
+    <div style="position:relative;z-index:1;display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:center;text-shadow:0 1px 4px rgba(0,0,0,0.7)">
 
       <!-- Links: Temp + Beschreibung -->
       <div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:8px;letter-spacing:.04em">📍 NORDERSTEDT · JETZT</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.82);margin-bottom:8px;letter-spacing:.04em">📍 NORDERSTEDT · JETZT</div>
         <div style="display:flex;align-items:flex-end;gap:10px;line-height:1">
           <span style="font-size:90px;font-weight:100;color:#fff;letter-spacing:-4px">${temp}°</span>
           <span style="font-size:52px;margin-bottom:6px">${icon}</span>
         </div>
         <div style="font-size:20px;color:rgba(255,255,255,0.9);margin-top:8px;font-weight:300">${desc}</div>
-        <div style="font-size:15px;color:rgba(255,255,255,0.5);margin-top:6px">Gefühlt <strong style="color:rgba(255,255,255,0.8)">${Math.round(c.apparent_temperature)}°</strong></div>
+        <div style="font-size:15px;color:rgba(255,255,255,0.82);margin-top:6px">Gefühlt <strong style="color:#fff">${Math.round(c.apparent_temperature)}°</strong></div>
         ${heroRainTxt ? `<div style="display:inline-block;font-size:14px;color:#cfe6ff;margin-top:10px;font-weight:600;background:rgba(30,90,160,0.45);padding:4px 11px;border-radius:14px;border:1px solid rgba(150,200,255,0.35)">🌧 Regen: ${heroRainTxt}</div>` : ''}
       </div>
 
       <!-- Mitte: Tageslicht-Arc -->
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
         ${arcSvg}
-        <div style="font-size:12px;color:rgba(255,255,255,0.4);text-align:center">Tageslicht</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.80);text-align:center">Tageslicht</div>
       </div>
 
       <!-- Rechts: Details -->
       <div style="display:grid;grid-template-columns:auto 1fr;gap:12px 20px;align-items:center">
-        <div style="color:rgba(255,255,255,0.5);font-size:15px;white-space:nowrap">💧 Feuchtigkeit</div>
+        <div style="color:rgba(255,255,255,0.82);font-size:15px;white-space:nowrap">💧 Feuchtigkeit</div>
         <div style="color:#fff;font-size:22px;font-weight:700">${c.relative_humidity_2m}%</div>
-        <div style="color:rgba(255,255,255,0.5);font-size:15px;white-space:nowrap">💨 Wind</div>
+        <div style="color:rgba(255,255,255,0.82);font-size:15px;white-space:nowrap">💨 Wind</div>
         <div style="color:#fff;font-size:22px;font-weight:700">${Math.round(c.wind_speed_10m)} <span style="font-size:14px;font-weight:400">km/h ${windDir(c.wind_direction_10m||0)}</span></div>
-        <div style="color:rgba(255,255,255,0.5);font-size:15px;white-space:nowrap">☀️ UV</div>
+        <div style="color:rgba(255,255,255,0.82);font-size:15px;white-space:nowrap">☀️ UV</div>
         <div style="font-size:22px;font-weight:700;color:${uv.color}">${Math.round(c.uv_index||0)} <span style="font-size:14px;font-weight:400">${uv.label}</span></div>
-        <div style="color:rgba(255,255,255,0.5);font-size:15px;white-space:nowrap">🌧 Regen</div>
+        <div style="color:rgba(255,255,255,0.82);font-size:15px;white-space:nowrap">🌧 Regen</div>
         <div style="color:#fff;font-size:22px;font-weight:700">${c.precipitation||0} <span style="font-size:14px;font-weight:400">mm</span></div>
+        ${bs && bs.cloud_cover != null ? `
+        <div style="color:rgba(255,255,255,0.82);font-size:15px;white-space:nowrap">☁️ Wolken</div>
+        <div style="color:#fff;font-size:22px;font-weight:700">${bs.cloud_cover}<span style="font-size:14px;font-weight:400">%</span></div>` : ''}
       </div>
     </div>
   </div>`;
@@ -7291,7 +7356,7 @@ document.addEventListener('paste', e => {
   }
   if (!file) return;
 
-  const pageVisible = id => document.getElementById(id)?.style.display !== 'none';
+  const pageVisible = id => document.getElementById(id)?.classList.contains('active');
 
   if (pageVisible('page-clipboard')) {
     const z = document.getElementById('clipboard-drop-zone');
@@ -7486,10 +7551,26 @@ let bollaSessionId = null;
 let bollaBusy = false;
 let bollaImageB64 = null;
 
+// Paste direkt auf bolla-input (zuverlässiger als globaler Handler bei fokussiertem INPUT)
+function bollaInputPaste(e) {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      e.preventDefault();
+      bollaLoadImage(item.getAsFile());
+      return;
+    }
+  }
+  // Kein Bild → natives Text-Paste läuft normal durch
+}
+
 // Paste-Handler: Strg+V für Screenshots
 document.addEventListener('paste', function(e) {
   // Nur wenn Bolla-Seite aktiv
   if (!document.getElementById('page-bolla')?.classList.contains('active')) return;
+  // Bereits durch bollaInputPaste behandelt wenn Input fokussiert
+  if (document.activeElement?.id === 'bolla-input') return;
   const items = e.clipboardData?.items;
   if (!items) return;
   for (const item of items) {
@@ -8861,11 +8942,18 @@ async function bollaSend() {
     if (bollaSessionId) body.session_id = bollaSessionId;
     if (sendImage) body.image = sendImage;
 
-    const resp = await fetch(API + '/api/bolla/chat', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body)
-    });
+    const resp = await (async () => {
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          return await fetch(API + '/api/bolla/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+        } catch(e) {
+          if (attempt < 3) {
+            status.innerHTML = `🟡 Verbinde... (${attempt}/3)`;
+            await new Promise(r => setTimeout(r, 1500));
+          } else throw e;
+        }
+      }
+    })();
 
     if (!resp.ok || !resp.body) {
       throw new Error('HTTP ' + resp.status);

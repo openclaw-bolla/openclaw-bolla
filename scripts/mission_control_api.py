@@ -3161,27 +3161,9 @@ def token_budget_snapshot():
         return {"error": str(e)}
 
 
-def bolla_chat_stream(message, session_id=None, image_b64=None):
-    """Streamt Claude-Code-Events als Generator. Jeder yield ist ein JSON-Objekt."""
-    import subprocess, tempfile, base64, shutil
-    claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
-    cmd = [claude_bin, "-p", "--output-format", "stream-json", "--verbose"]
-    if session_id:
-        cmd.extend(["--resume", session_id])
-
-    tmp_path = None
-    if image_b64:
-        try:
-            img_data = base64.b64decode(image_b64)
-            tmp = tempfile.NamedTemporaryFile(suffix=".png", prefix="bolla_img_", delete=False)
-            tmp.write(img_data)
-            tmp.close()
-            tmp_path = tmp.name
-            message = f"Schau dir das Bild an: {tmp_path}\n\n{message}" if message else f"Beschreibe was du in diesem Bild siehst: {tmp_path}"
-        except Exception as e:
-            print(f"Bild-Fehler: {e}")
-
-    cmd.append(message)
+def _run_claude_stream(cmd, tmp_path=None):
+    """Hilfsgenerator: führt claude-Kommando aus und liefert JSON-Events."""
+    import subprocess
     proc = None
     try:
         proc = subprocess.Popen(
@@ -3203,7 +3185,7 @@ def bolla_chat_stream(message, session_id=None, image_b64=None):
         proc.wait(timeout=5)
         if proc.returncode != 0:
             err = proc.stderr.read() if proc.stderr else ""
-            yield {"type": "error", "error": err.strip() or f"Exit {proc.returncode}"}
+            yield {"type": "error", "error": err.strip() or f"Exit {proc.returncode}", "returncode": proc.returncode}
     except Exception as e:
         yield {"type": "error", "error": str(e)}
     finally:
@@ -3214,6 +3196,48 @@ def bolla_chat_stream(message, session_id=None, image_b64=None):
                 os.unlink(tmp_path)
             except:
                 pass
+
+
+def bolla_chat_stream(message, session_id=None, image_b64=None):
+    """Streamt Claude-Code-Events als Generator. Jeder yield ist ein JSON-Objekt.
+    Bei ungültiger session_id wird automatisch ohne Resume neu gestartet."""
+    import tempfile, base64, shutil
+    claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
+
+    tmp_path = None
+    if image_b64:
+        try:
+            img_data = base64.b64decode(image_b64)
+            tmp = tempfile.NamedTemporaryFile(suffix=".png", prefix="bolla_img_", delete=False)
+            tmp.write(img_data)
+            tmp.close()
+            tmp_path = tmp.name
+            message = f"Schau dir das Bild an: {tmp_path}\n\n{message}" if message else f"Beschreibe was du in diesem Bild siehst: {tmp_path}"
+        except Exception as e:
+            print(f"Bild-Fehler: {e}")
+
+    full_msg = f"[MC-UI] {message}" if message else message
+
+    if session_id:
+        cmd = [claude_bin, "-p", "--output-format", "stream-json", "--verbose", "--resume", session_id, full_msg]
+        events = list(_run_claude_stream(cmd, tmp_path=None))
+        # Wenn Resume fehlschlägt (session abgelaufen), Fallback ohne Resume
+        if events and events[-1].get("type") == "error":
+            err = events[-1].get("error", "")
+            if "session" in err.lower() or "resume" in err.lower() or "not found" in err.lower() or events[-1].get("returncode", 0) != 0:
+                yield {"type": "system", "text": "⚠️ Alte Session abgelaufen — starte frischen Chat"}
+                cmd_fresh = [claude_bin, "-p", "--output-format", "stream-json", "--verbose", full_msg]
+                yield from _run_claude_stream(cmd_fresh, tmp_path=tmp_path)
+                return
+        yield from iter(events)
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except:
+                pass
+    else:
+        cmd = [claude_bin, "-p", "--output-format", "stream-json", "--verbose", full_msg]
+        yield from _run_claude_stream(cmd, tmp_path=tmp_path)
 
 
 def azure_list_voices():
@@ -4173,6 +4197,21 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(body)
                 return
+
+            # Wetter-Fotos: /img/weather/*.jpg
+            if _path_only.startswith("/img/weather/") and _path_only.endswith(".jpg"):
+                fname = os.path.basename(_path_only)
+                img_path = os.path.expanduser(f"~/workspace/mission-control/img/weather/{fname}")
+                if os.path.isfile(img_path):
+                    with open(img_path, "rb") as f:
+                        body = f.read()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "image/jpeg")
+                    self.send_header("Cache-Control", "public, max-age=86400")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
 
             # Generische Audio-Route: alle *.wav/.mp3/.ogg aus mission-control/ ausliefern
             # (für gclip-Player, Audio-Vergleiche, Sprachnotizen-Sharing)
