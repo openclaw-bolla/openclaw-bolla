@@ -6153,7 +6153,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
                 try:
                     result = subprocess.run(
-                        [claude_bin, "-p", "--model", "claude-opus-4-7", "--output-format", "json", prompt],
+                        [claude_bin, "-p", "--model", "claude-sonnet-4-6", "--output-format", "json", prompt],
                         capture_output=True, text=True, timeout=240,
                         stdin=subprocess.DEVNULL,
                         cwd=os.path.expanduser("~")

@@ -3,255 +3,753 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Control</title>
+<title>BOLLA // MISSION CONTROL</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --paper:#f5f0e8;--paper-d:#ede4d2;--paper-dd:#e4d8c4;
-  --ink:#3a2a1a;--ink-l:#7a6550;--ink-ll:#a8947a;
-  --line:rgba(160,130,90,0.22);--border:#c8b490;
-  --card:#faf6ef;--card-shadow:#d0bc98;
-  --red:#c85a3a;--blue:#4a6fa0;--green:#527a52;--amber:#b87333;
-}
-body{font-family:'Segoe UI','Trebuchet MS',Georgia,sans-serif;background:var(--paper);min-height:100vh;display:flex;color:var(--ink);position:relative;overflow-x:hidden}
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
-/* Notebook lines across entire page */
-body::before{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(transparent 0px,transparent 27px,var(--line) 27px,var(--line) 28px);pointer-events:none;z-index:0}
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-.app{display:flex;min-height:100vh;width:100%;position:relative;z-index:1}
+  :root {
+    --green: #00ff41;
+    --green-dim: #00aa2a;
+    --green-faint: #005510;
+    --green-bright: #80ffb0;
+    --bg: #000000;
+    --bg2: #030f03;
+    --bg3: #061206;
+    --border: #00551a;
+    --red: #ff3c3c;
+    --amber: #ffb300;
+    --font: 'Share Tech Mono', 'Courier New', monospace;
+  }
 
-/* ── SIDEBAR ── */
-.sb{width:215px;min-height:100vh;background:var(--paper-dd);border-right:3px solid var(--border);flex-shrink:0;position:relative;display:flex;flex-direction:column}
-/* Punched holes */
-.sb::after{content:'';position:absolute;right:-1px;top:0;bottom:0;width:3px;background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 42px,transparent 42px,transparent 52px,var(--border) 52px,var(--border) 56px)}
+  body {
+    background: var(--bg);
+    color: var(--green);
+    font-family: var(--font);
+    font-size: 14px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
 
-.sb-head{padding:26px 20px 18px;border-bottom:2px dashed var(--border)}
-.sb-logo{font-size:20px;font-weight:800;color:var(--red);letter-spacing:.5px;font-variant:small-caps}
-.sb-logo span{font-size:22px;margin-right:4px}
-.sb-tag{font-size:10.5px;color:var(--ink-l);margin-top:3px;font-style:italic;letter-spacing:.3px}
+  /* Scanlines */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
 
-.nav{list-style:none;padding:14px 0;flex:1}
-.nav li a{display:flex;align-items:center;gap:9px;padding:10px 18px;color:var(--ink);text-decoration:none;font-size:13.5px;border-radius:0 22px 22px 0;margin-right:14px;letter-spacing:.1px}
-.nav li a:hover{background:rgba(184,115,51,.15)}
-.nav li.on a{background:var(--amber);color:#fff;font-weight:700;box-shadow:2px 3px 0 #8a5a1a,3px 4px 8px rgba(100,60,20,.2)}
-.nav li a .ic{font-size:17px;width:22px;text-align:center;flex-shrink:0}
-.badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 7px}
+  /* CRT glow effect */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(0,30,10,0.0) 60%, rgba(0,0,0,0.5) 100%);
+    pointer-events: none;
+    z-index: 9998;
+  }
 
-.sb-foot{padding:16px 20px;border-top:1px dashed var(--border);font-size:11px;color:var(--ink-ll);font-style:italic}
+  /* TOPBAR */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 44px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    flex-shrink: 0;
+    position: relative;
+  }
 
-/* ── MAIN ── */
-.main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
 
-/* ── TOPBAR ── */
-.top{height:62px;background:var(--paper);border-bottom:2px solid var(--border);display:flex;align-items:center;padding:0 30px;gap:0;position:sticky;top:0;z-index:20;box-shadow:0 2px 8px rgba(100,70,30,.06)}
-.top-title{font-size:21px;font-weight:800;color:var(--ink);letter-spacing:.3px}
-.top-slash{color:var(--ink-ll);margin:0 10px;font-size:18px;font-weight:300}
-.top-sub{font-size:12.5px;color:var(--ink-l);font-style:italic;flex:1}
-.top-time{font-size:32px;font-weight:300;color:var(--ink);font-family:'Courier New',monospace;letter-spacing:3px;margin-right:4px}
-.top-date{font-size:11px;color:var(--ink-l);text-align:right;line-height:1.5}
+  .logo {
+    font-size: 18px;
+    color: var(--green-bright);
+    letter-spacing: 3px;
+    text-shadow: 0 0 10px var(--green), 0 0 20px var(--green-dim);
+    animation: flicker 8s infinite;
+  }
 
-/* ── CONTENT ── */
-.content{padding:24px 28px;flex:1}
+  @keyframes flicker {
+    0%, 95%, 100% { opacity: 1; }
+    96% { opacity: 0.7; }
+    97% { opacity: 1; }
+    98% { opacity: 0.85; }
+  }
 
-.sec{font-size:10.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink-l);margin:4px 0 16px;padding-bottom:8px;border-bottom:2px dashed var(--border);display:flex;align-items:center;gap:7px}
+  .breadcrumb {
+    color: var(--green-dim);
+    font-size: 12px;
+  }
 
-/* ── CARDS ── */
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:22px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    font-size: 12px;
+    color: var(--green-dim);
+  }
 
-.card{background:var(--card);border:2px solid var(--border);border-radius:3px 9px 5px 7px/7px 5px 9px 3px;padding:18px;position:relative;box-shadow:3px 4px 0 var(--card-shadow),4px 6px 14px rgba(100,65,20,.1);transition:transform .12s,box-shadow .12s}
-.card:hover{transform:translateY(-2px);box-shadow:4px 6px 0 var(--card-shadow),5px 8px 18px rgba(100,65,20,.14)}
-/* Corner fold */
-.card::after{content:'';position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 16px 16px;border-color:transparent transparent var(--card-shadow) transparent}
-/* Stamp */
-.stamp{position:absolute;top:10px;right:14px;font-size:22px;opacity:.35;transform:rotate(10deg)}
+  .clock {
+    font-size: 22px;
+    color: var(--green-bright);
+    text-shadow: 0 0 8px var(--green);
+    letter-spacing: 2px;
+  }
 
-.clabel{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-l);margin-bottom:12px;display:flex;align-items:center;gap:6px}
-.clabel::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber)}
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s infinite;
+    margin-right: 4px;
+  }
 
-.cval{font-size:44px;font-weight:700;line-height:1;color:var(--ink);font-family:'Courier New',monospace}
-.cunit{font-size:16px;font-weight:400;font-family:inherit;color:var(--ink-l);margin-left:1px}
-.csub{font-size:11.5px;color:var(--ink-ll);margin-top:5px;font-style:italic}
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
 
-.prog{height:7px;background:rgba(180,140,90,.2);border-radius:4px;margin-top:13px;overflow:hidden;border:1px solid rgba(180,140,90,.3)}
-.prog-b{height:100%;border-radius:4px}
-.g{background:var(--green)}.y{background:#c8a030}.r{background:var(--red)}
+  /* MAIN LAYOUT */
+  .layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
 
-/* Mail */
-.mbadge{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;background:var(--red);color:#fff;border-radius:50%;font-size:17px;font-weight:800;margin-bottom:8px;box-shadow:2px 2px 0 #8a2a1a}
-.mlist{list-style:none;margin-top:2px}
-.mitem{padding:7px 0;border-bottom:1px dashed rgba(180,140,90,.3)}
-.mitem:last-child{border-bottom:none}
-.msender{font-weight:700;color:var(--ink);font-size:12px}
-.msubj{color:var(--ink-l);font-size:11px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* SIDEBAR */
+  .sidebar {
+    width: 220px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    padding: 12px 0;
+  }
 
-/* Weather */
-.wx-main{display:flex;align-items:center;gap:14px;margin-bottom:12px}
-.wx-icon{font-size:50px;line-height:1}
-.wx-temp{font-size:50px;font-weight:300;font-family:'Courier New',monospace;line-height:1;color:var(--ink)}
-.wx-desc{font-size:12px;color:var(--ink-l);margin-top:3px}
-.wx-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:12px;color:var(--ink-l)}
+  .sidebar-section {
+    padding: 6px 16px;
+    font-size: 10px;
+    color: var(--green-faint);
+    letter-spacing: 2px;
+    margin-top: 8px;
+  }
 
-/* Bolla bubble */
-.bolla-row{display:flex;gap:11px;margin-top:8px}
-.av{width:38px;height:38px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;border:2px solid #9a6020;box-shadow:2px 2px 0 #7a4a10}
-.bubble{background:rgba(184,115,51,.1);border:1.5px solid rgba(184,115,51,.35);border-radius:4px 14px 14px 14px;padding:10px 14px;font-size:13px;color:var(--ink);line-height:1.55;flex:1}
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px;
+    cursor: pointer;
+    color: var(--green-dim);
+    font-size: 13px;
+    transition: all 0.1s;
+    position: relative;
+    letter-spacing: 0.5px;
+  }
 
-.tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:12px}
-.tag{display:inline-block;padding:2px 9px;border-radius:12px;font-size:10px;font-weight:700;letter-spacing:.4px}
-.tg{background:rgba(82,122,82,.18);color:#3a6a3a;border:1px solid rgba(82,122,82,.35)}
-.ta{background:rgba(184,115,51,.18);color:#8a5010;border:1px solid rgba(184,115,51,.35)}
-.tb{background:rgba(74,111,160,.18);color:#2a4f80;border:1px solid rgba(74,111,160,.35)}
-.tr{background:rgba(200,90,58,.15);color:var(--red);border:1px solid rgba(200,90,58,.3)}
+  .nav-item:hover {
+    color: var(--green);
+    background: rgba(0,255,65,0.05);
+  }
 
-/* Service dots */
-.srow{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:var(--ink-l)}
-.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-.dok{background:var(--green);box-shadow:0 0 5px rgba(82,122,82,.6)}
-.dwarn{background:#c8a030;box-shadow:0 0 5px rgba(200,160,48,.6)}
-.derr{background:var(--red);box-shadow:0 0 5px rgba(200,90,58,.6)}
-.srow strong{color:var(--ink)}
+  .nav-item.active {
+    color: var(--green-bright);
+    background: rgba(0,255,65,0.08);
+  }
+
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+  }
+
+  .nav-icon {
+    width: 16px;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  .nav-badge {
+    margin-left: auto;
+    background: var(--green-faint);
+    color: var(--green);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 1px 5px;
+    font-size: 10px;
+  }
+
+  .nav-badge.alert {
+    background: rgba(255,179,0,0.15);
+    color: var(--amber);
+    border-color: var(--amber);
+    box-shadow: 0 0 4px rgba(255,179,0,0.3);
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--green-faint);
+    line-height: 1.8;
+  }
+
+  /* CONTENT */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: var(--bg);
+  }
+
+  .content::-webkit-scrollbar { width: 6px; }
+  .content::-webkit-scrollbar-track { background: var(--bg2); }
+  .content::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .page-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .page-title {
+    font-size: 20px;
+    color: var(--green-bright);
+    text-shadow: 0 0 10px var(--green-dim);
+    letter-spacing: 2px;
+  }
+
+  .page-subtitle {
+    font-size: 11px;
+    color: var(--green-faint);
+  }
+
+  /* GRID */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .grid-3-1 {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+  }
+
+  /* WIDGET */
+  .widget {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .widget::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green-dim), transparent);
+  }
+
+  .widget-title {
+    font-size: 10px;
+    color: var(--green-faint);
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .widget-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .widget-value {
+    font-size: 36px;
+    color: var(--green-bright);
+    text-shadow: 0 0 12px var(--green);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .widget-value.warn { color: var(--amber); text-shadow: 0 0 10px rgba(255,179,0,0.5); }
+  .widget-value.ok   { color: var(--green-bright); }
+
+  .widget-label {
+    font-size: 11px;
+    color: var(--green-dim);
+  }
+
+  /* BAR */
+  .bar-track {
+    height: 6px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    margin-top: 12px;
+    position: relative;
+  }
+
+  .bar-fill {
+    height: 100%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    transition: width 1s ease;
+  }
+
+  .bar-fill.warn { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .bar-fill.crit { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+  /* SPARKLINE */
+  .sparkline {
+    margin-top: 10px;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 30px;
+  }
+
+  .spark-bar {
+    flex: 1;
+    background: var(--green-faint);
+    transition: height 0.3s;
+  }
+
+  .spark-bar.latest {
+    background: var(--green);
+    box-shadow: 0 0 4px var(--green);
+  }
+
+  /* MAIL WIDGET */
+  .mail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .mail-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    font-size: 12px;
+  }
+
+  .mail-item.unread {
+    border-color: var(--green-dim);
+    background: rgba(0,255,65,0.03);
+  }
+
+  .mail-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 4px var(--green);
+    margin-top: 3px;
+    flex-shrink: 0;
+  }
+
+  .mail-from {
+    color: var(--green-bright);
+    font-size: 11px;
+  }
+
+  .mail-subject {
+    color: var(--green-dim);
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mail-time {
+    margin-left: auto;
+    color: var(--green-faint);
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  /* WEATHER */
+  .weather-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+
+  .weather-temp {
+    font-size: 42px;
+    color: var(--green-bright);
+    text-shadow: 0 0 12px var(--green);
+    line-height: 1;
+  }
+
+  .weather-icon {
+    font-size: 36px;
+    filter: drop-shadow(0 0 6px var(--green-dim));
+  }
+
+  .weather-info {
+    font-size: 11px;
+    color: var(--green-dim);
+    line-height: 2;
+  }
+
+  .weather-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+
+  .weather-item {
+    flex: 1;
+    text-align: center;
+    font-size: 10px;
+    color: var(--green-dim);
+  }
+
+  .weather-item-val {
+    font-size: 14px;
+    color: var(--green);
+    margin-bottom: 2px;
+  }
+
+  /* TERMINAL LOG */
+  .log-widget {
+    font-size: 11px;
+    line-height: 1.9;
+    color: var(--green-dim);
+    max-height: 140px;
+    overflow-y: auto;
+  }
+
+  .log-widget::-webkit-scrollbar { width: 4px; }
+  .log-widget::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .log-line { display: flex; gap: 8px; }
+  .log-time { color: var(--green-faint); flex-shrink: 0; }
+  .log-ok   { color: var(--green-dim); }
+  .log-warn { color: var(--amber); }
+  .log-info { color: #00aaff; }
+
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 13px;
+    background: var(--green);
+    animation: blink 1s infinite;
+    vertical-align: middle;
+    margin-left: 2px;
+  }
+
+  @keyframes blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+
+  /* MINI GAUGE */
+  .gauge-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 11px;
+  }
+
+  .gauge-label { width: 60px; color: var(--green-dim); }
+  .gauge-track { flex: 1; height: 4px; background: var(--bg3); border: 1px solid var(--border); }
+  .gauge-fill  { height: 100%; background: var(--green); box-shadow: 0 0 4px var(--green); }
+  .gauge-fill.warn { background: var(--amber); box-shadow: 0 0 4px var(--amber); }
+  .gauge-fill.crit { background: var(--red); box-shadow: 0 0 4px var(--red); }
+  .gauge-val   { width: 36px; text-align: right; color: var(--green); }
+
+  /* ASCII DIVIDER */
+  .ascii-div {
+    color: var(--green-faint);
+    font-size: 11px;
+    margin: 4px 0 16px;
+    letter-spacing: 1px;
+  }
 </style>
 </head>
 <body>
-<div class="app">
 
-  <!-- SIDEBAR -->
-  <nav class="sb">
-    <div class="sb-head">
-      <div class="sb-logo"><span>🐾</span>Bolla</div>
-      <div class="sb-tag">Mission Control · Norderstedt</div>
-    </div>
-    <ul class="nav">
-      <li class="on"><a href="#"><span class="ic">🏠</span>Dashboard</a></li>
-      <li><a href="#"><span class="ic">🐾</span>Bolla</a></li>
-      <li><a href="#"><span class="ic">🎓</span>Schule</a></li>
-      <li><a href="#"><span class="ic">📅</span>Kalender</a></li>
-      <li><a href="#"><span class="ic">✉️</span>E-Mail<span class="badge">3</span></a></li>
-      <li><a href="#"><span class="ic">⛅</span>Wetter</a></li>
-      <li><a href="#"><span class="ic">💻</span>System Info</a></li>
-    </ul>
-    <div class="sb-foot">v2.4 · Dienstag, 10. Juni</div>
-  </nav>
-
-  <!-- MAIN -->
-  <div class="main">
-
-    <!-- TOPBAR -->
-    <header class="top">
-      <div class="top-title">Dashboard</div>
-      <span class="top-slash">/</span>
-      <div class="top-sub">Guten Abend, Chris &nbsp;·&nbsp; alles im grünen Bereich</div>
-      <div style="display:flex;align-items:baseline;gap:10px">
-        <div class="top-time">20:14</div>
-        <div class="top-date">Di, 10. Jun 2026<br><span style="color:var(--amber);font-weight:700">●</span> online</div>
-      </div>
-    </header>
-
-    <!-- CONTENT -->
-    <div class="content">
-
-      <div class="sec">📊 System-Überblick</div>
-
-      <div class="grid4">
-
-        <!-- CPU -->
-        <div class="card">
-          <div class="stamp">⚡</div>
-          <div class="clabel">CPU Last</div>
-          <div class="cval">12<span class="cunit">%</span></div>
-          <div class="csub">i7-1165G7 · 4 Kerne</div>
-          <div class="prog"><div class="prog-b g" style="width:12%"></div></div>
-        </div>
-
-        <!-- RAM -->
-        <div class="card">
-          <div class="stamp">🧠</div>
-          <div class="clabel">RAM Verbrauch</div>
-          <div class="cval">34<span class="cunit">%</span></div>
-          <div class="csub">5.4 GB von 16 GB</div>
-          <div class="prog"><div class="prog-b y" style="width:34%"></div></div>
-        </div>
-
-        <!-- Mail -->
-        <div class="card">
-          <div class="stamp">📬</div>
-          <div class="clabel">Neue E-Mails</div>
-          <div class="mbadge">3</div>
-          <ul class="mlist">
-            <li class="mitem">
-              <div class="msender">Robin Mandel</div>
-              <div class="msubj">Re: Wochenende in Ulm?</div>
-            </li>
-            <li class="mitem">
-              <div class="msender">Schule LGN</div>
-              <div class="msubj">Vertretungsplan KW 24</div>
-            </li>
-            <li class="mitem">
-              <div class="msender">Steffi Garschagen</div>
-              <div class="msubj">Fotos von den Mädels 📸</div>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Weather -->
-        <div class="card">
-          <div class="clabel">Wetter · Hamburg</div>
-          <div class="wx-main">
-            <div class="wx-icon">⛅</div>
-            <div>
-              <div class="wx-temp">18°</div>
-              <div class="wx-desc">Teils bewölkt</div>
-            </div>
-          </div>
-          <div class="wx-grid">
-            <div>💧 68 % Luftf.</div>
-            <div>🌬️ 14 km/h W</div>
-            <div>☀️ auf 05:12</div>
-            <div>🌙 unter 21:47</div>
-          </div>
-        </div>
-
-      </div>
-
-      <div class="sec">🐾 Bolla &amp; Dienste</div>
-
-      <div class="grid2">
-
-        <!-- Bolla last message -->
-        <div class="card">
-          <div class="stamp">💬</div>
-          <div class="clabel">Letzte Bolla-Nachricht</div>
-          <div class="bolla-row">
-            <div class="av">🐾</div>
-            <div class="bubble">Spotify-Tracks aktualisiert — 12 neue Songs erkannt. AURORA Lektorat läuft auf Kap.&nbsp;22–28. Soll ich heute Nacht die automatische Sicherung starten?</div>
-          </div>
-          <div class="tags">
-            <span class="tag tg">System OK</span>
-            <span class="tag ta">AURORA aktiv</span>
-            <span class="tag tb">Spotify sync</span>
-            <span class="tag tr">Backup ausstehend</span>
-          </div>
-        </div>
-
-        <!-- System status -->
-        <div class="card">
-          <div class="stamp">🖥️</div>
-          <div class="clabel">Dienste &amp; Uptime</div>
-          <div class="srow"><span class="dot dok"></span><strong>Mission Control</strong>&nbsp;·&nbsp;online, 4h 37min</div>
-          <div class="srow"><span class="dot dok"></span><strong>Cloudflare Tunnel</strong>&nbsp;·&nbsp;verbunden</div>
-          <div class="srow"><span class="dot dwarn"></span><strong>OneDrive Backup</strong>&nbsp;·&nbsp;ausstehend</div>
-          <div class="srow"><span class="dot dok"></span><strong>Git Repo</strong>&nbsp;·&nbsp;aktuell (master)</div>
-          <div class="srow" style="margin-top:14px">
-            <span style="font-size:11.5px;color:var(--ink-ll);font-style:italic">Disk: 68 GB frei &nbsp;·&nbsp; WSL2 läuft stabil</span>
-          </div>
-          <div class="prog" style="margin-top:10px"><div class="prog-b y" style="width:47%"></div></div>
-          <div style="font-size:11px;color:var(--ink-ll);margin-top:3px">Disk 47 % belegt (128 GB SSD)</div>
-        </div>
-
-      </div>
-    </div>
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">BOLLA</div>
+    <div class="breadcrumb">// MISSION_CONTROL v2.1.0</div>
+  </div>
+  <div class="topbar-right">
+    <span><span class="status-dot"></span>SYSTEM OK</span>
+    <span>THU 2026-06-11</span>
+    <div class="clock">20:14</div>
   </div>
 </div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">// NAVIGATION</div>
+
+    <div class="nav-item active">
+      <span class="nav-icon">▣</span>
+      <span>DASHBOARD</span>
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">◈</span>
+      <span>BOLLA</span>
+      <span class="nav-badge">AI</span>
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">◫</span>
+      <span>SCHULE</span>
+    </div>
+
+    <div class="sidebar-section">// KOMMUNIKATION</div>
+
+    <div class="nav-item">
+      <span class="nav-icon">◷</span>
+      <span>KALENDER</span>
+      <span class="nav-badge alert">2</span>
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">◻</span>
+      <span>E-MAIL</span>
+      <span class="nav-badge alert">3</span>
+    </div>
+
+    <div class="sidebar-section">// UMGEBUNG</div>
+
+    <div class="nav-item">
+      <span class="nav-icon">◬</span>
+      <span>WETTER</span>
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">◈</span>
+      <span>SYSTEM INFO</span>
+    </div>
+
+    <div class="sidebar-footer">
+      USER: chris@bolla<br>
+      NODE: surface-wsl2<br>
+      UPTIME: 4h 32m<br>
+      BUILD: 2026.06.11
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <div class="page-header">
+      <div class="page-title">DASHBOARD</div>
+      <div class="page-subtitle">// Übersicht aller Systeme</div>
+    </div>
+    <div class="ascii-div">+--------------------------------------------------------------+</div>
+
+    <!-- ROW 1: Stat widgets -->
+    <div class="grid">
+
+      <!-- RAM -->
+      <div class="widget">
+        <div class="widget-title">RAM_USAGE</div>
+        <div class="widget-value ok">34<span style="font-size:18px">%</span></div>
+        <div class="widget-label">5.4 GB / 16.0 GB</div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:34%"></div>
+        </div>
+        <div class="sparkline">
+          <div class="spark-bar" style="height:40%"></div>
+          <div class="spark-bar" style="height:55%"></div>
+          <div class="spark-bar" style="height:45%"></div>
+          <div class="spark-bar" style="height:60%"></div>
+          <div class="spark-bar" style="height:38%"></div>
+          <div class="spark-bar" style="height:42%"></div>
+          <div class="spark-bar" style="height:50%"></div>
+          <div class="spark-bar" style="height:35%"></div>
+          <div class="spark-bar" style="height:48%"></div>
+          <div class="spark-bar latest" style="height:34%"></div>
+        </div>
+      </div>
+
+      <!-- CPU -->
+      <div class="widget">
+        <div class="widget-title">CPU_LOAD</div>
+        <div class="widget-value ok">12<span style="font-size:18px">%</span></div>
+        <div class="widget-label">4 Kerne aktiv / i7-1165G7</div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:12%"></div>
+        </div>
+        <div class="sparkline">
+          <div class="spark-bar" style="height:70%"></div>
+          <div class="spark-bar" style="height:45%"></div>
+          <div class="spark-bar" style="height:80%"></div>
+          <div class="spark-bar" style="height:30%"></div>
+          <div class="spark-bar" style="height:25%"></div>
+          <div class="spark-bar" style="height:60%"></div>
+          <div class="spark-bar" style="height:20%"></div>
+          <div class="spark-bar" style="height:35%"></div>
+          <div class="spark-bar" style="height:28%"></div>
+          <div class="spark-bar latest" style="height:12%"></div>
+        </div>
+      </div>
+
+      <!-- MAIL -->
+      <div class="widget">
+        <div class="widget-title">NEUE_MAILS</div>
+        <div class="widget-value warn">3</div>
+        <div class="widget-label">ernstmandel@outlook.de</div>
+        <div style="margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px;">
+          <div style="font-size:11px; color: var(--green-dim); line-height: 2.2;">
+            <div>◆ <span style="color:var(--amber)">Robin</span> — Uni Ulm Bericht <span style="color:var(--green-faint)">19:42</span></div>
+            <div>◆ <span style="color:var(--amber)">Steffi</span> — Wochenende planen <span style="color:var(--green-faint)">18:07</span></div>
+            <div>◆ <span style="color:var(--green-dim)">LG-N</span> — Dienstplan Juni <span style="color:var(--green-faint)">09:31</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ROW 2: Weather + System -->
+    <div class="grid-3-1">
+
+      <!-- WETTER -->
+      <div class="widget">
+        <div class="widget-title">WETTER // HAMBURG</div>
+        <div class="weather-main">
+          <div class="weather-icon">⛅</div>
+          <div class="weather-temp">18°C</div>
+          <div class="weather-info">
+            Teilweise bewölkt<br>
+            Windstärke: 14 km/h NW<br>
+            Luftfeuchtigkeit: 68%<br>
+            Sichtweite: 22 km
+          </div>
+        </div>
+        <div class="weather-row">
+          <div class="weather-item">
+            <div class="weather-item-val">15°</div>
+            <div>FR 13.6</div>
+          </div>
+          <div class="weather-item">
+            <div class="weather-item-val">19°</div>
+            <div>SA 14.6</div>
+          </div>
+          <div class="weather-item">
+            <div class="weather-item-val">22°</div>
+            <div>SO 15.6</div>
+          </div>
+          <div class="weather-item">
+            <div class="weather-item-val">17°</div>
+            <div>MO 16.6</div>
+          </div>
+          <div class="weather-item">
+            <div class="weather-item-val">14°</div>
+            <div>DI 17.6</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SYSTEM KURZINFO -->
+      <div class="widget">
+        <div class="widget-title">SYSTEM</div>
+        <div class="gauge-row">
+          <div class="gauge-label">RAM</div>
+          <div class="gauge-track"><div class="gauge-fill" style="width:34%"></div></div>
+          <div class="gauge-val">34%</div>
+        </div>
+        <div class="gauge-row">
+          <div class="gauge-label">CPU</div>
+          <div class="gauge-track"><div class="gauge-fill" style="width:12%"></div></div>
+          <div class="gauge-val">12%</div>
+        </div>
+        <div class="gauge-row">
+          <div class="gauge-label">DISK</div>
+          <div class="gauge-track"><div class="gauge-fill warn" style="width:61%"></div></div>
+          <div class="gauge-val" style="color:var(--amber)">61%</div>
+        </div>
+        <div class="gauge-row">
+          <div class="gauge-label">SWAP</div>
+          <div class="gauge-track"><div class="gauge-fill" style="width:8%"></div></div>
+          <div class="gauge-val">8%</div>
+        </div>
+        <div style="margin-top:12px; font-size:11px; color:var(--green-faint); line-height:2;">
+          KERNEL: 6.6.87.2-WSL2<br>
+          IP: 172.28.14.7
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ROW 3: Terminal Log -->
+    <div class="widget" style="margin-bottom:20px;">
+      <div class="widget-title">SYSTEM_LOG // LIVE</div>
+      <div class="log-widget">
+        <div class="log-line"><span class="log-time">20:13:58</span><span class="log-ok">[OK]  </span><span>cloudflared tunnel bolla-mc — heartbeat OK (latency 12ms)</span></div>
+        <div class="log-line"><span class="log-time">20:13:45</span><span class="log-info">[INF] </span><span>mission-control HTTP server — GET / 200 (::1)</span></div>
+        <div class="log-line"><span class="log-time">20:12:30</span><span class="log-ok">[OK]  </span><span>bolla spotify-sync — 3 neue Tracks erkannt und indexiert</span></div>
+        <div class="log-line"><span class="log-time">20:11:17</span><span class="log-warn">[WRN] </span><span style="color:var(--amber)">disk /mnt/d — 61% belegt (Schwellwert 60% überschritten)</span></div>
+        <div class="log-line"><span class="log-time">20:10:02</span><span class="log-ok">[OK]  </span><span>git push origin master — workspace backup OK</span></div>
+        <div class="log-line"><span class="log-time">20:08:44</span><span class="log-info">[INF] </span><span>outlook-sync — 3 neue Mails geladen (INBOX)</span></div>
+        <div class="log-line"><span class="log-time">20:07:11</span><span class="log-ok">[OK]  </span><span>wetter-api — Hamburg 18°C aktualisiert</span></div>
+        <div class="log-line"><span class="log-time">20:05:00</span><span class="log-ok">[OK]  </span><span>cron: nacht-sicherung — alle Tasks erfolgreich</span></div>
+        <div class="log-line"><span class="log-time">20:04:33</span><span class="log-info">[INF] </span><span>bolla session gestartet — Sonnet 4.6 bereit<span class="cursor"></span></span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 </body>
 </html>
