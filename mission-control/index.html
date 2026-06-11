@@ -5490,7 +5490,7 @@ function rainWindows(d, dateStr, fromHour) {
     const hr = parseInt(times[i].slice(11,13));
     if (fromHour >= 0 && hr < fromHour) continue;
     const p = probs && probs[i] || 0, a = amts && amts[i] || 0;
-    if (p >= 40 || a >= 0.2) wet.push(hr);
+    if (p >= 30 || a >= 0.2) wet.push(hr);
   }
   if (!wet.length) return [];
   const windows = []; let start = wet[0], prev = wet[0];
@@ -5591,7 +5591,7 @@ function loadWeatherFull() {
         </div>
         <div style="font-size:20px;color:rgba(255,255,255,0.9);margin-top:8px;font-weight:300">${desc}</div>
         <div style="font-size:15px;color:rgba(255,255,255,0.82);margin-top:6px">Gefühlt <strong style="color:#fff">${Math.round(c.apparent_temperature)}°</strong></div>
-        ${heroRainTxt ? `<div style="display:inline-block;font-size:14px;color:#cfe6ff;margin-top:10px;font-weight:600;background:rgba(30,90,160,0.45);padding:4px 11px;border-radius:14px;border:1px solid rgba(150,200,255,0.35)">🌧 Regen: ${heroRainTxt}</div>` : ''}
+        ${heroRainTxt ? `<div style="display:inline-block;font-size:14px;color:#cfe6ff;margin-top:10px;font-weight:600;background:rgba(30,90,160,0.45);padding:4px 11px;border-radius:14px;border:1px solid rgba(150,200,255,0.35)">🌧 Regen ~${heroRainTxt}</div>` : ''}
       </div>
 
       <!-- Mitte: Tageslicht-Arc -->
@@ -12363,6 +12363,7 @@ async function sunoGenerate(feedback = '', prevLyrics = '') {
     document.getElementById('suno-feedback').value = '';
     document.getElementById('suno-retry-btn').style.display = '';
     status.textContent = '✅ Fertig!';
+    sunoNotify(data.title || 'Song bereit');
     sunoShowPopup();
   } catch(e) {
     status.textContent = '❌ Fehler: ' + e.message;
@@ -12388,6 +12389,30 @@ function sunoNewSong() {
   document.getElementById('suno-dl-status').style.color = 'var(--dim)';
   document.getElementById('suno-dl-title').focus();
   sunoReset();
+}
+function sunoNotify(title) {
+  // Toast (immer sichtbar)
+  let t = document.getElementById('suno-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'suno-toast';
+    t.style.cssText = 'position:fixed;bottom:80px;right:24px;background:linear-gradient(135deg,rgba(124,58,237,0.95),rgba(255,102,153,0.9));color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;z-index:9999;pointer-events:none;max-width:320px;box-shadow:0 4px 20px rgba(124,58,237,0.4);border:1px solid rgba(255,255,255,0.15)';
+    document.body.appendChild(t);
+  }
+  t.innerHTML = '🎵 <b>Song fertig!</b><br><span style="font-size:12px;opacity:0.9">' + title + '</span>';
+  t.style.opacity = '1'; t.style.display = 'block';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.style.display = 'none', 400); }, 5000);
+  // Browser-Notification (nur wenn Tab nicht sichtbar)
+  if (document.visibilityState !== 'visible') {
+    if (Notification.permission === 'granted') {
+      new Notification('🎵 Bolla Songs', { body: title + ' ist fertig!', icon: '/favicon.ico' });
+    } else if (Notification.permission === 'default') {
+      Notification.requestPermission().then(p => {
+        if (p === 'granted') new Notification('🎵 Bolla Songs', { body: title + ' ist fertig!', icon: '/favicon.ico' });
+      });
+    }
+  }
 }
 function sunoReset() {
   document.getElementById('suno-name').value = '';

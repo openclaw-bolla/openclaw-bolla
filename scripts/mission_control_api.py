@@ -1695,6 +1695,84 @@ def _fetch_party_charts():
     """Kuratierte dt. Partyhits — täglich 10 zufällige, Doppelungen zum Vortag vermieden."""
     return _daily_sample(_PARTY_HITS, 10)
 
+# Suno-optimierte Style-Tags für bekannte deutsche Party/Schlager-Hits.
+# Schlüssel: Titel lowercase (ohne Sonderpunktierung), Wert: fertige Suno-Tags.
+_DE_SONG_STYLE_MAP = {
+    "atemlos durch die nacht":           "german pop, schlager, upbeat, powerful female vocals, euro dance, arena anthem, polished production, 128bpm, catchy hook",
+    "cordula grün":                      "german folk-pop, acoustic guitar, feel-good, male vocals, sing-along, upbeat, catchy chorus",
+    "ein stern der deinen namen trägt":  "german schlager, emotional, acoustic guitar, male duet, anthemic chorus, feel-good",
+    "wahnsinn":                          "german schlager, party pop, upbeat, male vocals, dancefloor, catchy hook, festive",
+    "hey baby":                          "german party pop, eurodance, crowd sing-along, accordion, fun, dancefloor, festive",
+    "anton aus tirol":                   "german party pop, folk-pop, fun, accordion, upbeat, crowd pleaser, sing-along",
+    "hulapalu":                          "austrian folk rock, electric guitar, powerful male vocals, party anthem, upbeat, catchy hook",
+    "das rote pferd":                    "german schlager, accordion, party pop, fun, dancefloor, oktoberfest vibe",
+    "schwarz auf weiß":                  "german folk pop, volksmusik, anthemic, sing-along, brass, upbeat",
+    "tage wie diese":                    "german punk rock, anthemic, crowd sing-along, electric guitar, energetic, arena anthem",
+    "auf uns":                           "german pop ballad, acoustic guitar, anthemic chorus, emotional, uplifting, piano",
+    "applaus applaus":                   "german indie rock, upbeat, anthemic, guitar-driven, crowd sing-along",
+    "lieder":                            "german pop, emotional ballad, piano, male vocals, anthemic chorus",
+    "astronaut":                         "german hip-hop pop, upbeat, catchy hook, pop production",
+    "99 luftballons":                    "german new wave, synth-pop, 80s, female vocals, catchy, iconic",
+    "major tom völlig losgelöst":        "german new wave, synth-pop, 80s, electronic, space theme, catchy",
+    "major tom":                         "german new wave, synth-pop, 80s, electronic, space theme, catchy",
+    "marmor stein und eisen bricht":     "german schlager, 60s pop, male vocals, classic, nostalgic, melodic",
+    "verdammt ich lieb dich":            "german schlager rock, electric guitar, power ballad, male vocals, emotional",
+    "westerland":                        "german punk rock, guitar-driven, energetic, male vocals, catchy",
+    "männer":                            "german rock, rhythmic, male vocals, catchy groove, 80s pop",
+    "ich war noch niemals in new york":  "german schlager, upbeat, piano, male vocals, festive, sing-along",
+    "aber bitte mit sahne":              "german schlager, swing feel, male vocals, fun, festive",
+    "cowboy und indianer":               "german country pop, fun, upbeat, male vocals, crowd pleaser",
+    "80 millionen":                      "german pop, uplifting, piano, male vocals, anthemic, feel-good",
+}
+
+# Suno-optimierte Style-Tags für bekannte englische Hits.
+_EN_SONG_STYLE_MAP = {
+    "blinding lights":          "synth-pop, 80s retro, pulsing bassline, electronic drums, 125bpm, reverb-heavy, euphoric, male vocals",
+    "as it was":                "indie pop, driving 4/4 beat, synth arpeggios, melancholic, gated reverb, male falsetto",
+    "anti-hero":                "indie pop, piano-driven, synth undertones, conversational female vocals, introspective",
+    "shake it off":             "pop, upbeat, brass section, 4/4 dance beat, bright female vocals, carefree, 160bpm",
+    "shape of you":             "tropical pop, marimba, dancehall groove, mid-tempo, male vocals, catchy hook",
+    "perfect":                  "pop ballad, acoustic guitar, strings, slow waltz, emotional, male vocals",
+    "thinking out loud":        "soul pop, electric guitar, slow groove, warm male vocals, romantic",
+    "levitating":               "disco pop, funky bassline, bright synths, danceable, female vocals, euphoric",
+    "dont start now":           "nu-disco, funky bassline, driving beat, upbeat female vocals, catchy",
+    "bad guy":                  "dark pop, bass-heavy, minimalist beat, whispery female vocals, lo-fi",
+    "lovely":                   "dark pop, melancholic, sparse piano, ethereal female vocals, cinematic",
+    "sunflower":                "pop hip-hop, acoustic guitar, smooth male vocals, laid-back, breezy, lo-fi",
+    "circles":                  "pop, acoustic guitar, smooth male vocals, melancholic, mid-tempo",
+    "someone like you":         "pop ballad, piano, powerful female vocals, stripped back, heartbreak, emotional",
+    "hello":                    "pop ballad, piano, orchestral swells, powerful female vocals, dramatic",
+    "uptown funk":              "funk, brass section, punchy drums, energetic male vocals, 115bpm, groovy",
+    "just the way you are":     "pop r&b, piano, acoustic guitar, warm, smooth male vocals, feel-good",
+    "a sky full of stars":      "dance pop, euphoric, four-on-the-floor, big drop, synthesizer, male vocals",
+    "yellow":                   "britpop, acoustic guitar, emotional, male vocals, anthemic chorus, bittersweet",
+    "the scientist":            "britpop, piano, acoustic guitar, melancholic, male vocals, slow, heartfelt",
+    "stay":                     "pop r&b, smooth piano, male vocals, mid-tempo, emotional",
+    "watermelon sugar":         "retro pop, 70s groove, electric guitar, funk, bright male vocals, summery",
+    "peaches":                  "r&b pop, laid-back groove, smooth male vocals, bass-driven, summery",
+    "7 rings":                  "trap pop, 808 bass, female vocals, luxurious, catchy hook, hip-hop beat",
+    "thank u next":             "pop, light trap beat, breathy female vocals, confessional, upbeat",
+    "love story":               "country pop, acoustic guitar, strings, female vocals, romantic, uptempo",
+    "diamonds":                 "pop, airy female vocals, electronic production, empowering, mid-tempo",
+    "umbrella":                 "pop r&b, danceable, punchy beat, female vocals, catchy hook",
+    "happy":                    "funk pop, upbeat, handclaps, piano, bright male vocals, feel-good, 160bpm",
+    "rolling in the deep":      "soul pop, driving drums, acoustic guitar, powerful female vocals, anthemic, 105bpm",
+    "someone you loved":        "pop ballad, piano, emotional male vocals, heartbreak, minimalist",
+    "before you go":            "pop ballad, piano, emotional male vocals, powerful chorus, uplifting",
+    "drivers license":          "pop ballad, piano, slow build, vulnerable female vocals, cinematic, heartbreak",
+    "good 4 u":                 "pop punk, electric guitar, energetic, female vocals, 166bpm, punchy drums",
+    "butter":                   "dance pop, brass stabs, funky beat, smooth male group vocals, upbeat, catchy",
+    "dynamite":                 "disco pop, upbeat, bass, bright synths, male group vocals, feel-good",
+    "heat waves":               "indie pop, dreamy guitar, lo-fi warmth, male vocals, bittersweet, slow build",
+    "stay with me":             "soul pop, gospel choir, piano, powerful male vocals, heartfelt, mid-tempo",
+    "shallow":                  "country pop rock, acoustic guitar, duet, emotional build, powerful vocals, cinematic",
+    "memories":                 "pop, acoustic guitar, piano, nostalgic, male vocals, emotional, slow",
+    "dance monkey":             "pop, punchy synth bass, quirky beat, female vocals, 98bpm, catchy hook",
+    "believer":                 "arena rock, powerful drums, guitar riffs, anthemic, male vocals, aggressive build",
+    "thunder":                  "pop rock, electronic elements, punchy beat, male vocals, anthemic, energetic",
+    "sucker":                   "pop rock, guitar-driven, upbeat, male group vocals, fun, 138bpm",
+}
+
 def _fetch_kworb_alltime(pick=10):
     """Top 100 meistgestreamte Songs aller Zeiten via kworb.net — täglich 10 zufällige, keine Vortags-Doppelungen."""
     import urllib.request as _ur2, re as _re2
@@ -5953,19 +6031,29 @@ Antworte NUR als reines JSON ohne Markdown:
                                  f"und in einen präzisen Style-Prompt zu übersetzen.") if web_song_info else ""
 
                 if hit:
-                    hit_inst = (f"REFERENZ-SONG: '{hit}'. "
-                                f"WICHTIG: Analysiere DIESEN SPEZIFISCHEN SONG — nicht den allgemeinen Stil des Künstlers. "
-                                f"Viele Künstler haben verschiedene Songs mit sehr unterschiedlichem Klang. "
-                                f"Extrahiere die konkreten Eigenschaften DIESES Songs: "
-                                f"Tempo, Rhythmik, welche Instrumente dominieren (akustisch/elektrisch/elektronisch), "
-                                f"Produktionscharakter (roh/weich/poliert/verzerrt), Energie (sanft/mittel/aggressiv), "
-                                f"Vers/Chorus-Dynamik, Vocal-Charakter (ton, Ausdruck, Stärke, Textur). "
-                                f"Falls du den Song gut kennst: bleib präzise. Falls unsicher: beschreibe was du weißt, "
-                                f"aber übertrage NICHT den Klischee-Sound des Künstlers auf diesen Song. "
-                                f"KRITISCH — LYRICS-STIL-HARMONIE: Ton und Energie der Lyrics MÜSSEN zum Song passen. "
-                                f"Weicher melodischer Song → warme, fließende Lyrics. "
-                                f"Aggressiver Beat → kraftvolle, pointierte Lyrics. "
-                                f"Style-Prompt: Ausschließlich reine Musik-Eigenschaften — KEIN Künstlername, KEIN Songtitel.")
+                    import re as _re_hit
+                    _hit_key = _re_hit.sub(r'[^\w\s]', '', hit.lower()).strip()
+                    _mapped_style = _DE_SONG_STYLE_MAP.get(_hit_key, "") or _EN_SONG_STYLE_MAP.get(_hit_key, "")
+                    if _mapped_style:
+                        hit_inst = (f"REFERENZ-SONG: '{hit}'. "
+                                    f"BEKANNTER SONG — verwende diese erprobten Suno-Style-Tags als Basis: [{_mapped_style}]. "
+                                    f"Du kannst maximal 1-2 Tags ergänzen oder tauschen wenn der Anlass es erfordert, "
+                                    f"aber die Kerncharakteristik MUSS erhalten bleiben. "
+                                    f"KRITISCH — LYRICS-STIL-HARMONIE: Ton und Energie der Lyrics MÜSSEN zum Song passen.")
+                    else:
+                        hit_inst = (f"REFERENZ-SONG: '{hit}'. "
+                                    f"WICHTIG: Analysiere DIESEN SPEZIFISCHEN SONG — nicht den allgemeinen Stil des Künstlers. "
+                                    f"Viele Künstler haben verschiedene Songs mit sehr unterschiedlichem Klang. "
+                                    f"Extrahiere die konkreten Eigenschaften DIESES Songs: "
+                                    f"Tempo, Rhythmik, welche Instrumente dominieren (akustisch/elektrisch/elektronisch), "
+                                    f"Produktionscharakter (roh/weich/poliert/verzerrt), Energie (sanft/mittel/aggressiv), "
+                                    f"Vers/Chorus-Dynamik, Vocal-Charakter (Ton, Ausdruck, Stärke, Textur). "
+                                    f"Falls du den Song gut kennst: bleib präzise. Falls unsicher: beschreibe was du weißt, "
+                                    f"aber übertrage NICHT den Klischee-Sound des Künstlers auf diesen Song. "
+                                    f"KRITISCH — LYRICS-STIL-HARMONIE: Ton und Energie der Lyrics MÜSSEN zum Song passen. "
+                                    f"Weicher melodischer Song → warme, fließende Lyrics. "
+                                    f"Aggressiver Beat → kraftvolle, pointierte Lyrics. "
+                                    f"Style-Prompt: Ausschließlich reine Musik-Eigenschaften — KEIN Künstlername, KEIN Songtitel.")
                 else:
                     hit_inst = ""
                 if feedback and prev_lyrics:
@@ -6050,11 +6138,27 @@ Antworte NUR als reines JSON ohne Markdown:
                         ref_date = None
 
                 lehrer = "Mister Mandel" if sprache != "de" else "Herrn Mandel"
-                STYLE_RULE = ("Suno style tags in English, comma-separated short tags only, MAX 120 characters total. "
-                              "STRICT: NO artist names, NO song titles, NO full sentences — ONLY concise music tags. "
-                              "Cover: genre, tempo feel, main instruments, energy, vocal style, production texture. "
-                              "LESS IS MORE — 5-8 precise tags beat a long description. "
-                              "Example: 'synth-pop, 80s, pulsing bassline, electronic drums, 120bpm, smooth male vocals, polished'")
+                if sprache == "de":
+                    STYLE_RULE = ("Suno style tags in English, comma-separated short tags only, MAX 120 characters total. "
+                                  "STRICT: NO artist names, NO song titles, NO full sentences — ONLY concise music tags. "
+                                  "Cover: genre, tempo feel, main instruments, energy, vocal style, production texture. "
+                                  "LESS IS MORE — 5-8 precise tags beat a long description. "
+                                  "IMPORTANT for German songs: Suno recognizes genre tags like 'german pop', 'german schlager', "
+                                  "'german folk-pop', 'german party pop', 'german punk rock', 'german new wave', "
+                                  "'austrian folk rock', 'volksmusik' — use them when they match the reference song's sound. "
+                                  "Example schlager: 'german schlager, accordion, party pop, upbeat, male vocals, festive, catchy hook' "
+                                  "Example german pop: 'german pop, upbeat, powerful female vocals, euro dance, arena anthem, 128bpm'")
+                else:
+                    STYLE_RULE = ("Suno style tags in English, comma-separated short tags only, MAX 120 characters total. "
+                                  "STRICT: NO artist names, NO song titles, NO full sentences — ONLY concise music tags. "
+                                  "Cover: genre, tempo feel, main instruments, energy, vocal style, production texture. "
+                                  "LESS IS MORE — 5-8 precise tags beat a long description. "
+                                  "Suno understands these well: genre tags (indie pop, pop punk, trap pop, nu-disco, funk, soul pop, "
+                                  "dance pop, bedroom pop, r&b, country pop), energy (euphoric, anthemic, melancholic, groovy, bittersweet), "
+                                  "production (four-on-the-floor, 808 bass, punchy snare, lo-fi, reverb-heavy, gated reverb), "
+                                  "vocals (breathy female vocals, powerful female vocals, male falsetto, gritty male vocals). "
+                                  "Example pop: 'synth-pop, 80s retro, pulsing bassline, 125bpm, reverb-heavy, euphoric, male vocals' "
+                                  "Example ballad: 'pop ballad, piano, acoustic guitar, heartbreak, powerful female vocals, slow build'")
                 TITLE_RULE = ("kreativer Songtitel mit passenden Emojis"
                               + (" — verwende im Titel immer die ORIGINAL-Schreibweise des Namens, nicht die phonetische" if is_personal else ""))
 
@@ -6177,7 +6281,10 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     raise ValueError("Kein JSON-Objekt in Antwort gefunden")
                 song_data, _ = json.JSONDecoder().raw_decode(raw, idx)
                 if sprache == "de" and "style" in song_data:
-                    song_data["style"] = song_data["style"].rstrip(", ") + ", german lyrics"
+                    s = song_data["style"].rstrip(", ")
+                    if "german lyrics" not in s.lower():
+                        s += ", german lyrics"
+                    song_data["style"] = s
                 # Englisch: Original-Name im Titel sicherstellen (nur bei Einzelpersonen)
                 if sprache != "de" and is_personal and "title" in song_data:
                     if name.lower() not in song_data["title"].lower():

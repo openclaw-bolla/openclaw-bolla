@@ -1,7 +1,7 @@
 #!/bin/bash
 # MC-Server Watchdog — killt + restart wenn er amok läuft
 # Trigger:
-#   - RSS > 1.5 GB (normal: < 500 MB)
+#   - RSS > 1.5 GB (normal ohne Whisper: < 500 MB)
 #   - Log wächst > 500 KB pro Minute (Error-Spam-Loop)
 # Läuft alle 2 Min via Cron
 
@@ -38,9 +38,9 @@ GROWTH_PER_MIN=$((GROWTH * 60 / ELAPSED))
 
 AMOK=0
 REASON=""
-# Normal-Footprint mit Whisper large-v3 CUDA geladen: ~3 GB RAM. Erst ab 4.5 GB als Amok werten.
-if [ "$RSS_MB" -gt 4500 ]; then
-    AMOK=1; REASON="RSS=${RSS_MB}MB > 4.5GB"
+# Normal-Footprint ohne Whisper: < 500 MB. Ab 1.5 GB als Amok werten.
+if [ "$RSS_MB" -gt 1500 ]; then
+    AMOK=1; REASON="RSS=${RSS_MB}MB > 1.5GB"
 fi
 # Log-Wachstum ist der bessere Amok-Indikator (Endlos-Retry-Loops spammen Log)
 if [ "$GROWTH_PER_MIN" -gt 524288 ]; then  # 512 KB/Min
