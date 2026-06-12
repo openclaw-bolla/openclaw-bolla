@@ -48,7 +48,8 @@ def main():
     t.start()
 
     # URL in Windows-Zwischenablage
-    subprocess.run(["clip.exe"], input=url.encode(), check=True)
+    clip = "/mnt/c/Windows/System32/clip.exe"
+    subprocess.run([clip], input=url.encode(), check=True)
     print("\n" + "="*60)
     print("URL wurde in die Zwischenablage kopiert!")
     print("Bitte in Edge einfügen und mit ernstmandel@outlook.de anmelden.")

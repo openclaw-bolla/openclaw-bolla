@@ -35,16 +35,13 @@
 #### Amazon Kieselerde-Rückgabe (24,90 €) — Nachverfolgung aktiv
 - Bestellnummer: 306-6616120-2543506, bestellt 06.06., geliefert 08.06.
 - Widerruf schriftlich erklärt am 06.06. ✅ — Mail im Outlook-Gesendet bestätigt ✅ (10.06.)
-- Mail an **Founderholics GmbH** (Hersteller!) gesendet ✅ — friends@founderholics.de, Tel. 06131-6236029
-- Alle Amazon-Kanäle blockiert: Mail (Auto-Reply), Rückgabe-Button (Endlosschleife), Chat (leitet wieder zur Schleife), Telefon (existiert nicht mehr)
-- **Fristen:**
-  - Widerruf 14-Tage-Frist: bis 20.06. Ware zurücksenden (oder Nachweis)
-  - SEPA-Rückbuchungsfrist: 8 Wochen ab Lastschrift-Datum 06.06. = **bis ca. 01.08.2026**
-- **Nächste Schritte (Priorität):**
-  1. **SOFORT:** Ware per Paket zurückschicken (Sendungsverfolgung aufbewahren!) — Absender-Nachweis schützt die SEPA-Rückbuchung
-  2. Falls Founderholics nicht antwortet (Frist 3-5 Werktage): anrufen: 06131-6236029
-  3. Falls Amazon bis 01.07. keine Erstattung: Deutsche Bank — "Lastschrift von Amazon vom 06.06., 24,90 €, Widerruf erklärt, zurückbuchen"
-  4. Widerruf-Mail-Nachweis aus Outlook-Gesendet als Screenshot/PDF sichern
+- Mail an **Founderholics GmbH** gesendet 10.06. ✅ — Widerruf erklärt, Rücksendelabel erbeten
+- **Founderholics geantwortet 11.06. ✅:** Können Widerruf nicht direkt annehmen (Vertrag mit Amazon), ABER: Ware ungeöffnet auf eigene Kosten einsenden → sie erstatten den Kaufpreis
+- Alle Amazon-Kanäle blockiert: Mail (Auto-Reply), Rückgabe-Button (Endlosschleife), Chat, Telefon
+- **NÄCHSTER SCHRITT:** Paket schicken an:
+  `Founderholics GmbH, Rheinallee 88 Gebäude 16, 55120 Mainz`
+  → Sendungsverfolgung aufbewahren!
+- **Backup-Frist:** SEPA-Rückbuchung über Deutsche Bank bis ca. 01.08.2026
 
 ### Offen / nächste Session
 - **Kap 22–25 schreiben**: Lenis Erkenntnis vertieft, Maria/Vogt-Eskalation, erste öffentliche Reaktion

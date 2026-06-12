@@ -83,11 +83,12 @@ const initCount = parseInt(await agent(
 let kapNr = initCount  // nächste Kapitelnummer (0-basiert = kapitelanzahl)
 let fertig = false
 let geschrieben = 0
-const MAX_KAPITEL = 30  // Sicherheitsnetz — Geschichte endet wenn sie endet
+const KAP_ENDE = 41  // HARTE GRENZE: Prolog(0) + Kap1-40 = 41 Einträge max
 
 log(`Starte bei Kapitel ${kapNr} (Index ${kapNr-1} vorhanden, schreibe Index ${kapNr}+)`)
+log(`Ziel: bis Kapitel 40 (Array-Länge ${KAP_ENDE}) — dann Stop.`)
 
-while (!fertig && geschrieben < MAX_KAPITEL) {
+while (!fertig && kapNr < KAP_ENDE) {
   const kapIdx = kapNr  // 0-basiert: Index = Nummer (Prolog=0, Kap1=1, ...)
 
   log(`Schreibe Kapitel ${kapNr}...`)
@@ -152,7 +153,32 @@ AUSGABEFORMAT (EXAKT SO, mit diesen Trennzeichen):
     { label: `Kapitel ${kapNr} schreiben`, phase: 'Schreiben', model: 'sonnet' }
   )
 
-  if (!ergebnis || !ergebnis.includes('###TITEL###')) {
+  if (ergebnis === null) {
+    // null = API-Limit oder Terminal-Fehler — State-Datei schreiben, dann abbrechen
+    log(`Kapitel ${kapNr}: Agent-Call returned null → Limit erreicht, schreibe State-Datei`)
+    await agent(
+      `Schreibe folgende JSON-Datei: /home/bolla/workspace/state/claude_limits.json
+Inhalt:
+python3 -c "
+import json, datetime
+state = {}
+try: state = json.load(open('/home/bolla/workspace/state/claude_limits.json'))
+except: pass
+state['limited'] = True
+state['limited_since'] = datetime.datetime.now().isoformat()
+state['reset_info'] = 'Usage-Limit während Aurora-Workflow, Resume via Crontab 00:01'
+state['last_check'] = datetime.datetime.now().isoformat()
+state['triggered_by'] = 'aurora_workflow_kap_${kapNr}'
+json.dump(state, open('/home/bolla/workspace/state/claude_limits.json', 'w'), indent=2)
+print('State geschrieben')
+"`,
+      { label: 'Limit-State schreiben', model: 'haiku' }
+    )
+    log(`State-Datei geschrieben. Workflow bricht ab — Crontab 00:01 übernimmt.`)
+    break
+  }
+
+  if (!ergebnis.includes('###TITEL###')) {
     log(`Kapitel ${kapNr}: Kein valides Ergebnis — überspringe`)
     kapNr++
     geschrieben++

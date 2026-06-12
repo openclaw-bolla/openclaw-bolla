@@ -67,11 +67,36 @@ def render_chapter(flow, k):
         flow.append(Paragraph(txt, body))
     flow.append(PageBreak())
 
-def build(out, kapitel, untertitel_zeile):
+vorwort_text  = d.get('vorwort', '')
+impressum_text = d.get('impressum', '')
+
+def render_frontmatter(flow, text, heading=None):
+    """Rendert Vorwort oder Impressum als Fließtext-Seite."""
+    if heading:
+        flow.append(Spacer(1, 1.5*cm))
+        flow.append(Paragraph(esc(heading), chap))
+        flow.append(HRFlowable(width="100%", thickness=0.8, color=RULE, spaceAfter=18))
+    else:
+        flow.append(Spacer(1, 1.5*cm))
+    for raw in text.split("\n"):
+        line = raw.strip()
+        if not line:
+            flow.append(Spacer(1, 4))
+            continue
+        # Abschnittsüberschriften (alle Caps oder kurze Zeilen ohne Satzzeichen)
+        if len(line) < 40 and not line.endswith(('.', ',', '—', ':', ')')):
+            flow.append(Paragraph(esc(line), ParagraphStyle('fmhead', parent=scene, spaceBefore=14)))
+        else:
+            txt = re.sub(r'\*(.+?)\*', r'<i>\1</i>', esc(line))
+            flow.append(Paragraph(txt, body))
+    flow.append(PageBreak())
+
+def build(out, kapitel, untertitel_zeile, mit_frontmatter=False):
     doc = SimpleDocTemplate(out, pagesize=A4,
         leftMargin=2.4*cm, rightMargin=2.4*cm, topMargin=2.2*cm, bottomMargin=2.0*cm,
-        title="AURORA", author="Bolla für Chris")
+        title="AURORA", author="Chris Mandel")
     flow = []
+    # Titelseite
     flow.append(Spacer(1, 3.5*cm))
     flow.append(Paragraph("AURORA", title))
     flow.append(Paragraph("Was bleibt, wenn die Maschinen träumen", subtitle))
@@ -80,19 +105,28 @@ def build(out, kapitel, untertitel_zeile):
     flow.append(Spacer(1, 0.6*cm))
     flow.append(Paragraph(f"Stand {today}", small))
     flow.append(Spacer(1, 6*cm))
-    flow.append(Paragraph("für Chris &middot; von Bolla 🐾", small))
+    flow.append(Paragraph("f&uuml;r Chris &middot; von Bolla &#x1F43E;", small))
     flow.append(PageBreak())
+    # Impressum (Seite 2)
+    if mit_frontmatter and impressum_text:
+        render_frontmatter(flow, impressum_text)
+    # Vorwort
+    if mit_frontmatter and vorwort_text:
+        render_frontmatter(flow, vorwort_text, heading="Vorwort")
+    # Kapitel
     for k in kapitel:
         render_chapter(flow, k)
     doc.build(flow)
     print("PDF:", out)
 
-# 1) Komplettes Buch
-build(f"{DESK}/AURORA_Buch_komplett.pdf", ALLK, "Prolog &ndash; Kapitel 21")
+# 1) Komplettes Buch — mit Impressum + Vorwort
+letztes = ALLK[-1].get('titel', '').replace('Kapitel ', 'Kap. ').split(':')[0].strip()
+build(f"{DESK}/AURORA_Buch_komplett.pdf", ALLK,
+      f"Prolog &ndash; {letztes}", mit_frontmatter=True)
 
-# 2) Zuletzt geschriebene Kapitel (19-21)
-neu_titles = ["Kapitel 19: Was man nicht aufhält",
-              "Kapitel 20: Was man nicht benennt",
-              "Kapitel 21: Was man nicht zurücklässt"]
-neu = [k for k in ALLK if k.get('titel') in neu_titles]
-build(f"{DESK}/AURORA_Kapitel_19-21.pdf", neu, "Kapitel 19 &ndash; 21")
+# 2) Zuletzt geschriebene Kapitel — ohne Frontmatter
+neu = ALLK[-3:] if len(ALLK) >= 3 else ALLK
+erste = neu[0].get('titel','').split(':')[0].strip()
+letzte = neu[-1].get('titel','').split(':')[0].strip()
+build(f"{DESK}/AURORA_Kapitel_neu.pdf", neu,
+      f"{erste} &ndash; {letzte}", mit_frontmatter=False)
