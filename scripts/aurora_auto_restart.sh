@@ -51,13 +51,34 @@ if [ $PROBE_EXIT -ne 0 ] || [ -z "$PROBE" ]; then
     exit 1
 fi
 
-log "Quota frei (Probe OK) — starte Workflow..."
+log "Quota frei (Probe OK)..."
 
-# 3. Workflow starten
+# 3a. Falls Buch fertig → Schlusslektorat starten
+if [[ "$FERTIG" == ja* ]]; then
+    # Prüfe ob Lektorat schon läuft/erledigt
+    LEKTORAT_DONE=$(python3 -c "
+import json, os
+d = json.load(open('$JSON'))
+print('ja' if d.get('schlusslektorat_fertig') else 'nein')
+" 2>/dev/null)
+    if [ "$LEKTORAT_DONE" = "nein" ]; then
+        log "Buch fertig — starte Schlusslektorat..."
+        "$CLAUDE" --dangerously-skip-permissions -p \
+            "Das AURORA-Buch ist fertig. Starte sofort das Schlusslektorat: Workflow mit scriptPath /home/bolla/workspace/scripts/aurora_schluss_lektorat.js" \
+            >> "$LOG" 2>&1
+        log "Lektorat-Aufruf beendet (Exit: $?)"
+    else
+        log "Lektorat bereits erledigt — nichts zu tun."
+    fi
+    exit 0
+fi
+
+# 3b. Buch noch nicht fertig → Schreib-Workflow starten
+log "Starte Schreib-Workflow..."
 "$CLAUDE" --dangerously-skip-permissions -p \
     "Das AURORA-Buch (deutscher KI-Thriller) muss noch fertiggeschrieben werden. \
 Starte sofort den Schreib-Workflow mit dem scriptPath /home/bolla/workspace/scripts/aurora_schreib_workflow.js \
 Kein Text, nur die Workflow-Aktion ausführen." \
     >> "$LOG" 2>&1
 
-log "Workflow-Aufruf beendet (Exit: $?)"
+log "Schreib-Workflow-Aufruf beendet (Exit: $?)"
