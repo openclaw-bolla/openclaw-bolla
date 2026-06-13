@@ -150,7 +150,7 @@ AUSGABEFORMAT (EXAKT SO, mit diesen Trennzeichen):
 [Vollständiger Kapiteltext]
 ###ENDE###
 [Optional wenn letztes Kapitel:] ###ENDE_BUCH###`,
-    { label: `Kapitel ${kapNr} schreiben`, phase: 'Schreiben', model: 'sonnet' }
+    { label: `Kapitel ${kapNr} schreiben`, phase: 'Schreiben', model: 'claude-opus-4-8' }
   )
 
   if (ergebnis === null) {

@@ -3296,18 +3296,31 @@ def bolla_chat_stream(message, session_id=None, image_b64=None):
 
     full_msg = f"[MC-UI] {message}" if message else message
 
+    # Sofort ein Event senden, damit Cloudflare kein 524-Timeout schickt
+    yield {"type": "system", "status": "started"}
+
     if session_id:
         cmd = [claude_bin, "-p", "--output-format", "stream-json", "--verbose", "--resume", session_id, full_msg]
-        events = list(_run_claude_stream(cmd, tmp_path=None))
-        # Wenn Resume fehlschlägt (session abgelaufen), Fallback ohne Resume
-        if events and events[-1].get("type") == "error":
-            err = events[-1].get("error", "")
-            if "session" in err.lower() or "resume" in err.lower() or "not found" in err.lower() or events[-1].get("returncode", 0) != 0:
+        # Direkt streamen (kein list() mehr), Resume-Fehler werden on-the-fly erkannt
+        had_success = False
+        resume_error = None
+        for event in _run_claude_stream(cmd, tmp_path=None):
+            etype = event.get("type")
+            if etype in ("assistant", "result"):
+                had_success = True
+            if etype == "error" and not had_success:
+                resume_error = event
+                break
+            yield event
+        if resume_error:
+            err = resume_error.get("error", "")
+            if "session" in err.lower() or "resume" in err.lower() or "not found" in err.lower() or resume_error.get("returncode", 0) != 0:
                 yield {"type": "system", "text": "⚠️ Alte Session abgelaufen — starte frischen Chat"}
                 cmd_fresh = [claude_bin, "-p", "--output-format", "stream-json", "--verbose", full_msg]
                 yield from _run_claude_stream(cmd_fresh, tmp_path=tmp_path)
                 return
-        yield from iter(events)
+            else:
+                yield resume_error
         if tmp_path:
             try:
                 os.unlink(tmp_path)

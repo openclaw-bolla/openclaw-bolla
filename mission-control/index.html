@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Control — Chris</title>
+<title>Mission Possible — Chris</title>
 <link rel="icon" href="/favicon.ico" type="image/x-icon">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -806,7 +806,7 @@ html, body {
       <div style="text-align:center;margin-bottom:8px">
         <img src="/api/bolla/avatar/wave" style="width:58px;height:58px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);box-shadow:0 0 16px rgba(255,102,153,0.4)">
       </div>
-      <h1>MISSION CONTROL</h1>
+      <h1>MISSION POSSIBLE</h1>
       <div class="sub">Chris Mandel</div>
     </div>
     <nav id="sidebar-nav">
@@ -1696,7 +1696,7 @@ html, body {
                   <code style="color:var(--bright);font-size:13px">openclaw-bolla/openclaw-bolla</code>
                 </div>
                 <div style="padding:7px 10px;background:rgba(167,139,250,0.07);border-radius:6px">
-                  <div style="color:var(--dim);margin-bottom:2px">Mission Control</div>
+                  <div style="color:var(--dim);margin-bottom:2px">Mission Possible</div>
                   <a href="http://127.0.0.1:18790" target="_blank" style="color:#a78bfa;font-size:13px;text-decoration:none">127.0.0.1:18790</a> <span style="color:var(--dim)">·</span>
                   <a href="https://bolla.chrismandel.de" target="_blank" style="color:#a78bfa;font-size:13px;text-decoration:none">bolla.chrismandel.de</a>
                 </div>
@@ -2657,6 +2657,22 @@ html, body {
                 <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Kommentar-Verlauf</div>
                 <div id="ki-buch-kommentare" style="font-size:13px;color:var(--dim)">Keine bisherigen Kommentare</div>
               </div>
+
+              <!-- Vorwort -->
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 22px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px">✍️ Vorwort</div>
+                  <button onclick="this.closest('div').nextElementSibling||true; const t=document.getElementById('ki-buch-vorwort'); t.style.display=t.style.display==='none'?'block':'none'; this.textContent=t.style.display==='none'?'▶ Zeigen':'▼ Einklappen'" style="font-size:12px;color:var(--dim);background:none;border:none;cursor:pointer;padding:2px 6px">▼ Einklappen</button>
+                </div>
+                <div id="ki-buch-vorwort" style="font-size:14px;color:var(--text);line-height:1.85;white-space:pre-wrap;max-height:320px;overflow-y:auto">—</div>
+              </div>
+
+              <!-- Impressum -->
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 22px">
+                <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📋 Impressum</div>
+                <div id="ki-buch-impressum" style="font-size:14px;color:var(--text);line-height:1.85;white-space:pre-wrap">—</div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -4027,6 +4043,7 @@ function showPage(page) {
   if (item) document.getElementById('page-title').textContent = item.querySelector('span:nth-child(2)')?.textContent || '';
   const cmdBar = document.getElementById('mail-cmd-bar');
   if (page !== 'email') { if (cmdBar) cmdBar.style.display='none'; closeMailResult(); _selectedMails=[]; }
+  if (page === 'dashboard')  { loadCalendarData(); loadEmailData(); loadClaudeCode(); }
   if (page === 'system')     { tbInit(); kostenLoad(); loadBollaModel(); }
   if (page === 'brain')      initBrain();
   if (page === 'bolla')      loadBollaModel();
@@ -6453,7 +6470,7 @@ async function loadClaudeCode() {
     status.innerHTML =
       row('Claude Code', sys.claude_version || '–', 'var(--success)') +
       row('WSL / Ubuntu', 'aktiv ✓', 'var(--success)') +
-      row('Mission Control API', mcOk ? '🟢 läuft' : '🔴 gestoppt', mcOk ? 'var(--success)' : 'var(--danger)') +
+      row('Mission Possible API', mcOk ? '🟢 läuft' : '🔴 gestoppt', mcOk ? 'var(--success)' : 'var(--danger)') +
       row('Cloudflare Tunnel', cfOk ? '🟢 aktiv' : '🔴 gestoppt', cfOk ? 'var(--success)' : 'var(--danger)') +
       row('Telegram Bot', tgOk ? '🟢 aktiv' : '🔴 gestoppt', tgOk ? 'var(--success)' : 'var(--danger)') +
       row('Token heute', tok.today ? tok.today.toLocaleString('de-DE') : '–', 'var(--text)') +
@@ -6522,12 +6539,12 @@ async function tbLoad() {
     if (tip) tip.textContent = 'Budget-API nicht erreichbar.';
   }
 }
-// Auto-Refresh: beim Dashboard-Load + alle 6 Stunden
+// Auto-Refresh: beim Dashboard-Load + alle 5 Minuten
 let _tbInterval = null;
 function tbInit() {
   tbLoad();
   if (_tbInterval) clearInterval(_tbInterval);
-  _tbInterval = setInterval(tbLoad, 6 * 3600 * 1000);
+  _tbInterval = setInterval(tbLoad, 5 * 60 * 1000);
 }
 
 // ── Kosten & Konten Widget ─────────────────────────────────────
@@ -6914,7 +6931,7 @@ function initBrain() {
     {id:'ROBIN',   group:'family',  label:'👨‍⚕️ Robin',            size:14},
     {id:'STEPHANIE',group:'family', label:'👩 Steffi',            size:12},
     {id:'ENKEL',   group:'family',  label:'👧👦 Enkel ×4',        size:11},
-    {id:'MC',      group:'infra',   label:'🖥️ Mission Control',  size:18},
+    {id:'MC',      group:'infra',   label:'🖥️ Mission Possible', size:18},
     {id:'TELEGRAM',group:'infra',   label:'💬 Telegram',         size:15},
     {id:'TUNNEL',  group:'infra',   label:'☁️ CF Tunnel',        size:12},
     {id:'AZURE',   group:'infra',   label:'🔊 Azure Speech',     size:11},
@@ -7691,6 +7708,9 @@ async function bollaHistoryAdd(html) {
   if (!html || html.length < 100) return;
   const tmp = document.createElement('div');
   tmp.innerHTML = html;
+  // Thinking-Div rausfiltern — falls Speichern während Bolla noch "denkt"
+  tmp.querySelectorAll('#bolla-thinking').forEach(el => el.remove());
+  const cleanHtml = tmp.innerHTML;
   const userBlocks = tmp.querySelectorAll('.bolla-user-msg');
   const firstUserText = (() => {
     for (const b of userBlocks) {
@@ -7700,7 +7720,7 @@ async function bollaHistoryAdd(html) {
     return '';
   })();
   const title = firstUserText.length > 65 ? firstUserText.substring(0, 62) + '…' : (firstUserText || 'Session');
-  const entry = { id: Date.now(), ts: new Date().toISOString(), title, msgCount: userBlocks.length, html, sessionId: bollaSessionId || null };
+  const entry = { id: Date.now(), ts: new Date().toISOString(), title, msgCount: userBlocks.length, html: cleanHtml, sessionId: bollaSessionId || null };
   try { await fetch(API + '/api/chat-history/add', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(entry)}); } catch(e) {}
   bollaHistoryRender();
 }
@@ -7746,7 +7766,12 @@ function bollaHistoryOpen(i) {
   const s = _bollaHistoryCache[i];
   if (!s) return;
   const chat = document.getElementById('bolla-chat');
-  if (chat) chat.innerHTML = s.html;
+  if (chat) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = s.html;
+    tmp.querySelectorAll('#bolla-thinking').forEach(el => el.remove());
+    chat.innerHTML = tmp.innerHTML;
+  }
   bollaSessionId = s.sessionId || null;
   const statusEl = document.getElementById('bolla-status');
   if (bollaSessionId) {
@@ -8062,6 +8087,12 @@ async function loadKiBuch() {
         ? koms.map(k => `<div style="padding:7px 0;border-bottom:1px solid var(--border)"><div style="font-size:11px;color:var(--dim)">${k.datum||''} ${k.erledigt?'· ✓ erledigt':'· ⏳ offen'}</div><div style="font-size:13px;color:var(--text)">${k.text}</div></div>`).join('')
         : '<span style="color:var(--dim)">Keine bisherigen Kommentare</span>';
     }
+
+    // Vorwort + Impressum
+    const vwEl = document.getElementById('ki-buch-vorwort');
+    if (vwEl) vwEl.textContent = data.vorwort || '(noch kein Vorwort)';
+    const impEl = document.getElementById('ki-buch-impressum');
+    if (impEl) impEl.textContent = data.impressum || '(noch kein Impressum)';
 
     // Produzenten-Steuerung rendern
     kiBuchRenderSteuerung(data.steuerung || {});
