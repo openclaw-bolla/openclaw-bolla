@@ -131,7 +131,24 @@ else
     log "Kein Limit (5h: ${FIVE_H_PCT}%, 7d: ${SEVEN_D_PCT}%) — Tasks regulär prüfen..."
 fi
 
-# ── 5. Tasks ausführen ───────────────────────────────────────────────────────
+# ── 5. Budget-Puffer prüfen (Chris braucht immer mind. 20% Reserve) ──────────
+# Schwere Tasks (BOLLA_HEAVY_OK=true) nur starten wenn 5h-Fenster noch < 70% verbraucht
+# = mindestens 30% frei als Puffer für Chris' eigene Aktivitäten
+FIVE_H_HEAVY_OK=false
+FIVE_H_HEAVY_THRESHOLD=70  # Schwere Tasks nur unter dieser Grenze
+
+FIVE_H_UNDER_THRESHOLD=$(python3 -c "print('true' if float('$FIVE_H_PCT') < $FIVE_H_HEAVY_THRESHOLD else 'false')" 2>/dev/null || echo "false")
+if [ "$FIVE_H_UNDER_THRESHOLD" = "true" ]; then
+    FIVE_H_HEAVY_OK=true
+    log "Budget-Check: 5h=${FIVE_H_PCT}% < ${FIVE_H_HEAVY_THRESHOLD}% → BOLLA_HEAVY_OK=true (≥30% Reserve für Chris)"
+else
+    log "Budget-Check: 5h=${FIVE_H_PCT}% >= ${FIVE_H_HEAVY_THRESHOLD}% → BOLLA_HEAVY_OK=false (zu wenig Reserve — schwere Tasks pausiert)"
+fi
+
+export BOLLA_HEAVY_OK=$FIVE_H_HEAVY_OK
+export BOLLA_FIVE_H_PCT=$FIVE_H_PCT
+
+# ── 6. Tasks ausführen ───────────────────────────────────────────────────────
 TASK_COUNT=0
 
 if [ -d "$TASKS_DIR" ]; then

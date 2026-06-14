@@ -191,7 +191,7 @@ def save_clipboard_image(data_b64, mime):
     fpath = os.path.join(CLIPBOARD_IMAGES_DIR, fname)
     with open(fpath, "wb") as f:
         f.write(base64.b64decode(data_b64))
-    return {"filename": fname, "ts": datetime.now().isoformat()}
+    return {"ok": True, "filename": fname, "ts": datetime.now().isoformat()}
 
 def delete_clipboard_image(filename):
     _ensure_clipboard_images_dir()
@@ -282,6 +282,109 @@ def bildgen_generate(prompt, model="gemini-2.5-flash-image", aspect_ratio="1:1",
             return img_b64, mime
     return None, "Kein Bild in der API-Antwort erhalten."
 
+
+BILDGEN_ARCHIVE_DIR = os.path.join(WORKSPACE, "data/bildgen_archive")
+_MAI_CFG_PATH = os.path.join(WORKSPACE, "config/mai_image.json")
+
+def _mai_config():
+    try:
+        return json.load(open(_MAI_CFG_PATH))
+    except Exception:
+        return {}
+
+def bildgen_mai_generate(prompt, model="mai-image-2.5", size="1024x1024",
+                          input_image_b64=None, input_mime_type=None):
+    import urllib.request, urllib.error, base64, uuid as _uuid
+    cfg = _mai_config()
+    endpoint = cfg.get("endpoint", "").rstrip("/")
+    api_key  = cfg.get("api_key", "")
+    if not endpoint or not api_key:
+        return None, "MAI nicht konfiguriert. Bitte config/mai_image.json befüllen (endpoint + api_key)."
+
+    headers = {"api-key": api_key}
+
+    if input_image_b64:
+        url = endpoint + "/mai/v1/images/edits"
+        img_bytes = base64.b64decode(input_image_b64)
+        img_mime = input_mime_type or "image/png"
+        ext = "jpg" if "jpeg" in img_mime else "png"
+        boundary = _uuid.uuid4().hex
+        body = b""
+        for name, value in [("model", model), ("prompt", prompt), ("n", "1"), ("size", size)]:
+            body += f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n".encode()
+        body += f"--{boundary}\r\nContent-Disposition: form-data; name=\"image\"; filename=\"image.{ext}\"\r\nContent-Type: {img_mime}\r\n\r\n".encode()
+        body += img_bytes
+        body += f"\r\n--{boundary}--\r\n".encode()
+        headers["Content-Type"] = f"multipart/form-data; boundary={boundary}"
+        req = urllib.request.Request(url, data=body, headers=headers)
+    else:
+        url = endpoint + "/mai/v1/images/generations"
+        req = urllib.request.Request(url, data=json.dumps({
+            "model": model, "prompt": prompt, "n": 1, "size": size,
+            "output_format": "png", "output_compression": 100
+        }).encode(), headers={**headers, "Content-Type": "application/json"})
+
+    try:
+        with urllib.request.urlopen(req, timeout=90) as resp:
+            data = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        msg = e.read().decode("utf-8", errors="replace")
+        try: msg = json.loads(msg).get("error", {}).get("message", msg)
+        except Exception: pass
+        return None, f"MAI API-Fehler: {msg}"
+    except Exception as e:
+        return None, str(e)
+    items = data.get("data", [])
+    if not items or not items[0].get("b64_json"):
+        return None, "Kein Bild in der MAI-Antwort."
+    return items[0]["b64_json"], "image/png"
+
+def bildgen_archive_save(img_b64, mime, prompt, engine, aspect):
+    import base64 as _b64
+    os.makedirs(BILDGEN_ARCHIVE_DIR, exist_ok=True)
+    import time
+    ts = int(time.time())
+    ext = "jpg" if "jpeg" in mime else "png"
+    safe_engine = engine.replace("/", "_")[:20]
+    safe_aspect = aspect.replace(":", "x")
+    fname = f"{ts}_{safe_engine}_{safe_aspect}.{ext}"
+    with open(os.path.join(BILDGEN_ARCHIVE_DIR, fname), "wb") as f:
+        f.write(_b64.b64decode(img_b64))
+    meta = {"ts": ts, "engine": engine, "aspect": aspect, "prompt": prompt, "file": fname, "mime": mime}
+    with open(os.path.join(BILDGEN_ARCHIVE_DIR, fname + ".json"), "w", encoding="utf-8") as f:
+        json.dump(meta, f, ensure_ascii=False)
+    return fname
+
+def bildgen_archive_list():
+    import base64 as _b64
+    if not os.path.exists(BILDGEN_ARCHIVE_DIR):
+        return []
+    items = []
+    for fname in sorted(os.listdir(BILDGEN_ARCHIVE_DIR), reverse=True):
+        if fname.endswith(".json") or not (fname.endswith(".png") or fname.endswith(".jpg")):
+            continue
+        meta_path = os.path.join(BILDGEN_ARCHIVE_DIR, fname + ".json")
+        meta = {}
+        if os.path.exists(meta_path):
+            try: meta = json.load(open(meta_path, encoding="utf-8"))
+            except Exception: pass
+        img_path = os.path.join(BILDGEN_ARCHIVE_DIR, fname)
+        try:
+            with open(img_path, "rb") as fh:
+                b64 = _b64.b64encode(fh.read()).decode()
+        except Exception:
+            continue
+        mime = "image/jpeg" if fname.endswith(".jpg") else "image/png"
+        items.append({"file": fname, "b64": b64, "mime": mime, **meta})
+    return items
+
+def bildgen_archive_delete(fname):
+    safe = os.path.basename(fname)
+    for path in [os.path.join(BILDGEN_ARCHIVE_DIR, safe),
+                 os.path.join(BILDGEN_ARCHIVE_DIR, safe + ".json")]:
+        try: os.remove(path)
+        except Exception: pass
+    return {"ok": True}
 
 CLIENT_ID = "9e5f94bc-e8a4-4e73-b8be-63364c29d753"
 
@@ -3095,7 +3198,17 @@ def get_claude_quota():
 
     try:
         creds = json.load(open(_CLAUDE_CRED_PATH))
-        token = creds["claudeAiOauth"]["accessToken"]
+        oauth = creds["claudeAiOauth"]
+        token = oauth["accessToken"]
+        sub_type = oauth.get("subscriptionType", "pro")
+        rate_tier = oauth.get("rateLimitTier", "")
+        # Plan-Label aus subscriptionType ableiten
+        if "max" in sub_type.lower() or "max" in rate_tier.lower():
+            plan_label = "Max Plan"
+        elif "pro" in sub_type.lower():
+            plan_label = "Pro Plan"
+        else:
+            plan_label = sub_type.title() + " Plan"
         try:
             raw = _fetch(token)
         except _ue.HTTPError as he:
@@ -3160,6 +3273,7 @@ def get_claude_quota():
             "reset_label": reset_label,
             "tip": tip,
             "tip_color": tip_color,
+            "plan_label": plan_label,
             "source": "anthropic_oauth"
         }
         _claude_quota_cache["ts"] = _t.time()
@@ -4555,6 +4669,8 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/tokenbudget": get_token_budget,
                 "/api/tokenbudget/snapshot": token_budget_snapshot,
                 "/api/claudequota": get_claude_quota,
+                "/api/bildgen/archive": bildgen_archive_list,
+                "/api/bildgen/mai-config": lambda: {"configured": bool(_mai_config().get("api_key")), "default_model": _mai_config().get("default_model","mai-image-2.5")},
                 "/api/kosten": get_kosten,
                 "/api/status": lambda: {"ok": True, "ts": datetime.now().isoformat()},
                 "/api/redesigns-meta": get_redesigns_meta,
@@ -4772,6 +4888,56 @@ class Handler(BaseHTTPRequestHandler):
 
             elif self.path == "/api/ki-buch/generiere-status":
                 self._send_json(_ki_buch_job)
+
+            elif self.path == "/api/ki-buch/lektorat-status":
+                cache_dir = os.path.join(WORKSPACE, "data/aurora_lektorat")
+                buch_f    = os.path.join(WORKSPACE, "data/ki_buch.json")
+                # Modell-Mapping aus Workflow
+                welle1 = {0,2,11,16,17,18,20,30,34,41,42}
+                welle2 = {15,19,26,27,28,29,33,35,38,43,44,45}
+                geplant = sorted(welle1 | welle2)
+                # Kapitel-Titel aus Buch
+                buch_titel = {}
+                if os.path.isfile(buch_f):
+                    with open(buch_f) as fh:
+                        kaps = json.load(fh).get("kapitel", [])
+                    for i, k in enumerate(kaps):
+                        buch_titel[i] = k.get("titel", f"Kapitel {i}")
+                # Cache lesen
+                kapitel_status = []
+                for idx in geplant:
+                    cf = os.path.join(cache_dir, f"kap_{idx:02d}.json")
+                    modell = "Sonnet" if idx in welle1 else "Opus 4.8"
+                    if os.path.isfile(cf):
+                        with open(cf) as fh:
+                            cd = json.load(fh)
+                        aend = cd.get("aenderungen", [])
+                        kapitel_status.append({
+                            "idx": idx, "titel": buch_titel.get(idx, f"Kap {idx}"),
+                            "modell": modell, "fertig": True,
+                            "aenderungen_n": len(aend),
+                            "aenderungen": aend[:3]   # max 3 fürs UI
+                        })
+                    else:
+                        kapitel_status.append({
+                            "idx": idx, "titel": buch_titel.get(idx, f"Kap {idx}"),
+                            "modell": modell, "fertig": False,
+                            "aenderungen_n": 0, "aenderungen": []
+                        })
+                fertig_n  = sum(1 for k in kapitel_status if k["fertig"])
+                gesamt_n  = len(geplant)
+                laueft    = fertig_n < gesamt_n
+                self._send_json({
+                    "fertig": fertig_n,
+                    "gesamt": gesamt_n,
+                    "laeuft": laueft,
+                    "kapitel": kapitel_status,
+                    "workflow_log": [
+                        {"datum": "2026-06-14", "aktion": "Spannungslandkarte", "modell": "Sonnet + Opus (Synthese)", "ergebnis": "47/47 Kapitel analysiert"},
+                        {"datum": "2026-06-14", "aktion": "Lektorat Welle 1 (Humor & Hooks)", "modell": "Sonnet 4.6", "ergebnis": "11 Kapitel"},
+                        {"datum": "2026-06-14", "aktion": "Lektorat Welle 2 (Noah & Marlie)", "modell": "Opus 4.8", "ergebnis": "12 Kapitel"},
+                    ]
+                })
 
             elif self.path == "/api/ki-buch":
                 f = os.path.join(WORKSPACE, "data/ki_buch.json")
@@ -5413,17 +5579,53 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 if not ok:
                     self._send_json({"error": limit_err}, status=429)
                     return
-                model = body.get("model", "gemini-2.5-flash-image")
+                model  = body.get("model", "gemini-2.5-flash-image")
                 aspect = body.get("aspect_ratio", "1:1")
                 in_img  = body.get("input_image_b64")
                 in_mime = body.get("input_mime_type", "image/png")
-                img_b64, mime_or_err = bildgen_generate(prompt, model, aspect, in_img, in_mime)
+                if model.startswith("mai-"):
+                    # MAI-Image via Azure AI Foundry
+                    size_map = {"1:1":"1024x1024","16:9":"1280x720","9:16":"720x1280","4:3":"1024x768","3:4":"768x1024"}
+                    size = size_map.get(aspect, "1024x1024")
+                    img_b64, mime_or_err = bildgen_mai_generate(prompt, model, size, in_img, in_mime)
+                else:
+                    img_b64, mime_or_err = bildgen_generate(prompt, model, aspect, in_img, in_mime)
                 if img_b64 is None:
                     self._send_json({"error": mime_or_err}, status=500)
                 else:
                     _bildgen_counter["count"] += 1
                     remaining = BILDGEN_LIMIT - _bildgen_counter["count"]
                     self._send_json({"image_b64": img_b64, "mime_type": mime_or_err, "remaining": remaining})
+            elif self.path == "/api/bildgen/archive/save":
+                img_b64 = body.get("image_b64", "")
+                if not img_b64:
+                    self._send_json({"error": "Kein Bild"}, status=400)
+                    return
+                fname = bildgen_archive_save(
+                    img_b64,
+                    body.get("mime", "image/png"),
+                    body.get("prompt", ""),
+                    body.get("engine", "unbekannt"),
+                    body.get("aspect", "1:1")
+                )
+                self._send_json({"ok": True, "file": fname})
+            elif self.path == "/api/bildgen/archive/delete":
+                fname = body.get("file", "")
+                self._send_json(bildgen_archive_delete(fname))
+            elif self.path == "/api/bildgen/save-to-disk":
+                import base64 as _b64, subprocess, time as _t
+                img_b64 = body.get("b64", "")
+                mime = body.get("mime", "image/png")
+                ext = "jpg" if "jpeg" in mime else "png"
+                folder = "/mnt/d/OneDrive/Bilder/BildGen"
+                os.makedirs(folder, exist_ok=True)
+                fname = f"bildgen_{int(_t.time())}.{ext}"
+                fpath = os.path.join(folder, fname)
+                with open(fpath, "wb") as f:
+                    f.write(_b64.b64decode(img_b64))
+                win_path = fpath.replace("/mnt/d/", "D:\\").replace("/", "\\")
+                subprocess.Popen(["/mnt/c/Windows/System32/cmd.exe", "/c", f'explorer.exe /select,"{win_path}"'])
+                self._send_json({"ok": True, "path": win_path})
             elif self.path == "/api/clipboard":
                 text = body.get("text", "")
                 if body.get("append"):

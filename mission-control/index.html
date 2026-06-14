@@ -1510,7 +1510,7 @@ html, body {
             <div>
               <div style="font-size:13px;font-weight:700;color:#f97316;text-transform:uppercase;letter-spacing:1px">⚡ Anthropic Wochenbudget</div>
               <div style="font-size:11px;color:var(--dim);margin-top:2px">Echte Daten von Anthropic · <span id="tb-5h-label" style="color:#a78bfa">5h: …%</span> · <span id="tb-5h-reset" style="color:var(--dim)">5h-Reset: …</span></div>
-              <div id="tb-model-line" style="font-size:12px;color:var(--dim);margin-top:3px">Claude · Pro Plan · Live-Tools</div>
+              <div id="tb-model-line" style="font-size:12px;color:var(--dim);margin-top:3px">Claude · Max Plan · Live-Tools</div>
             </div>
             <div style="display:flex;align-items:center;gap:12px">
               <div style="text-align:center">
@@ -1732,7 +1732,7 @@ html, body {
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
                 <div style="font-size:13px;font-weight:700;color:#818cf8;text-transform:uppercase;letter-spacing:1px">🧠 Memory-Dateien</div>
                 <!-- BOLLA-UPDATED-START -->
-              <span style="font-size:11px;color:var(--dim)">Aktualisiert: 07.06.2026</span>
+              <span style="font-size:11px;color:var(--dim)">Aktualisiert: 14.06.2026</span>
               <!-- BOLLA-UPDATED-END -->
               </div>
               <div style="font-size:12px;color:var(--dim);margin-bottom:12px">~/.claude/projects/.../memory/ — live aus MEMORY.md</div>
@@ -1867,7 +1867,7 @@ html, body {
               <img src="/api/bolla/avatar/wave" style="width:48px;height:48px;border-radius:50%;object-fit:cover">
               <div style="flex:1;min-width:180px">
                 <div style="font-size:20px;font-weight:300;color:var(--bright)">Bolla</div>
-                <div id="bolla-model-line" style="font-size:13px;color:var(--dim)">Claude · Pro Plan · Live-Tools</div>
+                <div id="bolla-model-line" style="font-size:13px;color:var(--dim)">Claude · Max Plan · Live-Tools</div>
               </div>
               <div id="bolla-status" style="font-size:13px;color:var(--success)">🟢 Bereit</div>
               <button onclick="bollaClear()" style="padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:#f87171;cursor:pointer;font-size:13px" title="/clear — Session speichern &amp; neuen Chat">/clear</button>
@@ -2586,7 +2586,7 @@ html, body {
               </div>
             </div>
 
-            <!-- Rechte Spalte: Inhalt + Kommentar -->
+            <!-- Rechte Spalte: Inhalt + Lektorat + Kommentar -->
             <div style="display:flex;flex-direction:column;gap:16px">
               <!-- Nächster Schritt -->
               <div style="background:linear-gradient(rgba(236,72,153,0.12),rgba(236,72,153,0.12)),var(--card);border:1px solid rgba(236,72,153,0.4);border-radius:12px;padding:14px 18px;display:flex;align-items:flex-start;gap:12px">
@@ -2595,6 +2595,30 @@ html, body {
                   <div style="font-size:12px;font-weight:700;color:#ec4899;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Nächster Schritt</div>
                   <div id="ki-buch-naechster-schritt" style="font-size:14px;color:var(--text)">…</div>
                 </div>
+              </div>
+
+              <!-- WORKFLOW-STATUS & LEKTORAT-HISTORIE -->
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 22px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                  <div style="font-size:13px;font-weight:700;color:var(--bright)">⚙️ Workflow-Historie &amp; Lektorat</div>
+                  <button onclick="loadLektoratStatus()" style="font-size:12px;color:var(--dim);background:none;border:none;cursor:pointer;padding:3px 8px">↻</button>
+                </div>
+
+                <!-- Workflow-Log (Meilensteine) -->
+                <div id="aurora-wf-log" style="margin-bottom:14px"></div>
+
+                <!-- Lektorat-Fortschritt -->
+                <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Lektorat-Durchgang</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                  <div style="flex:1;height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden">
+                    <div id="aurora-lekt-bar" style="height:100%;background:linear-gradient(90deg,#7c3aed,#ec4899);border-radius:4px;width:0%;transition:width 0.4s"></div>
+                  </div>
+                  <div id="aurora-lekt-count" style="font-size:13px;color:var(--dim);white-space:nowrap">…/23</div>
+                </div>
+                <div id="aurora-lekt-status" style="font-size:13px;color:var(--dim);margin-bottom:12px"></div>
+
+                <!-- Kapitel-Chips -->
+                <div id="aurora-lekt-chips" style="display:flex;flex-wrap:wrap;gap:5px"></div>
               </div>
 
               <!-- Lese-/Bearbeitungsansicht des gewählten Kapitels -->
@@ -2616,6 +2640,9 @@ html, body {
                   <div style="font-size:12px;color:var(--dim);margin-top:7px">Tipp: Zum reinen Steuern reicht der Überblick oben — den Volltext am besten erst genießen, wenn ein ganzer Akt fertig ist.</div>
                 </div>
                 <div id="ki-buch-inhalt" style="display:none;font-size:15px;color:var(--text);line-height:1.85;white-space:pre-wrap;max-height:480px;overflow-y:auto"></div>
+                <div id="ki-buch-volltext-close" style="display:none;text-align:right;margin-top:8px">
+                  <button onclick="kiBuchVolltextSchliessen()" style="background:rgba(255,255,255,0.06);color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer">✕ Volltext einklappen</button>
+                </div>
                 <div id="ki-buch-inhalt-platzhalter" style="font-size:14px;color:var(--dim)">← Klicke links auf ein Kapitel.</div>
               </div>
 
@@ -2658,6 +2685,15 @@ html, body {
                 <div id="ki-buch-kommentare" style="font-size:13px;color:var(--dim)">Keine bisherigen Kommentare</div>
               </div>
 
+              <!-- Vorspann / Titelseite -->
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 22px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px">🌅 Vorspann / Titelseite</div>
+                  <button onclick="const t=document.getElementById('ki-buch-vorspann'); t.style.display=t.style.display==='none'?'block':'none'; this.textContent=t.style.display==='none'?'▶ Zeigen':'▼ Einklappen'" style="font-size:12px;color:var(--dim);background:none;border:none;cursor:pointer;padding:2px 6px">▼ Einklappen</button>
+                </div>
+                <div id="ki-buch-vorspann" style="font-size:14px;color:var(--text);line-height:1.85;white-space:pre-wrap">—</div>
+              </div>
+
               <!-- Vorwort -->
               <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 22px">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -2680,188 +2716,187 @@ html, body {
 
       <!-- BILDGEN -->
       <div class="page" id="page-bildgen">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1100px;margin:0 auto">
+        <div style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:16px">
 
-          <!-- ══ POLLINATIONS (links) ══ -->
-          <div style="display:flex;flex-direction:column;gap:0">
-
-            <!-- Logo-Header -->
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-              <div style="width:48px;height:48px;border-radius:12px;
-                          background:linear-gradient(135deg,#16a34a,#4ade80,#86efac,#15803d);
-                          display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;
-                          box-shadow:0 4px 16px rgba(74,222,128,0.3)">🌸</div>
+          <!-- ══ HEADER ══ -->
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="font-size:28px">🎨</div>
               <div>
-                <div style="display:flex;align-items:baseline;gap:6px">
-                  <span style="font-size:20px;font-weight:700;letter-spacing:-0.5px">
-                    <span style="color:#4ade80">P</span><span style="color:#86efac">o</span><span style="color:#4ade80">l</span><span style="color:#a3e635">l</span><span style="color:#4ade80">i</span><span style="color:#86efac">n</span><span style="color:#4ade80">a</span><span style="color:#a3e635">t</span><span style="color:#4ade80">i</span><span style="color:#86efac">o</span><span style="color:#4ade80">n</span><span style="color:#a3e635">s</span>
-                  </span>
-                  <span style="font-size:12px;color:var(--dim);font-weight:400">.ai</span>
-                </div>
-                <div style="font-size:12px;color:var(--dim);margin-top:2px">KI-Bildgenerierung · <span style="color:#4ade80;font-weight:600">kostenlos</span> · kein Account nötig</div>
+                <div style="font-size:20px;font-weight:700;color:var(--bright)">BildGen Studio</div>
+                <div style="font-size:12px;color:var(--dim)" id="bg-daily-remaining">—</div>
               </div>
             </div>
-
-            <!-- Hinweis -->
-            <div style="background:rgba(74,222,128,0.07);border:1px solid rgba(74,222,128,0.2);border-radius:8px;
-                        padding:8px 12px;font-size:12px;color:rgba(255,255,255,0.55);margin-bottom:14px;line-height:1.5">
-              Open-Source · Flux-Modell · Geschwindigkeit variiert (meist 1–15 Sek) · Kein API-Key erforderlich
+            <div style="font-size:12px;color:var(--dim);text-align:right">
+              <span id="bg-mai-status" style="display:none;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.4);border-radius:6px;padding:3px 10px;color:#818cf8">MAI konfiguriert ✓</span>
             </div>
+          </div>
 
-            <!-- Prompt -->
-            <textarea id="poll-prompt" rows="3"
-              placeholder="Beschreibe das Bild… (Strg+Enter = Generieren)"
-              style="background:#1a2a3a;border:1px solid #253a50;border-radius:8px;color:#e0e6ed;
-                     font-size:14px;padding:12px;resize:vertical;font-family:inherit;outline:none;
-                     width:100%;box-sizing:border-box;margin-bottom:6px"
-              onkeydown="if(event.ctrlKey&&event.key==='Enter')pollGenerate()"></textarea>
+          <!-- ══ ENGINE-AUSWAHL ══ -->
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button onclick="bgSelectEngine('pollinations')" id="bg-tab-pollinations"
+              style="flex:1;min-width:140px;padding:12px 10px;border-radius:12px;border:2px solid #22c55e;
+                     background:rgba(34,197,94,0.15);color:#4ade80;font-weight:700;font-size:14px;cursor:pointer;
+                     display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .2s">
+              <span style="font-size:22px">🌸</span>
+              <span>Pollinations</span>
+              <span style="font-size:11px;font-weight:400;color:rgba(74,222,128,0.7)">kostenlos · Flux</span>
+            </button>
+            <button onclick="bgSelectEngine('gemini')" id="bg-tab-gemini"
+              style="flex:1;min-width:140px;padding:12px 10px;border-radius:12px;border:2px solid #444;
+                     background:rgba(255,255,255,0.04);color:var(--dim);font-weight:700;font-size:14px;cursor:pointer;
+                     display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .2s">
+              <span style="font-size:22px">🍌</span>
+              <span>Nano Banana</span>
+              <span style="font-size:11px;font-weight:400">~€0.04/Bild · Gemini</span>
+            </button>
+            <button onclick="bgSelectEngine('mai')" id="bg-tab-mai"
+              style="flex:1;min-width:140px;padding:12px 10px;border-radius:12px;border:2px solid #444;
+                     background:rgba(255,255,255,0.04);color:var(--dim);font-weight:700;font-size:14px;cursor:pointer;
+                     display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .2s">
+              <span style="font-size:22px">✨</span>
+              <span>MAI-Image</span>
+              <span style="font-size:11px;font-weight:400">~€0.08–0.13/Bild · Azure</span>
+            </button>
+          </div>
 
-            <!-- Negativer Prompt (ausklappbar) -->
-            <div style="margin-bottom:10px">
-              <button onclick="pollToggleNeg()" id="poll-neg-toggle"
-                style="background:none;border:none;color:rgba(255,255,255,0.35);font-size:12px;cursor:pointer;padding:0;margin-bottom:4px">
-                ＋ Negativer Prompt
-              </button>
-              <textarea id="poll-neg" rows="2"
-                placeholder="Was soll NICHT im Bild sein… (z.B. blur, watermark, text)"
-                style="display:none;background:#1a2a3a;border:1px solid #253a50;border-radius:8px;color:#e0e6ed;
-                       font-size:13px;padding:10px;resize:vertical;font-family:inherit;outline:none;
-                       width:100%;box-sizing:border-box"></textarea>
-            </div>
-
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
-              <select id="poll-aspect" style="background:#1a2a3a;border:1px solid #253a50;border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px;outline:none">
-                <option value="1024x1024">Quadrat (1:1)</option>
-                <option value="1280x720">Querformat (16:9)</option>
-                <option value="720x1280">Hochformat (9:16)</option>
-                <option value="1024x768">4:3</option>
-                <option value="768x1024">3:4</option>
-              </select>
-              <select id="poll-model" style="background:#1a2a3a;border:1px solid #253a50;border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px;outline:none">
+          <!-- ══ ENGINE-OPTIONEN (je nach Auswahl) ══ -->
+          <!-- Pollinations-spezifisch -->
+          <div id="bg-opts-pollinations" style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <select id="bg-poll-model" style="background:#1a2a3a;border:1px solid #253a50;border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px;outline:none">
                 <option value="flux">Flux (Standard)</option>
                 <option value="flux-pro">Flux Pro (Qualität)</option>
-                <option value="flux-realism">Flux Realism</option>
+                <option value="flux-realism">Flux Realism ⭐ Fotorealistisch</option>
                 <option value="flux-anime">Flux Anime</option>
                 <option value="flux-schnell">Flux Schnell (schnell)</option>
                 <option value="turbo">Turbo</option>
               </select>
-              <button id="poll-btn" onclick="pollGenerate()"
-                style="background:linear-gradient(135deg,#16a34a,#4ade80);border:none;border-radius:8px;color:white;
-                       font-weight:700;font-size:14px;padding:8px 20px;cursor:pointer;box-shadow:0 2px 8px rgba(74,222,128,0.35)">
-                🌸 Generieren
-              </button>
-            </div>
-
-            <!-- Optionen-Zeile -->
-            <div style="display:flex;gap:14px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-              <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:rgba(255,255,255,0.5);cursor:pointer">
-                <input type="checkbox" id="poll-enhance" checked
-                  style="accent-color:#4ade80;width:14px;height:14px">
-                ✨ Prompt verbessern
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer">
+                <input type="checkbox" id="bg-poll-enhance" checked style="accent-color:#4ade80"> ✨ Prompt verbessern
               </label>
-              <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:rgba(255,255,255,0.5);cursor:pointer">
-                <input type="checkbox" id="poll-private"
-                  style="accent-color:#4ade80;width:14px;height:14px">
-                🔒 Privat
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer">
+                <input type="checkbox" id="bg-poll-private" style="accent-color:#4ade80"> 🔒 Privat
               </label>
-              <span id="poll-status" style="font-size:12px;color:#b8c5d4;margin-left:auto"></span>
             </div>
-
-            <div id="poll-result" style="display:none;flex-direction:column;align-items:center;gap:10px">
-              <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
-                <button onclick="pollDownload()" style="background:#16a34a;border:none;border-radius:8px;color:#fff;font-size:13px;padding:7px 18px;cursor:pointer;font-weight:600">⬇ Download</button>
-                <button onclick="pollCopy()" style="background:#2a3a4a;border:1px solid #4a5a6a;border-radius:8px;color:#fff;font-size:13px;padding:7px 18px;cursor:pointer;font-weight:600">📋 Kopieren</button>
-                <button onclick="pollGenerate()" style="background:#2a3a4a;border:1px solid #4a5a6a;border-radius:8px;color:#fff;font-size:13px;padding:7px 18px;cursor:pointer;font-weight:600">🔄 Nochmal</button>
-              </div>
-              <img id="poll-img" src="" alt="Generiertes Bild"
-                style="max-width:100%;border-radius:12px;border:1px solid #253a50;box-shadow:0 4px 24px rgba(0,0,0,0.4)">
+            <div>
+              <button onclick="bgToggleNeg()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:12px;cursor:pointer;padding:0">＋ Negativer Prompt</button>
+              <textarea id="bg-poll-neg" rows="2" placeholder="Was soll NICHT im Bild sein…"
+                style="display:none;margin-top:4px;background:#1a2a3a;border:1px solid #253a50;border-radius:8px;color:#e0e6ed;
+                       font-size:13px;padding:10px;resize:vertical;font-family:inherit;outline:none;width:100%;box-sizing:border-box"></textarea>
+            </div>
+          </div>
+          <!-- Gemini-spezifisch -->
+          <div id="bg-opts-gemini" style="display:none;flex-direction:column;gap:8px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <select id="bg-gem-model" style="background:#1a2a3a;border:1px solid #253a50;border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px;outline:none">
+                <option value="gemini-2.5-flash-image">Nano Banana 2.5 Flash</option>
+                <option value="gemini-2.0-flash-preview-image-generation">Nano Banana 2.0 Flash</option>
+              </select>
+            </div>
+          </div>
+          <!-- MAI-spezifisch -->
+          <div id="bg-opts-mai" style="display:none;flex-direction:column;gap:8px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <select id="bg-mai-model" style="background:#1a2a3a;border:1px solid #253a50;border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px;outline:none">
+                <option value="mai-image-2.5">MAI-Image-2.5 ⭐ Neueste</option>
+                <option value="mai-image-2">MAI-Image-2 (Standard)</option>
+                <option value="mai-image-2-efficient">MAI-Image-2-Efficient (günstiger)</option>
+              </select>
+            </div>
+            <div id="bg-mai-warning" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:8px 12px;font-size:12px;color:#f87171;display:none">
+              ⚠️ MAI nicht konfiguriert — bitte Azure-Endpoint + API-Key in <code>config/mai_image.json</code> eintragen.
             </div>
           </div>
 
-          <!-- ══ NANO BANANA (rechts) ══ -->
-          <div style="display:flex;flex-direction:column;gap:0">
+          <!-- ══ UPLOAD-PREVIEW (Gemini + MAI) ══ -->
+          <div id="bg-upload-preview" style="display:none;flex-direction:column;gap:6px">
+            <div style="position:relative;width:fit-content">
+              <img id="bg-upload-img" src="" alt="Eingabebild"
+                style="max-height:140px;max-width:100%;border-radius:10px;border:1px solid #253a50;display:block">
+              <div style="position:absolute;top:5px;left:7px;background:rgba(0,0,0,0.65);border-radius:4px;font-size:11px;color:#aaa;padding:2px 6px">Eingabebild</div>
+              <button onclick="bgClearUpload()" style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,0.7);border:none;border-radius:50%;color:white;width:20px;height:20px;cursor:pointer;font-size:13px;line-height:1;padding:0">✕</button>
+            </div>
+            <div style="font-size:12px;color:var(--dim)">Optional: Bild hochladen → Engine bearbeitet/variiert es</div>
+          </div>
 
-            <!-- Logo-Header -->
-            <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
-              <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#1a73e8,#34a853,#fbbc04,#ea4335);
-                          display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;
-                          box-shadow:0 4px 16px rgba(251,188,4,0.3)">🍌</div>
-              <div>
-                <div style="display:flex;align-items:baseline;gap:6px">
-                  <span style="font-size:20px;font-weight:700;letter-spacing:-0.5px">
-                    <span style="color:#4285F4">N</span><span style="color:#EA4335">a</span><span style="color:#FBBC05">n</span><span style="color:#34A853">o</span>
-                    <span style="color:var(--text)"> </span>
-                    <span style="color:#4285F4">B</span><span style="color:#EA4335">a</span><span style="color:#FBBC05">n</span><span style="color:#34A853">a</span><span style="color:#4285F4">n</span><span style="color:#EA4335">a</span>
-                  </span>
-                  <span style="font-size:12px;color:var(--dim);font-weight:400">by Google</span>
-                </div>
-                <div style="font-size:12px;color:var(--dim);margin-top:2px">KI-Bildgenerierung · <span style="color:#fbbc04;font-weight:600">~€0.04/Bild</span> · Gemini API</div>
+          <!-- ══ GEMEINSAMER PROMPT + SEITENVERHÄLTNIS ══ -->
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px">
+            <!-- Prompt History -->
+            <div style="display:flex;gap:6px;align-items:flex-start">
+              <textarea id="bg-prompt" rows="3"
+                placeholder="Beschreibe das Bild… (Strg+Enter = Generieren)"
+                style="flex:1;background:#111a24;border:1px solid #253a50;border-radius:8px;color:#e0e6ed;
+                       font-size:14px;padding:12px;resize:vertical;font-family:inherit;outline:none;box-sizing:border-box"
+                onkeydown="if(event.ctrlKey&&event.key==='Enter')bgGenerate()"></textarea>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <button id="bg-upload-btn" onclick="document.getElementById('bg-file').click()" title="Bild hochladen (Gemini / MAI)"
+                  style="padding:8px;background:#1a2a3a;border:1px solid #253a50;border-radius:8px;cursor:pointer;font-size:18px;line-height:1;display:none">📎</button>
+                <input id="bg-file" type="file" accept="image/*" style="display:none" onchange="bgFileChanged(this)">
+                <button onclick="bgPromptHistory()" title="Letzte Prompts"
+                  style="padding:8px;background:#1a2a3a;border:1px solid #253a50;border-radius:8px;cursor:pointer;font-size:16px;line-height:1">🕐</button>
               </div>
             </div>
-
-            <!-- Hinweis -->
-            <div style="background:rgba(251,188,4,0.07);border:1px solid rgba(251,188,4,0.2);border-radius:8px;
-                        padding:8px 12px;font-size:12px;color:rgba(255,255,255,0.55);margin-bottom:14px;line-height:1.5">
-              Google Gemini · Höchste Qualität · Zuverlässig schnell (3–8 Sek) · API-Key erforderlich
+            <!-- History Dropdown -->
+            <div id="bg-history-panel" style="display:none;background:#111a24;border:1px solid #253a50;border-radius:8px;padding:8px;max-height:160px;overflow-y:auto">
+              <div style="font-size:11px;color:var(--dim);margin-bottom:6px">Letzte Prompts (klicken = übernehmen)</div>
+              <div id="bg-history-list"></div>
             </div>
-
-            <!-- Upload-Vorschau -->
-            <div id="bildgen-upload-preview" style="display:none;margin-bottom:14px;position:relative;width:fit-content">
-              <img id="bildgen-upload-img" src="" alt="Eingabebild"
-                style="max-height:160px;max-width:100%;border-radius:10px;border:1px solid #253a50;display:block">
-              <div style="position:absolute;top:6px;left:8px;background:rgba(0,0,0,0.6);border-radius:4px;
-                          font-size:12px;color:#aaa;padding:2px 6px">Eingabebild</div>
-              <button onclick="bildgenClearUpload()"
-                style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.7);border:none;border-radius:50%;
-                       color:white;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:1;padding:0">✕</button>
-            </div>
-
-            <!-- Prompt -->
-            <div style="position:relative;margin-bottom:10px">
-              <textarea id="bildgen-prompt" rows="3" placeholder="Beschreibe das Bild… (Strg+Enter = Generieren)"
-                style="background:#1a2a3a;border:1px solid #253a50;border-radius:8px;color:#e0e6ed;
-                       font-size:14px;padding:12px 44px 12px 12px;resize:vertical;font-family:inherit;outline:none;
-                       width:100%;box-sizing:border-box"
-                onkeydown="if(event.ctrlKey&&event.key==='Enter')bildgenGenerate()"></textarea>
-              <button onclick="document.getElementById('bildgen-file').click()" title="Bild hochladen"
-                style="position:absolute;bottom:10px;right:10px;background:none;border:none;cursor:pointer;
-                       font-size:20px;opacity:0.6;line-height:1;padding:0"
-                onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">📎</button>
-              <input id="bildgen-file" type="file" accept="image/*" style="display:none" onchange="bildgenFileChanged(this)">
-            </div>
-
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
-              <select id="bildgen-aspect" style="background:#1a2a3a;border:1px solid #253a50;border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px;outline:none">
+            <!-- Controls -->
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <select id="bg-aspect" style="background:#111a24;border:1px solid #253a50;border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px;outline:none">
                 <option value="1:1">Quadrat (1:1)</option>
                 <option value="16:9">Querformat (16:9)</option>
                 <option value="9:16">Hochformat (9:16)</option>
                 <option value="4:3">4:3</option>
                 <option value="3:4">3:4</option>
               </select>
-              <select id="bildgen-model" style="background:#1a2a3a;border:1px solid #253a50;border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px;outline:none">
-                <option value="gemini-2.5-flash-image">Nano Banana (2.5 Flash)</option>
-                <option value="gemini-2.0-flash-preview-image-generation">Nano Banana 2 (2.0 Flash)</option>
-              </select>
-              <button id="bildgen-btn" onclick="bildgenGenerate()"
-                style="background:linear-gradient(135deg,#1a73e8,#34a853);border:none;border-radius:8px;color:white;
-                       font-weight:700;font-size:14px;padding:8px 20px;cursor:pointer;box-shadow:0 2px 8px rgba(26,115,232,0.4)">
-                ✨ Generieren
+              <span id="bg-status" style="font-size:12px;color:var(--dim);flex:1"></span>
+              <button id="bg-btn" onclick="bgGenerate()"
+                style="padding:9px 28px;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;
+                       background:linear-gradient(135deg,#22c55e,#4ade80);color:#0a1a0a;
+                       box-shadow:0 2px 12px rgba(34,197,94,0.4);transition:all .2s" id="bg-generate-btn">
+                🎨 Generieren
               </button>
-              <span id="bildgen-status" style="font-size:12px;color:#b8c5d4"></span>
-            </div>
-
-            <div id="bildgen-result" style="display:none;flex-direction:column;align-items:center;gap:10px">
-              <div style="display:flex;gap:8px">
-                <button onclick="bildgenDownload()" style="background:#1a73e8;border:none;border-radius:8px;color:#fff;font-size:13px;padding:7px 18px;cursor:pointer;font-weight:600">⬇ Download</button>
-                <button onclick="bildgenCopy()" style="background:#2a3a4a;border:1px solid #4a5a6a;border-radius:8px;color:#fff;font-size:13px;padding:7px 18px;cursor:pointer;font-weight:600">📋 Kopieren</button>
-              </div>
-              <img id="bildgen-img" src="" alt="Generiertes Bild"
-                style="max-width:100%;border-radius:12px;border:1px solid #253a50;box-shadow:0 4px 24px rgba(0,0,0,0.4)">
             </div>
           </div>
 
-        </div>
-      </div>
+          <!-- ══ ERGEBNIS ══ -->
+          <div id="bg-result" style="display:none;flex-direction:column;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;position:relative">
+            <button onclick="document.getElementById('bg-result').style.display='none'" title="Schließen" style="position:absolute;top:8px;right:10px;background:rgba(255,255,255,0.08);border:none;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;color:#e0e6ed;line-height:1">✕</button>
+            <img id="bg-img" src="" alt="Generiertes Bild"
+              style="max-width:100%;border-radius:12px;border:1px solid #253a50;box-shadow:0 4px 24px rgba(0,0,0,0.4);cursor:zoom-in" onclick="bgImgLightbox(this.src)">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+              <button onclick="bgDownload()" style="padding:8px 18px;background:#22c55e;border:none;border-radius:8px;color:#0a1a0a;font-size:13px;font-weight:700;cursor:pointer">⬇ Download</button>
+              <button onclick="bgGclip()" style="padding:8px 18px;background:#6366f1;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer">📱 gclip</button>
+              <button onclick="bgArchiveSave()" id="bg-archive-btn" style="padding:8px 18px;background:#f59e0b;border:none;border-radius:8px;color:#0a0a00;font-size:13px;font-weight:700;cursor:pointer">💾 Archivieren</button>
+              <button onclick="bgGenerate()" style="padding:8px 18px;background:#1a2a3a;border:1px solid #253a50;border-radius:8px;color:#e0e6ed;font-size:13px;cursor:pointer">🔄 Nochmal</button>
+              <button onclick="bgCopyToClipboard()" style="padding:8px 18px;background:#1a2a3a;border:1px solid #253a50;border-radius:8px;color:#e0e6ed;font-size:13px;cursor:pointer">📋 Kopieren</button>
+            </div>
+            <div id="bg-result-info" style="font-size:12px;color:var(--dim);text-align:center"></div>
+          </div>
+
+          <!-- ══ ARCHIV ══ -->
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+            <button onclick="bgToggleArchive()" style="width:100%;background:none;border:none;padding:14px 18px;
+              display:flex;align-items:center;justify-content:space-between;cursor:pointer;color:var(--text)">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:16px">📚</span>
+                <span style="font-weight:600;font-size:14px">Foto-Archiv</span>
+                <span id="bg-archive-count" style="background:#253a50;border-radius:12px;padding:2px 8px;font-size:12px;color:var(--dim)">0 Bilder</span>
+              </div>
+              <span id="bg-archive-arrow" style="font-size:14px;color:var(--dim);transition:transform .2s">▼</span>
+            </button>
+            <div id="bg-archive-panel" style="display:none;padding:0 16px 16px">
+              <div id="bg-archive-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">
+                <div style="color:var(--dim);font-size:13px;grid-column:1/-1;padding:12px 0">Noch keine Bilder archiviert.</div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /max-width wrapper -->
+      </div><!-- BILDGEN SEITE ENDE -->
+
 
       <!-- SUNO -->
       <div class="page" id="page-suno">
@@ -4043,7 +4078,7 @@ function showPage(page) {
   if (item) document.getElementById('page-title').textContent = item.querySelector('span:nth-child(2)')?.textContent || '';
   const cmdBar = document.getElementById('mail-cmd-bar');
   if (page !== 'email') { if (cmdBar) cmdBar.style.display='none'; closeMailResult(); _selectedMails=[]; }
-  if (page === 'dashboard')  { loadCalendarData(); loadEmailData(); loadClaudeCode(); }
+  if (page === 'dashboard')  { loadCalendarData(); loadEmailData(); loadClaudeCode(); tbLoad(); }
   if (page === 'system')     { tbInit(); kostenLoad(); loadBollaModel(); }
   if (page === 'brain')      initBrain();
   if (page === 'bolla')      loadBollaModel();
@@ -4062,9 +4097,10 @@ function showPage(page) {
   if (page === 'projekte')   loadProjekte();
   if (page === 'ki-workshop') loadKiWorkshop();
   if (page === 'ki-news')    loadKiNews();
-  if (page === 'ki-buch')    loadKiBuch();
+  if (page === 'ki-buch')    { loadKiBuch(); loadLektoratStatus(); }
   if (page === 'urlaub')     { initUrlaub(); initSommerreise(); }
   if (page === 'fotoanalyse') loadFotoAnalyse();
+  if (page === 'bildgen')    bgInitPage();
   if (page === 'kiforum') kifLoad();
   // Wenn es ein Unter-Tab einer Gruppe ist → Gruppe aufklappen
   const groups = ['projekte', 'schule', 'system'];
@@ -4530,6 +4566,413 @@ async function initNavDrag() {
 initNavDrag();
 
 // ===== BILDGEN =====
+// ═══ BILDGEN STUDIO (neu) ═══════════════════════════════════════════════════
+let _bgEngine = 'pollinations';
+let _bgLastBlob = null;
+let _bgLastUrl  = null;
+let _bgLastMime = 'image/png';
+let _bgLastPrompt = '';
+let _bgInputB64 = null;
+let _bgInputMime = null;
+let _bgHistory = JSON.parse(localStorage.getItem('bg-history') || '[]');
+let _bgArchiveOpen = false;
+let _bgArchiveItems = [];
+
+const BG_ENGINE_COLORS = {
+  pollinations: {border:'#22c55e', bg:'rgba(34,197,94,0.15)', color:'#4ade80'},
+  gemini:       {border:'#fbbc04', bg:'rgba(251,188,4,0.12)', color:'#fbbf24'},
+  mai:          {border:'#6366f1', bg:'rgba(99,102,241,0.15)', color:'#818cf8'},
+};
+const BG_ENGINE_GRAD = {
+  pollinations: 'linear-gradient(135deg,#16a34a,#4ade80)',
+  gemini:       'linear-gradient(135deg,#1a73e8,#34a853)',
+  mai:          'linear-gradient(135deg,#4f46e5,#818cf8)',
+};
+
+function bgSelectEngine(eng) {
+  _bgEngine = eng;
+  ['pollinations','gemini','mai'].forEach(e => {
+    const tab = document.getElementById('bg-tab-' + e);
+    const opts = document.getElementById('bg-opts-' + e);
+    const c = BG_ENGINE_COLORS[e];
+    if (e === eng) {
+      tab.style.border = '2px solid ' + c.border;
+      tab.style.background = c.bg;
+      tab.style.color = c.color;
+      if (opts) opts.style.display = 'flex';
+    } else {
+      tab.style.border = '2px solid #444';
+      tab.style.background = 'rgba(255,255,255,0.04)';
+      tab.style.color = 'var(--dim)';
+      if (opts) opts.style.display = 'none';
+    }
+  });
+  const btn = document.getElementById('bg-btn');
+  if (btn) btn.style.background = BG_ENGINE_GRAD[eng];
+  const upBtn = document.getElementById('bg-upload-btn');
+  if (upBtn) upBtn.style.display = (eng === 'gemini' || eng === 'mai') ? 'block' : 'none';
+  const maiWarn = document.getElementById('bg-mai-warning');
+  if (maiWarn && eng === 'mai') {
+    fetch('/api/bildgen/mai-config').then(r=>r.json()).then(d => {
+      maiWarn.style.display = d.configured ? 'none' : 'block';
+    }).catch(()=>{});
+  }
+}
+
+function bgToggleNeg() {
+  const el = document.getElementById('bg-poll-neg');
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function bgFileChanged(input) {
+  const file = input.files[0];
+  if (!file) return;
+  _bgInputMime = file.type || 'image/png';
+  const reader = new FileReader();
+  reader.onload = e => {
+    _bgInputB64 = e.target.result.split(',')[1];
+    const prev = document.getElementById('bg-upload-preview');
+    const img  = document.getElementById('bg-upload-img');
+    if (prev) { prev.style.display = 'flex'; }
+    if (img)  img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function bgClearUpload() {
+  _bgInputB64 = null; _bgInputMime = null;
+  const prev = document.getElementById('bg-upload-preview');
+  if (prev) prev.style.display = 'none';
+  const f = document.getElementById('bg-file');
+  if (f) f.value = '';
+}
+function bgGemClearUpload() { bgClearUpload(); }
+
+function bgAddHistory(prompt) {
+  _bgHistory = [prompt, ..._bgHistory.filter(p => p !== prompt)].slice(0, 10);
+  localStorage.setItem('bg-history', JSON.stringify(_bgHistory));
+}
+
+function bgPromptHistory() {
+  const panel = document.getElementById('bg-history-panel');
+  const list  = document.getElementById('bg-history-list');
+  if (!panel || !list) return;
+  if (panel.style.display !== 'none') { panel.style.display = 'none'; return; }
+  if (!_bgHistory.length) {
+    list.innerHTML = '<div style="color:var(--dim);font-size:12px">Noch keine Prompts</div>';
+  } else {
+    list.innerHTML = _bgHistory.map((p,i) =>
+      `<div onclick="document.getElementById('bg-prompt').value=${JSON.stringify(p)};document.getElementById('bg-history-panel').style.display='none'"
+            style="padding:5px 8px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-bottom:2px"
+            onmouseover="this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.background='none'">${p}</div>`
+    ).join('');
+  }
+  panel.style.display = 'block';
+}
+
+async function bgGenerate() {
+  const prompt = (document.getElementById('bg-prompt').value || '').trim();
+  if (!prompt) { alert('Bitte Prompt eingeben.'); return; }
+  const aspect = document.getElementById('bg-aspect').value;
+  const btn = document.getElementById('bg-btn');
+  const status = document.getElementById('bg-status');
+  const result = document.getElementById('bg-result');
+  btn.disabled = true; btn.textContent = '⏳ Generiert…';
+  if (status) status.textContent = 'Anfrage läuft…';
+  if (result) result.style.display = 'none';
+  _bgLastBlob = null; _bgLastUrl = null; _bgLastPrompt = prompt;
+
+  try {
+    if (_bgEngine === 'pollinations') {
+      await bgGeneratePollinations(prompt, aspect);
+    } else {
+      await bgGenerateViaServer(prompt, aspect);
+    }
+    bgAddHistory(prompt);
+  } catch(e) {
+    if (status) status.textContent = '⚠ ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🎨 Generieren';
+  }
+}
+
+async function bgGeneratePollinations(prompt, aspect) {
+  const model   = document.getElementById('bg-poll-model').value;
+  const enhance = document.getElementById('bg-poll-enhance').checked;
+  const priv    = document.getElementById('bg-poll-private').checked;
+  const neg     = document.getElementById('bg-poll-neg').value.trim();
+  const sizeMap = {'1:1':'1024x1024','16:9':'1280x720','9:16':'720x1280','4:3':'1024x768','3:4':'768x1024'};
+  const [w,h] = (sizeMap[aspect]||'1024x1024').split('x');
+  const params = new URLSearchParams({width:w, height:h, model, enhance:enhance?1:0, nologo:1});
+  if (neg)  params.set('negative_prompt', neg);
+  if (priv) params.set('private', 1);
+  const seed = Math.floor(Math.random() * 2**31);
+  params.set('seed', seed);
+  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params}`;
+  const status = document.getElementById('bg-status');
+  if (status) status.textContent = 'Pollinations generiert… (bis 15 Sek)';
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('Pollinations-Fehler ' + resp.status);
+  const blob = await resp.blob();
+  _bgLastBlob = blob; _bgLastMime = blob.type || 'image/jpeg';
+  _bgLastUrl = url;
+  bgShowResult(URL.createObjectURL(blob), '🌸 Pollinations · ' + model + ' · ' + aspect);
+}
+
+async function bgGenerateViaServer(prompt, aspect) {
+  const status = document.getElementById('bg-status');
+  let model, payload;
+  if (_bgEngine === 'gemini') {
+    model = document.getElementById('bg-gem-model').value;
+    payload = {prompt, model, aspect_ratio: aspect, input_image_b64: _bgInputB64, input_mime_type: _bgInputMime || 'image/png'};
+    if (status) status.textContent = 'Nano Banana generiert… (3–10 Sek)';
+  } else {
+    model = document.getElementById('bg-mai-model').value;
+    payload = {prompt, model, aspect_ratio: aspect, input_image_b64: _bgInputB64, input_mime_type: _bgInputMime || 'image/png'};
+    if (status) status.textContent = (_bgInputB64 ? 'MAI-Image bearbeitet… ' : 'MAI-Image generiert… ') + '(bis 30 Sek)';
+  }
+  const resp = await fetch('/api/bildgen', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+  const d = await resp.json();
+  if (d.error) throw new Error(d.error);
+  const mime = d.mime_type || 'image/png';
+  const ext  = mime.includes('jpeg') ? 'jpg' : 'png';
+  const arr  = Uint8Array.from(atob(d.image_b64), c => c.charCodeAt(0));
+  const blob = new Blob([arr], {type: mime});
+  _bgLastBlob = blob; _bgLastMime = mime;
+  const lbl = _bgEngine === 'gemini' ? '🍌 Nano Banana · ' + model : '✨ MAI · ' + model;
+  bgShowResult(URL.createObjectURL(blob), lbl + ' · ' + aspect);
+  const rem = document.getElementById('bg-daily-remaining');
+  if (rem && d.remaining != null) rem.textContent = 'Tageslimit: noch ' + d.remaining + ' Bilder';
+}
+
+function bgShowResult(url, info) {
+  const img = document.getElementById('bg-img');
+  const result = document.getElementById('bg-result');
+  const infoEl = document.getElementById('bg-result-info');
+  const status = document.getElementById('bg-status');
+  if (img)    img.src = url;
+  if (result) result.style.display = 'flex';
+  if (infoEl) infoEl.textContent = info;
+  if (status) status.textContent = '✓ Fertig';
+  setTimeout(()=>{ if (status) status.textContent = ''; }, 3000);
+}
+
+function bgImgLightbox(src) {
+  if (!src || src === window.location.href) return;
+  const lbImg = document.getElementById('lb-img');
+  const lb = document.getElementById('lightbox');
+  if (lbImg) lbImg.src = src;
+  if (lb) { lb.classList.add('open'); document.addEventListener('keydown', _lbKey); }
+}
+
+async function bgDownload() {
+  if (!_bgLastBlob) return;
+  const status = document.getElementById('bg-status');
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const b64 = e.target.result.split(',')[1];
+      const r = await fetch('/api/bildgen/save-to-disk', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({b64, mime: _bgLastMime})});
+      const d = await r.json();
+      if (d.ok && status) { status.textContent = '✓ Gespeichert: ' + d.path; setTimeout(()=>status.textContent='',4000); }
+    } catch(ex) {
+      if (status) { status.textContent = '⚠ ' + ex.message; setTimeout(()=>status.textContent='',3000); }
+    }
+  };
+  reader.readAsDataURL(_bgLastBlob);
+}
+
+async function bgCopyToClipboard() {
+  if (!_bgLastBlob) return;
+  const status = document.getElementById('bg-status');
+  try {
+    await navigator.clipboard.write([new ClipboardItem({[_bgLastMime]: _bgLastBlob})]);
+    if (status) { status.textContent = '✓ In Zwischenablage!'; setTimeout(()=>status.textContent='',2000); }
+  } catch(e) {
+    if (status) { status.textContent = '⚠ Kopieren fehlgeschlagen'; setTimeout(()=>status.textContent='',2000); }
+  }
+}
+
+async function bgGclip() {
+  if (!_bgLastBlob) return;
+  const status = document.getElementById('bg-status');
+  try {
+    const reader = new FileReader();
+    reader.onload = async e => {
+      const b64 = e.target.result.split(',')[1];
+      const resp = await fetch('/api/clipboard/image', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({image_b64: b64, mime: _bgLastMime, source: 'BildGen'})
+      });
+      const d = await resp.json();
+      if (status) { status.textContent = d.filename ? '✓ In gclip!' : ('⚠ ' + (d.error || 'gclip-Fehler')); setTimeout(()=>status.textContent='',2500); }
+    };
+    reader.readAsDataURL(_bgLastBlob);
+  } catch(e) {
+    if (status) { status.textContent = '⚠ ' + e.message; setTimeout(()=>status.textContent='',2500); }
+  }
+}
+
+async function bgArchiveSave() {
+  if (!_bgLastBlob) return;
+  const btn = document.getElementById('bg-archive-btn');
+  const status = document.getElementById('bg-status');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Speichern…'; }
+  try {
+    const reader = new FileReader();
+    reader.onload = async e => {
+      const b64 = e.target.result.split(',')[1];
+      const aspect = document.getElementById('bg-aspect').value;
+      const resp = await fetch('/api/bildgen/archive/save', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({image_b64: b64, mime: _bgLastMime, prompt: _bgLastPrompt, engine: _bgEngine, aspect})
+      });
+      const d = await resp.json();
+      if (d.ok) {
+        if (status) { status.textContent = '✓ Archiviert!'; setTimeout(()=>status.textContent='',2000); }
+        if (_bgArchiveOpen) bgLoadArchive();
+        else {
+          // Update counter
+          fetch('/api/bildgen/archive').then(r=>r.json()).then(items => {
+            const cnt = document.getElementById('bg-archive-count');
+            if (cnt) cnt.textContent = items.length + ' Bild' + (items.length===1?'':'er');
+          });
+        }
+      }
+      if (btn) { btn.disabled = false; btn.textContent = '💾 Archivieren'; }
+    };
+    reader.readAsDataURL(_bgLastBlob);
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Archivieren'; }
+    if (status) { status.textContent = '⚠ ' + e.message; setTimeout(()=>status.textContent='',2500); }
+  }
+}
+
+function bgToggleArchive() {
+  _bgArchiveOpen = !_bgArchiveOpen;
+  const panel = document.getElementById('bg-archive-panel');
+  const arrow = document.getElementById('bg-archive-arrow');
+  if (panel) panel.style.display = _bgArchiveOpen ? 'block' : 'none';
+  if (arrow) arrow.style.transform = _bgArchiveOpen ? 'rotate(180deg)' : '';
+  if (_bgArchiveOpen) bgLoadArchive();
+}
+
+async function bgLoadArchive() {
+  const grid = document.getElementById('bg-archive-grid');
+  const cnt  = document.getElementById('bg-archive-count');
+  if (!grid) return;
+  grid.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:12px 0">Lade…</div>';
+  try {
+    const items = await fetch('/api/bildgen/archive').then(r=>r.json());
+    if (cnt) cnt.textContent = items.length + ' Bild' + (items.length===1?'':'er');
+    if (!items.length) {
+      grid.innerHTML = '<div style="color:var(--dim);font-size:13px;grid-column:1/-1;padding:12px 0">Noch keine Bilder archiviert.</div>';
+      return;
+    }
+    const ENG_ICON = {pollinations:'🌸',gemini:'🍌',mai:'✨'};
+    _bgArchiveItems = items;
+    grid.innerHTML = items.map((item, idx) => {
+      const mime = item.mime || 'image/png';
+      const ts = item.ts ? new Date(item.ts*1000).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '–';
+      const safePrompt = (item.prompt||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      return `<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card);display:flex;flex-direction:column">
+        <div style="position:relative">
+          <img src="data:${mime};base64,${item.b64}" alt="${safePrompt}"
+            style="width:100%;aspect-ratio:1;object-fit:cover;cursor:pointer;display:block"
+            onclick="bgArchiveView(${idx})">
+          <div style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,0.65);border-radius:4px;font-size:11px;padding:2px 5px;color:#ccc">
+            ${ENG_ICON[item.engine]||'🖼'} ${item.aspect||''}
+          </div>
+        </div>
+        <div style="padding:6px 8px;flex:1;display:flex;flex-direction:column;gap:4px">
+          <div style="font-size:11px;color:var(--dim)">${ts}</div>
+          <div style="font-size:11px;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${safePrompt}</div>
+          <div style="display:flex;gap:4px;margin-top:auto">
+            <button onclick="bgArchiveDownload(${idx})" title="Bild herunterladen"
+              style="flex:1;padding:4px;background:#253a50;border:none;border-radius:5px;color:#e0e6ed;font-size:11px;cursor:pointer">⬇</button>
+            <button onclick="bgArchiveGclip(${idx})" title="Ans Handy (gclip)"
+              style="flex:1;padding:4px;background:#253a50;border:none;border-radius:5px;color:#e0e6ed;font-size:11px;cursor:pointer">📱</button>
+            <button onclick="bgArchiveDelete(${JSON.stringify(item.file)},this)" title="Aus Archiv löschen"
+              style="flex:1;padding:4px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:5px;color:#f87171;font-size:11px;cursor:pointer">✕</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    grid.innerHTML = '<div style="color:#f87171;font-size:13px">Fehler: ' + e.message + '</div>';
+  }
+}
+
+function bgArchiveView(idx) {
+  const item = _bgArchiveItems[idx];
+  if (!item) return;
+  const url = 'data:' + (item.mime||'image/png') + ';base64,' + item.b64;
+  const lbImg = document.getElementById('lb-img');
+  const lbCap = document.getElementById('lb-caption');
+  const lb = document.getElementById('lightbox');
+  if (lbImg) lbImg.src = url;
+  if (lbCap) lbCap.textContent = item.prompt || '';
+  if (lb) { lb.classList.add('open'); document.addEventListener('keydown', _lbKey); }
+}
+
+async function bgArchiveDownload(idx) {
+  const item = _bgArchiveItems[idx];
+  if (!item) return;
+  const r = await fetch('/api/bildgen/save-to-disk', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({b64: item.b64, mime: item.mime||'image/png'})});
+  const d = await r.json();
+  if (d.ok) alert('✓ Gespeichert:\n' + d.path);
+}
+
+async function bgArchiveGclip(idx) {
+  const item = _bgArchiveItems[idx];
+  if (!item) return;
+  try {
+    const resp = await fetch('/api/clipboard/image', {method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({image_b64: item.b64, mime: item.mime||'image/png', source:'BildGen-Archiv'})});
+    const d = await resp.json();
+    const status = document.getElementById('bg-status');
+    if (status) { status.textContent = d.filename ? '✓ In gclip!' : '⚠ gclip-Fehler'; setTimeout(()=>status.textContent='',2500); }
+  } catch(e) {}
+}
+
+async function bgArchiveDelete(fname, btnEl) {
+  if (!confirm('Bild aus Archiv löschen?')) return;
+  await fetch('/api/bildgen/archive/delete', {method:'POST',headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({file: fname})});
+  bgLoadArchive();
+}
+
+async function bgInitPage() {
+  bgSelectEngine('pollinations');
+  // Archiv-Zähler laden
+  try {
+    const items = await fetch('/api/bildgen/archive').then(r=>r.json());
+    const cnt = document.getElementById('bg-archive-count');
+    if (cnt) cnt.textContent = items.length + ' Bild' + (items.length===1?'':'er');
+  } catch(e) {}
+  // MAI-Status prüfen
+  try {
+    const d = await fetch('/api/bildgen/mai-config').then(r=>r.json());
+    const el = document.getElementById('bg-mai-status');
+    if (el && d.configured) el.style.display = 'inline-block';
+  } catch(e) {}
+}
+
+// Alte Funktion-Stubs damit kein Fehler wenn alte HTML-Refs noch referenziert werden
+function bildgenFileChanged(i){bgFileChanged(i);}
+function bildgenClearUpload(){bgGemClearUpload();}
+async function bildgenGenerate(){await bgGenerate();}
+function bildgenDownload(){bgDownload();}
+async function bildgenCopy(){await bgCopyToClipboard();}
+function pollToggleNeg(){bgToggleNeg();}
+async function pollGenerate(){await bgGenerate();}
+function pollDownload(){bgDownload();}
+async function pollCopy(){await bgCopyToClipboard();}
+
+// alte Bildgen-Variablen-Stubs
 let _bildgenLastBlob = null;
 let _bildgenInputB64 = null;
 let _bildgenInputMime = null;
@@ -6124,13 +6567,14 @@ async function loadBollaModel() {
 
     function renderModelLine(el) {
       if (!el) return;
+      const planStr = window._bollaPlanLabel || 'Max Plan';
       if (t.model_mismatch && def && live) {
         el.innerHTML = `Default: <b style="color:var(--bright)">${def}</b> · läuft gerade: ` +
           `<b style="color:#f0c040">${live}</b> <span title="Aktive Session weicht vom Default ab — mit /model umschalten">⚠️</span>`;
       } else if (def) {
-        el.innerHTML = `<b style="color:var(--bright)">${live || def}</b> · Default ✓ · Pro Plan`;
+        el.innerHTML = `<b style="color:var(--bright)">${live || def}</b> · Default ✓ · ${planStr}`;
       } else {
-        el.textContent = `${live} · Pro Plan · Live-Tools`;
+        el.textContent = `${live} · ${planStr} · Live-Tools`;
       }
     }
 
@@ -6517,6 +6961,14 @@ async function tbLoad() {
       }
     }
     if (upd)   upd.textContent = 'Anthropic live · ' + new Date().toLocaleString('de-DE', {timeZone:'Europe/Berlin', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) + ' Uhr';
+    if (d.plan_label) {
+      window._bollaPlanLabel = d.plan_label;  // für loadBollaModel() cachen
+      const planStr = 'Claude · ' + d.plan_label + ' · Live-Tools';
+      const ml1 = document.getElementById('tb-model-line');
+      const ml2 = document.getElementById('bolla-model-line');
+      if (ml1 && !ml1.querySelector('b')) ml1.textContent = planStr;
+      if (ml2 && !ml2.querySelector('b')) ml2.textContent = planStr;
+    }
 
     if (!bar || !label) return;
     bar.style.width = Math.min(100, pct) + '%';
@@ -6896,7 +7348,7 @@ async function loadSystem() {
             <span>📤 Antworten geschrieben</span><span>${fmtTok(total.output)}</span>
           </div>
         </div>
-        <div style="font-size:13px;color:var(--success);margin-top:8px">✨ ${tok.note||'Pro Plan — keine Kosten'}</div>
+        <div style="font-size:13px;color:var(--success);margin-top:8px">✨ ${tok.note||(window._bollaPlanLabel||'Max Plan')+' — keine Kosten'}</div>
       </div>`;
   } catch(e) { document.getElementById('system-content').innerHTML='<div class="loading">System-Daten nicht verfügbar</div>'; }
 }
@@ -7528,6 +7980,8 @@ setInterval(loadWeather, 30*60*1000);
 setInterval(loadSystem, 30*1000);
 setInterval(()=>{loadBirthdays();loadRobin();loadSchule();loadPhoto();loadRecipe();}, 10*60*1000);
 setInterval(loadClaudeCode, 2*60*1000);
+setInterval(tbLoad, 5*60*1000);  // Anthropic-Quota immer aktuell — auch ohne System-Tab
+tbLoad();  // Sofort beim Start laden, nicht erst nach 5 min warten
 if (document.getElementById('page-claudecode')?.classList.contains('active')) loadBollaMemory();
 
 // === CHAT PERSISTENCE ===
@@ -8089,6 +8543,8 @@ async function loadKiBuch() {
     }
 
     // Vorwort + Impressum
+    const vsEl = document.getElementById('ki-buch-vorspann');
+    if (vsEl) vsEl.textContent = data.vorspann || '(noch kein Vorspann)';
     const vwEl = document.getElementById('ki-buch-vorwort');
     if (vwEl) vwEl.textContent = data.vorwort || '(noch kein Vorwort)';
     const impEl = document.getElementById('ki-buch-impressum');
@@ -8137,6 +8593,59 @@ function kiBuchRenderSteuerung(st) {
 }
 
 function kiBuchEsc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+async function loadLektoratStatus() {
+  try {
+    const d = await fetch(API + '/api/ki-buch/lektorat-status').then(r => r.json());
+
+    // Workflow-Log
+    const logEl = document.getElementById('aurora-wf-log');
+    if (logEl && d.workflow_log) {
+      const MODELL_COL = { 'Sonnet 4.6': '#22d3ee', 'Opus 4.8': '#a78bfa', 'Sonnet + Opus (Synthese)': '#f59e0b' };
+      logEl.innerHTML = d.workflow_log.map(e => {
+        const col = MODELL_COL[e.modell] || '#9ca3af';
+        return `<div style="display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
+          <div style="flex:1">
+            <div style="font-size:13px;color:var(--text);font-weight:600">${kiBuchEsc(e.aktion)}</div>
+            <div style="font-size:12px;color:var(--dim);margin-top:2px">${kiBuchEsc(e.ergebnis)}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
+            <span style="font-size:11px;font-weight:700;color:${col};background:${col}1a;border:1px solid ${col}44;border-radius:5px;padding:2px 7px">${kiBuchEsc(e.modell)}</span>
+            <span style="font-size:11px;color:var(--dim)">${kiBuchEsc(e.datum)}</span>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // Fortschrittsbalken
+    const pct = d.gesamt > 0 ? Math.round(d.fertig / d.gesamt * 100) : 0;
+    const bar = document.getElementById('aurora-lekt-bar');
+    const cnt = document.getElementById('aurora-lekt-count');
+    const sta = document.getElementById('aurora-lekt-status');
+    if (bar) bar.style.width = pct + '%';
+    if (cnt) cnt.textContent = `${d.fertig}/${d.gesamt}`;
+    if (sta) {
+      if (d.laeuft) sta.innerHTML = `<span style="color:#f59e0b">⏳ Läuft gerade — ${d.gesamt - d.fertig} Kapitel ausstehend</span>`;
+      else sta.innerHTML = `<span style="color:#22c55e">✅ Alle ${d.gesamt} Kapitel abgeschlossen</span>`;
+    }
+
+    // Kapitel-Chips
+    const chips = document.getElementById('aurora-lekt-chips');
+    if (chips && d.kapitel) {
+      chips.innerHTML = d.kapitel.map(k => {
+        const col  = k.modell === 'Opus 4.8' ? '#a78bfa' : '#22d3ee';
+        const bg   = k.fertig ? (k.modell === 'Opus 4.8' ? 'rgba(167,139,250,0.12)' : 'rgba(34,211,238,0.1)') : 'rgba(255,255,255,0.04)';
+        const icon = k.fertig ? '✓' : '○';
+        const tip  = k.fertig ? k.aenderungen.join(' · ') : 'ausstehend';
+        return `<div title="${kiBuchEsc(tip)}" style="background:${bg};border:1px solid ${k.fertig ? col+'55' : 'var(--border)'};border-radius:7px;padding:4px 9px;font-size:12px;cursor:default">
+          <span style="color:${k.fertig ? col : 'var(--dim)'}">${icon}</span>
+          <span style="color:var(--dim);margin-left:3px">Kap ${k.idx}</span>
+          ${k.fertig ? `<span style="font-size:10px;color:${col};margin-left:4px">${k.modell === 'Opus 4.8' ? 'Op' : 'So'}</span>` : ''}
+        </div>`;
+      }).join('');
+    }
+  } catch(e) { console.error('Lektorat-Status:', e); }
+}
 
 async function kiBuchSteuerAktion(aktion, payload) {
   const body = {aktion};
@@ -8274,6 +8783,19 @@ function kiBuchVolltextAufdecken() {
   const gate = document.getElementById('ki-buch-volltext-gate');
   if (inhalt) inhalt.style.display = 'block';
   if (gate) gate.style.display = 'none';
+  // Schließen-Button einblenden
+  const closeBtn = document.getElementById('ki-buch-volltext-close');
+  if (closeBtn) closeBtn.style.display = 'block';
+}
+
+function kiBuchVolltextSchliessen() {
+  _kiBuchVolltextOffen = false;
+  const inhalt = document.getElementById('ki-buch-inhalt');
+  const gate = document.getElementById('ki-buch-volltext-gate');
+  const closeBtn = document.getElementById('ki-buch-volltext-close');
+  if (inhalt) inhalt.style.display = 'none';
+  if (gate) gate.style.display = 'block';
+  if (closeBtn) closeBtn.style.display = 'none';
 }
 
 let _kiBuchPollTimer = null;
