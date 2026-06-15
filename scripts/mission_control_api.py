@@ -3581,7 +3581,14 @@ def adb_connect(host):
     rc, out, err = _adb_run(["connect", host], timeout=10)
     msg = (out.decode("utf-8", "replace") + " " + err).strip()
     ok = rc == 0 and ("connected" in msg.lower() or "already" in msg.lower())
-    return {"ok": ok, "message": msg, "error": None if ok else (msg or "Verbindung fehlgeschlagen")}
+    if not ok and ("refused" in msg.lower() or "failed" in msg.lower()):
+        error = ("Verbindung fehlgeschlagen. Falls das Duo neu gestartet wurde: "
+                 "Port in WLAN-Debugging aktualisieren. Falls noch nie verbunden: "
+                 "Entwickleroptionen → WLAN-Debugging → 'Gerät mit Kopplungscode koppeln' "
+                 "→ Port + Code an Bolla schicken.")
+    else:
+        error = None if ok else (msg or "Verbindung fehlgeschlagen")
+    return {"ok": ok, "message": msg, "error": error}
 
 def adb_disconnect(host=""):
     args = ["disconnect"]
