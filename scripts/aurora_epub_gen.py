@@ -222,6 +222,7 @@ body {
   color: #1a1a1a;
   margin: 1.5em 2em;
   padding: 0;
+  page-break-before: always;
 }
 h1.chapter-title {
   font-family: 'Palatino Linotype', Palatino, Georgia, serif;
@@ -428,10 +429,10 @@ def build_opf(kapitel, has_cover):
     for i, _ in enumerate(kapitel):
         fid = 'prolog' if i == 0 else f'chapter{i:02d}'
         spine += f'    <itemref idref="{fid}"/>\n'
-    spine += '    <itemref idref="epilog"/>\n'
-    spine += '    <itemref idref="ueberautor"/>\n'
-    spine += '    <itemref idref="danksagung"/>\n'
-    spine += '    <itemref idref="rezension"/>\n'
+    spine += '    <itemref idref="epilog"     properties="page-spread-right"/>\n'
+    spine += '    <itemref idref="ueberautor" properties="page-spread-right"/>\n'
+    spine += '    <itemref idref="danksagung" properties="page-spread-right"/>\n'
+    spine += '    <itemref idref="rezension"  properties="page-spread-right"/>\n'
 
     mod = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     cover_meta = '<meta name="cover" content="cover-img"/>' if has_cover else ''

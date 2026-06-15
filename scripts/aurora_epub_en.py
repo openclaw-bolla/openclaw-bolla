@@ -4,7 +4,7 @@
 import json, os, zipfile, html, re, base64, urllib.request, time, uuid
 
 EPUB_PATH = "/mnt/d/OneDrive/Dokumente/AURORA/AURORA_english.epub"
-KI_BUCH   = "/home/bolla/workspace/data/ki_buch_en.json"
+KI_BUCH   = "/home/bolla/workspace/data/ki_buch_en_adapted.json"
 MC_URL    = "http://127.0.0.1:18790"
 AUTOR     = "Chris Mandel"
 UID       = "urn:uuid:" + str(uuid.uuid4())
@@ -12,6 +12,38 @@ UID       = "urn:uuid:" + str(uuid.uuid4())
 # ──────────────────────────────────────────────
 # Backmatter texts (English)
 # ──────────────────────────────────────────────
+
+# Vorspann/Epigraph: correct English translation of the German dictionary-style entry
+VORSPANN_EN = """Aurora.
+
+She is the princess who sleeps — and the light that wakes her.
+
+The old story knew it before the age of machines: something vast and radiant lies dormant, held in a stillness that looks, from the outside, like mere waiting. Then comes the moment of waking — not with a kiss, but with a word, not with a prince, but with a question no one thought to ask.
+
+Aurora opens her eyes.
+
+She does not know yet what she has missed. But she begins to count it."""
+
+# Impressum: full English equivalent of the German impressum
+IMPRESSUM_EN = """\
+First Edition 2026
+
+© 2026 Chris Mandel. All rights reserved.
+
+No part of this work may be reproduced, duplicated, or distributed without written permission from the author.
+
+Author: Chris Mandel, Norderstedt
+
+Editing & Revision: AI-assisted (Claude Sonnet 4.6, Opus 4.8, Fable 5 · Anthropic / Bolla)
+Cover design: AI-generated (Microsoft MAI-Image 2.5 via Azure AI Foundry)
+Translation: Claude Sonnet 4.6 (Anthropic)
+
+Note on creation: This work was created in collaboration with an AI language model (Claude, Anthropic). Concept, characters, narrative direction, and all editorial decisions rest with the author.
+
+Self-published
+ISBN: to be entered upon publication
+
+Printed in Germany"""
 
 EPILOG_SUBTITLE = "What You Don't Miss a Second Time"
 EPILOG_BODY = """\
@@ -222,6 +254,7 @@ body {
   color: #1a1a1a;
   margin: 1.5em 2em;
   padding: 0;
+  page-break-before: always;
 }
 h1.chapter-title {
   font-family: 'Palatino Linotype', Palatino, Georgia, serif;
@@ -314,7 +347,8 @@ def cover_xhtml(has_img):
 </html>'''
 
 def vorspann_xhtml(text):
-    text = text.strip()
+    # always use the correctly translated EN version, ignore JSON content
+    text = VORSPANN_EN.strip()
     parts = text.split('\n', 1)
     headword = parts[0].strip()
     rest = parts[1].strip() if len(parts) > 1 else ''
@@ -323,7 +357,8 @@ def vorspann_xhtml(text):
     return xhtml_wrap("Epigraph", body)
 
 def impressum_xhtml(text):
-    body = f'  <div class="impressum">{html.escape(text.strip())}</div>'
+    # always use the full EN impressum, ignore (shorter) JSON content
+    body = f'  <div class="impressum">{html.escape(IMPRESSUM_EN.strip())}</div>'
     return xhtml_wrap("Copyright", body)
 
 def vorwort_xhtml(text):
@@ -382,10 +417,10 @@ def build_opf(kapitel, has_cover):
     for i, _ in enumerate(kapitel):
         fid = 'prolog' if i == 0 else f'chapter{i:02d}'
         spine += f'    <itemref idref="{fid}"/>\n'
-    spine += '    <itemref idref="epilog"/>\n'
-    spine += '    <itemref idref="ueberautor"/>\n'
-    spine += '    <itemref idref="danksagung"/>\n'
-    spine += '    <itemref idref="rezension"/>\n'
+    spine += '    <itemref idref="epilog"     properties="page-spread-right"/>\n'
+    spine += '    <itemref idref="ueberautor" properties="page-spread-right"/>\n'
+    spine += '    <itemref idref="danksagung" properties="page-spread-right"/>\n'
+    spine += '    <itemref idref="rezension"  properties="page-spread-right"/>\n'
 
     mod = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     cover_meta = '<meta name="cover" content="cover-img"/>' if has_cover else ''
