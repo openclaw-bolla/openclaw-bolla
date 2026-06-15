@@ -1,51 +1,34 @@
-# Aktuell — 2026-06-14
+# Aktuell — 2026-06-15 (Nacht)
 
-## Stand: BildGen-Fixes + AURORA-Planung ✅
+## Status: Übersetzungs-Workflow läuft im Hintergrund
 
-### Was heute gemacht wurde
+### EPUB Deutsch ✅ FERTIG
+- `/mnt/d/OneDrive/Dokumente/AURORA/AURORA_deutsch.epub`
+- 1,18 MB, MAI-Cover (Atmosph. Hintergrundbild + CSS-Titeloverlay)
+- 47 Kapitel + Prolog + Vorspann + Vorwort + Impressum
+- Kindle: EPUB an @kindle.com senden oder in Kindle-App importieren (P20)
 
-#### 1. BildGen Studio — 4 Bugs gefixt
-- **Download-Button** (btoa-Stack-Overflow bei großen Bildern) → FileReader-Fix ✅
-- **gclip-Status** zeigte immer "Fehler" → Server gibt jetzt `ok:true`, JS-Check korrigiert ✅
-- **Archiv-Buttons tot** (1,67MB Base64 im onclick = HTML-Parser-Crash) → Index-Referenz statt Inline-Daten ✅
-- **MAI-Image-Upload** hinzugefügt: Upload-Button aktiv, `/edits`-Endpoint mit multipart ✅
+### AURORA Englisch — Übersetzungs-Workflow (Workflow-ID: wf_a35c2870-694)
+- **Läuft gerade:** 48 Kapitel parallel mit Sonnet
+- **Cache:** `/home/bolla/workspace/data/ki_buch_en_cache/` (Kapitel für Kapitel)
+- **Ausgabe:** `ki_buch_en.json` nach Workflow-Ende
+- **Dann:** Englisches EPUB generieren (aurora_epub_en_gen.py — noch zu schreiben)
 
-#### 2. AURORA — Englische Version geplant (noch nicht gestartet)
-- Standort: **Boston / Cambridge MA** + San Francisco als Zweitschauplatz
-- Protagonistin: Leni → **Ellie**
-- AURORA spricht Englisch mit leichter Nicht-Muttersprachler-Eigenheit ✅
-- Übersetzung: Haiku, gecacht, bei Leerlauf starten
-- Vorspann englisch: **anders als deutsch** — Sleeping-Beauty-Motiv (Aurora = Dornröschen) + Nordlicht-Metapher
+### Figuren-Anpassungen Englisch (Translation Bible)
+- Leni Yilmaz → Ellie Yilmaz
+- Marlie Braun → Marley Brown
+- Noah Khoury → unverändert
+- Vogt → Director Howell
+- Hamburg → Boston MA, NovaTech HQ = Boston Seaport
+- BND → NSA/CIA je Kontext
+- AURORA-Stil: Englisch mit leichter Nicht-Muttersprachler-Eigenheit
 
-#### 3. AURORA — Deutsch aktualisiert
-- **Vorspann** geschrieben (Etymologie, Mythologie, Aurora borealis) → in ki_buch.json ✅
-- **Impressum**: Cover-KI Google → Microsoft MAI-Image 2.5 ✅
-- **Titel**: "AURORA (Titel noch offen)" → **AURORA** ✅
-- **Status**: aktualisiert (47 Kapitel) ✅
-- **MP**: Vorspann-Block (🌅) im KI-Buch-Bereich ergänzt ✅
-- **Vorspann-Position**: direkt vor Prolog, nach Vorwort ✅
+### Nächste Schritte (nach Workflow)
+- [ ] Englisches EPUB aus ki_buch_en.json generieren
+- [ ] Vorspann EN prüfen (Sleeping-Beauty-Motiv, nicht Etymologie)
+- [ ] Beide EPUBs an Chris melden
 
-#### 4. AURORA Lektorat Welle 1+2 (Workflow — abgeschlossen)
-- 62 Agenten, 23 Kapitel gecacht + gemergt
-- Welle 1 (Humor/Hooks): Kap 16, 34 neu bearbeitet
-- Welle 2 (Charakter): Kap 28, 35, 38 neu bearbeitet
-
-### Offen / nächste Session
-
-#### AURORA Englisch (bei Leerlauf)
-- [ ] Haiku-Übersetzungs-Workflow starten
-- [ ] Vollständige Namen-Liste mit Nachnamen ausarbeiten
-- [ ] Englischen Vorspann schreiben (Sleeping-Beauty-Motiv)
-- [ ] Kulturelle Anpassungs-Checkliste (GDPR, Labor union, etc.)
-
-#### Amazon Kieselerde-Rückgabe
-- Paket senden an: Founderholics GmbH, Rheinallee 88 Gebäude 16, 55120 Mainz
-- Sendungsverfolgung aufheben! Backup: SEPA-Rückbuchung bis ca. 01.08.2026
-
-#### AURORA Buch (Schreiben)
-- Kap 22–25 schreiben: Lenis Erkenntnis, Maria/Vogt-Eskalation, erste öffentliche Reaktion
-- 2. Drittel (Kap 12–19) straffen — zu gestreckt
-
-### Backup-Status
-- ki_buch.json: aktuell (Vorspann, Impressum, Titel, Status)
-- Git + OneDrive: noch ausstehend für heute
+### Sonstiges erledigt heute
+- ISBN/Publishing-Planung: KDP + D2D, €4.99 / $4.99 → in Memory gespeichert
+- Haiku → Sonnet für Übersetzung korrigiert in Memory
+- Git-Commit + OneDrive-Backup ✅

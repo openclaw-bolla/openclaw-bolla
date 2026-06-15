@@ -156,11 +156,14 @@ body.cover-body {
 }
 .cover-title {
   font-family: 'Palatino Linotype', Palatino, Georgia, serif;
-  font-size: 4em;
+  font-size: 3.2em;
   font-weight: bold;
   color: #ffffff;
-  letter-spacing: 0.35em;
+  letter-spacing: 0.3em;
   text-align: center;
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
   text-shadow:
     0 0 30px rgba(80,200,255,0.7),
     0 0 60px rgba(80,200,255,0.3),
@@ -280,6 +283,7 @@ def build_opf(kapitel, has_cover):
 {manifest}  </manifest>
   <spine toc="ncx">
 {spine}  </spine>
+  {'<guide><reference type="cover" title="Cover" href="Text/cover.xhtml"/></guide>' if has_cover else ''}
 </package>'''
 
 def build_ncx(kapitel):

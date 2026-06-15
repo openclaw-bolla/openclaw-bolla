@@ -4067,7 +4067,10 @@ html, body {
 const API = '';  // same-origin: lokal via 127.0.0.1:18790, remote via bolla.chrismandel.de
 
 // ===== NAVIGATION =====
+let _clipRefreshInterval = null;
+
 function showPage(page) {
+  if (_clipRefreshInterval) { clearInterval(_clipRefreshInterval); _clipRefreshInterval = null; }
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   openSectionForPage(page);
@@ -4093,7 +4096,7 @@ function showPage(page) {
   if (page === 'email')      loadEmailFull();
   if (page === 'schule')     loadSchule();
   if (page === 'redesigns')  loadRedesigns();
-  if (page === 'clipboard')  loadClipboard();
+  if (page === 'clipboard')  { loadClipboard(); _clipRefreshInterval = setInterval(loadClipboard, 4000); }
   if (page === 'projekte')   loadProjekte();
   if (page === 'ki-workshop') loadKiWorkshop();
   if (page === 'ki-news')    loadKiNews();
@@ -4114,6 +4117,17 @@ function showPage(page) {
 
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', () => showPage(item.dataset.page));
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    const active = document.querySelector('.nav-item.active');
+    if (active && active.dataset.page === 'clipboard') {
+      if (_clipRefreshInterval) clearInterval(_clipRefreshInterval);
+      loadClipboard();
+      _clipRefreshInterval = setInterval(loadClipboard, 4000);
+    }
+  }
 });
 
 // ── Nav-Gruppen ──
