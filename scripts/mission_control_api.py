@@ -3370,8 +3370,10 @@ def token_budget_snapshot():
 
 
 def _run_claude_stream(cmd, tmp_path=None):
-    """Hilfsgenerator: führt claude-Kommando aus und liefert JSON-Events."""
-    import subprocess
+    """Hilfsgenerator: führt claude-Kommando aus und liefert JSON-Events.
+    Schickt alle 10s ein Heartbeat-Event, wenn Claude gerade still ist —
+    sonst kappen Cloudflare/Mobilfunk die stille Streaming-Leitung (network error)."""
+    import subprocess, select
     proc = None
     try:
         proc = subprocess.Popen(
@@ -3382,7 +3384,15 @@ def _run_claude_stream(cmd, tmp_path=None):
             bufsize=1,
             cwd=os.path.expanduser("~"),
         )
-        for line in proc.stdout:
+        while True:
+            rlist, _, _ = select.select([proc.stdout], [], [], 10)
+            if not rlist:
+                # 10s keine Daten -> Heartbeat, damit die Leitung warm bleibt
+                yield {"type": "ping"}
+                continue
+            line = proc.stdout.readline()
+            if line == "":
+                break  # EOF -> Claude fertig
             line = line.strip()
             if not line:
                 continue

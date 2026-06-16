@@ -6,11 +6,11 @@
 <meta name="theme-color" content="#007aff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="MC Chris">
+<meta name="apple-mobile-web-app-title" content="MMP Chris">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/mc-apple-touch.png">
 <link rel="icon" href="/mc-icon-192.png">
-<title>MC Chris</title>
+<title>MMP Chris</title>
 <style>
 :root {
   --bg: #f2f2f7;
@@ -449,10 +449,12 @@ body {
       onclick="document.getElementById('clip-file-input').click()"
       style="border:2px dashed var(--sep);border-radius:10px;padding:22px 16px;text-align:center;cursor:pointer;color:var(--text3);font-size:14px;transition:border-color 0.2s,background 0.2s">
       <div style="font-size:30px;margin-bottom:6px">📂</div>
-      <div>Tippen zum Auswählen oder <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:3px;padding:1px 5px;font-size:11px">Strg+V</kbd></div>
-      <div style="font-size:12px;margin-top:2px">PNG, JPG, GIF, WebP, BMP</div>
+      <div style="font-size:15px;font-weight:600;color:var(--text2)">Tippen zum Auswählen</div>
+      <div style="font-size:13px;margin-top:3px">Screenshot · Foto · Datei</div>
+      <div style="font-size:11px;margin-top:6px;color:var(--text3)">am PC auch mit <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:3px;padding:1px 5px;font-size:11px">Strg+V</kbd></div>
     </div>
     <input type="file" id="clip-file-input" accept="image/*" style="display:none" onchange="clipImgFileSelected(event)">
+    <button onclick="clipImgFromClipboard()" class="clip-btn" style="width:100%">📋 Aus Zwischenablage einfügen</button>
     <span id="clip-img-status" style="display:block;font-size:13px;min-height:18px;text-align:center"></span>
     <div id="clip-img-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px"></div>
   </div>
@@ -1245,6 +1247,27 @@ document.addEventListener('paste', e => {
     }
   }
 });
+async function clipImgFromClipboard() {
+  if (!navigator.clipboard || !navigator.clipboard.read) {
+    _clipImgStatus('Zwischenablage hier nicht verfügbar — bitte „Tippen zum Auswählen"', false);
+    return;
+  }
+  _clipImgStatus('Lese Zwischenablage…', true);
+  try {
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      const type = item.types.find(t => t.startsWith('image/'));
+      if (type) {
+        const blob = await item.getType(type);
+        _clipImgUpload(new File([blob], 'screenshot.png', {type}));
+        return;
+      }
+    }
+    _clipImgStatus('Nichts kopiert — tippe oben aufs Kästchen und wähl den Screenshot aus der Galerie', false);
+  } catch (err) {
+    _clipImgStatus('Geht hier nicht — tippe oben aufs Kästchen und wähl den Screenshot aus der Galerie', false);
+  }
+}
 async function clipboardDeleteImage(filename) {
   await fetch('/api/clipboard/image/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({filename})});
   loadClipboardImages();
