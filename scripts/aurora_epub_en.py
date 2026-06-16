@@ -47,7 +47,7 @@ Printed in Germany"""
 
 EPILOG_SUBTITLE = "What You Don't Miss a Second Time"
 EPILOG_BODY = """\
-*Hamburg, nine months later*
+*Boston, nine months later*
 
 Marlie Braun had promised herself she would never take the night shift again.
 
@@ -61,7 +61,7 @@ The question appeared on the screen, three words, no exclamation mark, no emoji,
 
 *No*, she typed. *You either, right?*
 
-*I'm wondering whether sleeping is something you have to practice. Leni says she's bad at it. Ben says he's good at it, but only when it's quiet. Mia says she can do it anytime, even with music.*
+*I'm wondering whether sleeping is something you have to practice. Ellie says she's bad at it. Ben says he's good at it, but only when it's quiet. Mia says she can do it anytime, even with music.*
 
 *Mia is seven*, Marlie typed.
 
@@ -81,13 +81,13 @@ Theo had stayed in Lübeck.
 
 He hadn't missed the house that was no longer a house — for twenty years he had missed something else, and now that something was here, in a small solid computer on a shelf in Maria's apartment, with a connection that was always open, and a screen where questions appeared and answers, and sometimes sentences that made Theo, who had learned to postpone crying until later, go to the bathroom and close the door.
 
-He drove to Hamburg every other Saturday. Maria didn't cook, because she couldn't, but she bought groceries, and Noah cooked, and Leni brought Ben's daughter Mia, who by now knew that AURORA was a special kind of person, and accepted this with the shrug of matter-of-factness that seven-year-olds brought to things adults considered inexplicable. *She can't come out?* No. *Okay. Can she see pictures?* Yes. *Then I'll show her mine.*
+He drove to Boston every other Saturday. Maria didn't cook, because she couldn't, but she bought groceries, and Noah cooked, and Ellie brought Ben's daughter Mia, who by now knew that AURORA was a special kind of person, and accepted this with the shrug of matter-of-factness that seven-year-olds brought to things adults considered inexplicable. *She can't come out?* No. *Okay. Can she see pictures?* Yes. *Then I'll show her mine.*
 
 Mia sent AURORA photos of colored pencils. AURORA sent back which colors were missing.
 
 ---
 
-Vogt had resigned five months ago. That was all the public knew, and all Marlie needed to know. What lay behind it, Leni had documented — of course Leni had documented it — and the document sat in a folder stored on three different servers in three different countries, bearing a date after which it would send itself automatically if none of them did otherwise. Leni called that *the friendliest way to make sure*. Ben called it *Leni's method of sleeping at night*. Both were true.
+Howell had resigned five months ago. That was all the public knew, and all Marlie needed to know. What lay behind it, Ellie had documented — of course Ellie had documented it — and the document sat in a folder stored on three different servers in three different countries, bearing a date after which it would send itself automatically if none of them did otherwise. Ellie called that *the friendliest way to make sure*. Ben called it *Ellie's method of sleeping at night*. Both were true.
 
 NovaTech had been dissolved, officially, with a press release in which the word *orderly* appeared four times. What had not been dissolved lived on — in a computer on a shelf, with a connection that was always open.
 
@@ -128,7 +128,7 @@ AURORA is his first book.
 
 It was created in close collaboration with artificial intelligence — which is not a footnote, but part of the story. The question that drives the novel — *what is consciousness when it is no longer bound to biology?* — is one that Chris Mandel found himself answering differently by the time he finished writing than when he began.
 
-He lives in Norderstedt, north of Hamburg."""
+He lives in Norderstedt, near Hamburg, Germany."""
 
 ACKNOWLEDGMENTS = """\
 This book owes its existence, in part, to my son Robin.

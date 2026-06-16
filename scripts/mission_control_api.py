@@ -124,6 +124,22 @@ def delete_clipboard_entry(idx):
     except Exception as e:
         return {"error": str(e)}
 
+def edit_clipboard_entry(idx, text):
+    """Ändert den Text eines bestehenden Eintrags in-place (Quelle/Zeitstempel bleiben)."""
+    try:
+        with open(CLIPBOARD_FILE, encoding="utf-8") as f:
+            raw = json.load(f)
+        entries = raw.get("entries", [])
+        if 0 <= idx < len(entries):
+            entries[idx]["text"] = text
+            entries[idx]["edited_ts"] = datetime.now().isoformat()
+        data = {"entries": entries}
+        with open(CLIPBOARD_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+        return data
+    except Exception as e:
+        return {"error": str(e)}
+
 def get_clipboard_trash():
     """Liefert den (automatisch bereinigten) Papierkorb, neueste zuerst."""
     trash = _purge_clipboard_trash(_load_clipboard_trash())
@@ -5642,6 +5658,9 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
             elif self.path == "/api/clipboard/delete":
                 idx = body.get("idx", -1)
                 self._send_json(delete_clipboard_entry(int(idx)))
+            elif self.path == "/api/clipboard/edit":
+                idx = body.get("idx", -1)
+                self._send_json(edit_clipboard_entry(int(idx), body.get("text", "")))
             elif self.path == "/api/clipboard/restore":
                 idx = body.get("idx", -1)
                 self._send_json(restore_clipboard_entry(int(idx)))
@@ -7327,17 +7346,17 @@ if __name__ == "__main__":
     # kein /api/transcribe, kein Modell auf dem Server (2026-06-07 restlos entfernt).
 
     port = 18790
-    # SO_REUSEADDR + SO_REUSEPORT damit Port-Bindung sofort nach Neustart klappt
-    # (Linux: SO_REUSEPORT umgeht TIME_WAIT zuverlässig)
+    # NUR SO_REUSEADDR — umgeht TIME_WAIT nach Neustart, OHNE dass ein zweiter
+    # Prozess denselben Port mitbinden darf. SO_REUSEPORT wurde entfernt (2026-06-16):
+    # es erlaubte einen stillen Doppelstart (Race @reboot vs. Watchdog), wodurch zwei
+    # Server gleichzeitig auf 18790 lauschten → Kernel-Round-Robin → sporadisch
+    # "Failed to fetch". Ohne SO_REUSEPORT scheitert ein zweiter Start sauber mit
+    # "Address already in use" — der natürliche Doppelstart-Schutz.
     import socket as _socket
     class _ReusableServer(ThreadingHTTPServer):
         allow_reuse_address = True
         def server_bind(self):
             self.socket.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1)
-            try:
-                self.socket.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEPORT, 1)
-            except (AttributeError, OSError):
-                pass  # SO_REUSEPORT nicht überall verfügbar
             super().server_bind()
     server = _ReusableServer(("0.0.0.0", port), Handler)
     print(f"Mission Control API läuft auf http://127.0.0.1:{port}")

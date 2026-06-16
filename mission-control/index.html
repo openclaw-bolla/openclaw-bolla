@@ -4068,6 +4068,8 @@ const API = '';  // same-origin: lokal via 127.0.0.1:18790, remote via bolla.chr
 
 // ===== NAVIGATION =====
 let _clipRefreshInterval = null;
+let _clipEntries = [];
+let _clipEditing = false;
 
 function showPage(page) {
   if (_clipRefreshInterval) { clearInterval(_clipRefreshInterval); _clipRefreshInterval = null; }
@@ -7655,6 +7657,7 @@ function initBrain() {
 
 // ===== CLIPBOARD =====
 async function loadClipboard() {
+  if (_clipEditing) return;  // nicht neu rendern während ein Eintrag bearbeitet wird
   try {
     const d = await fetch('/api/clipboard').then(r => r.json());
     clipboardRenderEntries(d.entries || []);
@@ -7674,6 +7677,7 @@ function clipboardRenderEntries(entries) {
     return;
   }
   if (countEl) countEl.textContent = entries.length + ' Eintrag' + (entries.length !== 1 ? 'e' : '');
+  _clipEntries = entries;
   const srcIcon = s => s === 'voice' ? '🎤' : s === 'bolla-anweisung' ? '🤖' : '✏️';
   const srcLabel = s => s === 'voice' ? 'Sprach-Notiz' : s === 'bolla-anweisung' ? 'Bolla' : 'Manuell';
   // Linkify: URLs anklickbar, Audio/Video direkt einbetten
@@ -7698,9 +7702,11 @@ function clipboardRenderEntries(entries) {
           <div style="font-size:12px;color:var(--dim);margin-bottom:6px">
             ${srcIcon(e.source)} ${srcLabel(e.source)} · ${e.ts ? new Date(e.ts).toLocaleString('de-DE', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''}
           </div>
-          <div style="font-size:15px;color:var(--bright);white-space:pre-wrap;line-height:1.6">${linkify(e.text)}</div>
+          <div id="clip-content-${i}" style="font-size:15px;color:var(--bright);white-space:pre-wrap;line-height:1.6">${linkify(e.text)}</div>
         </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
+        <div id="clip-actions-${i}" style="display:flex;gap:6px;flex-shrink:0">
+          <button onclick="clipboardEditEntry(${i})" title="Bearbeiten"
+            style="background:var(--card);border:1px solid var(--border);border-radius:5px;color:var(--dim);font-size:13px;padding:4px 8px;cursor:pointer">✎</button>
           <button onclick="clipboardCopyEntry(${i})" title="Kopieren"
             style="background:var(--card);border:1px solid var(--border);border-radius:5px;color:var(--dim);font-size:13px;padding:4px 8px;cursor:pointer">📋</button>
           <button onclick="clipboardDeleteEntry(${i})" title="Löschen"
@@ -7743,6 +7749,41 @@ async function clipboardDeleteEntry(idx) {
     const d = await fetch('/api/clipboard/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({idx})}).then(r => r.json());
     clipboardRenderEntries(d.entries || []);
   } catch(e) {}
+}
+
+function clipboardEditEntry(idx) {
+  const content = document.getElementById('clip-content-' + idx);
+  const actions = document.getElementById('clip-actions-' + idx);
+  if (!content || !actions) return;
+  _clipEditing = true;  // Auto-Refresh pausieren
+  const orig = (_clipEntries[idx] && _clipEntries[idx].text) || '';
+  content.innerHTML =
+    `<textarea id="clip-edit-${idx}" rows="5" style="width:100%;box-sizing:border-box;font-size:15px;line-height:1.6;`
+    + `background:var(--card);color:var(--bright);border:1px solid var(--accent);border-radius:6px;padding:8px;resize:vertical"></textarea>`;
+  const ta = document.getElementById('clip-edit-' + idx);
+  ta.value = orig;
+  ta.focus();
+  actions.innerHTML =
+    `<button onclick="clipboardSaveEdit(${idx})" title="Speichern" style="background:var(--accent);border:none;border-radius:5px;color:#fff;font-size:13px;padding:4px 8px;cursor:pointer">✓</button>`
+    + `<button onclick="clipboardCancelEdit()" title="Abbrechen" style="background:var(--card);border:1px solid var(--border);border-radius:5px;color:var(--dim);font-size:13px;padding:4px 8px;cursor:pointer">✕</button>`;
+}
+
+function clipboardCancelEdit() {
+  _clipEditing = false;
+  clipboardRenderEntries(_clipEntries);
+}
+
+async function clipboardSaveEdit(idx) {
+  const ta = document.getElementById('clip-edit-' + idx);
+  if (!ta) return;
+  const text = ta.value;
+  _clipEditing = false;
+  try {
+    const d = await fetch('/api/clipboard/edit', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({idx, text})}).then(r => r.json());
+    clipboardRenderEntries(d.entries || []);
+  } catch(e) {
+    clipboardRenderEntries(_clipEntries);
+  }
 }
 
 async function clipboardClearAll() {

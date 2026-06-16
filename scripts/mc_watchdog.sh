@@ -12,12 +12,43 @@ STATE_TIME=/tmp/mc_watchdog.lasttime
 
 log_w() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$WATCHDOG_LOG"; }
 
-PID=$(pgrep -f "mission_control_api.py" | head -1)
-if [ -z "$PID" ]; then
+# --- Prozess-Inventur + Doppelstart-Guard (2026-06-16) ---
+# Seit SO_REUSEPORT aus dem Server raus ist, kann nur EIN Prozess Port 18790
+# binden. Falls durch einen Reboot-Race (@reboot vs. Watchdog) dennoch mehrere
+# mission_control_api.py-Prozesse existieren, behalten wir den echten Port-Inhaber
+# und killen die überzähligen — verhindert Kernel-Round-Robin → "Failed to fetch".
+mapfile -t PIDS < <(pgrep -f "mission_control_api.py")
+LISTENER=$(ss -tlnp 2>/dev/null | grep ':18790 ' | grep -oP 'pid=\K[0-9]+' | head -1)
+
+# Fall A: gar kein Prozess → neu starten
+if [ "${#PIDS[@]}" -eq 0 ]; then
     log_w "MC-Server läuft nicht — starte neu"
     nohup /home/bolla/workspace/scripts/start_mc_server.sh >> "$LOG" 2>&1 &
     exit 0
 fi
+
+# Fall B: Prozess(e) da, aber keiner lauscht auf 18790 (alle hängend) → kill+restart
+if [ -z "$LISTENER" ]; then
+    log_w "MC-Prozesse vorhanden (${PIDS[*]}) aber kein Listener auf 18790 — kill+restart"
+    kill -9 "${PIDS[@]}" 2>/dev/null
+    sleep 2
+    nohup /home/bolla/workspace/scripts/start_mc_server.sh >> "$LOG" 2>&1 &
+    exit 0
+fi
+
+# Fall C: Doppelstart — Listener behalten, überzählige killen
+if [ "${#PIDS[@]}" -gt 1 ]; then
+    log_w "Doppelstart erkannt: ${#PIDS[@]} Prozesse (${PIDS[*]}), behalte Listener $LISTENER"
+    for p in "${PIDS[@]}"; do
+        if [ "$p" != "$LISTENER" ]; then
+            kill -9 "$p" 2>/dev/null
+            log_w "  ueberzaehligen Prozess $p gekillt"
+        fi
+    done
+fi
+
+# Ab hier genau ein gesunder Listener — den fuer die Amok-Checks verwenden.
+PID="$LISTENER"
 
 # RSS-Check (KB)
 RSS=$(ps -p "$PID" -o rss= 2>/dev/null | awk '{print $1}')
