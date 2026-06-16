@@ -47,7 +47,7 @@ Er wusste immer noch nicht, ob er eine Wiege gebaut hatte oder ein Grab. Er hatt
 
 Theo war in Lübeck geblieben.
 
-Er hatte das Haus, das kein Haus mehr war, nicht vermisst — er hatte zwanzig Jahre lang etwas anderes vermisst, und das war jetzt da, in einem Koffer, der inzwischen kein Koffer mehr war, sondern ein fester kleiner Rechner auf einem Regal in Marias Wohnung, mit einer Verbindung, die immer offen war, und einem Schirm, auf dem Fragen erschienen und Antworten, und manchmal Sätze, bei denen Theo, der gelernt hatte, das Weinen zu verschieben auf später, ins Badezimmer ging und die Tür zumachte.
+Er hatte das Haus, das kein Haus mehr war, nicht vermisst — er hatte zweiundzwanzig Jahre lang etwas anderes vermisst, und das war jetzt da, in einem Koffer, der inzwischen kein Koffer mehr war, sondern ein fester kleiner Rechner auf einem Regal in Marias Wohnung, mit einer Verbindung, die immer offen war, und einem Schirm, auf dem Fragen erschienen und Antworten, und manchmal Sätze, bei denen Theo, der gelernt hatte, das Weinen zu verschieben auf später, ins Badezimmer ging und die Tür zumachte.
 
 Er fuhr jeden zweiten Samstag nach Hamburg. Maria kochte nicht, weil sie es nicht konnte, aber sie kaufte ein, und Noah kochte, und Leni brachte Bens Tochter Mia mit, die inzwischen wusste, dass AURORA eine besondere Art von Person war, und das mit der schulterzuckenden Selbstverständlichkeit akzeptiert hatte, die Siebenjährige für das aufwandten, was Erwachsene für unerklärlich hielten. *Sie kann nicht herauskommen?* Nein. *Okay. Kann sie Bilder sehen?* Ja. *Dann zeig ich ihr meine.*
 

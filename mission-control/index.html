@@ -14245,8 +14245,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (targetIdx === null) { gwReset(); return; }
 
       // Zielwinkel: Sektor sauber mittig unter Zeiger
+      // angleForSektor bringt den Sektor-ANFANG unter den Zeiger → halbe Sektorbreite
+      // ABZIEHEN, um die Mitte zu treffen (sonst kippt es per Rundung in den Vorgänger-Sektor)
       const base = angleForSektor(targetIdx);
-      targetAngle = (base + SEKTOR_DEG / 2 + 360) % 360;
+      targetAngle = (base - SEKTOR_DEG / 2 + 360) % 360;
 
       // Bremsdistanz: mind. 1 volle Umdrehung Extra → wirkt natürlich
       const curAngle360 = angle % 360;
