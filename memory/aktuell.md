@@ -20,6 +20,7 @@
 - Pre-Edit-Backups: `AURORA_deutsch_vor_wellea.epub`, JSON-Backups `ki_buch_backup_vor_timeline/wellea/welleb_*`, `ki_buch_en_backup_vor_sync_*`.
 - Edit-Listen als Doku: `timeline_edits.json`, `welleb_*_edits.json`, `en_*_edits.json` (workspace/data).
 - OFFEN/optional für später: Theos Berufsdauer-Inkonsistenz (20/30/40 J.) — eigene kleine Sache, nie kritisch. Welle 3 (Foreshadowing Folgeband) weiter optional.
+- ✅ **Beide EPUBs an Kindle gesendet** (16.06. abends) via neues Skript `scripts/kindle_send.py` (Graph Upload-Session, da >4MB-sendMail-Limit; Doku in `reference_kindle.md`). Amazon-Verifikationsmail an ernstmandel@outlook.de → Chris muss klicken (48h).
 - Nächster realer Schritt = Publishing (KDP + D2D, €4.99/$4.99 — Plan steht im Memory).
 
 ## AURORA — Verkaufsreife-Check + Lektorat ✅ (16.06.)
