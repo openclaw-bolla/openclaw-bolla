@@ -309,15 +309,23 @@ def handle_adb_command(text_lower, chat_id, msg_id):
 
 
 def interactive_claude_running():
-    """True wenn gerade eine interaktive (nicht -p) Claude-Session läuft."""
+    """True wenn eine *interaktive* Claude-Session an einem echten Terminal läuft.
+
+    Hinweis: Claude Code überschreibt seinen Prozessnamen mit 'claude' und
+    versteckt die Startargumente — '-p'/'--print' sind in ps NICHT sichtbar
+    (auch nicht in /proc/PID/cmdline). Die alte Heuristik per ' -p ' im
+    Befehl konnte interaktive Sessions deshalb nie von Hintergrund-Calls
+    unterscheiden und meldete praktisch immer True. Wir unterscheiden jetzt
+    am TTY: eine echte interaktive Session hängt an einem Terminal (pts/*),
+    ein vom Daemon gestarteter 'claude -p' Call hat keins ('?')."""
     try:
-        r = subprocess.run(["ps", "aux"], capture_output=True, text=True)
+        r = subprocess.run(["ps", "-eo", "tty=,comm="], capture_output=True, text=True)
         for line in r.stdout.split("\n"):
-            if ("claude" in line
-                    and " -p " not in line
-                    and " --print " not in line
-                    and "grep" not in line
-                    and "telegram_bot" not in line):
+            parts = line.split()
+            if len(parts) < 2:
+                continue
+            tty, comm = parts[0], parts[1]
+            if comm == "claude" and tty.startswith("pts"):
                 return True
     except Exception:
         pass
@@ -337,7 +345,7 @@ def ask_claude(message, sender_name, file_path=None, media_label=None):
         prompt = f"[Telegram-Nachricht von {sender_name}]: {message}"
     claude_bin = os.path.expanduser("~/.local/bin/claude")
     cmd = [claude_bin, "-p", "--output-format", "json", prompt]
-    timeout = 60 if parallel else 120
+    timeout = 90 if parallel else 150
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=timeout,
