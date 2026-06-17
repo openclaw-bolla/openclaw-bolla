@@ -333,13 +333,11 @@ def interactive_claude_running():
 
 
 def ask_claude(message, sender_name, file_path=None, media_label=None):
-    """Fragt Claude Code und gibt die Antwort zurück.
+    """Fragt Claude Code und gibt die Antwort zurück."""
+    parallel = interactive_claude_running()
+    if parallel:
+        log.info("Interaktive Claude-Session aktiv — versuche trotzdem (kürzerer Timeout)")
 
-    Hinweis: 'claude -p' läuft problemlos PARALLEL zu einer interaktiven
-    Terminal-Session (gemessen: ~3s parallel). Daher KEIN Session-Check mehr —
-    der senkte früher nur unnötig den Timeout und produzierte irreführende
-    'aktive Session'-Fehlmeldungen. Funktioniert jetzt wie der MC-Bolla-Chat.
-    """
     if file_path and media_label:
         prompt = (f"[Telegram-Nachricht von {sender_name}]: {message or '(kein Text)'}\n\n"
                   f"[Angehängtes {media_label}: {file_path} — bitte lesen und analysieren/beschreiben]")
@@ -347,7 +345,7 @@ def ask_claude(message, sender_name, file_path=None, media_label=None):
         prompt = f"[Telegram-Nachricht von {sender_name}]: {message}"
     claude_bin = os.path.expanduser("~/.local/bin/claude")
     cmd = [claude_bin, "-p", "--output-format", "json", prompt]
-    timeout = 180
+    timeout = 90 if parallel else 150
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=timeout,
@@ -359,6 +357,8 @@ def ask_claude(message, sender_name, file_path=None, media_label=None):
         data = json.loads(result.stdout)
         return data.get("result", "")
     except subprocess.TimeoutExpired:
+        if parallel:
+            return "Bolla ist gerade in einer aktiven Session beschäftigt — kurz warten und nochmal schreiben! 🐾"
         return "Sorry, das hat zu lange gedauert — versuch's nochmal! 🐾"
     except Exception as e:
         log.error(f"Claude Fehler: {e}")
