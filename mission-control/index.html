@@ -916,6 +916,9 @@ html, body {
           <div id="greeting-weather" style="position:relative;z-index:2;flex-shrink:0"><div class="loading">Lade…</div></div>
           <div id="greeting-text" style="position:relative;z-index:2;text-align:right;flex:1;min-width:0"></div>
         </div>
+        <div id="dash-restart-banner" style="display:none;align-items:center;gap:12px;margin-bottom:14px;padding:14px 18px;background:rgba(249,115,22,0.13);border:1px solid rgba(249,115,22,0.55);border-radius:10px;color:#f97316;font-size:16px;font-weight:600">
+          <span style="font-size:22px">⟳</span><span id="dash-restart-text">Claude Code: Neustart bereit</span>
+        </div>
         <div class="dash-grid" style="margin-bottom:14px">
           <div class="card">
             <div class="card-head"><span class="card-title">Nächste Termine</span><span class="card-icon">📅</span></div>
@@ -1577,6 +1580,7 @@ html, body {
               <div style="font-size:13px;color:var(--dim);margin-top:3px">Persönlicher KI-Assistent · Aktiv seit März 2026 · WSL Ubuntu auf Windows 11</div>
               <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
                 <span id="cc-version-badge" style="padding:4px 10px;background:rgba(124,58,237,0.2);border:1px solid rgba(124,58,237,0.5);border-radius:20px;font-size:13px;color:#a78bfa">⏳ Version lädt...</span>
+                <span id="cc-restart-badge" style="display:none;padding:4px 10px;border-radius:20px;font-size:14px;font-weight:600"></span>
                 <span id="cc-cron-badge" style="padding:4px 10px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);border-radius:20px;font-size:13px;color:#22c55e">⏰ … Cron Jobs</span>
                 <span style="padding:4px 10px;background:rgba(6,182,212,0.15);border:1px solid rgba(6,182,212,0.4);border-radius:20px;font-size:13px;color:#06b6d4">📁 /home/bolla/workspace</span>
                 <span style="padding:4px 10px;background:rgba(255,102,153,0.15);border:1px solid rgba(255,102,153,0.4);border-radius:20px;font-size:13px;color:var(--accent)">🌐 bolla.chrismandel.de</span>
@@ -6935,6 +6939,39 @@ async function loadClaudeCode() {
       row('Telegram Bot', tgOk ? '🟢 aktiv' : '🔴 gestoppt', tgOk ? 'var(--success)' : 'var(--danger)') +
       row('Token heute', tok.today ? tok.today.toLocaleString('de-DE') : '–', 'var(--text)') +
       row('Letztes Backup', sys.last_backup || '–', 'var(--dim)');
+    // Neustart-/Versions-Check: liegt eine neuere Version bereit?
+    try {
+      const cv = await fetch(API+'/api/claudeversion').then(r => r.json());
+      // Dashboard-Banner: nur warnen, wenn Neustart nötig — sonst ausblenden
+      const banner = document.getElementById('dash-restart-banner');
+      const bantxt = document.getElementById('dash-restart-text');
+      if (banner) {
+        if (cv.needs_restart && cv.available_version) {
+          banner.style.display = 'flex';
+          if (bantxt) bantxt.textContent = 'Claude Code: Neustart bereit — läuft noch auf v' + (cv.running_version || '?') + ' (seit ' + (cv.uptime_human || '–') + '), v' + cv.available_version + ' liegt schon da';
+        } else {
+          banner.style.display = 'none';
+        }
+      }
+      const rb = document.getElementById('cc-restart-badge');
+      if (rb) {
+        if (cv.needs_restart && cv.available_version) {
+          rb.style.display = '';
+          rb.style.background = 'rgba(249,115,22,0.18)';
+          rb.style.border = '1px solid rgba(249,115,22,0.55)';
+          rb.style.color = '#f97316';
+          rb.textContent = '⟳ v' + (cv.running_version || '?') + ' → Neustart für v' + cv.available_version;
+        } else if (cv.running) {
+          rb.style.display = '';
+          rb.style.background = 'rgba(34,197,94,0.15)';
+          rb.style.border = '1px solid rgba(34,197,94,0.4)';
+          rb.style.color = '#22c55e';
+          rb.textContent = '✓ aktuell · läuft seit ' + (cv.uptime_human || '–');
+        } else {
+          rb.style.display = 'none';
+        }
+      }
+    } catch(e) {}
   } catch(e) {
     if (badge) badge.textContent = 'Offline';
     if (status) status.innerHTML = '<div style="color:var(--danger)">API nicht erreichbar</div>';
@@ -8037,6 +8074,30 @@ setInterval(()=>{loadBirthdays();loadRobin();loadSchule();loadPhoto();loadRecipe
 setInterval(loadClaudeCode, 2*60*1000);
 setInterval(tbLoad, 5*60*1000);  // Anthropic-Quota immer aktuell — auch ohne System-Tab
 tbLoad();  // Sofort beim Start laden, nicht erst nach 5 min warten
+
+// ── Auto-Refresh beim Zurückkehren zur mp (Tab/Fenster wieder sichtbar) ──
+// Löst „morgens noch der Stand von gestern": über Nacht frieren Browser-Tab &
+// Timer ein; beim Zurückkommen wird die GERADE AKTIVE Seite sofort neu geladen.
+// Kostet im Leerlauf nichts (feuert nur beim Reaktivieren), deckt alle Seiten ab.
+let _lastVisRefresh = Date.now();
+let _lastActiveDay  = new Date().toDateString();
+function refreshOnReturn() {
+  const now = Date.now();
+  if (now - _lastVisRefresh < 15000) return;   // Throttle: höchstens alle 15s
+  _lastVisRefresh = now;
+  const nav  = document.querySelector('.nav-item.active');
+  const page = nav ? nav.dataset.page : 'dashboard';
+  const dayChanged = new Date().toDateString() !== _lastActiveDay;
+  _lastActiveDay = new Date().toDateString();
+  try { if (page && typeof showPage === 'function') showPage(page); } catch(e) {}
+  if (dayChanged) {  // neuer Tag → Tagesinhalte explizit frisch ziehen
+    try { loadPhoto(); loadRecipe(); loadBirthdays(); renderGreeting(); } catch(e) {}
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshOnReturn();
+});
+window.addEventListener('focus', refreshOnReturn);
 if (document.getElementById('page-claudecode')?.classList.contains('active')) loadBollaMemory();
 
 // === CHAT PERSISTENCE ===

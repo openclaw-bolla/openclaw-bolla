@@ -3,1063 +3,375 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bolla Mission Control</title>
+<title>Mission Control — Aurora Glass</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
-    --bg-deep: #050a12;
-    --bg-panel: #080f1c;
-    --bg-card: #0c1628;
-    --bg-card2: #0a1220;
-    --neon-cyan: #00f5ff;
-    --neon-magenta: #ff2d78;
-    --neon-purple: #9d4edd;
-    --neon-green: #39ff14;
-    --neon-orange: #ff6b00;
-    --text-primary: #e0f4ff;
-    --text-secondary: #7ab8d4;
-    --text-dim: #3a6080;
-    --border-glow: rgba(0,245,255,0.25);
-    --border-dim: rgba(0,245,255,0.08);
+    --a: #a8c0ff;
+    --b: #fbc2eb;
+    --glass: rgba(255, 255, 255, 0.35);
+    --glass-strong: rgba(255, 255, 255, 0.55);
+    --stroke: rgba(255, 255, 255, 0.6);
+    --ink: #3a3a5a;
+    --ink-soft: #6b6b8d;
   }
   body {
-    font-family: 'Courier New', 'Lucida Console', monospace;
-    background: var(--bg-deep);
-    color: var(--text-primary);
-    height: 100vh;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 15% 20%, #fbc2eb 0%, transparent 45%),
+      radial-gradient(circle at 85% 15%, #a8c0ff 0%, transparent 50%),
+      radial-gradient(circle at 70% 90%, #c2ffd8 0%, transparent 45%),
+      radial-gradient(circle at 25% 85%, #ffe7b3 0%, transparent 40%),
+      linear-gradient(135deg, #e8efff, #fde8f6);
+    background-attachment: fixed;
     display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    padding: 22px;
+    gap: 22px;
   }
 
-  /* SCANLINE OVERLAY */
-  body::before {
-    content: '';
+  /* floating decorative blobs */
+  body::before, body::after {
+    content: "";
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.06) 2px,
-      rgba(0,0,0,0.06) 4px
-    );
-    pointer-events: none;
-    z-index: 1000;
-  }
-
-  /* TOPBAR */
-  .topbar {
-    height: 54px;
-    background: linear-gradient(90deg, #040810 0%, #080f1c 50%, #040810 100%);
-    border-bottom: 1px solid var(--neon-cyan);
-    box-shadow: 0 0 20px rgba(0,245,255,0.3), 0 2px 40px rgba(0,245,255,0.1);
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    gap: 16px;
-    flex-shrink: 0;
-    position: relative;
-  }
-  .topbar::after {
-    content: '';
-    position: absolute;
-    bottom: -3px;
-    left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
-    opacity: 0.5;
-  }
-  .topbar-logo {
-    font-size: 18px;
-    font-weight: bold;
-    color: var(--neon-cyan);
-    text-shadow: 0 0 12px var(--neon-cyan), 0 0 24px rgba(0,245,255,0.4);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-  }
-  .topbar-logo span {
-    color: var(--neon-magenta);
-    text-shadow: 0 0 12px var(--neon-magenta);
-  }
-  .topbar-sep { color: var(--text-dim); margin: 0 4px; }
-  .topbar-title {
-    font-size: 13px;
-    color: var(--text-secondary);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    flex: 1;
-  }
-  .topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
-  .topbar-status {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-  }
-  .dot-live {
-    width: 7px; height: 7px;
     border-radius: 50%;
-    background: var(--neon-green);
-    box-shadow: 0 0 8px var(--neon-green);
-    animation: pulse 2s infinite;
+    filter: blur(60px);
+    opacity: 0.5;
+    z-index: 0;
+    pointer-events: none;
   }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--neon-green); }
-    50% { opacity: 0.5; box-shadow: 0 0 2px var(--neon-green); }
-  }
-  .topbar-clock {
-    font-size: 22px;
-    color: var(--neon-cyan);
-    text-shadow: 0 0 10px var(--neon-cyan);
-    font-weight: bold;
-    letter-spacing: 2px;
-  }
-  .topbar-date {
-    font-size: 10px;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-  }
+  body::before { width: 340px; height: 340px; background: #ffb3d9; top: -80px; right: 18%; }
+  body::after { width: 300px; height: 300px; background: #9fd8ff; bottom: -90px; left: 22%; }
 
-  /* MAIN LAYOUT */
-  .layout {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-  }
-
-  /* SIDEBAR */
+  /* ---------- Sidebar ---------- */
   .sidebar {
-    width: 200px;
-    background: linear-gradient(180deg, #060c18 0%, #04080f 100%);
-    border-right: 1px solid var(--border-glow);
+    position: relative;
+    z-index: 2;
+    width: 232px;
+    flex-shrink: 0;
+    background: var(--glass);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border: 1px solid var(--stroke);
+    border-radius: 28px;
+    padding: 26px 18px;
+    box-shadow: 0 12px 40px rgba(120, 120, 200, 0.18);
     display: flex;
     flex-direction: column;
-    flex-shrink: 0;
-    padding: 16px 0;
-    position: relative;
   }
-  .sidebar::after {
-    content: '';
-    position: absolute;
-    top: 0; bottom: 0; right: -2px;
-    width: 2px;
-    background: linear-gradient(180deg, transparent, var(--neon-cyan), transparent);
-    opacity: 0.4;
-  }
-  .sidebar-section {
-    font-size: 9px;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    padding: 12px 16px 6px;
-  }
-  .nav-item {
+  .brand {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
-    cursor: pointer;
-    position: relative;
-    transition: all 0.2s;
-    border-left: 2px solid transparent;
-    font-size: 12px;
-    letter-spacing: 1px;
-    color: var(--text-secondary);
-    text-transform: uppercase;
+    gap: 12px;
+    padding: 4px 8px 24px;
   }
-  .nav-item:hover {
-    background: rgba(0,245,255,0.05);
-    color: var(--neon-cyan);
-    border-left-color: rgba(0,245,255,0.3);
+  .brand .logo {
+    width: 44px; height: 44px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--a), var(--b));
+    display: grid; place-items: center;
+    font-size: 22px;
+    box-shadow: 0 6px 16px rgba(168, 140, 230, 0.45);
   }
-  .nav-item.active {
-    background: rgba(0,245,255,0.08);
-    color: var(--neon-cyan);
-    border-left-color: var(--neon-cyan);
-    text-shadow: 0 0 8px rgba(0,245,255,0.5);
-  }
-  .nav-item.active::after {
-    content: '';
-    position: absolute;
-    right: 0; top: 0; bottom: 0;
-    width: 1px;
-    background: rgba(0,245,255,0.3);
-  }
-  .nav-icon {
-    width: 16px;
-    height: 16px;
+  .brand h1 { font-size: 19px; font-weight: 700; letter-spacing: .3px; }
+  .brand span { font-size: 12.5px; color: var(--ink-soft); }
+
+  .nav { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+  .nav a {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    flex-shrink: 0;
+    gap: 14px;
+    padding: 13px 16px;
+    border-radius: 16px;
+    text-decoration: none;
+    color: var(--ink-soft);
+    font-size: 15px;
+    font-weight: 600;
+    transition: all .2s ease;
   }
-  .nav-badge {
-    margin-left: auto;
-    background: var(--neon-magenta);
-    color: white;
-    font-size: 9px;
-    padding: 1px 5px;
-    border-radius: 8px;
-    box-shadow: 0 0 8px rgba(255,45,120,0.6);
-    font-weight: bold;
+  .nav a .ic { font-size: 19px; width: 24px; text-align: center; }
+  .nav a:hover { background: var(--glass-strong); color: var(--ink); transform: translateX(3px); }
+  .nav a.active {
+    background: linear-gradient(135deg, rgba(168,192,255,.85), rgba(251,194,235,.85));
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(168, 150, 230, 0.4);
   }
-  .sidebar-footer {
+  .nav .spacer { flex: 1; }
+  .profile {
     margin-top: auto;
-    padding: 12px 16px;
-    border-top: 1px solid var(--border-dim);
+    display: flex; align-items: center; gap: 12px;
+    background: var(--glass-strong);
+    border: 1px solid var(--stroke);
+    border-radius: 18px;
+    padding: 12px;
   }
-  .sidebar-footer-text {
-    font-size: 9px;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-    line-height: 1.8;
+  .profile .av {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #ffd6a5, #ffb3d9);
+    display: grid; place-items: center; font-size: 18px;
   }
-  .sidebar-footer-text span {
-    color: var(--neon-green);
-    text-shadow: 0 0 4px var(--neon-green);
-  }
+  .profile b { font-size: 14.5px; display: block; }
+  .profile small { font-size: 12px; color: var(--ink-soft); }
 
-  /* MAIN CONTENT */
-  .main {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    background: radial-gradient(ellipse at 30% 20%, rgba(0,245,255,0.03) 0%, transparent 60%),
-                radial-gradient(ellipse at 70% 80%, rgba(157,78,221,0.04) 0%, transparent 60%),
-                var(--bg-deep);
-  }
-  .main::-webkit-scrollbar { width: 4px; }
-  .main::-webkit-scrollbar-track { background: var(--bg-deep); }
-  .main::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 2px; }
+  /* ---------- Main ---------- */
+  .main { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 
-  /* GRID */
-  .grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin-bottom: 14px;
-  }
-  .grid-3 {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 14px;
-    margin-bottom: 14px;
-  }
-  .grid-4 {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-    margin-bottom: 14px;
-  }
-
-  /* CARDS */
-  .card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-dim);
-    border-radius: 6px;
-    padding: 16px;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.3s;
-  }
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
-    opacity: 0.3;
-  }
-  .card:hover { border-color: rgba(0,245,255,0.2); }
-  .card.magenta::before { background: linear-gradient(90deg, transparent, var(--neon-magenta), transparent); }
-  .card.purple::before { background: linear-gradient(90deg, transparent, var(--neon-purple), transparent); }
-  .card.green::before { background: linear-gradient(90deg, transparent, var(--neon-green), transparent); }
-  .card.orange::before { background: linear-gradient(90deg, transparent, var(--neon-orange), transparent); }
-
-  .card-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-  .card-label {
-    font-size: 9px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    flex: 1;
-  }
-  .card-icon { font-size: 14px; }
-
-  /* METRIC CARDS */
-  .metric-val {
-    font-size: 36px;
-    font-weight: bold;
-    line-height: 1;
-    margin-bottom: 4px;
-  }
-  .metric-unit { font-size: 16px; }
-  .metric-sub {
-    font-size: 10px;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-    margin-bottom: 10px;
-  }
-
-  /* PROGRESS BAR */
-  .progress-track {
-    height: 4px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%;
-    border-radius: 2px;
-    position: relative;
-  }
-  .progress-fill::after {
-    content: '';
-    position: absolute;
-    right: 0; top: 0; bottom: 0;
-    width: 6px;
-    background: white;
-    opacity: 0.8;
-    border-radius: 2px;
-    box-shadow: 0 0 6px currentColor;
-  }
-  .cyan-fill { background: linear-gradient(90deg, rgba(0,245,255,0.3), var(--neon-cyan)); box-shadow: 0 0 8px rgba(0,245,255,0.4); }
-  .magenta-fill { background: linear-gradient(90deg, rgba(255,45,120,0.3), var(--neon-magenta)); box-shadow: 0 0 8px rgba(255,45,120,0.4); }
-  .green-fill { background: linear-gradient(90deg, rgba(57,255,20,0.3), var(--neon-green)); box-shadow: 0 0 8px rgba(57,255,20,0.4); }
-  .orange-fill { background: linear-gradient(90deg, rgba(255,107,0,0.3), var(--neon-orange)); box-shadow: 0 0 8px rgba(255,107,0,0.4); }
-
-  /* GAUGE */
-  .gauge-wrap {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-  .gauge-circle {
-    width: 70px;
-    height: 70px;
-    position: relative;
-    flex-shrink: 0;
-  }
-  .gauge-svg { width: 70px; height: 70px; transform: rotate(-90deg); }
-  .gauge-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 6; }
-  .gauge-val-text {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: bold;
-  }
-  .gauge-info { flex: 1; }
-  .gauge-name {
-    font-size: 11px;
-    letter-spacing: 1px;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
-    text-transform: uppercase;
-  }
-  .gauge-detail {
-    font-size: 10px;
-    color: var(--text-dim);
-    line-height: 1.8;
-  }
-  .gauge-detail span { color: var(--text-secondary); }
-
-  /* WEATHER CARD */
-  .weather-main {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 12px;
-  }
-  .weather-icon { font-size: 40px; line-height: 1; }
-  .weather-temp {
-    font-size: 42px;
-    font-weight: bold;
-    color: var(--neon-cyan);
-    text-shadow: 0 0 20px rgba(0,245,255,0.5);
-    line-height: 1;
-  }
-  .weather-desc {
-    font-size: 11px;
-    color: var(--text-secondary);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-top: 2px;
-  }
-  .weather-city {
-    font-size: 9px;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 10px;
-  }
-  .weather-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-  }
-  .weather-item {
-    font-size: 10px;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-  }
-  .weather-item span { color: var(--text-secondary); }
-
-  /* MAIL CARD */
-  .mail-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border-dim);
-  }
-  .mail-item:last-child { border-bottom: none; }
-  .mail-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    margin-top: 4px;
-    flex-shrink: 0;
-  }
-  .mail-dot.unread {
-    background: var(--neon-magenta);
-    box-shadow: 0 0 6px var(--neon-magenta);
-  }
-  .mail-dot.read { background: var(--text-dim); }
-  .mail-sender { font-size: 11px; color: var(--text-primary); letter-spacing: 0.5px; margin-bottom: 2px; }
-  .mail-subject { font-size: 10px; color: var(--text-secondary); margin-bottom: 2px; }
-  .mail-time { font-size: 9px; color: var(--text-dim); letter-spacing: 1px; }
-  .mail-count {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-  .mail-count-num {
-    font-size: 28px;
-    font-weight: bold;
-    color: var(--neon-magenta);
-    text-shadow: 0 0 12px rgba(255,45,120,0.6);
-  }
-  .mail-count-label { font-size: 11px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; }
-
-  /* QUICK STATS */
-  .qstat {
+  .topbar {
+    background: var(--glass);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border: 1px solid var(--stroke);
+    border-radius: 24px;
+    padding: 20px 28px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border-dim);
+    box-shadow: 0 10px 34px rgba(120, 120, 200, 0.14);
   }
-  .qstat:last-child { border-bottom: none; }
-  .qstat-label { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; }
-  .qstat-val { font-size: 12px; color: var(--text-primary); letter-spacing: 1px; }
-  .qstat-val.ok { color: var(--neon-green); text-shadow: 0 0 6px var(--neon-green); }
-  .qstat-val.warn { color: var(--neon-orange); text-shadow: 0 0 6px var(--neon-orange); }
-  .qstat-val.alert { color: var(--neon-magenta); text-shadow: 0 0 6px var(--neon-magenta); }
-
-  /* ACTIVITY / LOG */
-  .log-line {
-    display: flex;
-    gap: 10px;
-    padding: 5px 0;
-    font-size: 10px;
-    border-bottom: 1px solid var(--border-dim);
+  .topbar .title h2 { font-size: 23px; font-weight: 700; }
+  .topbar .title p { font-size: 13.5px; color: var(--ink-soft); margin-top: 3px; }
+  .topbar .right { display: flex; align-items: center; gap: 18px; }
+  .clock {
+    text-align: right;
+    background: var(--glass-strong);
+    border: 1px solid var(--stroke);
+    border-radius: 16px;
+    padding: 10px 20px;
   }
-  .log-line:last-child { border-bottom: none; }
-  .log-time { color: var(--text-dim); letter-spacing: 1px; flex-shrink: 0; width: 42px; }
-  .log-tag {
-    font-size: 8px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 1px 5px;
-    border-radius: 3px;
-    flex-shrink: 0;
-    align-self: center;
+  .clock .time { font-size: 26px; font-weight: 700; letter-spacing: 1px; line-height: 1; }
+  .clock .date { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
+  .bell {
+    width: 46px; height: 46px; border-radius: 14px;
+    background: var(--glass-strong);
+    border: 1px solid var(--stroke);
+    display: grid; place-items: center; font-size: 20px; cursor: pointer;
+    position: relative;
   }
-  .log-tag.info { background: rgba(0,245,255,0.12); color: var(--neon-cyan); border: 1px solid rgba(0,245,255,0.2); }
-  .log-tag.ok { background: rgba(57,255,20,0.1); color: var(--neon-green); border: 1px solid rgba(57,255,20,0.2); }
-  .log-tag.warn { background: rgba(255,107,0,0.1); color: var(--neon-orange); border: 1px solid rgba(255,107,0,0.2); }
-  .log-msg { color: var(--text-secondary); line-height: 1.6; }
-
-  /* WIDE CARD */
-  .card-wide { grid-column: span 2; }
-  .card-full { grid-column: span 3; }
-
-  /* SECTION HEADER */
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 14px;
-    margin-top: 6px;
-  }
-  .section-title {
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-  }
-  .section-line {
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, var(--border-dim), transparent);
+  .bell::after {
+    content: "3"; position: absolute; top: -4px; right: -4px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff8fb1, #ff6f91);
+    color: #fff; font-size: 11px; font-weight: 700;
+    display: grid; place-items: center;
+    box-shadow: 0 2px 6px rgba(255, 111, 145, .5);
   }
 
-  /* MINI CHART */
-  .sparkline {
-    display: flex;
-    align-items: flex-end;
-    gap: 2px;
-    height: 30px;
-    margin-top: 8px;
+  /* ---------- Grid ---------- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
   }
-  .spark-bar {
-    flex: 1;
-    border-radius: 2px 2px 0 0;
-    opacity: 0.7;
-    transition: opacity 0.2s;
+  .card {
+    background: var(--glass);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid var(--stroke);
+    border-radius: 24px;
+    padding: 22px;
+    box-shadow: 0 10px 30px rgba(120, 120, 200, 0.14);
+    transition: transform .25s ease, box-shadow .25s ease;
   }
-  .spark-bar:hover { opacity: 1; }
+  .card:hover { transform: translateY(-5px); box-shadow: 0 18px 44px rgba(120, 120, 200, 0.24); }
+  .card .head { display: flex; align-items: center; gap: 11px; margin-bottom: 16px; }
+  .card .head .icb {
+    width: 40px; height: 40px; border-radius: 13px;
+    display: grid; place-items: center; font-size: 19px;
+  }
+  .card .head h3 { font-size: 14.5px; font-weight: 600; color: var(--ink-soft); }
 
-  /* BOLLA STATUS */
-  .bolla-avatar {
-    width: 40px; height: 40px;
-    border-radius: 50%;
-    border: 2px solid var(--neon-cyan);
-    box-shadow: 0 0 12px rgba(0,245,255,0.4);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
-    background: radial-gradient(circle, rgba(0,245,255,0.1) 0%, transparent 70%);
-    flex-shrink: 0;
-  }
-  .bolla-info { flex: 1; }
-  .bolla-name { font-size: 13px; color: var(--neon-cyan); text-shadow: 0 0 8px rgba(0,245,255,0.5); letter-spacing: 2px; margin-bottom: 2px; }
-  .bolla-status-text { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
-  .bolla-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .ic-ram { background: linear-gradient(135deg, #a8c0ff, #cdb4ff); }
+  .ic-cpu { background: linear-gradient(135deg, #b4f0d4, #a0e6c8); }
+  .ic-mail { background: linear-gradient(135deg, #ffd0e4, #ffb3d9); }
+  .ic-wx { background: linear-gradient(135deg, #ffe7a8, #ffd180); }
 
-  /* CORNER DECORATIONS */
-  .card .corner-tl, .card .corner-br {
-    position: absolute;
-    width: 8px; height: 8px;
-  }
-  .card .corner-tl {
-    top: 0; left: 0;
-    border-top: 1px solid var(--neon-cyan);
-    border-left: 1px solid var(--neon-cyan);
-    opacity: 0.5;
-  }
-  .card .corner-br {
-    bottom: 0; right: 0;
-    border-bottom: 1px solid var(--neon-cyan);
-    border-right: 1px solid var(--neon-cyan);
-    opacity: 0.5;
-  }
+  .metric { font-size: 38px; font-weight: 800; line-height: 1; }
+  .metric small { font-size: 17px; font-weight: 600; color: var(--ink-soft); }
+  .sub { font-size: 13px; color: var(--ink-soft); margin-top: 9px; }
 
-  /* SCROLLABLE */
-  .scroll-inner { max-height: 180px; overflow-y: auto; }
-  .scroll-inner::-webkit-scrollbar { width: 2px; }
-  .scroll-inner::-webkit-scrollbar-thumb { background: var(--border-glow); }
+  .bar {
+    height: 10px; border-radius: 20px;
+    background: rgba(255,255,255,.5);
+    margin-top: 16px; overflow: hidden;
+  }
+  .bar i { display: block; height: 100%; border-radius: 20px; }
+  .bar.ram i { width: 34%; background: linear-gradient(90deg, #a8c0ff, #c9b6ff); }
+  .bar.cpu i { width: 12%; background: linear-gradient(90deg, #8be0b8, #b4f0d4); }
+
+  .mails { margin-top: 4px; display: flex; flex-direction: column; gap: 11px; }
+  .mailrow { display: flex; align-items: center; gap: 11px; font-size: 13.5px; }
+  .mailrow .dot { width: 9px; height: 9px; border-radius: 50%; background: #ff6f91; flex-shrink: 0; }
+  .mailrow b { font-weight: 600; }
+  .mailrow span { color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .weather { display: flex; align-items: center; justify-content: space-between; }
+  .weather .big { font-size: 30px; }
+  .wx-extra { display: flex; gap: 18px; margin-top: 16px; font-size: 12.5px; color: var(--ink-soft); }
+  .wx-extra b { display: block; color: var(--ink); font-size: 15px; }
+
+  /* wide row */
+  .wide { grid-column: span 2; }
+  .activity { display: flex; flex-direction: column; gap: 14px; }
+  .act { display: flex; align-items: center; gap: 14px; }
+  .act .ai {
+    width: 34px; height: 34px; border-radius: 11px; flex-shrink: 0;
+    display: grid; place-items: center; font-size: 16px;
+    background: var(--glass-strong); border: 1px solid var(--stroke);
+  }
+  .act .txt { flex: 1; min-width: 0; }
+  .act .txt b { font-size: 14px; }
+  .act .txt p { font-size: 12.5px; color: var(--ink-soft); }
+  .act time { font-size: 12px; color: var(--ink-soft); }
+
+  .quick { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .qb {
+    background: var(--glass-strong);
+    border: 1px solid var(--stroke);
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform .2s ease;
+  }
+  .qb:hover { transform: scale(1.04); }
+  .qb .qi { font-size: 22px; }
+  .qb span { display: block; font-size: 13px; font-weight: 600; margin-top: 7px; }
+
+  @media (max-width: 1100px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    .wide { grid-column: span 2; }
+  }
+  @media (max-width: 720px) {
+    body { flex-direction: column; }
+    .sidebar { width: 100%; }
+    .grid { grid-template-columns: 1fr; }
+    .wide { grid-column: span 1; }
+  }
 </style>
 </head>
 <body>
 
-<!-- TOPBAR -->
-<div class="topbar">
-  <div class="topbar-logo">B<span>◆</span>LLA</div>
-  <div class="topbar-sep">//</div>
-  <div class="topbar-title">Mission Control — Dashboard</div>
-  <div class="topbar-right">
-    <div class="topbar-status">
-      <div class="dot-live"></div>
-      ONLINE · BOLLA v3.2
-    </div>
-    <div>
-      <div class="topbar-clock">20:14</div>
-      <div class="topbar-date">Mo 16. Jun 2026</div>
-    </div>
-  </div>
-</div>
-
-<!-- LAYOUT -->
-<div class="layout">
-
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sidebar-section">Navigation</div>
-
-    <div class="nav-item active">
-      <div class="nav-icon">◈</div>
-      Dashboard
-    </div>
-    <div class="nav-item">
-      <div class="nav-icon">◉</div>
-      Bolla
-    </div>
-    <div class="nav-item">
-      <div class="nav-icon">◧</div>
-      Schule
-    </div>
-
-    <div class="sidebar-section" style="margin-top:8px">Services</div>
-
-    <div class="nav-item">
-      <div class="nav-icon">⬡</div>
-      Kalender
-    </div>
-    <div class="nav-item">
-      <div class="nav-icon">◫</div>
-      E-Mail
-      <span class="nav-badge">3</span>
-    </div>
-    <div class="nav-item">
-      <div class="nav-icon">◎</div>
-      Wetter
-    </div>
-
-    <div class="sidebar-section" style="margin-top:8px">System</div>
-
-    <div class="nav-item">
-      <div class="nav-icon">▣</div>
-      System Info
-    </div>
-
-    <div class="sidebar-footer">
-      <div class="sidebar-footer-text">
-        UPTIME<br>
-        <span>14d 07h 32m</span><br>
-        KERNEL<br>
-        <span>6.6.87 WSL2</span>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">🚀</div>
+      <div>
+        <h1>Mission Control</h1>
+        <span>Bolla · Aurora</span>
       </div>
     </div>
-  </div>
+    <nav class="nav">
+      <a href="#" class="active"><span class="ic">🏠</span> Dashboard</a>
+      <a href="#"><span class="ic">🐾</span> Bolla</a>
+      <a href="#"><span class="ic">🎓</span> Schule</a>
+      <a href="#"><span class="ic">📅</span> Kalender</a>
+      <a href="#"><span class="ic">✉️</span> E-Mail</a>
+      <a href="#"><span class="ic">🌤️</span> Wetter</a>
+      <a href="#"><span class="ic">⚙️</span> System Info</a>
+    </nav>
+    <div class="profile">
+      <div class="av">🧑</div>
+      <div>
+        <b>Chris Mandel</b>
+        <small>Norderstedt</small>
+      </div>
+    </div>
+  </aside>
 
-  <!-- MAIN CONTENT -->
+  <!-- Main -->
   <div class="main">
-
-    <!-- BOLLA STATUS -->
-    <div class="section-header">
-      <div class="section-title">Agent Status</div>
-      <div class="section-line"></div>
-    </div>
-    <div class="grid-3" style="margin-bottom:14px">
-
-      <div class="card" style="grid-column: span 2;">
-        <div class="corner-tl"></div><div class="corner-br"></div>
-        <div class="card-header">
-          <div class="card-label">Bolla · KI-Assistent</div>
-          <div style="font-size:9px;letter-spacing:1px;color:var(--neon-green);text-shadow:0 0 6px var(--neon-green);">● AKTIV</div>
-        </div>
-        <div class="bolla-row">
-          <div class="bolla-avatar">🐾</div>
-          <div class="bolla-info">
-            <div class="bolla-name">BOLLA</div>
-            <div class="bolla-status-text">Bereit · claude-sonnet-4-6 · Session aktiv</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-size:20px;color:var(--neon-cyan);text-shadow:0 0 10px var(--neon-cyan);font-weight:bold;">73<span style="font-size:12px">%</span></div>
-            <div style="font-size:9px;color:var(--text-dim);letter-spacing:1px;">BUDGET</div>
-          </div>
-        </div>
-        <div class="progress-track">
-          <div class="progress-fill cyan-fill" style="width:73%"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:5px;">
-          <span style="font-size:9px;color:var(--text-dim);">3.65M / 5M Tokens</span>
-          <span style="font-size:9px;color:var(--neon-orange);">Reset in 4d 12h</span>
+    <header class="topbar">
+      <div class="title">
+        <h2>Dashboard</h2>
+        <p>Mittwoch, 17. Juni 2026 · Alles im grünen Bereich</p>
+      </div>
+      <div class="right">
+        <div class="bell">🔔</div>
+        <div class="clock">
+          <div class="time">20:14</div>
+          <div class="date">Guten Abend, Chris</div>
         </div>
       </div>
+    </header>
 
-      <div class="card green">
-        <div class="corner-tl"></div><div class="corner-br"></div>
-        <div class="card-header">
-          <div class="card-label">Mission Control</div>
-        </div>
-        <div style="margin-bottom:6px;">
-          <div class="qstat">
-            <span class="qstat-label">Webserver</span>
-            <span class="qstat-val ok">● ONLINE</span>
-          </div>
-          <div class="qstat">
-            <span class="qstat-label">CF Tunnel</span>
-            <span class="qstat-val ok">● AKTIV</span>
-          </div>
-          <div class="qstat">
-            <span class="qstat-label">Domain</span>
-            <span class="qstat-val" style="color:var(--text-secondary);font-size:10px;">bolla.chrismandel.de</span>
-          </div>
-          <div class="qstat">
-            <span class="qstat-label">Port</span>
-            <span class="qstat-val" style="color:var(--text-secondary);">18790</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SYSTEM METRICS -->
-    <div class="section-header">
-      <div class="section-title">System · Norderstedt · Surface Laptop</div>
-      <div class="section-line"></div>
-    </div>
-    <div class="grid-4">
-
+    <section class="grid">
       <!-- RAM -->
       <div class="card">
-        <div class="corner-tl"></div><div class="corner-br"></div>
-        <div class="card-header">
-          <div class="card-label">RAM</div>
-          <div class="card-icon" style="color:var(--neon-cyan);">▦</div>
-        </div>
-        <div class="gauge-wrap">
-          <div class="gauge-circle">
-            <svg class="gauge-svg" viewBox="0 0 70 70">
-              <circle class="gauge-bg" cx="35" cy="35" r="27"/>
-              <circle fill="none" stroke="url(#cyanGrad)" stroke-width="6" cx="35" cy="35" r="27"
-                stroke-dasharray="169.6" stroke-dashoffset="115.3" stroke-linecap="round"/>
-              <defs>
-                <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" style="stop-color:rgba(0,245,255,0.4)"/>
-                  <stop offset="100%" style="stop-color:#00f5ff"/>
-                </linearGradient>
-              </defs>
-            </svg>
-            <div class="gauge-val-text" style="color:var(--neon-cyan);text-shadow:0 0 8px var(--neon-cyan);">34%</div>
-          </div>
-          <div class="gauge-info">
-            <div class="gauge-name">Arbeitsspeicher</div>
-            <div class="gauge-detail">
-              Belegt: <span>5.4 GB</span><br>
-              Frei: <span>10.6 GB</span><br>
-              Gesamt: <span>16 GB</span>
-            </div>
-          </div>
-        </div>
-        <div class="sparkline">
-          <div class="spark-bar" style="height:40%;background:var(--neon-cyan);"></div>
-          <div class="spark-bar" style="height:55%;background:var(--neon-cyan);"></div>
-          <div class="spark-bar" style="height:35%;background:var(--neon-cyan);"></div>
-          <div class="spark-bar" style="height:45%;background:var(--neon-cyan);"></div>
-          <div class="spark-bar" style="height:60%;background:var(--neon-cyan);"></div>
-          <div class="spark-bar" style="height:38%;background:var(--neon-cyan);"></div>
-          <div class="spark-bar" style="height:34%;background:var(--neon-cyan);"></div>
-        </div>
+        <div class="head"><div class="icb ic-ram">🧠</div><h3>Arbeitsspeicher</h3></div>
+        <div class="metric">34<small>%</small></div>
+        <div class="sub">5,4 GB von 16 GB belegt</div>
+        <div class="bar ram"><i></i></div>
       </div>
 
       <!-- CPU -->
-      <div class="card magenta">
-        <div class="corner-tl"></div><div class="corner-br"></div>
-        <div class="card-header">
-          <div class="card-label">CPU</div>
-          <div class="card-icon" style="color:var(--neon-magenta);">⬡</div>
-        </div>
-        <div class="gauge-wrap">
-          <div class="gauge-circle">
-            <svg class="gauge-svg" viewBox="0 0 70 70">
-              <circle class="gauge-bg" cx="35" cy="35" r="27"/>
-              <circle fill="none" stroke="url(#magGrad)" stroke-width="6" cx="35" cy="35" r="27"
-                stroke-dasharray="169.6" stroke-dashoffset="149.2" stroke-linecap="round"/>
-              <defs>
-                <linearGradient id="magGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" style="stop-color:rgba(255,45,120,0.4)"/>
-                  <stop offset="100%" style="stop-color:#ff2d78"/>
-                </linearGradient>
-              </defs>
-            </svg>
-            <div class="gauge-val-text" style="color:var(--neon-magenta);text-shadow:0 0 8px var(--neon-magenta);">12%</div>
-          </div>
-          <div class="gauge-info">
-            <div class="gauge-name">Prozessor</div>
-            <div class="gauge-detail">
-              Kerne: <span>8 / 16</span><br>
-              Freq: <span>1.2 GHz</span><br>
-              Temp: <span>41 °C</span>
-            </div>
-          </div>
-        </div>
-        <div class="sparkline">
-          <div class="spark-bar" style="height:25%;background:var(--neon-magenta);"></div>
-          <div class="spark-bar" style="height:80%;background:var(--neon-magenta);"></div>
-          <div class="spark-bar" style="height:30%;background:var(--neon-magenta);"></div>
-          <div class="spark-bar" style="height:15%;background:var(--neon-magenta);"></div>
-          <div class="spark-bar" style="height:50%;background:var(--neon-magenta);"></div>
-          <div class="spark-bar" style="height:20%;background:var(--neon-magenta);"></div>
-          <div class="spark-bar" style="height:12%;background:var(--neon-magenta);"></div>
-        </div>
-      </div>
-
-      <!-- DISK -->
-      <div class="card purple">
-        <div class="corner-tl"></div><div class="corner-br"></div>
-        <div class="card-header">
-          <div class="card-label">Disk</div>
-          <div class="card-icon" style="color:var(--neon-purple);">▣</div>
-        </div>
-        <div class="gauge-wrap">
-          <div class="gauge-circle">
-            <svg class="gauge-svg" viewBox="0 0 70 70">
-              <circle class="gauge-bg" cx="35" cy="35" r="27"/>
-              <circle fill="none" stroke="url(#purpGrad)" stroke-width="6" cx="35" cy="35" r="27"
-                stroke-dasharray="169.6" stroke-dashoffset="62.6" stroke-linecap="round"/>
-              <defs>
-                <linearGradient id="purpGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" style="stop-color:rgba(157,78,221,0.4)"/>
-                  <stop offset="100%" style="stop-color:#9d4edd"/>
-                </linearGradient>
-              </defs>
-            </svg>
-            <div class="gauge-val-text" style="color:var(--neon-purple);text-shadow:0 0 8px var(--neon-purple);">63%</div>
-          </div>
-          <div class="gauge-info">
-            <div class="gauge-name">Speicher</div>
-            <div class="gauge-detail">
-              Belegt: <span>315 GB</span><br>
-              Frei: <span>185 GB</span><br>
-              Gesamt: <span>500 GB</span>
-            </div>
-          </div>
-        </div>
-        <div style="margin-top:8px;">
-          <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-dim);margin-bottom:3px;"><span>WSL2 /home</span><span style="color:var(--neon-purple);">42 GB</span></div>
-          <div class="progress-track"><div class="progress-fill" style="width:42%;background:var(--neon-purple);box-shadow:0 0 6px rgba(157,78,221,0.5);"></div></div>
-        </div>
-      </div>
-
-      <!-- NETWORK -->
-      <div class="card green">
-        <div class="corner-tl"></div><div class="corner-br"></div>
-        <div class="card-header">
-          <div class="card-label">Netzwerk</div>
-          <div class="card-icon" style="color:var(--neon-green);">◎</div>
-        </div>
-        <div style="margin-bottom:8px;">
-          <div style="font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:3px;">↓ DOWNLOAD</div>
-          <div style="font-size:22px;font-weight:bold;color:var(--neon-green);text-shadow:0 0 10px var(--neon-green);line-height:1;">8.4<span style="font-size:12px"> MB/s</span></div>
-        </div>
-        <div style="margin-bottom:8px;">
-          <div style="font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:3px;">↑ UPLOAD</div>
-          <div style="font-size:22px;font-weight:bold;color:var(--neon-cyan);text-shadow:0 0 10px var(--neon-cyan);line-height:1;">1.2<span style="font-size:12px"> MB/s</span></div>
-        </div>
-        <div class="qstat" style="padding:4px 0;">
-          <span class="qstat-label">Ping</span>
-          <span style="font-size:11px;color:var(--neon-green);">12 ms</span>
-        </div>
-        <div class="qstat" style="padding:4px 0;border:none;">
-          <span class="qstat-label">IP (lokal)</span>
-          <span style="font-size:10px;color:var(--text-secondary);">192.168.1.42</span>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- WEATHER + MAIL -->
-    <div class="section-header">
-      <div class="section-title">Widgets</div>
-      <div class="section-line"></div>
-    </div>
-    <div class="grid-3">
-
-      <!-- WEATHER -->
       <div class="card">
-        <div class="corner-tl"></div><div class="corner-br"></div>
-        <div class="card-header">
-          <div class="card-label">Wetter · Norderstedt</div>
-          <div class="card-icon">🌤</div>
+        <div class="head"><div class="icb ic-cpu">⚡</div><h3>Prozessor</h3></div>
+        <div class="metric">12<small>%</small></div>
+        <div class="sub">Last niedrig · 42 °C</div>
+        <div class="bar cpu"><i></i></div>
+      </div>
+
+      <!-- Mail -->
+      <div class="card">
+        <div class="head"><div class="icb ic-mail">✉️</div><h3>Posteingang</h3></div>
+        <div class="metric">3<small> neu</small></div>
+        <div class="mails">
+          <div class="mailrow"><span class="dot"></span><span><b>Lessing GY</b> — Stundenplan KW 26</span></div>
+          <div class="mailrow"><span class="dot"></span><span><b>Robin</b> — Re: Wochenende</span></div>
+          <div class="mailrow"><span class="dot"></span><span><b>IONOS</b> — Rechnung Juni</span></div>
         </div>
-        <div class="weather-main">
-          <div class="weather-icon">⛅</div>
-          <div>
-            <div class="weather-temp">18°<span style="font-size:20px;color:var(--text-secondary);">C</span></div>
-            <div class="weather-desc">Leicht bewölkt</div>
-          </div>
+      </div>
+
+      <!-- Weather -->
+      <div class="card">
+        <div class="head"><div class="icb ic-wx">🌤️</div><h3>Wetter</h3></div>
+        <div class="weather">
+          <div class="metric">18<small>°C</small></div>
+          <div class="big">⛅</div>
         </div>
-        <div class="weather-grid">
-          <div class="weather-item">Luftfeuchtigkeit<br><span>71%</span></div>
-          <div class="weather-item">Wind<br><span>14 km/h NW</span></div>
-          <div class="weather-item">Gefühlt<br><span>16°C</span></div>
-          <div class="weather-item">Sichtweite<br><span>22 km</span></div>
+        <div class="sub">Hamburg · leicht bewölkt</div>
+        <div class="wx-extra">
+          <div>💧 <b>62%</b> Luftf.</div>
+          <div>🌬️ <b>14</b> km/h</div>
+          <div>☂️ <b>10%</b> Regen</div>
         </div>
-        <div style="margin-top:10px;display:flex;gap:6px;">
-          <div style="flex:1;text-align:center;padding:6px;background:rgba(0,245,255,0.04);border:1px solid var(--border-dim);border-radius:4px;">
-            <div style="font-size:16px;">🌧</div>
-            <div style="font-size:9px;color:var(--text-dim);margin-top:2px;">Di</div>
-            <div style="font-size:11px;color:var(--text-secondary);">15°</div>
+      </div>
+
+      <!-- Activity (wide) -->
+      <div class="card wide">
+        <div class="head"><div class="icb ic-ram">📡</div><h3>Letzte Aktivität</h3></div>
+        <div class="activity">
+          <div class="act">
+            <div class="ai">💾</div>
+            <div class="txt"><b>Nachtsicherung erstellt</b><p>Backup nach OneDrive + GitHub gepusht</p></div>
+            <time>03:00</time>
           </div>
-          <div style="flex:1;text-align:center;padding:6px;background:rgba(0,245,255,0.04);border:1px solid var(--border-dim);border-radius:4px;">
-            <div style="font-size:16px;">⛅</div>
-            <div style="font-size:9px;color:var(--text-dim);margin-top:2px;">Mi</div>
-            <div style="font-size:11px;color:var(--text-secondary);">17°</div>
+          <div class="act">
+            <div class="ai">📧</div>
+            <div class="txt"><b>Kindle-Versand</b><p>3 EPUBs an Send-to-Kindle gesendet</p></div>
+            <time>gestern</time>
           </div>
-          <div style="flex:1;text-align:center;padding:6px;background:rgba(0,245,255,0.04);border:1px solid var(--border-dim);border-radius:4px;">
-            <div style="font-size:16px;">☀️</div>
-            <div style="font-size:9px;color:var(--text-dim);margin-top:2px;">Do</div>
-            <div style="font-size:11px;color:var(--text-secondary);">21°</div>
-          </div>
-          <div style="flex:1;text-align:center;padding:6px;background:rgba(0,245,255,0.04);border:1px solid var(--border-dim);border-radius:4px;">
-            <div style="font-size:16px;">🌤</div>
-            <div style="font-size:9px;color:var(--text-dim);margin-top:2px;">Fr</div>
-            <div style="font-size:11px;color:var(--text-secondary);">19°</div>
+          <div class="act">
+            <div class="ai">🌐</div>
+            <div class="txt"><b>Tunnel online</b><p>bolla.chrismandel.de erreichbar</p></div>
+            <time>19:58</time>
           </div>
         </div>
       </div>
 
-      <!-- MAIL -->
-      <div class="card magenta">
-        <div class="corner-tl"></div><div class="corner-br"></div>
-        <div class="card-header">
-          <div class="card-label">E-Mail · Outlook</div>
-          <div class="card-icon" style="color:var(--neon-magenta);">✉</div>
-        </div>
-        <div class="mail-count">
-          <div class="mail-count-num">3</div>
-          <div>
-            <div class="mail-count-label">neue Nachrichten</div>
-            <div style="font-size:9px;color:var(--text-dim);margin-top:2px;">ernstmandel@outlook.de</div>
-          </div>
-        </div>
-        <div class="scroll-inner">
-          <div class="mail-item">
-            <div class="mail-dot unread"></div>
-            <div>
-              <div class="mail-sender">Lessing Gymnasium</div>
-              <div class="mail-subject">Vertretungsplan KW 25 — Update</div>
-              <div class="mail-time">18:42</div>
-            </div>
-          </div>
-          <div class="mail-item">
-            <div class="mail-dot unread"></div>
-            <div>
-              <div class="mail-sender">Robin Mandel</div>
-              <div class="mail-subject">Doktorarbeit — Kapitel 3 fertig! 🎉</div>
-              <div class="mail-time">14:17</div>
-            </div>
-          </div>
-          <div class="mail-item">
-            <div class="mail-dot unread"></div>
-            <div>
-              <div class="mail-sender">OneDrive</div>
-              <div class="mail-subject">Ihr Speicher ist zu 68% voll</div>
-              <div class="mail-time">09:03</div>
-            </div>
-          </div>
-          <div class="mail-item">
-            <div class="mail-dot read"></div>
-            <div>
-              <div class="mail-sender">Steffi Garschagen</div>
-              <div class="mail-subject">Fotos vom Wochenende ☀️</div>
-              <div class="mail-time">Gestern</div>
-            </div>
-          </div>
+      <!-- Quick actions (wide) -->
+      <div class="card wide">
+        <div class="head"><div class="icb ic-cpu">🎛️</div><h3>Schnellzugriff</h3></div>
+        <div class="quick">
+          <div class="qb"><div class="qi">📨</div><span>Neue Mail</span></div>
+          <div class="qb"><div class="qi">📅</div><span>Termin</span></div>
+          <div class="qb"><div class="qi">🔄</div><span>Sync</span></div>
+          <div class="qb"><div class="qi">🐾</div><span>Bolla fragen</span></div>
         </div>
       </div>
-
-      <!-- KALENDER -->
-      <div class="card purple">
-        <div class="corner-tl"></div><div class="corner-br"></div>
-        <div class="card-header">
-          <div class="card-label">Kalender · Heute</div>
-          <div class="card-icon" style="color:var(--neon-purple);">⬡</div>
-        </div>
-        <div style="margin-bottom:10px;">
-          <div style="font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px;">Montag, 16. Juni 2026</div>
-          <div style="display:flex;flex-direction:column;gap:6px;" class="scroll-inner">
-
-            <div style="display:flex;gap:10px;align-items:flex-start;padding:7px 8px;background:rgba(157,78,221,0.08);border:1px solid rgba(157,78,221,0.2);border-radius:4px;border-left:3px solid var(--neon-purple);">
-              <div style="font-size:9px;color:var(--neon-purple);letter-spacing:1px;min-width:36px;">08:00</div>
-              <div>
-                <div style="font-size:11px;color:var(--text-primary);">Unterricht Kl. 9b</div>
-                <div style="font-size:9px;color:var(--text-dim);">EDV · Raum 214</div>
-              </div>
-            </div>
-
-            <div style="display:flex;gap:10px;align-items:flex-start;padding:7px 8px;background:rgba(0,245,255,0.05);border:1px solid rgba(0,245,255,0.15);border-radius:4px;border-left:3px solid var(--neon-cyan);">
-              <div style="font-size:9px;color:var(--neon-cyan);letter-spacing:1px;min-width:36px;">11:30</div>
-              <div>
-                <div style="font-size:11px;color:var(--text-primary);">Konferenz Lehrerkollegium</div>
-                <div style="font-size:9px;color:var(--text-dim);">Konferenzraum · 45 min</div>
-              </div>
-            </div>
-
-            <div style="display:flex;gap:10px;align-items:flex-start;padding:7px 8px;background:rgba(57,255,20,0.04);border:1px solid rgba(57,255,20,0.1);border-radius:4px;border-left:3px solid var(--neon-green);">
-              <div style="font-size:9px;color:var(--neon-green);letter-spacing:1px;min-width:36px;">20:30</div>
-              <div>
-                <div style="font-size:11px;color:var(--text-primary);">Video-Call Robin</div>
-                <div style="font-size:9px;color:var(--text-dim);">privat · Zoom</div>
-              </div>
-            </div>
-
-            <div style="font-size:9px;color:var(--text-dim);letter-spacing:1px;padding:4px 0;text-transform:uppercase;">Morgen</div>
-
-            <div style="display:flex;gap:10px;align-items:flex-start;padding:7px 8px;background:rgba(255,107,0,0.04);border:1px solid rgba(255,107,0,0.1);border-radius:4px;border-left:3px solid var(--neon-orange);">
-              <div style="font-size:9px;color:var(--neon-orange);letter-spacing:1px;min-width:36px;">09:00</div>
-              <div>
-                <div style="font-size:11px;color:var(--text-primary);">Arzttermin (Augenarzt)</div>
-                <div style="font-size:9px;color:var(--text-dim);">Norderstedt · Dr. Peters</div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- SYSTEM LOG -->
-    <div class="section-header">
-      <div class="section-title">System Log</div>
-      <div class="section-line"></div>
-    </div>
-    <div class="card" style="margin-bottom:14px;">
-      <div class="corner-tl"></div><div class="corner-br"></div>
-      <div class="scroll-inner" style="max-height:130px;">
-        <div class="log-line">
-          <div class="log-time">20:12</div>
-          <div class="log-tag ok">OK</div>
-          <div class="log-msg">Cloudflare Tunnel bolla-mc — Verbindung stabil (bolla.chrismandel.de)</div>
-        </div>
-        <div class="log-line">
-          <div class="log-time">20:08</div>
-          <div class="log-tag info">INFO</div>
-          <div class="log-msg">Mission Control API — GET /api/claudequota → 200 (3.65M / 5M Tokens)</div>
-        </div>
-        <div class="log-line">
-          <div class="log-time">19:55</div>
-          <div class="log-tag ok">OK</div>
-          <div class="log-msg">GitHub Backup Push erfolgreich — openclaw-bolla/openclaw-bolla (master)</div>
-        </div>
-        <div class="log-line">
-          <div class="log-time">19:42</div>
-          <div class="log-tag info">INFO</div>
-          <div class="log-msg">Bolla Session gestartet — claude-sonnet-4-6 · aktuell.md geladen</div>
-        </div>
-        <div class="log-line">
-          <div class="log-time">18:30</div>
-          <div class="log-tag warn">WARN</div>
-          <div class="log-msg">OneDrive-Sync — 847 Dateien ausstehend (Quota 68% voll)</div>
-        </div>
-        <div class="log-line">
-          <div class="log-time">06:00</div>
-          <div class="log-tag ok">OK</div>
-          <div class="log-msg">Cron: Automatische Nachtsicherung abgeschlossen — git commit + push OK</div>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /main -->
-</div><!-- /layout -->
+    </section>
+  </div>
 
 </body>
 </html>

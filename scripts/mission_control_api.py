@@ -1201,6 +1201,60 @@ def get_crontab():
     except Exception as e:
         return []
 
+def get_claude_version():
+    """Claude-Code-Versionsstatus fürs mp-Dashboard.
+    Liest die TATSÄCHLICH laufende Version direkt aus /proc/<pid>/exe (zeigt auf
+    .../versions/X) und vergleicht sie mit der bereitliegenden Version (Symlink-Ziel
+    von ~/.local/bin/claude). Unterschied → Neustart fällig.
+    Robuster als der frühere mtime/etime-Ansatz: erkennt den Prozess unabhängig davon,
+    wie sein argv[0] aussieht ('claude' vs. voller Pfad)."""
+    import subprocess as _sp, time as _t, os as _os
+    info = {"running": False, "needs_restart": False,
+            "available_version": None, "running_version": None,
+            "uptime_human": None, "uptime_days": None}
+    # Bereitliegende Version = Symlink-Ziel
+    try:
+        target = _os.path.realpath("/home/bolla/.local/bin/claude")
+        info["available_version"] = _os.path.basename(target)
+    except Exception:
+        pass
+    # Laufenden claude-Prozess finden (über exe-Symlink, nicht über argv)
+    try:
+        r = _sp.run(["pgrep", "-x", "claude"], capture_output=True, text=True)
+        pids = [p for p in r.stdout.split() if p.strip()]
+        best = None  # (etimes, pid, running_version)
+        for pid in pids:
+            try:
+                exe = _os.readlink(f"/proc/{pid}/exe")
+            except Exception:
+                continue
+            if "/claude/versions/" not in exe:
+                continue
+            ver = _os.path.basename(exe)
+            try:
+                e = int(_sp.run(["ps", "-o", "etimes=", "-p", pid],
+                                capture_output=True, text=True).stdout.strip())
+            except Exception:
+                e = 0
+            # Ältesten Prozess nehmen (der am ehesten veraltet ist)
+            if best is None or e > best[0]:
+                best = (e, pid, ver)
+        if best:
+            secs, _pid, info["running_version"] = best
+            info["running"] = True
+            info["uptime_days"] = round(secs / 86400.0, 1)
+            h = secs // 3600
+            if h >= 24:
+                info["uptime_human"] = f"{int(h // 24)}d {int(h % 24)}h"
+            else:
+                info["uptime_human"] = f"{int(h)}h {int((secs % 3600) // 60)}m"
+            # Direkter Versionsvergleich: läuft ≠ bereit → Neustart
+            if info["available_version"] and info["running_version"] != info["available_version"]:
+                info["needs_restart"] = True
+    except Exception:
+        pass
+    return info
+
 def get_immo_criteria():
     if IMMO_CRITERIA_FILE.exists():
         return json.loads(IMMO_CRITERIA_FILE.read_text())
@@ -4693,6 +4747,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/birthdays": get_birthdays,
                 "/api/robin": get_robin_info,
                 "/api/sysinfo": get_sysinfo,
+                "/api/claudeversion": get_claude_version,
                 "/api/surfaces/book": get_book_health,
                 "/api/surfaces/pro": get_pro_health,
                 "/api/surfaces/studio": get_studio_health,
