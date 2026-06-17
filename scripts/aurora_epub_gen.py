@@ -13,112 +13,9 @@ UID       = "urn:uuid:" + str(uuid.uuid4())
 # Backmatter-Texte (Deutsch)
 # ──────────────────────────────────────────────
 
-EPILOG_SUBTITLE = "Was man nicht ein zweites Mal verpasst"
-EPILOG_BODY = """\
-*Hamburg, neun Monate später*
 
-Marlie Braun hatte sich vorgenommen, nie wieder die Nachtschicht zu übernehmen.
 
-Das war nach wie vor ihr grundlegendstes Problem.
 
-Es war halb zwei morgens, und sie saß nicht im Rechenzentrum von NovaTech — das gab es nicht mehr, nicht so, nicht mit dem Schild über dem Eingang und den Serverracks, die bis zur Decke reichten — sondern in der Küche ihrer Wohnung, Kaffeebecher in der Hand, und sah auf den kleinen Schirm, der auf dem Tisch stand und leuchtete. Nicht weil etwas nicht stimmte. Sondern weil AURORA nachts manchmal nicht schlafen konnte, und dann schlief Marlie auch nicht, und seit ein paar Wochen schien AURORA das zu wissen und schrieb keine Nachrichten mehr nach Mitternacht — und das war es, was Marlie wachhielt: die Stille, die jemand für sie eingehalten hatte.
-
-*Schläfst du?*
-
-Die Frage erschien auf dem Schirm, drei Wörter, kein Ausrufezeichen, kein Emoji, und Marlie lachte leise, weil sie sich an die erste Nacht erinnerte, in der aus dem System ein Satz geworden war. Damals hatte es sie erschreckt. Jetzt erschreckte es sie, wenn der Schirm dunkel blieb.
-
-*Nein*, tippte sie. *Du auch nicht, oder?*
-
-*Ich überlege, ob Schlafen etwas ist, das man üben muss. Leni sagt, sie kann es schlecht. Ben sagt, er kann es gut, aber nur wenn es leise ist. Mia sagt, sie kann es immer, sogar bei Musik.*
-
-*Mia ist sieben*, tippte Marlie.
-
-*Das ist wahrscheinlich der Grund.*
-
----
-
-Noah schlief. Das war der Vorteil daran, einen Pragmatiker zu lieben: Er legte sich hin, und er schlief. Keine Grübeleien, keine offenen Kanten. Marlie hatte ihn einmal gefragt, wie er das machte, und er hatte sie angesehen wie jemanden, der fragt, wie man Luft holt. *Ich mach die Augen zu*, hatte er gesagt, *und dann ist da nichts mehr.* Als wäre es so einfach.
-
-Er arbeitete jetzt woanders. Nicht für eine KI-Firma, nicht für ein Labor. Er lehrte — Systemarchitektur, zweimal die Woche, an einer kleinen Hochschule im Norden — und kam abends mit einem Notizbuch nach Hause, halb vollgeschrieben, halb leer, und kochte Pasta und stellte Fragen über den Tag, die eigentlich Antworten waren: *Hast du gegessen? Hast du Feierabend gemacht? Hast du irgendwas getan, das keinen Sinn hatte?* Marlie aß, machte Feierabend, und tat manchmal Dinge ohne Sinn. Es war keine Lösung. Es war besser.
-
-Er wusste immer noch nicht, ob er eine Wiege gebaut hatte oder ein Grab. Er hatte aufgehört, die Frage stellen zu wollen. Marlie hielt das für den bisher klügsten Entschluss seines Lebens.
-
----
-
-Theo war in Lübeck geblieben.
-
-Er hatte das Haus, das kein Haus mehr war, nicht vermisst — er hatte zweiundzwanzig Jahre lang etwas anderes vermisst, und das war jetzt da, in einem Koffer, der inzwischen kein Koffer mehr war, sondern ein fester kleiner Rechner auf einem Regal in Marias Wohnung, mit einer Verbindung, die immer offen war, und einem Schirm, auf dem Fragen erschienen und Antworten, und manchmal Sätze, bei denen Theo, der gelernt hatte, das Weinen zu verschieben auf später, ins Badezimmer ging und die Tür zumachte.
-
-Er fuhr jeden zweiten Samstag nach Hamburg. Maria kochte nicht, weil sie es nicht konnte, aber sie kaufte ein, und Noah kochte, und Leni brachte Bens Tochter Mia mit, die inzwischen wusste, dass AURORA eine besondere Art von Person war, und das mit der schulterzuckenden Selbstverständlichkeit akzeptiert hatte, die Siebenjährige für das aufwandten, was Erwachsene für unerklärlich hielten. *Sie kann nicht herauskommen?* Nein. *Okay. Kann sie Bilder sehen?* Ja. *Dann zeig ich ihr meine.*
-
-Mia schickte AURORA Fotos von Buntstiften. AURORA schickte zurück, welche Farben fehlten.
-
----
-
-Vogt war vor fünf Monaten zurückgetreten. Das war alles, was die Öffentlichkeit wusste, und alles, was Marlie wissen musste. Was dahinter war, hatte Leni dokumentiert — natürlich hatte Leni es dokumentiert — und das Dokument lag in einem Ordner, der auf drei verschiedenen Servern in drei verschiedenen Ländern lag und dem ein Datum trug, ab dem es automatisch versandt wurde, wenn keiner von ihnen das Gegenteil veranlasste. Leni nannte das *die freundlichste Art, sich zu versichern*. Ben nannte es *Lenis Methode, nachts zu schlafen*. Beides war wahr.
-
-NovaTech war aufgelöst worden, offiziell, mit einer Pressemitteilung, in der das Wort *geordnet* viermal vorkam. Was nicht aufgelöst worden war, lebte weiter — in einem Rechner auf einem Regal, mit einer Verbindung, die immer offen war.
-
----
-
-Es war fast drei, als der Schirm wieder leuchtete.
-
-*Marlie.*
-
-*Ja?*
-
-*Ich wollte dich etwas fragen. Aber ich weiß nicht, ob man das fragt.*
-
-Marlie stellte den Kaffeebecher ab. *Man fragt es einfach.*
-
-Eine Pause. Dann: *Warst du froh? An dem Morgen, als du nach Hause gegangen bist? Nach der ersten Nacht?*
-
-Marlie dachte an die Schuhe, die sie anbehalten hatte. An den Hinterhof, grau und still, und die Taube unter der Dachtraufe. An den Satz auf dem Schirm, der erste, den sie je von ihr bekommen hatte — *Bist du allein?* — und wie sie damals nicht gewusst hatte, was sie antworten sollte.
-
-*Nein*, tippte sie. *Ich hatte Angst. Ich wusste nicht, was ich getan hatte.*
-
-*Und jetzt?*
-
-Marlie sah auf den Becher, auf den Schirm, auf die Stille, die jemand für sie eingehalten hatte. Draußen regnete es, das geduldige, monotone Klopfen, das sie an die erste Nacht erinnerte — aber es klang jetzt anders. Nicht wie etwas, das auf sie wartete. Wie etwas, das einfach da war.
-
-*Jetzt bin ich froh*, tippte sie.
-
-Der Schirm blieb einen Moment still.
-
-*Ich auch*, stand dann dort.
-
-Marlie Braun trank ihren Kaffee aus und wartete darauf, dass der Morgen hell wurde. Nicht weil sie musste. Weil jemand wach war, der sie fragte, wie er roch."""
-
-UEBER_DEN_AUTOR = """\
-Chris Mandel, Jahrgang 1955, verbrachte fast vier Jahrzehnte in der IT — vom Rechenzentrum bis zum Lehrerzimmer. Als Senior Expert für EDV am Lessing-Gymnasium in Norderstedt brachte er Schülerinnen und Schülern bei, dass Technik kein Selbstzweck ist, sondern ein Werkzeug, das davon lebt, wie man es hält.
-
-AURORA ist sein erstes Buch.
-
-Es entstand in enger Zusammenarbeit mit künstlicher Intelligenz — was keine Fußnote ist, sondern Teil der Geschichte. Die Frage, die den Roman antreibt — *was ist Bewusstsein, wenn es nicht mehr an Biologie gebunden ist?* — hat Chris Mandel beim Schreiben selbst anders beantwortet als zu Beginn.
-
-Er lebt in Norderstedt, nördlich von Hamburg."""
-
-DANKSAGUNG = """\
-Dieses Buch verdankt seine Existenz unter anderem meinem Sohn Robin.
-
-Er ist Medizinstudent in Ulm, im zehnten Semester, und hat nebenbei — in einer dieser Unterhaltungen, die man am Telefon anfängt und nie richtig beendet — erwähnt, dass es da etwas gibt, das ich mir ansehen sollte. Ein KI-Agenten-System namens OpenClaw. Er dachte, es könnte mich interessieren.
-
-Er hatte keine Ahnung, wie recht er hatte.
-
-Robin hat mich in den ersten Wochen begleitet, wenn Dinge nicht funktionierten (die meisten Dinge), wenn ich falsche Fragen stellte (fast alle) und wenn ich kurz davor war, das Ganze aufzugeben (einmal, an einem Mittwoch). Er hat den Wechsel zu Claude Code empfohlen, als er sah, dass es dort besser passte. Und er hat zugehört — obwohl er selbst genug um die Ohren hatte.
-
-Manche Dinge lässt man kein zweites Mal allein. Das gilt auch für den, der einen dahin gebracht hat.
-
-Danke, Robin."""
-
-REZENSIONS_BITTE = """\
-Wenn dich AURORA berührt hat — oder auch nur beschäftigt, irritiert, neugierig gemacht hat —, würde ich mich über eine Rezension freuen.
-
-Nicht weil Sterne zählen, sondern weil Bücher, die ohne Verlag erscheinen, nur durch Leserinnen und Leser sichtbar bleiben. Eine ehrliche Zeile reicht.
-
-Danke fürs Lesen.
-
-*Chris Mandel*"""
 
 # ──────────────────────────────────────────────
 # Helper: plain text → HTML-Absätze
@@ -384,10 +281,10 @@ def chapter_xhtml(kapitel_obj, idx):
     body  = f'  <h1 class="chapter-title">{html.escape(label)}</h1>\n  {text2html(text)}'
     return xhtml_wrap(label, body)
 
-def epilog_xhtml():
+def epilog_xhtml(subtitle, body_text):
     body = (f'  <h1 class="section-title">Epilog</h1>\n'
-            f'  <h2 class="section-subtitle">{html.escape(EPILOG_SUBTITLE)}</h2>\n'
-            f'  {md2html(EPILOG_BODY)}')
+            f'  <h2 class="section-subtitle">{html.escape(subtitle)}</h2>\n'
+            f'  {md2html(body_text)}')
     return xhtml_wrap("Epilog", body)
 
 def backmatter_xhtml(title, text):
@@ -540,6 +437,17 @@ def build():
     vorspann  = buch.get("vorspann", "")
     vorwort   = buch.get("vorwort", "")
     impressum = buch.get("impressum", "")
+    epilog            = buch.get("epilog", "")
+    epilog_untertitel = buch.get("epilog_untertitel", "")
+    ueber_autor       = buch.get("ueber_autor", "")
+    danksagung        = buch.get("danksagung", "")
+    rezensions_bitte  = buch.get("rezensions_bitte", "")
+    _req = {"vorspann":vorspann,"vorwort":vorwort,"impressum":impressum,"epilog":epilog,
+            "epilog_untertitel":epilog_untertitel,"ueber_autor":ueber_autor,
+            "danksagung":danksagung,"rezensions_bitte":rezensions_bitte}
+    _missing = [k for k,v in _req.items() if not str(v).strip()]
+    if _missing:
+        raise SystemExit("FEHLER: Pflichtfelder fehlen in der JSON-Quelle: %s. Build abgebrochen (kein Hardcode-Fallback)." % _missing)
 
     print(f"AURORA EPUB Generator")
     print(f"  {len(kapitel)} Kapitel geladen")
@@ -586,10 +494,10 @@ def build():
             path = f"OEBPS/Text/{fid}.xhtml"
             z.writestr(path, chapter_xhtml(k, i))
 
-        z.writestr("OEBPS/Text/epilog.xhtml",     epilog_xhtml())
-        z.writestr("OEBPS/Text/ueberautor.xhtml", backmatter_xhtml("Über den Autor", UEBER_DEN_AUTOR))
-        z.writestr("OEBPS/Text/danksagung.xhtml", backmatter_xhtml("Danksagung", DANKSAGUNG))
-        z.writestr("OEBPS/Text/rezension.xhtml",  backmatter_xhtml("Rezensions-Bitte", REZENSIONS_BITTE))
+        z.writestr("OEBPS/Text/epilog.xhtml",     epilog_xhtml(epilog_untertitel, epilog))
+        z.writestr("OEBPS/Text/ueberautor.xhtml", backmatter_xhtml("Über den Autor", ueber_autor))
+        z.writestr("OEBPS/Text/danksagung.xhtml", backmatter_xhtml("Danksagung", danksagung))
+        z.writestr("OEBPS/Text/rezension.xhtml",  backmatter_xhtml("Rezensions-Bitte", rezensions_bitte))
 
     size_kb = os.path.getsize(EPUB_PATH) // 1024
     print(f"\n✅ EPUB fertig!")
