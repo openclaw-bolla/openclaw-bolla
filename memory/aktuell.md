@@ -1,3 +1,25 @@
+# Aktuell — 2026-06-17
+
+## AURORA — STIL-ENTZERRUNG läuft (17.06. vorm.) 🔄
+- **Befund:** Chris stolpert beim Lesen über zu dichten Stakkato/Trikolon-Rhythmus ("kein X, kein Y, kein Z" + kurzer Echosatz). KI-Stil-Tell + kollidiert mit Stilziel "packend wie Follett". Ursache mit-erkannt: meiste Kapitel mit **Sonnet** geschrieben (dessen Schönschreib-Default).
+- **Entscheidung Chris:** In BEIDEN Büchern (DE+EN) durchziehen, mit Subagenten, im Hintergrund.
+- **Workflow `aurora-destyle` (Task wfetjit7h, Run wf_cefa45f1-bed) läuft:** 94 Kapitel (47 DE + 47 EN). Opus entzerrt Rhythmus (NUR Satzbau, Inhalt 1:1), Sonnet verifiziert Faktentreue. Quota beim Start: 5h 13%, 7d 75% übrig (Max Plan, grün).
+- **I/O:** Original-Kapitel in `data/destyle/{de,en}/in/kapNN.txt`, überarbeitet in `.../out/kapNN.txt`.
+- **Backups vor Start:** `ki_buch_backup_vor_destyle_20260617_100206.json`, `ki_buch_en_adapted_backup_vor_destyle_20260617_100206.json`.
+- **Workflow durch:** 89/94 ok. Plausi perfekt (DE ±0%, EN −0,4%, keine Datei fehlt/abgeschnitten).
+- **5 Nacharbeiten erledigt:** de17 ("ganze" raus) + en17 ("No." raus) = Mini-Erfindungen gefixt. de5/de15/en38 mutiger neu (Opus, 2. Durchlauf) + per Sonnet verifiziert: de15 ok, en38 ok (2 Name-Diffs = verschmolzene Echos, harmlos), de5 hatte 2 echte Auslassungen ("als Signatur", "nur eine Folge von Ziffern") → von Hand repariert.
+- **✅ ABGESCHLOSSEN (17.06. 12:35):** Chris hat Stil abgenommen ("ja ist besser"), Grad = konservativ/entstaut (Stimme erhalten). 
+- **Merge:** 47/47 DE + 47/47 EN out-Texte zurück in `ki_buch.json` / `ki_buch_en_adapted.json` (mit Wortzahl-Asserts). 
+- **EPUBs neu gebaut + verifiziert:** `AURORA_deutsch.epub` (3125 KB), `AURORA_english.epub` (3110 KB) in `/mnt/d/OneDrive/Dokumente/AURORA/`. Verifiziert: neue Stilform drin, alte Stakkato-Form weg, Timeline-Fix („einundzwanzig"/"twenty-one years") erhalten, Namen ok.
+- **Backups:** JSON `*_backup_vor_destyle_20260617_100206.json`, EPUB `AURORA_*_vor_destyle_20260617_*.epub`. Beispiel-Datei: `OneDrive/Desktop/AURORA_Stil_Vorher_Nachher.txt`.
+- **✅ KINDLE (17.06.):** Beide finalen EPUBs (entstaut, je ~3,05 MB) via `scripts/kindle_send.py` an `ernstmandel_MnAuOy@kindle.com` gesendet. Amazon-Verifikationsmail → Chris klickt selbst.
+- **✅ KDP-MARKETING-FEINSCHLIFF (17.06.):** `AURORA_KDP_Materialien.md` überarbeitet (Backup `*_backup_vor_keyword-fix_20260617.md`). Recherche: Frauen = größere/kauffreudigere eBook-Gruppe, Lieblingsgenre Krimi/Thriller (#1); Sci-Fi dagegen männerlastig/kleiner. Daher: (a) Klappentext + dezente emotionale Note („Sehnsucht. Schuld. Ein Verlust…" — kein Geheimnis-Spoiler), (b) Keywords Richtung Thriller + „starke weibliche Hauptfigur", (c) Kategorien getauscht: Haupt = Thriller&Krimis→Technothriller, Neben = Sci-Fi→Techno-Thriller. Romanze/Humor nur Würze → NICHT als Genre labeln (Reklamationsgefahr), nur im Klappentext nutzen. Klappentext liegt NUR in der KDP-MD, nicht im EPUB → keine Neubauten nötig.
+- **✅ D2D-MATERIALIEN (17.06.):** Neue Datei `AURORA_D2D_Materialien.md` (DE+EN) erstellt. Enthält: Plattform-Aufteilung (Amazon NUR via KDP, Rest via D2D, bei D2D Amazon abwählen, kein KDP Select), W-8BEN-Hinweis, deutscher Klappentext (= KDP) + **neuer englischer Blurb** (Boston/Marley-Setting, mit emotionaler Note), BISAC-Kategorien (Thriller-first) + DE/EN-Keywords. Frage Chris beantwortet: ja, beide Bücher bei beiden Distributoren — mit Shop-Aufteilung (kein Amazon-Doppeleintrag).
+- **OFFEN:** Tagesnotiz + git commit + OneDrive-Backup (`rsync .claude/`) bei Session-Ende. Publishing-Upload (KDP+D2D) wartet weiter auf Chris.
+- **LERNPUNKT:** Desktop-Dateien gehören auf OneDrive-Desktop (`/mnt/d/OneDrive/Desktop/`), nicht lokal — neu in rules_kritisch + [[feedback_desktop_onedrive]].
+
+---
+
 # Aktuell — 2026-06-16
 
 ## AURORA — Welle A (Blocker-Fixes) LÄUFT (16.06. nachm.)
