@@ -3,251 +3,170 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Control — Aurora Glass</title>
+<title>Mission Control · Lumen</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
-    --a: #a8c0ff;
-    --b: #fbc2eb;
-    --glass: rgba(255, 255, 255, 0.35);
-    --glass-strong: rgba(255, 255, 255, 0.55);
-    --stroke: rgba(255, 255, 255, 0.6);
-    --ink: #3a3a5a;
-    --ink-soft: #6b6b8d;
+    --accent: #0a84ff;
+    --bg: #fbfbfd;
+    --card: #ffffff;
+    --ink: #1d1d1f;
+    --muted: #86868b;
+    --line: #ededf0;
+    --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.05);
   }
   body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "Helvetica Neue", sans-serif;
+    background: var(--bg);
     color: var(--ink);
-    background:
-      radial-gradient(circle at 15% 20%, #fbc2eb 0%, transparent 45%),
-      radial-gradient(circle at 85% 15%, #a8c0ff 0%, transparent 50%),
-      radial-gradient(circle at 70% 90%, #c2ffd8 0%, transparent 45%),
-      radial-gradient(circle at 25% 85%, #ffe7b3 0%, transparent 40%),
-      linear-gradient(135deg, #e8efff, #fde8f6);
-    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
     display: flex;
-    padding: 22px;
-    gap: 22px;
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
   }
-
-  /* floating decorative blobs */
-  body::before, body::after {
-    content: "";
-    position: fixed;
-    border-radius: 50%;
-    filter: blur(60px);
-    opacity: 0.5;
-    z-index: 0;
-    pointer-events: none;
-  }
-  body::before { width: 340px; height: 340px; background: #ffb3d9; top: -80px; right: 18%; }
-  body::after { width: 300px; height: 300px; background: #9fd8ff; bottom: -90px; left: 22%; }
 
   /* ---------- Sidebar ---------- */
   .sidebar {
-    position: relative;
-    z-index: 2;
-    width: 232px;
-    flex-shrink: 0;
-    background: var(--glass);
-    backdrop-filter: blur(22px) saturate(160%);
-    -webkit-backdrop-filter: blur(22px) saturate(160%);
-    border: 1px solid var(--stroke);
-    border-radius: 28px;
-    padding: 26px 18px;
-    box-shadow: 0 12px 40px rgba(120, 120, 200, 0.18);
+    width: 248px;
+    background: rgba(250,250,252,0.7);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-right: 1px solid var(--line);
+    padding: 32px 18px;
     display: flex;
     flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
   }
   .brand {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 4px 8px 24px;
+    padding: 0 12px 28px;
   }
-  .brand .logo {
-    width: 44px; height: 44px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, var(--a), var(--b));
-    display: grid; place-items: center;
-    font-size: 22px;
-    box-shadow: 0 6px 16px rgba(168, 140, 230, 0.45);
+  .brand .dot {
+    width: 30px; height: 30px;
+    border-radius: 9px;
+    background: linear-gradient(145deg, var(--accent), #64b5ff);
+    box-shadow: 0 4px 12px rgba(10,132,255,0.35);
   }
-  .brand h1 { font-size: 19px; font-weight: 700; letter-spacing: .3px; }
-  .brand span { font-size: 12.5px; color: var(--ink-soft); }
+  .brand h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.2px; }
+  .brand span { display:block; font-size: 12px; color: var(--muted); font-weight: 400; }
 
-  .nav { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+  .nav { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
   .nav a {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 13px 16px;
-    border-radius: 16px;
+    display: flex; align-items: center; gap: 13px;
+    padding: 10px 14px;
+    border-radius: 10px;
     text-decoration: none;
-    color: var(--ink-soft);
+    color: var(--ink);
     font-size: 15px;
-    font-weight: 600;
-    transition: all .2s ease;
+    font-weight: 450;
+    transition: background 0.18s ease;
   }
-  .nav a .ic { font-size: 19px; width: 24px; text-align: center; }
-  .nav a:hover { background: var(--glass-strong); color: var(--ink); transform: translateX(3px); }
+  .nav a .ic { width: 19px; text-align: center; opacity: 0.85; font-size: 16px; }
+  .nav a:hover { background: rgba(0,0,0,0.035); }
   .nav a.active {
-    background: linear-gradient(135deg, rgba(168,192,255,.85), rgba(251,194,235,.85));
+    background: var(--accent);
     color: #fff;
-    box-shadow: 0 8px 20px rgba(168, 150, 230, 0.4);
+    box-shadow: 0 4px 14px rgba(10,132,255,0.28);
   }
-  .nav .spacer { flex: 1; }
-  .profile {
+  .nav a.active .ic { opacity: 1; }
+
+  .sidebar .foot {
     margin-top: auto;
-    display: flex; align-items: center; gap: 12px;
-    background: var(--glass-strong);
-    border: 1px solid var(--stroke);
-    border-radius: 18px;
-    padding: 12px;
+    padding: 14px 12px 0;
+    border-top: 1px solid var(--line);
+    display: flex; align-items: center; gap: 11px;
   }
-  .profile .av {
-    width: 40px; height: 40px; border-radius: 50%;
-    background: linear-gradient(135deg, #ffd6a5, #ffb3d9);
-    display: grid; place-items: center; font-size: 18px;
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(145deg,#d7d7dc,#f0f0f3);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:600; font-size:14px; color:#6b6b70;
   }
-  .profile b { font-size: 14.5px; display: block; }
-  .profile small { font-size: 12px; color: var(--ink-soft); }
+  .foot .who { font-size: 13.5px; font-weight: 500; }
+  .foot .who span { display:block; font-size: 12px; color: var(--muted); font-weight: 400; }
 
   /* ---------- Main ---------- */
-  .main { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; gap: 22px; min-width: 0; }
-
+  .main { flex: 1; padding: 0 48px 56px; }
   .topbar {
-    background: var(--glass);
-    backdrop-filter: blur(22px) saturate(160%);
-    -webkit-backdrop-filter: blur(22px) saturate(160%);
-    border: 1px solid var(--stroke);
-    border-radius: 24px;
-    padding: 20px 28px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: 0 10px 34px rgba(120, 120, 200, 0.14);
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 40px 0 30px;
+    position: sticky; top: 0;
+    background: linear-gradient(var(--bg) 70%, rgba(251,251,253,0));
+    z-index: 5;
   }
-  .topbar .title h2 { font-size: 23px; font-weight: 700; }
-  .topbar .title p { font-size: 13.5px; color: var(--ink-soft); margin-top: 3px; }
-  .topbar .right { display: flex; align-items: center; gap: 18px; }
+  .topbar .title h2 { font-size: 30px; font-weight: 600; letter-spacing: -0.6px; }
+  .topbar .title p { color: var(--muted); margin-top: 3px; font-size: 14px; }
   .clock {
     text-align: right;
-    background: var(--glass-strong);
-    border: 1px solid var(--stroke);
-    border-radius: 16px;
-    padding: 10px 20px;
   }
-  .clock .time { font-size: 26px; font-weight: 700; letter-spacing: 1px; line-height: 1; }
-  .clock .date { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
-  .bell {
-    width: 46px; height: 46px; border-radius: 14px;
-    background: var(--glass-strong);
-    border: 1px solid var(--stroke);
-    display: grid; place-items: center; font-size: 20px; cursor: pointer;
-    position: relative;
+  .clock .time {
+    font-size: 30px; font-weight: 300; letter-spacing: 0.5px;
+    font-variant-numeric: tabular-nums;
   }
-  .bell::after {
-    content: "3"; position: absolute; top: -4px; right: -4px;
-    width: 20px; height: 20px; border-radius: 50%;
-    background: linear-gradient(135deg, #ff8fb1, #ff6f91);
-    color: #fff; font-size: 11px; font-weight: 700;
-    display: grid; place-items: center;
-    box-shadow: 0 2px 6px rgba(255, 111, 145, .5);
-  }
+  .clock .date { font-size: 13px; color: var(--muted); }
 
   /* ---------- Grid ---------- */
   .grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
+    gap: 22px;
   }
   .card {
-    background: var(--glass);
-    backdrop-filter: blur(20px) saturate(150%);
-    -webkit-backdrop-filter: blur(20px) saturate(150%);
-    border: 1px solid var(--stroke);
-    border-radius: 24px;
-    padding: 22px;
-    box-shadow: 0 10px 30px rgba(120, 120, 200, 0.14);
-    transition: transform .25s ease, box-shadow .25s ease;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-  .card:hover { transform: translateY(-5px); box-shadow: 0 18px 44px rgba(120, 120, 200, 0.24); }
-  .card .head { display: flex; align-items: center; gap: 11px; margin-bottom: 16px; }
-  .card .head .icb {
-    width: 40px; height: 40px; border-radius: 13px;
-    display: grid; place-items: center; font-size: 19px;
+  .card:hover { transform: translateY(-3px); box-shadow: 0 2px 6px rgba(0,0,0,0.05), 0 16px 40px rgba(0,0,0,0.07); }
+  .card .label {
+    display:flex; align-items:center; gap:8px;
+    font-size: 13px; color: var(--muted); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.4px;
   }
-  .card .head h3 { font-size: 14.5px; font-weight: 600; color: var(--ink-soft); }
+  .card .big { font-size: 40px; font-weight: 600; letter-spacing: -1px; margin-top: 14px; }
+  .card .sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
 
-  .ic-ram { background: linear-gradient(135deg, #a8c0ff, #cdb4ff); }
-  .ic-cpu { background: linear-gradient(135deg, #b4f0d4, #a0e6c8); }
-  .ic-mail { background: linear-gradient(135deg, #ffd0e4, #ffb3d9); }
-  .ic-wx { background: linear-gradient(135deg, #ffe7a8, #ffd180); }
+  /* ring gauges */
+  .ring { margin: 6px auto 0; display:block; }
+  .ring-wrap { display:flex; flex-direction:column; align-items:center; }
+  .ring-wrap .ringlabel { font-size:13px; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px; align-self:flex-start; }
+  .ring-center { font-size: 26px; font-weight: 600; letter-spacing:-0.5px; }
 
-  .metric { font-size: 38px; font-weight: 800; line-height: 1; }
-  .metric small { font-size: 17px; font-weight: 600; color: var(--ink-soft); }
-  .sub { font-size: 13px; color: var(--ink-soft); margin-top: 9px; }
+  /* span helpers */
+  .col-2 { grid-column: span 2; }
 
-  .bar {
-    height: 10px; border-radius: 20px;
-    background: rgba(255,255,255,.5);
-    margin-top: 16px; overflow: hidden;
+  /* mail card */
+  .mail-list { margin-top: 16px; display:flex; flex-direction:column; gap:0; }
+  .mail-item {
+    display:flex; align-items:center; gap:13px;
+    padding: 13px 0;
+    border-top: 1px solid var(--line);
   }
-  .bar i { display: block; height: 100%; border-radius: 20px; }
-  .bar.ram i { width: 34%; background: linear-gradient(90deg, #a8c0ff, #c9b6ff); }
-  .bar.cpu i { width: 12%; background: linear-gradient(90deg, #8be0b8, #b4f0d4); }
+  .mail-item:first-child { border-top: none; }
+  .mail-dot { width:8px; height:8px; border-radius:50%; background: var(--accent); flex-shrink:0; }
+  .mail-item .mfrom { font-weight:550; font-size:14.5px; }
+  .mail-item .msub { font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mail-item .mtime { margin-left:auto; font-size:12px; color:var(--muted); flex-shrink:0; }
 
-  .mails { margin-top: 4px; display: flex; flex-direction: column; gap: 11px; }
-  .mailrow { display: flex; align-items: center; gap: 11px; font-size: 13.5px; }
-  .mailrow .dot { width: 9px; height: 9px; border-radius: 50%; background: #ff6f91; flex-shrink: 0; }
-  .mailrow b { font-weight: 600; }
-  .mailrow span { color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* weather card */
+  .weather { background: linear-gradient(160deg,#eaf4ff,#ffffff); }
+  .weather .temp { font-size: 52px; font-weight: 300; letter-spacing:-2px; line-height:1; margin-top:10px; }
+  .weather .city { font-size:15px; font-weight:600; }
+  .weather .cond { font-size:13px; color:var(--muted); }
+  .weather .sun { font-size:34px; float:right; }
+  .forecast { display:flex; justify-content:space-between; margin-top:20px; padding-top:16px; border-top:1px solid rgba(0,0,0,0.06); }
+  .forecast div { text-align:center; font-size:12px; color:var(--muted); }
+  .forecast div b { display:block; color:var(--ink); font-size:14px; font-weight:600; margin-top:4px; }
 
-  .weather { display: flex; align-items: center; justify-content: space-between; }
-  .weather .big { font-size: 30px; }
-  .wx-extra { display: flex; gap: 18px; margin-top: 16px; font-size: 12.5px; color: var(--ink-soft); }
-  .wx-extra b { display: block; color: var(--ink); font-size: 15px; }
-
-  /* wide row */
-  .wide { grid-column: span 2; }
-  .activity { display: flex; flex-direction: column; gap: 14px; }
-  .act { display: flex; align-items: center; gap: 14px; }
-  .act .ai {
-    width: 34px; height: 34px; border-radius: 11px; flex-shrink: 0;
-    display: grid; place-items: center; font-size: 16px;
-    background: var(--glass-strong); border: 1px solid var(--stroke);
-  }
-  .act .txt { flex: 1; min-width: 0; }
-  .act .txt b { font-size: 14px; }
-  .act .txt p { font-size: 12.5px; color: var(--ink-soft); }
-  .act time { font-size: 12px; color: var(--ink-soft); }
-
-  .quick { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  .qb {
-    background: var(--glass-strong);
-    border: 1px solid var(--stroke);
-    border-radius: 16px;
-    padding: 16px;
-    text-align: center;
-    cursor: pointer;
-    transition: transform .2s ease;
-  }
-  .qb:hover { transform: scale(1.04); }
-  .qb .qi { font-size: 22px; }
-  .qb span { display: block; font-size: 13px; font-weight: 600; margin-top: 7px; }
-
-  @media (max-width: 1100px) {
-    .grid { grid-template-columns: repeat(2, 1fr); }
-    .wide { grid-column: span 2; }
-  }
-  @media (max-width: 720px) {
-    body { flex-direction: column; }
-    .sidebar { width: 100%; }
-    .grid { grid-template-columns: 1fr; }
-    .wide { grid-column: span 1; }
-  }
+  /* progress bar within card */
+  .bar { height:6px; border-radius:99px; background:#eef0f3; margin-top:18px; overflow:hidden; }
+  .bar > span { display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent),#64b5ff); }
 </style>
 </head>
 <body>
@@ -255,123 +174,143 @@
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo">🚀</div>
-      <div>
-        <h1>Mission Control</h1>
-        <span>Bolla · Aurora</span>
-      </div>
+      <div class="dot"></div>
+      <h1>Mission Control<span>Bolla · Lumen</span></h1>
     </div>
     <nav class="nav">
-      <a href="#" class="active"><span class="ic">🏠</span> Dashboard</a>
+      <a href="#" class="active"><span class="ic">◎</span> Dashboard</a>
       <a href="#"><span class="ic">🐾</span> Bolla</a>
       <a href="#"><span class="ic">🎓</span> Schule</a>
       <a href="#"><span class="ic">📅</span> Kalender</a>
-      <a href="#"><span class="ic">✉️</span> E-Mail</a>
-      <a href="#"><span class="ic">🌤️</span> Wetter</a>
-      <a href="#"><span class="ic">⚙️</span> System Info</a>
+      <a href="#"><span class="ic">✉</span> E-Mail</a>
+      <a href="#"><span class="ic">☀</span> Wetter</a>
+      <a href="#"><span class="ic">⚙</span> System Info</a>
     </nav>
-    <div class="profile">
-      <div class="av">🧑</div>
-      <div>
-        <b>Chris Mandel</b>
-        <small>Norderstedt</small>
-      </div>
+    <div class="foot">
+      <div class="avatar">CM</div>
+      <div class="who">Chris Mandel<span>Norderstedt</span></div>
     </div>
   </aside>
 
   <!-- Main -->
-  <div class="main">
+  <main class="main">
     <header class="topbar">
       <div class="title">
         <h2>Dashboard</h2>
-        <p>Mittwoch, 17. Juni 2026 · Alles im grünen Bereich</p>
+        <p>Guten Abend, Chris — alles im grünen Bereich.</p>
       </div>
-      <div class="right">
-        <div class="bell">🔔</div>
-        <div class="clock">
-          <div class="time">20:14</div>
-          <div class="date">Guten Abend, Chris</div>
-        </div>
+      <div class="clock">
+        <div class="time">20:14</div>
+        <div class="date">Donnerstag, 18. Juni 2026</div>
       </div>
     </header>
 
     <section class="grid">
-      <!-- RAM -->
-      <div class="card">
-        <div class="head"><div class="icb ic-ram">🧠</div><h3>Arbeitsspeicher</h3></div>
-        <div class="metric">34<small>%</small></div>
-        <div class="sub">5,4 GB von 16 GB belegt</div>
-        <div class="bar ram"><i></i></div>
+
+      <!-- RAM gauge -->
+      <div class="card ring-wrap">
+        <div class="ringlabel">Arbeitsspeicher</div>
+        <svg class="ring" width="120" height="120" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#eef0f3" stroke-width="11"/>
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#0a84ff" stroke-width="11"
+                  stroke-linecap="round" stroke-dasharray="326.7"
+                  stroke-dashoffset="215.6" transform="rotate(-90 60 60)"/>
+          <text x="60" y="58" text-anchor="middle" class="ring-center" fill="#1d1d1f">34%</text>
+          <text x="60" y="76" text-anchor="middle" font-size="11" fill="#86868b">11 / 32 GB</text>
+        </svg>
       </div>
 
-      <!-- CPU -->
-      <div class="card">
-        <div class="head"><div class="icb ic-cpu">⚡</div><h3>Prozessor</h3></div>
-        <div class="metric">12<small>%</small></div>
-        <div class="sub">Last niedrig · 42 °C</div>
-        <div class="bar cpu"><i></i></div>
+      <!-- CPU gauge -->
+      <div class="card ring-wrap">
+        <div class="ringlabel">CPU-Last</div>
+        <svg class="ring" width="120" height="120" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#eef0f3" stroke-width="11"/>
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#34c759" stroke-width="11"
+                  stroke-linecap="round" stroke-dasharray="326.7"
+                  stroke-dashoffset="287.5" transform="rotate(-90 60 60)"/>
+          <text x="60" y="58" text-anchor="middle" class="ring-center" fill="#1d1d1f">12%</text>
+          <text x="60" y="76" text-anchor="middle" font-size="11" fill="#86868b">8 Kerne · ruhig</text>
+        </svg>
       </div>
 
-      <!-- Mail -->
-      <div class="card">
-        <div class="head"><div class="icb ic-mail">✉️</div><h3>Posteingang</h3></div>
-        <div class="metric">3<small> neu</small></div>
-        <div class="mails">
-          <div class="mailrow"><span class="dot"></span><span><b>Lessing GY</b> — Stundenplan KW 26</span></div>
-          <div class="mailrow"><span class="dot"></span><span><b>Robin</b> — Re: Wochenende</span></div>
-          <div class="mailrow"><span class="dot"></span><span><b>IONOS</b> — Rechnung Juni</span></div>
+      <!-- Mails -->
+      <div class="card col-2">
+        <div class="label">✉ Posteingang · 3 neu</div>
+        <div class="mail-list">
+          <div class="mail-item">
+            <div class="mail-dot"></div>
+            <div>
+              <div class="mfrom">Robin Mandel</div>
+              <div class="msub">Re: Tansania-Famulatur – Flüge gebucht ✈️</div>
+            </div>
+            <div class="mtime">19:48</div>
+          </div>
+          <div class="mail-item">
+            <div class="mail-dot"></div>
+            <div>
+              <div class="mfrom">Lessing-Gymnasium</div>
+              <div class="msub">Stundenplan KW 26 zur Freigabe</div>
+            </div>
+            <div class="mtime">17:02</div>
+          </div>
+          <div class="mail-item">
+            <div class="mail-dot"></div>
+            <div>
+              <div class="mfrom">Cloudflare</div>
+              <div class="msub">Tunnel „bolla-mc" läuft stabil</div>
+            </div>
+            <div class="mtime">14:30</div>
+          </div>
         </div>
       </div>
 
       <!-- Weather -->
+      <div class="card col-2 weather">
+        <span class="sun">⛅</span>
+        <div class="city">Hamburg</div>
+        <div class="cond">Leicht bewölkt · Wind 11 km/h</div>
+        <div class="temp">18°</div>
+        <div class="forecast">
+          <div>Fr<b>20°</b></div>
+          <div>Sa<b>22°</b></div>
+          <div>So<b>19°</b></div>
+          <div>Mo<b>17°</b></div>
+          <div>Di<b>21°</b></div>
+        </div>
+      </div>
+
+      <!-- Disk / extra status -->
       <div class="card">
-        <div class="head"><div class="icb ic-wx">🌤️</div><h3>Wetter</h3></div>
-        <div class="weather">
-          <div class="metric">18<small>°C</small></div>
-          <div class="big">⛅</div>
-        </div>
-        <div class="sub">Hamburg · leicht bewölkt</div>
-        <div class="wx-extra">
-          <div>💧 <b>62%</b> Luftf.</div>
-          <div>🌬️ <b>14</b> km/h</div>
-          <div>☂️ <b>10%</b> Regen</div>
-        </div>
+        <div class="label">💾 Speicher</div>
+        <div class="big">61%</div>
+        <div class="sub">312 GB von 512 GB belegt</div>
+        <div class="bar"><span style="width:61%"></span></div>
       </div>
 
-      <!-- Activity (wide) -->
-      <div class="card wide">
-        <div class="head"><div class="icb ic-ram">📡</div><h3>Letzte Aktivität</h3></div>
-        <div class="activity">
-          <div class="act">
-            <div class="ai">💾</div>
-            <div class="txt"><b>Nachtsicherung erstellt</b><p>Backup nach OneDrive + GitHub gepusht</p></div>
-            <time>03:00</time>
-          </div>
-          <div class="act">
-            <div class="ai">📧</div>
-            <div class="txt"><b>Kindle-Versand</b><p>3 EPUBs an Send-to-Kindle gesendet</p></div>
-            <time>gestern</time>
-          </div>
-          <div class="act">
-            <div class="ai">🌐</div>
-            <div class="txt"><b>Tunnel online</b><p>bolla.chrismandel.de erreichbar</p></div>
-            <time>19:58</time>
-          </div>
-        </div>
+      <!-- Bolla status -->
+      <div class="card">
+        <div class="label">🐾 Bolla</div>
+        <div class="big" style="color:#34c759">Online</div>
+        <div class="sub">MC-Server · Tunnel aktiv</div>
+        <div class="bar"><span style="width:100%; background:linear-gradient(90deg,#34c759,#7be495)"></span></div>
       </div>
 
-      <!-- Quick actions (wide) -->
-      <div class="card wide">
-        <div class="head"><div class="icb ic-cpu">🎛️</div><h3>Schnellzugriff</h3></div>
-        <div class="quick">
-          <div class="qb"><div class="qi">📨</div><span>Neue Mail</span></div>
-          <div class="qb"><div class="qi">📅</div><span>Termin</span></div>
-          <div class="qb"><div class="qi">🔄</div><span>Sync</span></div>
-          <div class="qb"><div class="qi">🐾</div><span>Bolla fragen</span></div>
-        </div>
+      <!-- Next appointment -->
+      <div class="card">
+        <div class="label">📅 Nächster Termin</div>
+        <div class="big" style="font-size:24px; margin-top:18px;">Konferenz</div>
+        <div class="sub">Morgen, 08:15 · Lehrerzimmer</div>
       </div>
+
+      <!-- Uptime -->
+      <div class="card">
+        <div class="label">⚙ System</div>
+        <div class="big" style="font-size:28px; margin-top:18px;">7 T 14 h</div>
+        <div class="sub">Uptime · WSL2 · alles nominal</div>
+      </div>
+
     </section>
-  </div>
+  </main>
 
 </body>
 </html>
