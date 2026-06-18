@@ -9112,9 +9112,11 @@ function pjRenderItems() {
           style="padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;cursor:pointer;flex-shrink:0;background:${st.col};color:${st.txt};white-space:nowrap">${st.label}</span>
         <button onclick="pjStartItem('${it.id}')" title="Als Prompt an Bolla schicken"
           style="padding:3px 10px;background:linear-gradient(135deg,#8b5cf6,#ec4899);border:none;border-radius:5px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap">▶ Start</button>
-        <button onclick="pjMoveItem('${it.id}',-1)" style="background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;padding:0 2px" title="Nach oben">▲</button>
-        <button onclick="pjMoveItem('${it.id}',1)"  style="background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;padding:0 2px" title="Nach unten">▼</button>
-        <button onclick="pjDeleteItem('${it.id}')"  style="background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;padding:0 3px" title="Löschen">✕</button>
+        <button onclick="pjMoveItem('${it.id}',-1)" style="background:none;border:none;color:var(--dim);font-size:14px;cursor:pointer;padding:0 3px" title="Nach oben">▲</button>
+        <button onclick="pjMoveItem('${it.id}',1)"  style="background:none;border:none;color:var(--dim);font-size:14px;cursor:pointer;padding:0 3px" title="Nach unten">▼</button>
+        <button onclick="pjDeleteItem('${it.id}')" title="Eintrag löschen"
+          style="flex-shrink:0;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);border-radius:5px;color:#f87171;font-size:14px;font-weight:600;cursor:pointer;padding:3px 9px;white-space:nowrap"
+          onmouseenter="this.style.background='rgba(239,68,68,0.25)'" onmouseleave="this.style.background='rgba(239,68,68,0.12)'">🗑 Löschen</button>
       </div>
       <!-- Ergebnis-Feld (immer da, ausklappbar, editierbar) -->
       <div style="border-top:1px solid rgba(255,255,255,0.05)">
@@ -9130,7 +9132,7 @@ function pjRenderItems() {
             oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
             onblur="pjSaveResultFromTA('${it.id}')"
           >${escHtml(it.ergebnis||'')}</textarea>
-          ${it.ergebnis ? `<button onclick="pjClearItemResult('${it.id}')" style="margin-top:4px;padding:2px 8px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:var(--dim);font-size:11px;cursor:pointer">✕ Löschen</button>` : ''}
+          ${it.ergebnis ? `<button onclick="pjClearItemResult('${it.id}')" title="Nur das Ergebnis löschen, Eintrag bleibt" style="margin-top:6px;padding:3px 10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:5px;color:#f87171;font-size:12px;cursor:pointer">🗑 Ergebnis löschen</button>` : ''}
         </div>
       </div>
       <!-- Laufendes Ergebnis (Streaming) -->
@@ -9275,7 +9277,9 @@ function pjSaveItemResult(id) {
 
 function pjClearItemResult(id) {
   const it = _pjCurrent.items.find(i => i.id === id);
-  if (it) { delete it.ergebnis; delete it.ergebnis_ts; pjSave(true); pjRenderItems(); }
+  if (!it) return;
+  if (!confirm('Nur das Ergebnis dieses Eintrags löschen? (Der Eintrag selbst bleibt erhalten.)')) return;
+  delete it.ergebnis; delete it.ergebnis_ts; pjSave(true); pjRenderItems();
 }
 
 function pjToggleCheck(id, checked) {
@@ -9295,6 +9299,9 @@ function pjMoveItem(id, dir) {
 }
 
 function pjDeleteItem(id) {
+  const it = _pjCurrent.items.find(i => i.id === id);
+  const warn = it && it.ergebnis ? '\n\n⚠️ Dieser Eintrag enthält ein Ergebnis, das mitgelöscht wird.' : '';
+  if (!confirm('Diesen Eintrag löschen?' + (it ? '\n\n„' + (it.text||'').slice(0,80) + '"' : '') + warn)) return;
   _pjCurrent.items = _pjCurrent.items.filter(i => i.id !== id);
   pjRenderItems();
   pjSave(true);
@@ -9464,16 +9471,54 @@ function pjRenderArchiv() {
   const wrap = document.getElementById('pj-archiv-wrap');
   const body = document.getElementById('pj-archiv-body');
   const count = document.getElementById('pj-archiv-count');
+  // Ältere Einträge ohne id nachträglich versehen, sonst greifen Edit/Löschen nicht
+  (_pjCurrent?.prompts || []).forEach((p, i) => { if (!p.id) p.id = 'p' + i + '_' + (p.ts || '').replace(/\D/g,''); });
   const prompts = (_pjCurrent?.prompts || []).slice().reverse();
   if (!prompts.length) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
   count.textContent = prompts.length + ' Einträge';
   body.innerHTML = prompts.map(p => `
     <div style="background:rgba(74,222,128,0.04);border:1px solid rgba(74,222,128,0.12);border-radius:8px;padding:10px 12px">
-      <div style="font-size:11px;color:var(--dim);margin-bottom:4px">${p.ts}</div>
-      <div style="font-size:13px;color:#c4b5fd;margin-bottom:5px;font-weight:600">${escHtml(p.prompt)}</div>
-      <div style="font-size:12px;color:var(--text);white-space:pre-wrap;line-height:1.5">${escHtml(p.antwort||'')}</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span style="font-size:11px;color:var(--dim);flex:1">${p.ts}</span>
+        <button onclick="pjDeleteArchiv('${p.id}')" title="Eintrag löschen"
+          style="background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;padding:0 3px;flex-shrink:0">✕</button>
+      </div>
+      <div id="pj-arch-prompt-${p.id}" onclick="pjEditArchiv('${p.id}','prompt')" title="Klicken zum Bearbeiten"
+        style="font-size:13px;color:#c4b5fd;margin-bottom:5px;font-weight:600;cursor:text;white-space:pre-wrap;line-height:1.4">${escHtml(p.prompt)}</div>
+      <div id="pj-arch-antwort-${p.id}" onclick="pjEditArchiv('${p.id}','antwort')" title="Klicken zum Bearbeiten"
+        style="font-size:12px;color:var(--text);white-space:pre-wrap;line-height:1.5;cursor:text;min-height:18px">${p.antwort ? escHtml(p.antwort) : '<span style="color:var(--dim);font-style:italic">(leer — klicken zum Bearbeiten)</span>'}</div>
     </div>`).join('');
+}
+
+function pjEditArchiv(id, field) {
+  const p = (_pjCurrent?.prompts || []).find(x => x.id === id);
+  if (!p) return;
+  const div = document.getElementById('pj-arch-' + field + '-' + id);
+  if (!div || div.querySelector('textarea')) return;
+  const isPrompt = field === 'prompt';
+  div.innerHTML = `<textarea
+    style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--accent);border-radius:6px;color:${isPrompt?'#c4b5fd':'var(--text)'};font-size:${isPrompt?'13px':'12px'};padding:6px 9px;font-family:inherit;resize:none;outline:none;line-height:1.5;overflow:hidden"
+    oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+    onblur="pjCommitArchiv('${id}','${field}',this.value)"
+    onkeydown="if(event.key==='Escape'){this.value=this.defaultValue;this.blur();}">${escHtml(p[field] || '')}</textarea>`;
+  const ta = div.querySelector('textarea');
+  ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px';
+  ta.focus();
+}
+
+function pjCommitArchiv(id, field, val) {
+  const p = (_pjCurrent?.prompts || []).find(x => x.id === id);
+  if (p && (p[field] || '') !== val.trim()) { p[field] = val.trim(); pjSave(true); }
+  pjRenderArchiv();
+}
+
+function pjDeleteArchiv(id) {
+  if (!_pjCurrent) return;
+  if (!confirm('Diesen Ergebnis-Eintrag löschen?')) return;
+  _pjCurrent.prompts = (_pjCurrent.prompts || []).filter(x => x.id !== id);
+  pjRenderArchiv();
+  pjSave(true);
 }
 
 document.addEventListener('click', e => {

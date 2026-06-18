@@ -23,9 +23,12 @@ KW = ["kdp", "kindle direct", "ihr ebook", "your ebook", "is live", "ist jetzt",
       "kindle-shop", "blocked", "abgelehnt", "rejected", "action required",
       "maßnahme erforderlich", "review", "überprüfung deines", "payment", "auszahlung"]
 # Absender, die immer durchgehen
-SENDER_OK = ["kdp.amazon", "kdp@amazon"]
+SENDER_OK = ["kdp.amazon", "kdp@amazon", "routenote"]
 # harte Ausschlüsse (Shopping/Bestellungen), damit keine Fehlalarme
 BLOCK = ["bestellung", "widerruf", "lieferung", "zahlungserinnerung", "retoure", "rücksende"]
+# Auto-Reply-/Eingangsbestätigungs-Marker (im bodyPreview) — NICHT melden, nur als gesehen merken
+AUTOREPLY = ["your message has been received", "this is an automated", "automatic reply",
+             "out of office", "auto-reply", "automatische antwort", "experiencing a delay"]
 
 def tg(text):
     try:
@@ -55,7 +58,7 @@ def main():
     seen = set(st.get("seen", []))
     at = token()
     qs = urllib.parse.urlencode({'$top':'25','$orderby':'receivedDateTime desc',
-                                 '$select':'id,subject,from,receivedDateTime,webLink'})
+                                 '$select':'id,subject,from,receivedDateTime,webLink,bodyPreview'})
     url = "https://graph.microsoft.com/v1.0/me/messages?"+qs
     res = json.loads(urllib.request.urlopen(urllib.request.Request(
         url, headers={"Authorization":f"Bearer {at}"})).read())
@@ -70,11 +73,19 @@ def main():
         sender_hit = any(s in frm for s in SENDER_OK)
         kw_hit = any(k in sl for k in KW)
         blocked = any(b in sl for b in BLOCK)
-        # KDP-relevant: bekannter Absender ODER (Keyword UND nicht Shopping-Block)
-        if sender_hit or (kw_hit and not blocked and "amazon" in frm):
+        is_routenote = "routenote" in frm
+        body = (m.get("bodyPreview") or "").lower()
+        is_autoreply = any(p in body for p in AUTOREPLY)
+        # relevant: bekannter Absender ODER (Keyword UND nicht Shopping-Block, nur Amazon)
+        # — aber NIE Auto-Replies/Eingangsbestätigungen melden (z.B. RouteNote "message received")
+        if (sender_hit or (kw_hit and not blocked and "amazon" in frm)) and not is_autoreply:
             new_ids.append(mid)
-            tg(f"📧 *KDP-Mail eingetroffen!*\n\n*{subj}*\nvon `{frm}`\n{m['receivedDateTime'][:16]}\n\n"
-               f"→ Auf [kdp.amazon.com](https://kdp.amazon.com) prüfen. 🐾")
+            if is_routenote:
+                tg(f"📬 *RouteNote-Antwort eingetroffen!*\n\n*{subj}*\nvon `{frm}`\n{m['receivedDateTime'][:16]}\n\n"
+                   f"→ In Outlook lesen — Antwort auf unsere Review-/KI-Frage. 🐾")
+            else:
+                tg(f"📧 *KDP-Mail eingetroffen!*\n\n*{subj}*\nvon `{frm}`\n{m['receivedDateTime'][:16]}\n\n"
+                   f"→ Auf [kdp.amazon.com](https://kdp.amazon.com) prüfen. 🐾")
         # immer als gesehen markieren (auch irrelevante), damit wir nicht jedes Mal alles neu prüfen
         seen.add(mid)
     st["seen"] = list(seen)[-300:]

@@ -72,11 +72,22 @@ def check_google():
         print("google err", e)
     return False, None
 
+# Marker für leere Trefferlisten — wenn vorhanden, ist NICHTS gefunden,
+# egal ob die Suchbegriffe (Suchfeld/„Ergebnisse für …") im HTML reflektiert werden.
+NO_RESULTS = ["keine ergebnisse", "keine treffer", "0 treffer", "0 ergebnisse",
+              "nichts gefunden", "leider nichts", "leider keine", "no results",
+              "did not match", "keine produkte"]
+
 def _scrape_has(url):
-    """True, wenn Seite sowohl AURORA als auch 'Chris Mandel'/'Mandel' enthält."""
+    """True nur, wenn die Seite einen echten Treffer zeigt:
+    AURORA + 'Chris Mandel' im HTML UND KEIN 'keine Ergebnisse'-Marker.
+    Der Negativ-Check verhindert den Klassiker, dass eine Suchseite die
+    Suchbegriffe bloß zurückspiegelt (Suchfeld, „Ergebnisse für …")."""
     try:
         r = requests.get(url, headers=UA, timeout=25)
         html = r.text.lower()
+        if any(m in html for m in NO_RESULTS):
+            return False
         return ("aurora" in html) and ("chris mandel" in html or "mandel, chris" in html)
     except Exception as e:
         print("scrape err", url, e)
@@ -96,9 +107,12 @@ def check_amazon():
     return (_scrape_has(url), url)
 
 # Reihenfolge = Prioritaet fuer "erste 3"
+# Amazon BEWUSST raus: Der Amazon-Weg laeuft ueber KDP (bei D2D abgewaehlt),
+# das deckt der kdp_mail_watcher ab. Ausserdem spiegelt die Amazon-Suchseite
+# die volle Query ("AURORA Chris Mandel") im HTML wider -> _scrape_has lieferte
+# dort einen Fehlalarm ("AURORA ist live"), obwohl nichts gelistet war (18.06.).
 SHOPS = [
     ("Apple Books", check_apple),
-    ("Amazon Kindle", check_amazon),
     ("Kobo", check_kobo),
     ("Google Play", check_google),
     ("Tolino / Thalia", check_thalia),
@@ -133,7 +147,8 @@ def main():
                 ubl = ""
                 if not st.get("ubl_announced"):
                     st["ubl_announced"] = True
-                    ubl = ("\n\n🔗 Dein Books2Read-Link dürfte jetzt aktiv sein:\n"
+                    ubl = ("\n\n🔗 Deine Books2Read-UBL (Plattformen erscheinen nach und nach,"
+                           " sobald die Shops das Buch wirklich gelistet haben):\n"
                            "DE: https://books2read.com/u/bz0nwj\n"
                            "(EN-Link analog auf der D2D View-Book-Seite)")
                 tg(f"📚 *AURORA ist live!* 🎉\n\n"

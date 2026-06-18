@@ -6,8 +6,9 @@ Bidirektionaler Outlook ↔ Gmail Kontakt-Sync (inkl. Fotos)
 - Match über E-Mail oder Name
 """
 
-import json, requests, time, base64, sys
+import json, requests, time, base64, sys, re
 from pathlib import Path
+import phonenumbers as pn
 
 WORKSPACE = Path("/home/bolla/workspace")
 MS_TOKEN_FILE = WORKSPACE / "config/ms_token.json"
@@ -218,6 +219,21 @@ def name_key(s):
     wenn ein System Vorname-Nachname und das andere Nachname-Vorname führt)."""
     return " ".join(sorted(s.lower().split()))
 
+def mobile_key(num):
+    """E.164-Schlüssel NUR für Mobilnummern (personengebunden, eindeutig).
+    Festnetz wird bewusst NICHT verwendet — Ehepaare teilen sich oft eine
+    Festnetznummer, das würde zwei Personen fälschlich verschmelzen.
+    Gibt None zurück, wenn keine gültige Mobilnummer."""
+    if not num:
+        return None
+    try:
+        x = pn.parse(num, "DE")
+        if pn.is_valid_number(x) and pn.number_type(x) == pn.PhoneNumberType.MOBILE:
+            return "MOB:" + pn.format_number(x, pn.PhoneNumberFormat.E164)
+    except Exception:
+        pass
+    return None
+
 def build_google_index(contacts):
     """E-Mail/Name → (resourceName, etag)"""
     idx = {}
@@ -226,6 +242,10 @@ def build_google_index(contacts):
         etag = c.get("etag", "")
         for e in c.get("emailAddresses", []):
             idx[e.get("value", "").lower()] = (rn, etag)
+        for p in c.get("phoneNumbers", []):
+            mk = mobile_key(p.get("value", ""))
+            if mk:
+                idx[mk] = (rn, etag)
         for n in c.get("names", []):
             dn = n.get("displayName", "").lower()
             if dn:
@@ -239,6 +259,10 @@ def build_outlook_index(contacts):
     for c in contacts:
         for e in c.get("emailAddresses", []):
             idx[e.get("address", "").lower()] = c
+        for num in [c.get("mobilePhone"), *(c.get("homePhones") or []), *(c.get("businessPhones") or [])]:
+            mk = mobile_key(num)
+            if mk:
+                idx[mk] = c
         dn = c.get("displayName", "").lower()
         if dn:
             idx[dn] = c
@@ -261,6 +285,12 @@ def sync_outlook_to_gmail(ms_token, g_token, outlook_contacts, google_index):
             if email in google_index:
                 resource_name, etag = google_index[email]
                 break
+        if not resource_name:
+            for num in [contact.get("mobilePhone"), *(contact.get("homePhones") or []), *(contact.get("businessPhones") or [])]:
+                mk = mobile_key(num)
+                if mk and mk in google_index:
+                    resource_name, etag = google_index[mk]
+                    break
         if not resource_name and name.lower() in google_index:
             resource_name, etag = google_index[name.lower()]
         if not resource_name and name_key(name) in google_index:
@@ -325,6 +355,12 @@ def sync_gmail_to_outlook(ms_token, g_token, google_contacts, outlook_index):
             if email in outlook_index:
                 outlook_match = outlook_index[email]
                 break
+        if not outlook_match:
+            for p in contact.get("phoneNumbers", []):
+                mk = mobile_key(p.get("value", ""))
+                if mk and mk in outlook_index:
+                    outlook_match = outlook_index[mk]
+                    break
         if not outlook_match and name.lower() in outlook_index:
             outlook_match = outlook_index[name.lower()]
         if not outlook_match and name_key(name) in outlook_index:
