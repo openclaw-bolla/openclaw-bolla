@@ -1633,6 +1633,10 @@ html, body {
               <div style="font-size:13px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">🚨 Recovery</div>
               <div style="display:flex;flex-direction:column;gap:7px;font-size:13px">
                 <div style="padding:7px 10px;background:rgba(245,158,11,0.08);border-radius:6px;border-left:2px solid #f59e0b">
+                  <span style="color:var(--bright);font-weight:600">API Error / Login weg?</span><br>
+                  <span style="color:var(--dim)"><code style="color:#f59e0b;font-size:12px">/login</code> eingeben → Edge öffnet sich automatisch → einloggen. Öffnet Edge <b style="color:var(--bright)">nicht</b>: langen Link aus dem Terminal markieren, kopieren, in Edge einfügen. Ausfall? → <a href="https://status.claude.com" target="_blank" style="color:#818cf8;text-decoration:none">status.claude.com</a></span>
+                </div>
+                <div style="padding:7px 10px;background:rgba(245,158,11,0.08);border-radius:6px;border-left:2px solid #f59e0b">
                   <span style="color:var(--bright);font-weight:600">WSL weg?</span><br>
                   <span style="color:var(--dim)">Windows Features → WSL aktivieren → Neustart</span>
                 </div>
@@ -5970,7 +5974,9 @@ function rainWindows(d, dateStr, fromHour) {
     const hr = parseInt(times[i].slice(11,13));
     if (fromHour >= 0 && hr < fromHour) continue;
     const p = probs && probs[i] || 0, a = amts && amts[i] || 0;
-    if (p >= 30 || a >= 0.2) wet.push(hr);
+    // Menge ist der ehrliche Indikator: 0 mm = kein Regen, egal welche %-Chance.
+    // Phantom-Regen ("30% aber 0,0 mm" an Schönwettertagen) wird so gefiltert.
+    if (a >= 0.15 || (p >= 55 && a >= 0.05)) wet.push(hr);
   }
   if (!wet.length) return [];
   const windows = []; let start = wet[0], prev = wet[0];
