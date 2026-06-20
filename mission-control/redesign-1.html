@@ -3,355 +3,278 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Control — Lumen</title>
+<title>Mission Control // GREENPHOSPHOR</title>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
   :root{
-    --bg:#F5F5F7;
-    --card:#FFFFFF;
-    --ink:#1D1D1F;
-    --muted:#86868B;
-    --line:#E8E8ED;
-    --accent:#0A84FF;
-    --accent-soft:#EAF4FF;
-    --green:#34C759;
-    --orange:#FF9F0A;
-    --shadow:0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
+    --green:#00ff66;
+    --green-dim:#0c8a3a;
+    --green-faint:#063d1c;
+    --bg:#050805;
+    --panel:#0a0f0a;
+    --amber:#ffcc33;
+    --red:#ff4d4d;
   }
-  html,body{ height:100%; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
   body{
-    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Helvetica,Arial,sans-serif;
     background:var(--bg);
-    color:var(--ink);
-    -webkit-font-smoothing:antialiased;
-    display:flex;
-    min-height:100vh;
+    color:var(--green);
+    font-family:"Courier New",ui-monospace,Menlo,Consolas,monospace;
     font-size:15px;
-    letter-spacing:-0.01em;
+    line-height:1.5;
+    overflow:hidden;
+    text-shadow:0 0 4px rgba(0,255,102,.55);
   }
+  /* CRT Overlay */
+  body::before{
+    content:"";
+    position:fixed;inset:0;
+    pointer-events:none;
+    background:repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,.18) 3px,
+      rgba(0,0,0,.18) 4px);
+    z-index:9999;
+  }
+  body::after{
+    content:"";
+    position:fixed;inset:0;
+    pointer-events:none;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,.55) 100%);
+    z-index:9998;
+  }
+  @keyframes flicker{0%{opacity:.97}50%{opacity:1}100%{opacity:.98}}
+  #app{height:100vh;display:flex;animation:flicker .15s infinite}
 
-  /* ---------- Sidebar ---------- */
+  /* Sidebar */
   .sidebar{
-    width:248px;
-    flex-shrink:0;
-    background:rgba(255,255,255,.72);
-    backdrop-filter:saturate(180%) blur(20px);
-    border-right:1px solid var(--line);
-    padding:28px 18px;
-    display:flex;
-    flex-direction:column;
-    position:sticky;
-    top:0;
-    height:100vh;
+    width:230px;
+    border-right:1px solid var(--green-dim);
+    padding:18px 14px;
+    display:flex;flex-direction:column;
+    background:linear-gradient(180deg,rgba(0,255,102,.04),transparent);
   }
-  .brand{
-    display:flex; align-items:center; gap:11px;
-    padding:6px 10px 26px;
+  .logo{
+    font-size:14px;letter-spacing:1px;
+    border:1px solid var(--green-dim);
+    padding:8px 10px;margin-bottom:6px;
+    white-space:pre;line-height:1.15;
   }
-  .brand .dot{
-    width:30px; height:30px; border-radius:9px;
-    background:linear-gradient(135deg,var(--accent),#62B6FF);
-    display:flex; align-items:center; justify-content:center;
-    color:#fff; font-weight:600; font-size:16px;
-    box-shadow:0 4px 10px rgba(10,132,255,.35);
-  }
-  .brand h1{ font-size:17px; font-weight:600; }
-  .brand span{ display:block; font-size:12px; color:var(--muted); font-weight:400; margin-top:1px; }
-
-  .nav{ display:flex; flex-direction:column; gap:3px; }
-  .nav-label{ font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); padding:8px 12px 6px; font-weight:600;}
-  .nav a{
-    display:flex; align-items:center; gap:13px;
-    padding:10px 12px;
-    border-radius:11px;
-    color:var(--ink);
+  .logo b{color:var(--amber);text-shadow:0 0 6px rgba(255,204,51,.6)}
+  .uptime{font-size:12px;color:var(--green-dim);margin-bottom:18px;padding-left:2px}
+  nav{display:flex;flex-direction:column;gap:3px}
+  .navlink{
+    display:flex;align-items:center;gap:10px;
+    padding:7px 10px;
+    color:var(--green);
     text-decoration:none;
-    font-size:14.5px;
-    font-weight:450;
-    transition:background .15s ease;
+    border:1px solid transparent;
+    cursor:pointer;
+    transition:.12s;
   }
-  .nav a:hover{ background:rgba(0,0,0,.04); }
-  .nav a.active{ background:var(--accent); color:#fff; box-shadow:0 4px 12px rgba(10,132,255,.30); }
-  .nav a.active .ic{ opacity:1; }
-  .ic{ width:19px; height:19px; opacity:.65; flex-shrink:0; }
-  .nav a.active .ic{ filter:none; }
+  .navlink .tag{color:var(--green-dim)}
+  .navlink:hover{border-color:var(--green-faint);background:rgba(0,255,102,.05)}
+  .navlink.active{
+    border-color:var(--green-dim);
+    background:rgba(0,255,102,.1);
+    color:var(--amber);
+    text-shadow:0 0 6px rgba(255,204,51,.6);
+  }
+  .navlink.active .tag{color:var(--amber)}
+  .sidefoot{margin-top:auto;font-size:12px;color:var(--green-dim);border-top:1px solid var(--green-faint);padding-top:10px}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 1.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 
-  .side-foot{ margin-top:auto; padding:14px 12px; border-top:1px solid var(--line); display:flex; align-items:center; gap:11px;}
-  .avatar{ width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#FFB347,#FF9F0A); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:14px;}
-  .side-foot .nm{ font-size:14px; font-weight:550; }
-  .side-foot .rl{ font-size:12px; color:var(--muted); }
-
-  /* ---------- Main ---------- */
-  .main{ flex:1; display:flex; flex-direction:column; min-width:0; }
+  /* Main */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
   .topbar{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:30px 40px 22px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 24px;
+    border-bottom:1px solid var(--green-dim);
+    background:rgba(0,255,102,.03);
   }
-  .topbar h2{ font-size:28px; font-weight:600; letter-spacing:-0.02em; }
-  .topbar .sub{ font-size:13.5px; color:var(--muted); margin-top:3px; }
-  .clock{ text-align:right; }
-  .clock .time{ font-size:30px; font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; }
-  .clock .date{ font-size:13px; color:var(--muted); margin-top:1px; }
+  .topbar h1{font-size:18px;font-weight:normal;letter-spacing:1px}
+  .topbar h1::before{content:"> ";color:var(--green-dim)}
+  .cursor{display:inline-block;width:9px;height:17px;background:var(--green);margin-left:3px;vertical-align:-2px;animation:blink 1s steps(2) infinite;box-shadow:0 0 6px var(--green)}
+  @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+  .clock{font-size:22px;letter-spacing:2px;color:var(--amber);text-shadow:0 0 8px rgba(255,204,51,.6)}
+  .clock small{font-size:12px;color:var(--green-dim);display:block;text-align:right;letter-spacing:1px}
 
-  .content{ padding:6px 40px 48px; }
+  .content{flex:1;overflow:auto;padding:22px 24px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
 
-  /* ---------- Grid / Cards ---------- */
-  .grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:22px; }
   .card{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:22px;
-    padding:24px;
-    box-shadow:var(--shadow);
+    border:1px solid var(--green-dim);
+    background:var(--panel);
+    padding:0;
+    position:relative;
   }
-  .card .head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
-  .card .head .t{ font-size:14px; font-weight:550; color:var(--muted); }
-  .badge{ width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center; background:var(--accent-soft); }
-  .badge svg{ width:18px; height:18px; }
+  .card-h{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:8px 12px;
+    border-bottom:1px solid var(--green-faint);
+    font-size:12px;letter-spacing:1px;color:var(--green-dim);
+    background:rgba(0,255,102,.04);
+  }
+  .card-h .id{color:var(--green)}
+  .card-b{padding:16px 14px}
 
-  .metric{ font-size:42px; font-weight:600; letter-spacing:-0.03em; line-height:1; font-variant-numeric:tabular-nums; }
-  .metric small{ font-size:18px; font-weight:500; color:var(--muted); }
-  .metric-sub{ font-size:13px; color:var(--muted); margin-top:8px; }
+  .big{font-size:40px;letter-spacing:1px}
+  .big.warn{color:var(--amber);text-shadow:0 0 10px rgba(255,204,51,.6)}
+  .sub{font-size:12px;color:var(--green-dim);margin-top:4px}
 
-  .ring-row{ display:flex; align-items:center; gap:18px; }
-  .ring{ position:relative; width:78px; height:78px; flex-shrink:0; }
-  .ring svg{ transform:rotate(-90deg); }
-  .ring .val{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:600; font-variant-numeric:tabular-nums;}
+  .bar{height:14px;border:1px solid var(--green-dim);margin-top:12px;padding:2px;background:#040604}
+  .bar > span{display:block;height:100%;background:repeating-linear-gradient(90deg,var(--green) 0 6px,transparent 6px 8px);box-shadow:0 0 8px var(--green)}
+  .bar.warn > span{background:repeating-linear-gradient(90deg,var(--amber) 0 6px,transparent 6px 8px);box-shadow:0 0 8px var(--amber)}
 
-  .bar{ height:7px; border-radius:99px; background:var(--line); overflow:hidden; margin-top:16px; }
-  .bar > i{ display:block; height:100%; border-radius:99px; }
+  .mail{display:flex;gap:10px;padding:6px 0;border-bottom:1px dotted var(--green-faint);font-size:13px}
+  .mail:last-child{border-bottom:none}
+  .mail .from{color:var(--amber);min-width:74px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mail .subj{color:var(--green);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mail .t{color:var(--green-dim);font-size:11px}
 
-  /* wide cards */
-  .span2{ grid-column:span 2; }
+  .wx{display:flex;align-items:center;gap:16px}
+  .wx pre{color:var(--amber);font-size:12px;line-height:1.1;text-shadow:0 0 6px rgba(255,204,51,.5)}
+  .stat-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;border-bottom:1px dotted var(--green-faint)}
+  .stat-row span:last-child{color:var(--amber)}
+  .ascii-list{font-size:13px;line-height:1.7}
+  .ascii-list .ok{color:var(--green)}
+  .ascii-list .bad{color:var(--red);text-shadow:0 0 6px rgba(255,77,77,.6)}
+  .log{font-size:12px;color:var(--green-dim);line-height:1.7}
+  .log b{color:var(--green)}
 
-  .mail-list{ display:flex; flex-direction:column; gap:2px; margin-top:4px; }
-  .mail{ display:flex; align-items:center; gap:14px; padding:11px 8px; border-radius:12px; transition:background .15s;}
-  .mail:hover{ background:rgba(0,0,0,.03); }
-  .mail .pin{ width:9px; height:9px; border-radius:50%; background:var(--accent); flex-shrink:0;}
-  .mail .who{ font-weight:550; font-size:14px; }
-  .mail .pre{ font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .mail .tm{ margin-left:auto; font-size:12px; color:var(--muted); flex-shrink:0; }
-  .mail .body{ min-width:0; }
-
-  .weather{ display:flex; align-items:center; justify-content:space-between; }
-  .weather .deg{ font-size:52px; font-weight:600; letter-spacing:-0.03em; }
-  .weather .city{ font-size:14px; color:var(--muted); margin-top:2px; }
-  .weather .cond{ font-size:13.5px; font-weight:500; margin-top:6px; }
-  .sun{ width:74px; height:74px; }
-  .forecast{ display:flex; justify-content:space-between; margin-top:22px; padding-top:18px; border-top:1px solid var(--line); }
-  .fc{ text-align:center; flex:1; }
-  .fc .d{ font-size:12px; color:var(--muted); }
-  .fc .e{ font-size:20px; margin:6px 0; }
-  .fc .tt{ font-size:13px; font-weight:550; }
-
-  .chips{ display:flex; gap:9px; flex-wrap:wrap; margin-top:4px;}
-  .chip{ font-size:12.5px; padding:6px 12px; border-radius:99px; background:var(--bg); color:var(--muted); font-weight:500;}
-
-  @media (max-width:1100px){ .grid{ grid-template-columns:repeat(2,1fr);} .span2{grid-column:span 2;} }
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-track{background:#040604}
+  ::-webkit-scrollbar-thumb{background:var(--green-dim)}
 </style>
 </head>
 <body>
+<div id="app">
 
-  <!-- Sidebar -->
+  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="brand">
-      <div class="dot">M</div>
-      <div>
-        <h1>Mission Control</h1>
-        <span>Persönliches Dashboard</span>
-      </div>
-    </div>
-
-    <nav class="nav">
-      <div class="nav-label">Übersicht</div>
-      <a href="#" class="active">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-        Dashboard
-      </a>
-      <a href="#">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M5 21c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
-        Bolla
-      </a>
-      <a href="#">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 9l8-5 8 5-8 5z"/><path d="M4 9v6l8 5 8-5V9"/></svg>
-        Schule
-      </a>
-      <a href="#">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
-        Kalender
-      </a>
-      <a href="#">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 7l9 6 9-6"/></svg>
-        E-Mail
-      </a>
-      <a href="#">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 17a4 4 0 0 0 0-8 6 6 0 0 0-11.5 1.5A3.5 3.5 0 0 0 6 17z"/></svg>
-        Wetter
-      </a>
-      <div class="nav-label">System</div>
-      <a href="#">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2.5"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg>
-        System Info
-      </a>
+    <div class="logo"><b>╔═╗ MISSION</b>
+<b>╚═╝ CONTROL</b> v3.1</div>
+    <div class="uptime">uptime 14d 06:51:22</div>
+    <nav>
+      <a class="navlink active"><span class="tag">[00]</span> Dashboard</a>
+      <a class="navlink"><span class="tag">[01]</span> Bolla</a>
+      <a class="navlink"><span class="tag">[02]</span> Schule</a>
+      <a class="navlink"><span class="tag">[03]</span> Kalender</a>
+      <a class="navlink"><span class="tag">[04]</span> E-Mail</a>
+      <a class="navlink"><span class="tag">[05]</span> Wetter</a>
+      <a class="navlink"><span class="tag">[06]</span> System Info</a>
     </nav>
-
-    <div class="side-foot">
-      <div class="avatar">CM</div>
-      <div>
-        <div class="nm">Chris Mandel</div>
-        <div class="rl">Norderstedt</div>
-      </div>
-    </div>
+    <div class="sidefoot"><span class="dot"></span> ONLINE &nbsp; node@bolla<br>last sync 20:13:58</div>
   </aside>
 
-  <!-- Main -->
+  <!-- MAIN -->
   <div class="main">
     <header class="topbar">
-      <div>
-        <h2>Dashboard</h2>
-        <div class="sub">Freitag, 19. Juni 2026 · Guten Abend, Chris</div>
-      </div>
-      <div class="clock">
-        <div class="time">20:14</div>
-        <div class="date">Alle Systeme normal</div>
-      </div>
+      <h1>dashboard<span class="cursor"></span></h1>
+      <div class="clock">20:14:07<small>SA 20 JUN 2026</small></div>
     </header>
 
-    <main class="content">
+    <div class="content">
       <div class="grid">
 
         <!-- RAM -->
-        <section class="card">
-          <div class="head">
-            <span class="t">Arbeitsspeicher</span>
-            <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="#0A84FF" stroke-width="1.8"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M7 7V4M12 7V4M17 7V4M7 21v-4M12 21v-4M17 21v-4"/></svg></span>
+        <div class="card">
+          <div class="card-h"><span>SPEICHER</span><span class="id">[MEM]</span></div>
+          <div class="card-b">
+            <div class="big">34%</div>
+            <div class="sub">5.4 GB / 16.0 GB belegt</div>
+            <div class="bar"><span style="width:34%"></span></div>
           </div>
-          <div class="ring-row">
-            <div class="ring">
-              <svg width="78" height="78">
-                <circle cx="39" cy="39" r="32" stroke="#E8E8ED" stroke-width="8" fill="none"/>
-                <circle cx="39" cy="39" r="32" stroke="#0A84FF" stroke-width="8" fill="none" stroke-linecap="round" stroke-dasharray="201" stroke-dashoffset="133"/>
-              </svg>
-              <div class="val">34%</div>
-            </div>
-            <div>
-              <div class="metric-sub" style="margin:0;font-weight:550;color:var(--ink);">5,4 / 16 GB</div>
-              <div class="metric-sub">belegt · stabil</div>
-            </div>
-          </div>
-        </section>
+        </div>
 
         <!-- CPU -->
-        <section class="card">
-          <div class="head">
-            <span class="t">Prozessor</span>
-            <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="#0A84FF" stroke-width="1.8"><rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg></span>
+        <div class="card">
+          <div class="card-h"><span>PROZESSOR</span><span class="id">[CPU]</span></div>
+          <div class="card-b">
+            <div class="big">12%</div>
+            <div class="sub">load 0.48 · 8 cores · 41°C</div>
+            <div class="bar"><span style="width:12%"></span></div>
           </div>
-          <div class="ring-row">
-            <div class="ring">
-              <svg width="78" height="78">
-                <circle cx="39" cy="39" r="32" stroke="#E8E8ED" stroke-width="8" fill="none"/>
-                <circle cx="39" cy="39" r="32" stroke="#34C759" stroke-width="8" fill="none" stroke-linecap="round" stroke-dasharray="201" stroke-dashoffset="177"/>
-              </svg>
-              <div class="val">12%</div>
-            </div>
-            <div>
-              <div class="metric-sub" style="margin:0;font-weight:550;color:var(--ink);">8 Kerne</div>
-              <div class="metric-sub">leicht · 47°C</div>
-            </div>
-          </div>
-        </section>
+        </div>
 
-        <!-- Mails counter -->
-        <section class="card">
-          <div class="head">
-            <span class="t">Posteingang</span>
-            <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="#0A84FF" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 7l9 6 9-6"/></svg></span>
+        <!-- MAIL -->
+        <div class="card">
+          <div class="card-h"><span>POSTEINGANG</span><span class="id">3 NEU</span></div>
+          <div class="card-b">
+            <div class="mail"><span class="from">Robin</span><span class="subj">Re: Famulatur Tansania</span><span class="t">19:48</span></div>
+            <div class="mail"><span class="from">KDP</span><span class="subj">Konto-Verifizierung läuft</span><span class="t">17:02</span></div>
+            <div class="mail"><span class="from">LG-Sekr.</span><span class="subj">Stundenplan KW26</span><span class="t">14:11</span></div>
           </div>
-          <div class="metric">3 <small>neu</small></div>
-          <div class="metric-sub">von 14 ungelesenen</div>
-          <div class="bar"><i style="width:65%;background:var(--accent);"></i></div>
-        </section>
+        </div>
 
-        <!-- Wetter compact -->
-        <section class="card">
-          <div class="head">
-            <span class="t">Wetter</span>
-            <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="#FF9F0A" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg></span>
+        <!-- WETTER -->
+        <div class="card">
+          <div class="card-h"><span>WETTER · HAMBURG</span><span class="id">[WX]</span></div>
+          <div class="card-b">
+            <div class="wx">
+              <pre>  \\ | /
+ -- (*) --
+  / | \\  </pre>
+              <div>
+                <div class="big warn">18°C</div>
+                <div class="sub">heiter · Wind 12 km/h NW</div>
+              </div>
+            </div>
+            <div class="stat-row"><span>Luftfeuchte</span><span>61 %</span></div>
+            <div class="stat-row"><span>Sonnenuntergang</span><span>21:52</span></div>
           </div>
-          <div class="metric">18°<small>C</small></div>
-          <div class="metric-sub">Hamburg · Heiter</div>
-          <div class="chips"><span class="chip">↑ 21°</span><span class="chip">↓ 13°</span><span class="chip">💨 12 km/h</span></div>
-        </section>
+        </div>
 
-        <!-- Mail list (wide) -->
-        <section class="card span2">
-          <div class="head">
-            <span class="t">Neueste E-Mails</span>
-            <span style="font-size:13px;color:var(--accent);font-weight:550;">Alle ansehen</span>
+        <!-- SYSTEM STATUS -->
+        <div class="card">
+          <div class="card-h"><span>DIENSTE</span><span class="id">[SVC]</span></div>
+          <div class="card-b ascii-list">
+            <div><span class="ok">[✓]</span> mission_control_api &nbsp;:18790</div>
+            <div><span class="ok">[✓]</span> cloudflared tunnel &nbsp;bolla-mc</div>
+            <div><span class="ok">[✓]</span> mail-to-calendar &nbsp;&nbsp;active</div>
+            <div><span class="bad">[!]</span> bookbackup.timer &nbsp;&nbsp;idle</div>
           </div>
-          <div class="mail-list">
-            <div class="mail">
-              <span class="pin"></span>
-              <div class="body">
-                <div class="who">Robin Mandel</div>
-                <div class="pre">Re: Famulatur Tansania — Flüge sind gebucht 🎉</div>
-              </div>
-              <span class="tm">19:52</span>
-            </div>
-            <div class="mail">
-              <span class="pin"></span>
-              <div class="body">
-                <div class="who">Lessing-Gymnasium</div>
-                <div class="pre">Vertretungsplan für Montag aktualisiert</div>
-              </div>
-              <span class="tm">18:30</span>
-            </div>
-            <div class="mail">
-              <span class="pin"></span>
-              <div class="body">
-                <div class="who">Amazon KDP</div>
-                <div class="pre">Ihr Titel „AURORA" — Statusaktualisierung</div>
-              </div>
-              <span class="tm">16:07</span>
-            </div>
-            <div class="mail" style="opacity:.55;">
-              <span class="pin" style="background:var(--line);"></span>
-              <div class="body">
-                <div class="who">Steffi Garschagen</div>
-                <div class="pre">Fotos vom Wochenende mit den Kindern</div>
-              </div>
-              <span class="tm">Gestern</span>
-            </div>
-          </div>
-        </section>
+        </div>
 
-        <!-- Wetter detail (wide) -->
-        <section class="card span2">
-          <div class="head">
-            <span class="t">Wetter · Hamburg</span>
-            <span style="font-size:13px;color:var(--muted);">Aktualisiert 20:10</span>
+        <!-- DISK / NET -->
+        <div class="card">
+          <div class="card-h"><span>DATENTRÄGER</span><span class="id">[DSK]</span></div>
+          <div class="card-b">
+            <div class="big warn">72%</div>
+            <div class="sub">/ &nbsp;181 GB / 256 GB</div>
+            <div class="bar warn"><span style="width:72%"></span></div>
+            <div class="stat-row" style="margin-top:12px"><span>Netz ↓</span><span>1.2 MB/s</span></div>
+            <div class="stat-row"><span>Netz ↑</span><span>0.3 MB/s</span></div>
           </div>
-          <div class="weather">
-            <div>
-              <div class="deg">18°</div>
-              <div class="city">Norderstedt / Hamburg</div>
-              <div class="cond">Heiter · gefühlt 17°</div>
-            </div>
-            <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="#FF9F0A" stroke-width="1.6"><circle cx="12" cy="12" r="4.5" fill="#FFE9C7"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M19.8 4.2l-2.1 2.1M6.3 17.7l-2.1 2.1"/></svg>
+        </div>
+
+        <!-- KALENDER -->
+        <div class="card">
+          <div class="card-h"><span>NÄCHSTE TERMINE</span><span class="id">[CAL]</span></div>
+          <div class="card-b ascii-list">
+            <div><span class="tag" style="color:var(--green-dim)">SO 09:00</span> · Spaziergang Norderstedt</div>
+            <div><span class="tag" style="color:var(--green-dim)">MO 08:00</span> · Unterricht 7b</div>
+            <div><span class="tag" style="color:var(--green-dim)">MI 15:30</span> · KDP-Bankprüfung Frist</div>
           </div>
-          <div class="forecast">
-            <div class="fc"><div class="d">Sa</div><div class="e">☀️</div><div class="tt">22°</div></div>
-            <div class="fc"><div class="d">So</div><div class="e">⛅</div><div class="tt">20°</div></div>
-            <div class="fc"><div class="d">Mo</div><div class="e">🌦️</div><div class="tt">17°</div></div>
-            <div class="fc"><div class="d">Di</div><div class="e">🌧️</div><div class="tt">15°</div></div>
-            <div class="fc"><div class="d">Mi</div><div class="e">⛅</div><div class="tt">19°</div></div>
+        </div>
+
+        <!-- LOG -->
+        <div class="card">
+          <div class="card-h"><span>SYSTEM LOG</span><span class="id">[LOG]</span></div>
+          <div class="card-b log">
+            <div><b>20:13</b> backup nightly OK (4661 files)</div>
+            <div><b>20:01</b> tunnel reconnect ok</div>
+            <div><b>19:50</b> 3 mails fetched</div>
+            <div><b>19:42</b> AURORA EN build queued</div>
           </div>
-        </section>
+        </div>
 
       </div>
-    </main>
+    </div>
   </div>
-
+</div>
 </body>
 </html>
