@@ -6158,6 +6158,7 @@ function loadWeatherFull() {
       @keyframes wett-snow { to { transform: translateY(100vh) rotate(360deg); } }
       @keyframes wett-pulse { 0%,100%{transform:scale(1);opacity:.6} 50%{transform:scale(1.25);opacity:1} }
       @keyframes wett-glow  { 0%,100%{box-shadow:0 0 30px 10px rgba(255,200,50,.3)} 50%{box-shadow:0 0 60px 20px rgba(255,200,50,.6)} }
+      @keyframes wett-detail-in { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
     `;
     document.head.appendChild(s);
   }
@@ -6294,7 +6295,8 @@ function loadWeatherFull() {
     const windMax = Math.round(d.daily.wind_speed_10m_max?.[i]||0);
     const uvMax2 = uvLabel(d.daily.uv_index_max?.[i]||0);
     const dayRainTxt = rainWindowsCompact(rainWindows(d, date, isToday ? nowHour : -1));
-    h += `<div style="background:${cardBg};border-radius:14px;padding:14px 10px;text-align:center;border:1px solid rgba(255,255,255,${isToday?'0.2':'0.07'});${isToday?'box-shadow:0 0 0 2px rgba(255,255,255,0.18)':''}">
+    const isSel = window._weatherSelDay === i;
+    h += `<div id="wcard-${i}" onclick="toggleDayDetail(${i})" title="Details zum Tag anzeigen" style="background:${cardBg};border-radius:14px;padding:14px 10px;text-align:center;cursor:pointer;transition:transform .12s,box-shadow .12s;border:1px solid rgba(255,255,255,${isSel?'0.45':isToday?'0.2':'0.07'});${isSel?'box-shadow:0 0 0 3px rgba(120,184,255,0.85),0 6px 18px rgba(0,0,0,0.4);transform:translateY(-2px)':isToday?'box-shadow:0 0 0 2px rgba(255,255,255,0.18)':''}" onmouseover="if(window._weatherSelDay!==${i})this.style.transform='translateY(-2px)'" onmouseout="if(window._weatherSelDay!==${i})this.style.transform=''">
       <div style="font-size:${isToday?'16':'14'}px;color:${isToday?'#fff':'rgba(255,255,255,0.7)'};font-weight:${isToday?700:500};margin-bottom:2px">${dayLabel}</div>
       <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:8px">${dateLabel}</div>
       <div style="font-size:34px;margin-bottom:8px">${icon2}</div>
@@ -6308,7 +6310,164 @@ function loadWeatherFull() {
   });
   h += `</div>`;
 
+  // Hinweiszeile + aufklappbarer Detail-Bereich für den gewählten Tag
+  h += `<div style="font-size:12px;color:rgba(255,255,255,0.32);text-align:center;margin:4px 0 14px">👆 Tag antippen für Details (Regen-Zeitfenster, Stundenverlauf …)</div>`;
+  h += `<div id="day-detail"></div>`;
+
   document.getElementById('wetter-content').innerHTML = h;
+
+  // Falls vor dem Neuaufbau ein Tag offen war → wieder herstellen (ohne Scroll)
+  if (window._weatherSelDay != null && window._weatherSelDay < d.daily.time.slice(0,7).length) {
+    const dd = document.getElementById('day-detail');
+    if (dd) dd.innerHTML = renderDayDetail(window._weatherSelDay);
+  }
+}
+
+// WMO-Code → Bright-Sky-Foto-Icon (für Foto-Hintergrund der Tages-Detailbox)
+function wmoToPhotoIcon(code) {
+  if (code === 0 || code === 1) return 'clear-day';
+  if (code === 2) return 'partly-cloudy-day';
+  if (code === 3) return 'cloudy';
+  if (code === 45 || code === 48) return 'fog';
+  if (code >= 71 && code <= 77) return 'snow';
+  if (code === 95 || code === 96 || code === 99) return 'thunderstorm';
+  return 'rain'; // 51–65, 80–82
+}
+
+// Klick auf eine Tageskarte: Detailbox auf-/zuklappen (Toggle)
+function toggleDayDetail(i) {
+  const dd = document.getElementById('day-detail');
+  if (!dd) return;
+  if (window._weatherSelDay === i) {
+    // gleichen Tag nochmal → schließen
+    window._weatherSelDay = null;
+    dd.innerHTML = '';
+  } else {
+    window._weatherSelDay = i;
+    dd.innerHTML = renderDayDetail(i);
+  }
+  // Karten-Hervorhebung aktualisieren
+  for (let k = 0; k < 7; k++) {
+    const c = document.getElementById('wcard-' + k);
+    if (!c) continue;
+    const today = k === 0;
+    const sel = window._weatherSelDay === k;
+    c.style.border = `1px solid rgba(255,255,255,${sel?'0.45':today?'0.2':'0.07'})`;
+    c.style.boxShadow = sel ? '0 0 0 3px rgba(120,184,255,0.85),0 6px 18px rgba(0,0,0,0.4)' : (today ? '0 0 0 2px rgba(255,255,255,0.18)' : '');
+    c.style.transform = sel ? 'translateY(-2px)' : '';
+  }
+  if (window._weatherSelDay != null) {
+    dd.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+}
+
+// Große Detailbox für Tag i (Stil wie Hero oben): Foto-Hintergrund,
+// Regen-Zeitfenster, Stundenverlauf des Tages, Sonne, Wind, UV, Regen.
+function renderDayDetail(i) {
+  const d = window._weather;
+  if (!d) return '';
+  const date = d.daily.time[i];
+  const code = d.daily.weather_code[i];
+  const tMax = Math.round(d.daily.temperature_2m_max[i]);
+  const tMin = Math.round(d.daily.temperature_2m_min[i]);
+  const icon = WMO_ICONS[code] || '🌤️';
+  const desc = WMO_DESC[code] || '';
+  const isToday = i === 0;
+  const nowHour = new Date(d.current.time).getHours();
+
+  // Foto-Hintergrund wie Hero (tagsüber-Variante für Vorhersagetage)
+  const [photo, overlayA] = getWeatherPhoto(wmoToPhotoIcon(code), true);
+  const bg = photo
+    ? `linear-gradient(rgba(0,0,0,${overlayA+0.08}),rgba(0,0,0,${overlayA+0.08})), url('${photo}') center/cover no-repeat`
+    : (WMO_BG[code] || WMO_BG[0]);
+
+  // Datum/Wochentag
+  const wd = isToday ? 'Heute' : new Date(date).toLocaleDateString('de-DE',{weekday:'long'});
+  const dl = new Date(date).toLocaleDateString('de-DE',{day:'2-digit',month:'long'});
+
+  // Sonne, Wind, UV
+  const sr = d.daily.sunrise[i].slice(11,16);
+  const ss = d.daily.sunset[i].slice(11,16);
+  const windMax = Math.round(d.daily.wind_speed_10m_max?.[i] || 0);
+  const uvMaxVal = Math.round(d.daily.uv_index_max?.[i] || 0);
+  const uvMax = uvLabel(d.daily.uv_index_max?.[i] || 0);
+  const rainMaxP = d.daily.precipitation_probability_max[i] || 0;
+
+  // Regen-Zeitfenster (heute: erst ab jetzt) + Gesamtmenge aus stündlichen Daten
+  const windows = rainWindows(d, date, isToday ? nowHour : -1);
+  const rainTxt = rainWindowsText(windows);
+  let rainSum = 0;
+  for (let k = 0; k < d.hourly.time.length; k++) {
+    if (d.hourly.time[k].startsWith(date)) rainSum += d.hourly.precipitation[k] || 0;
+  }
+  rainSum = Math.round(rainSum * 10) / 10;
+
+  const particles = wettAnimParticles(code);
+
+  let h = `<div style="background:${bg};border-radius:22px;padding:28px;position:relative;overflow:hidden;margin-bottom:22px;animation:wett-detail-in .28s ease">
+    ${particles}
+    <div style="position:relative;z-index:1;text-shadow:0 1px 4px rgba(0,0,0,0.7)">
+      <div style="display:grid;grid-template-columns:1fr auto;gap:24px;align-items:start">
+
+        <!-- Links: Tag, Temp, Beschreibung, Regenfenster -->
+        <div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.82);margin-bottom:6px;letter-spacing:.04em">📅 ${wd.toUpperCase()} · ${dl}</div>
+          <div style="display:flex;align-items:flex-end;gap:12px;line-height:1">
+            <span style="font-size:72px;font-weight:100;color:#fff;letter-spacing:-3px">${tMax}°</span>
+            <span style="font-size:42px;margin-bottom:6px">${icon}</span>
+            <span style="font-size:24px;color:rgba(255,255,255,0.55);margin-bottom:10px;font-weight:300">${tMin}°</span>
+          </div>
+          <div style="font-size:19px;color:rgba(255,255,255,0.92);margin-top:8px;font-weight:300">${desc}</div>
+          ${rainTxt
+            ? `<div style="display:inline-block;font-size:15px;color:#cfe6ff;margin-top:12px;font-weight:600;background:rgba(30,90,160,0.5);padding:6px 14px;border-radius:14px;border:1px solid rgba(150,200,255,0.4)">🌧 Regen ${rainTxt}${rainSum>0?` · ${rainSum} mm`:''}</div>`
+            : `<div style="display:inline-block;font-size:15px;color:#bfe8c8;margin-top:12px;font-weight:600;background:rgba(40,120,70,0.4);padding:6px 14px;border-radius:14px;border:1px solid rgba(140,220,170,0.35)">☀️ Voraussichtlich trocken</div>`}
+        </div>
+
+        <!-- Rechts: Detailwerte -->
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:11px 16px;align-items:center">
+          <div style="color:rgba(255,255,255,0.82);font-size:14px;white-space:nowrap">☀️ Aufgang</div>
+          <div style="color:#fff;font-size:18px;font-weight:700">${sr}</div>
+          <div style="color:rgba(255,255,255,0.82);font-size:14px;white-space:nowrap">🌙 Untergang</div>
+          <div style="color:#fff;font-size:18px;font-weight:700">${ss}</div>
+          <div style="color:rgba(255,255,255,0.82);font-size:14px;white-space:nowrap">💧 Regenrisiko</div>
+          <div style="color:#fff;font-size:18px;font-weight:700">${rainMaxP}<span style="font-size:13px;font-weight:400">%</span></div>
+          <div style="color:rgba(255,255,255,0.82);font-size:14px;white-space:nowrap">💨 Wind max</div>
+          <div style="color:#fff;font-size:18px;font-weight:700">${windMax} <span style="font-size:13px;font-weight:400">km/h</span></div>
+          <div style="color:rgba(255,255,255,0.82);font-size:14px;white-space:nowrap">☀️ UV max</div>
+          <div style="font-size:18px;font-weight:700;color:${uvMax.color}">${uvMaxVal} <span style="font-size:13px;font-weight:400">${uvMax.label}</span></div>
+        </div>
+      </div>`;
+
+  // ── Stundenverlauf für genau diesen Tag ──
+  let cells = '';
+  for (let k = 0; k < d.hourly.time.length; k++) {
+    const t = d.hourly.time[k];
+    if (!t.startsWith(date)) continue;
+    const hr = parseInt(t.slice(11,13));
+    if (hr < 7 || hr > 20) continue;       // nur Tagesstunden 7–20 Uhr
+    if (isToday && hr < nowHour) continue;  // heute: nur ab jetzt
+    const isNowCell = isToday && hr === nowHour;
+    const temp = Math.round(d.hourly.temperature_2m[k]);
+    const rp = d.hourly.precipitation_probability[k] || 0;
+    const amt = d.hourly.precipitation[k] || 0;
+    const wet = amt >= 0.15 || (rp >= 55 && amt >= 0.05);
+    cells += `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:62px;flex-shrink:0;padding:8px 2px;border-radius:10px;${wet?'background:rgba(60,120,200,0.22)':isNowCell?'background:rgba(255,255,255,0.08)':''}">
+      <div style="font-size:13px;color:${isNowCell?'#fff':'rgba(255,255,255,0.45)'};font-weight:${isNowCell?700:400}">${isNowCell?'Jetzt':String(hr).padStart(2,'0')+'h'}</div>
+      <div style="font-size:22px;line-height:1">${WMO_ICONS[d.hourly.weather_code[k]]||'🌤️'}</div>
+      <div style="font-size:15px;color:${wettTempColor(temp)};font-weight:700">${temp}°</div>
+      <div style="font-size:11px;color:${wet?'#7ab8ff':'rgba(255,255,255,0.3)'};font-weight:${wet?700:400}">${rp>5?rp+'%':'—'}</div>
+      <div style="font-size:10px;color:${amt>0?'#9cc8ff':'transparent'}">${amt>0?amt+'mm':'·'}</div>
+    </div>`;
+  }
+  if (cells) {
+    h += `<div style="margin-top:22px;background:rgba(0,0,0,0.28);border-radius:14px;padding:14px 12px">
+      <div style="font-size:12px;color:rgba(255,255,255,0.55);margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase">Stundenverlauf${isToday?' (ab jetzt)':''}</div>
+      <div style="display:flex;gap:3px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.15) transparent">${cells}</div>
+    </div>`;
+  }
+
+  h += `</div></div>`;
+  return h;
 }
 
 // ===== FOTOS =====
@@ -7313,7 +7472,7 @@ async function docsLoad() {
   el.innerHTML = '<div style="color:var(--dim);font-size:13px">Lade…</div>';
   const GROUPS = [
     { label: '🤖 Bolla & Setup', color: '#f472b6', files: ['was_ist_bolla.docx','mein_ki_setup.docx','bolla_recovery.docx','Bolla-Notfallplan.pdf','accounts_overview.pdf','00_DOKUMENTATIONS_INDEX.docx'] },
-    { label: '⚙️ Claude Code & Skills', color: '#a78bfa', files: ['Claude Code Skills und Hooks.docx','Bolla-MD-Erklaerung.pdf','Tokens-Erklaerung.docx'] },
+    { label: '⚙️ Claude Code & Skills', color: '#a78bfa', files: ['Claude Code Skills und Hooks.docx','Bolla-MD-Erklaerung.pdf','Bolla-JSON-Erklaerung.pdf','Tokens-Erklaerung.docx'] },
     { label: '🔧 Technik & Infrastruktur', color: '#34d399', files: ['WSL_Crash_Erklaerung.docx','ssh-tunnel-erklaerung.pdf','Cloudflare-IONOS-Erklaerung.docx','ADB-Erklaerung.pdf'] },
     { label: '🧠 KI Allgemein', color: '#60a5fa', files: ['KI-Modelle-Jarvis-Bolla optimiert.pdf','ki-modelle-erklaerung.html','openclaw-zusammenfassung.pdf'] },
     { label: '🎵 Musik & Streaming', color: '#fb923c', files: ['Suno_RouteNote_Anleitung.docx'] },

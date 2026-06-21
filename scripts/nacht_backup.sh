@@ -36,9 +36,14 @@ $PUSH_OK || log "WARNING: git push nicht möglich (Netz/Cloudflare?) — wird be
 # 3. OneDrive-Backup — rsync mit Excludes
 # cp -a hat aktive Session-Files gelockt (D-State auf OneDrive) → WSL-Service crash.
 # nice/ionice damit es nie eine aktive Session stört.
+# WICHTIG: KEIN --delete! (NTFS case-insensitiv vs. Linux case-sensitiv → rsync hält
+#   lebende Dateien für überzählig und löscht sie → OneDrive meldet tägl. Massenlöschung,
+#   im Extremfall Verlust von memory/MEMORY.md. Geprüft 17.06.2026.) Ohne --delete sammeln
+#   sich nur ~60 MB harmlose Altlasten — egal bei einem Backup.
+# -L: Symlinks folgen (memory-Ordner sind konsolidiert auf projects/-home-bolla/memory/).
 DEST="/mnt/d/OneDrive/Dokumente/Bolla/claude-code"
 mkdir -p "$DEST" 2>>"$LOG"
-if nice -n 19 ionice -c 3 rsync -rt --delete --no-perms --no-owner --no-group -q \
+if nice -n 19 ionice -c 3 rsync -rtL --no-perms --no-owner --no-group -q \
         --exclude 'cache/' \
         --exclude 'file-history/' \
         --exclude 'projects/-home-bolla/*.jsonl' \
