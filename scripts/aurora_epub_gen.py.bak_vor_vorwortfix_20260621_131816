@@ -1,28 +1,24 @@
 #!/usr/bin/env python3
-"""AURORA EPUB Generator (English) — erstellt AURORA_english.epub in OneDrive"""
+"""AURORA EPUB Generator — erstellt AURORA_deutsch.epub in OneDrive"""
 
 import json, os, zipfile, html, re, base64, urllib.request, time, uuid
 
-EPUB_PATH = "/mnt/d/OneDrive/Dokumente/AURORA/AURORA_english.epub"
-KI_BUCH   = "/home/bolla/workspace/data/ki_buch_en_adapted.json"
+EPUB_PATH = "/mnt/d/OneDrive/Dokumente/AURORA/AURORA_deutsch.epub"
+KI_BUCH   = "/home/bolla/workspace/data/ki_buch.json"
 MC_URL    = "http://127.0.0.1:18790"
 AUTOR     = "Chris Mandel"
 UID       = "urn:uuid:" + str(uuid.uuid4())
 
 # ──────────────────────────────────────────────
-# Backmatter texts (English)
+# Backmatter-Texte (Deutsch)
 # ──────────────────────────────────────────────
-
-# Vorspann/Epigraph: correct English translation of the German dictionary-style entry
-
-# Impressum: full English equivalent of the German impressum
 
 
 
 
 
 # ──────────────────────────────────────────────
-# Helpers
+# Helper: plain text → HTML-Absätze
 # ──────────────────────────────────────────────
 
 def text2html(txt):
@@ -39,7 +35,7 @@ def text2html(txt):
     return '\n'.join(out)
 
 def md2html(txt):
-    """Markdown subset → XHTML: *em*, --- → <hr>, paragraphs."""
+    """Markdown-Subset → XHTML: *em*, --- → <hr>, Absätze."""
     if not txt:
         return "<p> </p>"
     paras = re.split(r'\n{2,}', txt.strip())
@@ -51,9 +47,6 @@ def md2html(txt):
         if p == '---':
             out.append('<hr class="scene-sep"/>')
             continue
-        if p.startswith('## '):
-            out.append(f'<h2 class="subhead">{html.escape(p[3:].strip())}</h2>')
-            continue
         p = html.escape(p)
         p = re.sub(r'\*(.*?)\*', r'<em>\1</em>', p)
         p = p.replace('\n', '<br/>\n')
@@ -64,7 +57,7 @@ def xhtml_wrap(title_str, body_html, extra_css=""):
     return f'''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en">
+      xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="de">
 <head>
   <meta charset="UTF-8"/>
   <title>{html.escape(title_str)}</title>
@@ -77,12 +70,12 @@ def xhtml_wrap(title_str, body_html, extra_css=""):
 </html>'''
 
 # ──────────────────────────────────────────────
-# Cover via MAI
+# Cover-Generierung via MAI
 # ──────────────────────────────────────────────
 
 def generate_cover():
     prompt = (
-        "Book cover background art for a dark English AI thriller novel. "
+        "Book cover background art for a dark German AI thriller novel. "
         "Dramatic deep midnight blue to black sky. A stunning aurora borealis in shades of teal, "
         "violet and pale green illuminates the upper two-thirds. Subtle abstract neural network "
         "patterns and faint data streams glow within the aurora. At the horizon: a soft orange-red "
@@ -105,13 +98,13 @@ def generate_cover():
         with urllib.request.urlopen(req, timeout=120) as r:
             d = json.loads(r.read())
         if d.get("image_b64"):
-            print(f"  Cover ✓  (daily limit remaining: {d.get('remaining','?')})")
+            print(f"  Cover ✓  (Tageslimit-Rest: {d.get('remaining','?')})")
             return base64.b64decode(d["image_b64"])
         else:
-            print(f"  Cover error: {d.get('error')}")
+            print(f"  Cover-Fehler: {d.get('error')}")
             return None
     except Exception as e:
-        print(f"  Cover exception: {e}")
+        print(f"  Cover-Exception: {e}")
         return None
 
 # ──────────────────────────────────────────────
@@ -153,14 +146,6 @@ h2.section-subtitle {
   margin: -1.5em 0 2.5em 0;
   letter-spacing: 0.05em;
 }
-h2.subhead {
-  font-size: 1.05em;
-  font-weight: bold;
-  text-align: left;
-  color: #222;
-  margin: 1.8em 0 0.4em 0;
-}
-h2.subhead + p { text-indent: 0; }
 p {
   margin: 0 0 0.7em 0;
   text-indent: 1.5em;
@@ -193,14 +178,60 @@ hr.scene-sep {
   white-space: pre-wrap;
   margin-top: 3em;
 }
+/* Cover */
 body.cover-body {
   margin: 0; padding: 0;
   background: #060912;
 }
+.cover-wrap {
+  position: relative;
+  width: 100%;
+}
+.cover-wrap img {
+  display: block;
+  width: 100%;
+}
+.cover-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 5% 8%;
+  background: linear-gradient(to bottom,
+    rgba(0,0,0,0) 50%,
+    rgba(6,9,18,0.7) 80%,
+    rgba(6,9,18,0.92) 100%);
+}
+.cover-title {
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 3.2em;
+  font-weight: bold;
+  color: #ffffff;
+  letter-spacing: 0.3em;
+  text-align: center;
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  text-shadow:
+    0 0 30px rgba(80,200,255,0.7),
+    0 0 60px rgba(80,200,255,0.3),
+    0 3px 6px rgba(0,0,0,0.9);
+  margin: 0 0 0.3em 0;
+}
+.cover-author {
+  font-size: 1em;
+  color: rgba(255,255,255,0.8);
+  letter-spacing: 0.25em;
+  text-align: center;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+  margin: 0;
+}
 """
 
 # ──────────────────────────────────────────────
-# Page content
+# Seiten-Inhalte
 # ──────────────────────────────────────────────
 
 def cover_xhtml(has_img):
@@ -217,7 +248,7 @@ def cover_xhtml(has_img):
     return f'''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en">
+      xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="de">
 <head>
   <meta charset="UTF-8"/>
   <title>AURORA</title>
@@ -227,35 +258,34 @@ def cover_xhtml(has_img):
 </html>'''
 
 def vorspann_xhtml(text):
-    # use the vorspann from the JSON source (fallback to hardcoded EN constant)
-    text = (text or "").strip()
+    text = text.strip()
     parts = text.split('\n', 1)
     headword = parts[0].strip()
     rest = parts[1].strip() if len(parts) > 1 else ''
     body = (f'  <p class="vorspann-headword">{html.escape(headword)}</p>\n'
             f'  <div class="vorspann">{html.escape(rest)}</div>')
-    return xhtml_wrap("Epigraph", body)
+    return xhtml_wrap("Vorspann", body)
 
 def impressum_xhtml(text):
     body = f'  <div class="impressum">{html.escape(text.strip())}</div>'
-    return xhtml_wrap("Copyright", body)
+    return xhtml_wrap("Impressum", body)
 
 def vorwort_xhtml(text):
-    body = f'  <h1 class="section-title">Preface</h1>\n  {md2html(text)}'
-    return xhtml_wrap("Preface", body)
+    body = f'  <h1 class="section-title">Vorwort</h1>\n  {text2html(text)}'
+    return xhtml_wrap("Vorwort", body)
 
 def chapter_xhtml(kapitel_obj, idx):
-    titel = kapitel_obj.get("titel", f"Chapter {idx}")
+    titel = kapitel_obj.get("titel", f"Kapitel {idx}")
     text  = kapitel_obj.get("text", "")
-    label = "Prologue" if idx == 0 else titel
+    label = "Prolog" if idx == 0 else titel
     body  = f'  <h1 class="chapter-title">{html.escape(label)}</h1>\n  {text2html(text)}'
     return xhtml_wrap(label, body)
 
 def epilog_xhtml(subtitle, body_text):
-    body = (f'  <h1 class="section-title">Epilogue</h1>\n'
+    body = (f'  <h1 class="section-title">Epilog</h1>\n'
             f'  <h2 class="section-subtitle">{html.escape(subtitle)}</h2>\n'
             f'  {md2html(body_text)}')
-    return xhtml_wrap("Epilogue", body)
+    return xhtml_wrap("Epilog", body)
 
 def backmatter_xhtml(title, text):
     body = f'  <h1 class="section-title">{html.escape(title)}</h1>\n  {md2html(text)}'
@@ -290,9 +320,9 @@ def build_opf(kapitel, has_cover):
     manifest += '    <item id="rezension"  href="Text/rezension.xhtml"   media-type="application/xhtml+xml"/>\n'
 
     spine += '    <itemref idref="cover" properties="page-spread-right"/>\n'
+    spine += '    <itemref idref="vorspann" properties="page-spread-right"/>\n'
     spine += '    <itemref idref="impressum" properties="page-spread-left"/>\n'
     spine += '    <itemref idref="vorwort" properties="page-spread-right"/>\n'
-    spine += '    <itemref idref="vorspann" properties="page-spread-right"/>\n'
     for i, _ in enumerate(kapitel):
         fid = 'prolog' if i == 0 else f'chapter{i:02d}'
         spine += f'    <itemref idref="{fid}"/>\n'
@@ -310,7 +340,7 @@ def build_opf(kapitel, has_cover):
     <dc:identifier id="uid">{UID}</dc:identifier>
     <dc:title>AURORA</dc:title>
     <dc:creator>{html.escape(AUTOR)}</dc:creator>
-    <dc:language>en</dc:language>
+    <dc:language>de</dc:language>
     <dc:date>2026</dc:date>
     <dc:publisher>{html.escape(AUTOR)}</dc:publisher>
     <meta property="dcterms:modified">{mod}</meta>
@@ -326,18 +356,18 @@ def build_opf(kapitel, has_cover):
 def build_ncx(kapitel):
     nav_points = ''
     items = [
-        ('cover',     'Cover',     'Text/cover.xhtml'),
-        ('impressum', 'Copyright', 'Text/impressum.xhtml'),
-        ('vorwort',   'Preface',   'Text/vorwort.xhtml'),
-        ('vorspann',  'Epigraph',  'Text/vorspann.xhtml'),
+        ('cover',     'Cover',       'Text/cover.xhtml'),
+        ('vorspann',  'Vorspann',    'Text/vorspann.xhtml'),
+        ('impressum', 'Impressum',   'Text/impressum.xhtml'),
+        ('vorwort',   'Vorwort',     'Text/vorwort.xhtml'),
     ]
     for i, k in enumerate(kapitel):
         fid  = 'prolog' if i == 0 else f'chapter{i:02d}'
         items.append((fid, k['titel'], f'Text/{fid}.xhtml'))
-    items.append(('epilog',     'Epilogue',         'Text/epilog.xhtml'))
-    items.append(('ueberautor', 'About the Author', 'Text/ueberautor.xhtml'))
-    items.append(('danksagung', 'Acknowledgments',  'Text/danksagung.xhtml'))
-    items.append(('rezension',  'A Note on Reviews','Text/rezension.xhtml'))
+    items.append(('epilog',     'Epilog',           'Text/epilog.xhtml'))
+    items.append(('ueberautor', 'Über den Autor',   'Text/ueberautor.xhtml'))
+    items.append(('danksagung', 'Danksagung',       'Text/danksagung.xhtml'))
+    items.append(('rezension',  'Rezensions-Bitte', 'Text/rezension.xhtml'))
 
     for order, (fid, titel_str, href) in enumerate(items, 1):
         nav_points += f'''  <navPoint id="nav{order}" playOrder="{order}">
@@ -363,32 +393,32 @@ def build_ncx(kapitel):
 def build_toc_xhtml(kapitel):
     items = [
         ('Text/cover.xhtml',     'Cover'),
-        ('Text/impressum.xhtml', 'Copyright'),
-        ('Text/vorwort.xhtml',   'Preface'),
-        ('Text/vorspann.xhtml',  'Epigraph'),
+        ('Text/vorspann.xhtml',  'Vorspann'),
+        ('Text/impressum.xhtml', 'Impressum'),
+        ('Text/vorwort.xhtml',   'Vorwort'),
     ]
     for i, k in enumerate(kapitel):
         href = 'Text/prolog.xhtml' if i == 0 else f'Text/chapter{i:02d}.xhtml'
         items.append((href, k['titel']))
-    items.append(('Text/epilog.xhtml',     'Epilogue'))
-    items.append(('Text/ueberautor.xhtml', 'About the Author'))
-    items.append(('Text/danksagung.xhtml', 'Acknowledgments'))
-    items.append(('Text/rezension.xhtml',  'A Note on Reviews'))
+    items.append(('Text/epilog.xhtml',     'Epilog'))
+    items.append(('Text/ueberautor.xhtml', 'Über den Autor'))
+    items.append(('Text/danksagung.xhtml', 'Danksagung'))
+    items.append(('Text/rezension.xhtml',  'Rezensions-Bitte'))
 
     li = ''.join(f'      <li><a href="{h}">{html.escape(t)}</a></li>\n' for h, t in items)
 
     return f'''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en">
+      xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="de">
 <head>
   <meta charset="UTF-8"/>
-  <title>Table of Contents</title>
+  <title>Inhaltsverzeichnis</title>
   <link rel="stylesheet" type="text/css" href="css/style.css"/>
 </head>
 <body>
   <nav epub:type="toc" id="toc">
-    <h1 class="section-title">Contents</h1>
+    <h1 class="section-title">Inhalt</h1>
     <ol>
 {li}    </ol>
   </nav>
@@ -396,7 +426,7 @@ def build_toc_xhtml(kapitel):
 </html>'''
 
 # ──────────────────────────────────────────────
-# Main build
+# Haupt-Build
 # ──────────────────────────────────────────────
 
 def build():
@@ -419,21 +449,21 @@ def build():
     if _missing:
         raise SystemExit("FEHLER: Pflichtfelder fehlen in der JSON-Quelle: %s. Build abgebrochen (kein Hardcode-Fallback)." % _missing)
 
-    print(f"AURORA EPUB Generator (English)")
-    print(f"  {len(kapitel)} chapters loaded")
+    print(f"AURORA EPUB Generator")
+    print(f"  {len(kapitel)} Kapitel geladen")
     LOCAL_COVER = "/mnt/d/OneDrive/Dokumente/AURORA/cover_v6_portrait.png"
     if os.path.exists(LOCAL_COVER):
-        print(f"  Using local cover: cover_v6_portrait.png (1600×2560)")
+        print(f"  Verwende lokales Cover: cover_v6_portrait.png (1600×2560)")
         with open(LOCAL_COVER, 'rb') as f:
             cover_bytes = f.read()
     else:
-        print(f"  Generating cover via MAI...")
+        print(f"  Generiere Cover via MAI...")
         cover_bytes = generate_cover()
     has_cover = cover_bytes is not None
 
     os.makedirs(os.path.dirname(EPUB_PATH), exist_ok=True)
 
-    print(f"  Building EPUB...")
+    print(f"  Baue EPUB...")
     with zipfile.ZipFile(EPUB_PATH, 'w', compression=zipfile.ZIP_DEFLATED) as z:
         z.writestr(zipfile.ZipInfo("mimetype"), "application/epub+zip",
                    compress_type=zipfile.ZIP_STORED)
@@ -465,16 +495,16 @@ def build():
             z.writestr(path, chapter_xhtml(k, i))
 
         z.writestr("OEBPS/Text/epilog.xhtml",     epilog_xhtml(epilog_untertitel, epilog))
-        z.writestr("OEBPS/Text/ueberautor.xhtml", backmatter_xhtml("About the Author", ueber_autor))
-        z.writestr("OEBPS/Text/danksagung.xhtml", backmatter_xhtml("Acknowledgments", danksagung))
-        z.writestr("OEBPS/Text/rezension.xhtml",  backmatter_xhtml("A Note on Reviews", rezensions_bitte))
+        z.writestr("OEBPS/Text/ueberautor.xhtml", backmatter_xhtml("Über den Autor", ueber_autor))
+        z.writestr("OEBPS/Text/danksagung.xhtml", backmatter_xhtml("Danksagung", danksagung))
+        z.writestr("OEBPS/Text/rezension.xhtml",  backmatter_xhtml("Rezensions-Bitte", rezensions_bitte))
 
     size_kb = os.path.getsize(EPUB_PATH) // 1024
-    print(f"\n✅ EPUB done!")
-    print(f"   Path:     {EPUB_PATH}")
-    print(f"   Size:     {size_kb} KB")
-    print(f"   Cover:    {'✓ Portrait cover' if has_cover else '✗ (text fallback)'}")
-    print(f"   Sections: Epigraph + Copyright + Preface + {len(kapitel)} ch. + Epilogue + Backmatter")
+    print(f"\n✅ EPUB fertig!")
+    print(f"   Pfad:  {EPUB_PATH}")
+    print(f"   Größe: {size_kb} KB")
+    print(f"   Cover: {'✓ Portrait-Cover' if has_cover else '✗ (Fallback Text-Cover)'}")
+    print(f"   Sektionen: Vorspann + Impressum + Vorwort + {len(kapitel)} Kap. + Epilog + Backmatter")
 
 if __name__ == "__main__":
     build()

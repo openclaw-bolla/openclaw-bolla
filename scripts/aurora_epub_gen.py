@@ -47,6 +47,9 @@ def md2html(txt):
         if p == '---':
             out.append('<hr class="scene-sep"/>')
             continue
+        if p.startswith('## '):
+            out.append(f'<h2 class="subhead">{html.escape(p[3:].strip())}</h2>')
+            continue
         p = html.escape(p)
         p = re.sub(r'\*(.*?)\*', r'<em>\1</em>', p)
         p = p.replace('\n', '<br/>\n')
@@ -146,6 +149,14 @@ h2.section-subtitle {
   margin: -1.5em 0 2.5em 0;
   letter-spacing: 0.05em;
 }
+h2.subhead {
+  font-size: 1.05em;
+  font-weight: bold;
+  text-align: left;
+  color: #222;
+  margin: 1.8em 0 0.4em 0;
+}
+h2.subhead + p { text-indent: 0; }
 p {
   margin: 0 0 0.7em 0;
   text-indent: 1.5em;
@@ -271,7 +282,7 @@ def impressum_xhtml(text):
     return xhtml_wrap("Impressum", body)
 
 def vorwort_xhtml(text):
-    body = f'  <h1 class="section-title">Vorwort</h1>\n  {text2html(text)}'
+    body = f'  <h1 class="section-title">Vorwort</h1>\n  {md2html(text)}'
     return xhtml_wrap("Vorwort", body)
 
 def chapter_xhtml(kapitel_obj, idx):
@@ -320,9 +331,9 @@ def build_opf(kapitel, has_cover):
     manifest += '    <item id="rezension"  href="Text/rezension.xhtml"   media-type="application/xhtml+xml"/>\n'
 
     spine += '    <itemref idref="cover" properties="page-spread-right"/>\n'
-    spine += '    <itemref idref="vorspann" properties="page-spread-right"/>\n'
     spine += '    <itemref idref="impressum" properties="page-spread-left"/>\n'
     spine += '    <itemref idref="vorwort" properties="page-spread-right"/>\n'
+    spine += '    <itemref idref="vorspann" properties="page-spread-right"/>\n'
     for i, _ in enumerate(kapitel):
         fid = 'prolog' if i == 0 else f'chapter{i:02d}'
         spine += f'    <itemref idref="{fid}"/>\n'
@@ -357,9 +368,9 @@ def build_ncx(kapitel):
     nav_points = ''
     items = [
         ('cover',     'Cover',       'Text/cover.xhtml'),
-        ('vorspann',  'Vorspann',    'Text/vorspann.xhtml'),
         ('impressum', 'Impressum',   'Text/impressum.xhtml'),
         ('vorwort',   'Vorwort',     'Text/vorwort.xhtml'),
+        ('vorspann',  'Vorspann',    'Text/vorspann.xhtml'),
     ]
     for i, k in enumerate(kapitel):
         fid  = 'prolog' if i == 0 else f'chapter{i:02d}'
@@ -393,9 +404,9 @@ def build_ncx(kapitel):
 def build_toc_xhtml(kapitel):
     items = [
         ('Text/cover.xhtml',     'Cover'),
-        ('Text/vorspann.xhtml',  'Vorspann'),
         ('Text/impressum.xhtml', 'Impressum'),
         ('Text/vorwort.xhtml',   'Vorwort'),
+        ('Text/vorspann.xhtml',  'Vorspann'),
     ]
     for i, k in enumerate(kapitel):
         href = 'Text/prolog.xhtml' if i == 0 else f'Text/chapter{i:02d}.xhtml'

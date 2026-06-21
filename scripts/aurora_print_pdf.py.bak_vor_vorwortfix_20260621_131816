@@ -14,7 +14,7 @@ import sys, re, html
 from pathlib import Path
 import pyphen
 from reportlab.lib.units import mm
-from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT
+from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -30,13 +30,13 @@ CFG = {
                hyph="de_DE", autor="Chris Mandel",
                t_epilog="Epilog", t_autor="Über den Autor",
                t_dank="Danksagung", t_rezension=None,
-               t_prolog="Prolog", t_vorwort="Vorwort"),
+               t_prolog="Prolog"),
     "en": dict(json="/home/bolla/workspace/data/ki_buch_en_adapted.json",
                out="/mnt/d/OneDrive/Dokumente/AURORA/AURORA_innenteil_en.pdf",
                hyph="en_US", autor="Chris Mandel",
                t_epilog="Epilogue", t_autor="About the Author",
                t_dank="Acknowledgements", t_rezension=None,
-               t_prolog="Prologue", t_vorwort="Preface"),
+               t_prolog="Prologue"),
 }[LANG]
 
 import json
@@ -102,15 +102,11 @@ t_half = ParagraphStyle("t_half", fontName="EBG", fontSize=22, leading=28,
 impr   = ParagraphStyle("impr", fontName="EBG", fontSize=9.5, leading=13,
                         alignment=TA_CENTER, textColor="#333333")
 headword = ParagraphStyle("headword", fontName="EBG-I", fontSize=20, leading=26,
-                          alignment=TA_LEFT, spaceAfter=10)
+                          alignment=TA_CENTER, spaceAfter=10)
 vorspann = ParagraphStyle("vorspann", fontName="EBG-I", fontSize=12.5, leading=18,
-                          alignment=TA_LEFT, textColor="#222222")
+                          alignment=TA_CENTER, textColor="#222222")
 secttit = ParagraphStyle("secttit", fontName="EBG-B", fontSize=20, leading=26,
                          alignment=TA_CENTER, spaceAfter=16)
-# Zwischenüberschrift im Vorwort (## ...)
-subhead = ParagraphStyle("subhead", fontName="EBG-B", fontSize=12.5, leading=16,
-                         alignment=TA_LEFT, firstLineIndent=0,
-                         spaceBefore=12, spaceAfter=3)
 
 # ---------------------------------------------------------------- Flowable-Bau
 def paras(text, style_first=body0, style_rest=body):
@@ -122,9 +118,6 @@ def paras(text, style_first=body0, style_rest=body):
             continue
         if blk == "---":
             flow.append(Paragraph("✳", scene)); first = True; continue
-        if blk.startswith("## "):
-            flow.append(Paragraph(md_inline(blk[3:].strip()), subhead))
-            first = True; continue   # 1. Absatz nach Zwischenüberschrift bündig
         blk = blk.replace("\n", "<br/>")
         flow.append(Paragraph(md_inline(blk), style_first if first else style_rest))
         first = False
@@ -148,12 +141,7 @@ for ln in re.split(r"\n{2,}", D.get("impressum","").strip()):
     story.append(Paragraph(html.escape(ln.strip()).replace("\n","<br/>"), impr))
     story.append(Spacer(1, 5))
 new_page()
-# --- Vorwort (mit Überschrift)
-story.append(Spacer(1, FH*0.10))
-story.append(Paragraph(html.escape(CFG["t_vorwort"]), secttit))
-story += paras(D.get("vorwort",""))
-new_page()
-# --- Vorspann / Definition (eigene Seite direkt vor dem Prolog)
+# --- Vorspann / Definition (S.4)
 vs = D.get("vorspann","").strip()
 vs_parts = re.split(r"\n{2,}", vs)
 story += [Spacer(1, FH*0.22)]
@@ -162,6 +150,9 @@ if vs_parts:
     for p in vs_parts[1:]:
         story.append(Paragraph(html.escape(p.strip()).replace("\n","<br/>"), vorspann))
         story.append(Spacer(1, 6))
+new_page()
+# --- Vorwort
+story += paras(D.get("vorwort",""))
 new_page()
 
 # --- Kapitel
@@ -203,7 +194,7 @@ if D.get("rezensions_bitte"):
     story += paras(D["rezensions_bitte"])
 
 # ---------------------------------------------------------------- Seitenrahmen
-FOLIO_FROM = 4   # Titelei (Schmutztitel/Haupttitel/Impressum, S.1-3) ohne Kopf-/Fußzeile
+FOLIO_FROM = 5   # Titelei (S.1-4) ohne Kopf-/Fußzeile
 def draw_footer(canvas, doc, with_header):
     pg = doc.page
     if pg < FOLIO_FROM:
