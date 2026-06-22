@@ -27,6 +27,50 @@ SPAM_PATTERNS = [
     "[SPAM]",
 ]
 
+SPAM_RULES_FILE = WORKSPACE / "config/spam_rules.json"
+OWN_DOMAINS = {"wtnet.de", "outlook.de", "outlook.com", "gmail.com", "googlemail.com",
+               "lg-n.de", "hotmail.com", "hotmail.de", "live.de", "live.com"}
+
+
+def load_rules():
+    """Lädt die vom Mail-Prüfen vorgeschlagenen, von Chris bestätigten Regeln."""
+    if SPAM_RULES_FILE.exists():
+        try:
+            return json.loads(SPAM_RULES_FILE.read_text()).get("rules", [])
+        except Exception as e:
+            logging.getLogger("spam_watcher").error(f"spam_rules.json kaputt: {e}")
+    return []
+
+
+def _cyrillic_ratio(s: str) -> float:
+    letters = [c for c in (s or "") if c.isalpha()]
+    if not letters:
+        return 0.0
+    cyr = sum(1 for c in letters if "Ѐ" <= c <= "ӿ")
+    return cyr / len(letters)
+
+
+def rule_match(subject: str, sender_email: str, rules: list):
+    """Gibt das Label der ersten passenden Regel zurück, sonst None.
+    Eigene Domains werden bei sender_domain hart ignoriert (Absender ist fälschbar)."""
+    s = subject or ""
+    se = (sender_email or "").lower()
+    _m = re.search(r"[\w.+-]+@[\w.-]+", se)   # reine Adresse aus '"Name" <a@b>' ziehen
+    if _m:
+        se = _m.group(0)
+    for r in rules:
+        typ, wert = r.get("typ"), (r.get("wert") or "")
+        if typ == "cyrillic" and _cyrillic_ratio(s) >= 0.5:
+            return r.get("label", "kyrillischer Betreff")
+        if typ == "subject_keyword" and wert and wert.lower() in s.lower():
+            return r.get("label", wert)
+        if typ == "sender_domain" and wert:
+            dom = wert.lower().lstrip("@")
+            if dom and not any(dom == d or dom.endswith("." + d) for d in OWN_DOMAINS):
+                if se.endswith("@" + dom) or se.endswith("." + dom):
+                    return r.get("label", dom)
+    return None
+
 LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
@@ -96,6 +140,7 @@ def clean_outlook():
     """Löscht Spam in Outlook (alle Ordner)."""
     log.info("[Outlook] Prüfe ernstmandel@outlook.de...")
     token = refresh_ms_token()
+    rules = load_rules()
 
     # Alle Ordner holen
     folders = graph_get(token, "https://graph.microsoft.com/v1.0/me/mailFolders?$top=50")
@@ -107,15 +152,17 @@ def clean_outlook():
         if fname in skip:
             continue
         fid = folder["id"]
-        url = f"https://graph.microsoft.com/v1.0/me/mailFolders/{fid}/messages?$select=id,subject&$top=50"
+        url = f"https://graph.microsoft.com/v1.0/me/mailFolders/{fid}/messages?$select=id,subject,from&$top=50"
 
         while url:
             data = graph_get(token, url)
             for mail in data.get("value", []):
                 subject = mail.get("subject") or ""
-                if is_spam(subject):
+                sender  = ((mail.get("from") or {}).get("emailAddress") or {}).get("address", "")
+                reason  = "Spam-Stempel" if is_spam(subject) else rule_match(subject, sender, rules)
+                if reason:
                     if graph_delete(token, f"https://graph.microsoft.com/v1.0/me/messages/{mail['id']}"):
-                        log.info(f"  🗑️  [{fname}] {subject[:70]}")
+                        log.info(f"  🗑️  [{fname}] ({reason}) {subject[:60]}")
                         total += 1
             url = data.get("@odata.nextLink")
 
@@ -133,20 +180,41 @@ def clean_wtnet():
     with open(WTNET_CONFIG) as f:
         cfg = json.load(f)
 
+    from email.header import decode_header, make_header
+    rules = load_rules()
     try:
         m = imaplib.IMAP4_SSL(cfg["imap_host"], cfg["imap_port"])
         m.login(cfg["email"], cfg["password"])
         m.select("INBOX")
 
-        status, data = m.search(None, "SUBJECT", '"SPAM"')
+        status, data = m.search(None, "ALL")
         ids = data[0].split()
+        deleted = 0
 
-        if ids:
-            log.info(f"[wtnet] 🗑️  {len(ids)} Spam-Mail(s) gefunden, lösche...")
-            for mid in ids:
+        for mid in ids:
+            t, d = m.fetch(mid, "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT)])")
+            if not d or not d[0]:
+                continue
+            raw = d[0][1].decode("utf-8", "replace")
+            subject, sender = "", ""
+            for line in raw.splitlines():
+                low = line.lower()
+                if low.startswith("subject:"):
+                    try:
+                        subject = str(make_header(decode_header(line[8:].strip())))
+                    except Exception:
+                        subject = line[8:].strip()
+                elif low.startswith("from:"):
+                    sender = line[5:].strip()
+            reason = "Spam-Stempel" if is_spam(subject) else rule_match(subject, sender, rules)
+            if reason:
                 m.store(mid, "+FLAGS", "\\Deleted")
+                log.info(f"  🗑️  [wtnet] ({reason}) {subject[:60]}")
+                deleted += 1
+
+        if deleted:
             m.expunge()
-            log.info(f"[wtnet] ✅ {len(ids)} Spam-Mail(s) gelöscht.")
+            log.info(f"[wtnet] ✅ {deleted} Spam-Mail(s) gelöscht.")
         else:
             log.info("[wtnet] Kein Spam.")
 

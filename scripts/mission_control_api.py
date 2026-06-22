@@ -1356,6 +1356,177 @@ def newsletter_search(term):
     return {"results": results, "term": term, "mails_checked": len(mails)}
 
 
+# ── Spam-Regeln (vom Mail-Prüfen vorgeschlagen, vom Watcher angewendet) ───────
+OWN_DOMAINS = {"wtnet.de", "outlook.de", "outlook.com", "gmail.com", "googlemail.com",
+               "lg-n.de", "hotmail.com", "hotmail.de", "live.de", "live.com"}
+SPAM_RULES_FILE = os.path.join(WORKSPACE, "config/spam_rules.json")
+
+
+def _sanitize_rule(rg):
+    """Validiert einen Regel-Vorschlag. Gibt sauberes Dict zurück oder None.
+    Schützt davor, dass je eine von Chris' eigenen Domains geblockt wird."""
+    if not isinstance(rg, dict):
+        return None
+    typ  = (rg.get("typ")  or "").strip()
+    wert = (rg.get("wert") or "").strip()
+    label = (rg.get("label") or "").strip()
+    if typ not in ("cyrillic", "subject_keyword", "sender_domain"):
+        return None
+    if typ == "sender_domain":
+        dom = wert.lower().lstrip("@")
+        if not dom or any(dom == d or dom.endswith("." + d) for d in OWN_DOMAINS):
+            return None  # eigene Domain → niemals blocken (Absender ist fälschbar)
+        wert = dom
+    if typ == "subject_keyword" and not wert:
+        return None
+    if not label:
+        label = {"cyrillic": "Betreff überwiegend kyrillisch",
+                 "subject_keyword": f"Betreff enthält '{wert}'",
+                 "sender_domain": f"Absender-Domain {wert}"}[typ]
+    return {"typ": typ, "wert": wert, "label": label}
+
+
+def spam_rule_add(data):
+    """Speichert eine vom Prüfen vorgeschlagene Spam-Regel in spam_rules.json."""
+    clean = _sanitize_rule(data.get("rule") or {})
+    if not clean:
+        return {"ok": False, "error": "Regel ungültig oder betrifft eine eigene Domain — nicht gespeichert."}
+    try:
+        rules = []
+        if os.path.exists(SPAM_RULES_FILE):
+            with open(SPAM_RULES_FILE, encoding="utf-8") as f:
+                rules = json.load(f).get("rules", [])
+        for r in rules:
+            if r.get("typ") == clean["typ"] and (r.get("wert", "").lower() == clean["wert"].lower()):
+                return {"ok": True, "text": f"Regel gab's schon: {clean['label']}", "rule": clean}
+        rules.append(clean)
+        with open(SPAM_RULES_FILE, "w", encoding="utf-8") as f:
+            json.dump({"rules": rules}, f, ensure_ascii=False, indent=2)
+        return {"ok": True, "text": f"✓ Regel aktiv: {clean['label']} — läuft ab jetzt alle 15 Min mit.",
+                "rule": clean}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+# ── Reiseplaner: eigene Notizen + Unterkünfte pro Station ─────────────────────
+REISE_DATA_FILE = os.path.join(WORKSPACE, "data/reise_notizen.json")
+
+
+def reise_get():
+    """Alle benutzerdefinierten Notizen/Unterkünfte, keyed nach Station-ID."""
+    if os.path.exists(REISE_DATA_FILE):
+        try:
+            with open(REISE_DATA_FILE, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+
+def reise_save(data):
+    """Speichert Notiz + Unterkunft für eine Station (id)."""
+    sid = (data.get("id") or "").strip()
+    if not sid:
+        return {"ok": False, "error": "Keine Station-ID."}
+    try:
+        store = reise_get()
+        entry = store.get(sid, {})
+        for k in ("notiz", "unterkunft_name", "unterkunft_link", "checkin", "checkout", "stornofrist"):
+            if k in data:
+                entry[k] = (data.get(k) or "").strip()
+        store[sid] = entry
+        os.makedirs(os.path.dirname(REISE_DATA_FILE), exist_ok=True)
+        with open(REISE_DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(store, f, ensure_ascii=False, indent=2)
+        return {"ok": True, "text": "✓ Gespeichert", "entry": entry}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+def reise_storno_nudge(data):
+    """Schickt eine Storno-Erinnerung für eine Unterkunft an Telegram."""
+    import urllib.request as _ur, urllib.parse as _up
+    station = (data.get("station") or "").strip()
+    name    = (data.get("unterkunft_name") or "Unterkunft").strip()
+    link    = (data.get("unterkunft_link") or "").strip()
+    frist   = (data.get("stornofrist") or "").strip()
+    try:
+        tg = json.load(open(os.path.join(WORKSPACE, "config/telegram_bot.json")))
+        msg = f"\U0001f3e8 *Storno-Erinnerung — {station or 'Reise'}*\n\n{name}"
+        if frist:
+            msg += f"\n⏰ Kostenlos stornierbar bis: *{frist}*"
+        if link:
+            msg += f"\n\U0001f517 [Buchung öffnen]({link})"
+        msg += "\n\n_Noch behalten oder stornieren?_ \U0001f43e"
+        qs = _up.urlencode({"chat_id": tg["chris_id"], "text": msg,
+                            "parse_mode": "Markdown", "disable_web_page_preview": "true"})
+        _ur.urlopen(f"https://api.telegram.org/bot{tg['bot_token']}/sendMessage?{qs}", timeout=5)
+        return {"ok": True, "text": "✓ Erinnerung an Telegram geschickt"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+def _graph_calendar_token():
+    """Access-Token mit Calendars.ReadWrite (gleiches Konto/Token wie mail_to_calendar.py)."""
+    import urllib.request, urllib.parse
+    from pathlib import Path
+    cfg  = json.loads(Path(os.path.join(WORKSPACE, "config/outlook_oauth2.json")).read_text())
+    tokf = os.path.join(WORKSPACE, "config/outlook_token.json")
+    tok  = json.loads(Path(tokf).read_text())
+    data = urllib.parse.urlencode({
+        "client_id": cfg["client_id"], "client_secret": cfg["client_secret"],
+        "refresh_token": tok["refresh_token"], "grant_type": "refresh_token",
+        "scope": "Mail.ReadWrite Mail.Send Calendars.ReadWrite Contacts.ReadWrite Tasks.ReadWrite offline_access",
+    }).encode()
+    req = urllib.request.Request("https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
+                                 data=data, method="POST")
+    with urllib.request.urlopen(req, timeout=20) as r:
+        new = json.loads(r.read())
+    tok.update(new)
+    Path(tokf).write_text(json.dumps(tok, indent=2))
+    os.chmod(tokf, 0o600)
+    return new["access_token"]
+
+
+def reise_calendar_storno(data):
+    """Legt einen Outlook-Ganztags-Termin für die Storno-Frist an (Erinnerung 2 Tage vorher)."""
+    import urllib.request
+    from datetime import datetime as _dt, timedelta as _td
+    station = (data.get("station") or "Reise").strip()
+    name    = (data.get("unterkunft_name") or "Unterkunft").strip()
+    link    = (data.get("unterkunft_link") or "").strip()
+    frist   = (data.get("stornofrist") or "").strip()   # YYYY-MM-DD
+    if not frist:
+        return {"ok": False, "error": "Keine Storno-Frist angegeben."}
+    try:
+        d0 = _dt.strptime(frist, "%Y-%m-%d").date()
+        d1 = d0 + _td(days=1)
+        token = _graph_calendar_token()
+        body_text = (f"Kostenlos stornierbar bis {d0.strftime('%d.%m.%Y')}.\n"
+                     + (f"🔗 {link}\n" if link else "")
+                     + "\nBehalten oder stornieren? — Bolla 🐾 (Reiseplaner)")
+        event = {
+            "subject": f"⏰ Storno-Frist: {name} ({station})",
+            "start": {"dateTime": d0.strftime("%Y-%m-%dT00:00:00"), "timeZone": "Europe/Berlin"},
+            "end":   {"dateTime": d1.strftime("%Y-%m-%dT00:00:00"), "timeZone": "Europe/Berlin"},
+            "isAllDay": True,
+            "isReminderOn": True,
+            "reminderMinutesBeforeStart": 2880,  # 2 Tage vorher
+            "body": {"contentType": "Text", "content": body_text},
+            "categories": ["Wichtig"],
+        }
+        req = urllib.request.Request("https://graph.microsoft.com/v1.0/me/calendar/events",
+                data=json.dumps(event).encode(), method="POST",
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            res = json.loads(r.read())
+        if res.get("id"):
+            return {"ok": True, "text": f"✓ Kalendereintrag am {d0.strftime('%d.%m.%Y')} (Erinnerung 2 Tage vorher)"}
+        return {"ok": False, "error": "Antwort ohne Event-ID"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 def mail_command(data):
     """Führt einen Sprachbefehl auf eine oder mehrere Mails aus."""
     import subprocess, smtplib, re, urllib.request
@@ -1481,15 +1652,41 @@ Beginne direkt mit der Anrede. Unterschreibe als Chris Mandel."""
     else:
         mail_context = "\n\n".join(_mail_block(m, i+1) for i, m in enumerate(mails))
 
-    prompt = f"""Du bist Bolla, Chris Mandels KI-Assistent. Antworte kurz und direkt auf Deutsch.
+    own = ", ".join(sorted(OWN_DOMAINS))
+    prompt = f"""Du bist Bolla, Chris Mandels KI-Assistent. Analysiere die folgende(n) E-Mail(s) auf Deutsch.
 
 {"E-Mail" if len(mails)==1 else f"{len(mails)} E-Mails"}:
 {mail_context}
 
-Aufgabe: {instruction or 'Fasse diese Mail(s) kurz zusammen.'}"""
+Aufgabe: {instruction or 'Prüfe auf Spam/Phishing und fasse kurz zusammen.'}
+
+Antworte mit GENAU diesem JSON (kein Markdown, keine Code-Fences):
+{{"antwort": "<deine kurze Analyse für Chris, ruhig mit Emojis>", "spam": <true/false>, "regel": <null ODER {{"typ":"...","wert":"...","label":"..."}}>}}
+
+Für das Feld "regel" (nur ausfüllen wenn spam=true, sonst null):
+- Wähle das TREFFSICHERSTE Kriterium, das diese und künftige gleiche Mails fängt, aber keine echte Post.
+- "typ" ist eines von: "cyrillic" (Betreff überwiegend kyrillisch), "subject_keyword" (markantes Wort im Betreff), "sender_domain" (Absender-Domain).
+- "wert": bei subject_keyword das Wort, bei sender_domain die Domain (z.B. "xy.ru"), bei cyrillic "".
+- WICHTIG: NIEMALS sender_domain mit einer von Chris' eigenen Domains ({own}) — Spam fälscht den Absender. Dann lieber cyrillic oder subject_keyword.
+- "label": kurze deutsche Beschreibung, z.B. "Betreff enthält 'Коробочка'"."""
     try:
         r = subprocess.run([CLAUDE_BIN,"-p",prompt], capture_output=True, text=True, timeout=60)
-        return {"type":"analysis","text":r.stdout.strip()}
+        raw = r.stdout.strip()
+        text, suggestion = raw, None
+        try:
+            js = raw
+            if "```" in js:
+                seg = js.split("```")[1]
+                js = seg[4:] if seg.lstrip().lower().startswith("json") else seg
+            i, j = js.find("{"), js.rfind("}")
+            if i >= 0 and j > i:
+                parsed = json.loads(js[i:j+1])
+                text = parsed.get("antwort") or raw
+                if parsed.get("spam"):
+                    suggestion = _sanitize_rule(parsed.get("regel") or {})
+        except Exception:
+            pass
+        return {"type":"analysis","text":text,"rule_suggestion":suggestion}
     except Exception as e:
         return {"type":"error","text":str(e)}
 
@@ -3116,13 +3313,13 @@ def get_token_usage():
         mismatch = default_raw.lower() not in latest_model.lower()
 
     data = {
-        "model": f"{_pretty(latest_model)} (Pro Plan)",
+        "model": f"{_pretty(latest_model)} (Max Plan)",
         "model_live": live_short,
         "model_default": default_pretty,
         "model_mismatch": mismatch,
         "today": {"input": t_in, "output": t_out, "cache_read": t_cr, "cache_creation": t_ce},
         "total": {"input": a_in, "output": a_out, "cache_read": a_cr, "cache_creation": a_ce},
-        "note": "Pro Plan — keine Kosten"
+        "note": "Max Plan — keine Kosten"
     }
     _token_cache["ts"] = _t.time()
     _token_cache["data"] = data
@@ -4741,6 +4938,7 @@ class Handler(BaseHTTPRequestHandler):
 
             simple = {
                 "/api/calendar": get_calendar,
+                "/api/reise-notizen": reise_get,
                 "/api/email": get_emails,
                 "/api/photo": lambda: get_photo_of_day() or {},
                 "/api/recipe": get_recipe_of_day,
@@ -5568,6 +5766,14 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 self._handle_tts(body)
             elif self.path == "/api/mail-command":
                 self._send_json(mail_command(body))
+            elif self.path == "/api/spam-rule":
+                self._send_json(spam_rule_add(body))
+            elif self.path == "/api/reise-notizen":
+                self._send_json(reise_save(body))
+            elif self.path == "/api/reise-storno-nudge":
+                self._send_json(reise_storno_nudge(body))
+            elif self.path == "/api/reise-calendar-storno":
+                self._send_json(reise_calendar_storno(body))
             elif self.path == "/api/offers/zip":
                 self._send_json(offers_set_zip(body.get("zip","")))
             elif self.path == "/api/newsletter/watchlist":
