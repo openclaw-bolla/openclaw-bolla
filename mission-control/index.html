@@ -6011,6 +6011,7 @@ async function loadWeather() {
     ]);
     const d = await r.json();
     window._weather = d;
+    window._weatherTs = Date.now();
     if (bsR) { try { const bsJ = await bsR.json(); window._brightsky = bsJ.weather || null; } catch(e){} }
     const c = d.current;
     const bs = window._brightsky;
@@ -6128,7 +6129,9 @@ function rainWindowsCompact(windows) {
 
 function loadWeatherFull() {
   const d = window._weather;
-  if (!d) { loadWeather().then(loadWeatherFull); return; }
+  // Daten fehlen oder sind älter als 10 Min → frisch holen (loadWeather rendert dann selbst, da Seite aktiv)
+  const stale = !window._weatherTs || (Date.now() - window._weatherTs) > 600000;
+  if (!d || stale) { loadWeather(); return; }
   const c = d.current;
   const bs   = window._brightsky;
   // Tag/Nacht aus Sonnenauf-/-untergang bestimmen
