@@ -308,8 +308,10 @@ def _mai_config():
     except Exception:
         return {}
 
-def bildgen_mai_generate(prompt, model="mai-image-2.5", size="1024x1024",
+def bildgen_mai_generate(prompt, model="mai-image-2.5", width=1024, height=1024,
                           input_image_b64=None, input_mime_type=None):
+    # MAI image generations API erwartet width/height in Pixeln (NICHT size/aspect_ratio!).
+    # Regeln (MS-Doku): beide Dims ≥768, width×height ≤ 1.048.576 (=1024²). Output immer PNG.
     import urllib.request, urllib.error, base64, uuid as _uuid
     cfg = _mai_config()
     endpoint = cfg.get("endpoint", "").rstrip("/")
@@ -320,13 +322,14 @@ def bildgen_mai_generate(prompt, model="mai-image-2.5", size="1024x1024",
     headers = {"api-key": api_key}
 
     if input_image_b64:
+        # Edits-API nimmt nur model+prompt+image (keine width/height) — behält Eingabe-Maße.
         url = endpoint + "/mai/v1/images/edits"
         img_bytes = base64.b64decode(input_image_b64)
         img_mime = input_mime_type or "image/png"
         ext = "jpg" if "jpeg" in img_mime else "png"
         boundary = _uuid.uuid4().hex
         body = b""
-        for name, value in [("model", model), ("prompt", prompt), ("n", "1"), ("size", size)]:
+        for name, value in [("model", model), ("prompt", prompt)]:
             body += f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n".encode()
         body += f"--{boundary}\r\nContent-Disposition: form-data; name=\"image\"; filename=\"image.{ext}\"\r\nContent-Type: {img_mime}\r\n\r\n".encode()
         body += img_bytes
@@ -336,8 +339,7 @@ def bildgen_mai_generate(prompt, model="mai-image-2.5", size="1024x1024",
     else:
         url = endpoint + "/mai/v1/images/generations"
         req = urllib.request.Request(url, data=json.dumps({
-            "model": model, "prompt": prompt, "n": 1, "size": size,
-            "output_format": "png", "output_compression": 100
+            "model": model, "prompt": prompt, "width": int(width), "height": int(height)
         }).encode(), headers={**headers, "Content-Type": "application/json"})
 
     try:
@@ -3563,9 +3565,42 @@ def get_kosten():
     try:
         with open(_KOSTEN_FILE, encoding="utf-8") as f:
             data = json.load(f)
+        _kosten_inject_live(data)   # gemessene Verbräuche aus dem Ledger einspielen
         return data
     except Exception as e:
         return {"error": str(e)}
+
+def _kosten_inject_live(data):
+    """Überschreibt die Beträge der self-metered Konten mit den Live-Ledger-Summen
+    des laufenden Monats. Manuelle Guthaben-Konten (PiAPI etc.) bleiben unberührt."""
+    try:
+        sums, counts = kosten_ledger_month_sums()
+        monat = _MONATE_DE[datetime.now().month]
+        # *_bestand = Portal-Stand vor Self-Metering (zählt zur Summe, nicht zur Bildzahl)
+        gem = round(sums.get("gemini_image", 0.0) + sums.get("gemini_analyse", 0.0)
+                    + sums.get("gemini_bestand", 0.0), 2)
+        gem_n = counts.get("gemini_image", 0)
+        mai = round(sums.get("mai_image", 0.0) + sums.get("mai_bestand", 0.0), 2)
+        mai_n = counts.get("mai_image", 0)
+        for k in data.get("konten", []):
+            n = k.get("name", "")
+            if n == "Gemini API Verbrauch":
+                k["betrag"] = gem
+                k["einheit"] = f"€ ({monat})"
+                k["info"] = (f"{monat}: {gem:.2f}€ von 10€-Limit · {gem_n} Bilder gezählt "
+                             f"(Bolla self-metered: Nano Banana {GEMINI_IMG_PREIS:.2f}€/Bild) · "
+                             f"via Visa · Chris' manuelle Foundry-/Portal-Nutzung NICHT erfasst")
+                k["aktualisiert"] = datetime.now().strftime("%Y-%m-%d")
+            elif n.startswith("Azure AI Foundry"):
+                if mai_n > 0:
+                    k["betrag"] = mai
+                    k["einheit"] = f"€ ({monat})"
+                    k["info"] = (f"{monat}: {mai:.2f}€ · {mai_n} Bilder gezählt "
+                                 f"(MAI-Image über Azure, ~{MAI_IMG_PREIS:.2f}€/Bild self-metered) · "
+                                 f"manuelle Foundry-Playground-Nutzung NICHT erfasst")
+                k["aktualisiert"] = datetime.now().strftime("%Y-%m-%d")
+    except Exception:
+        pass
 
 def kosten_update_guthaben(name, betrag, info=None):
     try:
@@ -3583,6 +3618,54 @@ def kosten_update_guthaben(name, betrag, info=None):
         return {"ok": True}
     except Exception as e:
         return {"error": str(e)}
+
+
+# ── Self-Metering: Bolla zählt jeden kostenpflichtigen API-Call selbst mit ──
+# Google/Azure-Rechnungen sind nicht live per API-Key abrufbar + kommen verzögert.
+# Self-Metering ist exakt für alles, was DURCH Bolla läuft, und sofort sichtbar.
+_KOSTEN_LEDGER       = os.path.join(WORKSPACE, "data/api_kosten_ledger.json")
+GEMINI_IMG_PREIS     = 0.04     # Nano Banana (gemini-2.5-flash-image) ~€/Bild
+GEMINI_ANALYSE_PREIS = 0.0005   # Foto-Analyse ~€/Foto
+MAI_IMG_PREIS        = 0.10     # MAI-Image-2.5 (Azure), Mittel von 0,08–0,13 €/Bild
+_MONATE_DE = ["", "Januar", "Februar", "März", "April", "Mai", "Juni",
+              "Juli", "August", "September", "Oktober", "November", "Dezember"]
+
+def kosten_ledger_add(service, betrag, info=""):
+    """Hängt einen Verbrauchsposten an den Ledger an (ein Eintrag pro API-Call)."""
+    try:
+        try:
+            with open(_KOSTEN_LEDGER, encoding="utf-8") as f:
+                eintraege = json.load(f)
+        except Exception:
+            eintraege = []
+        eintraege.append({
+            "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "datum": datetime.now().strftime("%Y-%m-%d"),
+            "service": service,
+            "betrag": round(float(betrag), 4),
+            "info": info,
+        })
+        os.makedirs(os.path.dirname(_KOSTEN_LEDGER), exist_ok=True)
+        with open(_KOSTEN_LEDGER, "w", encoding="utf-8") as f:
+            json.dump(eintraege, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass   # Kosten-Tracking darf eine Bildgenerierung NIE blockieren
+
+def kosten_ledger_month_sums(yyyymm=None):
+    """Summen + Call-Anzahl pro Service für den angegebenen Monat (default: laufender)."""
+    if yyyymm is None:
+        yyyymm = datetime.now().strftime("%Y-%m")
+    sums, counts = {}, {}
+    try:
+        with open(_KOSTEN_LEDGER, encoding="utf-8") as f:
+            for e in json.load(f):
+                if e.get("datum", "").startswith(yyyymm):
+                    s = e.get("service", "?")
+                    sums[s] = round(sums.get(s, 0.0) + e.get("betrag", 0.0), 4)
+                    counts[s] = counts.get(s, 0) + 1
+    except Exception:
+        pass
+    return sums, counts
 
 
 def token_budget_snapshot():
@@ -5878,10 +5961,12 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 in_img  = body.get("input_image_b64")
                 in_mime = body.get("input_mime_type", "image/png")
                 if model.startswith("mai-"):
-                    # MAI-Image via Azure AI Foundry
-                    size_map = {"1:1":"1024x1024","16:9":"1280x720","9:16":"720x1280","4:3":"1024x768","3:4":"768x1024"}
-                    size = size_map.get(aspect, "1024x1024")
-                    img_b64, mime_or_err = bildgen_mai_generate(prompt, model, size, in_img, in_mime)
+                    # MAI-Image via Azure AI Foundry — width/height in px.
+                    # Constraints: beide ≥768, w×h ≤ 1.048.576. Pro Aspect max. Auflösung im Budget.
+                    dim_map = {"1:1":(1024,1024), "16:9":(1360,768), "9:16":(768,1360),
+                               "4:3":(1152,864), "3:4":(864,1152)}
+                    w, h = dim_map.get(aspect, (1024,1024))
+                    img_b64, mime_or_err = bildgen_mai_generate(prompt, model, w, h, in_img, in_mime)
                 else:
                     img_b64, mime_or_err = bildgen_generate(prompt, model, aspect, in_img, in_mime)
                 if img_b64 is None:
@@ -5889,6 +5974,11 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 else:
                     _bildgen_counter["count"] += 1
                     remaining = BILDGEN_LIMIT - _bildgen_counter["count"]
+                    # Self-Metering: erfolgreichen Bild-Call mit Kosten verbuchen
+                    if model.startswith("mai-"):
+                        kosten_ledger_add("mai_image", MAI_IMG_PREIS, f"MAI {model} {aspect}")
+                    else:
+                        kosten_ledger_add("gemini_image", GEMINI_IMG_PREIS, f"{model} {aspect}")
                     self._send_json({"image_b64": img_b64, "mime_type": mime_or_err, "remaining": remaining})
             elif self.path == "/api/bildgen/archive/save":
                 img_b64 = body.get("image_b64", "")
