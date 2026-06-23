@@ -3,358 +3,257 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Control — Lumen</title>
+<title>Mission Control — Kladde</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  :root {
-    --accent: #0a84ff;
-    --bg: #fbfbfd;
-    --card: #ffffff;
-    --ink: #1d1d1f;
-    --muted: #86868b;
-    --line: #ececef;
-  }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Helvetica, Arial, sans-serif;
-    background: var(--bg);
-    color: var(--ink);
-    -webkit-font-smoothing: antialiased;
-    display: flex;
-    min-height: 100vh;
-    font-size: 15px;
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Gochi+Hand&family=Patrick+Hand&display=swap');
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  :root{
+    --paper:#f4ecd8;
+    --paper-dark:#ece0c4;
+    --ink:#3a3326;
+    --ink-blue:#3a5a78;
+    --ink-red:#b5503e;
+    --line:#cbbd9d;
+    --accent:#c98a3b;
+    --green:#5b7a4a;
   }
 
-  /* Sidebar */
-  .sidebar {
-    width: 248px;
-    background: #ffffff;
-    border-right: 1px solid var(--line);
-    padding: 32px 18px;
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-  }
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 0 12px 28px;
-  }
-  .brand .logo {
-    width: 34px; height: 34px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #0a84ff, #5ac8fa);
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; font-weight: 700; font-size: 17px;
-    box-shadow: 0 4px 12px rgba(10,132,255,0.25);
-  }
-  .brand .name { font-size: 17px; font-weight: 600; letter-spacing: -0.2px; }
-  .brand .sub { font-size: 12px; color: var(--muted); }
-
-  .nav { display: flex; flex-direction: column; gap: 4px; }
-  .nav-label {
-    font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px;
-    color: var(--muted); padding: 12px 12px 8px; font-weight: 600;
-  }
-  .nav a {
-    display: flex; align-items: center; gap: 13px;
-    padding: 11px 12px;
-    border-radius: 11px;
-    color: var(--ink);
-    text-decoration: none;
-    font-size: 15px;
-    font-weight: 500;
-    transition: background 0.15s, color 0.15s;
-  }
-  .nav a .ic { width: 20px; text-align: center; font-size: 17px; }
-  .nav a:hover { background: #f2f2f5; }
-  .nav a.active { background: var(--accent); color: #fff; }
-  .nav a.active .ic { filter: none; }
-
-  .side-foot {
-    margin-top: auto;
-    display: flex; align-items: center; gap: 11px;
-    padding: 12px; border-radius: 12px; background: #f7f7f9;
-  }
-  .avatar {
-    width: 36px; height: 36px; border-radius: 50%;
-    background: linear-gradient(135deg,#ffd60a,#ff9f0a);
-    display:flex; align-items:center; justify-content:center;
-    font-weight:700; color:#fff;
-  }
-  .side-foot .who { font-size: 14px; font-weight: 600; }
-  .side-foot .role { font-size: 12px; color: var(--muted); }
-
-  /* Main */
-  .main { flex: 1; display: flex; flex-direction: column; }
-  .topbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 26px 40px;
-    border-bottom: 1px solid var(--line);
-    background: rgba(251,251,253,0.8);
-    backdrop-filter: saturate(180%) blur(20px);
-    position: sticky; top: 0; z-index: 5;
-  }
-  .topbar h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
-  .topbar .crumb { font-size: 13px; color: var(--muted); margin-top: 3px; }
-  .clock { display: flex; align-items: center; gap: 18px; }
-  .time {
-    font-size: 24px; font-weight: 600; letter-spacing: -0.5px;
-    font-variant-numeric: tabular-nums;
-  }
-  .date-chip {
-    font-size: 13px; color: var(--muted);
-    background: #fff; border: 1px solid var(--line);
-    padding: 8px 14px; border-radius: 20px;
+  body{
+    font-family:'Patrick Hand', cursive;
+    background:#e3d7ba;
+    color:var(--ink);
+    min-height:100vh;
+    font-size:18px;
+    /* subtle paper grain */
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(0,0,0,.025) 0, transparent 60%),
+      radial-gradient(circle at 80% 70%, rgba(0,0,0,.025) 0, transparent 60%);
   }
 
-  .content { padding: 36px 40px 48px; }
-  .section-title {
-    font-size: 14px; font-weight: 600; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 18px;
+  .layout{ display:flex; min-height:100vh; }
+
+  /* ---------- SIDEBAR ---------- */
+  .sidebar{
+    width:240px;
+    background:var(--paper-dark);
+    padding:28px 18px;
+    position:relative;
+    border-right:2px solid var(--line);
+    /* notebook holes */
+    box-shadow: inset -8px 0 16px -10px rgba(0,0,0,.2);
+  }
+  .sidebar::before{
+    content:""; position:absolute; top:0; bottom:0; right:18px;
+    width:2px; background:repeating-linear-gradient(var(--ink-red) 0 6px, transparent 6px 12px);
+    opacity:.35;
+  }
+  .brand{
+    font-family:'Gochi Hand', cursive;
+    font-size:30px; line-height:1.05; color:var(--ink-blue);
+    margin-bottom:4px;
+  }
+  .brand small{ display:block; font-family:'Caveat'; font-size:18px; color:var(--accent); transform:rotate(-2deg); }
+
+  .nav{ margin-top:34px; list-style:none; }
+  .nav li{
+    display:flex; align-items:center; gap:12px;
+    padding:9px 12px; margin-bottom:6px; border-radius:10px;
+    cursor:pointer; font-size:20px; color:var(--ink);
+    transition:.15s; position:relative;
+  }
+  .nav li .ic{ font-size:20px; width:24px; text-align:center; }
+  .nav li:hover{ background:rgba(201,138,59,.16); }
+  .nav li.active{
+    background:var(--paper);
+    box-shadow:1px 2px 0 var(--line);
+  }
+  /* hand-drawn circle around active item */
+  .nav li.active::after{
+    content:""; position:absolute; inset:-3px -6px;
+    border:2px solid var(--ink-blue); border-radius:14px 11px 13px 10px;
+    opacity:.55; transform:rotate(-.6deg);
   }
 
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 22px;
-    margin-bottom: 36px;
+  .pin{
+    margin-top:40px; padding:14px; transform:rotate(-1.5deg);
+    background:#fff7e0; border:1px solid var(--line);
+    box-shadow:2px 3px 6px rgba(0,0,0,.12);
+    font-family:'Caveat'; font-size:19px; color:var(--ink-blue);
   }
-  .card {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 20px;
-    padding: 24px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.03), 0 8px 24px rgba(0,0,0,0.03);
-    transition: transform 0.18s, box-shadow 0.18s;
-  }
-  .card:hover { transform: translateY(-3px); box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 14px 34px rgba(0,0,0,0.07); }
-  .card .head {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 18px;
-  }
-  .card .label { font-size: 14px; color: var(--muted); font-weight: 500; }
-  .card .icon {
-    width: 38px; height: 38px; border-radius: 11px;
-    display:flex; align-items:center; justify-content:center; font-size: 19px;
-  }
-  .ic-ram { background:#e8f1ff; }
-  .ic-cpu { background:#eafaf0; }
-  .ic-mail { background:#fff0e8; }
-  .ic-weather { background:#e9f6ff; }
+  .pin b{ color:var(--ink-red); }
 
-  .big { font-size: 38px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
-  .big small { font-size: 18px; font-weight: 600; color: var(--muted); }
-  .sub-note { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  /* ---------- MAIN ---------- */
+  .main{ flex:1; padding:26px 34px; }
 
-  .ring-wrap { display:flex; align-items:center; gap: 20px; }
-  .ring { position: relative; width: 84px; height: 84px; flex-shrink:0; }
-  .ring svg { transform: rotate(-90deg); }
-  .ring .pct {
-    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    font-size: 19px; font-weight: 700;
+  .topbar{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    border-bottom:2px solid var(--line); padding-bottom:14px; margin-bottom:8px;
+    position:relative;
+  }
+  .topbar::after{
+    content:""; position:absolute; left:0; right:0; bottom:-5px; height:2px;
+    background:var(--line); opacity:.5;
+  }
+  .page-title{ font-family:'Gochi Hand'; font-size:38px; color:var(--ink); }
+  .page-title span{ color:var(--accent); }
+  .clock{ text-align:right; }
+  .clock .time{ font-family:'Gochi Hand'; font-size:34px; color:var(--ink-blue); letter-spacing:1px; }
+  .clock .date{ font-family:'Caveat'; font-size:19px; color:var(--ink); opacity:.8; }
+
+  .section-label{
+    font-family:'Caveat'; font-size:22px; color:var(--ink-red);
+    margin:22px 4px 12px; transform:rotate(-.8deg);
   }
 
-  .bar-track { height: 8px; background: #eef0f3; border-radius: 6px; overflow:hidden; margin-top:14px; }
-  .bar-fill { height: 100%; border-radius: 6px; }
-
-  /* Wide cards */
-  .grid-2 { display:grid; grid-template-columns: 1.4fr 1fr; gap: 22px; }
-  .mail-item {
-    display:flex; align-items:center; gap:14px;
-    padding: 14px 0; border-bottom: 1px solid var(--line);
+  /* ---------- WIDGET GRID ---------- */
+  .grid{
+    display:grid; gap:22px;
+    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
   }
-  .mail-item:last-child { border-bottom: none; }
-  .mail-dot { width: 9px; height: 9px; border-radius:50%; background: var(--accent); flex-shrink:0; }
-  .mail-meta { flex:1; }
-  .mail-from { font-size: 15px; font-weight: 600; }
-  .mail-sub { font-size: 13px; color: var(--muted); }
-  .mail-time { font-size: 13px; color: var(--muted); }
 
-  .weather-big { display:flex; align-items:center; gap: 22px; }
-  .weather-temp { font-size: 56px; font-weight: 700; letter-spacing: -2px; }
-  .weather-ico { font-size: 56px; }
-  .weather-row { display:flex; justify-content:space-between; margin-top: 22px; gap: 8px; }
-  .wcol { text-align:center; flex:1; }
-  .wcol .d { font-size:12px; color:var(--muted); margin-bottom:6px; }
-  .wcol .e { font-size:22px; }
-  .wcol .t { font-size:13px; font-weight:600; margin-top:6px; }
+  .card{
+    background:var(--paper);
+    border:2px solid var(--ink);
+    border-radius:255px 15px 225px 15px/15px 225px 15px 255px; /* the famous hand-drawn box */
+    padding:20px 22px;
+    box-shadow:3px 4px 0 rgba(58,51,38,.12);
+    position:relative;
+    transform:rotate(-.4deg);
+  }
+  .card:nth-child(even){ transform:rotate(.5deg); }
+  .card:nth-child(3n){ transform:rotate(-.7deg); }
+
+  .card .label{
+    font-family:'Caveat'; font-size:21px; color:var(--ink-blue);
+    display:flex; align-items:center; gap:8px; margin-bottom:6px;
+  }
+  .card .big{ font-family:'Gochi Hand'; font-size:46px; line-height:1; color:var(--ink); }
+  .card .big small{ font-size:22px; color:var(--accent); }
+  .card .sub{ font-size:16px; opacity:.75; margin-top:6px; }
+
+  /* hand-drawn gauge bar */
+  .gauge{
+    height:14px; margin-top:14px; border:2px solid var(--ink);
+    border-radius:10px; background:repeating-linear-gradient(90deg,transparent 0 7px, rgba(0,0,0,.04) 7px 8px);
+    overflow:hidden; position:relative;
+  }
+  .gauge i{
+    display:block; height:100%;
+    background:repeating-linear-gradient(45deg, var(--accent) 0 6px, #d99a4e 6px 12px);
+  }
+  .gauge.cpu i{ background:repeating-linear-gradient(45deg, var(--green) 0 6px, #6f8d5c 6px 12px); }
+
+  /* mail card list */
+  .mails{ list-style:none; margin-top:10px; }
+  .mails li{
+    font-size:16px; padding:6px 0; border-bottom:1px dashed var(--line);
+    display:flex; gap:8px; align-items:baseline;
+  }
+  .mails li:last-child{ border-bottom:none; }
+  .mails .dot{ color:var(--ink-red); font-size:20px; }
+  .mails .from{ color:var(--ink-blue); }
+
+  /* weather card */
+  .weather{ text-align:center; }
+  .weather .sun{ font-size:54px; line-height:1; }
+  .weather .temp{ font-family:'Gochi Hand'; font-size:50px; color:var(--accent); }
+  .weather .city{ font-family:'Caveat'; font-size:24px; color:var(--ink-blue); }
+  .weather .meta{ font-size:15px; opacity:.75; margin-top:4px; }
+
+  .stamp{
+    position:absolute; top:-14px; right:14px;
+    font-family:'Caveat'; font-size:17px; color:var(--ink-red);
+    border:2px solid var(--ink-red); border-radius:50%;
+    padding:6px 10px; transform:rotate(11deg); opacity:.8;
+    background:var(--paper);
+  }
+
+  .footnote{
+    margin-top:30px; font-family:'Caveat'; font-size:19px;
+    color:var(--ink); opacity:.7; text-align:center; transform:rotate(-.5deg);
+  }
 </style>
 </head>
 <body>
+<div class="layout">
+
+  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="brand">
-      <div class="logo">M</div>
-      <div>
-        <div class="name">Mission Control</div>
-        <div class="sub">Chris' Dashboard</div>
-      </div>
-    </div>
+    <div class="brand">Mission<br>Control <small>~ Chris' Kladde</small></div>
+    <ul class="nav">
+      <li class="active"><span class="ic">▦</span> Dashboard</li>
+      <li><span class="ic">🐾</span> Bolla</li>
+      <li><span class="ic">✎</span> Schule</li>
+      <li><span class="ic">▢</span> Kalender</li>
+      <li><span class="ic">✉</span> E-Mail</li>
+      <li><span class="ic">☁</span> Wetter</li>
+      <li><span class="ic">⚙</span> System Info</li>
+    </ul>
 
-    <nav class="nav">
-      <div class="nav-label">Übersicht</div>
-      <a href="#" class="active"><span class="ic">▦</span> Dashboard</a>
-      <a href="#"><span class="ic">🐾</span> Bolla</a>
-      <a href="#"><span class="ic">🎓</span> Schule</a>
-      <div class="nav-label">Persönlich</div>
-      <a href="#"><span class="ic">📅</span> Kalender</a>
-      <a href="#"><span class="ic">✉️</span> E-Mail</a>
-      <a href="#"><span class="ic">🌤</span> Wetter</a>
-      <a href="#"><span class="ic">⚙️</span> System Info</a>
-    </nav>
-
-    <div class="side-foot">
-      <div class="avatar">CM</div>
-      <div>
-        <div class="who">Chris Mandel</div>
-        <div class="role">Norderstedt</div>
-      </div>
+    <div class="pin">
+      <b>Merkzettel:</b><br>
+      Robin Mail beantworten · Akku Surface Book checken 🔌
     </div>
   </aside>
 
-  <div class="main">
-    <header class="topbar">
-      <div>
-        <h1>Dashboard</h1>
-        <div class="crumb">Montag, 22. Juni 2026</div>
-      </div>
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="page-title">Dash<span>board</span></div>
       <div class="clock">
-        <span class="date-chip">Guten Abend 👋</span>
-        <span class="time">20:14</span>
+        <div class="time">20:14</div>
+        <div class="date">Dienstag, 23. Juni 2026</div>
       </div>
-    </header>
+    </div>
 
-    <main class="content">
-      <div class="section-title">System & Übersicht</div>
-      <div class="grid">
+    <div class="section-label">— Notizen vom Maschinenraum —</div>
 
-        <!-- RAM -->
-        <div class="card">
-          <div class="head">
-            <span class="label">Arbeitsspeicher</span>
-            <span class="icon ic-ram">🧠</span>
-          </div>
-          <div class="ring-wrap">
-            <div class="ring">
-              <svg width="84" height="84">
-                <circle cx="42" cy="42" r="36" stroke="#eef0f3" stroke-width="9" fill="none"/>
-                <circle cx="42" cy="42" r="36" stroke="#0a84ff" stroke-width="9" fill="none"
-                        stroke-linecap="round" stroke-dasharray="226"
-                        stroke-dashoffset="149"/>
-              </svg>
-              <div class="pct">34%</div>
-            </div>
-            <div>
-              <div class="sub-note">5,4 GB von 16 GB</div>
-              <div class="sub-note">in Benutzung</div>
-            </div>
-          </div>
-        </div>
+    <div class="grid">
 
-        <!-- CPU -->
-        <div class="card">
-          <div class="head">
-            <span class="label">Prozessor</span>
-            <span class="icon ic-cpu">⚡️</span>
-          </div>
-          <div class="ring-wrap">
-            <div class="ring">
-              <svg width="84" height="84">
-                <circle cx="42" cy="42" r="36" stroke="#eef0f3" stroke-width="9" fill="none"/>
-                <circle cx="42" cy="42" r="36" stroke="#34c759" stroke-width="9" fill="none"
-                        stroke-linecap="round" stroke-dasharray="226"
-                        stroke-dashoffset="199"/>
-              </svg>
-              <div class="pct">12%</div>
-            </div>
-            <div>
-              <div class="sub-note">Auslastung</div>
-              <div class="sub-note">8 Kerne · ruhig</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Mails -->
-        <div class="card">
-          <div class="head">
-            <span class="label">Posteingang</span>
-            <span class="icon ic-mail">✉️</span>
-          </div>
-          <div class="big">3 <small>neu</small></div>
-          <div class="bar-track"><div class="bar-fill" style="width:42%;background:#ff9f0a"></div></div>
-          <div class="sub-note">12 ungelesen insgesamt</div>
-        </div>
-
-        <!-- Wetter klein -->
-        <div class="card">
-          <div class="head">
-            <span class="label">Hamburg</span>
-            <span class="icon ic-weather">🌤</span>
-          </div>
-          <div class="big">18<small>°C</small></div>
-          <div class="sub-note">Wolkig · gefühlt 17°</div>
-          <div class="sub-note">↑ 21° &nbsp; ↓ 12°</div>
-        </div>
+      <!-- RAM -->
+      <div class="card">
+        <div class="label">⛁ Arbeitsspeicher</div>
+        <div class="big">34<small>%</small></div>
+        <div class="sub">5,4 von 16 GB belegt</div>
+        <div class="gauge"><i style="width:34%"></i></div>
       </div>
 
-      <div class="section-title">Heute im Blick</div>
-      <div class="grid-2">
-
-        <!-- Mail-Liste -->
-        <div class="card">
-          <div class="head">
-            <span class="label" style="font-size:15px;color:var(--ink);font-weight:600">Neueste E-Mails</span>
-            <span class="mail-time">Posteingang</span>
-          </div>
-          <div class="mail-item">
-            <span class="mail-dot"></span>
-            <div class="mail-meta">
-              <div class="mail-from">Lessing-Gymnasium</div>
-              <div class="mail-sub">Stundenplan-Update Klasse 7b</div>
-            </div>
-            <span class="mail-time">19:48</span>
-          </div>
-          <div class="mail-item">
-            <span class="mail-dot"></span>
-            <div class="mail-meta">
-              <div class="mail-from">Robin Mandel</div>
-              <div class="mail-sub">Re: Famulatur Tansania – Flüge</div>
-            </div>
-            <span class="mail-time">18:02</span>
-          </div>
-          <div class="mail-item">
-            <span class="mail-dot"></span>
-            <div class="mail-meta">
-              <div class="mail-from">KDP Amazon</div>
-              <div class="mail-sub">Ihre Bankprüfung ist abgeschlossen</div>
-            </div>
-            <span class="mail-time">16:30</span>
-          </div>
-        </div>
-
-        <!-- Wetter Wochenausblick -->
-        <div class="card">
-          <div class="head">
-            <span class="label" style="font-size:15px;color:var(--ink);font-weight:600">Wetter · Hamburg</span>
-            <span class="mail-time">5-Tage</span>
-          </div>
-          <div class="weather-big">
-            <span class="weather-ico">🌤</span>
-            <div>
-              <div class="weather-temp">18°</div>
-              <div class="sub-note">Leicht bewölkt</div>
-            </div>
-          </div>
-          <div class="weather-row">
-            <div class="wcol"><div class="d">Di</div><div class="e">☀️</div><div class="t">21°</div></div>
-            <div class="wcol"><div class="d">Mi</div><div class="e">🌦</div><div class="t">17°</div></div>
-            <div class="wcol"><div class="d">Do</div><div class="e">⛅️</div><div class="t">19°</div></div>
-            <div class="wcol"><div class="d">Fr</div><div class="e">☀️</div><div class="t">23°</div></div>
-            <div class="wcol"><div class="d">Sa</div><div class="e">🌧</div><div class="t">16°</div></div>
-          </div>
-        </div>
+      <!-- CPU -->
+      <div class="card">
+        <div class="label">⚡ Prozessor</div>
+        <div class="big">12<small>%</small></div>
+        <div class="sub">leise vor sich hin tuckernd</div>
+        <div class="gauge cpu"><i style="width:12%"></i></div>
       </div>
-    </main>
-  </div>
+
+      <!-- MAIL -->
+      <div class="card">
+        <span class="stamp">neu!</span>
+        <div class="label">✉ Posteingang</div>
+        <div class="big">3 <small>neue</small></div>
+        <ul class="mails">
+          <li><span class="dot">•</span><span class="from">Robin</span> — Famulatur Tansania</li>
+          <li><span class="dot">•</span><span class="from">Lessing-Gym</span> — Stundenplan KW26</li>
+          <li><span class="dot">•</span><span class="from">KDP</span> — AURORA ist live 🎉</li>
+        </ul>
+      </div>
+
+      <!-- WEATHER -->
+      <div class="card weather">
+        <div class="label" style="justify-content:center">☁ Wetter</div>
+        <div class="sun">⛅</div>
+        <div class="temp">18°C</div>
+        <div class="city">Hamburg</div>
+        <div class="meta">leicht bewölkt · Wind 14 km/h · 12° nachts</div>
+      </div>
+
+    </div>
+
+    <div class="footnote">„Alles im grünen Bereich." — eigenhändig notiert um 20:14 Uhr ✒</div>
+  </main>
+
+</div>
 </body>
 </html>

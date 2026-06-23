@@ -931,18 +931,8 @@ html, body {
             <div id="recent-mails" style="margin-top:10px"></div>
           </div>
           <div class="card">
-            <div class="card-head"><span class="card-title">📁 Projekte</span><span class="card-icon">📌</span></div>
-            <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:6px">🏫 Schule — Nächste</div>
+            <div class="card-head"><span class="card-title">Schule — Nächste</span><span class="card-icon">🏫</span></div>
             <div id="next-class"><div class="loading">Lade...</div></div>
-            <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
-              <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px">📌 Stichwortliste</div>
-              <div id="stichwortliste"><div class="loading">Lade...</div></div>
-              <div style="display:flex;gap:6px;margin-top:10px">
-                <input id="sw-name" placeholder="Stichwort" style="flex:1;min-width:0;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--bright);font-size:14px;padding:5px 8px">
-                <input id="sw-projekt" placeholder="Projekt / Beschreibung" style="flex:2;min-width:0;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--bright);font-size:14px;padding:5px 8px">
-                <button onclick="addStichwort()" title="Hinzufügen" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:16px;font-weight:700;padding:4px 12px;cursor:pointer">＋</button>
-              </div>
-            </div>
           </div>
         </div>
         <div class="grid-3-1">
@@ -1685,10 +1675,6 @@ html, body {
                   <span style="color:var(--bright);font-weight:600">Daten weg?</span><br>
                   <span style="color:var(--dim)">GitHub openclaw-bolla · OneDrive Dokumente/Bolla</span>
                 </div>
-                <div onclick="fetch('/api/dokumente/open?file=' + encodeURIComponent('Claude komplett neu.html'))" style="padding:7px 10px;background:rgba(245,158,11,0.14);border-radius:6px;border-left:2px solid #f59e0b;cursor:pointer">
-                  <span style="color:var(--bright);font-weight:600">🛟 Ganzer PC neu / Totalausfall?</span><br>
-                  <span style="color:var(--dim)">Komplette Schritt-für-Schritt-Anleitung öffnen — Bolla von Grund auf auf neuem PC aufsetzen (2 Backups, 7 Schritte, Fertig-Check).</span>
-                </div>
               </div>
               <div style="display:flex;gap:6px;margin-top:12px">
                 <span onclick="fetch('/api/dokumente/open?file=bolla_recovery.docx')" style="padding:5px 10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:6px;color:#f59e0b;font-size:12px;cursor:pointer">📄 Recovery.docx</span>
@@ -2228,20 +2214,6 @@ html, body {
             <span style="font-size:20px">📱</span>
             <span style="font-size:14px;font-weight:700;color:var(--bright);text-transform:uppercase;letter-spacing:1.5px">Surface Duo</span>
           </div>
-
-          <!-- ⌨️ AUTOKEY — prominenter Merker -->
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:9px 14px;background:linear-gradient(135deg,rgba(167,139,250,0.18),rgba(129,140,248,0.10));border:1px solid #a78bfa;border-radius:10px;box-shadow:0 2px 10px rgba(167,139,250,0.18)">
-            <span style="font-size:22px;line-height:1">⌨️</span>
-            <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-              <kbd style="font-size:14px;font-weight:700;color:#fff;background:rgba(0,0,0,0.35);border:1px solid #a78bfa;border-radius:6px;padding:3px 9px;font-family:inherit">Win</kbd>
-              <span style="font-size:14px;font-weight:700;color:#c4b5fd">+</span>
-              <kbd style="font-size:14px;font-weight:700;color:#fff;background:rgba(0,0,0,0.35);border:1px solid #a78bfa;border-radius:6px;padding:3px 9px;font-family:inherit">Strg</kbd>
-              <span style="font-size:14px;font-weight:700;color:#c4b5fd">+</span>
-              <kbd style="font-size:14px;font-weight:700;color:#fff;background:rgba(0,0,0,0.35);border:1px solid #a78bfa;border-radius:6px;padding:3px 9px;font-family:inherit">S</kbd>
-            </div>
-            <span style="font-size:14px;color:rgba(255,255,255,0.8)">Screenshot <strong style="color:#fff">rechte Duo-Seite</strong> → Zwischenablage</span>
-          </div>
-
           <div class="grid-2">
             <!-- Duo Health -->
             <div class="card" id="duo-health-card">
@@ -5092,11 +5064,11 @@ async function bgLoadArchive() {
           <div style="font-size:11px;color:var(--dim)">${ts}</div>
           <div style="font-size:11px;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${safePrompt}</div>
           <div style="display:flex;gap:4px;margin-top:auto">
-            <button onclick="bgArchiveDownload(${idx},this)" title="Bild herunterladen"
+            <button onclick="bgArchiveDownload(${idx})" title="Bild herunterladen"
               style="flex:1;padding:4px;background:#253a50;border:none;border-radius:5px;color:#e0e6ed;font-size:11px;cursor:pointer">⬇</button>
-            <button onclick="bgArchiveGclip(${idx},this)" title="Ans Handy (gclip)"
+            <button onclick="bgArchiveGclip(${idx})" title="Ans Handy (gclip)"
               style="flex:1;padding:4px;background:#253a50;border:none;border-radius:5px;color:#e0e6ed;font-size:11px;cursor:pointer">📱</button>
-            <button onclick="bgArchiveDelete(${idx},this)" title="Aus Archiv löschen"
+            <button onclick="bgArchiveDelete(${JSON.stringify(item.file)},this)" title="Aus Archiv löschen"
               style="flex:1;padding:4px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:5px;color:#f87171;font-size:11px;cursor:pointer">✕</button>
           </div>
         </div>
@@ -5119,51 +5091,30 @@ function bgArchiveView(idx) {
   if (lb) { lb.classList.add('open'); document.addEventListener('keydown', _lbKey); }
 }
 
-// Kurzes sichtbares Feedback direkt am Button (Label kurz wechseln, dann zurück)
-function _bgBtnFlash(btnEl, txt, ms) {
-  if (!btnEl) return;
-  if (btnEl._restore) clearTimeout(btnEl._restore);
-  if (btnEl._orig === undefined) btnEl._orig = btnEl.textContent;
-  btnEl.textContent = txt;
-  btnEl._restore = setTimeout(() => { btnEl.textContent = btnEl._orig; btnEl._orig = undefined; }, ms || 1500);
-}
-
-async function bgArchiveDownload(idx, btnEl) {
+async function bgArchiveDownload(idx) {
   const item = _bgArchiveItems[idx];
   if (!item) return;
-  _bgBtnFlash(btnEl, '…', 8000);
-  try {
-    const r = await fetch('/api/bildgen/save-to-disk', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({b64: item.b64, mime: item.mime||'image/png'})});
-    const d = await r.json();
-    if (d.ok) { _bgBtnFlash(btnEl, '✓', 1500); alert('✓ Gespeichert:\n' + d.path); }
-    else _bgBtnFlash(btnEl, '⚠', 2000);
-  } catch(e) { _bgBtnFlash(btnEl, '⚠', 2000); }
+  const r = await fetch('/api/bildgen/save-to-disk', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({b64: item.b64, mime: item.mime||'image/png'})});
+  const d = await r.json();
+  if (d.ok) alert('✓ Gespeichert:\n' + d.path);
 }
 
-async function bgArchiveGclip(idx, btnEl) {
+async function bgArchiveGclip(idx) {
   const item = _bgArchiveItems[idx];
   if (!item) return;
-  _bgBtnFlash(btnEl, '…', 8000);
   try {
     const resp = await fetch('/api/clipboard/image', {method:'POST',headers:{'Content-Type':'application/json'},
       body: JSON.stringify({image_b64: item.b64, mime: item.mime||'image/png', source:'BildGen-Archiv'})});
     const d = await resp.json();
-    _bgBtnFlash(btnEl, d.filename ? '✓' : '⚠', d.filename ? 1500 : 2000);
     const status = document.getElementById('bg-status');
     if (status) { status.textContent = d.filename ? '✓ In gclip!' : '⚠ gclip-Fehler'; setTimeout(()=>status.textContent='',2500); }
-  } catch(e) { _bgBtnFlash(btnEl, '⚠', 2000); }
+  } catch(e) {}
 }
 
-async function bgArchiveDelete(idx, btnEl) {
-  const item = _bgArchiveItems[idx];
-  if (!item) return;
+async function bgArchiveDelete(fname, btnEl) {
   if (!confirm('Bild aus Archiv löschen?')) return;
-  try {
-    const r = await fetch('/api/bildgen/archive/delete', {method:'POST',headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({file: item.file})});
-    const d = await r.json();
-    if (!d.ok) { _bgBtnFlash(btnEl, '⚠', 2000); return; }
-  } catch(e) { _bgBtnFlash(btnEl, '⚠', 2000); return; }
+  await fetch('/api/bildgen/archive/delete', {method:'POST',headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({file: fname})});
   bgLoadArchive();
 }
 
@@ -5412,7 +5363,6 @@ async function loadCalendarData() {
   } catch(e) {
     document.getElementById('upcoming-events').innerHTML = '<li class="loading">API nicht erreichbar</li>';
   }
-  loadStichworte();
 }
 
 function _parseEvDate(dateStr) {
@@ -5471,68 +5421,6 @@ function renderNextClass() {
     </div>`;
   });
   document.getElementById('next-class').innerHTML = h;
-}
-
-// ===== Stichwortliste (Dashboard-Projekte) =====
-async function loadStichworte() {
-  const el = document.getElementById('stichwortliste');
-  if (!el) return;
-  try {
-    const r = await fetch(API + '/api/stichworte');
-    const data = await r.json();
-    const items = (data.items || []);
-    if (!items.length) {
-      el.innerHTML = '<div style="color:var(--dim);font-size:13px">Noch keine Stichworte</div>';
-      return;
-    }
-    el.innerHTML = items.map(it => {
-      const done = it.done;
-      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;
-                          background:${done ? 'rgba(34,197,94,0.10)' : 'rgba(255,255,255,0.03)'};
-                          border:1px solid ${done ? 'rgba(34,197,94,0.35)' : 'var(--border)'};
-                          border-radius:7px;padding:5px 8px">
-        <button onclick="toggleStichwort('${it.id}')" title="${done ? 'Wieder offen' : 'Erledigt'}"
-                style="background:none;border:none;cursor:pointer;font-size:16px;flex-shrink:0">${done ? '✅' : '⬜'}</button>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:700;color:${done ? 'var(--dim)' : 'var(--bright)'};${done ? 'text-decoration:line-through' : ''}">${it.name}</div>
-          <div style="font-size:13px;color:var(--dim);${done ? 'text-decoration:line-through' : ''}">${it.projekt}</div>
-        </div>
-        ${done ? `<button onclick="deleteStichwort('${it.id}')" title="Löschen"
-                style="background:none;border:none;cursor:pointer;font-size:15px;color:#ef4444;flex-shrink:0">🗑</button>` : ''}
-      </div>`;
-    }).join('');
-  } catch(e) {
-    el.innerHTML = '<div style="color:var(--dim);font-size:13px">Liste nicht erreichbar</div>';
-  }
-}
-
-async function addStichwort() {
-  const name = document.getElementById('sw-name').value.trim();
-  const projekt = document.getElementById('sw-projekt').value.trim();
-  if (!name) return;
-  await fetch(API + '/api/stichworte/add', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({name, projekt})
-  });
-  document.getElementById('sw-name').value = '';
-  document.getElementById('sw-projekt').value = '';
-  loadStichworte();
-}
-
-async function toggleStichwort(id) {
-  await fetch(API + '/api/stichworte/toggle', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({id})
-  });
-  loadStichworte();
-}
-
-async function deleteStichwort(id) {
-  await fetch(API + '/api/stichworte/delete', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({id})
-  });
-  loadStichworte();
 }
 
 function loadCalendar() {
@@ -7653,7 +7541,6 @@ async function docsLoad() {
   if (!el) return;
   el.innerHTML = '<div style="color:var(--dim);font-size:13px">Lade…</div>';
   const GROUPS = [
-    { label: '🛟 Claude Code Recovery', color: '#f59e0b', desc: 'Bolla von Grund auf auf einem neuen PC wiederherstellen — komplette Anleitung (2 Backups, 7 Schritte, Fertig-Check, Duo-Hotkey).', files: ['Claude komplett neu.html'] },
     { label: '🤖 Bolla & Setup', color: '#f472b6', files: ['was_ist_bolla.docx','mein_ki_setup.docx','bolla_recovery.docx','Bolla-Notfallplan.pdf','accounts_overview.pdf','00_DOKUMENTATIONS_INDEX.docx'] },
     { label: '⚙️ Claude Code & Skills', color: '#a78bfa', files: ['Claude Code Skills und Hooks.docx','Bolla-MD-Erklaerung.pdf','Bolla-JSON-Erklaerung.pdf','Tokens-Erklaerung.docx'] },
     { label: '🔧 Technik & Infrastruktur', color: '#34d399', files: ['WSL_Crash_Erklaerung.docx','ssh-tunnel-erklaerung.pdf','Cloudflare-IONOS-Erklaerung.docx','ADB-Erklaerung.pdf'] },
@@ -7673,7 +7560,6 @@ async function docsLoad() {
       const docs = grp.files.map(f => byName[f]).filter(Boolean);
       if (!docs.length) continue;
       cols[ci % 3].push(`<div style="font-size:11px;font-weight:700;color:${grp.color};letter-spacing:.5px;margin:10px 0 4px;text-transform:uppercase">${grp.label}</div>`);
-      if (grp.desc) cols[ci % 3].push(`<div style="font-size:12px;color:var(--dim);margin:-2px 0 5px;line-height:1.4">${grp.desc}</div>`);
       cols[ci % 3].push(...docs.map(d => docEntry(d)));
       ci++;
     }

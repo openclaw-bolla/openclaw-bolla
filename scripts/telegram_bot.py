@@ -41,6 +41,16 @@ log = logging.getLogger("telegram_bot")
 
 API = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
+# --- AURORA Stolperstein-Archiv (Sätze zum späteren Fable-5-Lektorat) ---------
+STOLPER_FILE = os.path.expanduser("~/workspace/data/aurora_stolpersteine.jsonl")
+AZURE_SPEECH_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "azure_speech.json")
+# Trigger-Präfixe (case-insensitive, am Anfang der Nachricht / des Transkripts)
+SATZ_TRIGGERS = ("satz:", "satz ", "stolperstein:", "stolperstein ", "📌")
+# Sammel-Modus: solange das Flag existiert, wird JEDE Nachricht von Chris archiviert (Copy-Paste ohne Präfix)
+SAMMEL_FLAG = os.path.expanduser("~/workspace/data/.aurora_sammelmodus")
+SAMMEL_AN = ("sammeln", "sammeln an", "satz sammeln", "sammelmodus", "sammelmodus an", "lesen", "sammeln starten")
+SAMMEL_AUS = ("fertig", "sammeln aus", "sammelmodus aus", "sammeln stop", "sammeln beenden", "ende sammeln")
+
 
 def get_updates(offset=None):
     params = {"timeout": 30, "allowed_updates": ["message"]}
@@ -131,6 +141,182 @@ def extract_media(msg):
     if "audio" in msg:
         return msg["audio"]["file_id"], ".mp3", "Audio"
     return None
+
+
+def _now_iso():
+    """Lokaler Zeitstempel (Date.now ist im Skript ok — kein Workflow-Resume)."""
+    return time.strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def archive_satz(text, source="text"):
+    """Hängt einen Stolperstein-Satz an die JSONL-Sammeldatei an. Gibt die laufende Nummer zurück."""
+    text = (text or "").strip()
+    if not text:
+        return None
+    os.makedirs(os.path.dirname(STOLPER_FILE), exist_ok=True)
+    entry = {"ts": _now_iso(), "source": source, "text": text, "status": "offen"}
+    with open(STOLPER_FILE, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    return count_saetze()
+
+
+def _read_saetze():
+    if not os.path.isfile(STOLPER_FILE):
+        return []
+    out = []
+    with open(STOLPER_FILE, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    out.append(json.loads(line))
+                except json.JSONDecodeError:
+                    pass
+    return out
+
+
+def count_saetze():
+    return len(_read_saetze())
+
+
+def undo_last_satz():
+    """Entfernt den letzten Eintrag. Gibt den gelöschten Text zurück oder None."""
+    rows = _read_saetze()
+    if not rows:
+        return None
+    removed = rows.pop()
+    with open(STOLPER_FILE, "w", encoding="utf-8") as f:
+        for r in rows:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    return removed.get("text", "")
+
+
+def sammelmodus_an():
+    open(SAMMEL_FLAG, "w").close()
+
+
+def sammelmodus_aus():
+    try:
+        os.unlink(SAMMEL_FLAG)
+    except OSError:
+        pass
+
+
+def sammelmodus_ist_an():
+    return os.path.isfile(SAMMEL_FLAG)
+
+
+def transcribe_voice(ogg_path):
+    """Transkribiert eine Telegram-Sprachnachricht (.ogg) via Azure Speech STT (Deutsch).
+    Gibt den erkannten Text zurück oder None."""
+    try:
+        with open(AZURE_SPEECH_FILE) as f:
+            cfg = json.load(f)
+        key, region = cfg["key"], cfg["region"]
+    except Exception as e:
+        log.error(f"Azure-Speech-Config fehlt: {e}")
+        return None
+    wav_path = ogg_path + ".wav"
+    try:
+        # OGG/Opus -> WAV PCM 16 kHz mono (von Azure STT verlangt)
+        subprocess.run(["ffmpeg", "-y", "-i", ogg_path, "-ar", "16000", "-ac", "1", wav_path],
+                       capture_output=True, timeout=30)
+        url = (f"https://{region}.stt.speech.microsoft.com/speech/recognition/"
+               f"conversation/cognitiveservices/v1?language=de-DE&format=simple")
+        headers = {"Ocp-Apim-Subscription-Key": key,
+                   "Content-Type": "audio/wav; codecs=audio/pcm; samplerate=16000"}
+        with open(wav_path, "rb") as wf:
+            r = requests.post(url, headers=headers, data=wf, timeout=30)
+        data = r.json()
+        if data.get("RecognitionStatus") == "Success":
+            return data.get("DisplayText", "").strip()
+        log.error(f"Azure STT: {data.get('RecognitionStatus')}")
+        return None
+    except Exception as e:
+        log.error(f"Transkription Fehler: {e}")
+        return None
+    finally:
+        for p in (wav_path,):
+            try:
+                os.unlink(p)
+            except OSError:
+                pass
+
+
+def strip_satz_trigger(text):
+    """Wenn text mit einem Satz-Trigger beginnt: gibt (True, rest) zurück, sonst (False, text)."""
+    low = text.strip().lower()
+    for trig in SATZ_TRIGGERS:
+        if low.startswith(trig):
+            return True, text.strip()[len(trig):].strip(" :")
+    return False, text
+
+
+def handle_satz_command(text, sender_id, chat_id, msg_id):
+    """Verarbeitet Stolperstein-Befehle (nur Chris). Gibt True zurück wenn behandelt."""
+    if sender_id != int(CHRIS_ID):
+        return False
+    low = text.strip().lower()
+
+    # Sammel-Modus AN
+    if low in SAMMEL_AN:
+        sammelmodus_an()
+        send_message(chat_id,
+            "📚 Sammel-Modus AN. Kipp jetzt Sätze rein — auch per Copy-Paste, ganz ohne Präfix. "
+            "Jeder wird archiviert (ich antworte NICHT inhaltlich). Beenden mit »fertig«.", reply_to=msg_id)
+        return True
+
+    # Sammel-Modus AUS
+    if low in SAMMEL_AUS:
+        war_an = sammelmodus_ist_an()
+        sammelmodus_aus()
+        if war_an:
+            send_message(chat_id, f"✅ Sammel-Modus aus. Insgesamt {count_saetze()} Stolperstein(e) archiviert.", reply_to=msg_id)
+        else:
+            send_message(chat_id, "Sammel-Modus war nicht an. 🐾", reply_to=msg_id)
+        return True
+
+    # Status / Liste
+    if low in ("sätze", "saetze", "satzliste", "stolpersteine"):
+        rows = _read_saetze()
+        if not rows:
+            send_message(chat_id, "📋 Noch keine Stolpersteine archiviert.", reply_to=msg_id)
+            return True
+        letzte = rows[-5:]
+        lines = [f"📋 {len(rows)} Stolperstein(e) gesammelt. Die letzten:"]
+        start = len(rows) - len(letzte) + 1
+        for i, r in enumerate(letzte):
+            t = r.get("text", "")
+            lines.append(f"  {start+i}. {t[:70]}" + ("…" if len(t) > 70 else ""))
+        send_message(chat_id, "\n".join(lines), reply_to=msg_id)
+        return True
+
+    # Undo
+    if low in ("satz undo", "satz lösch letzten", "satz loesch letzten", "satz rückgängig", "satz zurück"):
+        removed = undo_last_satz()
+        if removed is None:
+            send_message(chat_id, "Nichts zum Rückgängigmachen da. 🐾", reply_to=msg_id)
+        else:
+            send_message(chat_id, f"🗑️ Letzten Stolperstein entfernt:\n»{removed[:80]}«\nJetzt {count_saetze()} gespeichert.", reply_to=msg_id)
+        return True
+
+    # Erfassung per Trigger-Präfix
+    is_satz, rest = strip_satz_trigger(text)
+    if is_satz:
+        if not rest:
+            send_message(chat_id, "Kein Satz dabei — schick mir z.B. »satz: Der Satz, der dir aufgefallen ist.«", reply_to=msg_id)
+            return True
+        nr = archive_satz(rest, source="text")
+        send_message(chat_id, f"📌 Stolperstein #{nr} archiviert:\n»{rest[:90]}" + ("…" if len(rest) > 90 else "") + "«", reply_to=msg_id)
+        return True
+
+    # Sammel-Modus aktiv → diese (präfixlose) Nachricht ist ein Satz, kein Job
+    if sammelmodus_ist_an():
+        nr = archive_satz(text, source="text")
+        send_message(chat_id, f"📌 #{nr}", reply_to=msg_id)
+        return True
+
+    return False
 
 
 def adb_connected():
@@ -433,7 +619,28 @@ def main():
             if should_respond(msg):
                 log.info(f"Antworte auf: {text[:80]}" + (f" [{media[2]}]" if media else ""))
 
-                # ADB-Befehle zuerst prüfen (nur von Chris, nur bei reinem Text)
+                # Sprachnachricht von Chris: per Azure transkribieren → ab hier wie Text behandeln
+                if media and media[2] == "Sprachnachricht" and sender_id == int(CHRIS_ID):
+                    requests.post(f"{API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
+                    ogg = download_telegram_file(media[0], ".ogg")
+                    transcript = transcribe_voice(ogg) if ogg else None
+                    if ogg:
+                        try:
+                            os.unlink(ogg)
+                        except OSError:
+                            pass
+                    if not transcript:
+                        send_message(chat_id, "Konnte die Sprachnachricht nicht verstehen 😕 — nochmal?", reply_to=msg_id)
+                        continue
+                    log.info(f"Voice transkribiert: {transcript[:80]}")
+                    text = transcript
+                    media = None  # weiter wie eine normale Textnachricht
+
+                # AURORA-Stolperstein zuerst (Sammel-Modus/Präfix/Steuerbefehle) — vor ADB & Claude
+                if not media and handle_satz_command(text, sender_id, chat_id, msg_id):
+                    continue
+
+                # ADB-Befehle (nur von Chris, nur bei reinem Text)
                 if not media and sender_id == int(CHRIS_ID) and handle_adb_command(text.strip().lower(), chat_id, msg_id):
                     continue
 

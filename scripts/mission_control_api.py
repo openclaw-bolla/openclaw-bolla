@@ -1896,6 +1896,52 @@ def projekte_delete(pid):
         data["current"] = data["projects"][0]["id"] if data["projects"] else ""
     _projekte_save_raw(data)
     return {"ok": True}
+
+# ===== Stichwortliste (Dashboard-Projekte) =====
+# Schlanke Merkliste: Stichwort (name) + kurze Projektbeschreibung. Bolla pflegt sie,
+# Chris kann im Dashboard auf erledigt setzen / löschen.
+STICHWORTE_FILE = os.path.join(WORKSPACE, "data/stichworte.json")
+
+def _stichworte_load():
+    if os.path.exists(STICHWORTE_FILE):
+        try:
+            with open(STICHWORTE_FILE, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"items": []}
+
+def _stichworte_save_raw(data):
+    os.makedirs(os.path.dirname(STICHWORTE_FILE), exist_ok=True)
+    with open(STICHWORTE_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def stichworte_list():
+    return _stichworte_load()
+
+def stichworte_add(name, projekt):
+    data = _stichworte_load()
+    sid = "sw-" + str(int(datetime.now().timestamp() * 1000))
+    data["items"].append({"id": sid, "name": (name or "").strip(),
+                          "projekt": (projekt or "").strip(), "done": False})
+    _stichworte_save_raw(data)
+    return {"ok": True, "id": sid}
+
+def stichworte_toggle(sid):
+    data = _stichworte_load()
+    for it in data["items"]:
+        if it["id"] == sid:
+            it["done"] = not it.get("done", False)
+            break
+    _stichworte_save_raw(data)
+    return {"ok": True}
+
+def stichworte_delete(sid):
+    data = _stichworte_load()
+    data["items"] = [it for it in data["items"] if it["id"] != sid]
+    _stichworte_save_raw(data)
+    return {"ok": True}
+
 WORKSHOP_FORTSCHRITT = os.path.join(WORKSPACE, "projektwoche-ki-workshop/fortschritt.json")
 
 def get_workshop_fortschritt():
@@ -5064,6 +5110,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/workshop":       get_workshop,
                 "/api/workshop/fortschritt": get_workshop_fortschritt,
                 "/api/projekte/list":  projekte_list,
+                "/api/stichworte":     stichworte_list,
             }
 
             if self.path.startswith("/api/projekte/load"):
@@ -5385,7 +5432,7 @@ class Handler(BaseHTTPRequestHandler):
                     data = f.read()
                 self.send_response(200)
                 self.send_header("Content-Type", ctype)
-                disp = "inline" if ext == ".pdf" else "attachment"
+                disp = "inline" if ext in (".pdf", ".html") else "attachment"
                 self.send_header("Content-Disposition", f'{disp}; filename="{fname}"')
                 self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
@@ -5752,6 +5799,12 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 self._send_json(projekte_add_auftrag(body.get("pid",""), body.get("text","")))
             elif self.path == "/api/projekte/auftrag/status":
                 self._send_json(projekte_auftrag_status(body.get("pid",""), body.get("id",""), body.get("status","")))
+            elif self.path == "/api/stichworte/add":
+                self._send_json(stichworte_add(body.get("name",""), body.get("projekt","")))
+            elif self.path == "/api/stichworte/toggle":
+                self._send_json(stichworte_toggle(body.get("id","")))
+            elif self.path == "/api/stichworte/delete":
+                self._send_json(stichworte_delete(body.get("id","")))
             elif self.path == "/api/kosten/guthaben":
                 self._send_json(kosten_update_guthaben(body.get("name",""), body.get("betrag", 0), body.get("info")))
             elif self.path == "/api/travel/recommendation":
