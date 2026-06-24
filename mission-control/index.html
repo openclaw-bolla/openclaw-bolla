@@ -5925,6 +5925,8 @@ async function nlScanNow() {
 
 // ===== MAIL KOMMANDO =====
 let _selectedMails = [];
+let _pendingSpamRule = null;
+let _pendingDraft = null;
 
 function _updateCmdBar() {
   const bar = document.getElementById('mail-cmd-bar');
@@ -6011,10 +6013,10 @@ async function sendMailCommand() {
       _showResultPanel('Gelöscht ✓', d.text, '#66bb6a');
     } else if (d.type==='draft') {
       const safeText = d.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      const dStr = encodeURIComponent(JSON.stringify(d));
+      _pendingDraft = d;
       _showResultPanel('Entwurf', `<div style="font-size:13px;color:var(--dim);margin-bottom:8px">📝 An: ${d.draft_to}</div><div style="white-space:pre-wrap">${safeText}</div>`, '#ffa726');
       if (acts) acts.innerHTML =
-        `<button onclick="sendDraft(decodeURIComponent('${dStr}'))" style="background:#66bb6a;color:#000;border:none;border-radius:6px;padding:7px 18px;cursor:pointer;font-size:13px;font-weight:600">✉ Senden</button>`
+        `<button onclick="sendDraft()" style="background:#66bb6a;color:#000;border:none;border-radius:6px;padding:7px 18px;cursor:pointer;font-size:13px;font-weight:600">✉ Senden</button>`
         +`<button onclick="closeMailResult()" style="background:rgba(255,255,255,0.1);color:var(--text);border:none;border-radius:6px;padding:7px 18px;cursor:pointer;font-size:13px">✕ Verwerfen</button>`;
       inp.value='';
     } else if (d.type==='sent') {
@@ -6025,10 +6027,10 @@ async function sendMailCommand() {
       const hasRule = d.rule_suggestion && d.rule_suggestion.label;
       _showResultPanel('Ergebnis', (d.text||'(keine Antwort)').replace(/\n/g,'<br>'), hasRule ? '#ef5350' : '#a78bfa');
       if (hasRule && acts) {
-        const rStr = encodeURIComponent(JSON.stringify(d.rule_suggestion));
+        _pendingSpamRule = d.rule_suggestion;
         const lbl = d.rule_suggestion.label.replace(/</g,'&lt;').replace(/>/g,'&gt;');
         acts.innerHTML =
-          `<button onclick="applySpamRule(decodeURIComponent('${rStr}'))" style="background:#ef5350;color:#fff;border:none;border-radius:6px;padding:7px 18px;cursor:pointer;font-size:13px;font-weight:600">🛡 Regel einbauen: ${lbl}</button>`
+          `<button onclick="applySpamRule()" style="background:#ef5350;color:#fff;border:none;border-radius:6px;padding:7px 18px;cursor:pointer;font-size:13px;font-weight:600">🛡 Regel einbauen: ${lbl}</button>`
           +`<button onclick="closeMailResult()" style="background:rgba(255,255,255,0.1);color:var(--text);border:none;border-radius:6px;padding:7px 18px;cursor:pointer;font-size:13px">Nichts tun</button>`;
       }
     }
@@ -6038,11 +6040,12 @@ async function sendMailCommand() {
   inp.disabled=false; btn.disabled=false; btn.textContent='→';
 }
 
-async function applySpamRule(rStr) {
+async function applySpamRule() {
   const acts = document.getElementById('mail-result-actions');
+  if (!_pendingSpamRule) { _showResultPanel('Fehler','⚠ Keine Regel vorgemerkt','#ef5350'); return; }
   if (acts) acts.innerHTML = '<span style="color:var(--dim);font-size:13px;padding:7px">⏳ Speichere Regel…</span>';
   try {
-    const rule = JSON.parse(rStr);
+    const rule = _pendingSpamRule;
     const r = await fetch(API+'/api/spam-rule', {method:'POST',
       headers:{'Content-Type':'application/json'}, body: JSON.stringify({rule})});
     const d = await r.json();
@@ -6051,11 +6054,12 @@ async function applySpamRule(rStr) {
   } catch(e) { _showResultPanel('Fehler','⚠ '+e.message,'#ef5350'); }
 }
 
-async function sendDraft(dStr) {
+async function sendDraft() {
   const body = document.getElementById('mail-result-body');
+  if (!_pendingDraft) { _showResultPanel('Fehler','⚠ Kein Entwurf vorgemerkt','#ef5350'); return; }
   if (body) body.innerHTML = '⏳ Sende…';
   try {
-    const d=JSON.parse(dStr);
+    const d=_pendingDraft;
     const r=await fetch(API+'/api/mail-command',{method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({action:'send',draft_to:d.draft_to,
@@ -6082,11 +6086,23 @@ function dayCode(d, i) {
 }
 
 // Anzeige (Icon/Text/Foto) für Tag i. Für HEUTE (i=0) die echte DWD-Messung
-// (brightsky) bevorzugen — die ist für die Bewölkung verlässlicher als Open-Meteos
-// Modell (das meldet hier "bedeckt" bei realen 25% Wolken). Andere Tage: Open-Meteo.
+// (brightsky) bevorzugen — die ist für die Bewölkung oft verlässlicher als Open-Meteos
+// Modell (das meldet manchmal "bedeckt" bei realen 25% Wolken). ABER: eine einzelne
+// DWD-Station kann auch grob danebenliegen (24.06.2026: Station meldete 100% Wolken
+// bei wolkenlosem Himmel). Deshalb Plausibilitäts-Cross-Check gegen Open-Meteos
+// flächigen cloud_cover — bei starkem Widerspruch gewinnt das Modell. Andere Tage: Open-Meteo.
+// Ist die DWD-Stationsmessung (brightsky) für HEUTE brauchbar? Ja, außer ihre
+// Bewölkung widerspricht Open-Meteos flächigem cloud_cover um >40 Punkte — dann
+// liegt vermutlich die einzelne Station daneben (24.06.2026: Station 100 % bei
+// wolkenlosem Himmel) und das Modell gewinnt.
+function bsUsable(bs, current) {
+  if (!bs || !bs.icon) return false;
+  const omCC = current && current.cloud_cover, bsCC = bs.cloud_cover;
+  return omCC == null || bsCC == null || Math.abs(bsCC - omCC) <= 40;
+}
 function dayVisual(d, i) {
   const bs = window._brightsky;
-  if (i === 0 && bs && bs.icon) {
+  if (i === 0 && bsUsable(bs, d.current)) {
     return { icon: BS_EMOJI[bs.icon] || '🌤️', desc: BS_DESC[bs.icon] || '', photoIcon: bs.icon };
   }
   const code = dayCode(d, i);
@@ -6182,7 +6198,7 @@ function uvLabel(uv) {
 async function loadWeather() {
   try {
     const [r, bsR] = await Promise.all([
-      fetch('https://api.open-meteo.com/v1/forecast?latitude=53.69&longitude=9.98&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m,apparent_temperature,uv_index,precipitation&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,uv_index_max,wind_speed_10m_max&timezone=Europe/Berlin&forecast_days=8'),
+      fetch('https://api.open-meteo.com/v1/forecast?latitude=53.69&longitude=9.98&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m,apparent_temperature,uv_index,precipitation,cloud_cover&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,uv_index_max,wind_speed_10m_max&timezone=Europe/Berlin&forecast_days=8'),
       fetch('https://api.brightsky.dev/current_weather?lat=53.69&lon=9.98').catch(()=>null)
     ]);
     const d = await r.json();
@@ -6191,9 +6207,10 @@ async function loadWeather() {
     if (bsR) { try { const bsJ = await bsR.json(); window._brightsky = bsJ.weather || null; } catch(e){} }
     const c = d.current;
     const bs = window._brightsky;
+    const useBs = bsUsable(bs, c);   // Stationsmessung nur bei Plausibilität (sonst Open-Meteo)
     const temp = bs && bs.temperature != null ? Math.round(bs.temperature) : Math.round(c.temperature_2m);
-    const icon = bs ? (BS_EMOJI[bs.icon] || WMO_ICONS[c.weather_code] || '🌤️') : (WMO_ICONS[c.weather_code] || '🌤️');
-    const desc = bs ? (BS_DESC[bs.icon] || WMO_DESC[c.weather_code] || '') : (WMO_DESC[c.weather_code] || '');
+    const icon = useBs ? (BS_EMOJI[bs.icon] || WMO_ICONS[c.weather_code] || '🌤️') : (WMO_ICONS[c.weather_code] || '🌤️');
+    const desc = useBs ? (BS_DESC[bs.icon] || WMO_DESC[c.weather_code] || '') : (WMO_DESC[c.weather_code] || '');
     const daily = d.daily;
     let forecastHtml = '';
     for (let i = 1; i <= 3; i++) {
@@ -6315,9 +6332,12 @@ function loadWeatherFull() {
   const srMs  = new Date(d.daily.sunrise[0]).getTime();
   const ssMs  = new Date(d.daily.sunset[0]).getTime();
   const isDay = nowMs > srMs && nowMs < ssMs;
-  const icon = bs ? (BS_EMOJI[bs.icon] || WMO_ICONS[c.weather_code] || '🌤️') : (WMO_ICONS[c.weather_code] || '🌤️');
-  const desc = bs ? (BS_DESC[bs.icon] || WMO_DESC[c.weather_code] || '') : (WMO_DESC[c.weather_code] || '');
-  const [photo, overlayA] = bs ? getWeatherPhoto(bs.icon, isDay) : getWeatherPhoto(null, isDay);
+  const useBs = bsUsable(bs, c);   // Stationsmessung nur bei Plausibilität (sonst Open-Meteo)
+  const icon = useBs ? (BS_EMOJI[bs.icon] || WMO_ICONS[c.weather_code] || '🌤️') : (WMO_ICONS[c.weather_code] || '🌤️');
+  const desc = useBs ? (BS_DESC[bs.icon] || WMO_DESC[c.weather_code] || '') : (WMO_DESC[c.weather_code] || '');
+  // Foto passend zur gewählten Quelle: Station-Icon ODER (bei verworfener Station) Open-Meteo-Code.
+  // NICHT null übergeben — das ergäbe sonst das graue Overcast-Foto trotz Sonne.
+  const [photo, overlayA] = useBs ? getWeatherPhoto(bs.icon, isDay) : getWeatherPhoto(wmoToPhotoIcon(c.weather_code), isDay);
   // Overlay direkt ins background einbacken → kein z-index-Konflikt mit Content
   const bg = photo
     ? `linear-gradient(rgba(0,0,0,${overlayA}),rgba(0,0,0,${overlayA})), url('${photo}') center/cover no-repeat`
