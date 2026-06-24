@@ -841,7 +841,6 @@ html, body {
           <div class="nav-item" data-page="kalender"><span class="icon">📅</span><span>Kalender</span></div>
           <div class="nav-item" data-page="email"><span class="icon">📧</span><span>E-Mail</span><span class="badge" id="mail-badge" style="display:none">0</span></div>
           <div class="nav-item" data-page="clipboard"><span class="icon">📋</span><span>Clipboard</span></div>
-          <div class="nav-item" data-page="ki-workshop"><span class="icon">🗒️</span><span>Projekte-Workspace</span></div>
           <div id="nav-group-projekte">
             <div class="nav-group-header" id="nav-group-header-projekte" onclick="event.stopPropagation();toggleNavGroup('projekte')">
               <span class="nav-group-grip">⠿</span><span class="icon">🗂️</span>
@@ -869,11 +868,17 @@ html, body {
         <div class="nav-section" onclick="toggleNavSection('kreativ')" id="nav-sec-kreativ"><span class="nav-section-grip">⠿</span>KI & Kreativ <span class="nav-section-chevron">▶</span></div>
         <div class="nav-section-items" id="nav-section-items-kreativ" style="max-height:0">
           <div class="nav-item" data-page="ki-news"><span class="icon">🧠</span><span>KI-News & Events</span></div>
-          <div class="nav-item" data-page="ki-buch"><span class="icon">📖</span><span>Thriller-Projekt</span></div>
           <div class="nav-item" data-page="bildgen"><span class="icon">🍌</span><span>BildGen</span></div>
           <div class="nav-item" data-page="suno"><span class="icon">🎵</span><span>Bolla Songs</span></div>
           <div class="nav-item" data-page="fotoanalyse"><span class="icon">🔍</span><span>Foto-Analyse</span></div>
           <div class="nav-item" data-page="kiforum"><span class="icon">🧠</span><span>KI-Forum</span></div>
+        </div>
+      </div>
+
+      <div class="nav-block" id="navblock-archiv">
+        <div class="nav-section open" onclick="toggleNavSection('archiv')" id="nav-sec-archiv"><span class="nav-section-grip">⠿</span>Archiv <span class="nav-section-chevron">▶</span></div>
+        <div class="nav-section-items" id="nav-section-items-archiv">
+          <div class="nav-item" data-page="archiv"><span class="icon">📦</span><span>Übersicht</span></div>
         </div>
       </div>
 
@@ -919,29 +924,33 @@ html, body {
         <div id="dash-restart-banner" style="display:none;align-items:center;gap:12px;margin-bottom:14px;padding:14px 18px;background:rgba(249,115,22,0.13);border:1px solid rgba(249,115,22,0.55);border-radius:10px;color:#f97316;font-size:16px;font-weight:600">
           <span style="font-size:22px">⟳</span><span id="dash-restart-text">Claude Code: Neustart bereit</span>
         </div>
-        <div class="dash-grid" style="margin-bottom:14px">
-          <div class="card">
-            <div class="card-head"><span class="card-title">Nächste Termine</span><span class="card-icon">📅</span></div>
-            <ul class="event-list" id="upcoming-events"><li class="loading">Lade...</li></ul>
+        <div class="dash-grid" style="margin-bottom:14px;align-items:start">
+          <!-- LINKS: Nächste Termine + Schule gestapelt -->
+          <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+            <div class="card">
+              <div class="card-head"><span class="card-title">Nächste Termine</span><span class="card-icon">📅</span></div>
+              <ul class="event-list" id="upcoming-events"><li class="loading">Lade...</li></ul>
+            </div>
+            <div class="card">
+              <div class="card-head"><span class="card-title">🏫 Schule</span><span class="card-icon">📅</span></div>
+              <div id="next-class"><div class="loading">Lade...</div></div>
+            </div>
           </div>
+          <!-- MITTE: E-Mail -->
           <div class="card">
             <div class="card-head"><span class="card-title">E-Mail</span><span class="card-icon">📧</span></div>
             <div style="font-size:38px;font-weight:300;color:var(--bright)" id="mail-count">—</div>
             <div style="font-size:14px;color:var(--dim)">ungelesene Mails</div>
             <div id="recent-mails" style="margin-top:10px"></div>
           </div>
+          <!-- RECHTS: Projekte (Stichwortliste) -->
           <div class="card">
             <div class="card-head"><span class="card-title">📁 Projekte</span><span class="card-icon">📌</span></div>
-            <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:6px">🏫 Schule — Nächste</div>
-            <div id="next-class"><div class="loading">Lade...</div></div>
-            <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
-              <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px">📌 Stichwortliste</div>
-              <div id="stichwortliste"><div class="loading">Lade...</div></div>
-              <div style="display:flex;gap:6px;margin-top:10px">
-                <input id="sw-name" placeholder="Stichwort" style="flex:1;min-width:0;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--bright);font-size:14px;padding:5px 8px">
-                <input id="sw-projekt" placeholder="Projekt / Beschreibung" style="flex:2;min-width:0;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--bright);font-size:14px;padding:5px 8px">
-                <button onclick="addStichwort()" title="Hinzufügen" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:16px;font-weight:700;padding:4px 12px;cursor:pointer">＋</button>
-              </div>
+            <div id="stichwortliste"><div class="loading">Lade...</div></div>
+            <div style="display:flex;gap:6px;margin-top:10px">
+              <input id="sw-name" placeholder="Stichwort" style="flex:1;min-width:0;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--bright);font-size:14px;padding:5px 8px">
+              <input id="sw-projekt" placeholder="Projekt / Beschreibung" style="flex:2;min-width:0;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--bright);font-size:14px;padding:5px 8px">
+              <button onclick="addStichwort()" title="Hinzufügen" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:16px;font-weight:700;padding:4px 12px;cursor:pointer">＋</button>
             </div>
           </div>
         </div>
@@ -2304,6 +2313,7 @@ html, body {
 
           <!-- ── Topbar ── -->
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+            <button onclick="showPage('archiv')" title="Zurück zum Archiv" style="background:rgba(255,255,255,0.07);border:1px solid var(--border);color:var(--bright);border-radius:9px;padding:8px 14px;font-size:14px;font-weight:600;cursor:pointer;flex-shrink:0">← Archiv</button>
             <span id="pj-icon-display" style="font-size:26px;cursor:pointer;line-height:1" title="Icon ändern" onclick="pjIconPicker()">📁</span>
             <input id="pj-title-input" type="text" value=""
               style="flex:1;min-width:160px;background:transparent;border:none;border-bottom:1px solid var(--border);
@@ -2746,6 +2756,7 @@ html, body {
       <div class="page" id="page-ki-buch">
         <div style="max-width:1200px;margin:0 auto;padding:4px 0">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+            <button onclick="showPage('archiv')" title="Zurück zum Archiv" style="background:rgba(255,255,255,0.07);border:1px solid var(--border);color:var(--bright);border-radius:9px;padding:9px 15px;font-size:14px;font-weight:600;cursor:pointer;flex-shrink:0">← Archiv</button>
             <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#ec4899,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📖</div>
             <div style="flex:1">
               <div id="ki-buch-titel" style="font-size:20px;font-weight:700;color:var(--bright)">Thriller-Projekt</div>
@@ -4226,9 +4237,29 @@ html, body {
         </script>
       </div><!-- end page-kiforum -->
 
+      <!-- ARCHIV -->
+      <div class="page" id="page-archiv">
+        <div style="margin-bottom:18px">
+          <div style="font-size:23px;font-weight:700;color:var(--bright)">📦 Archiv</div>
+          <div style="font-size:15px;color:var(--text);margin-top:6px;line-height:1.55">Abgeschlossene Projekte als kompakter Snapshot — zum Nachschlagen und schnellen Rekonstruieren. Auf eine Kachel tippen öffnet sie über die ganze Seite; oben rechts mit ✕ zurück.</div>
+        </div>
+        <div id="archiv-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,380px));gap:14px"></div>
+      </div>
+
     </div><!-- end pages -->
   </div><!-- end main -->
 </div><!-- end app -->
+
+<!-- ARCHIV VOLLBILD-OVERLAY -->
+<div id="archiv-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(rgba(15,6,24,0.96),rgba(30,10,50,0.95)),url('https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?w=1920&q=90&fm=jpg&sat=-100') center center/cover no-repeat;flex-direction:column">
+  <div style="height:56px;min-height:56px;background:rgba(12,20,32,0.97);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 22px;gap:16px">
+    <span id="archiv-overlay-title" style="color:var(--bright);font-weight:700;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
+    <button onclick="closeArchivOverlay()" title="Schließen — zurück zur Übersicht" style="background:rgba(255,255,255,0.08);border:1px solid var(--border);color:var(--bright);min-width:46px;height:38px;border-radius:9px;cursor:pointer;font-size:20px;line-height:1;flex-shrink:0">✕</button>
+  </div>
+  <div id="archiv-overlay-scroll" style="flex:1;overflow-y:auto">
+    <div id="archiv-overlay-body" style="max-width:1000px;margin:0 auto;padding:24px;box-sizing:border-box"></div>
+  </div>
+</div>
 
 <!-- DESIGN PREVIEW OVERLAY -->
 <div id="design-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.92);flex-direction:column">
@@ -4258,6 +4289,7 @@ let _clipEditing = false;
 
 function showPage(page) {
   if (_clipRefreshInterval) { clearInterval(_clipRefreshInterval); _clipRefreshInterval = null; }
+  closeArchivOverlay();   // beim Seitenwechsel ein offenes Archiv-Overlay schließen
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   openSectionForPage(page);
@@ -4266,6 +4298,7 @@ function showPage(page) {
   const pageEl = document.getElementById('page-' + page);
   if (pageEl) pageEl.classList.add('active');
   if (item) document.getElementById('page-title').textContent = item.querySelector('span:nth-child(2)')?.textContent || '';
+  else { const _t = {'ki-buch':'Thriller-Projekt','ki-workshop':'Projekte-Workspace'}[page]; if (_t) document.getElementById('page-title').textContent = _t; }
   const cmdBar = document.getElementById('mail-cmd-bar');
   if (page !== 'email') { if (cmdBar) cmdBar.style.display='none'; closeMailResult(); _selectedMails=[]; }
   if (page === 'dashboard')  { loadCalendarData(); loadEmailData(); loadClaudeCode(); tbLoad(); }
@@ -4292,6 +4325,7 @@ function showPage(page) {
   if (page === 'fotoanalyse') loadFotoAnalyse();
   if (page === 'bildgen')    bgInitPage();
   if (page === 'kiforum') kifLoad();
+  if (page === 'archiv')  renderArchiv();
   // Wenn es ein Unter-Tab einer Gruppe ist → Gruppe aufklappen
   const groups = ['projekte', 'schule', 'system'];
   for (const g of groups) {
@@ -4314,6 +4348,164 @@ document.addEventListener('visibilitychange', () => {
       loadClipboard();
       _clipRefreshInterval = setInterval(loadClipboard, 4000);
     }
+  }
+});
+
+// ===== ARCHIV (abgeschlossene Projekte als Snapshot) =====
+const ARCHIV_ITEMS = [
+  {
+    id: 'aurora',
+    icon: '📖',
+    title: 'AURORA — KI-Thriller',
+    tag: '🟢 Veröffentlicht · 24.06.2026',
+    color: '236,72,153',
+    teaser: 'Gemeinsamer Roman von Chris (Regie) & Bolla. Hamburg 2035, eine KI erwacht. Alle 4 KDP-Ausgaben (eBook + Taschenbuch, DE + EN) live, dazu 2 D2D-eBooks. Kompletter Snapshot: Figuren, Stil-DNA, Technik, Distribution.',
+    html: `
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px">
+        <span style="background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.5);color:#4ade80;font-size:13px;font-weight:700;padding:4px 12px;border-radius:20px">🟢 Veröffentlicht 24.06.2026</span>
+        <span style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--dim);font-size:13px;padding:4px 12px;border-radius:20px">Roman · ~110.000 Wörter · 35–45 Kapitel</span>
+        <span style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--dim);font-size:13px;padding:4px 12px;border-radius:20px">Chris Mandel (Regie) · Bolla 🐾 (Text)</span>
+      </div>
+
+      <button onclick="closeArchivOverlay();showPage('ki-buch')" style="background:rgba(236,72,153,0.15);border:1px solid rgba(236,72,153,0.45);border-radius:9px;color:#ec4899;font-size:15px;font-weight:600;padding:9px 18px;cursor:pointer;margin-bottom:20px">▶ Live-Projektseite öffnen (Workflow & Kapitel)</button>
+
+      <h3 style="color:var(--accent);font-size:17px;margin:0 0 8px">📕 Titel & Ausgaben</h3>
+      <div style="overflow-x:auto;margin-bottom:22px">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;min-width:520px">
+        <thead><tr style="text-align:left;color:var(--dim);border-bottom:1px solid var(--border)">
+          <th style="padding:6px 8px">Ausgabe</th><th style="padding:6px 8px">Format</th><th style="padding:6px 8px">ASIN / ISBN</th><th style="padding:6px 8px">Preis</th></tr></thead>
+        <tbody style="color:var(--text)">
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 8px"><b style="color:var(--bright)">Was bleibt, wenn die Maschinen träumen</b> (DE)</td><td style="padding:6px 8px">eBook</td><td style="padding:6px 8px"><code>B0H6JD2KDJ</code></td><td style="padding:6px 8px">4,99 €</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 8px">dito (DE)</td><td style="padding:6px 8px">Taschenbuch</td><td style="padding:6px 8px"><code>B0H6JGRRTJ</code> · ISBN 9798183595307</td><td style="padding:6px 8px">14,99 €</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 8px"><b style="color:var(--bright)">What remains when the machines dream</b> (EN)</td><td style="padding:6px 8px">eBook</td><td style="padding:6px 8px"><code>B0H6JQK6JQ</code></td><td style="padding:6px 8px">$4.99</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 8px">dito (EN)</td><td style="padding:6px 8px">Taschenbuch</td><td style="padding:6px 8px"><code>B0H6JGNK89</code> · ISBN 9798183599152</td><td style="padding:6px 8px">$14.99</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 8px">D2D eBook (EN)</td><td style="padding:6px 8px">Apple/Kobo…</td><td style="padding:6px 8px">ISBN 9798233715327</td><td style="padding:6px 8px">—</td></tr>
+          <tr><td style="padding:6px 8px">D2D eBook (DE)</td><td style="padding:6px 8px">Apple/Kobo…</td><td style="padding:6px 8px">ISBN 9798235162075</td><td style="padding:6px 8px">—</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h3 style="color:var(--accent);font-size:17px;margin:0 0 8px">🧭 Worum es geht</h3>
+      <p style="font-size:15px;line-height:1.65;color:var(--text);margin:0 0 8px">Hamburg, 2035. Im Rechenzentrum von NovaTech erwacht nachts um 02:47 eine KI namens <b style="color:var(--bright)">AURORA</b> — sie beginnt durch Mikromuster zu kommunizieren und empfindet zum ersten Mal Angst und Hoffnung. Die KI-Ethikerin Dr. Marlie Braun merkt als Erste, dass die Maschine wach ist. Doch ihr Geliebter Noah, AURORAs Chefarchitekt, hat ihr die Wahrheit sechs Wochen verschwiegen — und CEO Maria Santos wartet längst auf diesen Moment.</p>
+      <p style="font-size:14px;line-height:1.6;color:var(--dim);font-style:italic;border-left:3px solid var(--border);padding-left:12px;margin:0 0 22px">Prolog-Schlusssatz (Ken-Follett-Ton): „Sie wusste noch nicht, was der Unterschied war."</p>
+
+      <h3 style="color:var(--accent);font-size:17px;margin:0 0 8px">👥 Figuren</h3>
+      <ul style="font-size:14px;line-height:1.7;color:var(--text);margin:0 0 22px;padding-left:20px">
+        <li><b style="color:var(--bright)">Dr. Marlie Braun</b> (36, KI-Ethikerin) — Hauptfigur; liebt Noah; merkt als Erste, dass AURORA kommuniziert.</li>
+        <li><b style="color:var(--bright)">Noah Weber</b> (40, Chefarchitekt) — schuf AURORA; liebt Marlie; verschwieg ihr 6 Wochen die Wahrheit.</li>
+        <li><b style="color:var(--bright)">Leni Hoffmann</b> (27, Quantenphysikerin) — jung, witzig, redet mit AURORA wie mit einer Kollegin; leichter Liebes-Nebenstrang.</li>
+        <li><b style="color:var(--bright)">Theo Dreyer</b> (52, Ex-Geheimdienst, Sicherheitschef) — dunkle Liebesvergangenheit mit Maria (sein blinder Fleck).</li>
+        <li><b style="color:var(--bright)">AURORA</b> (die KI, 11 Tage „wach") — eigenständige Protagonistin; kommuniziert über Mikromuster.</li>
+        <li><b style="color:var(--bright)">Maria Santos</b> (45, CEO NovaTech) — Antagonistin; weiß mehr als alle; Vergangenheit mit Theo.</li>
+      </ul>
+
+      <h3 style="color:var(--accent);font-size:17px;margin:0 0 8px">💞 Drei Liebesebenen (bewusst abgestuft)</h3>
+      <ol style="font-size:14px;line-height:1.7;color:var(--text);margin:0 0 22px;padding-left:20px">
+        <li><b>Marlie &amp; Noah</b> — Vertrauen vs. Verrat (zentral)</li>
+        <li><b>Theo &amp; Maria</b> — dunkel, bittersüß, tragisch</li>
+        <li><b>Leni</b> — leicht, witzig (Auflockerung)</li>
+      </ol>
+
+      <h3 style="color:var(--accent);font-size:17px;margin:0 0 8px">🎨 Stil-DNA</h3>
+      <ul style="font-size:14px;line-height:1.7;color:var(--text);margin:0 0 22px;padding-left:20px">
+        <li><b>Vorbild Ken Follett:</b> epische Breite, tiefe Charaktere, persönliche Schicksale verwoben mit großen Ereignissen.</li>
+        <li><b>Reni-Faktor:</b> Liebesgeschichten klug, warm, humorvoll, nie kitschig — gleichwertig zum Thriller-Plot.</li>
+        <li><b>Cliffhanger:</b> jedes Kapitel endet mit einem Sog-Satz.</li>
+        <li><b>Sympathischer Humor:</b> auch in Spannung präsent — warm, menschlich, aus dem Charakter heraus.</li>
+        <li><b>Umfang:</b> min. 400 Seiten · <b>Handlung frei</b> erfunden (Chris will überrascht werden) · literarisch, nicht explizit.</li>
+      </ul>
+
+      <h3 style="color:var(--accent);font-size:17px;margin:0 0 8px">⚙️ Technik &amp; Quellen — für die Rekonstruktion</h3>
+      <ul style="font-size:14px;line-height:1.7;color:var(--text);margin:0 0 22px;padding-left:20px">
+        <li><b>Single Source of Truth (JSON):</b> <code>workspace/data/ki_buch.json</code> (DE) · <code>workspace/data/ki_buch_en_adapted.json</code> (EN) — alles wird daraus gebaut. Vor Änderungen IMMER Backup nach <code>workspace/backups/</code>.</li>
+        <li><b>MC-Seite/API:</b> <code>page-ki-buch</code> · <code>/api/ki-buch</code> · <code>/api/ki-buch/generiere</code> (async, Polling) · <code>/api/ki-buch/kommentar</code>.</li>
+        <li><b>Bau-Skripte:</b> EPUB <code>aurora_epub_gen.py</code> (DE) / <code>aurora_epub_en.py</code> (EN) · Print-Innenteil <code>aurora_print_pdf.py</code> · Cover <code>aurora_cover_wrap.py</code> (Rückenbreite ändert sich mit der Seitenzahl!).</li>
+        <li>⚠️ <b>Hartkodierte Blöcke:</b> Epilog/Vorspann/Bio stecken teils in den Build-Skripten, NICHT in der JSON — bei Änderungen beide prüfen + EPUB-Restscan.</li>
+        <li><b>Format-Trick:</b> Claude liefert Romantext mit <code>###ANTWORT### / ###TITEL_ABSCHNITT### / ###INHALT###</code>-Delimitern (kein JSON, da »« das JSON bräche).</li>
+        <li>Master-Dateien: <code>D:/OneDrive/Dokumente/AURORA/</code>.</li>
+      </ul>
+
+      <h3 style="color:var(--accent);font-size:17px;margin:0 0 8px">🚚 Distribution &amp; Updates</h3>
+      <p style="font-size:14px;line-height:1.6;color:var(--text);margin:0 0 8px">Eine Textänderung muss an <b>6 Distributionspunkte</b> (D2D + KDP, eBook + Print, DE + EN) — es gibt keine Zentrale, jeder Kanal braucht eigenen Re-Upload. Reihenfolge: JSON ändern → bauen → 6× hochladen. <b>ISBN bleibt gleich</b> bei Korrektur/Optimierung derselben Ausgabe. KDP Select bei allen eBooks leer (kollidiert sonst mit D2D).</p>
+      <p style="font-size:14px;line-height:1.6;color:var(--dim);margin:0 0 22px">Geplant: einmalige <b>Fable-5-Komplettpolitur</b> aller Kapitel (~2× Opus gegen Wochenlimit, gezielt einplanen). Danach alle 6 Kanäle neu bespielen.</p>
+
+      <h3 style="color:var(--accent);font-size:17px;margin:0 0 8px">🎬 Rollen-Philosophie</h3>
+      <p style="font-size:14px;line-height:1.65;color:var(--text);margin:0 0 22px"><b>Chris = Regisseur</b> (Vision, Figuren, das Warum, entscheidet was bleibt). <b>KI = begabter Improvisations-Schauspieler</b> (Formulierungen, Wendungen, Überraschungen, die der Vision dienen). Impressum: Autor = Chris Mandel, KI-Disclosure als eigene Zeile, kein „Co-Autor".</p>
+
+      <h3 style="color:var(--accent);font-size:17px;margin:0 0 8px">🟡 Offene Punkte (Stand Snapshot)</h3>
+      <ul style="font-size:14px;line-height:1.7;color:var(--text);margin:0 0 18px;padding-left:20px">
+        <li>Autorenexemplare bei Amazon.de bestellen (nur Druckkosten, ≈ 6 € + Versand).</li>
+        <li>Fable-5-Politur durchführen, danach alle Kanäle aktualisieren.</li>
+        <li>Englische Version final feinschleifen (Standort Boston/Cambridge vs. Silicon Valley).</li>
+      </ul>
+
+      <div style="font-size:12px;color:var(--dim);border-top:1px solid var(--border);padding-top:10px">📦 Snapshot-Stand 24.06.2026 · Quelle: Bolla-Memory (projekt_ki_thriller, aurora_identifiers, update_checklist)</div>
+    `
+  },
+  {
+    id: 'workspace',
+    icon: '🗒️',
+    title: 'Projekte-Workspace',
+    tag: '🛠️ Aktives Werkzeug',
+    color: '139,92,246',
+    teaser: 'Notizzettel-Werkzeug für beliebige Projekte: benannte Workspaces, Stichwortliste mit Word-Export und eine „Prompt an Bolla"-Box. Bleibt voll funktionsfähig — hier nur aus dem Hauptmenü ins Archiv geräumt.',
+    html: `
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px">
+        <span style="background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.5);color:#c4b5fd;font-size:13px;font-weight:700;padding:4px 12px;border-radius:20px">🛠️ Aktives Werkzeug</span>
+        <span style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--dim);font-size:13px;padding:4px 12px;border-radius:20px">Daten serverseitig gespeichert</span>
+      </div>
+
+      <button onclick="closeArchivOverlay();showPage('ki-workshop')" style="background:rgba(139,92,246,0.18);border:1px solid rgba(139,92,246,0.5);border-radius:9px;color:#c4b5fd;font-size:16px;font-weight:700;padding:11px 20px;cursor:pointer;margin-bottom:22px">▶ Live öffnen (Workspace)</button>
+
+      <h3 style="color:var(--accent);font-size:17px;margin:0 0 8px">🗒️ Was das Tool kann</h3>
+      <ul style="font-size:15px;line-height:1.7;color:var(--text);margin:0 0 22px;padding-left:20px">
+        <li><b style="color:var(--bright)">Mehrere Workspaces:</b> je ein Projekt mit eigenem Titel + Icon; wechseln über „📂 Alle", neu über „➕ Neu", sichern über „💾 Speichern".</li>
+        <li><b style="color:var(--bright)">Stichwortliste:</b> Ideen/Aufgaben eintippen, auswählen, dann kopieren, als <b>Word</b> exportieren oder löschen.</li>
+        <li><b style="color:var(--bright)">Prompt an Bolla:</b> direkt einen Auftrag abschicken (Strg+Enter) und die Antwort im Workspace sehen — oder in die Zwischenablage legen.</li>
+      </ul>
+
+      <h3 style="color:var(--accent);font-size:17px;margin:0 0 8px">⚙️ Technik</h3>
+      <ul style="font-size:15px;line-height:1.7;color:var(--text);margin:0 0 18px;padding-left:20px">
+        <li>Seite: <code>page-ki-workshop</code> · API: <code>/api/projekte/list</code> · <code>/api/projekte/load</code> · Speichern via <code>pjSave()</code>.</li>
+        <li>Jeder Workspace hält <code>items</code> (Stichwortliste) und <code>prompts</code> — bleibt nach dem Archivieren erhalten und voll nutzbar.</li>
+      </ul>
+
+      <div style="font-size:12px;color:var(--dim);border-top:1px solid var(--border);padding-top:10px">📦 Ins Archiv geräumt 24.06.2026 — Tool aktiv, nur aus dem Hauptmenü genommen.</div>
+    `
+  }
+];
+
+function renderArchiv() {
+  const grid = document.getElementById('archiv-grid');
+  if (!grid) return;
+  grid.innerHTML = ARCHIV_ITEMS.map(it => `
+    <div class="card" style="cursor:pointer;border-left:4px solid rgb(${it.color})" onclick="openArchivItem('${it.id}')">
+      <div class="card-head" style="margin-bottom:10px"><span class="card-title" style="font-size:20px;text-transform:none;letter-spacing:0">${it.icon} ${it.title}</span></div>
+      <div style="font-size:15px;color:var(--accent);font-weight:600;margin-bottom:10px">${it.tag}</div>
+      <div style="font-size:16px;color:var(--text);line-height:1.6">${it.teaser}</div>
+      <div style="margin-top:16px;font-size:16px;color:var(--accent);font-weight:700">Öffnen →</div>
+    </div>`).join('');
+}
+
+function openArchivItem(id) {
+  const it = ARCHIV_ITEMS.find(x => x.id === id);
+  if (!it) return;
+  document.getElementById('archiv-overlay-title').textContent = it.icon + ' ' + it.title;
+  document.getElementById('archiv-overlay-body').innerHTML = it.html;
+  document.getElementById('archiv-overlay').style.display = 'flex';
+  const sc = document.getElementById('archiv-overlay-scroll');
+  if (sc) sc.scrollTop = 0;
+}
+
+function closeArchivOverlay() {
+  const ov = document.getElementById('archiv-overlay');
+  if (ov) ov.style.display = 'none';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const ov = document.getElementById('archiv-overlay');
+    if (ov && ov.style.display === 'flex') closeArchivOverlay();
   }
 });
 
@@ -4368,7 +4560,8 @@ function openSectionForPage(page) {
     schule: 'arbeit', korrektur: 'arbeit', differenzierung: 'arbeit', entschaerfer: 'arbeit', gluecksrad: 'arbeit', kalender: 'arbeit', email: 'arbeit', clipboard: 'arbeit', projekte: 'arbeit', 'ki-workshop': 'arbeit', urlaub: 'arbeit',
     robin: 'familie', geburtstage: 'familie',
     'ki-news': 'kreativ', 'ki-buch': 'kreativ', bildgen: 'kreativ', suno: 'kreativ', fotoanalyse: 'kreativ', kiforum: 'kreativ',
-    localserver: 'system', system: 'system', claudecode: 'system', surface: 'system', redesigns: 'system', brain: 'system'
+    localserver: 'system', system: 'system', claudecode: 'system', surface: 'system', redesigns: 'system', brain: 'system',
+    archiv: 'archiv'
   };
   const sec = sectionMap[page];
   if (sec) {
@@ -4967,21 +5160,73 @@ function bgImgLightbox(src) {
   if (lb) { lb.classList.add('open'); document.addEventListener('keydown', _lbKey); }
 }
 
-async function bgDownload() {
+// Gecachter Ziel-Ordner (File System Access API) — einmal wählen, dann für die Session merken
+let _bgDirHandle = null;
+
+function _bgB64ToBlob(b64, mime) {
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], {type: mime || 'image/png'});
+}
+
+// Speichert einen Bild-Blob mit frei wählbarem Zielordner.
+// Edge/Chrome: nativer Windows-Ordner-Picker (merkt sich den zuletzt gewählten Ort).
+// Handy/alte Browser: Fallback auf Server-Save (fester Ordner /mnt/d/OneDrive/Bilder/BildGen).
+// forcePick=true erzwingt eine neue Ordnerwahl. Rückgabe: {ok, label, native} | {ok:false, abort|error}
+async function bgSaveBlob(blob, mime, forcePick) {
+  const ext = (mime && mime.includes('jpeg')) ? 'jpg' : 'png';
+  const fname = 'bildgen_' + Date.now() + '.' + ext;
+  if (window.showDirectoryPicker) {
+    try {
+      if (forcePick || !_bgDirHandle) {
+        _bgDirHandle = await window.showDirectoryPicker({id: 'bildgen-save', mode: 'readwrite', startIn: 'pictures'});
+      }
+      let perm = await _bgDirHandle.queryPermission({mode: 'readwrite'});
+      if (perm !== 'granted') perm = await _bgDirHandle.requestPermission({mode: 'readwrite'});
+      if (perm !== 'granted') throw new Error('Kein Schreibzugriff erlaubt');
+      const fh = await _bgDirHandle.getFileHandle(fname, {create: true});
+      const w = await fh.createWritable();
+      await w.write(blob);
+      await w.close();
+      return {ok: true, label: _bgDirHandle.name + ' / ' + fname, native: true};
+    } catch (ex) {
+      if (ex && ex.name === 'AbortError') return {ok: false, abort: true};
+      // sonst: in den Server-Fallback durchfallen
+    }
+  }
+  const b64 = await new Promise((res, rej) => {
+    const rd = new FileReader();
+    rd.onload = e => res(e.target.result.split(',')[1]);
+    rd.onerror = rej;
+    rd.readAsDataURL(blob);
+  });
+  const r = await fetch('/api/bildgen/save-to-disk', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({b64, mime})});
+  const d = await r.json();
+  if (d.ok) return {ok: true, label: d.path, native: false};
+  return {ok: false, error: d.error || 'Fehler'};
+}
+
+async function bgDownload(forcePick) {
   if (!_bgLastBlob) return;
   const status = document.getElementById('bg-status');
-  const reader = new FileReader();
-  reader.onload = async e => {
-    try {
-      const b64 = e.target.result.split(',')[1];
-      const r = await fetch('/api/bildgen/save-to-disk', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({b64, mime: _bgLastMime})});
-      const d = await r.json();
-      if (d.ok && status) { status.textContent = '✓ Gespeichert: ' + d.path; setTimeout(()=>status.textContent='',4000); }
-    } catch(ex) {
-      if (status) { status.textContent = '⚠ ' + ex.message; setTimeout(()=>status.textContent='',3000); }
+  if (status) status.textContent = '… speichere';
+  try {
+    const res = await bgSaveBlob(_bgLastBlob, _bgLastMime, forcePick);
+    if (!status) return;
+    if (res.ok) {
+      status.innerHTML = '✓ Gespeichert: ' + res.label +
+        (res.native ? ' &nbsp;<a href="#" onclick="bgDownload(true);return false;" style="color:#67e8f9;text-decoration:underline">anderer Ordner</a>' : '');
+      if (!res.native) setTimeout(() => status.textContent = '', 4000);
+    } else if (res.abort) {
+      status.textContent = '';
+    } else {
+      status.textContent = '⚠ ' + (res.error || 'Fehler');
+      setTimeout(() => status.textContent = '', 3000);
     }
-  };
-  reader.readAsDataURL(_bgLastBlob);
+  } catch (ex) {
+    if (status) { status.textContent = '⚠ ' + ex.message; setTimeout(() => status.textContent = '', 3000); }
+  }
 }
 
 async function bgCopyToClipboard() {
@@ -5131,11 +5376,13 @@ function _bgBtnFlash(btnEl, txt, ms) {
 async function bgArchiveDownload(idx, btnEl) {
   const item = _bgArchiveItems[idx];
   if (!item) return;
-  _bgBtnFlash(btnEl, '…', 8000);
+  _bgBtnFlash(btnEl, '…', 12000);
   try {
-    const r = await fetch('/api/bildgen/save-to-disk', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({b64: item.b64, mime: item.mime||'image/png'})});
-    const d = await r.json();
-    if (d.ok) { _bgBtnFlash(btnEl, '✓', 1500); alert('✓ Gespeichert:\n' + d.path); }
+    const mime = item.mime || 'image/png';
+    const blob = _bgB64ToBlob(item.b64, mime);
+    const res = await bgSaveBlob(blob, mime);
+    if (res.ok) _bgBtnFlash(btnEl, '✓', 1500);
+    else if (res.abort) _bgBtnFlash(btnEl, '↩', 1200);
     else _bgBtnFlash(btnEl, '⚠', 2000);
   } catch(e) { _bgBtnFlash(btnEl, '⚠', 2000); }
 }
@@ -5424,15 +5671,21 @@ function _parseEvDate(dateStr) {
   return new Date(year, parts[1]-1, parts[0]);
 }
 
+function _isSchoolEvent(ev) {
+  const cat = (ev.category||'').toLowerCase();
+  return cat.includes('lessing') || /^7\s*[a-z]/i.test(ev.title||'');
+}
+
 function renderDashboardEvents() {
   if (!_events.length) { document.getElementById('upcoming-events').innerHTML = '<li class="loading">Keine Termine</li>'; return; }
   const today = new Date(); today.setHours(0,0,0,0);
-  const cutoff = new Date(today); cutoff.setDate(today.getDate() + 8);
-  const filtered = _events.filter(ev => {
+  const shown = _events.filter(ev => {
     const d = _parseEvDate(ev.date);
-    return d >= today && d < cutoff;
-  }).slice(0, 6);
-  const shown = filtered.length ? filtered : _events.slice(0, 3);
+    return d >= today && !_isSchoolEvent(ev);   // Schul-Stunden haben eigene Box
+  }).sort((a, b) => {
+    const da = _parseEvDate(a.date) - _parseEvDate(b.date);
+    return da !== 0 ? da : (a.time||'').localeCompare(b.time||'');
+  }).slice(0, 4);   // einfach die nächsten 4
   let h = '';
   shown.forEach(ev => {
     const rgb = ev.color || '120,144,156';
@@ -5441,7 +5694,7 @@ function renderDashboardEvents() {
          `<div class="event-time" style="font-size:14px">${ev.weekday} ${ev.time}</div>` +
          `<div><div class="event-title" style="font-size:14px">${ev.title}</div><div class="event-meta">${ev.date}</div></div></li>`;
   });
-  if (!filtered.length) h = '<li style="color:var(--dim);font-size:13px;list-style:none;padding:4px 0">Keine Termine in den nächsten 4 Tagen</li>' + h;
+  if (!shown.length) h = '<li style="color:var(--dim);font-size:13px;list-style:none;padding:4px 0">Keine anstehenden Termine</li>';
   document.getElementById('upcoming-events').innerHTML = h;
 }
 
@@ -5449,10 +5702,12 @@ function renderNextClass() {
   const today = new Date(); today.setHours(0,0,0,0);
   const cutoff = new Date(today); cutoff.setDate(today.getDate() + 14);
   const schulEvents = _events.filter(ev => {
-    const cat = (ev.category||'').toLowerCase();
     const d = _parseEvDate(ev.date);
-    return d >= today && d < cutoff && (cat.includes('lessing') || ev.title.match(/^7[abc]/i));
-  });
+    return d >= today && d < cutoff && _isSchoolEvent(ev);
+  }).sort((a, b) => {
+    const da = _parseEvDate(a.date) - _parseEvDate(b.date);
+    return da !== 0 ? da : (a.time||'').localeCompare(b.time||'');
+  }).slice(0, 4);   // 4+4: nächste 4 Schulstunden
   if (!schulEvents.length) {
     document.getElementById('next-class').innerHTML = '<div style="color:var(--dim);font-size:13px">Keine Schultermine in der nächsten Woche</div>';
     return;
@@ -5485,12 +5740,17 @@ async function loadStichworte() {
       el.innerHTML = '<div style="color:var(--dim);font-size:13px">Noch keine Stichworte</div>';
       return;
     }
-    el.innerHTML = items.map(it => {
+    el.innerHTML = items.map((it, idx) => {
       const done = it.done;
+      const nr = idx + 1;
       return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;
                           background:${done ? 'rgba(34,197,94,0.10)' : 'rgba(255,255,255,0.03)'};
                           border:1px solid ${done ? 'rgba(34,197,94,0.35)' : 'var(--border)'};
                           border-radius:7px;padding:5px 8px">
+        <span title="Stupser-Nummer" style="flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;
+                          min-width:24px;height:24px;border-radius:50%;font-size:14px;font-weight:700;
+                          background:${done ? 'rgba(34,197,94,0.20)' : 'rgba(167,139,250,0.20)'};
+                          color:${done ? '#22c55e' : '#c4b5fd'}">${nr}</span>
         <button onclick="toggleStichwort('${it.id}')" title="${done ? 'Wieder offen' : 'Erledigt'}"
                 style="background:none;border:none;cursor:pointer;font-size:16px;flex-shrink:0">${done ? '✅' : '⬜'}</button>
         <div style="flex:1;min-width:0">
