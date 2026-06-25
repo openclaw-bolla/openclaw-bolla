@@ -379,6 +379,11 @@ body {
   <div id="bd-list"><div class="loading">Lade Geburtstage</div></div>
 </div>
 
+<!-- ROBIN -->
+<div class="page" id="p-robin">
+  <div id="robin-timeline"><div class="loading">Lade</div></div>
+</div>
+
 <!-- LADEN (EV Charging) -->
 <div class="page" id="p-laden">
   <div id="laden-content"><div class="loading">Standort wird ermittelt</div></div>
@@ -466,6 +471,10 @@ body {
 </div>
 
 <!-- GLÜCKSRAD LÖSUNG -->
+<div class="page" id="p-thriller">
+  <div id="thriller-content"><div style="text-align:center;color:var(--text3);padding:40px 0">Lade…</div></div>
+</div>
+
 <div class="page" id="p-gluecksrad">
   <div id="gw-loesung-wrap" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;padding:24px 16px">
     <div id="gw-loesung-nummer" style="font-size:72px;font-weight:900;color:var(--accent);line-height:1">—</div>
@@ -481,12 +490,14 @@ body {
   <button class="tabbtn" data-tab="sos" style="color:#ff3b30"><span class="ic">🆘</span>SOS</button>
   <button class="tabbtn active" data-tab="cal"><span class="ic">📅</span>Kalender</button>
   <button class="tabbtn" data-tab="mail"><span class="ic">📧</span>Mails</button>
-  <button class="tabbtn" data-tab="notiz"><span class="ic">🎙️</span>Notiz</button>
   <button class="tabbtn" data-tab="clip"><span class="ic">📋</span>Clipboard</button>
   <button class="tabbtn" data-tab="wx"><span class="ic">🌤️</span>Wetter</button>
   <button class="tabbtn" data-tab="bd"><span class="ic">🎂</span>Geburtstag</button>
   <button class="tabbtn" data-tab="rezept"><span class="ic">🍽️</span>Rezept</button>
   <button class="tabbtn" data-tab="laden"><span class="ic">🔋</span>Laden</button>
+  <button class="tabbtn" data-tab="robin"><span class="ic">🩺</span>Robin</button>
+  <button class="tabbtn" data-tab="notiz"><span class="ic">🎙️</span>Notiz</button>
+  <button class="tabbtn" data-tab="thriller"><span class="ic">📖</span>Thriller</button>
   <button class="tabbtn" data-tab="gluecksrad"><span class="ic">🎡</span>Lösung</button>
 </nav>
 
@@ -524,9 +535,11 @@ const TITLES = {
   laden:       ['Ladestopp',      'Nächste EnBW-Säulen'],
   notiz:       ['Sprachnotiz',    'Aufnehmen · Senden · Speichern'],
   bd:          ['Geburtstage',    'Nächste Anlässe'],
+  robin:       ['Robin',          'Medizinstudium Uni Ulm'],
   clip:        ['Clipboard',      'Geräteübergreifend teilen'],
   sos:         ['🆘 Notfall',     'Notruf & Standort'],
-  gluecksrad:  ['🎡 Lösung',      'Aktueller Musikstil — live']
+  gluecksrad:  ['🎡 Lösung',      'Aktueller Musikstil — live'],
+  thriller:    ['📖 AURORA',      'Kapitel & Vorschau']
 };
 
 let activeTab = 'cal';
@@ -581,7 +594,7 @@ function refreshTab() {
   const containers = {
     cal: 'cal-list', mail: 'mail-list', wx: 'wx-content',
     rezept: 'rezept-content', laden: 'laden-content',
-    notiz: null, bd: 'bd-list',
+    notiz: null, bd: 'bd-list', robin: 'robin-timeline',
     clip: null, sos: null, gluecksrad: null
   };
   const cid = containers[activeTab];
@@ -602,12 +615,108 @@ async function loadTab(tab) {
     else if (tab === 'laden')  await loadLaden();
     else if (tab === 'notiz')  await loadNotiz();
     else if (tab === 'bd')     await loadBirthdays();
+    else if (tab === 'robin')  loadRobinTimeline();
     else if (tab === 'clip')        await loadClipboard();
     else if (tab === 'sos')         await loadSOS();
     else if (tab === 'gluecksrad')  await loadGluecksradLoesung();
+    else if (tab === 'thriller')    await loadThriller();
   } catch (e) {
     console.error(tab, e);
   }
+}
+
+// ===== THRILLER (AURORA) =====
+async function loadThriller() {
+  const el = document.getElementById('thriller-content');
+  try {
+    const d = await fetch('/api/ki-buch').then(r => r.json());
+    const kapitel = d.kapitel || [];
+    const esc = s => { const x=document.createElement('div'); x.textContent=s==null?'':s; return x.innerHTML; };
+    let html = `<div style="background:var(--card);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:14px">
+      <div style="font-weight:700;font-size:17px">${esc(d.titel||'AURORA')}</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:3px">${esc(d.status||'')}</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:5px">${kapitel.length} Kapitel · ${(d.statistik?.woerter_gesamt||0).toLocaleString('de-DE')} Wörter</div>
+    </div>`;
+    html += kiMobilFiguren(d, esc);
+    if (!kapitel.length) {
+      html += `<div style="text-align:center;color:var(--text3);padding:30px 0">Noch keine Kapitel.</div>`;
+    } else {
+      kapitel.forEach((k, i) => {
+        const wc = (k.text||'').split(/\s+/).filter(Boolean).length;
+        const ueb = (k.ueberblick||'').trim();
+        html += `<div style="background:var(--card);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:12px">
+          <div style="font-weight:700;font-size:16px;margin-bottom:8px">📄 ${esc(k.titel||('Kapitel '+(i+1)))}</div>`;
+        if (ueb) {
+          html += `<div style="background:rgba(175,82,222,0.08);border:1px solid rgba(175,82,222,0.22);border-radius:10px;padding:11px 13px;margin-bottom:11px">
+            <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:5px">🗺️ Vorschau — spoilerfrei</div>
+            <div style="font-size:15px;line-height:1.55;color:var(--text)">${esc(ueb)}</div></div>`;
+        } else {
+          html += `<div style="font-size:14px;color:var(--text3);margin-bottom:11px;font-style:italic">(Noch keine Vorschau hinterlegt)</div>`;
+        }
+        html += `<button onclick="thrillerToggle(${i})" id="thriller-btn-${i}" data-wc="${wc}" style="width:100%;background:rgba(0,122,255,0.1);color:var(--accent);border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:600;cursor:pointer">📖 Ganzes Kapitel lesen · ${wc} Wörter ⚠️</button>
+          <div id="thriller-full-${i}" style="display:none;margin-top:12px">
+            <div style="font-size:16px;line-height:1.75;white-space:pre-wrap;color:var(--text)">${esc(k.text||'')}</div>
+            <button onclick="thrillerToggle(${i})" style="width:100%;background:rgba(0,122,255,0.1);color:var(--accent);border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;margin-top:14px">✕ Kapitel schließen</button>
+          </div>
+        </div>`;
+      });
+    }
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div style="text-align:center;color:var(--red);padding:30px 0">Fehler beim Laden</div>`;
+  }
+}
+function thrillerToggle(i) {
+  const full = document.getElementById('thriller-full-'+i);
+  const btn = document.getElementById('thriller-btn-'+i);
+  if (!full) return;
+  const open = full.style.display !== 'block';
+  full.style.display = open ? 'block' : 'none';
+  if (btn) {
+    const wc = btn.getAttribute('data-wc') || '';
+    btn.innerHTML = open ? '✕ Kapitel schließen' : ('📖 Ganzes Kapitel lesen · ' + wc + ' Wörter ⚠️');
+    if (!open) btn.scrollIntoView({block:'center', behavior:'smooth'}); // beim Schließen zurück zum Kapitel
+  }
+}
+function kiMobilFiguren(d, esc) {
+  const prot = d.protagonisten||[];
+  const nf = d.nebenfiguren||[];
+  if (!prot.length && !(d.antagonist && d.antagonist.name)) return '';
+  let gi = 0;
+  const feld = (ic,lb,v) => v ? `<div style="margin-top:7px"><div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px">${ic} ${lb}</div><div style="font-size:15px;line-height:1.5;color:var(--text)">${esc(v)}</div></div>` : '';
+  const card = (f, farbe, tag) => {
+    const i = gi++;
+    const alter = (f.alter!==null&&f.alter!==undefined&&f.alter!=='')?', '+f.alter:'';
+    const det = [feld('👤','Aussehen',f.aussehen),feld('✨','Detail',f.detail),feld('🎭','Macke',f.macke),feld('💔','Wunde',f.wunde),feld('🗣️','Stimme',f.stimme),feld('❤️','Beziehung',f.liebesbeziehung),feld('⭐','Besonderheit',f.besonderheit)].join('');
+    return `<div style="background:var(--card);border-radius:12px;padding:13px 15px;box-shadow:var(--shadow);margin-bottom:9px;border-left:4px solid ${farbe}">
+      <div onclick="thrillerFigToggle(${i})" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <span id="tfig-arr-${i}" style="color:var(--text3);font-size:13px">▸</span>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:16px;color:${farbe}">${esc(f.name)}${tag||''}</div>
+          <div style="font-size:13px;color:var(--text2)">${esc(f.rolle||'')}${alter}</div>
+        </div>
+      </div>
+      <div style="font-size:14px;color:var(--text2);margin-top:6px;line-height:1.5">${esc(f.beschreibung||'')}</div>
+      <div id="tfig-det-${i}" style="display:none;margin-top:4px">${det}</div>
+    </div>`;
+  };
+  let h = `<div style="font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin:18px 2px 8px">👥 Figuren</div>`;
+  prot.forEach(p => h += card(p, '#af52de', ''));
+  if (d.antagonist && d.antagonist.name) h += card(d.antagonist, '#ff3b30', ' ⚔️');
+  if (nf.length) {
+    h += `<div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;margin:14px 2px 6px">Nebenfiguren</div>`;
+    nf.forEach(n => h += card(n, '#34c759', ''));
+  }
+  h += `<div style="font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin:20px 2px 8px">📖 Kapitel</div>`;
+  return h;
+}
+function thrillerFigToggle(i) {
+  const det = document.getElementById('tfig-det-'+i);
+  const arr = document.getElementById('tfig-arr-'+i);
+  if (!det) return;
+  const open = det.style.display === 'none';
+  det.style.display = open ? 'block' : 'none';
+  if (arr) arr.textContent = open ? '▾' : '▸';
 }
 
 // ===== KALENDER =====
@@ -748,167 +857,46 @@ const WX_DESC = {
   95:'Gewitter', 96:'Gewitter mit Hagel', 99:'Starkes Gewitter'
 };
 
-// Bright-Sky (DWD-Station) → Emoji/Text. Stationsmessung schlägt das Modell bei Bewölkung
-const BS_EMOJI = {
-  'clear-day':'☀️','clear-night':'🌙','partly-cloudy-day':'🌤️','partly-cloudy-night':'🌤️',
-  'cloudy':'☁️','fog':'🌫️','wind':'💨','rain':'🌧️','sleet':'🌨️','snow':'❄️','hail':'🌨️','thunderstorm':'⛈️'
-};
-const BS_DESC = {
-  'clear-day':'Klar','clear-night':'Klar','partly-cloudy-day':'Teils bewölkt','partly-cloudy-night':'Teils bewölkt',
-  'cloudy':'Bewölkt','fog':'Nebel','wind':'Windig','rain':'Regen','sleet':'Schneeregen','snow':'Schnee','hail':'Hagel','thunderstorm':'Gewitter'
-};
-// Station nur nutzen, wenn ihre Bewölkung nicht stark vom Modell abweicht (Plausibilität)
-function bsUsable(bs, cur) {
-  if (!bs || !bs.icon) return false;
-  const o = cur && cur.cloud_cover, b = bs.cloud_cover;
-  return o == null || b == null || Math.abs(b - o) <= 40;
-}
-
-const WX_WIND_DIR = ['N','NO','O','SO','S','SW','W','NW'];
-function wxWindDir(deg) { return WX_WIND_DIR[Math.round((deg||0)/45)%8]; }
-function wxUv(uv) {
-  if (uv<=2) return {label:'Niedrig',color:'#34c759'};
-  if (uv<=5) return {label:'Mittel', color:'#ff9500'};
-  if (uv<=7) return {label:'Hoch',   color:'#ff6b35'};
-  return {label:'Sehr hoch', color:'#ff3b30'};
-}
-function wxTempColor(t) {
-  if (t<=0)  return '#5ac8fa';
-  if (t<=10) return '#34aadc';
-  if (t<=18) return '#34c759';
-  if (t<=24) return '#ff9500';
-  if (t<=30) return '#ff6b35';
-  return '#ff3b30';
-}
-// Repräsentativer Code: heute = aktueller Himmel (sonst zeigt das Tages-Aggregat das trübste Wetter)
-function wxDayCode(d, i) {
-  return (i===0 && d.current && d.current.weather_code!=null) ? d.current.weather_code : d.daily.weather_code[i];
-}
-// Regen-Zeitfenster aus Stundendaten. Menge ist der ehrliche Indikator → Phantom-Regen (30% / 0,0 mm) raus.
-function wxRainWindows(d, dateStr, fromHour) {
-  if (fromHour===undefined) fromHour = -1;
-  const t=d.hourly.time, p=d.hourly.precipitation_probability, a=d.hourly.precipitation, wet=[];
-  for (let i=0;i<t.length;i++) {
-    if (!t[i].startsWith(dateStr)) continue;
-    const hr=parseInt(t[i].slice(11,13)); if (fromHour>=0 && hr<fromHour) continue;
-    const pp=p&&p[i]||0, aa=a&&a[i]||0;
-    if (aa>=0.15 || (pp>=55 && aa>=0.05)) wet.push(hr);
-  }
-  if (!wet.length) return [];
-  const w=[]; let s=wet[0], prev=wet[0];
-  for (let k=1;k<wet.length;k++) { if (wet[k]===prev+1) prev=wet[k]; else { w.push([s,prev]); s=wet[k]; prev=wet[k]; } }
-  w.push([s,prev]); return w;
-}
-function wxRainText(w)    { return w.length ? w.map(([s,e])=>s===e?`${s} Uhr`:`${s}–${e} Uhr`).join(', ') : ''; }
-function wxRainCompact(w) { if (!w.length) return ''; const [s,e]=w[0]; const b=s===e?`${s}h`:`${s}–${e}h`; return w.length>1?b+'·':b; }
-// Hero-Hintergrund je nach Bedingung + Tag/Nacht
-function wxHeroBg(code, isDay) {
-  if (code===0||code===1) return isDay?'linear-gradient(135deg,#2e8fd6,#5bb3e8)':'linear-gradient(135deg,#1a2a52,#2c3e7a)';
-  if (code===2)           return isDay?'linear-gradient(135deg,#4a90c2,#82afc6)':'linear-gradient(135deg,#243352,#3a4a6a)';
-  if (code===3||code===45||code===48) return isDay?'linear-gradient(135deg,#6e8e9e,#95a8b2)':'linear-gradient(135deg,#2e3a44,#46545e)';
-  if (code>=71&&code<=86) return 'linear-gradient(135deg,#7a90a5,#aebfc8)';
-  if (code>=51&&code<=82) return 'linear-gradient(135deg,#34506b,#48607a)';
-  if (code>=95)           return 'linear-gradient(135deg,#1a1326,#2a2236)';
-  return 'linear-gradient(135deg,#4a90e2,#357abd)';
-}
-
 async function loadWeather() {
   const el = document.getElementById('wx-content');
   try {
-    const [omR, bsR] = await Promise.all([
-      fetch('https://api.open-meteo.com/v1/forecast?latitude=53.69&longitude=9.98&current=temperature_2m,weather_code,apparent_temperature,wind_speed_10m,wind_direction_10m,relative_humidity_2m,uv_index,precipitation,cloud_cover&hourly=temperature_2m,weather_code,precipitation_probability,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,uv_index_max,wind_speed_10m_max&timezone=Europe/Berlin&forecast_days=7'),
-      fetch('https://api.brightsky.dev/current_weather?lat=53.69&lon=9.98').catch(()=>null)
-    ]);
-    const d = await omR.json();
-    let bs = null; if (bsR) { try { bs = (await bsR.json()).weather || null; } catch(e){} }
-    const cur = d.current, daily = d.daily;
-
-    // Tag/Nacht aus Sonnenstand
-    const now = new Date(cur.time), nowMs = now.getTime();
-    const srMs = new Date(daily.sunrise[0]).getTime(), ssMs = new Date(daily.sunset[0]).getTime();
-    const isDay = nowMs > srMs && nowMs < ssMs;
-    const useBs = bsUsable(bs, cur);
-    const icon = useBs ? (BS_EMOJI[bs.icon] || WX_ICONS[cur.weather_code] || '🌤️') : (WX_ICONS[cur.weather_code] || '🌤️');
-    const desc = useBs ? (BS_DESC[bs.icon]  || WX_DESC[cur.weather_code]  || '')   : (WX_DESC[cur.weather_code]  || '');
-    const bg = wxHeroBg(cur.weather_code, isDay);
-    const uv = wxUv(cur.uv_index||0);
-    const todayStr = cur.time.slice(0,10), nowHour = now.getHours();
-    const rainTxt = wxRainText(wxRainWindows(d, todayStr, nowHour));
-    const sr = daily.sunrise[0].slice(11,16), ss = daily.sunset[0].slice(11,16);
-    const srMin = parseInt(sr)*60+parseInt(sr.slice(3)), ssMin = parseInt(ss)*60+parseInt(ss.slice(3));
-    const nowMin = now.getHours()*60 + now.getMinutes();
-    const dayProg = Math.max(0, Math.min(1, (nowMin-srMin)/((ssMin-srMin)||1)));
-
-    // ── HERO ──
-    let h = `<div class="wx-now" style="background:${bg}">
-      <div class="loc">📍 Norderstedt · ${useBs?'DWD-Station':'Modell'}</div>
-      <div style="display:flex;align-items:flex-start;gap:12px;margin-top:6px">
-        <div class="temp">${Math.round(cur.temperature_2m)}°</div>
-        <div style="margin-top:8px;font-size:46px">${icon}</div>
-      </div>
-      <div class="desc">${desc}</div>
-      <div class="extra">
-        <span>Gefühlt ${Math.round(cur.apparent_temperature)}°</span>
-        <span>💨 ${Math.round(cur.wind_speed_10m)} km/h ${wxWindDir(cur.wind_direction_10m)}</span>
-        <span>💧 ${cur.relative_humidity_2m}%</span>
-        <span>☀️ UV ${Math.round(cur.uv_index||0)} ${uv.label}</span>
-      </div>
-      ${rainTxt ? `<div style="display:inline-block;font-size:13px;margin-top:12px;font-weight:600;background:rgba(255,255,255,0.18);padding:5px 12px;border-radius:14px">🌧 Regen ~${rainTxt}</div>` : ''}
-      <div style="margin-top:14px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;opacity:0.92;margin-bottom:4px"><span>☀️ ${sr}</span><span>${ss} 🌙</span></div>
-        <div style="height:4px;border-radius:2px;background:rgba(255,255,255,0.25);position:relative">
-          <div style="position:absolute;left:0;top:0;bottom:0;width:${(dayProg*100).toFixed(0)}%;background:rgba(255,220,120,0.9);border-radius:2px"></div>
-          ${dayProg>0&&dayProg<1 ? `<div style="position:absolute;left:${(dayProg*100).toFixed(0)}%;top:-3px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:#ffd66e;box-shadow:0 0 6px #ffd66e"></div>` : ''}
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=53.69&longitude=9.98&current=temperature_2m,weather_code,apparent_temperature,wind_speed_10m,relative_humidity_2m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Europe/Berlin&forecast_days=5');
+    const d = await r.json();
+    const cur  = d.current;
+    const days = d.daily;
+    const curIcon = WX_ICONS[cur.weather_code] || '🌤️';
+    const curDesc = WX_DESC[cur.weather_code] || '';
+    const daysHtml = days.time.slice(1).map((day, i) => {
+      const idx  = i + 1;
+      const dt   = new Date(day);
+      const name = dt.toLocaleDateString('de-DE', { weekday:'short' });
+      const code = days.weather_code[idx];
+      const rain = days.precipitation_probability_max?.[idx];
+      return `<div class="wx-day">
+        <div class="name">${name}</div>
+        <div class="icon">${WX_ICONS[code] || '🌤️'}</div>
+        ${rain != null ? `<div style="font-size:12px;color:rgba(255,255,255,0.75);width:36px;text-align:center">${rain}%💧</div>` : '<div style="width:36px"></div>'}
+        <div class="t"><span class="tmax">${Math.round(days.temperature_2m_max[idx])}°</span><span class="tmin">${Math.round(days.temperature_2m_min[idx])}°</span></div>
+      </div>`;
+    }).join('');
+    el.innerHTML = `
+      <div class="wx-now">
+        <div class="loc">📍 Norderstedt</div>
+        <div style="display:flex;align-items:flex-start;gap:12px;margin-top:8px">
+          <div class="temp">${Math.round(cur.temperature_2m)}°</div>
+          <div style="margin-top:8px;font-size:44px">${curIcon}</div>
+        </div>
+        <div class="desc">${curDesc}</div>
+        <div class="extra">
+          <span>Gefühlt ${Math.round(cur.apparent_temperature)}°</span>
+          <span>💨 ${Math.round(cur.wind_speed_10m)} km/h</span>
+          <span>💧 ${cur.relative_humidity_2m}%</span>
         </div>
       </div>
-    </div>`;
-
-    // ── 24-STUNDEN-VERLAUF (horizontal) ──
-    const ht = d.hourly.time;
-    let si = ht.findIndex(t => t >= cur.time.slice(0,13));
-    if (si < 0) si = 0;
-    const N = Math.min(24, ht.length - si);
-    let cells = '';
-    for (let k=0;k<N;k++) {
-      const i = si+k, hr = new Date(ht[i]).getHours(), isNow = k===0;
-      const tc = wxTempColor(Math.round(d.hourly.temperature_2m[i]));
-      const rp = d.hourly.precipitation_probability[i]||0;
-      cells += `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-width:50px;flex-shrink:0;padding:6px 2px;${isNow?'background:rgba(0,122,255,0.08);border-radius:10px':''}">
-        <div style="font-size:12px;color:var(--text3);font-weight:${isNow?700:400}">${isNow?'Jetzt':String(hr).padStart(2,'0')}</div>
-        <div style="font-size:22px;line-height:1">${WX_ICONS[d.hourly.weather_code[i]]||'🌤️'}</div>
-        <div style="font-size:14px;font-weight:700;color:${tc}">${Math.round(d.hourly.temperature_2m[i])}°</div>
-        <div style="font-size:11px;color:var(--accent)">${rp>5?rp+'%':'·'}</div>
+      <div class="card" style="flex-direction:column">
+        <div class="section-head" style="margin:0 0 6px">Nächste Tage</div>
+        ${daysHtml}
       </div>`;
-    }
-    h += `<div class="card" style="flex-direction:column;gap:8px">
-      <div class="section-head" style="margin:0">24-Stunden-Verlauf</div>
-      <div style="display:flex;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px">${cells}</div>
-    </div>`;
-
-    // ── 7-TAGE-VORHERSAGE ──
-    let daysHtml = '';
-    daily.time.slice(0,7).forEach((date,i) => {
-      if (i===0) return; // heute steckt im Hero
-      const dt = new Date(date);
-      const name = dt.toLocaleDateString('de-DE',{weekday:'short'});
-      const dl   = dt.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'});
-      const code = wxDayCode(d,i);
-      const rain = daily.precipitation_probability_max[i]||0;
-      const rw   = wxRainCompact(wxRainWindows(d, date, -1));
-      const tmax = Math.round(daily.temperature_2m_max[i]), tmin = Math.round(daily.temperature_2m_min[i]);
-      daysHtml += `<div class="wx-day">
-        <div class="name">${name}<div style="font-size:11px;color:var(--text3);font-weight:400">${dl}</div></div>
-        <div class="icon">${WX_ICONS[code]||'🌤️'}</div>
-        <div style="font-size:11px;color:var(--accent);width:60px;text-align:center;line-height:1.4">${rain>5?'💧'+rain+'%':''}${rw?'<br>🕐'+rw:''}</div>
-        <div class="t"><span class="tmax">${tmax}°</span><span class="tmin">${tmin}°</span></div>
-      </div>`;
-    });
-    h += `<div class="card" style="flex-direction:column">
-      <div class="section-head" style="margin:0 0 6px">7-Tage-Vorhersage</div>
-      ${daysHtml}
-    </div>`;
-
-    el.innerHTML = h;
   } catch (e) {
     el.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`;
   }
@@ -1025,6 +1013,48 @@ function birthdayCard(b) {
       <div class="meta">${esc(b.date)} · ${daysTxt}${ageTxt}</div>
     </div>
   </div>`;
+}
+
+// ===== ROBIN =====
+function loadRobinTimeline() {
+  const steps = [
+    {year:'WS 2021/22',    label:'FS 1–2 · Vorklinik',      detail:'Biochemie, Anatomie, Physiologie, Biologie, Chemie', done:true},
+    {year:'WS 2022/23',    label:'FS 3–4 · Vorklinik',      detail:'Pathophysiologie, Pharmakologie, Abschluss Vorklinik', done:true},
+    {year:'SS 2023',       label:'M1 · Physikum ✓',          detail:'1. Staatsexamen — Vorklinischer Abschnitt', done:true, exam:true},
+    {year:'WS 2023/24',    label:'FS 5–6 · Klinik',          detail:'Klinische Propädeutik, Innere Medizin, Chirurgie', done:true},
+    {year:'WS 2024/25',    label:'FS 7 · Klinik',            detail:'Neurologie, Psychiatrie, Pädiatrie, Kardiologie', done:true},
+    {year:'SS 2025',       label:'Forschungssemester',        detail:'Experimentelle Medizin · Doktorarbeit: Neutrophile Granulozyten / TRAKI', done:true, special:true},
+    {year:'WS 2025/26',    label:'FS 8 · Blockpraktikum',    detail:'Alle klinischen Fächer: Innere, Chirurgie, Gynäkologie, Pädiatrie, Psychiatrie u.a.', done:true},
+    {year:'SS 2026',       label:'FS 9 ← JETZT',             detail:'Fortsetzung klinische Ausbildung', current:true},
+    {year:'WS 2026/27',    label:'FS 10 · Klinik Abschluss', detail:'Abschluss klinischer Abschnitt, M2-Vorbereitung'},
+    {year:'Frühjahr 2027', label:'M2 · 2. Staatsexamen',     detail:'Hammerexamen — 320 Fragen über 3 Tage', exam:true},
+    {year:'SS 2027–2028',  label:'PJ · Praktisches Jahr',    detail:'Innere Medizin · Chirurgie · Wahlfach'},
+    {year:'Herbst 2028',   label:'M3 · Approbation 🎉',      detail:'3. Staatsexamen — Arzt!', exam:true},
+  ];
+  const el = document.getElementById('robin-timeline');
+  el.innerHTML = `
+    <div style="font-size:13px;color:var(--text3);margin-bottom:14px;padding:0 2px">
+      Uni Ulm · Medizinstudium · Regelstudienzeit 12 Semester
+    </div>
+    <div style="background:var(--card);border-radius:14px;padding:16px 14px;box-shadow:var(--shadow)">
+      ${steps.map((s, i, arr) => {
+        const color = s.exam ? '#ff9500' : s.special ? '#af52de' : s.current ? '#007aff' : s.done ? '#34c759' : '#c7c7cc';
+        const isLast = i === arr.length - 1;
+        return `<div style="display:flex;gap:12px">
+          <div style="display:flex;flex-direction:column;align-items:center;width:18px;flex-shrink:0">
+            <div style="width:${s.current?'16px':'12px'};height:${s.current?'16px':'12px'};border-radius:50%;background:${color};${s.current?'box-shadow:0 0 0 3px rgba(0,122,255,0.22)':''}margin-top:3px;flex-shrink:0"></div>
+            ${!isLast ? `<div style="width:2px;flex:1;background:#e5e5ea;margin:3px 0;min-height:16px"></div>` : ''}
+          </div>
+          <div style="padding-bottom:${isLast?'0':'16px'};flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px">
+              <span style="font-size:14px;font-weight:${s.current||s.exam?'600':'400'};color:${s.done||s.current||s.exam||s.special?'#1c1c1e':'#8e8e93'}">${s.label}</span>
+              <span style="font-size:11px;color:${color};white-space:nowrap;flex-shrink:0">${s.year}</span>
+            </div>
+            <div style="font-size:12px;color:#8e8e93;margin-top:2px;line-height:1.4">${s.detail}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
 // ===== CLIPBOARD =====

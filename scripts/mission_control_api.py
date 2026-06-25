@@ -2220,8 +2220,29 @@ def _fetch_kworb_alltime(pick=10):
     except Exception as e:
         return [{"error": str(e)}]
 
+def _fetch_itunes_genre(genre_id, country="us", limit=10):
+    """Echte, aktuelle genre-gefilterte Streaming-Charts via Apple/iTunes RSS (kein API-Key nötig).
+    genre 17 = Dance, 14 = Pop, 7 = Electronic. Für den Release-/Veröffentlichungs-Modus."""
+    import urllib.request as _ur2, json as _json2
+    url = f"https://itunes.apple.com/{country}/rss/topsongs/limit={limit}/genre={genre_id}/json"
+    req = _ur2.Request(url, headers={"User-Agent": "Mozilla/5.0 BollaMC/1.0"})
+    try:
+        data = _json2.loads(_ur2.urlopen(req, timeout=12).read().decode("utf-8", "ignore"))
+        entries = data.get("feed", {}).get("entry", [])
+        results = []
+        for e in entries:
+            title = e.get("im:name", {}).get("label", "").strip()
+            artist = e.get("im:artist", {}).get("label", "").strip()
+            if title:
+                results.append({"title": title, "artist": artist, "streams": "Dance-Charts 🍎"})
+            if len(results) >= limit:
+                break
+        return results
+    except Exception as e:
+        return [{"error": str(e)}]
+
 def get_charts():
-    """Streaming Charts: DE + Global (Spotify via kworb) + Party + Overall Alltime."""
+    """Streaming Charts: DE + Global (Spotify via kworb) + Party (Schlager) + Dance (Apple) + Overall Alltime."""
     import time as _time
     now = _time.time()
     if _charts_cache["data"] and now - _charts_cache["ts"] < CHARTS_TTL:
@@ -2229,8 +2250,9 @@ def get_charts():
     de = _fetch_kworb("de_daily")
     gl = _fetch_kworb("global_daily")
     party = _fetch_party_charts()
+    dance = _fetch_itunes_genre(17, "de")   # echte aktuelle Dance/Party-Charts für Release-Songs
     overall = _fetch_kworb_alltime()
-    result = {"de": de, "global": gl, "party": party, "overall": overall}
+    result = {"de": de, "global": gl, "party": party, "dance": dance, "overall": overall}
     _charts_cache["data"] = result
     _charts_cache["ts"] = now
     return result
@@ -6613,12 +6635,14 @@ Antworte NUR als reines JSON ohne Markdown:
                 kontext = body.get("kontext", "").strip()
                 feedback = body.get("feedback", "").strip()
                 prev_lyrics = body.get("prev_lyrics", "").strip()
+                profil = body.get("profil", False)  # 3. Variante: Veröffentlichungs-Modus mit Chris' Release-Profil
                 jugendfrei = body.get("jugendfrei", True)
                 jugendfrei_inst = ("WICHTIG: Songtext muss absolut jugendfrei und familienfreundlich sein. "
                                    "Keine zweideutigen Formulierungen, keine Anspielungen, keine suggestiven Ausdrücke. "
                                    "Clean lyrics, appropriate for all ages, family-friendly.\n") if jugendfrei else ""
                 SCHOOL_KONTEXT = "Geburtstagssong für Schüler · Computerkurs Herrn Mandel · Lessing-Gymnasium"
-                is_school = not kontext or kontext == SCHOOL_KONTEXT
+                # Release-/Profil-Modus ist NIE ein Schulsong, auch wenn kein Thema angegeben ist
+                is_school = (not kontext or kontext == SCHOOL_KONTEXT) and not profil
                 import re as _re2
                 # Klassennamen erkennen: "7a", "10c", "Klasse 7b", "klasse 10" usw.
                 is_class = bool(_re2.match(r'(?i)^(?:klasse\s*)?\d{1,2}\s*[a-zA-Z]?$', name))
@@ -6855,6 +6879,22 @@ Antworte NUR als reines JSON ohne Markdown:
                 rhythm_hint = _rhythm_hint(name) if is_personal else ""
                 style_timing_hint = _style_timing_hint(hit, geburtstag, ref_date)
 
+                # 3. Variante — Veröffentlichungs-Profil (Chris' Release-Marken-Stimme: Feel-good mit Augenzwinkern)
+                if profil:
+                    profil_inst = (
+                        "VERÖFFENTLICHUNGS-PROFIL (Marken-Stimme, hat hohe Priorität für Ton & Stimmung):\n"
+                        "Dies ist ein Song für die kommerzielle Veröffentlichung (Spotify/Apple), KEIN Anlass-/Schulsong. "
+                        "Marken-Kern: Feel-good Pop mit einem cleveren Augenzwinkern — warm, eingängig, zum Mitsingen, gute Laune mit Twist.\n"
+                        "LYRICS: positiv und lebensbejahend, aber nie kitschig; ein eingängiger Refrain (Hook) der hängenbleibt und zum Mitsingen einlädt; "
+                        "ein cleverer, augenzwinkernder Dreh statt platter Phrasen; universell verständlich (kein Insider-/Schulbezug, keine Namen von realen Personen, "
+                        "kein 'Lessing-Gymnasium', kein 'Herr Mandel'); radiotauglich und zeitlos.\n"
+                        "STYLE-TAGS (Basis, falls kein Referenz-Song dominiert): feel-good, uplifting, warm, catchy, sing-along, polished pop production. "
+                        "Bei ruhigem Song zusätzlich heartfelt/melodic, bei frechem witty/upbeat, bei Sommer summery/danceable/bright.\n"
+                        "TITEL: eingängig und radiotauglich, kein Name einer realen Person."
+                    )
+                else:
+                    profil_inst = ""
+
                 if is_school:
                     who = f"Schüler/in: {name}" if is_personal else (f"Gruppe/Klasse: {name}" if name else "Allgemeiner Klassen-Song")
                     prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Geburtstagssong {lang_inst}.
@@ -6885,11 +6925,13 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
   "style": "{STYLE_RULE}"
 }}"""
                 else:
-                    who_line = f"Person/Gruppe: {name}" if name else "Kein spezifischer Adressat (nur Anlass)"
+                    who_line = f"Person/Gruppe: {name}" if name else ("Kein spezifischer Adressat — Song fürs Profil/Veröffentlichung" if profil else "Kein spezifischer Adressat (nur Anlass)")
+                    kontext_line = f"Thema / Kontext: {kontext}" if kontext else ("Freies Thema — wähle ein universelles, positives Thema passend zum Profil" if profil else "Anlass / Kontext: ")
                     prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Song {lang_inst}.
 
 {jugendfrei_inst}{who_line}
-Anlass / Kontext: {kontext}
+{kontext_line}
+{profil_inst}
 {gb_kontext(geburtstag, ref_date)}
 {gb_lyrics_hint(geburtstag, ref_date)}
 {hit_inst}

@@ -146,7 +146,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 14px 8px 4px;
+  padding: 8px 14px 8px 15px;
   cursor: pointer;
   border-left: 3px solid rgba(96,165,250,0.35);
   font-size: 13px;
@@ -826,8 +826,8 @@ html, body {
           <div id="nav-group-schule">
             <div class="nav-group-header" id="nav-group-header-schule" onclick="event.stopPropagation();toggleNavGroup('schule')">
               <span class="nav-group-grip">⠿</span><span class="icon">🏫</span>
-              <span>Lehrer</span>
-              <span class="nav-group-count">4</span>
+              <span>Schule</span>
+              <span class="nav-group-count">5</span>
               <span class="nav-group-chevron" id="nav-chevron-schule">▶</span>
             </div>
             <div class="nav-group-items" id="nav-group-items-schule">
@@ -835,10 +835,9 @@ html, body {
               <div class="nav-item nav-subitem" data-page="korrektur"><span class="icon">✏️</span><span>KI-Korrektur</span></div>
               <div class="nav-item nav-subitem" data-page="differenzierung"><span class="icon">🎯</span><span>Differenzierung</span></div>
               <div class="nav-item nav-subitem" data-page="entschaerfer"><span class="icon">🕊️</span><span>Elternbrief-Entschärfer</span></div>
+              <div class="nav-item nav-subitem" data-page="gluecksrad"><span class="icon">🎡</span><span>Musik-Quiz Glücksrad</span></div>
             </div>
           </div>
-          <div class="nav-item" data-page="schuljahr2627"><span class="icon">🗓️</span><span>Schuljahr 26/27</span></div>
-          <div class="nav-item" data-page="gluecksrad"><span class="icon">🎡</span><span>Musik-Quiz Glücksrad</span></div>
           <div class="nav-item" data-page="kalender"><span class="icon">📅</span><span>Kalender</span></div>
           <div class="nav-item" data-page="email"><span class="icon">📧</span><span>E-Mail</span><span class="badge" id="mail-badge" style="display:none">0</span></div>
           <div class="nav-item" data-page="clipboard"><span class="icon">📋</span><span>Clipboard</span></div>
@@ -975,21 +974,6 @@ html, body {
       <!-- SCHULE -->
       <div class="page" id="page-schule">
         <div class="grid" id="schule-content"><div class="loading">Lade...</div></div>
-      </div>
-
-      <!-- SCHULJAHR 26/27 (Planungsseite – noch leer) -->
-      <div class="page" id="page-schuljahr2627">
-        <div style="max-width:900px;margin:0 auto;padding:8px 0">
-          <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:14px;padding:40px 28px;text-align:center">
-            <div style="font-size:46px;margin-bottom:10px">🗓️</div>
-            <div style="font-size:22px;font-weight:700;color:var(--bright);margin-bottom:6px">Schuljahr 2026/27 – Planung</div>
-            <div style="font-size:15px;color:var(--dim);line-height:1.6;max-width:560px;margin:0 auto">
-              Unsere gemeinsame Planungsseite für das neue Schuljahr. 🐾<br>
-              Noch leer – sag mir einfach, was hier rein soll (Termine, Klassen, Projekte, Ideen),
-              dann baue ich es Stück für Stück auf.
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- KI-KORREKTUR -->
@@ -3124,65 +3108,17 @@ html, body {
               <div style="font-size:13px;color:var(--dim)">Songs zu Themen wie Geburtstag, Abschied, Party …</div>
             </div>
           </div>
-          <div style="display:flex;gap:8px;flex-shrink:0">
-            <button onclick="const b=document.getElementById('release-profil-box');const open=b.style.display!=='none';b.style.display=open?'none':'block';this.style.background=open?'var(--card2)':'rgba(124,58,237,0.18)';this.style.color=open?'var(--dim)':'#c4b5fd'"
-              style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--dim);
-                     padding:7px 14px;cursor:pointer;font-size:13px;white-space:nowrap;transition:all .2s"
-              onmouseover="this.style.borderColor='var(--accent)'"
-              onmouseout="this.style.borderColor='var(--border)'"
-              title="Dein Veröffentlichungs-Profil (Genre, Bio, Mood-Tags)">
-              🚀 Profil
-            </button>
-            <button onclick="sunoReset()"
-              style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--dim);
-                     padding:7px 14px;cursor:pointer;font-size:13px;white-space:nowrap;transition:all .2s"
-              onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'"
-              onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">
-              🗑️ Zurücksetzen
-            </button>
-          </div>
-        </div>
-
-        <!-- Release-Profil (versteckt, per Header-Button "🚀 Profil" aufklappbar) -->
-        <div id="release-profil-box" style="display:none;max-width:65%;margin:0 auto 16px auto">
-          <div style="background:var(--card2);border:1px solid rgba(124,58,237,0.45);border-radius:12px;overflow:hidden">
-            <div style="display:flex;align-items:center;gap:8px;padding:12px 15px;color:var(--bright);font-size:15px;font-weight:700;border-bottom:1px solid rgba(124,58,237,0.2)">
-              🚀 Veröffentlichungs-Profil <span style="font-size:13px;font-weight:400;color:var(--dim)">— für DistroKid / Spotify / Apple</span>
-            </div>
-            <div style="padding:14px 16px 16px 16px;font-size:14px;line-height:1.65;color:var(--text)">
-              <div style="font-style:italic;color:var(--dim);margin-bottom:12px">Marken-Stimme: Feel-good Pop mit Augenzwinkern — warm, eingängig, zum Mitsingen. Gute Laune mit einem cleveren Twist.</div>
-
-              <div style="margin-bottom:10px"><b style="color:var(--bright)">🎼 Genre (DistroKid):</b><br>
-                Primary: <b>Pop</b> · Secondary: <b>Singer/Songwriter</b> <span style="color:var(--dim)">(oder „Dance/Electronic" bei elektronischeren Tracks)</span></div>
-
-              <div style="margin-bottom:10px"><b style="color:var(--bright)">📝 Künstler-Bio (Spotify/Apple):</b><br>
-                <span onclick="navigator.clipboard.writeText('Eingängige Feel-Good-Songs mit Herz und einem Augenzwinkern — warme Melodien, die im Ohr bleiben und gute Laune machen. Pop zum Mitsingen, mit einem cleveren Twist.');this.style.color='#22c55e';setTimeout(()=>this.style.color='',1200)" style="cursor:pointer;display:inline-block;margin-top:3px;padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:7px" title="Klick = kopieren">Eingängige Feel-Good-Songs mit Herz und einem Augenzwinkern — warme Melodien, die im Ohr bleiben und gute Laune machen. Pop zum Mitsingen, mit einem cleveren Twist. 📋</span></div>
-
-              <div style="margin-bottom:10px"><b style="color:var(--bright)">🎯 Mood-Tags (Spotify-Pitch):</b><br>
-                <span style="color:var(--dim)">feel-good · uplifting · warm · catchy · sing-along · playful · tongue-in-cheek · sunny</span></div>
-
-              <div><b style="color:var(--bright)">🎚️ Pro Song variieren:</b><br>
-                <span style="color:var(--dim)">ruhig → heartfelt, melodic, nostalgic · frech → witty, upbeat, charming · Sommer → summery, danceable, bright</span></div>
-
-              <div style="margin-top:11px;padding-top:9px;border-top:1px solid var(--border);font-size:12px;color:var(--dim)">💡 Spotify vergibt Genre selbst — die Wörter wirken über Bio, Pitch & Titel, nicht als direkter Tag.</div>
-            </div>
-          </div>
+          <button onclick="sunoReset()"
+            style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--dim);
+                   padding:7px 14px;cursor:pointer;font-size:13px;white-space:nowrap;transition:all .2s"
+            onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'"
+            onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">
+            🗑️ Zurücksetzen
+          </button>
         </div>
 
         <!-- Formular (zentriert, ~60% Breite) -->
         <div style="max-width:65%;margin:0 auto 20px auto;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px">
-          <!-- Modus-Schalter: 3 Varianten -->
-          <div style="display:flex;justify-content:center;margin-bottom:14px">
-            <div style="display:inline-flex;background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden">
-              <button id="suno-mode-schule" onclick="sunoSetMode('schule')"
-                style="padding:9px 18px;border:none;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;transition:all .2s">🎂 Schüler</button>
-              <button id="suno-mode-frei" onclick="sunoSetMode('frei')"
-                style="padding:9px 18px;border:none;border-left:1px solid var(--border);cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;transition:all .2s">✏️ Freies Thema</button>
-              <button id="suno-mode-profil" onclick="sunoSetMode('profil')"
-                style="padding:9px 18px;border:none;border-left:1px solid var(--border);cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;transition:all .2s">🚀 Veröffentlichung</button>
-            </div>
-          </div>
-          <div id="suno-mode-hint" style="display:none;margin:-4px auto 14px auto;max-width:90%;text-align:center;font-size:13px;color:#c4b5fd;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);border-radius:8px;padding:8px 12px;line-height:1.5"></div>
           <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px">
             <div>
               <label style="font-size:13px;color:var(--dim);display:block;margin-bottom:3px">Name / Gruppe <span style="font-weight:400;opacity:0.6">(optional)</span></label>
@@ -3191,7 +3127,7 @@ html, body {
                        color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
             </div>
             <div>
-              <label id="suno-kontext-label" style="font-size:13px;color:var(--dim);display:block;margin-bottom:3px">Kontext / Anlass <span style="color:var(--accent);font-style:italic">(überschreiben → Klasse/Alter/Geburtstag verschwinden)</span></label>
+              <label style="font-size:13px;color:var(--dim);display:block;margin-bottom:3px">Kontext / Anlass <span style="color:var(--accent);font-style:italic">(überschreiben → Klasse/Alter/Geburtstag verschwinden)</span></label>
               <input id="suno-kontext" type="text" oninput="sunoKontextChanged()"
                 style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
                        color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
@@ -3293,12 +3229,9 @@ html, body {
               <button id="chart-tab-global" onclick="sunoChartTab('global')"
                 style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;
                        background:transparent;color:var(--dim);border-left:1px solid var(--border);transition:all .2s">🌍 Global</button>
-              <button id="chart-tab-party" onclick="sunoChartTab('party')" title="Deutsche Schlager-/Mitsing-Partyhits — familientauglich für Schul-Partys"
+              <button id="chart-tab-party" onclick="sunoChartTab('party')"
                 style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;
                        background:transparent;color:var(--dim);border-left:1px solid var(--border);transition:all .2s">🥳 Party</button>
-              <button id="chart-tab-dance" onclick="sunoChartTab('dance')" title="Aktuelle Dance/Party-Charts (Apple, täglich) — fürs Veröffentlichen"
-                style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;
-                       background:transparent;color:var(--dim);border-left:1px solid var(--border);transition:all .2s">💃 Dance</button>
               <button id="chart-tab-overall" onclick="sunoChartTab('overall')"
                 style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;
                        background:transparent;color:var(--dim);border-left:1px solid var(--border);transition:all .2s">🏆 Overall</button>
@@ -4624,7 +4557,7 @@ function toggleNavSection(name) {
 function openSectionForPage(page) {
   const sectionMap = {
     dashboard: 'start', bolla: 'start', wetter: 'start',
-    schule: 'arbeit', korrektur: 'arbeit', differenzierung: 'arbeit', entschaerfer: 'arbeit', gluecksrad: 'arbeit', schuljahr2627: 'arbeit', kalender: 'arbeit', email: 'arbeit', clipboard: 'arbeit', projekte: 'arbeit', 'ki-workshop': 'arbeit', urlaub: 'arbeit',
+    schule: 'arbeit', korrektur: 'arbeit', differenzierung: 'arbeit', entschaerfer: 'arbeit', gluecksrad: 'arbeit', kalender: 'arbeit', email: 'arbeit', clipboard: 'arbeit', projekte: 'arbeit', 'ki-workshop': 'arbeit', urlaub: 'arbeit',
     robin: 'familie', geburtstage: 'familie',
     'ki-news': 'kreativ', 'ki-buch': 'kreativ', bildgen: 'kreativ', suno: 'kreativ', fotoanalyse: 'kreativ', kiforum: 'kreativ',
     localserver: 'system', system: 'system', claudecode: 'system', surface: 'system', redesigns: 'system', brain: 'system',
@@ -4757,7 +4690,6 @@ async function initNavDrag() {
     'differenzierung': 'nav-section-items-arbeit',
     'entschaerfer': 'nav-section-items-arbeit',
     'gluecksrad': 'nav-section-items-arbeit',
-    'schuljahr2627': 'nav-section-items-arbeit',
     'kalender': 'nav-section-items-arbeit',
     'email': 'nav-section-items-arbeit',
     'clipboard': 'nav-section-items-arbeit',
@@ -13937,37 +13869,6 @@ async function loadRedesigns() {
 const SUNO_DEFAULT_KONTEXT = 'Geburtstagssong für Schüler · Computerkurs Herrn Mandel · Lessing-Gymnasium';
 let sunoLang = 'de';
 let sunoLastLyrics = '';
-let sunoMode = 'schule';  // 'schule' | 'frei' | 'profil'
-function sunoSetMode(mode) {
-  sunoMode = mode;
-  const map = {schule:'suno-mode-schule', frei:'suno-mode-frei', profil:'suno-mode-profil'};
-  for (const [m, id] of Object.entries(map)) {
-    const b = document.getElementById(id);
-    const active = m === mode;
-    b.style.background = active ? (m === 'profil' ? 'linear-gradient(135deg,#7c3aed,#ff6699)' : 'var(--accent)') : 'transparent';
-    b.style.color = active ? 'white' : 'var(--dim)';
-  }
-  const kontext = document.getElementById('suno-kontext');
-  const kontextLabel = document.getElementById('suno-kontext-label');
-  const hint = document.getElementById('suno-mode-hint');
-  if (mode === 'schule') {
-    kontext.value = SUNO_DEFAULT_KONTEXT;
-    if (kontextLabel) kontextLabel.innerHTML = 'Kontext / Anlass <span style="color:var(--accent);font-style:italic">(überschreiben → Klasse/Alter/Geburtstag verschwinden)</span>';
-    hint.style.display = 'none';
-  } else if (mode === 'frei') {
-    if (kontext.value === SUNO_DEFAULT_KONTEXT) kontext.value = '';
-    kontext.placeholder = 'z.B. Abschied 10. Klasse · Sommerfest · Hochzeit …';
-    if (kontextLabel) kontextLabel.innerHTML = 'Thema / Anlass';
-    hint.style.display = 'none';
-  } else if (mode === 'profil') {
-    if (kontext.value === SUNO_DEFAULT_KONTEXT) kontext.value = '';
-    kontext.placeholder = 'Thema (optional) — z.B. Neuanfang, Sommer, Fernweh …';
-    if (kontextLabel) kontextLabel.innerHTML = 'Thema <span style="opacity:0.6">(optional)</span>';
-    hint.innerHTML = '🚀 <b>Veröffentlichungs-Modus:</b> Song wird in deiner Feel-Good-Marken-Stimme erzeugt (warm, eingängig, mit Augenzwinkern) — bereit für DistroKid. Thema optional, Hit-Orientierung & Sprache wie gewohnt. <span style="opacity:0.7">Details: „🚀 Profil" oben.</span>';
-    hint.style.display = 'block';
-  }
-  sunoKontextChanged();
-}
 function sunoKontextChanged() {
   const val = document.getElementById('suno-kontext').value.trim();
   const isDefault = val === SUNO_DEFAULT_KONTEXT;
@@ -14002,7 +13903,6 @@ async function sunoGenerate(feedback = '', prevLyrics = '') {
         hit: document.getElementById('suno-hit').value.trim(),
         style_hint: document.getElementById('suno-style-hint').value.trim(),
         jugendfrei: document.getElementById('suno-jugendfrei')?.checked ?? true,
-        profil: sunoMode === 'profil',
         feedback
       })
     });
@@ -14080,7 +13980,7 @@ function sunoReset() {
   document.getElementById('suno-feedback').value = '';
   sunoLastLyrics = '';
   sunoSetLang('de');
-  sunoSetMode('schule');
+  sunoKontextChanged();
   document.getElementById('suno-retry-btn').style.display = 'none';
   document.getElementById('suno-result-grid').style.display = 'none';
   document.getElementById('suno-lyrics-placeholder').style.display = 'block';
@@ -14145,7 +14045,7 @@ async function sunoLoadCharts() {
 }
 function sunoChartTab(tab) {
   _sunoChartTab = tab;
-  ['de','global','party','dance','overall'].forEach(t => {
+  ['de','global','party','overall'].forEach(t => {
     const btn = document.getElementById('chart-tab-' + t);
     btn.style.background = t === tab ? 'var(--accent)' : 'transparent';
     btn.style.color = t === tab ? 'white' : 'var(--dim)';
@@ -14389,8 +14289,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (pg) _chartObs.observe(pg, {attributes: true, attributeFilter: ['style']});
 })();
 
-// Kontext-Feld + Modus-Schalter beim Laden vorbelegen
-sunoSetMode('schule');
+// Kontext-Feld beim Laden vorbelegen
+document.getElementById('suno-kontext').value = SUNO_DEFAULT_KONTEXT;
 
 // ═══════════════════════════════════════════════════════════
 // FOTO-ANALYSE

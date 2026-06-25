@@ -1,0 +1,50 @@
+*/15 * * * * /home/bolla/workspace/scripts/sync_obsidian_vault.sh >> /home/bolla/workspace/logs/obsidian_sync.log 2>&1
+@reboot sleep 10 && /home/bolla/workspace/scripts/start_mc_server.sh >> /home/bolla/workspace/logs/mission_control_api.log 2>&1
+*/15 * * * * python3 /home/bolla/workspace/scripts/spam_watcher.py >> /home/bolla/workspace/logs/spam_watcher.log 2>&1
+0 10 * * * python3 /home/bolla/workspace/scripts/check_claude_desktop.py >> /home/bolla/workspace/logs/claude_desktop_check.log 2>&1
+0 19 * * 0 python3 /home/bolla/workspace/scripts/outlook_backup.py >> /home/bolla/workspace/logs/outlook_backup.log 2>&1
+@reboot sleep 15 && python3 /home/bolla/workspace/scripts/telegram_bot.py >> /home/bolla/workspace/logs/telegram_bot.log 2>&1
+@reboot sleep 20 && /home/bolla/.local/bin/cloudflared tunnel run bolla-mc >> /home/bolla/workspace/logs/cloudflared.log 2>&1
+*/2 * * * * /home/bolla/workspace/scripts/cloudflared_healthcheck.sh
+0 18 * * 0 python3 /home/bolla/workspace/scripts/outlook_gmail_sync.py >> /home/bolla/workspace/logs/outlook_gmail_sync.log 2>&1
+0 17 * * 0 /home/bolla/workspace/scripts/weekly_backup.sh >> /home/bolla/workspace/logs/weekly_backup.log 2>&1
+*/2 * * * * /usr/bin/python3 /home/bolla/workspace/scripts/soul_watcher.py >> /home/bolla/workspace/logs/soul_watcher_cron.log 2>&1
+0 7 * * * python3 /home/bolla/workspace/scripts/generate_redesigns.py >> /home/bolla/workspace/logs/generate_redesigns.log 2>&1
+@reboot sudo service ssh start
+0 3 * * 0 python3 /home/bolla/workspace/scripts/ea_organizer.py >> /home/bolla/workspace/logs/ea_organizer.log 2>&1
+@reboot sleep 25 && /home/bolla/workspace/scripts/pro_tunnel_watchdog.sh >> /home/bolla/workspace/logs/pro_tunnel_watchdog.log 2>&1
+0 12 * * * python3 /home/bolla/workspace/scripts/mail_to_calendar.py >> /home/bolla/workspace/logs/mail_calendar.log 2>&1
+0 5 * * 1 python3 /home/bolla/workspace/scripts/newsletter_scanner.py >> /home/bolla/workspace/logs/newsletter_scanner.log 2>&1
+0 8 1 * * /usr/bin/python3 /home/bolla/workspace/scripts/aimor_push.py >> /home/bolla/workspace/logs/aimor_push.log 2>&1
+0 20 28-31 * * /usr/bin/python3 /home/bolla/workspace/scripts/aimor_notify.py >> /home/bolla/workspace/logs/aimor_notify.log 2>&1
+55 6 * * * curl -s http://127.0.0.1:18790/api/recipe > /dev/null 2>&1
+15 0 * * * /home/bolla/workspace/scripts/nacht_backup.sh >> /home/bolla/workspace/logs/nacht_backup.log 2>&1
+0 10 * * 1 python3 /home/bolla/workspace/scripts/hardware_tips.py >> /home/bolla/workspace/logs/hardware_tips.log 2>&1
+5 10 * * 1 python3 /home/bolla/workspace/scripts/kindle_check.py >> /home/bolla/workspace/logs/kindle_check.log 2>&1
+00 09 14 05 * /usr/bin/python3 /tmp/remind_sommerleuchten.py # EINMALIG_SOMMERLEUCHTEN
+55 23 * * 6 curl -s http://127.0.0.1:18790/api/tokenbudget/snapshot >> /home/bolla/workspace/logs/token_budget.log 2>&1
+0 */3 * * * python3 /home/bolla/workspace/scripts/spotify_watcher.py >> /home/bolla/workspace/logs/spotify_watcher.log 2>&1
+*/2 * * * * /home/bolla/workspace/scripts/mc_watchdog.sh
+*/2 * * * * /home/bolla/workspace/scripts/book_tunnel_watchdog.sh
+@reboot sleep 60 && /home/bolla/workspace/scripts/startup_backup_check.sh >> /home/bolla/workspace/logs/nacht_backup.log 2>&1
+0 10 * * 0 /usr/bin/python3 /home/bolla/workspace/scripts/mc_weekly_update.py >> /home/bolla/workspace/logs/mc_weekly_update.log 2>&1
+30 3 * * * python3 /home/bolla/workspace/scripts/memory_health.py >> /home/bolla/workspace/logs/memhealth.log 2>&1
+
+# ── Anthropic Limit-Watcher (Session + Usage) ──────────────────────────────
+# Täglich Mitternacht: Resume nach monatlichem Usage-Reset
+1 0 * * * /home/bolla/workspace/scripts/limit_watcher.sh >> /home/bolla/workspace/logs/limit_watcher.log 2>&1
+# Alle 2h: Fallback für Session-Timeout (5h-Limit) + allg. Recovery
+13 */2 * * * /home/bolla/workspace/scripts/limit_watcher.sh >> /home/bolla/workspace/logs/limit_watcher.log 2>&1
+0 * * * * /home/bolla/workspace/scripts/fable5_check.sh
+0 9 14 7 * sed -i 's/"model": "opus"/"model": "sonnet"/' /home/bolla/.claude/settings.json && echo "$(date): Model zurück auf sonnet" >> /home/bolla/workspace/logs/model_switch.log # EINMALIG_SONNET_SWITCH
+*/2 * * * * /home/bolla/workspace/scripts/telegram_bot_watchdog.sh
+0 */6 * * * /usr/bin/python3 /home/bolla/workspace/scripts/aurora_shop_watcher.py >> /home/bolla/workspace/logs/aurora_watcher.log 2>&1
+0 */4 * * * /usr/bin/python3 /home/bolla/workspace/scripts/kdp_mail_watcher.py >> /home/bolla/workspace/logs/kdp_mail_watcher.log 2>&1
+0 9 * * * /usr/bin/python3 /home/bolla/workspace/scripts/kdp_publish_reminder.py >> /home/bolla/workspace/logs/kdp_publish_reminder.log 2>&1
+*/10 * * * * sudo -n /home/bolla/workspace/scripts/wsl_timesync.sh >/dev/null 2>&1
+10 10 * * 1 python3 /home/bolla/workspace/scripts/capabilities_drift.py >> /home/bolla/workspace/logs/capabilities_drift.log 2>&1
+
+# ── Nach Backup 23.06. dazugekommene Reminder (manuell rekonstruiert 24.06.) ──
+0 9 * * * python3 /home/bolla/workspace/scripts/suno_ostern_reminder.py # suno-ostern-reminder
+30 9 * * * python3 /home/bolla/workspace/scripts/bollawave_release_reminder.py # bollawave-release-reminder
+0 9 * * * /usr/bin/python3 /home/bolla/workspace/scripts/gplay_policy_reminder.py >> /home/bolla/workspace/logs/gplay_policy_reminder.log 2>&1 # GPLAY_POLICY
