@@ -60,7 +60,10 @@ def rule_match(subject: str, sender_email: str, rules: list):
         se = _m.group(0)
     for r in rules:
         typ, wert = r.get("typ"), (r.get("wert") or "")
-        if typ == "cyrillic" and _cyrillic_ratio(s) >= 0.5:
+        # Betreff nennenswert kyrillisch ODER Absender(-Name) überwiegend kyrillisch.
+        # 0.3 statt 0.5: russische Werbung mischt lateinische Markennamen rein
+        # (z.B. "Скидка -40% на KLAPP, SOTHYS, JANS" → nur ~35% kyrillisch).
+        if typ == "cyrillic" and (_cyrillic_ratio(s) >= 0.3 or _cyrillic_ratio(sender_email or "") >= 0.4):
             return r.get("label", "kyrillischer Betreff")
         if typ == "subject_keyword" and wert and wert.lower() in s.lower():
             return r.get("label", wert)
@@ -205,7 +208,10 @@ def clean_wtnet():
                     except Exception:
                         subject = line[8:].strip()
                 elif low.startswith("from:"):
-                    sender = line[5:].strip()
+                    try:
+                        sender = str(make_header(decode_header(line[5:].strip())))
+                    except Exception:
+                        sender = line[5:].strip()
             reason = "Spam-Stempel" if is_spam(subject) else rule_match(subject, sender, rules)
             if reason:
                 m.store(mid, "+FLAGS", "\\Deleted")
