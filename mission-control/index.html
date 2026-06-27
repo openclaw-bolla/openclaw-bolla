@@ -6353,13 +6353,22 @@ async function sendMailCommand() {
       _showResultPanel('Fehler', '⚠ '+d.text, '#ef5350');
     } else {
       const hasRule = d.rule_suggestion && d.rule_suggestion.label;
-      _showResultPanel('Ergebnis', (d.text||'(keine Antwort)').replace(/\n/g,'<br>'), hasRule ? '#ef5350' : '#a78bfa');
-      if (hasRule && acts) {
-        _pendingSpamRule = d.rule_suggestion;
-        const lbl = d.rule_suggestion.label.replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        acts.innerHTML =
-          `<button onclick="applySpamRule()" style="background:#ef5350;color:#fff;border:none;border-radius:6px;padding:7px 18px;cursor:pointer;font-size:13px;font-weight:600">🛡 Regel einbauen: ${lbl}</button>`
-          +`<button onclick="closeMailResult()" style="background:rgba(255,255,255,0.1);color:var(--text);border:none;border-radius:6px;padding:7px 18px;cursor:pointer;font-size:13px">Nichts tun</button>`;
+      const covered = d.already_covered;
+      const showAdd = hasRule && !covered;
+      _showResultPanel('Ergebnis', (d.text||'(keine Antwort)').replace(/\n/g,'<br>'), showAdd ? '#ef5350' : (covered ? '#66bb6a' : '#a78bfa'));
+      if (acts) {
+        if (showAdd) {
+          _pendingSpamRule = d.rule_suggestion;
+          const lbl = d.rule_suggestion.label.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          acts.innerHTML =
+            `<button onclick="applySpamRule()" style="background:#ef5350;color:#fff;border:none;border-radius:6px;padding:7px 18px;cursor:pointer;font-size:13px;font-weight:600">🛡 Regel einbauen: ${lbl}</button>`
+            +`<button onclick="closeMailResult()" style="background:rgba(255,255,255,0.1);color:var(--text);border:none;border-radius:6px;padding:7px 18px;cursor:pointer;font-size:13px">Nichts tun</button>`;
+        } else if (covered) {
+          const cl = String(covered).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          acts.innerHTML =
+            `<span style="color:#66bb6a;font-size:13px;font-weight:600;padding:7px 4px">✓ Schon abgedeckt durch Regel: ${cl} — wird automatisch gelöscht.</span>`
+            +`<button onclick="closeMailResult()" style="background:rgba(255,255,255,0.1);color:var(--text);border:none;border-radius:6px;padding:7px 18px;cursor:pointer;font-size:13px">OK</button>`;
+        }
       }
     }
   } catch(e) {

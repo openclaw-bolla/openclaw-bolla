@@ -1388,6 +1388,42 @@ def _sanitize_rule(rg):
     return {"typ": typ, "wert": wert, "label": label}
 
 
+def _cyrillic_ratio_s(s):
+    """Anteil kyrillischer Buchstaben an allen Buchstaben (0..1)."""
+    s = s or ""
+    letters = [c for c in s if c.isalpha()]
+    if not letters:
+        return 0.0
+    cyr = sum(1 for c in letters if "Ѐ" <= c <= "ӿ")
+    return cyr / len(letters)
+
+
+def _existing_rule_covers(subject, sender_email):
+    """Greift schon eine gespeicherte Regel auf diese Mail? → Label oder None.
+    Spiegelt die rule_match-Logik aus spam_watcher.py wider."""
+    try:
+        if not os.path.exists(SPAM_RULES_FILE):
+            return None
+        with open(SPAM_RULES_FILE, encoding="utf-8") as f:
+            rules = json.load(f).get("rules", [])
+    except Exception:
+        return None
+    subj = subject or ""
+    snd  = (sender_email or "").lower()
+    for r in rules:
+        typ  = r.get("typ")
+        wert = (r.get("wert") or "")
+        if typ == "cyrillic" and (_cyrillic_ratio_s(subj) >= 0.3 or _cyrillic_ratio_s(snd) >= 0.4):
+            return r.get("label") or "Betreff überwiegend kyrillisch"
+        if typ == "subject_keyword" and wert and wert.lower() in subj.lower():
+            return r.get("label") or f"Betreff enthält '{wert}'"
+        if typ == "sender_domain" and wert:
+            dom = wert.lower().lstrip("@")
+            if snd == dom or snd.endswith("@" + dom) or snd.endswith("." + dom):
+                return r.get("label") or f"Absender-Domain {wert}"
+    return None
+
+
 def spam_rule_add(data):
     """Speichert eine vom Prüfen vorgeschlagene Spam-Regel in spam_rules.json."""
     clean = _sanitize_rule(data.get("rule") or {})
@@ -1674,7 +1710,7 @@ Für das Feld "regel" (nur ausfüllen wenn spam=true, sonst null):
     try:
         r = subprocess.run([CLAUDE_BIN,"-p",prompt], capture_output=True, text=True, timeout=60)
         raw = r.stdout.strip()
-        text, suggestion = raw, None
+        text, suggestion, covered = raw, None, None
         try:
             js = raw
             if "```" in js:
@@ -1686,9 +1722,21 @@ Für das Feld "regel" (nur ausfüllen wenn spam=true, sonst null):
                 text = parsed.get("antwort") or raw
                 if parsed.get("spam"):
                     suggestion = _sanitize_rule(parsed.get("regel") or {})
+                    subj = mail.get("subject", "") or ""
+                    # Fallback: Spam erkannt, aber KI gab keinen Regel-Vorschlag → selbst ableiten
+                    if not suggestion:
+                        if _cyrillic_ratio_s(subj) >= 0.3:
+                            suggestion = _sanitize_rule({"typ": "cyrillic", "wert": ""})
+                        else:
+                            words = [w.strip(".,!?:;–-\"'«»()[]") for w in subj.split()]
+                            kw = max([w for w in words if len(w) >= 4], key=len, default="")
+                            if kw:
+                                suggestion = _sanitize_rule({"typ": "subject_keyword", "wert": kw})
+                    # Greift schon eine bestehende Regel? → dann Info statt Knopf
+                    covered = _existing_rule_covers(subj, mail.get("from_email", "") or "")
         except Exception:
             pass
-        return {"type":"analysis","text":text,"rule_suggestion":suggestion}
+        return {"type":"analysis","text":text,"rule_suggestion":suggestion,"already_covered":covered}
     except Exception as e:
         return {"type":"error","text":str(e)}
 
