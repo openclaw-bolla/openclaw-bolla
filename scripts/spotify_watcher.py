@@ -57,8 +57,10 @@ def search_spotify(client_id, client_secret):
                       auth=(client_id, client_secret), timeout=10)
     r.raise_for_status()
     token = r.json().get("access_token")
+    # limit max 10: diese App (Client-Credentials ohne Extended Quota) liefert ab limit>10
+    # "400 Invalid limit". Apple/iTunes (limit=200) ist eh der Hauptweg; Spotify nur Bonus.
     r = requests.get("https://api.spotify.com/v1/search",
-                     params={"q": f'artist:{ARTIST}', "type": "track", "limit": 50, "market": "DE"},
+                     params={"q": f'artist:{ARTIST}', "type": "track", "limit": 10, "market": "DE"},
                      headers={"Authorization": f"Bearer {token}"}, timeout=15)
     r.raise_for_status()
     found = {}
