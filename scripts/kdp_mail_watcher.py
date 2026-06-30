@@ -23,7 +23,7 @@ KW = ["kdp", "kindle direct", "ihr ebook", "your ebook", "is live", "ist jetzt",
       "kindle-shop", "blocked", "abgelehnt", "rejected", "action required",
       "maßnahme erforderlich", "review", "überprüfung deines", "payment", "auszahlung"]
 # Absender, die immer durchgehen
-SENDER_OK = ["kdp.amazon", "kdp@amazon", "routenote"]
+SENDER_OK = ["kdp.amazon", "kdp@amazon"]
 # harte Ausschlüsse (Shopping/Bestellungen), damit keine Fehlalarme
 BLOCK = ["bestellung", "widerruf", "lieferung", "zahlungserinnerung", "retoure", "rücksende"]
 # Auto-Reply-/Eingangsbestätigungs-Marker (im bodyPreview) — NICHT melden, nur als gesehen merken
@@ -73,19 +73,14 @@ def main():
         sender_hit = any(s in frm for s in SENDER_OK)
         kw_hit = any(k in sl for k in KW)
         blocked = any(b in sl for b in BLOCK)
-        is_routenote = "routenote" in frm
         body = (m.get("bodyPreview") or "").lower()
         is_autoreply = any(p in body for p in AUTOREPLY)
         # relevant: bekannter Absender ODER (Keyword UND nicht Shopping-Block, nur Amazon)
-        # — aber NIE Auto-Replies/Eingangsbestätigungen melden (z.B. RouteNote "message received")
+        # — aber NIE Auto-Replies/Eingangsbestätigungen melden
         if (sender_hit or (kw_hit and not blocked and "amazon" in frm)) and not is_autoreply:
             new_ids.append(mid)
-            if is_routenote:
-                tg(f"📬 *RouteNote-Antwort eingetroffen!*\n\n*{subj}*\nvon `{frm}`\n{m['receivedDateTime'][:16]}\n\n"
-                   f"→ In Outlook lesen — Antwort auf unsere Review-/KI-Frage. 🐾")
-            else:
-                tg(f"📧 *KDP-Mail eingetroffen!*\n\n*{subj}*\nvon `{frm}`\n{m['receivedDateTime'][:16]}\n\n"
-                   f"→ Auf [kdp.amazon.com](https://kdp.amazon.com) prüfen. 🐾")
+            tg(f"📧 *KDP-Mail eingetroffen!*\n\n*{subj}*\nvon `{frm}`\n{m['receivedDateTime'][:16]}\n\n"
+               f"→ Auf [kdp.amazon.com](https://kdp.amazon.com) prüfen. 🐾")
         # immer als gesehen markieren (auch irrelevante), damit wir nicht jedes Mal alles neu prüfen
         seen.add(mid)
     st["seen"] = list(seen)[-300:]

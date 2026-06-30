@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# rel <Songtitel> — verschiebt Song + Cover in released/
+
+SUNO_DIR="/mnt/d/OneDrive/Dokumente/Bolla/Suno_RouteNote"
+RELEASED="$SUNO_DIR/released"
+
+if [[ -z "$1" ]]; then
+    echo "Verwendung: rel <Songtitel>"
+    echo "Beispiel:   rel \"Seven more weeks\""
+    exit 1
+fi
+
+TITLE="$1"
+mkdir -p "$RELEASED"
+
+# MP3 finden — erst _320, dann plain
+if [[ -f "$SUNO_DIR/${TITLE}_320.mp3" ]]; then
+    MP3_SRC="$SUNO_DIR/${TITLE}_320.mp3"
+    MP3_DST="$RELEASED/${TITLE}_320.mp3"
+elif [[ -f "$SUNO_DIR/${TITLE}.mp3" ]]; then
+    MP3_SRC="$SUNO_DIR/${TITLE}.mp3"
+    MP3_DST="$RELEASED/${TITLE}.mp3"
+else
+    echo "❌ Keine MP3 gefunden für: $TITLE"
+    echo "   Gesucht: ${TITLE}_320.mp3 oder ${TITLE}.mp3"
+    exit 1
+fi
+
+COVER="$SUNO_DIR/${TITLE}_cover.jpg"
+
+mv "$MP3_SRC" "$MP3_DST"
+echo "✅ MP3  → released/$(basename "$MP3_DST")"
+
+if [[ -f "$COVER" ]]; then
+    mv "$COVER" "$RELEASED/${TITLE}_cover.jpg"
+    echo "✅ Cover → released/${TITLE}_cover.jpg"
+else
+    echo "⚠️  Kein Cover gefunden"
+fi
+
+echo ""
+echo "🎵 \"$TITLE\" ist im released/-Ordner. Jetzt bei RouteNote einreichen!"

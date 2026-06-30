@@ -2058,7 +2058,7 @@ GEMINI_CONFIG = Path(os.path.join(WORKSPACE, "config/gemini_api.json"))
 PARTY_CHARTS_CACHE = Path(os.path.join(WORKSPACE, "config/party_charts_cache.json"))
 CREDENTIALS_FILE = Path(os.path.expanduser("~/.claude/.credentials.json"))
 SUNO_API_BASE = "https://studio-api-prod.suno.com"
-SUNO_ROUTENOTE_DIR = Path("/mnt/d/OneDrive/Dokumente/Bolla/Suno_RouteNote")
+SUNO_DISTROKID_DIR = Path("/mnt/d/OneDrive/Dokumente/Bolla/Suno_DistroKid")
 
 _charts_cache = {"data": None, "ts": 0}
 CHARTS_TTL = 1800  # 30 Minuten
@@ -7083,15 +7083,15 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 audio_url = found.get("audio_url") or found.get("mp3_url") or ""
                 if not audio_url:
                     self._send_json({"error": "Kein audio_url im Song-Objekt"}); return
-                # 3. MP3 herunterladen + auf 320kbps konvertieren (RouteNote-Anforderung)
-                SUNO_ROUTENOTE_DIR.mkdir(parents=True, exist_ok=True)
+                # 3. MP3 herunterladen + auf 320kbps konvertieren (DistroKid-Anforderung)
+                SUNO_DISTROKID_DIR.mkdir(parents=True, exist_ok=True)
                 safe_title = "".join(c for c in title if c.isalnum() or c in " _-").strip()
-                mp3_path = SUNO_ROUTENOTE_DIR / f"{safe_title}.mp3"
+                mp3_path = SUNO_DISTROKID_DIR / f"{safe_title}.mp3"
                 try:
                     mp3_req = urllib.request.Request(audio_url, headers={"User-Agent": "BollaMC/1.0"})
                     with urllib.request.urlopen(mp3_req, timeout=60) as resp:
                         mp3_data = resp.read()
-                    tmp_path = SUNO_ROUTENOTE_DIR / f"{safe_title}_tmp.mp3"
+                    tmp_path = SUNO_DISTROKID_DIR / f"{safe_title}_tmp.mp3"
                     tmp_path.write_bytes(mp3_data)
                     # ffmpeg: auf 320kbps konvertieren (Suno liefert nur 64kbps)
                     import subprocess as _sp_ff
@@ -7174,7 +7174,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     img = _PILImage.open(_io_cv.BytesIO(img_bytes)).convert("RGB")
                     if img.size != (3000, 3000):
                         img = img.resize((3000, 3000), _PILImage.LANCZOS)
-                    cover_path = SUNO_ROUTENOTE_DIR / f"{safe_title}_cover.jpg"
+                    cover_path = SUNO_DISTROKID_DIR / f"{safe_title}_cover.jpg"
                     img.save(str(cover_path), "JPEG", quality=95)
                 except Exception as e:
                     self._send_json({"error": f"Cover-Generierung Fehler: {e}"}); return
