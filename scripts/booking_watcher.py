@@ -148,8 +148,11 @@ def parse_booking(subject, text):
 
     # Hotelname: aus Subject ("…bestätigt: Hotel X" / "Hotel X: Buchung …")
     m = re.search(r"best[äa]tigt:\s*(.+)$", subject, re.I)
+    mu = re.search(r"in der Unterkunft\s+(.+)$", subject, re.I)  # "aktualisierte/neue Buchung in der Unterkunft X"
     if m:
         res["hotel"] = m.group(1).strip()
+    elif mu:
+        res["hotel"] = mu.group(1).strip()
     else:
         res["hotel"] = re.split(r":\s*Buchung|\s*:\s*Buchung| via Booking", subject)[0].strip()
     res["hotel"] = re.sub(r"^[^\w]+", "", res["hotel"]).strip()
@@ -159,9 +162,10 @@ def parse_booking(subject, text):
     if m:
         res["buchungsnr"] = m.group(1)
 
-    # Check-in / Check-out  ("Anreise Mi 25 Mrz 2026", "Abreise Do 26 Mrz 2026")
-    ci = re.search(r"Anreise\D{0,6}(\d{1,2})\.?\s+([A-Za-zäöüÄÖÜ]+)\.?\s+(\d{4})", text)
-    co = re.search(r"Abreise\D{0,6}(\d{1,2})\.?\s+([A-Za-zäöüÄÖÜ]+)\.?\s+(\d{4})", text)
+    # Check-in / Check-out  ("Anreise Mi 25 Mrz 2026" / "Anreise Samstag, 25. Juli 2026")
+    # \D{0,20} überspringt den ausgeschriebenen Wochentag samt Komma vor dem Tag.
+    ci = re.search(r"Anreise\D{0,20}?(\d{1,2})\.?\s+([A-Za-zäöüÄÖÜ]+)\.?\s+(\d{4})", text)
+    co = re.search(r"Abreise\D{0,20}?(\d{1,2})\.?\s+([A-Za-zäöüÄÖÜ]+)\.?\s+(\d{4})", text)
     # Fallback: "Check-in TT.MM.JJJJ"
     if not ci:
         ci2 = re.search(r"Check-?in\D{0,6}(\d{1,2})\.(\d{1,2})\.(\d{4})", text)
@@ -207,8 +211,12 @@ def parse_booking(subject, text):
         if m:
             res["stornofrist"] = (d_ci - timedelta(days=int(m.group(1)))).isoformat()
 
-    # Ort: aus Adresse "PLZ , Stadt , Bundesland , Deutschland"
+    # Ort: aus Adresse — zwei Layouts:
+    #  (a) "PLZ , Stadt , Bundesland , Deutschland"  (Bestätigungs-Mail)
+    #  (b) "Straße , Stadt , PLZ , Deutschland"       (aktualisierte Buchung)
     m = re.search(r"\b\d{4,5}\b\s*,\s*([A-Za-zäöüÄÖÜß.\- ]{2,40}?)\s*,\s*[A-Za-zäöüÄÖÜß.\- ]{3,40}\s*,\s*(?:Deutschland|Österreich|Schweiz)", text)
+    if not m:
+        m = re.search(r",\s*([A-Za-zäöüÄÖÜß.\- ]{2,40}?)\s*,\s*\d{4,5}\s*,\s*(?:Deutschland|Österreich|Schweiz)", text)
     if m:
         res["ort"] = m.group(1).strip()
     return res
