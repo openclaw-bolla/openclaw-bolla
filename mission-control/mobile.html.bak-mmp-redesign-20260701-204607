@@ -379,15 +379,9 @@ body {
   <div id="bd-list"><div class="loading">Lade Geburtstage</div></div>
 </div>
 
-<!-- LADEN (Ladeplaner entlang Route) -->
+<!-- LADEN (EV Charging) -->
 <div class="page" id="p-laden">
-  <div class="card" style="flex-direction:column;gap:10px">
-    <div style="font-size:13px;color:var(--text2);line-height:1.45">Ziel eingeben → alle Ladesäulen <b>entlang der Fahrroute</b>. EnBW &amp; Partner zuerst, Aral Pulse in eigener Liste.</div>
-    <input id="laden-ziel" class="clip-textarea" style="min-height:0;padding:12px 13px" placeholder="Ziel — z. B. Herrsching, München, Ostsee…" enterkeyhint="search" autocomplete="off">
-    <input id="laden-start" class="clip-textarea" style="min-height:0;padding:12px 13px" placeholder="Start (leer lassen = aktueller Standort)" autocomplete="off">
-    <button class="primary-btn" style="margin:0" onclick="ladenRouteSearch()">🔌 Ladesäulen entlang Route</button>
-  </div>
-  <div id="laden-content"></div>
+  <div id="laden-content"><div class="loading">Standort wird ermittelt</div></div>
 </div>
 
 <!-- NOTIZ (Sprachnotiz) -->
@@ -421,12 +415,11 @@ body {
     <div style="font-size:22px;font-weight:700;margin-bottom:4px">Notfall</div>
     <div id="sos-address" style="font-size:14px;opacity:0.85;line-height:1.4">Standort wird ermittelt…</div>
     <div style="display:flex;gap:10px;margin-top:16px">
-      <a href="tel:112" style="flex:1;padding:14px;background:rgba(255,255,255,0.22);border-radius:12px;color:#fff;text-decoration:none;font-size:20px;font-weight:800;text-align:center">📞 112 anrufen</a>
+      <a href="tel:112" style="flex:1;padding:14px;background:rgba(255,255,255,0.2);border-radius:12px;color:#fff;text-decoration:none;font-size:18px;font-weight:700;text-align:center">📞 112</a>
+      <button onclick="sosSend()" style="flex:1;padding:14px;background:rgba(255,255,255,0.2);border-radius:12px;border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">📡 Standort<br>senden</button>
     </div>
   </div>
-  <div class="section-head">📍 Standort per WhatsApp senden</div>
-  <div id="sos-share"><div class="loading" style="padding:16px">Standort wird ermittelt…</div></div>
-  <div id="sos-send-status" style="text-align:center;font-size:14px;min-height:20px;margin:4px 0 8px"></div>
+  <div id="sos-send-status" style="text-align:center;font-size:14px;min-height:20px;margin-bottom:8px"></div>
   <div class="section-head">Meine Kontakte</div>
   <div id="sos-contacts"><div class="loading" style="padding:20px"></div></div>
   <div class="section-head">Medizinische Infos</div>
@@ -472,6 +465,17 @@ body {
   </div>
 </div>
 
+<!-- GLÜCKSRAD LÖSUNG -->
+<div class="page" id="p-gluecksrad">
+  <div id="gw-loesung-wrap" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;padding:24px 16px">
+    <div id="gw-loesung-nummer" style="font-size:72px;font-weight:900;color:var(--accent);line-height:1">—</div>
+    <div id="gw-loesung-stil" style="font-size:28px;font-weight:700;color:var(--text);text-align:center">Noch kein Stil gewählt</div>
+    <div id="gw-loesung-beschreibung" style="display:none;max-width:340px;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);border-radius:12px;padding:12px 16px;font-size:15px;color:var(--text);text-align:center;line-height:1.5"></div>
+    <div id="gw-loesung-hint" style="font-size:14px;color:var(--text3);text-align:center">Rad auf dem Beamer drehen — Lösung erscheint hier automatisch</div>
+    <div id="gw-loesung-status" style="font-size:12px;color:var(--text3)"></div>
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <nav class="tabbar" id="tabbar">
   <button class="tabbtn" data-tab="sos" style="color:#ff3b30"><span class="ic">🆘</span>SOS</button>
@@ -482,7 +486,8 @@ body {
   <button class="tabbtn" data-tab="wx"><span class="ic">🌤️</span>Wetter</button>
   <button class="tabbtn" data-tab="bd"><span class="ic">🎂</span>Geburtstag</button>
   <button class="tabbtn" data-tab="rezept"><span class="ic">🍽️</span>Rezept</button>
-  <button class="tabbtn" data-tab="laden"><span class="ic">🔌</span>Laden</button>
+  <button class="tabbtn" data-tab="laden"><span class="ic">🔋</span>Laden</button>
+  <button class="tabbtn" data-tab="gluecksrad"><span class="ic">🎡</span>Lösung</button>
 </nav>
 
 <!-- Floating Mic Button — auf jeder Seite außer Notiz selbst -->
@@ -516,17 +521,19 @@ const TITLES = {
   mail:        ['Mails',          'Ungelesen'],
   wx:          ['Wetter',         'Norderstedt'],
   rezept:      ['Rezept',         'Rezept des Tages'],
-  laden:       ['Ladeplaner',     'Säulen entlang deiner Route'],
+  laden:       ['Ladestopp',      'Nächste EnBW-Säulen'],
   notiz:       ['Sprachnotiz',    'Aufnehmen · Senden · Speichern'],
   bd:          ['Geburtstage',    'Nächste Anlässe'],
   clip:        ['Clipboard',      'Geräteübergreifend teilen'],
-  sos:         ['🆘 Notfall',     'Notruf & Standort']
+  sos:         ['🆘 Notfall',     'Notruf & Standort'],
+  gluecksrad:  ['🎡 Lösung',      'Aktueller Musikstil — live']
 };
 
 let activeTab = 'cal';
 const loaded = {};
 
 let _clipAutoTimer = null;
+let _gwLoesungTimer = null;
 function switchTab(tab) {
   if (tab === activeTab) { refreshTab(); return; }
   const btn = document.querySelector('.tabbtn[data-tab="' + tab + '"]');
@@ -547,6 +554,9 @@ function switchTab(tab) {
   // Auto-Refresh des gclip wenn der Clip-Tab aktiv ist (alle 8 Sek)
   if (_clipAutoTimer) { clearInterval(_clipAutoTimer); _clipAutoTimer = null; }
   if (tab === 'clip') _clipAutoTimer = setInterval(loadClipboard, 8000);
+  // Auto-Refresh Glücksrad-Lösung alle 2 Sek
+  if (_gwLoesungTimer) { clearInterval(_gwLoesungTimer); _gwLoesungTimer = null; }
+  if (tab === 'gluecksrad') _gwLoesungTimer = setInterval(loadGluecksradLoesung, 2000);
 }
 
 // Beim Zurück auf den Tab (App in den Vordergrund) → einmal sofort neu laden
@@ -570,9 +580,9 @@ function refreshTab() {
   // Reset content area
   const containers = {
     cal: 'cal-list', mail: 'mail-list', wx: 'wx-content',
-    rezept: 'rezept-content', laden: null,
+    rezept: 'rezept-content', laden: 'laden-content',
     notiz: null, bd: 'bd-list',
-    clip: null, sos: null
+    clip: null, sos: null, gluecksrad: null
   };
   const cid = containers[activeTab];
   if (cid) document.getElementById(cid).innerHTML = '<div class="loading">Lade</div>';
@@ -594,6 +604,7 @@ async function loadTab(tab) {
     else if (tab === 'bd')     await loadBirthdays();
     else if (tab === 'clip')        await loadClipboard();
     else if (tab === 'sos')         await loadSOS();
+    else if (tab === 'gluecksrad')  await loadGluecksradLoesung();
   } catch (e) {
     console.error(tab, e);
   }
@@ -1242,94 +1253,112 @@ function clipboardImageFullscreen(url) {
   document.body.appendChild(overlay);
 }
 
-// ===== LADEPLANER (Säulen ENTLANG der Route) =====
+// ===== LADESTOPP-FINDER =====
+const LADE_TIER = [
+  { names: ['enbw','mobility+','e-wald'], tier: 1, label: '✅ ~46 ct/kWh', color: '#34c759' },
+  { names: ['aral','pulse','total energ'], tier: 2, label: '🟡 ~55 ct/kWh', color: '#ff9500' },
+];
+function ladeTier(op) {
+  const o = (op||'').toLowerCase();
+  for (const t of LADE_TIER) if (t.names.some(n => o.includes(n))) return t;
+  return { tier: 3, label: '⚠️ variabel', color: '#8e8e93' };
+}
+function ladeDist(aLat, aLon, bLat, bLon) {
+  const dlat = (aLat-bLat)*Math.PI/180, dlon = (aLon-bLon)*Math.PI/180;
+  const a = Math.sin(dlat/2)**2 + Math.cos(aLat*Math.PI/180)*Math.cos(bLat*Math.PI/180)*Math.sin(dlon/2)**2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
 async function loadLaden() {
-  // Passiv: Suche startet Chris per Button. Enter im Feld triggert ebenfalls.
-  const z = document.getElementById('laden-ziel');
-  if (z && !z._wired) {
-    z._wired = true;
-    const go = e => { if (e.key === 'Enter') { e.preventDefault(); ladenRouteSearch(); } };
-    z.addEventListener('keydown', go);
-    document.getElementById('laden-start').addEventListener('keydown', go);
-  }
-}
-
-function _ladenCurrentPos(timeoutMs) {
-  return new Promise(resolve => {
-    if (!navigator.geolocation) return resolve(null);
-    navigator.geolocation.getCurrentPosition(
-      p => resolve({ lat: p.coords.latitude, lon: p.coords.longitude }),
-      () => resolve(null),
-      { enableHighAccuracy: false, timeout: timeoutMs || 8000 }
-    );
-  });
-}
-
-async function ladenRouteSearch() {
-  const ziel     = document.getElementById('laden-ziel').value.trim();
-  const startTxt = document.getElementById('laden-start').value.trim();
   const el = document.getElementById('laden-content');
-  if (!ziel) { el.innerHTML = '<div class="empty">Bitte ein Ziel eingeben</div>'; return; }
-
-  let url = '/api/laden/route?ziel=' + encodeURIComponent(ziel);
-  if (startTxt) {
-    url += '&start=' + encodeURIComponent(startTxt);
-  } else {
-    el.innerHTML = '<div class="loading">Standort wird ermittelt</div>';
-    const pos = await _ladenCurrentPos(8000);
-    if (pos) url += '&start_lat=' + pos.lat + '&start_lon=' + pos.lon;
-    // sonst: Server nimmt Norderstedt (Zuhause) als Start
+  if (!navigator.geolocation) {
+    el.innerHTML = '<div class="empty">⚠️ Geolocation nicht verfügbar</div>'; return;
   }
-  el.innerHTML = '<div class="loading">Route &amp; Ladesäulen werden gesucht<br><span style="font-size:12px">bei langen Strecken kann das ~1 Min dauern</span></div>';
+  el.innerHTML = '<div class="loading">GPS wird ermittelt</div>';
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const { latitude: lat, longitude: lon } = pos.coords;
+    el.innerHTML = '<div class="loading">Ladesäulen werden gesucht</div>';
+    try {
+      const query = `[out:json][timeout:25];node["amenity"="charging_station"](around:12000,${lat},${lon});out body;`;
+      const r = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'data=' + encodeURIComponent(query)
+      });
+      if (!r.ok) throw new Error(`Overpass HTTP ${r.status}`);
+      const d = await r.json();
+      const elements = d.elements || [];
+      if (!elements.length) { el.innerHTML = ladenFallback(lat, lon, 'Keine Säulen in 12 km'); return; }
 
-  try {
-    const d = await fetch(url).then(r => r.json());
-    if (d.error) { el.innerHTML = `<div class="empty">⚠️ ${esc(d.error)}</div>`; return; }
-    ladenRenderRoute(d);
-  } catch (e) {
-    el.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`;
-  }
+      elements.forEach(s => {
+        const op = s.tags?.operator || s.tags?.brand || s.tags?.name || '';
+        s._t  = ladeTier(op);
+        s._km = ladeDist(lat, lon, s.lat, s.lon);
+      });
+      elements.sort((a, b) => a._t.tier - b._t.tier || a._km - b._km);
+
+      const byTier = {};
+      elements.forEach(s => { const k = s._t.tier; if (!byTier[k]) byTier[k] = []; byTier[k].push(s); });
+
+      let html = `<div class="section-head" style="margin-top:0">📍 ${elements.length} Säulen in 12 km</div>`;
+      [1, 2, 3].forEach(t => {
+        if (!byTier[t]) return;
+        html += `<div class="section-head">${byTier[t][0]._t.label}</div>`;
+        byTier[t].slice(0, t === 3 ? 6 : 99).forEach(s => {
+          const tags = s.tags || {};
+          const op   = tags.operator || tags.brand || tags.name || 'Unbekannt';
+          const name = tags.name || op;
+          const addr = [tags['addr:street'], tags['addr:housenumber'], tags['addr:city']].filter(Boolean).join(' ');
+          const dist = s._km < 1 ? `${Math.round(s._km*1000)} m` : `${s._km.toFixed(1)} km`;
+          const kw   = tags['maxpower:ev'] || tags['socket:type2_combo:output'] || '';
+          const cap  = tags.capacity ? `${tags.capacity} Pl.` : '';
+          const tc   = s._t.color;
+          html += `<div class="card" style="align-items:center;gap:10px">
+            <div class="left">
+              <div class="card-dot" style="background:${tc}22;color:${tc};font-size:22px">⚡</div>
+            </div>
+            <div class="right">
+              <div class="title">${esc(name)}</div>
+              <div class="meta">${esc(op)} · ${dist}${kw ? ' · '+kw+' kW' : ''}${cap ? ' · '+cap : ''}</div>
+              ${addr ? `<div class="extra">${esc(addr)}</div>` : ''}
+            </div>
+            <a href="https://maps.google.com/?q=${s.lat},${s.lon}" target="_blank"
+               style="flex-shrink:0;padding:8px 12px;background:rgba(0,122,255,0.12);border-radius:9px;color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap">Route</a>
+          </div>`;
+        });
+      });
+      el.innerHTML = html;
+    } catch (e) {
+      el.innerHTML = ladenFallback(lat, lon, e.message);
+    }
+  }, err => {
+    el.innerHTML = ladenFallback(null, null, 'GPS: ' + err.message);
+  }, { enableHighAccuracy: false, timeout: 10000 });
 }
 
-function ladenStationCard(s, color) {
-  const meta = [s.operator, s.kw ? s.kw + ' kW' : '', s.capacity ? s.capacity + ' Pl.' : ''].filter(Boolean).join(' · ');
-  const sub  = [s.route_km != null ? `bei km ${s.route_km}` : '', s.detour_m != null ? `${s.detour_m} m ab Route` : ''].filter(Boolean).join(' · ');
-  return `<div class="card" style="align-items:center;gap:10px">
-    <div class="left"><div class="card-dot" style="background:${color}22;color:${color};font-size:22px">⚡</div></div>
-    <div class="right">
-      <div class="title">${esc(s.name)}</div>
-      <div class="meta">${esc(meta)}</div>
-      ${sub ? `<div class="extra">📍 ${esc(sub)}${s.addr ? ' · ' + esc(s.addr) : ''}</div>` : (s.addr ? `<div class="extra">${esc(s.addr)}</div>` : '')}
+function ladenFallback(lat, lon, errMsg) {
+  const mapsQ = lat ? `EnBW+Ladesäule+in+der+Nähe` : 'EnBW+Ladesäule';
+  const mapsUrl = lat
+    ? `https://maps.google.com/maps?q=${mapsQ}&near=${lat},${lon}`
+    : `https://maps.google.com/maps?q=${mapsQ}`;
+  return `
+    <div class="card" style="flex-direction:column;gap:6px;border-left:3px solid var(--orange)">
+      <div style="font-weight:600;color:var(--orange)">⚠️ Live-Daten nicht verfügbar</div>
+      <div style="font-size:13px;color:var(--text3)">${esc(errMsg)}</div>
     </div>
-    <a href="${s.maps}" target="_blank" style="flex-shrink:0;padding:8px 12px;background:rgba(0,122,255,0.12);border-radius:9px;color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap">Karte</a>
-  </div>`;
-}
-
-function ladenRenderRoute(d) {
-  const el = document.getElementById('laden-content');
-  const km    = d.dist_km != null ? `${d.dist_km} km` : '';
-  const dauer = d.dauer_min != null ? `${Math.floor(d.dauer_min/60)} h ${d.dauer_min%60} min` : '';
-  let h = `<div class="card" style="flex-direction:column;gap:4px;border-left:3px solid var(--accent)">
-    <div style="font-weight:700;font-size:15px">${esc(d.start)} → ${esc(d.ziel)}</div>
-    <div style="font-size:13px;color:var(--text2)">🛣️ ${km}${dauer ? ' · ⏱️ ' + dauer : ''} · ${d.count} Säulen entlang der Route</div>
-  </div>`;
-
-  if (d.enbw && d.enbw.length) {
-    h += `<div class="section-head" style="color:var(--green)">✅ EnBW &amp; Partner · ~46 ct/kWh</div>`;
-    h += d.enbw.map(s => ladenStationCard(s, '#34c759')).join('');
-  }
-  if (d.aral && d.aral.length) {
-    h += `<div class="section-head" style="color:var(--orange)">🟡 Aral Pulse · ~55 ct/kWh</div>`;
-    h += d.aral.map(s => ladenStationCard(s, '#ff9500')).join('');
-  }
-  if (d.sonstige && d.sonstige.length) {
-    h += `<div class="section-head">⚙️ Sonstige Anbieter (${d.sonstige.length})</div>`;
-    h += d.sonstige.slice(0, 20).map(s => ladenStationCard(s, '#8e8e93')).join('');
-  }
-  if (!(d.enbw||[]).length && !(d.aral||[]).length && !(d.sonstige||[]).length) {
-    h += '<div class="empty"><div class="big">🔌</div>Keine Säulen entlang dieser Route gefunden</div>';
-  }
-  el.innerHTML = h;
+    <div class="section-head">Direkt öffnen</div>
+    <a href="${mapsUrl}" target="_blank" class="card" style="text-decoration:none;align-items:center;gap:14px">
+      <div class="card-dot blue" style="font-size:20px">🗺️</div>
+      <div class="right"><div class="title">Google Maps</div><div class="meta">EnBW Ladesäulen in der Nähe suchen</div></div>
+    </a>
+    <a href="https://www.enbw.com/elektromobilitaet/produkte/mobilitaet-plus/ladekartenapp/" target="_blank" class="card" style="text-decoration:none;align-items:center;gap:14px">
+      <div class="card-dot green" style="font-size:20px">✅</div>
+      <div class="right"><div class="title">EnBW mobility+</div><div class="meta">~46 ct/kWh · App öffnen</div></div>
+    </a>
+    <a href="https://www.aral-pulse.com/finden" target="_blank" class="card" style="text-decoration:none;align-items:center;gap:14px">
+      <div class="card-dot orange" style="font-size:20px">🟡</div>
+      <div class="right"><div class="title">ARAL Pulse</div><div class="meta">~55 ct/kWh · Säulenfinder</div></div>
+    </a>`;
 }
 
 // ===== SPRACHNOTIZ (komplett Web Speech API — kein Whisper/Server mehr) =====
@@ -1466,14 +1495,13 @@ async function loadNotizVerlauf() {
 }
 
 // ===== SOS =====
-let _sosLat = null, _sosLon = null, _sosContacts = [];
+let _sosLat = null, _sosLon = null;
 
 async function loadSOS() {
   // Load contacts & medical info
   try {
     const d = await fetch('/api/sos/contacts').then(r => r.json());
     const contacts = d.contacts || [];
-    _sosContacts = contacts;
     const med = d.medical || {};
     document.getElementById('sos-contacts').innerHTML = contacts.length
       ? contacts.map(c => c.tel
@@ -1507,7 +1535,7 @@ async function loadSOS() {
   } catch (e) { /* ignore */ }
 
   // Get GPS position
-  if (!navigator.geolocation) { sosRenderShare(); return; }
+  if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(async pos => {
     _sosLat = pos.coords.latitude;
     _sosLon = pos.coords.longitude;
@@ -1519,52 +1547,91 @@ async function loadSOS() {
     } catch {
       document.getElementById('sos-address').textContent = `${_sosLat.toFixed(5)}, ${_sosLon.toFixed(5)}`;
     }
-    sosRenderShare();
   }, () => {
     document.getElementById('sos-address').textContent = 'Standort nicht verfügbar';
-    sosRenderShare();
   });
 }
 
-function _sosMapsLink() {
-  return (_sosLat && _sosLon) ? `https://maps.google.com/?q=${_sosLat},${_sosLon}` : '';
-}
-
-// Standort teilen: native WhatsApp-Deeplinks an die Notfallkontakte (Chris' Telegram macht keinen Sinn).
-function sosRenderShare() {
-  const el = document.getElementById('sos-share');
-  if (!el) return;
-  const maps = _sosMapsLink();
-  if (!maps) {
-    el.innerHTML = '<div style="color:var(--text3);font-size:14px;padding:10px 8px;line-height:1.4">Warte auf GPS-Standort…<br><span style="font-size:12px">Standortfreigabe im Browser nötig.</span></div>';
-    return;
-  }
-  const addr = document.getElementById('sos-address').textContent || '';
-  const text = encodeURIComponent(`🆘 Notfall! Ich brauche Hilfe. Mein Standort:\n${addr}\n${maps}`);
-  const waContacts = _sosContacts.filter(c => c.wa);
-  let h = waContacts.map(c =>
-    `<a href="https://wa.me/${c.wa}?text=${text}" target="_blank" class="card" style="text-decoration:none;align-items:center;gap:14px;border-left:3px solid var(--green)">
-      <div class="card-dot green" style="font-size:20px">${c.emoji || '💬'}</div>
-      <div class="right"><div class="title">${esc(c.name)}</div><div class="meta">Standort per WhatsApp senden</div></div>
-      <div style="font-size:22px">💬</div>
-    </a>`).join('');
-  if (!waContacts.length) {
-    h += '<div style="color:var(--text3);font-size:13px;padding:8px">Keine WhatsApp-Kontakte in sos_contacts.json (Feld „wa")</div>';
-  }
-  h += `<button onclick="sosCopyMaps()" class="clip-btn" style="width:100%;margin-top:4px">📋 Standort-Link kopieren</button>`;
-  el.innerHTML = h;
-}
-
-async function sosCopyMaps() {
+async function sosSend() {
   const st = document.getElementById('sos-send-status');
-  const maps = _sosMapsLink();
-  if (!maps) { st.textContent = 'Noch kein Standort'; st.style.color = 'var(--red)'; return; }
+  st.textContent = '📡 Standort wird gesendet…'; st.style.color = 'var(--text3)';
   try {
-    await navigator.clipboard.writeText(maps);
-    st.textContent = '✓ Standort-Link kopiert'; st.style.color = 'var(--green)';
-  } catch {
-    st.textContent = maps; st.style.color = 'var(--text2)';
+    await fetch('/api/sos/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lat: _sosLat, lon: _sosLon,
+        address: document.getElementById('sos-address').textContent
+      })
+    });
+    st.textContent = '✓ Standort per Telegram gesendet'; st.style.color = 'var(--green)';
+  } catch (e) {
+    st.textContent = '⚠️ ' + e.message; st.style.color = 'var(--red)';
   }
+}
+
+// ===== GLÜCKSRAD LÖSUNG =====
+const GW_BESCHREIBUNG = {
+  "Blues":         "Melancholisch, rhythmisch, emotional · Call-and-Response (12-Takt-Schema) · B.B. King",
+  "Rock'n'Roll":   "Schneller 4/4-Takt, harte Beats, Backbeats, eingängige Riffs · Elvis Presley, Little Richard",
+  "Jazz":          "Improvisation, synkopierte Rhythmen, Saxofon",
+  "Pop":           "Eingängige Melodien, einfache wiederholte Refrains",
+  "Hip-Hop":       "Rhythmisch, basslastig, urban · entstanden in New York · 50 Cent",
+  "Klassik":       "Großes Orchester, keine elektronischen Instrumente",
+  "Reggae":        "One-Drop-Rhythmus · Bob Marley",
+  "Metal":         "Laut, kraftvoll, episch · Gesang oft Screaming · Metallica",
+  "Country":       "„Three chords and the truth“ · Banjo, Mandoline, Fiddle · Johnny Cash",
+  "Techno":        "Mechanischer Rhythmus, synthetisch, hypnotisch · Scooter",
+  "Soul":          "Emotionaler Gesang, kraftvoll und ausdrucksstark · Stevie Wonder",
+  "Punk":          "Schnell, einfache Akkorde, verzerrte Gitarren, rauer Stil, kritisch · Sex Pistols",
+  "Swing":         "Gleichmäßiger Rhythmus, Big Band, tanzbar, Swing-Feeling · Glenn Miller",
+  "R&B":           "Emotional · vereint Soul, Jazz und Blues · Michael Jackson, R. Kelly",
+  "Disco":         "Verwandt mit Funk & Soul · tanzbarer Groove, gleichmäßiger Rhythmus · Bee Gees",
+  "Gospel":        "Christlich, Afro-Amerikanisch, mehrstimmige kraftvolle Chöre",
+  "Rap":           "Gesungenes Sprechen mit Reimen und Flow · Flow = Wörter passen perfekt zum Beat",
+  "Boogie-Woogie": "Rhythmisch, energetisch, schwingend · Klavierstil",
+  "K-Pop":         "Genre-Mix, Idol-Kultur · aufwendige Musikvideos, Choreografie · BTS",
+  "Latin":         "Afrikanische Rhythmen, spanische Melodien · Congas, Bongos, Maracas · Shakira",
+  "Indie":         "Independent, experimentell, authentisch, oft Gitarren · Coldplay",
+  "Bluegrass":     "Subgenre Country – nur Saiteninstrumente, viel schneller · The Osborne Brothers",
+  "Hard-Rock":     "Kraftvoll, verzerrt, energetisch · Deep Purple",
+  "Choral":        "Einfache Melodien, fehlender Rhythmus, Kirchenmusik"
+};
+
+let _gwLoesungLast = null;
+async function loadGluecksradLoesung() {
+  try {
+    const d = await fetch('/api/gluecksrad/state').then(r => r.json());
+    const key = d.stil + '|' + d.nummer;
+    if (key === _gwLoesungLast) return; // keine Änderung
+    _gwLoesungLast = key;
+
+    const numEl  = document.getElementById('gw-loesung-nummer');
+    const stilEl = document.getElementById('gw-loesung-stil');
+    const descEl = document.getElementById('gw-loesung-beschreibung');
+    const hintEl = document.getElementById('gw-loesung-hint');
+    const statEl = document.getElementById('gw-loesung-status');
+
+    if (!d.stil) {
+      numEl.textContent  = '—';
+      stilEl.textContent = 'Noch kein Stil gewählt';
+      if (descEl) { descEl.style.display = 'none'; descEl.textContent = ''; }
+      hintEl.textContent = 'Rad auf dem Beamer drehen — Lösung erscheint hier automatisch';
+      statEl.textContent = '';
+    } else {
+      numEl.textContent  = `Nr. ${d.nummer}`;
+      stilEl.textContent = d.stil;
+      if (descEl) {
+        const beschr = GW_BESCHREIBUNG[d.stil] || '';
+        descEl.textContent = beschr;
+        descEl.style.display = beschr ? 'block' : 'none';
+      }
+      hintEl.textContent = '';
+      statEl.textContent = '🔄 Aktualisiert automatisch';
+      stilEl.style.color = 'var(--accent)';
+      setTimeout(() => { stilEl.style.color = 'var(--text)'; }, 600);
+    }
+  } catch (e) { /* ignore wenn Rad gerade nicht läuft */ }
 }
 
 // ===== INIT =====
