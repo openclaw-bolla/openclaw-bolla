@@ -105,14 +105,41 @@ ALIASES = {
 
 
 def load_etappen():
-    """Etappen (id, name) direkt aus SR_ROUTE in index.html — keine Doppelpflege."""
+    """Etappen (id, name, lat, lon) direkt aus SR_ROUTE in index.html — keine Doppelpflege."""
     txt = INDEX.read_text(encoding="utf-8")
     blk = re.search(r"const SR_ROUTE\s*=\s*\[(.*?)\n\];", txt, re.S)
     src = blk.group(1) if blk else txt
     out = []
-    for m in re.finditer(r"id:'([^']+)',\s*name:'([^']+)'", src):
-        out.append({"id": m.group(1), "name": m.group(2)})
+    # id + name, dann im selben Objekt lat/lon (stehen direkt darunter)
+    for m in re.finditer(r"id:'([^']+)',\s*name:'([^']+)'.*?lat:\s*([\d.]+)\s*,\s*lon:\s*([\d.]+)", src, re.S):
+        out.append({"id": m.group(1), "name": m.group(2),
+                    "lat": float(m.group(3)), "lon": float(m.group(4))})
     return out
+
+
+def _haversine(lat1, lon1, lat2, lon2):
+    """Luftlinie in km zwischen zwei Koordinaten."""
+    from math import radians, sin, cos, asin, sqrt
+    dlat = radians(lat2 - lat1); dlon = radians(lon2 - lon1)
+    a = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+    return 2 * 6371 * asin(sqrt(a))
+
+
+def geocode(ort):
+    """Ort → (lat, lon) via Nominatim (kostenlos). None bei Fehlschlag."""
+    if not ort:
+        return None
+    try:
+        qs = urllib.parse.urlencode({"q": ort + ", Deutschland", "format": "json", "limit": "1"})
+        req = urllib.request.Request(
+            "https://nominatim.openstreetmap.org/search?" + qs,
+            headers={"User-Agent": "bolla-booking-watcher/1.0 (chrismandel13@gmail.com)"})
+        j = json.loads(urllib.request.urlopen(req, timeout=15).read())
+        if j:
+            return float(j[0]["lat"]), float(j[0]["lon"])
+    except Exception as e:
+        print("geocode err", e)
+    return None
 
 
 # ───────────────────────── Parsing ─────────────────────────
@@ -189,7 +216,15 @@ def parse_booking(subject, text):
         return None
 
     res = {"hotel": "", "ort": "", "checkin": "", "checkout": "",
-           "stornofrist": "", "buchungsnr": "", "link": ""}
+           "stornofrist": "", "buchungsnr": "", "link": "", "fruehstueck": None,
+           "hotel_adresse": ""}
+
+    # Frühstück inklusive?  (True/False/None=unklar)
+    if re.search(r"Fr[üu]hst[üu]ck\s+ist\s+im\s+(?:End)?preis\s+(?:inbegriffen|enthalten)", text, re.I) \
+       or re.search(r"inkl(?:usive)?\.?\s+Fr[üu]hst[üu]ck", text, re.I):
+        res["fruehstueck"] = True
+    elif re.search(r"ohne\s+Fr[üu]hst[üu]ck|kein\s+Fr[üu]hst[üu]ck", text, re.I):
+        res["fruehstueck"] = False
 
     # Hotelname: aus Subject ("…bestätigt: Hotel X" / "Hotel X: Buchung …")
     m = re.search(r"best[äa]tigt:\s*(.+)$", subject, re.I)
@@ -244,6 +279,20 @@ def parse_booking(subject, text):
             res["stornofrist"] = datetime(int(m.group(3)), int(m.group(2)), int(m.group(1))).date().isoformat()
         except ValueError:
             pass
+    # (a2) ausgeschriebenes Datum, an "€ 0" gekoppelt:
+    #      "Stornierungsgebühren bis 25. Juli 2026 18:00: € 0"
+    if not res["stornofrist"]:
+        m = re.search(r"bis\s+(\d{1,2})\.\s*([A-Za-zäöüÄÖÜ]+)\s+(\d{4})[^€]{0,20}€\s*0\b", text, re.I)
+        if not m:  # oder "kostenlos … bis 25. Juli 2026"
+            m = re.search(r"kostenlos\D{0,40}?bis\s+(\d{1,2})\.\s*([A-Za-zäöüÄÖÜ]+)\s+(\d{4})", text, re.I)
+        if m:
+            d = _date(m.group(1), m.group(2), m.group(3))
+            if d:
+                res["stornofrist"] = d.isoformat()
+    # (a3) "bis 18:00 Uhr am Tag der Anreise … kostenlos" → Stornofrist = Anreisetag
+    if not res["stornofrist"] and d_ci and \
+       re.search(r"am\s+Tag\s+der\s+Anreise[^.]{0,40}kostenlos|kostenlos[^.]{0,40}am\s+Tag\s+der\s+Anreise", text, re.I):
+        res["stornofrist"] = d_ci.isoformat()
     # (b) "X Tage vor Anreise/Check-in"  → checkin − X
     if not res["stornofrist"] and d_ci:
         m = re.search(r"(\d+)\s*Tag\D{0,30}?(?:vor)\D{0,30}?(?:Anreise|Check-?in)", text, re.I)
@@ -264,28 +313,92 @@ def parse_booking(subject, text):
         m = re.search(r",\s*([A-Za-zäöüÄÖÜß.\- ]{2,40}?)\s*,\s*\d{4,5}\s*,\s*(?:Deutschland|Österreich|Schweiz)", text)
     if m:
         res["ort"] = m.group(1).strip()
+
+    # volle Hotel-Adresse (Straße Nr, PLZ Ort) für präzises Geocoding im Reiseplaner
+    am = re.search(r"([A-Za-zäöüÄÖÜß.\-]+(?:\s+[A-Za-zäöüÄÖÜß.\-]+){0,3}\s+\d+\s*[a-z]?)\s*,\s*"
+                   r"([A-Za-zäöüÄÖÜß.\- ]{2,40}?)\s*,\s*(\d{4,5})\s*,\s*(?:Deutschland|Österreich|Schweiz)", text)
+    if am:
+        res["hotel_adresse"] = f"{am.group(1).strip()}, {am.group(3)} {am.group(2).strip()}"
     return res
 
 
+RADIUS_KM = 50  # Buchungen im Umkreis werden der nächstgelegenen Etappe zugeordnet
+
+
 def match_etappe(booking, etappen):
-    """Findet die Etappe per Ortsabgleich (Stadt → Etappenname). None bei Mehrdeutig/keine."""
-    cand = []
+    """Findet die passende Etappe. Reihenfolge:
+    1) Namens-/Alias-Abgleich (Stadt ⊂ Etappenname o. umgekehrt) — Vorrang, kein Netz.
+    2) Fallback: Geo-Umkreis ≤ RADIUS_KM km (Buchungsort geocoden → nächstgelegene Etappe).
+    Liefert (etappe, info) — info beschreibt den Treffer (z.B. '8 km Luftlinie') oder None."""
     ort = (booking.get("ort") or "").lower()
     hotel = (booking.get("hotel") or "").lower()
+
+    # 1) Name/Alias
+    cand = []
     for e in etappen:
         terms = [e["name"].lower()] + ALIASES.get(e["id"], [])
-        hit = False
         for t in terms:
-            # Etappenname/Alias kommt in der Stadt vor (Titisee ⊂ "Titisee-Neustadt")
-            # oder die Stadt ist (Teil von) Name/Alias
             if ort and (t in ort or ort in t):
-                hit = True; break
+                cand.append(e); break
             if hotel and t in hotel:  # Notnagel: Ort steckt im Hotelnamen
-                hit = True; break
-        if hit:
-            cand.append(e)
+                cand.append(e); break
     uniq = {e["id"]: e for e in cand}
-    return list(uniq.values())[0] if len(uniq) == 1 else None
+    if len(uniq) == 1:
+        return list(uniq.values())[0], None
+
+    # 2) Geo-Umkreis (nur wenn Name nicht eindeutig war)
+    if not booking.get("ort"):
+        return None, None
+    geo = geocode(booking["ort"])
+    if not geo:
+        return None, None
+    lat, lon = geo
+    best, best_km = None, None
+    for e in etappen:
+        if e.get("lat") is None:
+            continue
+        km = _haversine(lat, lon, e["lat"], e["lon"])
+        if best_km is None or km < best_km:
+            best, best_km = e, km
+    if best and best_km is not None and best_km <= RADIUS_KM:
+        return best, f"{best_km:.0f} km Luftlinie zu {best['name']}"
+    return None, None
+
+
+def handle_storno(hotel, etappen, st):
+    """Storno-Mail: Hotel im Reiseplaner suchen und (falls noch eingetragen) entfernen.
+    Allgemeine Notiz (Therme-Tipps o. ä.) bleibt erhalten, nur die Buchungsfelder gehen raus."""
+    rd = WS / "data" / "reise_notizen.json"
+    store = {}
+    if rd.exists():
+        try:
+            store = json.loads(rd.read_text())
+        except Exception:
+            store = {}
+    hl = (hotel or "").strip().lower()
+    hit = None
+    for e in etappen:
+        name = (store.get(e["id"], {}) or {}).get("unterkunft_name", "").strip().lower()
+        if name and hl and (name == hl or name in hl or hl in name):
+            hit = e; break
+
+    st.setdefault("bookings", []).append({"storno": hotel, "etappe": hit["id"] if hit else None})
+
+    if not hit:
+        tg(f"🗑️ *Storno erkannt — nichts zu ändern*\n\n"
+           f"*{hotel}* war im Reiseplaner nicht (mehr) eingetragen "
+           f"(evtl. schon durch eine neue Buchung ersetzt).\n\n_Nur zur Info._ 🐾")
+        return
+
+    # allgemeine Notiz ohne Frühstück-Zeile behalten, Buchungsfelder leeren
+    alt = (store.get(hit["id"], {}) or {}).get("notiz", "")
+    clean = "\n".join(l for l in alt.splitlines() if "rühstück" not in l).strip()
+    mc_post("/api/reise-notizen", {
+        "id": hit["id"], "unterkunft_name": "", "checkin": "", "checkout": "",
+        "stornofrist": "", "unterkunft_link": "", "buchungsnr": "", "notiz": clean})
+    tg(f"🗑️ *Buchung storniert → aus Reiseplaner entfernt*\n\n"
+       f"🏨 *{hotel}*\n📍 Etappe: {hit['name']}\n\n"
+       f"_Die Unterkunft ist jetzt wieder frei — neue Buchung wird automatisch eingetragen._ 🐾")
 
 
 # ───────────────────────── Hauptlauf ─────────────────────────
@@ -315,8 +428,23 @@ def main():
         subj = m.get("subject") or ""
         if "booking.com" not in frm:
             continue
+        # reine Nachrichten-/Chat-Mails der Unterkunft sind keine Buchungen
+        if re.search(r"Sie haben eine Nachricht|Nachricht von der Unterkunft", subj, re.I):
+            seen_mids.add(mid)
+            continue
         raw_html = m.get("body", {}).get("content", "")
         text = html_to_text(raw_html)
+
+        # ── Stornierung? ("Buchung storniert für die Unterkunft X") ──
+        sm = re.search(r"storniert\s+f[üu]r\s+die\s+Unterkunft\s+(.+?)\s*$", subj, re.I) \
+             or re.search(r"Stornierung\s+(?:Ihrer\s+Buchung\s+)?(?:in\s+der\s+Unterkunft\s+)?(.+?)\s*$", subj, re.I)
+        if sm and ("storniert" in subj.lower() or "stornierung" in subj.lower()):
+            seen_mids.add(mid)
+            hotel = re.sub(r"^[^\w]+", "", sm.group(1).strip())
+            neu += 1
+            handle_storno(hotel, etappen, st)
+            continue
+
         b = parse_booking(subj, text)
         seen_mids.add(mid)
         if not b:
@@ -326,14 +454,15 @@ def main():
             continue  # dieser Aufenthalt schon verarbeitet (mehrere Mails pro Buchung)
         done_keys.add(bkey(b))
 
-        e = match_etappe(b, etappen)
+        e, match_info = match_etappe(b, etappen)
         neu += 1
         if TEST:
             print(f"── {subj[:60]}")
             print(f"   Hotel:   {b['hotel']}\n   Ort:     {b['ort']}")
             print(f"   Check-in:{b['checkin']}  Check-out:{b['checkout']}  Storno:{b['stornofrist']}")
             print(f"   Buchung: {b['buchungsnr']}  Link: {b['link'] or '—'}")
-            print(f"   →  Etappe: {e['name'] if e else '— NICHT zugeordnet —'}\n")
+            print(f"   →  Etappe: {e['name'] if e else '— NICHT zugeordnet —'}"
+                  f"{'  (' + match_info + ')' if match_info else ''}\n")
 
         if not e:
             tg(f"🏨 *Neue Booking-Buchung — konnte ich nicht zuordnen*\n\n"
@@ -360,21 +489,38 @@ def main():
             st.setdefault("bookings", []).append({**b, "etappe": e["id"], "konflikt": True})
             continue
 
-        # Eintragen + Storno-Kalender
-        mc_post("/api/reise-notizen", {
+        # Frühstück-Zeile in die Notiz übernehmen (bestehende Notiz erhalten)
+        payload = {
             "id": e["id"], "unterkunft_name": b["hotel"],
             "checkin": b["checkin"], "checkout": b["checkout"],
             "stornofrist": b["stornofrist"],
-            "unterkunft_link": b["link"], "buchungsnr": b["buchungsnr"]})
-        cal = ""
-        if b["stornofrist"]:
-            r = mc_post("/api/reise-calendar-storno", {
-                "station": e["name"], "unterkunft_name": b["hotel"], "stornofrist": b["stornofrist"]})
-            cal = "📅 Storno im Kalender (Erinnerung 2 Tg. vorher)\n" if r.get("ok") else ""
+            "unterkunft_link": b["link"], "buchungsnr": b["buchungsnr"]}
+        fr_line = "🍳 Frühstück inklusive" if b.get("fruehstueck") is True else \
+                  ("⚠️ Ohne Frühstück" if b.get("fruehstueck") is False else "")
+        if fr_line:
+            alt = ""
+            if rd.exists():
+                try:
+                    alt = (json.loads(rd.read_text()).get(e["id"], {}) or {}).get("notiz", "")
+                except Exception:
+                    alt = ""
+            if "rühstück" not in alt:
+                payload["notiz"] = (alt + "\n" + fr_line).strip()
+
+        # Eintragen — reise_save rechnet Fahrstrecke Hotel→Ziel + legt Aufenthalt/Storno im Kalender an
+        payload["hotel_adresse"] = b.get("hotel_adresse", "")
+        _r = mc_post("/api/reise-notizen", payload)
+        _entry = _r.get("entry", {}) if isinstance(_r, dict) else {}
+        dist = ""
+        if _entry.get("ziel_dist_km") is not None:
+            dist = f"🚗 {_entry['ziel_dist_km']} km · {_entry.get('ziel_dauer_min','?')} Min bis {_entry.get('ziel_name', e['name'])}\n"
+        cal = "📅 Aufenthalt + Storno im Kalender\n" if b["stornofrist"] else "📅 Aufenthalt im Kalender\n"
         st.setdefault("bookings", []).append({**b, "etappe": e["id"]})
+        fr_tg = {True: "🍳 Frühstück inklusive\n", False: "⚠️ *Ohne Frühstück!*\n"}.get(b.get("fruehstueck"), "")
+        via = f"📍 zugeordnet über {match_info}\n" if match_info else ""
         tg(f"✅ *Buchung zugeordnet → Etappe {e['name']}*\n\n"
-           f"🏨 *{b['hotel']}*\n📅 {b['checkin']} → {b['checkout']}\n"
-           f"⏰ Storno frei bis: *{b['stornofrist'] or '—'}*\n{cal}\n"
+           f"🏨 *{b['hotel']}*\n{via}📅 {b['checkin']} → {b['checkout']}\n"
+           f"{fr_tg}{dist}⏰ Storno frei bis: *{b['stornofrist'] or '—'}*\n{cal}\n"
            f"_Eingetragen im Reiseplaner._ 🐾")
 
     st["seen_mids"] = list(seen_mids)[-400:]

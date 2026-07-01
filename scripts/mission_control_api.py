@@ -1517,6 +1517,98 @@ def reise_get():
     return {}
 
 
+_REISE_UA = {"User-Agent": "bolla-reiseplaner/1.0 (chrismandel13@gmail.com)"}
+_REISE_GEO_CACHE = os.path.join(WORKSPACE, "config/reise_geocache.json")
+
+
+def _reise_etappen():
+    """Etappen (id → name, lat, lon) aus SR_ROUTE in index.html — eine Quelle, kein Drift."""
+    import re
+    idx = os.path.join(WORKSPACE, "mission-control/index.html")
+    txt = open(idx, encoding="utf-8").read()
+    blk = re.search(r"const SR_ROUTE\s*=\s*\[(.*?)\n\];", txt, re.S)
+    src = blk.group(1) if blk else txt
+    out = {}
+    for m in re.finditer(r"id:'([^']+)',\s*name:'([^']+)'.*?lat:\s*([\d.]+)\s*,\s*lon:\s*([\d.]+)", src, re.S):
+        out[m.group(1)] = {"name": m.group(2), "lat": float(m.group(3)), "lon": float(m.group(4))}
+    return out
+
+
+def _reise_geocode(query):
+    """Ort/Adresse → (lat, lon) via Nominatim (kostenlos), mit Datei-Cache. None bei Fehlschlag."""
+    import urllib.request, urllib.parse
+    query = (query or "").strip()
+    if not query:
+        return None
+    try:
+        cache = json.loads(open(_REISE_GEO_CACHE).read()) if os.path.exists(_REISE_GEO_CACHE) else {}
+    except Exception:
+        cache = {}
+    if query in cache:
+        v = cache[query]
+        return tuple(v) if v else None
+    res = None
+    try:
+        qs = urllib.parse.urlencode({"q": query, "format": "json", "limit": "1"})
+        req = urllib.request.Request("https://nominatim.openstreetmap.org/search?" + qs, headers=_REISE_UA)
+        j = json.loads(urllib.request.urlopen(req, timeout=15).read())
+        if j:
+            res = (float(j[0]["lat"]), float(j[0]["lon"]))
+    except Exception:
+        res = None
+    cache[query] = list(res) if res else None
+    try:
+        open(_REISE_GEO_CACHE, "w").write(json.dumps(cache, ensure_ascii=False, indent=2))
+    except Exception:
+        pass
+    return res
+
+
+def _reise_osrm(lat1, lon1, lat2, lon2):
+    """Fahrstrecke (km) + Fahrzeit (min) via OSRM (kostenlos). None bei Fehlschlag."""
+    import urllib.request
+    try:
+        url = (f"http://router.project-osrm.org/route/v1/driving/"
+               f"{lon1},{lat1};{lon2},{lat2}?overview=false")
+        j = json.loads(urllib.request.urlopen(urllib.request.Request(url, headers=_REISE_UA), timeout=20).read())
+        if j.get("code") == "Ok" and j.get("routes"):
+            rt = j["routes"][0]
+            return round(rt["distance"] / 1000, 1), round(rt["duration"] / 60)
+    except Exception:
+        pass
+    return None
+
+
+def reise_hotel_distanz(entry, sid):
+    """Fahrstrecke Hotel → Etappenziel (Stadt, sofern kein eigenes Ziel gesetzt).
+    Ergänzt entry um hotel_lat/lon, ziel_dist_km, ziel_dauer_min, ziel_name. Return True bei Erfolg."""
+    et = _reise_etappen().get(sid)
+    if not et:
+        return False
+    # Zielpunkt: eigenes Ziel (ziel_lat/lon, z.B. Sightseeing) sonst Etappen-Stadt
+    ziel_lat = entry.get("ziel_lat") or et["lat"]
+    ziel_lon = entry.get("ziel_lon") or et["lon"]
+    ziel_name = entry.get("ziel_name") or et["name"]
+    # Hotel geocoden — Kaskade: gespeicherte Adresse → Name+Etappe → nur Name
+    hotel = None
+    for q in [entry.get("hotel_adresse"),
+              f"{entry.get('unterkunft_name','')}, {et['name']}, Deutschland",
+              entry.get("unterkunft_name")]:
+        if q and q.strip():
+            hotel = _reise_geocode(q)
+            if hotel:
+                break
+    if not hotel:
+        return False
+    route = _reise_osrm(hotel[0], hotel[1], ziel_lat, ziel_lon)
+    entry["hotel_lat"], entry["hotel_lon"] = hotel[0], hotel[1]
+    entry["ziel_name"] = ziel_name
+    if route:
+        entry["ziel_dist_km"], entry["ziel_dauer_min"] = route
+        return True
+    return False
+
+
 def reise_save(data):
     """Speichert Notiz + Unterkunft für eine Station (id)."""
     sid = (data.get("id") or "").strip()
@@ -1525,14 +1617,32 @@ def reise_save(data):
     try:
         store = reise_get()
         entry = store.get(sid, {})
-        for k in ("notiz", "unterkunft_name", "unterkunft_link", "checkin", "checkout", "stornofrist", "buchungsnr"):
+        old_hotel = entry.get("unterkunft_name", ""); old_adr = entry.get("hotel_adresse", "")
+        old_ci = entry.get("checkin", ""); old_co = entry.get("checkout", ""); old_frist = entry.get("stornofrist", "")
+        for k in ("notiz", "unterkunft_name", "unterkunft_link", "checkin", "checkout", "stornofrist", "buchungsnr", "hotel_adresse"):
             if k in data:
                 entry[k] = (data.get(k) or "").strip()
+        hotel = entry.get("unterkunft_name", "")
+        hotel_changed = hotel != old_hotel or entry.get("hotel_adresse", "") != old_adr
+        dates_changed = entry.get("checkin", "") != old_ci or entry.get("checkout", "") != old_co or entry.get("stornofrist", "") != old_frist
+        # Fahrstrecke Hotel → Ziel (nur bei geändertem Hotel oder wenn noch keine berechnet)
+        if hotel and (hotel_changed or "ziel_dist_km" not in entry):
+            reise_hotel_distanz(entry, sid)
+        elif not hotel:
+            for k in ("hotel_lat", "hotel_lon", "ziel_dist_km", "ziel_dauer_min", "ziel_name"):
+                entry.pop(k, None)
         store[sid] = entry
         os.makedirs(os.path.dirname(REISE_DATA_FILE), exist_ok=True)
         with open(REISE_DATA_FILE, "w", encoding="utf-8") as f:
             json.dump(store, f, ensure_ascii=False, indent=2)
-        return {"ok": True, "text": "✓ Gespeichert", "entry": entry}
+        # Kalender automatisch (Aufenthalt + Storno) — nur bei relevanter Änderung
+        cal = ""
+        if hotel_changed or dates_changed:
+            station = _reise_etappen().get(sid, {}).get("name", sid)
+            r = reise_calendar_sync(sid, entry, station)
+            if r.get("ok") and r.get("angelegt"):
+                cal = " · 📅 " + " + ".join(r["angelegt"]) + " im Kalender"
+        return {"ok": True, "text": "✓ Gespeichert" + cal, "entry": entry}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
@@ -1617,6 +1727,85 @@ def reise_calendar_storno(data):
         if res.get("id"):
             return {"ok": True, "text": f"✓ Kalendereintrag am {d0.strftime('%d.%m.%Y')} (Erinnerung 2 Tage vorher)"}
         return {"ok": False, "error": "Antwort ohne Event-ID"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+def reise_calendar_sync(sid, entry, station):
+    """Legt/aktualisiert Aufenthalts- + Storno-Termin einer Etappe im Outlook-Kalender.
+    Idempotent: alte Reiseplaner-Termine dieser Etappe (Body-Marker [rp:sid]) werden zuerst
+    gelöscht, dann neu angelegt — kein Duplizieren beim erneuten Speichern."""
+    import urllib.request, urllib.parse
+    from datetime import datetime as _dt, timedelta as _td
+    marker = f"[rp:{sid}]"
+    hotel  = (entry.get("unterkunft_name") or "").strip()
+    ci     = (entry.get("checkin") or "").strip()
+    co     = (entry.get("checkout") or "").strip()
+    frist  = (entry.get("stornofrist") or "").strip()
+    dates = [d for d in (ci, co, frist) if d]
+    if not hotel and not dates:
+        return {"ok": False, "error": "Nichts zu synchronisieren."}
+    try:
+        token = _graph_calendar_token()
+        H = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        # 1) Zeitfenster um alle Termine + alte [rp:sid]-Events darin löschen
+        ds = sorted(_dt.strptime(d, "%Y-%m-%d").date() for d in dates)
+        w0 = (ds[0] - _td(days=5)).strftime("%Y-%m-%dT00:00:00")
+        w1 = (ds[-1] + _td(days=5)).strftime("%Y-%m-%dT23:59:59")
+        qs = urllib.parse.urlencode({"startDateTime": w0, "endDateTime": w1,
+                                     "$select": "id,body", "$top": "100"})
+        r = urllib.request.urlopen(urllib.request.Request(
+            "https://graph.microsoft.com/v1.0/me/calendarView?" + qs,
+            headers={"Authorization": f"Bearer {token}",
+                     "Prefer": 'outlook.timezone="Europe/Berlin"'}), timeout=20)
+        for ev in json.loads(r.read()).get("value", []):
+            if marker in (ev.get("body", {}).get("content", "") or ""):
+                try:
+                    urllib.request.urlopen(urllib.request.Request(
+                        "https://graph.microsoft.com/v1.0/me/events/" + urllib.parse.quote(ev["id"]),
+                        headers=H, method="DELETE"), timeout=20)
+                except Exception:
+                    pass
+        angelegt = []
+        # 2) Aufenthalts-Termin (Ganztags checkin→checkout)
+        if hotel and ci:
+            d_ci = _dt.strptime(ci, "%Y-%m-%d").date()
+            d_co = _dt.strptime(co, "%Y-%m-%d").date() if co else d_ci + _td(days=1)
+            info = []
+            if entry.get("ziel_dist_km") is not None:
+                info.append(f"🚗 {entry['ziel_dist_km']} km · {entry.get('ziel_dauer_min','?')} Min bis {entry.get('ziel_name', station)}")
+            if "rühstück inklusive" in (entry.get("notiz") or ""):
+                info.append("🍳 Frühstück inklusive")
+            if entry.get("buchungsnr"):
+                info.append(f"Buchung Nr. {entry['buchungsnr']}")
+            if entry.get("unterkunft_link"):
+                info.append(f"🔗 {entry['unterkunft_link']}")
+            body = "\n".join(info) + f"\n\n{marker} — Bolla 🐾 Reiseplaner"
+            ev = {"subject": f"🏨 {station}: {hotel}",
+                  "start": {"dateTime": d_ci.strftime("%Y-%m-%dT00:00:00"), "timeZone": "Europe/Berlin"},
+                  "end":   {"dateTime": d_co.strftime("%Y-%m-%dT00:00:00"), "timeZone": "Europe/Berlin"},
+                  "isAllDay": True, "isReminderOn": True, "reminderMinutesBeforeStart": 1440,
+                  "body": {"contentType": "Text", "content": body}, "categories": ["Reiseplaner"]}
+            urllib.request.urlopen(urllib.request.Request(
+                "https://graph.microsoft.com/v1.0/me/calendar/events",
+                data=json.dumps(ev).encode(), method="POST", headers=H), timeout=20)
+            angelegt.append("Aufenthalt")
+        # 3) Storno-Reminder (Ganztags an der Frist, Erinnerung 2 Tage vorher)
+        if hotel and frist:
+            d0 = _dt.strptime(frist, "%Y-%m-%d").date()
+            body = (f"Kostenlos stornierbar bis {d0.strftime('%d.%m.%Y')}.\n"
+                    + (f"🔗 {entry['unterkunft_link']}\n" if entry.get("unterkunft_link") else "")
+                    + f"\nBehalten oder stornieren?\n{marker} — Bolla 🐾 Reiseplaner")
+            ev = {"subject": f"⏰ Storno-Frist: {hotel} ({station})",
+                  "start": {"dateTime": d0.strftime("%Y-%m-%dT00:00:00"), "timeZone": "Europe/Berlin"},
+                  "end":   {"dateTime": (d0 + _td(days=1)).strftime("%Y-%m-%dT00:00:00"), "timeZone": "Europe/Berlin"},
+                  "isAllDay": True, "isReminderOn": True, "reminderMinutesBeforeStart": 2880,
+                  "body": {"contentType": "Text", "content": body}, "categories": ["Reiseplaner"]}
+            urllib.request.urlopen(urllib.request.Request(
+                "https://graph.microsoft.com/v1.0/me/calendar/events",
+                data=json.dumps(ev).encode(), method="POST", headers=H), timeout=20)
+            angelegt.append("Storno")
+        return {"ok": True, "angelegt": angelegt}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
@@ -3462,11 +3651,12 @@ def get_token_usage():
         if not m:
             return "Claude"
         p = m.split("-")
-        if len(p) >= 4 and p[0] == "claude":
-            return f"Claude {p[1].capitalize()} {p[2]}.{p[3]}"
+        if len(p) >= 3 and p[0] == "claude":
+            ver = ".".join(p[2:])   # claude-opus-4-8 → 4.8 · claude-sonnet-5 → 5 · claude-fable-5 → 5
+            return f"Claude {p[1].capitalize()} {ver}"
         return m
 
-    # Konfigurierter Default aus settings.json (z.B. "sonnet")
+    # Konfigurierter Default aus settings.json (Alias oder volle ID)
     _alias = {"sonnet": "Sonnet 4.6", "opus": "Opus 4.8", "haiku": "Haiku 4.5"}
     default_raw = ""
     try:
@@ -3474,7 +3664,14 @@ def get_token_usage():
             default_raw = (json.load(_sf).get("model") or "").strip()
     except Exception:
         default_raw = ""
-    default_pretty = _alias.get(default_raw.lower(), _pretty(default_raw) if default_raw else "")
+    default_pretty = _alias.get(default_raw.lower(), (_pretty(default_raw).replace("Claude ", "") if default_raw else ""))
+
+    # Plan live von Anthropic (nie hartkodieren)
+    _plan = ""
+    try:
+        _plan = (get_claude_quota() or {}).get("plan_label", "") or ""
+    except Exception:
+        _plan = ""
 
     # Kurzname des Live-Modells fürs Frontend (z.B. "Opus 4.8")
     live_short = _pretty(latest_model).replace("Claude ", "")
@@ -3484,13 +3681,14 @@ def get_token_usage():
         mismatch = default_raw.lower() not in latest_model.lower()
 
     data = {
-        "model": f"{_pretty(latest_model)} (Max Plan)",
+        "model": f"{_pretty(latest_model)}" + (f" ({_plan})" if _plan else ""),
         "model_live": live_short,
         "model_default": default_pretty,
         "model_mismatch": mismatch,
+        "plan": _plan,
         "today": {"input": t_in, "output": t_out, "cache_read": t_cr, "cache_creation": t_ce},
         "total": {"input": a_in, "output": a_out, "cache_read": a_cr, "cache_creation": a_ce},
-        "note": "Max Plan — keine Kosten"
+        "note": (f"{_plan} — keine Kosten" if _plan else "Abo — keine Kosten")
     }
     _token_cache["ts"] = _t.time()
     _token_cache["data"] = data
@@ -5802,7 +6000,7 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     global _ki_buch_job
                     try:
                         cl = _sh3.which("claude") or os.path.expanduser("~/.local/bin/claude")
-                        r = _sp3.run([cl, "-p", "--output-format", "json", "--model", "claude-sonnet-4-6", prompt],
+                        r = _sp3.run([cl, "-p", "--output-format", "json", "--model", "claude-sonnet-5", prompt],
                                      capture_output=True, text=True, timeout=900, stdin=_sp3.DEVNULL,
                                      cwd=os.path.expanduser("~"))
                         if r.returncode != 0:
@@ -7055,7 +7253,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
                 try:
                     result = subprocess.run(
-                        [claude_bin, "-p", "--model", "claude-sonnet-4-6", "--output-format", "json", prompt],
+                        [claude_bin, "-p", "--model", "claude-sonnet-5", "--output-format", "json", prompt],
                         capture_output=True, text=True, timeout=240,
                         stdin=subprocess.DEVNULL,
                         cwd=os.path.expanduser("~")
@@ -7181,7 +7379,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                         f"Reply with ONLY the image prompt, nothing else."
                     )
                     _cp_result = _sp2.run(
-                        [_claude_bin2, "-p", "--model", "claude-sonnet-4-6", "--output-format", "json", _cover_prompt_instr],
+                        [_claude_bin2, "-p", "--model", "claude-sonnet-5", "--output-format", "json", _cover_prompt_instr],
                         capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~")
                     )
                     img_prompt = json.loads(_cp_result.stdout).get("result", "").strip() if _cp_result.returncode == 0 else ""
@@ -7662,7 +7860,7 @@ Return ONLY this exact JSON (no markdown, no extra text):
 
     try:
         res = _sp.run(
-            [claude_bin, "-p", "--model", "claude-sonnet-4-6", "--output-format", "json", prompt],
+            [claude_bin, "-p", "--model", "claude-sonnet-5", "--output-format", "json", prompt],
             capture_output=True, text=True, timeout=120, stdin=_sp.DEVNULL,
             cwd=os.path.expanduser("~")
         )
