@@ -8543,10 +8543,14 @@ async function loadClipboard() {
   if (_clipEditing) return;  // nicht neu rendern während ein Eintrag bearbeitet wird
   try {
     const d = await fetch('/api/clipboard').then(r => r.json());
-    clipboardRenderEntries(d.entries || []);
+    if (!d || !Array.isArray(d.entries)) throw new Error('leere Antwort');
+    clipboardRenderEntries(d.entries);
     document.getElementById('clipboard-status').textContent = '';
   } catch(e) {
-    document.getElementById('clipboard-status').textContent = 'Fehler beim Laden';
+    // Server evtl. gerade neu gestartet → Anzeige NICHT leeren, einmal nachladen.
+    const s = document.getElementById('clipboard-status');
+    if (s) s.textContent = '⏳ lädt…';
+    setTimeout(loadClipboard, 2500);
   }
   loadClipboardImages();
 }
@@ -13084,10 +13088,17 @@ async function loadProjekte() {
   try {
     const r = await fetch(API + '/api/makler', {signal: AbortSignal.timeout(20000)});
     const data = await r.json();
+    if (!data || !data.regionen) throw new Error('leere Antwort');
     _maklerRenderList(data);
   } catch(e) {
-    const list = document.getElementById('makler-list');
-    if (list) list.innerHTML = `<div style="padding:20px;color:#f87171;font-size:14px">Fehler: ${escHtml(e.message)}</div>`;
+    // Server evtl. gerade neu gestartet → letzten Stand behalten + einmal nachladen,
+    // NIEMALS leer/„Fehler" rendern (sonst wirkt es wie Datenverlust).
+    if (_maklerData) { _maklerRenderList(_maklerData); }
+    else {
+      const list = document.getElementById('makler-list');
+      if (list) list.innerHTML = `<div style="padding:20px;color:var(--dim);font-size:14px">⏳ Lade… (Server antwortet gleich)</div>`;
+    }
+    setTimeout(() => { if (!_maklerData) loadProjekte(); }, 2500);
   }
 }
 

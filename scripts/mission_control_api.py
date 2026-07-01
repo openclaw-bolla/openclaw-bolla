@@ -822,7 +822,7 @@ def get_emails_wtnet():
 
 def get_emails_recent_wtnet():
     """Holt die letzten Mails von wtnet (gelesen + ungelesen)."""
-    import imaplib, email as email_lib
+    import imaplib, email as email_lib, re
     from email.header import decode_header
     try:
         wtnet_cfg = os.path.join(WORKSPACE, "config/wtnet_account.json")
@@ -849,6 +849,8 @@ def get_emails_recent_wtnet():
             from_parts = decode_header(from_raw)
             from_str = "".join(p.decode(enc or "utf-8", errors="replace") if isinstance(p, bytes) else p for p, enc in from_parts)
             from_name = from_str.split("<")[0].strip().strip('"')
+            _addr_m = re.search(r"[\w.+-]+@[\w.-]+", from_str)
+            from_email = _addr_m.group(0) if _addr_m else ""
             date_raw = msg.get("Date", "")
             try:
                 from email.utils import parsedate_to_datetime
@@ -861,7 +863,7 @@ def get_emails_recent_wtnet():
             if "*** SPAM" in subj.upper() or "[SPAM]" in subj.upper():
                 continue
             msgs.append({"account": "wtnet", "id": uid.decode(),
-                         "from": from_name or "Unbekannt",
+                         "from": from_name or "Unbekannt", "from_email": from_email,
                          "subject": subj, "date": date_str, "is_today": is_today,
                          "isRead": is_read, "preview": ""})
         mail.logout()
@@ -1372,7 +1374,7 @@ def _sanitize_rule(rg):
     typ  = (rg.get("typ")  or "").strip()
     wert = (rg.get("wert") or "").strip()
     label = (rg.get("label") or "").strip()
-    if typ not in ("cyrillic", "subject_keyword", "sender_domain"):
+    if typ not in ("cyrillic", "cjk", "subject_keyword", "sender_domain"):
         return None
     if typ == "sender_domain":
         dom = wert.lower().lstrip("@")
@@ -1383,6 +1385,7 @@ def _sanitize_rule(rg):
         return None
     if not label:
         label = {"cyrillic": "Betreff überwiegend kyrillisch",
+                 "cjk": "Betreff ostasiatisch (JP/CN/KR)",
                  "subject_keyword": f"Betreff enthält '{wert}'",
                  "sender_domain": f"Absender-Domain {wert}"}[typ]
     return {"typ": typ, "wert": wert, "label": label}
@@ -1396,6 +1399,17 @@ def _cyrillic_ratio_s(s):
         return 0.0
     cyr = sum(1 for c in letters if "Ѐ" <= c <= "ӿ")
     return cyr / len(letters)
+
+
+def _cjk_ratio_s(s):
+    """Anteil ostasiatischer Zeichen (JP/CN/KR) an allen Wort-Zeichen (0..1)."""
+    def _is_cjk(c):
+        return ("぀" <= c <= "ゟ" or "゠" <= c <= "ヿ"
+                or "一" <= c <= "鿿" or "가" <= c <= "힣")
+    chars = [c for c in (s or "") if c.isalpha() or _is_cjk(c)]
+    if not chars:
+        return 0.0
+    return sum(1 for c in chars if _is_cjk(c)) / len(chars)
 
 
 def _existing_rule_covers(subject, sender_email):
@@ -1413,8 +1427,10 @@ def _existing_rule_covers(subject, sender_email):
     for r in rules:
         typ  = r.get("typ")
         wert = (r.get("wert") or "")
-        if typ == "cyrillic" and (_cyrillic_ratio_s(subj) >= 0.3 or _cyrillic_ratio_s(snd) >= 0.4):
+        if typ == "cyrillic" and (_cyrillic_ratio_s(subj) >= 0.2 or _cyrillic_ratio_s(snd) >= 0.3):
             return r.get("label") or "Betreff überwiegend kyrillisch"
+        if typ == "cjk" and (_cjk_ratio_s(subj) >= 0.2 or _cjk_ratio_s(snd) >= 0.3):
+            return r.get("label") or "Betreff ostasiatisch (JP/CN/KR)"
         if typ == "subject_keyword" and wert and wert.lower() in subj.lower():
             return r.get("label") or f"Betreff enthält '{wert}'"
         if typ == "sender_domain" and wert:
@@ -1422,6 +1438,46 @@ def _existing_rule_covers(subject, sender_email):
             if snd == dom or snd.endswith("@" + dom) or snd.endswith("." + dom):
                 return r.get("label") or f"Absender-Domain {wert}"
     return None
+
+
+def _parse_mail_analysis(raw):
+    """Robuste Extraktion von {antwort, spam, regel} aus der KI-Ausgabe.
+    Fällt bei kaputtem JSON NICHT aus: die freie 'antwort' enthält oft
+    unescapte Anführungszeichen (Zitate wie »auf L'Oreal & Co.«), die
+    json.loads sprengen. Dann ziehen wir spam/regel/antwort per Regex —
+    die sind strukturiert bzw. klar abgegrenzt."""
+    import re
+    js = raw or ""
+    if "```" in js:
+        seg = js.split("```")[1]
+        js = seg[4:] if seg.lstrip().lower().startswith("json") else seg
+    i, j = js.find("{"), js.rfind("}")
+    if i < 0 or j <= i:
+        return None
+    block = js[i:j + 1]
+    # 1) Der Normalfall: sauberes JSON
+    try:
+        return json.loads(block)
+    except Exception:
+        pass
+    # 2) Fallback: Felder einzeln bergen
+    out = {}
+    m = re.search(r'"spam"\s*:\s*(true|false)', block, re.I)
+    out["spam"] = bool(m and m.group(1).lower() == "true")
+    mr = re.search(r'"regel"\s*:\s*(\{.*?\}|null)', block, re.S)
+    if mr and mr.group(1).strip() != "null":
+        try:
+            out["regel"] = json.loads(mr.group(1))
+        except Exception:
+            out["regel"] = None
+    else:
+        out["regel"] = None
+    # antwort: alles zwischen "antwort":"  und  ", "spam"  (nur DIESES "," + "spam"
+    # ist der echte Trenner — stray-Quotes im Text stehen nie davor)
+    ma = re.search(r'"antwort"\s*:\s*"(.*?)"\s*,\s*"spam"', block, re.S)
+    if ma:
+        out["antwort"] = ma.group(1).replace('\\n', '\n').replace('\\"', '"').replace('\\/', '/')
+    return out
 
 
 def spam_rule_add(data):
@@ -1703,7 +1759,7 @@ Antworte mit GENAU diesem JSON (kein Markdown, keine Code-Fences):
 
 Für das Feld "regel" (nur ausfüllen wenn spam=true, sonst null):
 - Wähle das TREFFSICHERSTE Kriterium, das diese und künftige gleiche Mails fängt, aber keine echte Post.
-- "typ" ist eines von: "cyrillic" (Betreff überwiegend kyrillisch), "subject_keyword" (markantes Wort im Betreff), "sender_domain" (Absender-Domain).
+- "typ" ist eines von: "cyrillic" (Betreff überwiegend kyrillisch), "cjk" (Betreff ostasiatisch — Japanisch/Chinesisch/Koreanisch), "subject_keyword" (markantes Wort im Betreff), "sender_domain" (Absender-Domain).
 - "wert": bei subject_keyword das Wort, bei sender_domain die Domain (z.B. "xy.ru"), bei cyrillic "".
 - WICHTIG: NIEMALS sender_domain mit einer von Chris' eigenen Domains ({own}) — Spam fälscht den Absender. Dann lieber cyrillic oder subject_keyword.
 - "label": kurze deutsche Beschreibung, z.B. "Betreff enthält 'Коробочка'"."""
@@ -1712,21 +1768,18 @@ Für das Feld "regel" (nur ausfüllen wenn spam=true, sonst null):
         raw = r.stdout.strip()
         text, suggestion, covered = raw, None, None
         try:
-            js = raw
-            if "```" in js:
-                seg = js.split("```")[1]
-                js = seg[4:] if seg.lstrip().lower().startswith("json") else seg
-            i, j = js.find("{"), js.rfind("}")
-            if i >= 0 and j > i:
-                parsed = json.loads(js[i:j+1])
+            parsed = _parse_mail_analysis(raw)
+            if parsed:
                 text = parsed.get("antwort") or raw
                 if parsed.get("spam"):
                     suggestion = _sanitize_rule(parsed.get("regel") or {})
                     subj = mail.get("subject", "") or ""
                     # Fallback: Spam erkannt, aber KI gab keinen Regel-Vorschlag → selbst ableiten
                     if not suggestion:
-                        if _cyrillic_ratio_s(subj) >= 0.3:
+                        if _cyrillic_ratio_s(subj) >= 0.2:
                             suggestion = _sanitize_rule({"typ": "cyrillic", "wert": ""})
+                        elif _cjk_ratio_s(subj) >= 0.2:
+                            suggestion = _sanitize_rule({"typ": "cjk", "wert": ""})
                         else:
                             words = [w.strip(".,!?:;–-\"'«»()[]") for w in subj.split()]
                             kw = max([w for w in words if len(w) >= 4], key=len, default="")

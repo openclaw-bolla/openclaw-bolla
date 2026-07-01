@@ -50,6 +50,18 @@ def _cyrillic_ratio(s: str) -> float:
     return cyr / len(letters)
 
 
+def _cjk_ratio(s: str) -> float:
+    """Anteil ostasiatischer Schriftzeichen (Japanisch/Chinesisch/Koreanisch)
+    an allen 'Wort'-Zeichen. Fängt gefälschte Amazon-Japan-Phishings u.ä."""
+    def _is_cjk(c):
+        return ("぀" <= c <= "ゟ" or "゠" <= c <= "ヿ"      # Hiragana, Katakana
+                or "一" <= c <= "鿿" or "가" <= c <= "힣")   # CJK-Ideogramme, Hangul
+    chars = [c for c in (s or "") if c.isalpha() or _is_cjk(c)]
+    if not chars:
+        return 0.0
+    return sum(1 for c in chars if _is_cjk(c)) / len(chars)
+
+
 def rule_match(subject: str, sender_email: str, rules: list):
     """Gibt das Label der ersten passenden Regel zurück, sonst None.
     Eigene Domains werden bei sender_domain hart ignoriert (Absender ist fälschbar)."""
@@ -61,10 +73,12 @@ def rule_match(subject: str, sender_email: str, rules: list):
     for r in rules:
         typ, wert = r.get("typ"), (r.get("wert") or "")
         # Betreff nennenswert kyrillisch ODER Absender(-Name) überwiegend kyrillisch.
-        # 0.3 statt 0.5: russische Werbung mischt lateinische Markennamen rein
-        # (z.B. "Скидка -40% на KLAPP, SOTHYS, JANS" → nur ~35% kyrillisch).
-        if typ == "cyrillic" and (_cyrillic_ratio(s) >= 0.3 or _cyrillic_ratio(sender_email or "") >= 0.4):
+        # 0.2/0.3: russische Werbung tarnt sich mit lateinischen Markennamen
+        # (z.B. "L'Oreal, Matrix, Dermedic и другие…" → nur ~26% kyrillisch).
+        if typ == "cyrillic" and (_cyrillic_ratio(s) >= 0.2 or _cyrillic_ratio(sender_email or "") >= 0.3):
             return r.get("label", "kyrillischer Betreff")
+        if typ == "cjk" and (_cjk_ratio(s) >= 0.2 or _cjk_ratio(sender_email or "") >= 0.3):
+            return r.get("label", "ostasiatischer Betreff")
         if typ == "subject_keyword" and wert and wert.lower() in s.lower():
             return r.get("label", wert)
         if typ == "sender_domain" and wert:
