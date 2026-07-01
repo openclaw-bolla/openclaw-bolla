@@ -125,6 +125,51 @@ def html_to_text(html):
     return re.sub(r"\s+", " ", t).strip()
 
 
+def _unwrap_safelinks(u):
+    """Outlook 'SafeLinks' packt echte URLs in
+    ...safelinks.protection.outlook.com/?url=<encoded>&data=... — auspacken."""
+    if "safelinks.protection.outlook.com" not in u.lower():
+        return u
+    m = re.search(r"[?&]url=([^&]+)", u)
+    if not m:
+        return u
+    return urllib.parse.unquote(m.group(1))
+
+
+def extract_booking_link(html):
+    """Sucht in der Roh-HTML den 'Buchung verwalten/ansehen'-Link.
+    Bevorzugt Deeplinks mit Buchungsnr (bn=) + Pincode (öffnen die Buchung
+    ohne Login). Fällt sonst auf einen beliebigen booking.com-Buchungslink.
+    Outlook-SafeLinks-Wrapper werden vorher ausgepackt."""
+    if not html:
+        return ""
+    raw = re.findall(r'href=["\']([^"\']+)["\']', html, re.I)
+    hrefs = []
+    for h in raw:
+        h = h.replace("&amp;", "&")
+        u = _unwrap_safelinks(h)
+        if "booking.com" in u.lower():
+            hrefs.append(u)
+    def score(u):
+        ul = u.lower()
+        s = 0
+        if "mybooking" in ul or "myreservation" in ul or "mytrips" in ul:
+            s += 3
+        if "pincode" in ul:
+            s += 3
+        if "bn=" in ul or "res_id" in ul or "confirmation" in ul:
+            s += 2
+        return s
+    cands = sorted({h for h in hrefs}, key=score, reverse=True)
+    cands = [c for c in cands if score(c) > 0]
+    if not cands:
+        return ""
+    best = cands[0]
+    if best.startswith("//"):
+        best = "https:" + best
+    return best.replace("&amp;", "&")
+
+
 def _date(d, mon, y):
     mon = MONATE.get(mon.lower().rstrip("."))
     if not mon:
@@ -144,7 +189,7 @@ def parse_booking(subject, text):
         return None
 
     res = {"hotel": "", "ort": "", "checkin": "", "checkout": "",
-           "stornofrist": "", "buchungsnr": ""}
+           "stornofrist": "", "buchungsnr": "", "link": ""}
 
     # Hotelname: aus Subject ("…bestätigt: Hotel X" / "Hotel X: Buchung …")
     m = re.search(r"best[äa]tigt:\s*(.+)$", subject, re.I)
@@ -270,11 +315,13 @@ def main():
         subj = m.get("subject") or ""
         if "booking.com" not in frm:
             continue
-        text = html_to_text(m.get("body", {}).get("content", ""))
+        raw_html = m.get("body", {}).get("content", "")
+        text = html_to_text(raw_html)
         b = parse_booking(subj, text)
         seen_mids.add(mid)
         if not b:
             continue
+        b["link"] = extract_booking_link(raw_html)
         if bkey(b) in done_keys:
             continue  # dieser Aufenthalt schon verarbeitet (mehrere Mails pro Buchung)
         done_keys.add(bkey(b))
@@ -285,7 +332,8 @@ def main():
             print(f"── {subj[:60]}")
             print(f"   Hotel:   {b['hotel']}\n   Ort:     {b['ort']}")
             print(f"   Check-in:{b['checkin']}  Check-out:{b['checkout']}  Storno:{b['stornofrist']}")
-            print(f"   Buchung: {b['buchungsnr']}  →  Etappe: {e['name'] if e else '— NICHT zugeordnet —'}\n")
+            print(f"   Buchung: {b['buchungsnr']}  Link: {b['link'] or '—'}")
+            print(f"   →  Etappe: {e['name'] if e else '— NICHT zugeordnet —'}\n")
 
         if not e:
             tg(f"🏨 *Neue Booking-Buchung — konnte ich nicht zuordnen*\n\n"
@@ -316,7 +364,8 @@ def main():
         mc_post("/api/reise-notizen", {
             "id": e["id"], "unterkunft_name": b["hotel"],
             "checkin": b["checkin"], "checkout": b["checkout"],
-            "stornofrist": b["stornofrist"]})
+            "stornofrist": b["stornofrist"],
+            "unterkunft_link": b["link"], "buchungsnr": b["buchungsnr"]})
         cal = ""
         if b["stornofrist"]:
             r = mc_post("/api/reise-calendar-storno", {

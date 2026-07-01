@@ -12517,12 +12517,14 @@ function srRenderStationen() {
       html += `<div style="font-size:10px;font-weight:700;color:${rc};text-transform:uppercase;letter-spacing:.6px;margin:8px 0 3px 2px">${o.region}</div>`;
       lastRegion = o.region;
     }
+    const _gebucht = ((_reiseData[o.id] || {}).unterkunft_name || '').trim()
+      ? ` · <span style="color:#34d399;font-weight:700">✓ gebucht</span>` : '';
     html += `<div onclick="srShowDetail('${o.id}')" style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:4px 6px;border-radius:6px;transition:background .15s"
       onmouseenter="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background='transparent'">
       <div style="width:20px;height:20px;border-radius:50%;background:${o.farbe};display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;flex-shrink:0">${o.nr}</div>
       <div style="min-width:0">
         <div style="font-size:12px;font-weight:600;color:var(--bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.name}</div>
-        <div style="font-size:10px;color:var(--dim)">${o.datum} · ${o.aufenthalt.split('(')[0].trim()}</div>
+        <div style="font-size:10px;color:var(--dim)">${o.datum} · ${o.aufenthalt.split('(')[0].trim()}${_gebucht}</div>
       </div>
     </div>`;
   });
@@ -12634,7 +12636,7 @@ function srShowDetail(id) {
         <textarea id="reise-notiz" placeholder="z.B. Caracalla Therme: 3 Std. 23 €, Sauna mit Aufguss super!" style="${_fld};min-height:120px;resize:vertical;line-height:1.55">${_esc(_u.notiz)}</textarea>
       </div>
       <div>
-        <div style="font-size:11px;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🏨 Meine Unterkunft</div>
+        <div style="font-size:11px;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🏨 Meine Unterkunft${_u.buchungsnr ? ` <span style="color:var(--dim);font-weight:600;text-transform:none;letter-spacing:0">· Nr. ${_esc(_u.buchungsnr)}</span>` : ''}</div>
         <input id="reise-uname" type="text" placeholder="Name der Unterkunft" value="${_esc(_u.unterkunft_name)}" style="${_fld};margin-bottom:6px">
         <input id="reise-ulink" type="url" placeholder="Booking-Link deiner Buchung" value="${_esc(_u.unterkunft_link)}" style="${_fld};margin-bottom:6px">
         <div style="display:flex;gap:6px;margin-bottom:6px">
@@ -12648,7 +12650,6 @@ function srShowDetail(id) {
           <button onclick="reiseSave('${id}')" style="${_btn};background:#10b981;color:#04221a">💾 Speichern</button>
           <button onclick="reiseBookingSearch('${id}','${_esc(o.name)}')" style="${_btn};background:rgba(96,165,250,0.18);color:#60a5fa;border:1px solid rgba(96,165,250,0.4)">🔍 Bei Booking suchen</button>
           <button onclick="reiseOpenBooking()" style="${_btn};background:rgba(255,255,255,0.06);color:var(--text);border:1px solid var(--border)">🔗 Buchung öffnen</button>
-          <button onclick="reiseStornoNudge('${id}','${_esc(o.name)}')" style="${_btn};background:rgba(248,113,113,0.15);color:#f87171;border:1px solid rgba(248,113,113,0.4)">⏰ Storno an Telegram</button>
           <button onclick="reiseCalStorno('${id}','${_esc(o.name)}')" style="${_btn};background:rgba(168,139,250,0.15);color:#a78bfa;border:1px solid rgba(168,139,250,0.4)">📅 Storno in Kalender</button>
         </div>
       </div>
@@ -12687,16 +12688,6 @@ function reiseOpenBooking() {
   const link = document.getElementById('reise-ulink')?.value || '';
   if (!link) { reiseToast('Kein Buchungs-Link eingetragen', '#fbbf24'); return; }
   window.open(/^https?:\/\//.test(link) ? link : 'https://' + link, '_blank');
-}
-function reiseStornoNudge(id, name) {
-  const link  = document.getElementById('reise-ulink')?.value || '';
-  const frist = document.getElementById('reise-storno')?.value || '';
-  const uname = document.getElementById('reise-uname')?.value || name;
-  fetch(API + '/api/reise-storno-nudge', { method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ station:name, unterkunft_name:uname, unterkunft_link:link,
-      stornofrist: frist ? new Date(frist).toLocaleDateString('de-DE') : '' }) })
-    .then(r => r.json()).then(d => reiseToast(d.ok ? '✓ Erinnerung an Telegram geschickt' : '⚠ ' + (d.error || 'Fehler'), d.ok ? '#34d399' : '#f87171'))
-    .catch(e => reiseToast('⚠ ' + e.message, '#f87171'));
 }
 function reiseCalStorno(id, name) {
   const link  = document.getElementById('reise-ulink')?.value || '';

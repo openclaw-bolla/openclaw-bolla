@@ -1469,7 +1469,7 @@ def reise_save(data):
     try:
         store = reise_get()
         entry = store.get(sid, {})
-        for k in ("notiz", "unterkunft_name", "unterkunft_link", "checkin", "checkout", "stornofrist"):
+        for k in ("notiz", "unterkunft_name", "unterkunft_link", "checkin", "checkout", "stornofrist", "buchungsnr"):
             if k in data:
                 entry[k] = (data.get(k) or "").strip()
         store[sid] = entry
