@@ -4377,6 +4377,7 @@ let _clipEditing = false;
 
 function showPage(page) {
   if (_clipRefreshInterval) { clearInterval(_clipRefreshInterval); _clipRefreshInterval = null; }
+  if (_reiseRefreshInterval) { clearInterval(_reiseRefreshInterval); _reiseRefreshInterval = null; }
   closeArchivOverlay();   // beim Seitenwechsel ein offenes Archiv-Overlay schließen
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -12499,10 +12500,22 @@ let _srMap = null;
 let _srMarkers = {};
 
 let _reiseData = {};
+let _reiseRefreshInterval = null;
 function initSommerreise() {
   srRenderStationen();
   srInitMap();
-  fetch(API + '/api/reise-notizen').then(r => r.json()).then(d => { _reiseData = d || {}; srRenderStationen(); }).catch(()=>{});
+  reiseLoadNotizen();
+  // Stilles Auto-Polling: solange die Urlaub-Seite offen ist, alle 2 Min die
+  // Buchungsdaten nachladen → neue "✓ gebucht"-Badges ploppen live auf, sobald
+  // der Wächter eine Buchung eingetragen hat. Interval wird in showPage geräumt.
+  if (_reiseRefreshInterval) clearInterval(_reiseRefreshInterval);
+  _reiseRefreshInterval = setInterval(reiseLoadNotizen, 120000);
+}
+function reiseLoadNotizen() {
+  fetch(API + '/api/reise-notizen').then(r => r.json()).then(d => {
+    _reiseData = d || {};
+    srRenderStationen();
+  }).catch(()=>{});
 }
 
 function srRenderStationen() {
