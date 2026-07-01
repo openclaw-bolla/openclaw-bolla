@@ -3868,12 +3868,20 @@ def get_token_usage():
     except Exception:
         _plan = ""
 
-    # Kurzname des Live-Modells fürs Frontend (z.B. "Opus 4.8")
-    live_short = _pretty(latest_model).replace("Claude ", "")
-    # Mismatch nur melden, wenn beide bekannt sind und Familie abweicht
+    # Kurzname des Live-Modells fürs Frontend — NUR wenn wirklich frisch (letzte 10 Min).
+    # Sonst ist "läuft gerade" irreführend (alter Log-Eintrag eines Nebenprozesses/Watchers)
+    # und löst einen Fehlalarm gegen den Default aus → leer lassen, kein Mismatch.
+    live_short = ""
     mismatch = False
-    if default_raw and latest_model:
-        mismatch = default_raw.lower() not in latest_model.lower()
+    try:
+        _age = (datetime.now(timezone.utc)
+                - datetime.fromisoformat((latest_ts or "").replace("Z", "+00:00"))).total_seconds()
+    except Exception:
+        _age = 1e9
+    if _age < 600 and latest_model:
+        live_short = _pretty(latest_model).replace("Claude ", "")
+        if default_raw:
+            mismatch = default_raw.lower() not in latest_model.lower()
 
     data = {
         "model": f"{_pretty(latest_model)}" + (f" ({_plan})" if _plan else ""),

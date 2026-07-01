@@ -7457,7 +7457,7 @@ async function loadBollaModel() {
     const r = await fetch(API + '/api/tokenusage');
     const t = await r.json();
     const def = t.model_default || '';
-    const live = t.model_live || (t.model || '').replace(/\s*\(.*\)$/, '').replace('Claude ', '');
+    const live = t.model_live || '';
 
     function renderModelLine(el) {
       if (!el) return;
@@ -12463,11 +12463,19 @@ const SR_ROUTE = [
     lat:47.9990, lon:7.8421,
     tag:'Tag 4–6', datum:'28.–30.07.', aufenthalt:'2 Übernachtungen',
     anfahrt:'Titisee/Feldberg → ~25–30 km · ca. 30 Min.',
-    tipp:'Münster-Turmbesteigung morgens — Weitsicht auf Schwarzwald und Vogesen. Abends im Studentenviertel auf dem Platz vor dem Münster: Straßenmarkt, lebendige Atmosphäre.',
+    tipp:'Die 3 Tage clever aufteilen: Ankunftstag für Münster & Altstadt, der freie Mitteltag (29.07.) ideal für den Halbtagesausflug in den Kaiserstuhl (nur 25 Min. entfernt), am letzten Vormittag vor der Weiterfahrt nach Konstanz noch Schlossberg oder Schauinsland. Münster-Turmbesteigung am besten morgens — Weitsicht auf Schwarzwald und Vogesen. Abends im Studentenviertel auf dem Platz vor dem Münster: Straßenmarkt, lebendige Atmosphäre.',
     beschreibung:'Freiburg im Breisgau ist die sonnigste Großstadt Deutschlands und die inoffizielle Hauptstadt des Schwarzwalds. Das gotische Münster mit seinem durchbrochenen Sandsteinturm zählt zu den schönsten mittelalterlichen Kathedralen. Die Bächle — kleine Wasserrinnen entlang der Altstadt-Gassen — sind einzigartig in Deutschland. Freiburg hat eine lebendige Universität, exzellente Küche und das Dreisamtal als Ausflugsziel direkt vor der Tür.',
     highlights:['⛪ Freiburger Münster (Gotik, 116 m — Turmbesteigung!)','💧 Bächle in der Altstadt (einzigartig in DE)','🏔️ Schlossberg mit Aussichtsturm (Seilbahn)','🚡 Schauinsland Gondelbahn (1.284 m)','🖼️ Augustinermuseum (mittelalterliche Kunst)','🛒 Münstermarkt (tägl. außer So)','🍽️ Markthalle (Feinschmecker-Paradies)','🌿 Botanischer Garten Universität'] },
 
-  { nr:8,  id:'kon',  name:'Konstanz',            region:'Bodensee',    farbe:'#0ea5e9',
+  { nr:8,  id:'kai',  name:'Kaiserstuhl',         region:'Schwarzwald', farbe:'#84cc16',
+    lat:48.1044, lon:7.6821,
+    tag:'Tag 5', datum:'29.07.', aufenthalt:'Halbtagesausflug (~4–5 Std.)',
+    anfahrt:'Freiburg → ~25 km · ca. 30 Min.',
+    tipp:'Vormittags starten, dann bleibt nachmittags noch Zeit für Freiburg. Ein Weindorf reicht für den Halbtag — Achkarren oder Oberrotweil sind am zugänglichsten. Wer noch Puste hat: kurzer Spaziergang zum Winzerweg mit Blick übers Rheintal bis zu den Vogesen.',
+    beschreibung:'Der Kaiserstuhl ist ein erloschener Vulkan mitten im Rheintal und Deutschlands wärmste Ecke — deshalb wächst hier auf steilen Terrassen einer der besten Weine des Landes (Spätburgunder, Grauburgunder). Die Hänge sind von Trockenmauern und schmalen Winzerpfaden durchzogen, dazwischen liegen pittoreske Weindörfer wie Achkarren, Oberrotweil und Burkheim. Nur 25 Autominuten von Freiburg entfernt und trotzdem eine komplett andere Landschaft — mediterran, warm, offen.',
+    highlights:['🍷 Weinprobe in einem der Winzerdörfer (Achkarren, Oberrotweil, Burkheim)','🥾 Kurzwanderung auf einem Winzerpfad zwischen den Rebterrassen','🌋 Vulkangestein & Lösshohlwege (einzigartige Geologie)','🦋 Orchideenpfad Bötzingen (im Sommer meist verblüht, aber schöner Weg)','🌄 Blick übers Rheintal bis zu den Vogesen','🏊 Feuerbergsee bei Bötzingen (ehem. Steinbruch, Baden möglich)'] },
+
+  { nr:9,  id:'kon',  name:'Konstanz',            region:'Bodensee',    farbe:'#0ea5e9',
     lat:47.6607, lon:9.1755,
     tag:'Tag 7', datum:'31.07.', aufenthalt:'1 Übernachtung',
     anfahrt:'Freiburg → ~130 km · ca. 1½ Std.',
@@ -12475,7 +12483,7 @@ const SR_ROUTE = [
     beschreibung:'Konstanz ist die größte Stadt am Bodensee und liegt als einzige deutsche Großstadt direkt an der Schweizer Grenze — was ihr im Zweiten Weltkrieg die Bombardierung ersparte und die mittelalterliche Altstadt erhielt. Das Konzilgebäude von 1388 war Schauplatz des größten Kirchenkongresses des Mittelalters. Die Imperia-Statue am Hafen — eine provokante Rotunde von Peter Lenk — ist ein Pflichtfoto.',
     highlights:['🏛️ Konzilgebäude (Papstwahl 1417, Welterbe-Anwärter)','⛪ Münster Unserer Lieben Frau','💃 Imperia-Statue am Hafen (Peter Lenk)','🌉 Rheinbrücke — Blick in die Schweiz','🚢 Fähre nach Meersburg (direkt vom Zentrum)','🌸 Mainau per Rad (7 km)','🍷 Altstadt & Weinstuben'] },
 
-  { nr:9,  id:'mai',  name:'Mainau',               region:'Bodensee',    farbe:'#ec4899',
+  { nr:10, id:'mai',  name:'Mainau',               region:'Bodensee',    farbe:'#ec4899',
     lat:47.7026, lon:9.1945,
     tag:'Tag 8', datum:'01.08.', aufenthalt:'Halbtag (~4 Std.)',
     anfahrt:'Konstanz → ~15 km · ca. 15 Min. (oder Rad)',
@@ -12483,7 +12491,7 @@ const SR_ROUTE = [
     beschreibung:'Die Blumeninsel Mainau im Bodensee gehört der schwedischen Grafenfamilie Bernadotte und ist eine der meistbesuchten Sehenswürdigkeiten Deutschlands. Über 45 Hektar Schloss- und Gartenanlage mit einem atemberaubenden Blütenkalender das ganze Jahr. Das Barockschloss thront malerisch über dem See. Im Juli ein Farbenmeer aus Dahlien, Seerosen und tropischen Gewächsen.',
     highlights:['🌸 Barockschloss & Schlosskirche','🦋 Schmetterlingshaus (über 120 Arten)','🌹 Dahlien- & Rosengarten (Juli-Highlight)','🌳 Baumkronenpfad (12 m Höhe)','🌅 Panoramablick auf Konstanzer Bucht','🍽️ Schlossrestaurant'] },
 
-  { nr:10, id:'mee',  name:'Meersburg',             region:'Bodensee',    farbe:'#d97706',
+  { nr:11, id:'mee',  name:'Meersburg',             region:'Bodensee',    farbe:'#d97706',
     lat:47.6935, lon:9.2724,
     tag:'Tag 8', datum:'01.08.', aufenthalt:'1 Übernachtung',
     anfahrt:'Mainau/Konstanz → Fähre ~20 Min. (Konstanz–Meersburg)',
@@ -12491,7 +12499,7 @@ const SR_ROUTE = [
     beschreibung:'Meersburg ist das romantischste und steilste Städtchen am gesamten Bodensee. Das Alte Schloss aus dem 7. Jahrhundert ist die älteste dauerhaft bewohnte Burg Deutschlands. Zwischen Ober- und Unterstadt ziehen sich enge Weinbergs-Gassen am Seehang entlang — der Blick über den See auf die Schweizer Alpen ist unvergesslich. Exzellente Weine von der Staatsweinkellerei.',
     highlights:['🏰 Altes Schloss (älteste bewohnte Burg DE, 7. Jh.)','🏛️ Neues Schloss (ehem. Bischofsresidenz)','🍷 Staatsweinkellerei Meersburg (Weinprobe)','⛴️ Fähre Konstanz–Meersburg','✍️ Annette-von-Droste-Hülshoff-Museum','🌄 Seesterrasse mit Alpenblick','🛍️ Steile Altstadt-Gassen'] },
 
-  { nr:11, id:'uel',  name:'Überlingen',             region:'Bodensee',    farbe:'#059669',
+  { nr:12, id:'uel',  name:'Überlingen',             region:'Bodensee',    farbe:'#059669',
     lat:47.7710, lon:9.1633,
     tag:'Tag 9', datum:'02.08.', aufenthalt:'~2 Std.',
     anfahrt:'Meersburg → ~22 km · ca. 20 Min.',
@@ -12499,7 +12507,7 @@ const SR_ROUTE = [
     beschreibung:'Überlingen gilt als heimliche Schönheit am Bodensee — eine der besterhaltenen mittelalterlichen Städte, die weniger bekannt ist als ihre Nachbarn. Das gotische Münster St. Nikolaus besitzt einen der bedeutendsten Schnitzaltäre Deutschlands. Die Seepromenade mit dem Lindengarten bietet traumhafte Aussicht auf die Schweizer Alpen.',
     highlights:['⛪ Münster St. Nikolaus (Marienaltar, Meisterwerk)','🌳 Seepromenade & Lindengarten','🏛️ Stadtmauer mit Türmen','🛒 Wochenmarkt (Sa)','🌅 Alpenblick von der Promenade'] },
 
-  { nr:12, id:'fn',   name:'Friedrichshafen',        region:'Bodensee',    farbe:'#7c3aed',
+  { nr:13, id:'fn',   name:'Friedrichshafen',        region:'Bodensee',    farbe:'#7c3aed',
     lat:47.6549, lon:9.4782,
     tag:'Tag 9', datum:'02.08.', aufenthalt:'~3 Std.',
     anfahrt:'Überlingen → ~35 km · ca. 30 Min.',
@@ -12507,7 +12515,7 @@ const SR_ROUTE = [
     beschreibung:'Friedrichshafen ist die Stadt des Zeppelins — hier startete Graf Ferdinand von Zeppelin am 2. Juli 1900 seinen ersten Luftschiffflug über den Bodensee. Das Zeppelin Museum direkt am See gehört zu den bedeutendsten technischen Museen Europas und zeigt eine originalgetreue Rekonstruktion des Luftschiffs "Hindenburg". Außerdem: Dornier Museum und wunderschöne Seepromenade.',
     highlights:['🚁 Zeppelin Museum (Weltklasse, Hindenburg-Gondel)','✈️ Dornier Museum','🏰 Schloss Friedrichshafen','🌊 Seepromenade (3 km)','⛴️ Fähre nach Romanshorn (CH)','🛁 Bodensee-Therme'] },
 
-  { nr:13, id:'lin',  name:'Lindau',                 region:'Bodensee',    farbe:'#2563eb',
+  { nr:14, id:'lin',  name:'Lindau',                 region:'Bodensee',    farbe:'#2563eb',
     lat:47.5456, lon:9.6872,
     tag:'Tag 9–10', datum:'02.–03.08.', aufenthalt:'1 Übernachtung',
     anfahrt:'Friedrichshafen → ~30 km · ca. 25 Min.',
@@ -12515,7 +12523,7 @@ const SR_ROUTE = [
     beschreibung:'Lindau liegt auf einer kleinen Insel im Bodensee, verbunden durch einen Damm mit dem Festland. Der Hafen mit dem bayerischen Löwen (6 m hoch) und dem alten Leuchtturm ist das bekannteste Postkartenmotiv vom Bodensee. Die Altstadtinsel ist kompakt und zu Fuß in 1–2 Stunden vollständig zu erkunden — Altes Rathaus, Diebsturm, Maximilianstraße.',
     highlights:['🦁 Hafen mit Bayerischem Löwe & Leuchtturm','🏛️ Altes Rathaus (15. Jh.)','🗼 Diebsturm (Stadtturm)','🛍️ Maximilianstraße (Flaniermeile)','🏊 Strandbad Eichwald','🌅 Alpenblick über den See (Abendstimmung)','🇦🇹 Bregenz direkt sichtbar (15 Min.)'] },
 
-  { nr:14, id:'bre',  name:'Bregenz',                region:'Österreich',  farbe:'#dc2626',
+  { nr:15, id:'bre',  name:'Bregenz',                region:'Österreich',  farbe:'#dc2626',
     lat:47.5031, lon:9.7471,
     tag:'Tag 10', datum:'03.08.', aufenthalt:'1 Übernachtung',
     anfahrt:'Lindau → ~15 km · ca. 15 Min.',
