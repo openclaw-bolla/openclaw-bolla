@@ -6151,6 +6151,52 @@ class Handler(BaseHTTPRequestHandler):
                 _gluecksrad_state["stil"] = body.get("stil")
                 _gluecksrad_state["nummer"] = body.get("nummer")
                 self._send_json({"ok": True})
+            elif self.path == "/api/aufpeppen":
+                import base64 as _b64a, subprocess as _spa, shutil as _sha, uuid as _uuida, re as _rea
+                fb64 = body.get("file_b64", "")
+                fname_in = (body.get("filename", "") or "upload").strip()
+                platform = body.get("platform", "insta")
+                style    = body.get("style", "auto")
+                text     = (body.get("text", "") or "").strip()
+                music    = body.get("music", "")  # "" oder "song"
+                if not fb64:
+                    self._send_json({"error": "Keine Datei"}, status=400); return
+                ext = os.path.splitext(fname_in)[1].lower() or ".jpg"
+                if ext not in (".jpg",".jpeg",".png",".webp",".bmp",".mp4",".mov",".m4v",".avi",".mkv"):
+                    self._send_json({"error": f"Dateityp {ext} nicht unterstützt"}, status=400); return
+                _ensure_clipboard_images_dir()
+                tmp_in = os.path.join(CLIPBOARD_IMAGES_DIR, f"_in_{_uuida.uuid4().hex[:8]}{ext}")
+                try:
+                    with open(tmp_in, "wb") as f:
+                        f.write(_b64a.b64decode(fb64))
+                except Exception as e:
+                    self._send_json({"error": f"Dekodieren fehlgeschlagen: {e}"}, status=400); return
+                is_img = ext in (".jpg",".jpeg",".png",".webp",".bmp")
+                out_ext = ".jpg" if (is_img and platform == "insta") else ".mp4"
+                out_name = f"pep_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{_uuida.uuid4().hex[:6]}{out_ext}"
+                out_path = os.path.join(CLIPBOARD_IMAGES_DIR, out_name)
+                cmd = ["python3", os.path.join(WORKSPACE, "scripts/aufpeppen.py"), tmp_in,
+                       "--platform", platform, "--style", style, "--out", out_path]
+                if text: cmd += ["--text", text]
+                if music == "song":
+                    try:
+                        arch = "/mnt/d/OneDrive/Dokumente/Bolla/Suno_DistroKid"
+                        mp3s = [os.path.join(arch, f) for f in os.listdir(arch) if f.lower().endswith(".mp3")]
+                        if mp3s: cmd += ["--music", max(mp3s, key=os.path.getmtime)]
+                    except Exception: pass
+                try:
+                    r = _spa.run(cmd, capture_output=True, text=True, timeout=360)
+                    ok = r.returncode == 0 and os.path.isfile(out_path)
+                    if ok:
+                        self._send_json({"ok": True, "url": f"/api/clipboard/image/{out_name}",
+                                         "filename": out_name, "kind": "image" if out_ext == ".jpg" else "video"})
+                    else:
+                        self._send_json({"error": (r.stderr or r.stdout or "Aufpeppen fehlgeschlagen")[-300:]}, status=500)
+                except Exception as e:
+                    self._send_json({"error": str(e)}, status=500)
+                finally:
+                    try: os.remove(tmp_in)
+                    except Exception: pass
             elif self.path == "/api/ki-buch/generiere":
                 global _ki_buch_job
                 if _ki_buch_job["status"] == "running":

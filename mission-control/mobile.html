@@ -340,6 +340,18 @@ body {
   transition: opacity 0.15s;
 }
 .clip-btn:active { opacity: 0.5; }
+.pep-sel {
+  width: 100%;
+  border: 1.5px solid var(--sep);
+  border-radius: 11px;
+  padding: 12px;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fafafa;
+  outline: none;
+}
+.pep-sel:focus { border-color: var(--accent); }
 .clip-btn.green { background: rgba(52,199,89,0.15); color: var(--green); }
 .clip-btn.red   { background: rgba(255,59,48,0.12); color: var(--red); }
 </style>
@@ -472,6 +484,45 @@ body {
   </div>
 </div>
 
+<div class="page" id="p-pep">
+  <div class="card" style="flex-direction:column;gap:12px">
+    <div id="pep-drop"
+      onclick="document.getElementById('pep-file').click()"
+      style="border:2px dashed var(--sep);border-radius:10px;padding:22px 16px;text-align:center;cursor:pointer;color:var(--text3)">
+      <div style="font-size:32px;margin-bottom:6px">✨📷</div>
+      <div style="font-size:15px;font-weight:600;color:var(--text2)">Bild oder Video wählen</div>
+      <div style="font-size:13px;margin-top:3px">wird im Feel-Good-Stil aufgepeppt</div>
+    </div>
+    <input type="file" id="pep-file" accept="image/*,video/*" style="display:none" onchange="pepFileSelected(event)">
+    <div id="pep-preview" style="display:none;text-align:center"></div>
+
+    <label style="font-size:14px;font-weight:600;color:var(--text2)">Plattform / Format</label>
+    <select id="pep-platform" class="pep-sel">
+      <option value="insta">📸 Instagram (Bild 4:5)</option>
+      <option value="tiktok">🎵 TikTok (Hochformat-Video)</option>
+    </select>
+
+    <label style="font-size:14px;font-weight:600;color:var(--text2)">Pepp-Stärke</label>
+    <select id="pep-style" class="pep-sel">
+      <option value="auto">✨ Automatisch (empfohlen)</option>
+      <option value="natural">🌱 Dezent-natürlich</option>
+      <option value="vivid">🌞 Sonnig-kräftig</option>
+      <option value="spectacular">🎆 Spektakulär</option>
+    </select>
+
+    <label style="font-size:14px;font-weight:600;color:var(--text2)">Text im Bild (optional)</label>
+    <input id="pep-text" class="clip-textarea" style="min-height:0;padding:10px" placeholder="z.B. Läuft, Sommer! 🌞">
+
+    <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text2)">
+      <input type="checkbox" id="pep-music" style="width:20px;height:20px"> 🎶 Aktuellen Song als Tonspur drunterlegen (nur Video)
+    </label>
+
+    <button onclick="pepStart()" id="pep-btn" class="clip-btn green" style="width:100%;font-size:16px;padding:14px">✨ Aufpeppen</button>
+    <div id="pep-status" style="text-align:center;font-size:14px;min-height:20px"></div>
+    <div id="pep-result" style="display:none;flex-direction:column;gap:8px;text-align:center"></div>
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <nav class="tabbar" id="tabbar">
   <button class="tabbtn" data-tab="sos" style="color:#ff3b30"><span class="ic">🆘</span>SOS</button>
@@ -479,6 +530,7 @@ body {
   <button class="tabbtn" data-tab="mail"><span class="ic">📧</span>Mails</button>
   <button class="tabbtn" data-tab="notiz"><span class="ic">🎙️</span>Notiz</button>
   <button class="tabbtn" data-tab="clip"><span class="ic">📋</span>Clipboard</button>
+  <button class="tabbtn" data-tab="pep"><span class="ic">✨</span>Aufpeppen</button>
   <button class="tabbtn" data-tab="wx"><span class="ic">🌤️</span>Wetter</button>
   <button class="tabbtn" data-tab="bd"><span class="ic">🎂</span>Geburtstag</button>
   <button class="tabbtn" data-tab="rezept"><span class="ic">🍽️</span>Rezept</button>
@@ -520,6 +572,7 @@ const TITLES = {
   notiz:       ['Sprachnotiz',    'Aufnehmen · Senden · Speichern'],
   bd:          ['Geburtstage',    'Nächste Anlässe'],
   clip:        ['Clipboard',      'Geräteübergreifend teilen'],
+  pep:         ['✨ Aufpeppen',   'Bild/Video → Feel-Good-Post'],
   sos:         ['🆘 Notfall',     'Notruf & Standort']
 };
 
@@ -1195,6 +1248,70 @@ function clipImgDragLeave(e) {
 }
 function clipImgDrop(e) { e.preventDefault(); clipImgDragLeave(e); _clipImgUpload(e.dataTransfer.files[0]); }
 function clipImgFileSelected(e) { _clipImgUpload(e.target.files[0]); e.target.value = ''; }
+
+// ===== AUFPEPPEN =====
+let _pepFile = null;
+function pepFileSelected(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  _pepFile = f;
+  const isVid = f.type.startsWith('video');
+  // Plattform sinnvoll vorbelegen
+  document.getElementById('pep-platform').value = isVid ? 'tiktok' : 'insta';
+  const prev = document.getElementById('pep-preview');
+  const url = URL.createObjectURL(f);
+  prev.style.display = 'block';
+  prev.innerHTML = isVid
+    ? `<video src="${url}" style="max-width:100%;max-height:240px;border-radius:10px" muted playsinline></video>`
+    : `<img src="${url}" style="max-width:100%;max-height:240px;border-radius:10px">`;
+  document.getElementById('pep-drop').querySelector('div:nth-child(2)').textContent = f.name;
+}
+async function pepStart() {
+  if (!_pepFile) { pepStatus('Erst ein Bild/Video wählen 📷', false); return; }
+  const btn = document.getElementById('pep-btn');
+  btn.disabled = true; btn.style.opacity = '0.5';
+  pepStatus('✨ Wird aufgepeppt … einen Moment', true);
+  document.getElementById('pep-result').style.display = 'none';
+  try {
+    const b64 = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result.split(',')[1]);
+      r.onerror = rej;
+      r.readAsDataURL(_pepFile);
+    });
+    const payload = {
+      file_b64: b64,
+      filename: _pepFile.name,
+      platform: document.getElementById('pep-platform').value,
+      style: document.getElementById('pep-style').value,
+      text: document.getElementById('pep-text').value.trim(),
+      music: document.getElementById('pep-music').checked ? 'song' : ''
+    };
+    const r = await fetch('/api/aufpeppen', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if (!r.ok || d.error) { pepStatus('⚠️ ' + (d.error || 'Fehlgeschlagen'), false); return; }
+    pepStatus('✅ Fertig!', true);
+    const res = document.getElementById('pep-result');
+    res.style.display = 'flex';
+    const media = d.kind === 'video'
+      ? `<video src="${d.url}" controls playsinline style="max-width:100%;border-radius:10px"></video>`
+      : `<img src="${d.url}" style="max-width:100%;border-radius:10px">`;
+    res.innerHTML = media
+      + `<a href="${d.url}" download="${d.filename}" style="display:inline-block;margin-top:4px;padding:12px;background:rgba(34,197,94,0.15);color:#22c55e;border-radius:8px;font-size:15px;font-weight:600;text-decoration:none">⬇ Auf Handy speichern</a>`
+      + `<div style="font-size:12px;color:var(--text3)">Danach in Insta/TikTok posten. Bei TikTok KI-Haken beim Upload setzen.</div>`;
+  } catch (e) {
+    pepStatus('⚠️ Fehler: ' + e.message, false);
+  } finally {
+    btn.disabled = false; btn.style.opacity = '1';
+  }
+}
+function pepStatus(msg, ok) {
+  const el = document.getElementById('pep-status');
+  el.textContent = msg; el.style.color = ok ? 'var(--green)' : 'var(--red)';
+}
 
 document.addEventListener('paste', e => {
   const tag = document.activeElement?.tagName;
