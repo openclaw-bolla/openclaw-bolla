@@ -10,7 +10,7 @@ Fällt beides nicht → diesen Durchlauf überspringen, später neu versuchen.
 
 Solange Fable NICHT verfügbar ist, kostet der Test praktisch nichts (0 Tokens).
 """
-import json, os, sys, subprocess, datetime, urllib.request
+import json, os, sys, subprocess, datetime, urllib.request, fcntl
 
 HOME = "/home/bolla"
 os.environ.setdefault("HOME", HOME)
@@ -84,9 +84,21 @@ def run_consultation():
     log(f"Bericht geschrieben: {OUT_FILE} ({len(report)} Zeichen)")
     return True
 
+LOCK_FILE = f"{DATADIR}/.aurora_fable_watcher.lock"
+
 def main():
     if os.path.exists(DONE_FLAG):
         return  # schon erledigt, still beenden
+    # EXKLUSIV-LOCK: verhindert, dass zwei Instanzen (nohup + Cron) parallel
+    # eine teure Fable-Konsultation starten. Lock hält für die Prozess-Lebensdauer,
+    # wird bei Prozessende automatisch freigegeben.
+    global _lock_fh
+    _lock_fh = open(LOCK_FILE, "w")
+    try:
+        fcntl.flock(_lock_fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        log("Anderer Wächter-Lauf ist bereits aktiv → überspringe (kein Parallellauf).")
+        return
     if not quota_ok():
         return
     if not fable_available():

@@ -1031,11 +1031,18 @@ async function loadClipboard() {
       const linkify = (text) => {
         const esc = text.replace(/</g,'&lt;');
         return esc.replace(/(https?:\/\/[^\s]+)/g, (url) => {
+          if (/\.(mp4|mov|m4v|avi)(\?|$)/i.test(url)) {
+            const fn = url.split('/').pop().split('?')[0] || 'bolla-video.mp4';
+            return `<video controls preload="metadata" src="${url}" style="width:100%;margin-top:6px;border-radius:6px"></video>`
+              + `<a href="${url}" download="${fn}" style="display:inline-block;margin-top:6px;padding:8px 12px;background:rgba(34,197,94,0.15);color:#22c55e;border-radius:6px;font-size:14px;font-weight:600;text-decoration:none">⬇ Auf Handy speichern</a>`;
+          }
           if (/\.(wav|mp3|ogg|m4a|webm)(\?|$)/i.test(url)) {
             return `<a href="${url}" target="_blank" style="color:var(--accent)">${url}</a><br><audio controls preload="none" src="${url}" style="width:100%;margin-top:6px"></audio>`;
           }
           if (/\.(png|jpe?g|gif|webp)(\?|$)/i.test(url)) {
-            return `<a href="${url}" target="_blank" style="color:var(--accent)">${url}</a><br><img src="${url}" style="max-width:100%;margin-top:6px;border-radius:6px">`;
+            const fn = url.split('/').pop().split('?')[0] || 'bolla-bild.jpg';
+            return `<a href="${url}" target="_blank" style="color:var(--accent)">${url}</a><br><img src="${url}" style="max-width:100%;margin-top:6px;border-radius:6px">`
+              + `<br><a href="${url}" download="${fn}" style="display:inline-block;margin-top:6px;padding:8px 12px;background:rgba(34,197,94,0.15);color:#22c55e;border-radius:6px;font-size:14px;font-weight:600;text-decoration:none">⬇ Auf Handy speichern</a>`;
           }
           return `<a href="${url}" target="_blank" style="color:var(--accent);text-decoration:underline">${url}</a>`;
         });

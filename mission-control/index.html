@@ -925,6 +925,9 @@ html, body {
         <div id="dash-restart-banner" style="display:none;align-items:center;gap:12px;margin-bottom:14px;padding:14px 18px;background:rgba(249,115,22,0.13);border:1px solid rgba(249,115,22,0.55);border-radius:10px;color:#f97316;font-size:16px;font-weight:600">
           <span style="font-size:22px">⟳</span><span id="dash-restart-text">Claude Code: Neustart bereit</span>
         </div>
+        <div id="dash-agents-banner" style="display:none;align-items:center;gap:12px;margin-bottom:14px;padding:14px 18px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.55);border-radius:10px;color:#22c55e;font-size:16px;font-weight:600">
+          <span style="font-size:22px">🎩</span><span id="dash-agents-text"></span>
+        </div>
         <div class="dash-grid" style="margin-bottom:14px;align-items:start">
           <!-- LINKS: Nächste Termine + Schule gestapelt -->
           <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
@@ -4384,7 +4387,7 @@ function showPage(page) {
   else { const _t = {'ki-buch':'Thriller-Projekt','ki-workshop':'Projekte-Workspace'}[page]; if (_t) document.getElementById('page-title').textContent = _t; }
   const cmdBar = document.getElementById('mail-cmd-bar');
   if (page !== 'email') { if (cmdBar) cmdBar.style.display='none'; closeMailResult(); _selectedMails=[]; }
-  if (page === 'dashboard')  { loadCalendarData(); loadEmailData(); loadClaudeCode(); tbLoad(); loadRecipe(); loadPhoto(); loadBirthdays(); renderGreeting(); }
+  if (page === 'dashboard')  { loadCalendarData(); loadEmailData(); loadClaudeCode(); tbLoad(); loadRecipe(); loadPhoto(); loadBirthdays(); renderGreeting(); loadDashAgents(); }
   if (page === 'system')     { tbInit(); kostenLoad(); loadBollaModel(); }
   if (page === 'brain')      initBrain();
   if (page === 'bolla')      loadBollaModel();
@@ -7459,16 +7462,20 @@ async function loadBollaModel() {
     const def = t.model_default || '';
     const live = t.model_live || '';
 
+    const agents = Array.isArray(t.bg_agents) ? t.bg_agents : [];
+    const agentStr = agents.map(a =>
+      `<b style="color:#22c55e">${a.count} Agent${a.count > 1 ? 'en' : ''} auf ${a.model}</b>`).join(' · ');
     function renderModelLine(el) {
       if (!el) return;
       const planStr = window._bollaPlanLabel || 'Max Plan';
+      const agentTail = agentStr ? ` · ${agentStr}` : '';
       if (t.model_mismatch && def && live) {
         el.innerHTML = `Default: <b style="color:var(--bright)">${def}</b> · läuft gerade: ` +
-          `<b style="color:#f0c040">${live}</b> <span title="Aktive Session weicht vom Default ab — mit /model umschalten">⚠️</span>`;
+          `<b style="color:#f0c040">${live}</b> <span title="Aktive Session weicht vom Default ab — mit /model umschalten">⚠️</span>` + agentTail;
       } else if (def) {
-        el.innerHTML = `<b style="color:var(--bright)">${live || def}</b> · Default ✓ · ${planStr}`;
+        el.innerHTML = `<b style="color:var(--bright)">${live || def}</b> · Default ✓ · ${planStr}` + agentTail;
       } else {
-        el.textContent = `${live} · ${planStr} · Live-Tools`;
+        el.innerHTML = `${live} · ${planStr} · Live-Tools` + agentTail;
       }
     }
 
@@ -7477,6 +7484,27 @@ async function loadBollaModel() {
     renderModelLine(document.getElementById('bolla-caps-plan'));
   } catch (e) {}
 }
+
+// Dashboard-Überblick: grüne Banderole, wenn headless-Agenten (z.B. Fable 5) laufen.
+// Unsichtbar, wenn keine laufen. Backend-Quelle: /api/tokenusage -> bg_agents.
+async function loadDashAgents() {
+  const banner = document.getElementById('dash-agents-banner');
+  const txt = document.getElementById('dash-agents-text');
+  if (!banner || !txt) return;
+  try {
+    const r = await fetch(API + '/api/tokenusage');
+    const t = await r.json();
+    const agents = Array.isArray(t.bg_agents) ? t.bg_agents : [];
+    if (agents.length) {
+      txt.textContent = agents.map(a =>
+        `${a.count} Agent${a.count > 1 ? 'en' : ''} auf ${a.model} aktiv`).join(' · ');
+      banner.style.display = 'flex';
+    } else {
+      banner.style.display = 'none';
+    }
+  } catch (e) { banner.style.display = 'none'; }
+}
+setInterval(() => { if (document.getElementById('dash-agents-banner')?.offsetParent) loadDashAgents(); }, 30000);
 
 // ═══ KI-KORREKTUR ══════════════════════════════════════════════════════════════
 let korrFileB64 = null, korrMediaType = null, korrLastResult = null;

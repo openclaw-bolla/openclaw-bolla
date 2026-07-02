@@ -3883,11 +3883,39 @@ def get_token_usage():
         if default_raw:
             mismatch = default_raw.lower() not in latest_model.lower()
 
+    # Laufende Hintergrund-Agenten (headless "claude -p --model X") live nach Modell zählen
+    _agents = {}
+    try:
+        for _pid in os.listdir("/proc"):
+            if not _pid.isdigit():
+                continue
+            try:
+                with open(f"/proc/{_pid}/cmdline", "rb") as _cf:
+                    _args = [x.decode("utf-8", "ignore") for x in _cf.read().split(b"\x00") if x]
+            except Exception:
+                continue
+            if not _args or not any("claude" in a for a in _args):
+                continue
+            if "-p" not in _args and "--print" not in _args:   # nur headless Agenten
+                continue
+            if "--model" not in _args:
+                continue
+            try:
+                _m = _args[_args.index("--model") + 1]
+            except Exception:
+                continue
+            _name = _pretty(_m).replace("Claude ", "")
+            _agents[_name] = _agents.get(_name, 0) + 1
+    except Exception:
+        pass
+    bg_agents = [{"model": k, "count": v} for k, v in sorted(_agents.items())]
+
     data = {
         "model": f"{_pretty(latest_model)}" + (f" ({_plan})" if _plan else ""),
         "model_live": live_short,
         "model_default": default_pretty,
         "model_mismatch": mismatch,
+        "bg_agents": bg_agents,
         "plan": _plan,
         "today": {"input": t_in, "output": t_out, "cache_read": t_cr, "cache_creation": t_ce},
         "total": {"input": a_in, "output": a_out, "cache_read": a_cr, "cache_creation": a_ce},
