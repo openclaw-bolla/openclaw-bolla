@@ -7282,6 +7282,32 @@ async function loadRobin() {
           <div style="font-size:13px;color:var(--bright);margin-top:4px">🦁 Safari (Nordtansania / Serengeti)</div>
         </div>
       </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">💰 Kostenschätzung Tansania</span><span style="font-size:13px;color:var(--dim)">Stand 03.07.2026</span></div>
+        ${[
+          {icon:'🏥', label:'Famulatur KCMC (4 Wo.)', min:'550 USD · ~510€', real:'650 USD · ~600€', detail:[
+            ['Registrierung KCMC (einmalig)', '150 USD'],
+            ['Unterkunft (Doctor\'s Compound, 4 Wo.)', '~150 USD'],
+            ['Essen (~3€ × 3 × 28 Tage)', '~250 USD'],
+            ['Lokaler Transport (Boda-Boda/Dala-Dala)', '~50 USD'],
+          ]},
+          {icon:'🏔️', label:'Kilimanjaro (7 Tage)', min:'1.300 USD · ~1.200€', real:'1.550 USD · ~1.450€'},
+          {icon:'🦁', label:'Safari (6–7 Tage)', min:'1.000 USD · ~930€', real:'1.500 USD · ~1.400€'},
+        ].map(r => `<div style="padding:8px 10px;background:rgba(255,255,255,0.05);border-radius:8px;margin-bottom:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:13px;color:var(--bright)">${r.icon} ${r.label}</div>
+            <div style="text-align:right"><div style="font-size:13px;color:var(--bright)">${r.real}</div><div style="font-size:11px;color:var(--dim)">min. ${r.min}</div></div>
+          </div>
+          ${r.detail ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08)">
+            ${r.detail.map(([k,v]) => `<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--dim);padding:1px 0"><span>${k}</span><span>${v}</span></div>`).join('')}
+          </div>` : ''}
+        </div>`).join('')}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:rgba(129,140,248,0.12);border-radius:8px;margin-top:4px;border-left:3px solid var(--accent)">
+          <div style="font-size:13px;font-weight:600;color:var(--bright)">Gesamt (3 Programmteile)</div>
+          <div style="text-align:right"><div style="font-size:14px;font-weight:600;color:var(--bright)">~3.700 USD · ≈3.450€</div><div style="font-size:11px;color:var(--dim)">min. ~2.850 USD · ≈2.650€</div></div>
+        </div>
+        <div style="font-size:11px;color:var(--dim);margin-top:8px;line-height:1.4">Ohne Flug (~900€), Visum (~50 USD) & Versicherung. KCMC-Elective-Gebühr unsicher — Robin sollte beim International Office nachfragen. Kilimanjaro-Preise: Budget-Anbieter Moshi (Machame-Route). Safari: Budget-Camping Northern Circuit.</div>
+      </div>
       <div class="card" style="grid-column:span 2">
         <div class="card-head"><span class="card-title">🩺 Studienverlauf Medizin</span><span style="font-size:13px;color:var(--dim)">Uni Ulm · Regelstudienzeit</span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px">

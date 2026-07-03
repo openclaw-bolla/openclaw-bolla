@@ -5359,21 +5359,18 @@ class Handler(BaseHTTPRequestHandler):
         # In die Windows-Zwischenablage legen (STA-Thread nötig für Clipboard)
         clip_ok = False
         if winpath:
-            winpath_ps = winpath.replace("'", "''")
             ps = (
-                "$ProgressPreference='SilentlyContinue';"
                 "Add-Type -AssemblyName System.Windows.Forms,System.Drawing;"
-                f"$img=[System.Drawing.Image]::FromFile('{winpath_ps}');"
+                f"$img=[System.Drawing.Image]::FromFile('{winpath}');"
                 "[System.Windows.Forms.Clipboard]::SetImage($img);$img.Dispose();"
-                "if([System.Windows.Forms.Clipboard]::ContainsImage()){'CLIPOK'}else{'CLIPFAIL'}"
+                "Write-Output ([System.Windows.Forms.Clipboard]::ContainsImage())"
             )
             enc = base64.b64encode(ps.encode("utf-16-le")).decode()
             try:
                 r = _sp.run(["/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
                              "-STA", "-NoProfile", "-EncodedCommand", enc],
-                            capture_output=True, text=True, timeout=40)
-                out = (r.stdout or "") + (r.stderr or "")
-                clip_ok = "CLIPOK" in out
+                            capture_output=True, text=True, timeout=25)
+                clip_ok = "True" in (r.stdout or "")
             except Exception:
                 clip_ok = False
 
