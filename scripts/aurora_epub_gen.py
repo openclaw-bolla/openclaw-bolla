@@ -468,9 +468,9 @@ def build():
 
     print(f"AURORA EPUB Generator")
     print(f"  {len(kapitel)} Kapitel geladen")
-    LOCAL_COVER = "/mnt/d/OneDrive/Dokumente/AURORA/cover_v6_portrait.png"
+    LOCAL_COVER = "/mnt/d/OneDrive/Dokumente/Bolla/AURORA/4_Cover_Quellen/AURORA_Cover_Master.png"
     if os.path.exists(LOCAL_COVER):
-        print(f"  Verwende lokales Cover: cover_v6_portrait.png (1600×2560)")
+        print(f"  Verwende festes Release-Cover: AURORA_Cover_Master.png")
         with open(LOCAL_COVER, 'rb') as f:
             cover_bytes = f.read()
     else:
