@@ -426,14 +426,14 @@ def build():
 
     print(f"AURORA EPUB Generator (English)")
     print(f"  {len(kapitel)} chapters loaded")
-    LOCAL_COVER = "/mnt/d/OneDrive/Dokumente/AURORA/cover_v6_portrait.png"
+    # Festes Release-Cover (identisch mit DE-Master, md5 16a7317ae56f) — NIE neu generieren
+    LOCAL_COVER = "/mnt/d/OneDrive/Dokumente/Bolla/AURORA/4_Cover_Quellen/AURORA_Cover_Master.png"
     if os.path.exists(LOCAL_COVER):
-        print(f"  Using local cover: cover_v6_portrait.png (1600×2560)")
+        print(f"  Using fixed master cover: AURORA_Cover_Master.png")
         with open(LOCAL_COVER, 'rb') as f:
             cover_bytes = f.read()
     else:
-        print(f"  Generating cover via MAI...")
-        cover_bytes = generate_cover()
+        raise SystemExit("FEHLER: Festes Master-Cover nicht gefunden — Build abgebrochen (kein Würfeln).")
     has_cover = cover_bytes is not None
 
     os.makedirs(os.path.dirname(EPUB_PATH), exist_ok=True)
