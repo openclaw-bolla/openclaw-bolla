@@ -2,268 +2,341 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Mission Control — Notizbuch</title>
+<title>Mission Control</title>
 <style>
-  * { box-sizing: border-box; }
-  html, body {
-    margin: 0; padding: 0; height: 100%;
-    font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive, sans-serif;
-    background-color: #e9dcc0;
-    background-image:
-      radial-gradient(circle at 20% 30%, rgba(139,94,60,0.05) 0%, transparent 40%),
-      radial-gradient(circle at 80% 70%, rgba(139,94,60,0.06) 0%, transparent 45%),
-      repeating-linear-gradient(0deg, rgba(120,90,50,0.03) 0px, rgba(120,90,50,0.03) 1px, transparent 1px, transparent 26px);
-    color: #4a3826;
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', -apple-system, sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #a8c0ff 0%, #f7c6e0 45%, #ffe3ec 70%, #fff1d6 100%);
+    background-attachment: fixed;
+    display: flex;
+    color: #3a3550;
+    overflow-x: hidden;
   }
-  .app { display: flex; height: 100vh; }
-
-  /* ---- SIDEBAR ---- */
-  .sidebar {
-    width: 210px;
-    background: #d8c39c;
-    background-image: repeating-linear-gradient(180deg, rgba(139,94,60,0.05) 0px, rgba(139,94,60,0.05) 1px, transparent 1px, transparent 24px);
-    border-right: 3px dashed #8b5e3c;
-    padding: 22px 14px;
-    position: relative;
-  }
-  .sidebar::after {
+  body::before {
     content: "";
-    position: absolute; top: 0; right: -8px; bottom: 0; width: 8px;
-    background: repeating-linear-gradient(180deg, transparent 0 10px, #8b5e3c22 10px 12px);
+    position: fixed;
+    top: -20%; left: -10%;
+    width: 60%; height: 60%;
+    background: radial-gradient(circle, rgba(255,255,255,0.55), transparent 70%);
+    filter: blur(40px);
+    z-index: 0;
   }
-  .brand {
-    font-family: "Bradley Hand", "Segoe Print", cursive;
-    font-size: 26px;
-    color: #6b3f1d;
-    text-align: center;
-    transform: rotate(-2deg);
-    margin-bottom: 4px;
-    text-shadow: 1px 1px 0 rgba(139,94,60,0.15);
+  body::after {
+    content: "";
+    position: fixed;
+    bottom: -25%; right: -10%;
+    width: 65%; height: 65%;
+    background: radial-gradient(circle, rgba(200,220,255,0.5), transparent 70%);
+    filter: blur(50px);
+    z-index: 0;
   }
-  .brand-sub {
-    text-align: center;
-    font-size: 13px;
-    color: #8b6b45;
-    margin-bottom: 24px;
-    transform: rotate(1deg);
+
+  .sidebar {
+    position: relative;
+    z-index: 2;
+    width: 220px;
+    min-width: 220px;
+    height: 100vh;
+    background: rgba(255,255,255,0.35);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255,255,255,0.5);
+    padding: 28px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .logo {
+    font-size: 20px;
+    font-weight: 700;
+    color: #5b4b8a;
+    margin-bottom: 30px;
+    padding-left: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo span.dot {
+    width: 12px; height: 12px;
+    background: linear-gradient(135deg, #a8c0ff, #f7c6e0);
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 12px rgba(168,192,255,0.8);
   }
   .nav-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
-    font-size: 16px;
-    color: #5a4530;
-    border-radius: 10px 3px 10px 3px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #5a5270;
     cursor: pointer;
-    border: 2px solid transparent;
-    transition: transform 0.15s ease;
+    transition: all 0.25s ease;
   }
-  .nav-item .ic { font-size: 18px; }
   .nav-item:hover {
-    transform: rotate(-1deg) scale(1.02);
-    border-color: #8b5e3c55;
-    background: rgba(255,250,235,0.4);
+    background: rgba(255,255,255,0.5);
+    transform: translateX(4px);
   }
   .nav-item.active {
-    background: #fff8e8;
-    border: 2px dashed #b5824f;
-    font-weight: bold;
-    color: #6b3f1d;
-    transform: rotate(-1deg);
-    box-shadow: 2px 3px 0 rgba(139,94,60,0.15);
+    background: rgba(255,255,255,0.65);
+    box-shadow: 0 4px 18px rgba(168,140,255,0.25);
+    color: #4b3f7a;
+    font-weight: 700;
+  }
+  .nav-item .ic {
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 9px;
   }
 
-  /* ---- MAIN ---- */
-  .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+  .main {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    padding: 26px 40px 40px;
+    height: 100vh;
+    overflow-y: auto;
+  }
 
   .topbar {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 18px 32px;
-    border-bottom: 3px solid #8b5e3c;
-    background: repeating-linear-gradient(90deg, transparent 0 40px, rgba(139,94,60,0.05) 40px 41px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.4);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255,255,255,0.55);
+    border-radius: 24px;
+    padding: 18px 28px;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 28px rgba(150,130,220,0.12);
   }
   .topbar h1 {
-    font-size: 28px;
-    color: #6b3f1d;
-    margin: 0;
-    transform: rotate(-1deg);
+    font-size: 24px;
+    font-weight: 700;
+    color: #4b3f7a;
   }
-  .topbar .clock {
-    font-size: 22px;
-    background: #fff8e8;
-    border: 2px dashed #8b5e3c;
-    border-radius: 12px 4px 12px 4px;
-    padding: 8px 18px;
-    transform: rotate(2deg);
-    box-shadow: 2px 3px 0 rgba(139,94,60,0.2);
+  .topbar .sub {
+    font-size: 13px;
+    color: #8a80a8;
+    margin-top: 2px;
+  }
+  .clock {
+    font-size: 28px;
+    font-weight: 700;
+    color: #5b4b8a;
+    background: rgba(255,255,255,0.55);
+    padding: 8px 22px;
+    border-radius: 18px;
+    letter-spacing: 1px;
+  }
+  .clock .date {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: #9a8fbf;
+    text-align: center;
+    margin-top: 2px;
   }
 
-  .content {
-    padding: 28px 32px;
+  .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 26px;
+    gap: 22px;
   }
 
   .card {
-    background: #fdf6e3;
-    border: 2px solid #8b5e3c;
-    border-radius: 14px 4px 14px 4px / 4px 14px 4px 14px;
-    padding: 18px 20px;
+    background: rgba(255,255,255,0.42);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 26px;
+    padding: 22px 24px;
+    box-shadow: 0 10px 30px rgba(150,130,220,0.14);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
     position: relative;
-    box-shadow: 3px 4px 0 rgba(139,94,60,0.18), 6px 8px 14px rgba(0,0,0,0.08);
+    overflow: hidden;
   }
-  .card:nth-child(1) { transform: rotate(-1.5deg); }
-  .card:nth-child(2) { transform: rotate(1deg); }
-  .card:nth-child(3) { transform: rotate(-0.8deg); }
-  .card:nth-child(4) { transform: rotate(1.5deg); }
-  .card:nth-child(5) { transform: rotate(-1deg); }
-  .card:nth-child(6) { transform: rotate(0.6deg); }
-
-  .card::before {
-    content: "";
-    position: absolute;
-    top: -10px; left: 24px;
-    width: 46px; height: 20px;
-    background: rgba(230, 200, 90, 0.55);
-    border: 1px solid rgba(180,150,50,0.4);
-    transform: rotate(-4deg);
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 38px rgba(150,130,220,0.22);
   }
-
-  .card h3 {
-    margin: 6px 0 12px;
-    font-size: 18px;
-    color: #6b3f1d;
-    display: flex; align-items: center; gap: 8px;
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
   }
-  .card .big {
-    font-size: 34px;
-    font-weight: bold;
-    color: #4a3826;
-  }
-  .card .small {
+  .card-title {
     font-size: 14px;
-    color: #8b6b45;
-    margin-top: 6px;
+    font-weight: 600;
+    color: #6a5d95;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
+  .card-icon {
+    width: 38px; height: 38px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .icon-ram { background: linear-gradient(135deg, #cfe0ff, #a8c0ff); }
+  .icon-cpu { background: linear-gradient(135deg, #ffd6e8, #f7c6e0); }
+  .icon-mail { background: linear-gradient(135deg, #ffe3b0, #ffd08a); }
+  .icon-weather { background: linear-gradient(135deg, #c8f0e0, #a0e8cf); }
 
-  .bar-track {
-    width: 100%; height: 14px;
-    border: 2px solid #8b5e3c;
-    border-radius: 8px;
-    margin-top: 10px;
-    background: repeating-linear-gradient(90deg, #fdf6e3 0 6px, #f0e4c8 6px 7px);
+  .big-value {
+    font-size: 34px;
+    font-weight: 800;
+    color: #4b3f7a;
+  }
+  .big-value .unit { font-size: 16px; font-weight: 600; color: #9a8fbf; }
+
+  .bar-bg {
+    width: 100%;
+    height: 10px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 10px;
+    margin-top: 14px;
     overflow: hidden;
   }
   .bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #c9a876, #8b5e3c);
-    border-right: 2px solid #6b3f1d;
+    border-radius: 10px;
+  }
+  .bar-ram { width: 34%; background: linear-gradient(90deg, #a8c0ff, #7a9cff); }
+  .bar-cpu { width: 12%; background: linear-gradient(90deg, #f7c6e0, #ff9ec9); }
+
+  .card-foot {
+    margin-top: 10px;
+    font-size: 12.5px;
+    color: #8a80a8;
   }
 
-  .mail-list { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+  .mail-list {
+    list-style: none;
+    margin-top: 4px;
+    font-size: 13.5px;
+  }
   .mail-list li {
-    padding: 6px 0;
-    border-bottom: 1px dashed #b5824f;
-    display: flex; justify-content: space-between;
+    padding: 7px 0;
+    border-bottom: 1px dashed rgba(150,130,220,0.2);
+    color: #5a5270;
+    display: flex;
+    justify-content: space-between;
   }
   .mail-list li:last-child { border-bottom: none; }
-  .mail-list .from { color: #6b3f1d; font-weight: bold; }
-  .mail-list .time { color: #a08258; font-size: 12px; }
+  .mail-list .from { font-weight: 600; color: #4b3f7a; }
 
-  .weather-icon { font-size: 42px; float: right; margin-top: -8px; }
+  .weather-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .weather-emoji { font-size: 46px; }
+  .weather-city { font-size: 13px; color: #8a80a8; margin-top: 2px; }
 
-  .doodle-arrow {
-    position: absolute; bottom: 8px; right: 14px;
-    font-size: 20px; color: #b5824f; opacity: 0.6;
+  .badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.7);
+    color: #6a5d95;
   }
 
-  .stamp {
-    position: absolute; top: 10px; right: 14px;
-    font-size: 11px; padding: 3px 8px;
-    border: 2px solid #a83232;
-    color: #a83232;
-    border-radius: 50%;
-    transform: rotate(8deg);
-    opacity: 0.55;
+  .wide {
+    grid-column: span 2;
+  }
+
+  @media (max-width: 900px) {
+    .wide { grid-column: span 1; }
+    .sidebar { width: 72px; min-width: 72px; padding: 20px 10px; }
+    .sidebar .label { display: none; }
+    .logo span.text { display: none; }
   }
 </style>
 </head>
 <body>
-<div class="app">
 
   <div class="sidebar">
-    <div class="brand">✎ Bolla's MC</div>
-    <div class="brand-sub">— Notizbuch Edition —</div>
-
-    <div class="nav-item active"><span class="ic">🏠</span> Dashboard</div>
-    <div class="nav-item"><span class="ic">🐾</span> Bolla</div>
-    <div class="nav-item"><span class="ic">🎓</span> Schule</div>
-    <div class="nav-item"><span class="ic">📅</span> Kalender</div>
-    <div class="nav-item"><span class="ic">✉️</span> E-Mail</div>
-    <div class="nav-item"><span class="ic">☁️</span> Wetter</div>
-    <div class="nav-item"><span class="ic">🖥️</span> System Info</div>
+    <div class="logo"><span class="dot"></span><span class="text">Mission Control</span></div>
+    <div class="nav-item active"><span class="ic">🏠</span><span class="label">Dashboard</span></div>
+    <div class="nav-item"><span class="ic">🐾</span><span class="label">Bolla</span></div>
+    <div class="nav-item"><span class="ic">🎓</span><span class="label">Schule</span></div>
+    <div class="nav-item"><span class="ic">📅</span><span class="label">Kalender</span></div>
+    <div class="nav-item"><span class="ic">✉️</span><span class="label">E-Mail</span></div>
+    <div class="nav-item"><span class="ic">☁️</span><span class="label">Wetter</span></div>
+    <div class="nav-item"><span class="ic">🖥️</span><span class="label">System Info</span></div>
   </div>
 
   <div class="main">
     <div class="topbar">
-      <h1>Dashboard</h1>
-      <div class="clock">🕗 20:14</div>
+      <div>
+        <h1>Dashboard</h1>
+        <div class="sub">Alles im Blick, ganz entspannt ✨</div>
+      </div>
+      <div class="clock">20:14<span class="date">Sonntag, 05. Juli</span></div>
     </div>
 
-    <div class="content">
+    <div class="grid">
 
       <div class="card">
-        <h3>🧠 Arbeitsspeicher</h3>
-        <div class="big">34%</div>
-        <div class="bar-track"><div class="bar-fill" style="width:34%;"></div></div>
-        <div class="small">5,4 GB von 16 GB belegt</div>
-        <div class="doodle-arrow">↳</div>
-      </div>
-
-      <div class="card">
-        <h3>⚙️ Prozessor</h3>
-        <div class="big">12%</div>
-        <div class="bar-track"><div class="bar-fill" style="width:12%;"></div></div>
-        <div class="small">läuft entspannt, alles ruhig</div>
-      </div>
-
-      <div class="card">
-        <h3>✉️ Neue Mails</h3>
-        <div class="stamp">NEU</div>
-        <div class="big">3</div>
-        <ul class="mail-list">
-          <li><span class="from">Robin Mandel</span> <span class="time">09:12</span></li>
-          <li><span class="from">Lessing-Gymnasium</span> <span class="time">08:47</span></li>
-          <li><span class="from">Amazon</span> <span class="time">Gestern</span></li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <h3>☁️ Wetter Hamburg</h3>
-        <span class="weather-icon">🌤️</span>
-        <div class="big">18°C</div>
-        <div class="small">Leicht bewölkt, Wind 12 km/h</div>
-        <div class="small">Morgen: 21°C ☀️</div>
-      </div>
-
-      <div class="card">
-        <h3>📅 Nächster Termin</h3>
-        <div class="big" style="font-size:22px;">Elternabend</div>
-        <div class="small">Heute, 19:00 Uhr — Aula</div>
-        <div class="doodle-arrow">✓</div>
-      </div>
-
-      <div class="card">
-        <h3>📝 Notiz an mich</h3>
-        <div class="small" style="font-size:16px; line-height:1.5;">
-          „Nicht vergessen: AURORA-Verteilung heute anstoßen — Text ist fertig! 🎉"
+        <div class="card-head">
+          <div class="card-title">Arbeitsspeicher</div>
+          <div class="card-icon icon-ram">💾</div>
         </div>
+        <div class="big-value">34<span class="unit">%</span></div>
+        <div class="bar-bg"><div class="bar-fill bar-ram"></div></div>
+        <div class="card-foot">5,4 GB von 16 GB belegt</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Prozessor</div>
+          <div class="card-icon icon-cpu">⚙️</div>
+        </div>
+        <div class="big-value">12<span class="unit">%</span></div>
+        <div class="bar-bg"><div class="bar-fill bar-cpu"></div></div>
+        <div class="card-foot">Ruhig unterwegs, alles entspannt</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Wetter Hamburg</div>
+          <div class="card-icon icon-weather">🌤️</div>
+        </div>
+        <div class="weather-row">
+          <div class="weather-emoji">🌤️</div>
+          <div>
+            <div class="big-value">18<span class="unit">°C</span></div>
+            <div class="weather-city">leicht bewölkt · gefühlt 17°C</div>
+          </div>
+        </div>
+        <div class="card-foot">Wind 12 km/h · Luftfeuchte 64%</div>
+      </div>
+
+      <div class="card wide">
+        <div class="card-head">
+          <div class="card-title">Neue E-Mails</div>
+          <div class="card-icon icon-mail">✉️</div>
+        </div>
+        <div class="big-value">3<span class="unit">ungelesen</span></div>
+        <ul class="mail-list">
+          <li><span class="from">Lessing-Gymnasium</span><span>Vertretungsplan Montag <span class="badge">Neu</span></span></li>
+          <li><span class="from">Amazon KDP</span><span>Update zu deinem Titel</span></li>
+          <li><span class="from">Robin Mandel</span><span>Re: Wochenende in Ulm</span></li>
+        </ul>
       </div>
 
     </div>
   </div>
 
-</div>
 </body>
 </html>
