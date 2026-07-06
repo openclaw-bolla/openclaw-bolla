@@ -6314,14 +6314,6 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
             elif self.path == "/api/board":
                 self._send_json(board_list())
 
-            elif self.path == "/api/schuljahr2627":
-                f = os.path.join(WORKSPACE, "data/schuljahr2627.json")
-                if os.path.isfile(f):
-                    with open(f, encoding="utf-8") as fh:
-                        self._send_json(json.load(fh))
-                else:
-                    self._send_json({"klassen": [], "module_vorjahr": [], "offene_fragen": []})
-
             elif self.path == "/api/sidebar-state":
                 sf = os.path.join(WORKSPACE, "data/sidebar_state.json")
                 if os.path.isfile(sf):
@@ -8826,346 +8818,157 @@ def _keep_block_together(paragraphs):
             p.paragraph_format.keep_with_next = True
 
 
-# ── Reiseplaner: Tages-Reiseplan (Übersichtskarte + je Tag eine Seite) ────────
-
-SR_TRIP_START = datetime(2026, 7, 25)  # Sa, 25.07.2026 — Start der Sommerreise
-SR_WOCHENTAGE_VOLL = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
-
-
-def _sr_tag_range(tag):
-    import re
-    nums = re.findall(r'\d+', tag or '') or ['1']
-    return int(nums[0]), int(nums[-1])
-
-
-def _sr_date_for_day(n):
-    return SR_TRIP_START + timedelta(days=n - 1)
-
-
-def _sr_day_label(n):
-    d = _sr_date_for_day(n)
-    return f"{SR_WOCHENTAGE_VOLL[d.weekday()]}, {d.day:02d}.{d.month:02d}."
-
-
-def _reise_day_groups(stationen):
-    """Lückenlose Tagesliste von Tag 1 bis zum letzten Reisetag. Tage mit Etappen(-Start) werden
-    gruppiert (inkl. Fahrzeit-Summe); Tage ohne eigene Etappe (Standquartier-/freie Tage) erscheinen
-    als 'frei' mit Verweis auf das aktuelle Übernachtungs-Quartier — so sieht Chris auch, was am
-    freien Freiburg-Tag ansteht, statt dass der Tag ganz fehlt."""
-    prim = {}
-    for o in stationen:
-        dn = _sr_tag_range(o.get('tag'))[0]
-        prim.setdefault(dn, []).append(o)
-    maxday = max(_sr_tag_range(o.get('tag'))[1] for o in stationen) if stationen else 0
-    out = []
-    for d in range(1, maxday + 1):
-        if d in prim:
-            stops = prim[d]
-            km = mn = 0
-            legs = 0
-            faehre = False
-            for o in stops:
-                mult = 2 if o.get('retour') else 1
-                if o.get('distKm'):
-                    km += o['distKm'] * mult
-                if o.get('dauerMin'):
-                    mn += o['dauerMin'] * mult
-                    legs += 1
-                if o.get('faehre'):
-                    faehre = True
-            out.append({'daynum': d, 'stations': stops, 'frei': False, 'base': None,
-                        'km': km, 'min': mn, 'legs': legs, 'faehre': faehre})
-        else:
-            base = None
-            for o in stationen:
-                if o.get('ueber'):
-                    a, b = _sr_tag_range(o.get('tag'))
-                    if a <= d <= b:
-                        base = o
-            out.append({'daynum': d, 'stations': [], 'frei': True, 'base': base,
-                        'km': 0, 'min': 0, 'legs': 0, 'faehre': False})
-    return out
-
-
-def _reise_overview_map(stationen):
-    """Gesamtstrecken-Übersicht: farbige, nummerierte Punkte mit Datum + Verbindungslinie über die
-    ganze Route (Auto-Zoom auf alle Stationen). Modelliert auf _reise_walk_map. Gibt PNG-Pfad zurück."""
-    from staticmap import StaticMap, CircleMarker, Line
-    from staticmap.staticmap import _lon_to_x, _lat_to_y
-    from PIL import ImageDraw, ImageFont
-    import tempfile
-
-    def hex2rgb(h):
-        h = h.lstrip('#')
-        return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
-
-    pts = [o for o in stationen if o.get('lat') and o.get('lon')]
-    m = StaticMap(1100, 850, padding_x=80, padding_y=80,
-                  url_template="https://tile.openstreetmap.org/{z}/{x}/{y}.png")
-    coords = [(o['lon'], o['lat']) for o in pts]
-    if len(coords) > 1:
-        m.add_line(Line(coords, "#1e40af", 3))
-    for o in pts:
-        m.add_marker(CircleMarker((o['lon'], o['lat']), "#ffffff", 2))
-    img = m.render()
-    draw = ImageDraw.Draw(img)
-    try:
-        font_nr = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 16)
-        font_dt = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 13)
-        font_hd = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 14)
-        font_lg = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
-    except Exception:
-        font_nr = font_dt = font_hd = font_lg = ImageFont.load_default()
-
-    for i, o in enumerate(pts, 1):
-        tx, ty = _lon_to_x(o['lon'], m.zoom), _lat_to_y(o['lat'], m.zoom)
-        px, py = m._x_to_px(tx), m._y_to_px(ty)
-        rgb = hex2rgb(o.get('farbe', '#6366f1'))
-        r = 15
-        draw.ellipse([px - r - 2, py - r - 2, px + r + 2, py + r + 2], fill=(20, 20, 20))
-        draw.ellipse([px - r, py - r, px + r, py + r], fill=rgb)
-        txt = str(o.get('nr', i))
-        bb = draw.textbbox((0, 0), txt, font=font_nr)
-        draw.text((px - (bb[2] - bb[0]) // 2 - bb[0], py - (bb[3] - bb[1]) // 2 - bb[1]),
-                  txt, font=font_nr, fill="white")
-        dat = o.get('datum', '')
-        if dat:
-            db = draw.textbbox((0, 0), dat, font=font_dt)
-            dw, dh = db[2] - db[0], db[3] - db[1]
-            lx, ly = px + r + 2, py - r - dh - 5
-            draw.rectangle([lx - 2, ly - 2, lx + dw + 3, ly + dh + 3], fill=(255, 255, 255), outline=rgb)
-            draw.text((lx, ly - db[1]), dat, font=font_dt, fill=(20, 20, 20))
-
-    entries = [(o.get('nr', i + 1), o['name'], o.get('farbe', '#6366f1')) for i, o in enumerate(pts)]
-    lh = 26 + len(entries) * 18 + 6
-    lw = 250
-    lx0, ly0 = 8, img.height - lh - 8
-    draw.rectangle([lx0, ly0, lx0 + lw, ly0 + lh], fill=(255, 255, 255), outline=(150, 150, 150))
-    draw.text((lx0 + 8, ly0 + 6), "SOMMERREISE 2026", font=font_hd, fill=(30, 30, 30))
-    for i, (nr, nm, fb) in enumerate(entries):
-        ry = ly0 + 26 + i * 18
-        rgb = hex2rgb(fb)
-        r2 = 6
-        draw.ellipse([lx0 + 8, ry + 2, lx0 + 8 + r2 * 2, ry + 2 + r2 * 2], fill=rgb)
-        draw.text((lx0 + 26, ry), f"{nr}. {nm}"[:34], font=font_lg, fill=(30, 30, 30))
-
-    tf = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-    img.save(tf.name, quality=92)
-    return tf.name
-
-
-def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle=""):
-    """Kompletter Tages-Reiseplan: Seite 1 = Übersichtskarte (farbige, datierte Punkte + Route),
-    danach je Reisetag eine eigene Seite mit den Etappen des Tages — jeweils Halbtag-Zuordnung
-    (Vormittag/Nachmittag/Abend), An-/Weiterfahrt, ausführliche Beschreibung, Tipp & Highlights."""
+def reise_sightseeing_docx(stationen, titel="🧭 Sightseeing-Guide", subtitle=""):
+    """Reines Tipps-&-Highlights-Dokument für unterwegs (kein Anfahrt-/Unterkunfts-Kram).
+    Orte mit längerem Aufenthalt (2+ Übernachtungen) bekommen zusätzlich einen nummerierten
+    Laufplan (Karte + Reihenfolge + kurze Erklärungen je Stopp) — analog zum Flensburg-Projekt."""
     from docx import Document
     from docx.shared import Inches, Pt, RGBColor, Cm
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     import io
+    import time
 
     def hexrgb(h):
         h = h.lstrip('#')
         return RGBColor(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
 
-    GREY = RGBColor(0x64, 0x74, 0x8b)
-    DARK = RGBColor(0x33, 0x33, 0x33)
-    BLUE = RGBColor(0x1e, 0x40, 0xaf)
-    FAHRT = RGBColor(0x25, 0x63, 0xeb)
-    TIPP_B = RGBColor(0xb4, 0x5f, 0x06)
-    TIPP_T = RGBColor(0x44, 0x55, 0x6b)
-
     doc = Document()
     for sec in doc.sections:
-        sec.top_margin = Cm(1.5)
-        sec.bottom_margin = Cm(1.5)
-        sec.left_margin = Cm(1.8)
-        sec.right_margin = Cm(1.8)
+        sec.top_margin = Cm(1.5); sec.bottom_margin = Cm(1.5)
+        sec.left_margin = Cm(1.8); sec.right_margin = Cm(1.8)
 
-    # ── Seite 1: Titel + Übersichtskarte + Eckdaten ──
     t = doc.add_heading(titel, 0)
     t.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    t.runs[0].font.size = Pt(24)
-    t.runs[0].font.color.rgb = BLUE
-    t.paragraph_format.space_before = Pt(0)
-    t.paragraph_format.space_after = Pt(3)
+    t.runs[0].font.size = Pt(26); t.runs[0].font.color.rgb = RGBColor(0x1e, 0x40, 0xaf)
+    t.paragraph_format.space_before = Pt(0); t.paragraph_format.space_after = Pt(4)
 
     if subtitle:
         sub = doc.add_paragraph(subtitle)
         sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        sub.runs[0].font.size = Pt(12)
-        sub.runs[0].font.italic = True
-        sub.runs[0].font.color.rgb = GREY
-        sub.paragraph_format.space_after = Pt(8)
+        sub.runs[0].font.size = Pt(14); sub.runs[0].font.color.rgb = RGBColor(0x64, 0x74, 0x8b)
+        sub.paragraph_format.space_after = Pt(12)
 
-    map_path = None
-    try:
-        map_path = _reise_overview_map(stationen)
-        doc.add_picture(map_path, width=Inches(6.4))
-        mp = doc.paragraphs[-1]
-        mp.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        mp.paragraph_format.space_before = Pt(4)
-        mp.paragraph_format.space_after = Pt(8)
-    except Exception as e:
-        print(f"Übersichtskarte fehlgeschlagen: {e}")
+    map_paths = []
+    last_region = None
+    for st in stationen:
+        block = []  # Absätze dieser Station — am Ende gemeinsam "keep together" markiert
 
-    n_ueber = sum(1 for s in stationen if s.get('ueber'))
-    n_tag = len(stationen) - n_ueber
-    total_km = 0
-    for s in stationen:
-        if s.get('distKm'):
-            total_km += s['distKm'] * (2 if s.get('retour') else 1)
-    eck = doc.add_paragraph()
-    eck.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    er = eck.add_run(f"Start: Norderstedt (Buchenweg 67a)   ·   {n_ueber} Übernachtungen · "
-                     f"{n_tag} Tagesstopps   ·   rund {round(total_km)} km   ·   Ziel: Kaufering (04.08.)")
-    er.font.size = Pt(11)
-    er.font.color.rgb = DARK
-    eck.paragraph_format.space_after = Pt(4)
+        if st.get("ueber") and doc.paragraphs:
+            # Jede Übernachtungs-Station beginnt auf einer neuen Seite (Tagesstopps hängen
+            # sich weiter unten an dieselbe Seite wie ihre vorige Übernachtung an) — so landen
+            # z.B. Kaiserstuhl (Tagesstopp von Freiburg) und Konstanz (nächste Übernachtung)
+            # nie auf derselben Seite.
+            doc.add_page_break()
 
-    gm_url = "https://www.google.com/maps/dir/" + "/".join(
-        f"{s['lat']},{s['lon']}" for s in stationen if s.get('lat'))
-    gmp = doc.add_paragraph()
-    gmp.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    gr = gmp.add_run("🗺️ Gesamte Route in Google Maps: " + gm_url)
-    gr.font.size = Pt(9)
-    gr.font.color.rgb = GREY
+        if st["region"] != last_region:
+            rp = doc.add_paragraph(st["region"])
+            rp.runs[0].font.size = Pt(15); rp.runs[0].font.bold = True
+            rp.runs[0].font.color.rgb = RGBColor(0x94, 0xa3, 0xb8)
+            rp.paragraph_format.space_before = Pt(16); rp.paragraph_format.space_after = Pt(3)
+            last_region = st["region"]
 
-    # ── Ab hier: je Reisetag eine eigene Seite ──
-    for grp in _reise_day_groups(stationen):
-        doc.add_page_break()
-        dn = grp['daynum']
-        hd = doc.add_paragraph()
-        hr = hd.add_run(f"Tag {dn} — {_sr_day_label(dn)}")
-        hr.font.size = Pt(19)
-        hr.font.bold = True
-        hr.font.color.rgb = BLUE
-        hd.paragraph_format.space_before = Pt(0)
-        hd.paragraph_format.space_after = Pt(2)
+        h = doc.add_paragraph()
+        r = h.add_run(st["name"])
+        r.font.size = Pt(20); r.font.bold = True; r.font.color.rgb = hexrgb(st["farbe"])
+        h.paragraph_format.space_after = Pt(2)
+        block.append(h)
 
-        if grp['frei']:
-            base = grp.get('base')
-            bname = base['name'] if base else "Standquartier"
-            fp = doc.add_paragraph()
-            fr0 = fp.add_run(f"🏡 Freier Tag — Standquartier {bname}")
-            fr0.font.size = Pt(14)
-            fr0.font.bold = True
-            fr0.font.color.rgb = hexrgb(base['farbe']) if base else BLUE
-            fp.paragraph_format.space_before = Pt(4)
-            fp.paragraph_format.space_after = Pt(4)
-            hint = doc.add_paragraph()
-            hr2 = hint.add_run("Zeit zur freien Verfügung — Umgebung erkunden, Ausflüge in der Region "
-                               "oder einfach ausruhen. Ideen siehe Tipps & Highlights zu "
-                               f"{bname} an den vorigen Tagen.")
-            hr2.font.size = Pt(11)
-            hr2.font.color.rgb = DARK
-            if base and base.get('tipp'):
-                tp = doc.add_paragraph()
-                tp.paragraph_format.space_before = Pt(6)
-                b = tp.add_run("💡 Tipp: ")
-                b.font.bold = True
-                b.font.size = Pt(11)
-                b.font.color.rgb = TIPP_B
-                rr = tp.add_run(base['tipp'])
-                rr.font.size = Pt(11)
-                rr.font.color.rgb = TIPP_T
-            continue
+        meta = doc.add_paragraph(f"{st['datum']} · {st['aufenthalt']}")
+        meta.runs[0].font.size = Pt(13); meta.runs[0].font.italic = True
+        meta.runs[0].font.color.rgb = RGBColor(0x64, 0x74, 0x8b)
+        meta.paragraph_format.space_after = Pt(5)
+        block.append(meta)
 
-        if grp['legs']:
-            mn = grp['min']
-            if mn >= 60:
-                ztxt = f"{int(mn // 60)} Std." + (f" {int(mn % 60)} Min." if mn % 60 else "")
-            else:
-                ztxt = f"{int(mn)} Min."
-            fr = doc.add_paragraph()
-            frr = fr.add_run(f"🚗 Fahrt heute: ~{round(grp['km'])} km · {ztxt}"
-                             + (f" · {grp['legs']} Etappen" if grp['legs'] >= 2 else "")
-                             + (" · ⛴️ inkl. Fähre" if grp['faehre'] else ""))
-            frr.font.size = Pt(11)
-            frr.font.bold = True
-            frr.font.color.rgb = FAHRT
-            fr.paragraph_format.space_after = Pt(8)
+        if st.get("tipp"):
+            tp = doc.add_paragraph()
+            tp.paragraph_format.space_after = Pt(7)
+            b = tp.add_run("💡 Tipp: ")
+            b.font.bold = True; b.font.size = Pt(14); b.font.color.rgb = RGBColor(0xb4, 0x5f, 0x06)
+            rr = tp.add_run(st["tipp"])
+            rr.font.size = Pt(14); rr.font.color.rgb = RGBColor(0x44, 0x55, 0x6b)
+            block.append(tp)
 
-        for st in grp['stations']:
-            h = doc.add_paragraph()
-            r = h.add_run(st['name'])
-            r.font.size = Pt(17)
-            r.font.bold = True
-            r.font.color.rgb = hexrgb(st.get('farbe', '#1e40af'))
-            zusatz = " — " + " · ".join(x for x in [st.get('tageszeit'), st.get('aufenthalt')] if x)
-            if zusatz.strip(" —·"):
-                r2 = h.add_run(zusatz)
-                r2.font.size = Pt(12)
-                r2.font.color.rgb = GREY
-            h.paragraph_format.space_before = Pt(8)
-            h.paragraph_format.space_after = Pt(3)
+        for hl in st.get("highlights", []):
+            bp = doc.add_paragraph(style="List Bullet")
+            br = bp.add_run(hl); br.font.size = Pt(14)
+            bp.paragraph_format.space_after = Pt(2)
+            block.append(bp)
 
-            if st.get('anfahrt'):
-                ap = doc.add_paragraph()
-                ar = ap.add_run("🚗 " + st['anfahrt'])
-                ar.font.size = Pt(10.5)
-                ar.font.color.rgb = DARK
-                ap.paragraph_format.space_after = Pt(4)
+        if st.get("lang"):
+            # Highlights geocoden (kostenlos, gecacht) → Laufreihenfolge ab Stadtzentrum
+            # Kleine Pause zwischen Calls schont Nominatims Free-Tier (max. ~1 req/s)
+            geocoded, ohne_platz = [], []
+            for i, hl in enumerate(st.get("highlights", [])):
+                if i:
+                    time.sleep(0.6)
+                pos = _reise_geocode_highlight(hl, st["name"])
+                if pos:
+                    geocoded.append({"highlight": hl, "lat": pos[0], "lon": pos[1]})
+                else:
+                    ohne_platz.append(hl)
+            infos = _reise_highlight_infos(st)
 
-            if st.get('beschreibung'):
-                bp = doc.add_paragraph(st['beschreibung'])
-                bp.runs[0].font.size = Pt(11)
-                bp.runs[0].font.color.rgb = DARK
-                bp.paragraph_format.space_after = Pt(5)
-                bp.paragraph_format.line_spacing = 1.25
+            if geocoded:
+                order = _reise_walk_order(st["lat"], st["lon"], geocoded)
+                try:
+                    map_path = _reise_walk_map(st["name"], order, st.get("farbe", "#6366f1"))
+                    map_paths.append(map_path)
+                    doc.add_picture(map_path, width=Inches(5.4))
+                    mp = doc.paragraphs[-1]
+                    mp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    mp.paragraph_format.space_before = Pt(8); mp.paragraph_format.space_after = Pt(8)
+                    block.append(mp)
+                except Exception as e:
+                    print(f"Laufplan-Karte fehlgeschlagen ({st['name']}): {e}")
 
-            if st.get('tipp'):
-                tp = doc.add_paragraph()
-                tp.paragraph_format.space_after = Pt(5)
-                b = tp.add_run("💡 Tipp: ")
-                b.font.bold = True
-                b.font.size = Pt(11)
-                b.font.color.rgb = TIPP_B
-                rr = tp.add_run(st['tipp'])
-                rr.font.size = Pt(11)
-                rr.font.color.rgb = TIPP_T
+                lbl = doc.add_paragraph(f"🚶 Laufplan {st['name']}")
+                lbl.runs[0].font.size = Pt(17); lbl.runs[0].font.bold = True
+                lbl.runs[0].font.color.rgb = hexrgb(st["farbe"])
+                lbl.paragraph_format.space_before = Pt(4); lbl.paragraph_format.space_after = Pt(5)
+                block.append(lbl)
 
-            if st.get('highlights'):
-                lbl = doc.add_paragraph()
-                hb = lbl.add_run("Sehenswürdigkeiten & Highlights:")
-                hb.font.bold = True
-                hb.font.size = Pt(10.5)
-                hb.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
-                lbl.paragraph_format.space_after = Pt(1)
-                for hl in st['highlights']:
-                    bpp = doc.add_paragraph(style="List Bullet")
-                    br = bpp.add_run(hl)
-                    br.font.size = Pt(11)
-                    bpp.paragraph_format.space_after = Pt(1)
+                prev = (st["lat"], st["lon"])
+                for i, pt in enumerate(order, 1):
+                    dist_m = _reise_haversine_m(prev[0], prev[1], pt["lat"], pt["lon"])
+                    dist_txt = f"~{round(dist_m)} m Luftlinie" if dist_m < 950 else f"~{dist_m/1000:.1f} km Luftlinie"
+                    pp = doc.add_paragraph()
+                    pp.paragraph_format.space_after = Pt(6)
+                    nrun = pp.add_run(f"{i}. {_reise_highlight_clean_name(pt['highlight'])}")
+                    nrun.font.bold = True; nrun.font.size = Pt(15); nrun.font.color.rgb = hexrgb(st["farbe"])
+                    drun = pp.add_run(f"  ({dist_txt} zum vorigen Stopp)" if i > 1 else "  (ab Zentrum)")
+                    drun.font.size = Pt(12); drun.font.italic = True; drun.font.color.rgb = RGBColor(0x64, 0x74, 0x8b)
+                    for fact in infos.get(pt["highlight"], []):
+                        pp.add_run("\n· " + fact).font.size = Pt(14)
+                    block.append(pp)
+                    prev = (pt["lat"], pt["lon"])
 
-            if st.get('infoUrl'):
-                ip = doc.add_paragraph()
-                ir = ip.add_run("ℹ️ Preise & Öffnungszeiten: " + st['infoUrl'])
-                ir.font.size = Pt(9)
-                ir.font.color.rgb = GREY
-                ip.paragraph_format.space_after = Pt(3)
+            if ohne_platz:
+                lbl2 = doc.add_paragraph("Weitere Tipps (kein fester Platz auf der Karte gefunden)")
+                lbl2.runs[0].font.size = Pt(13); lbl2.runs[0].font.italic = True
+                lbl2.runs[0].font.color.rgb = RGBColor(0x64, 0x74, 0x8b)
+                lbl2.paragraph_format.space_before = Pt(4); lbl2.paragraph_format.space_after = Pt(3)
+                block.append(lbl2)
+                for hl in ohne_platz:
+                    pp = doc.add_paragraph()
+                    pp.paragraph_format.space_after = Pt(5)
+                    nrun = pp.add_run(_reise_highlight_clean_name(hl) + "\n")
+                    nrun.font.bold = True; nrun.font.size = Pt(14)
+                    for fact in infos.get(hl, []):
+                        pp.add_run("· " + fact + "\n").font.size = Pt(14)
+                    block.append(pp)
 
-    # Weiterfahrt-Hinweis am Ende (Bregenz → Kaufering)
-    wf = doc.add_paragraph()
-    wf.paragraph_format.space_before = Pt(14)
-    wfr = wf.add_run("🚗 Weiterfahrt 04.08.: Bregenz → Kaufering (Steffi & Familie, "
-                     "Thomas-Morus-Str. 12b) · ~160 km · ~1½ Std.")
-    wfr.font.size = Pt(11)
-    wfr.font.bold = True
-    wfr.font.color.rgb = BLUE
+        _keep_block_together(block)
+        doc.add_paragraph("").paragraph_format.space_after = Pt(3)
 
-    foot = doc.add_paragraph("🐾  Bolla · Reiseplan Sommerreise 2026 · Gute Fahrt und schönes Wetter!")
+    foot = doc.add_paragraph("🐾  Bolla · Sightseeing-Guide · Viel Spaß und gutes Wetter!")
     foot.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    foot.runs[0].font.size = Pt(11)
-    foot.runs[0].font.color.rgb = GREY
+    foot.runs[0].font.size = Pt(13); foot.runs[0].font.color.rgb = RGBColor(0x94, 0xa3, 0xb8)
     foot.paragraph_format.space_before = Pt(10)
 
-    buf = io.BytesIO()
-    doc.save(buf)
-    if map_path:
-        try:
-            os.unlink(map_path)
-        except Exception:
-            pass
+    buf = io.BytesIO(); doc.save(buf)
+    for p in map_paths:
+        try: os.unlink(p)
+        except Exception: pass
     return buf.getvalue()
 
 

@@ -973,16 +973,8 @@ html, body {
 
       <!-- SCHULJAHR 26/27 (Planungsseite – noch leer) -->
       <div class="page" id="page-schuljahr2627">
-        <div style="max-width:900px;margin:0 auto;padding:8px 0">
-          <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:14px;padding:40px 28px;text-align:center">
-            <div style="font-size:46px;margin-bottom:10px">🗓️</div>
-            <div style="font-size:22px;font-weight:700;color:var(--bright);margin-bottom:6px">Schuljahr 2026/27 – Planung</div>
-            <div style="font-size:15px;color:var(--dim);line-height:1.6;max-width:560px;margin:0 auto">
-              Unsere gemeinsame Planungsseite für das neue Schuljahr. 🐾<br>
-              Noch leer – sag mir einfach, was hier rein soll (Termine, Klassen, Projekte, Ideen),
-              dann baue ich es Stück für Stück auf.
-            </div>
-          </div>
+        <div style="max-width:900px;margin:0 auto;padding:8px 0" id="sj2627-root">
+          <div style="text-align:center;color:var(--dim);padding:30px">Lade Planung…</div>
         </div>
       </div>
 
@@ -2632,10 +2624,7 @@ html, body {
                 <div style="font-size:12px;color:var(--dim);margin-top:2px">Norderstedt → 15 Stationen → 04.08. Kaufering · ~11 Tage · ~1.270 km (real geprüft)</div>
               </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <button onclick="srDownloadWord('schwarzwald')" style="padding:6px 13px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.4);border-radius:7px;color:#34d399;font-size:12px;cursor:pointer;font-weight:600">📄 Schwarzwald</button>
-                <button onclick="srDownloadWord('bodensee')" style="padding:6px 13px;background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.4);border-radius:7px;color:#60a5fa;font-size:12px;cursor:pointer;font-weight:600">📄 Bodensee</button>
-                <button onclick="srDownloadWord('gesamt')" style="padding:6px 13px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);border-radius:7px;color:#fbbf24;font-size:12px;cursor:pointer;font-weight:600">📄 Gesamtplan</button>
-                <button id="sr-sightseeing-btn" onclick="srDownloadSightseeing()" style="padding:6px 13px;background:rgba(236,72,153,0.15);border:1px solid rgba(236,72,153,0.4);border-radius:7px;color:#f472b6;font-size:12px;cursor:pointer;font-weight:600">🧭 Sightseeing</button>
+                <button id="sr-sightseeing-btn" onclick="srDownloadSightseeing()" title="Kompletter Tages-Reiseplan als Word: Übersichtskarte + je Tag eine Seite mit Programm, Fahrzeiten & Infos" style="padding:7px 16px;background:rgba(251,191,36,0.16);border:1px solid rgba(251,191,36,0.45);border-radius:8px;color:#fbbf24;font-size:13px;cursor:pointer;font-weight:700">📄 Reiseplan als Word</button>
               </div>
             </div>
 
@@ -4483,6 +4472,7 @@ function showPage(page) {
   if (page === 'redesigns')  loadRedesigns();
   if (page === 'clipboard')  { loadClipboard(); _clipRefreshInterval = setInterval(loadClipboard, 4000); }
   if (page === 'board')      loadBoard();
+  if (page === 'schuljahr2627') loadSchuljahr2627();
   if (page === 'projekte')   loadProjekte();
   if (page === 'ki-workshop') loadKiWorkshop();
   if (page === 'ki-news')    loadKiNews();
@@ -5911,6 +5901,44 @@ const BOARD_PRIO = {
   mid:  {dot:'🟡', label:'mittlere Aussicht'},
   low:  {dot:'🟢', label:'geringe Aussicht / kann warten'}
 };
+
+async function loadSchuljahr2627() {
+  const box = document.getElementById('sj2627-root');
+  try {
+    const r = await fetch(API + '/api/schuljahr2627');
+    const d = await r.json();
+    const klassen = (d.klassen || []).map(k => `<span style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:14px;font-weight:600;color:var(--bright)">${k}</span>`).join('');
+    const module = (d.module_vorjahr || []).map(m => `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--text)">${m}</div>`).join('');
+    const fragen = (d.offene_fragen || []).map(f => `
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px">
+        <div style="font-size:14px;color:var(--bright);font-weight:600;margin-bottom:6px">❓ ${f.frage}</div>
+        <div style="font-size:14px;color:${f.antwort ? 'var(--text)' : 'var(--dim)'};font-style:${f.antwort ? 'normal' : 'italic'}">${f.antwort ? '✅ ' + f.antwort : 'noch offen'}</div>
+      </div>`).join('');
+    box.innerHTML = `
+      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:14px;padding:24px 26px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <div style="font-size:32px">🗓️</div>
+          <div>
+            <div style="font-size:20px;font-weight:700;color:var(--bright)">Schuljahr ${d.schuljahr || '2026/27'} – Planung ${d.fach || ''}</div>
+            <div style="font-size:13px;color:var(--dim)">${d.wochenstunden || '?'} Std./Woche · Klassen: ${(d.klassen||[]).join(', ')}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">${klassen}</div>
+        <div style="font-size:14px;color:var(--text);line-height:1.6">${d.hinweis || ''}</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:16px">
+        <div style="font-size:16px;font-weight:700;color:var(--bright);margin-bottom:10px">📚 Module aus dem Vorjahr (25/26)</div>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:10px">Quelle: ${d.quelle_vorjahr || ''} — Reihenfolge noch zu bestätigen</div>
+        ${module}
+      </div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:14px;padding:20px 22px">
+        <div style="font-size:16px;font-weight:700;color:var(--bright);margin-bottom:12px">❓ Offene Fragen für die Planung</div>
+        ${fragen || '<div style="color:var(--dim);font-size:14px">Keine offenen Fragen mehr 🎉</div>'}
+      </div>`;
+  } catch (e) {
+    box.innerHTML = '<div style="color:var(--dim);font-size:14px">Konnte Planung nicht laden.</div>';
+  }
+}
 
 async function loadBoard() {
   const box = document.getElementById('board-content');
@@ -13246,14 +13274,14 @@ function srDownloadSightseeing() {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
       teil: 'gesamt',
-      titel: '🧭 Sightseeing-Guide — Schwarzwald & Bodensee 2026',
-      subtitle: 'Nur die Tipps & Highlights zu den Orten, die wir besuchen wollen'
+      titel: '🗺️ Sommerreise 2026 — Schwarzwald & Bodensee',
+      subtitle: 'Norderstedt → Schwarzwald → Bodensee → Bregenz → Kaufering · 25.07.–04.08.2026'
     })
   }).then(r => { if (!r.ok) throw new Error('Serverfehler'); return r.blob(); })
     .then(blob => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url; a.download = 'Sightseeing-Guide-Sommerreise-2026.docx'; a.click();
+      a.href = url; a.download = 'Reiseplan-Sommerreise-2026.docx'; a.click();
       URL.revokeObjectURL(url);
     })
     .catch(e => alert('⚠ Sightseeing-Guide fehlgeschlagen: ' + e.message))
