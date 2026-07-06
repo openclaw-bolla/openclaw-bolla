@@ -842,9 +842,19 @@ html, body {
           <div class="nav-item" data-page="kalender"><span class="icon">📅</span><span>Kalender</span></div>
           <div class="nav-item" data-page="email"><span class="icon">📧</span><span>E-Mail</span><span class="badge" id="mail-badge" style="display:none">0</span></div>
           <div class="nav-item" data-page="clipboard"><span class="icon">📋</span><span>Clipboard</span></div>
-          <div class="nav-item" data-page="board"><span class="icon">📋</span><span>Projekt-Board</span></div>
-          <div class="nav-item" data-page="projekte"><span class="icon">🏡</span><span>Immobilienkauf Bayern</span></div>
-          <div class="nav-item" data-page="urlaub"><span class="icon">✈️</span><span>Reiseplaner</span></div>
+          <div id="nav-group-projekte">
+            <div class="nav-group-header" id="nav-group-header-projekte" onclick="event.stopPropagation();toggleNavGroup('projekte')">
+              <span class="nav-group-grip">⠿</span><span class="icon">🗂️</span>
+              <span>Projekte</span>
+              <span class="nav-group-count">3</span>
+              <span class="nav-group-chevron" id="nav-chevron-projekte">▶</span>
+            </div>
+            <div class="nav-group-items" id="nav-group-items-projekte">
+              <div class="nav-item nav-subitem" data-page="board"><span class="icon">📋</span><span>Projekt-Board</span></div>
+              <div class="nav-item nav-subitem" data-page="projekte"><span class="icon">🏡</span><span>Immobilienkauf Bayern</span></div>
+              <div class="nav-item nav-subitem" data-page="urlaub"><span class="icon">✈️</span><span>Reiseplaner</span></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -2629,7 +2639,7 @@ html, body {
             <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
               <div>
                 <div style="font-size:15px;font-weight:700;color:#fbbf24">🌲 Sommerreise 2026 — Schwarzwald &amp; Bodensee</div>
-                <div style="font-size:12px;color:var(--dim);margin-top:2px">Norderstedt → 15 Stationen → 04.08. Kaufering · ~11 Tage · ~1.270 km (real geprüft)</div>
+                <div style="font-size:12px;color:var(--dim);margin-top:2px">Norderstedt → 14 Stationen → 01.08. Kaufering · ~13 Tage · ~1.300 km</div>
               </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
                 <button onclick="srDownloadWord('schwarzwald')" style="padding:6px 13px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.4);border-radius:7px;color:#34d399;font-size:12px;cursor:pointer;font-weight:600">📄 Schwarzwald</button>
@@ -2645,17 +2655,11 @@ html, body {
               <div style="font-size:12px;color:#7dd3fc">Fahrzeiten gelten für den <b>VW ID.3</b> (~200 km pro Ladung im Sommer, mit Puffer; Erfahrung Norderstedt↔Ulm ~720 km: Sommer ~9 h, Winter ~10 h). Nur die lange Anreise braucht Ladestopps — alle Etappen vor Ort liegen unter einer Akkuladung. Heimweg Bregenz → Kaufering (~160 km) ohne Stopp machbar.</div>
             </div>
 
-            <!-- Tagesübersicht: Wochentag + Fahrzeit-Summe pro Tag, wichtig an Tagen mit mehreren Stopps -->
-            <div style="margin-bottom:14px">
-              <div style="font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">📅 Tagesübersicht (Fahrzeiten real geprüft via Routing)</div>
-              <div id="sr-tagesuebersicht" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px"></div>
-            </div>
-
             <!-- Hauptlayout -->
             <div style="display:grid;grid-template-columns:240px 1fr;gap:16px;align-items:start">
               <!-- Linke Spalte: Stationsliste -->
               <div style="display:flex;flex-direction:column;gap:2px" id="sr-stationen">
-                <div style="font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">8 Stationen · 7 Tagesstopps</div>
+                <div style="font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">14 Stationen</div>
               </div>
               <!-- Rechte Spalte: Karte + Detail -->
               <div style="display:flex;flex-direction:column;gap:12px">
@@ -3236,7 +3240,7 @@ html, body {
               <button id="suno-mode-frei" onclick="sunoSetMode('frei')"
                 style="padding:9px 18px;border:none;border-left:1px solid var(--border);cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;transition:all .2s">✏️ Freies Thema</button>
               <button id="suno-mode-profil" onclick="sunoSetMode('profil')"
-                style="padding:9px 18px;border:none;border-left:1px solid var(--border);cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;transition:all .2s">🌊 bollawave-Stil</button>
+                style="padding:9px 18px;border:none;border-left:1px solid var(--border);cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;transition:all .2s">🚀 Veröffentlichung</button>
             </div>
           </div>
           <div id="suno-mode-hint" style="display:none;margin:-4px auto 14px auto;max-width:90%;text-align:center;font-size:13px;color:#c4b5fd;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);border-radius:8px;padding:8px 12px;line-height:1.5"></div>
@@ -3403,46 +3407,6 @@ html, body {
               </button>
             </div>
             <div id="suno-dl-status" style="font-size:13px;color:var(--dim);margin-top:8px;min-height:18px"></div>
-
-            <!-- 🚀 Veröffentlichen: verkettet die komplette DistroKid-Vorbereitung -->
-            <div style="margin-top:16px;padding:13px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.35);border-radius:10px">
-              <div style="font-size:14px;font-weight:700;color:#4ade80;margin-bottom:3px">🚀 Für DistroKid fertig machen</div>
-              <div style="font-size:13px;color:var(--dim);line-height:1.5;margin-bottom:11px">Legt aus dem Song oben einen fertigen Ordner an: <b>MP3 320k</b>, <b>3000²-Cover</b>, Lyrics, Upload-Checkliste — plus <b>Social-Paket mit TikTok/Insta-Video</b> &amp; Captions. Danach nur noch bei DistroKid hochladen.</div>
-              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
-                <div style="display:flex;align-items:center;gap:6px">
-                  <label style="font-size:13px;color:var(--dim)">Genre</label>
-                  <input id="suno-pub-genre" type="text" value="Pop" style="width:130px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 10px;font-size:14px;outline:none;font-family:inherit">
-                </div>
-                <div style="display:flex;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:13px">
-                  <button id="suno-pub-de" onclick="sunoPubLang('de')" style="padding:7px 13px;border:none;cursor:pointer;font-weight:700;background:#22c55e;color:white;transition:all .2s">🇩🇪 DE</button>
-                  <button id="suno-pub-en" onclick="sunoPubLang('en')" style="padding:7px 13px;border:none;cursor:pointer;font-weight:600;background:transparent;color:var(--dim);transition:all .2s">🇬🇧 EN</button>
-                </div>
-                <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text);cursor:pointer">
-                  <input type="checkbox" id="suno-pub-fetch" checked style="width:16px;height:16px;accent-color:#22c55e;cursor:pointer">
-                  MP3 &amp; Cover frisch aus Suno holen
-                </label>
-              </div>
-              <textarea id="suno-pub-lyrics" rows="4" placeholder="Liedtext hier einfügen — für Lyrics.txt und den Namens-/Schulbezug-Scan (empfohlen)"
-                style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 11px;font-size:14px;line-height:1.5;outline:none;font-family:inherit;resize:vertical;margin-bottom:10px"></textarea>
-              <button id="suno-pub-btn" onclick="sunoPublish()"
-                style="width:100%;background:linear-gradient(135deg,#16a34a,#22c55e);border:none;border-radius:8px;color:white;font-weight:700;font-size:15px;padding:11px 18px;cursor:pointer;box-shadow:0 2px 12px rgba(34,197,94,0.35);transition:opacity .2s">
-                🚀 Alles für DistroKid vorbereiten
-              </button>
-              <div id="suno-pub-status" style="font-size:13px;color:var(--dim);margin-top:9px;min-height:18px;line-height:1.55"></div>
-              <details style="margin-top:11px">
-                <summary style="font-size:14px;color:#4ade80;cursor:pointer;font-weight:600">📋 So geht ein Release — Schritt für Schritt</summary>
-                <div style="margin-top:9px;padding:12px 14px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid var(--border);font-size:14px;line-height:1.75;color:var(--text)">
-                  <div><b>1.</b> Song in <b>Suno</b> fertig machen — mit dem Pro-Modell (ab 05.08. wieder da) für gute Qualität. <b>Titel merken.</b></div>
-                  <div><b>2.</b> Oben den <b>Titel eintippen</b> — exakt wie in Suno (danach wird der Song im Suno-Feed gesucht).</div>
-                  <div><b>3.</b> <b>Sprache + Genre</b> wählen, Liedtext einfügen <span style="color:var(--dim)">(optional, nur für den Namens-Scan)</span>.</div>
-                  <div><b>4.</b> Grünen Knopf <b>„🚀 Alles für DistroKid vorbereiten"</b> drücken → 1–2 Min warten → fertiger Ordner liegt auf dem <b>Desktop</b>.</div>
-                  <div><b>5.</b> Bei <b>DistroKid hochladen</b> — die <b>Checkliste</b> im Ordner sagt dir jedes Feld (Künstler = bollawave, KI-Haken setzen!).</div>
-                  <div><b>6.</b> <b>Nach</b> dem Release: Video + Captions aus dem Unterordner <b>„Social Media"</b> posten <span style="color:var(--dim)">(bei TikTok den KI-Haken beim Upload setzen)</span>.</div>
-                  <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);color:var(--dim)">💡 Fehler <i>„Song nicht in Suno-Feed gefunden"</i>? → Suno-Token unten kurz aktualisieren, dann nochmal.</div>
-                </div>
-              </details>
-            </div>
-
             <details style="margin-top:10px">
               <summary style="font-size:12px;color:var(--dim);cursor:pointer">🔑 Suno-Token aktualisieren</summary>
               <div style="margin-top:10px;padding:10px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid var(--border)">
@@ -4863,7 +4827,6 @@ async function initNavDrag() {
     'projekte': 'nav-section-items-arbeit',
     'urlaub': 'nav-section-items-arbeit',
     'ki-workshop': 'nav-section-items-arbeit',
-    'board': 'nav-section-items-familie',
     'robin': 'nav-section-items-familie',
     'geburtstage': 'nav-section-items-familie',
     'bildgen': 'nav-section-items-kreativ',
@@ -5905,13 +5868,6 @@ const BOARD_STATUS = {
   dropped: {icon:'❌', label:'verworfen', color:'#ef5350', bg:'rgba(239,83,80,.09)',  bd:'rgba(239,83,80,.32)'}
 };
 
-// Prio-Einschätzung (von Bolla gepflegt, Feld a.prio) — nur Anzeige, ändert Reihenfolge NICHT
-const BOARD_PRIO = {
-  high: {dot:'🔴', label:'hohe Erfolgsaussicht / dringlich'},
-  mid:  {dot:'🟡', label:'mittlere Aussicht'},
-  low:  {dot:'🟢', label:'geringe Aussicht / kann warten'}
-};
-
 async function loadBoard() {
   const box = document.getElementById('board-content');
   try {
@@ -5938,18 +5894,12 @@ async function loadBoard() {
         const metaLine = meta.length ? `<div style="font-size:12px;color:var(--dim);margin-top:3px">${meta.join(' · ')}</div>` : '';
         const replyBadge = a.reply ? `<span style="flex-shrink:0;align-self:center;font-size:12px;font-weight:700;color:#22c55e;background:rgba(34,197,94,.16);border:1px solid rgba(34,197,94,.42);padding:3px 9px;border-radius:10px">✉️ Antwort${a.reply_date ? ' ' + escHtml(a.reply_date) : ''}</span>` : '';
         const isDone = a.status === 'done';
-        const canNudge = (a.status === 'open' || a.status === 'doing');
-        const pr = BOARD_PRIO[a.prio];
-        const prioDot = pr ? `<span title="${pr.label}" style="flex-shrink:0;font-size:13px;line-height:1.4">${pr.dot}</span>` : '';
-        const nudgeBtn = canNudge ? `<button onclick="boardActionNudge(event,'${p.id}','${a.id}')" title="Diese Aktion anstupsen: Auftrag in Zwischenablage + Bolla-Queue" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:13px;line-height:1;cursor:pointer;padding:4px 8px">📌</button>` : '';
         const actBtns = `<div style="flex-shrink:0;display:flex;gap:4px;align-self:center">
-            ${nudgeBtn}
             <button onclick="boardActionToggle('${p.id}','${a.id}')" title="${isDone ? 'wieder auf offen' : 'als erledigt markieren'}" style="background:none;border:1px solid var(--border);border-radius:6px;color:${isDone ? '#22c55e' : 'var(--dim)'};font-size:13px;line-height:1;cursor:pointer;padding:4px 8px">${isDone ? '↩' : '✓'}</button>
             ${isDone ? `<button onclick="boardActionDelete('${p.id}','${a.id}')" title="löschen" style="background:none;border:1px solid var(--border);border-radius:6px;color:#ef5350;font-size:13px;line-height:1;cursor:pointer;padding:4px 8px">✕</button>` : ''}
           </div>`;
         rows += `<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 11px;margin-bottom:7px;background:${as.bg};border:1px solid ${as.bd};border-radius:7px">
           <span style="font-size:15px;line-height:1.4;flex-shrink:0" title="${as.label}">${as.icon}</span>
-          ${prioDot}
           <div style="flex:1;min-width:0"><div style="font-size:14px;line-height:1.45;${dim}${strike}">${escHtml(a.text)}</div>${metaLine}</div>
           ${replyBadge}
           ${actBtns}
@@ -6016,25 +5966,6 @@ async function boardNudge(ev, pid) {
       btn.textContent = '⚠️ Fehler';
     }
   } catch(e) { btn.textContent = '⚠️ Fehler'; }
-  setTimeout(() => { btn.textContent = orig; }, 2400);
-}
-
-async function boardActionNudge(ev, pid, aid) {
-  ev.stopPropagation();
-  const btn = ev.currentTarget;
-  const orig = btn.textContent;
-  try {
-    const r = await fetch(API + '/api/board/action-nudge', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({projId: pid, actId: aid})});
-    const d = await r.json();
-    if (d && d.prompt) {
-      let copied = false;
-      try { await navigator.clipboard.writeText(d.prompt); copied = true; } catch(e) {}
-      btn.textContent = copied ? '✓📋' : '✓';
-      btn.title = copied ? 'Aktion angestupst + in Zwischenablage kopiert' : 'Aktion angestupst (Kopieren blockiert)';
-    } else {
-      btn.textContent = '⚠️';
-    }
-  } catch(e) { btn.textContent = '⚠️'; }
   setTimeout(() => { btn.textContent = orig; }, 2400);
 }
 
@@ -12712,170 +12643,125 @@ async function tripDownloadDocx() {
 
 const SR_ROUTE = [
   { nr:1,  id:'bb',   name:'Baden-Baden',     region:'Schwarzwald', farbe:'#f59e0b',
-    lat:48.7614, lon:8.2385, distKm:700, dauerMin:540, tageszeit:'Nachmittag',
+    lat:48.7614, lon:8.2385,
     tag:'Tag 1', datum:'25.07.', aufenthalt:'1 Übernachtung',
     anfahrt:'Norderstedt → ~700 km · ca. 9 Std. (inkl. 3–4 Ladestopps · ID.3, Erfahrungswert) · Ankunft ~16:00',
     tipp:'⚡ Mit dem ID.3 3–4 Schnelllade-Stopps einplanen (~200 km pro Ladung im Sommer, mit Puffer) — Ionity/EnBW entlang A7/A5 gut ausgebaut. Erfahrung Norderstedt→Ulm: Sommer ~9 h, Winter ~10 h. Daher früh starten (~7:00)! Nachmittags Lichtentaler Allee, abends Caracalla-Therme zur Erholung.',
-    beschreibung:'Baden-Baden ist das elegante Tor zum Schwarzwald — weltberühmte Thermen, die älteste Spielbank Deutschlands und die herrliche Lichtentaler Allee am Ufer der Oos. Nach der langen Anreise aus Norderstedt ideal zum Ankommen und Entspannen. Das Stadtbild ist geprägt von Belle-Époque-Architektur und einem mondänen Flair, das früher russische Zaren und europäische Könige anzog. Als Kurstadt gehört Baden-Baden seit 2021 zum UNESCO-Welterbe „Great Spa Towns of Europe". Komponist Johannes Brahms verbrachte hier mehrere Sommer und komponierte in seinem kleinen Haus an der Lichtentaler Allee, und auch Dostojewski war zu Gast in der Spielbank — seine Verluste am Roulettetisch sollen ihn zu seinem Roman „Der Spieler" inspiriert haben.',
-    infoUrl:'https://caracalla.eu/prices/',
+    beschreibung:'Baden-Baden ist das elegante Tor zum Schwarzwald — weltberühmte Thermen, die älteste Spielbank Deutschlands und die herrliche Lichtentaler Allee am Ufer der Oos. Nach der langen Anreise aus Norderstedt ideal zum Ankommen und Entspannen. Das Stadtbild ist geprägt von Belle-Époque-Architektur und einem mondänen Flair, das früher russische Zaren und europäische Könige anzog.',
     highlights:['♨️ Caracalla Therme (Wellness, Pools, Sauna)','🏛️ Friedrichsbad (römisch-irisches Bad, 19. Jh.)','🎰 Spielbank Baden-Baden (älteste Deutschlands)','🌳 Lichtentaler Allee (2,4 km Parkpromenade)','🍇 Weinberge & Rebland (Spätburgunder)','🖼️ Kunstmuseum Baden-Baden'] },
 
   { nr:2,  id:'gen',  name:'Gengenbach',       region:'Schwarzwald', farbe:'#f97316',
-    lat:48.4022, lon:7.9821, distKm:61, dauerMin:46, tageszeit:'Vormittag',
+    lat:48.4022, lon:7.9821,
     tag:'Tag 2', datum:'26.07.', aufenthalt:'Halbtag (~2–3 Std.)',
-    anfahrt:'Baden-Baden → ~61 km · ca. 46 Min.',
+    anfahrt:'Baden-Baden → ~55 km · ca. 50 Min.',
     tipp:'Perfekter Zwischenstopp auf dem Weg nach Freudenstadt. Altstadt zu Fuß in 1–2h komplett erkundbar.',
-    beschreibung:'Gengenbach gehört zu den schönsten Fachwerkstädtchen Deutschlands — Mittelalter zum Anfassen mit perfekt erhaltenen Stadtmauern, bunten Bürgerhäusern und einem idyllischen Marktplatz. Im Advent ist Gengenbach weltbekannt für seinen "lebenden Adventskalender" am Rathaus. Im Sommer ist es angenehm ruhig und sehr fotogen. Die Stadt war bis zur Auflösung 1803 eine Freie Reichsstadt und verdankt ihre besondere Prägung dem ehemaligen Benediktinerkloster, dessen Barockbau heute Sitz von Stadtverwaltung und dem stimmungsvollen Kaisersaal ist.',
-    infoUrl:'https://www.gengenbach.info/',
+    beschreibung:'Gengenbach gehört zu den schönsten Fachwerkstädtchen Deutschlands — Mittelalter zum Anfassen mit perfekt erhaltenen Stadtmauern, bunten Bürgerhäusern und einem idyllischen Marktplatz. Im Advent ist Gengenbach weltbekannt für seinen "lebenden Adventskalender" am Rathaus. Im Sommer ist es angenehm ruhig und sehr fotogen.',
     highlights:['🏰 Mittelalterliche Altstadt & Marktplatz','🗼 Niggelturm & Stadtmauer','🏛️ Kaisersaal im Rathaus','🍷 Weinbau im Kinzigtal','📸 Fotomotiv-Paradies'] },
 
   { nr:3,  id:'fd',   name:'Freudenstadt',     region:'Schwarzwald', farbe:'#10b981',
-    lat:48.4645, lon:8.4125, distKm:66, dauerMin:64, tageszeit:'Nachmittag',
+    lat:48.4645, lon:8.4125,
     tag:'Tag 2', datum:'26.07.', aufenthalt:'1 Übernachtung',
-    anfahrt:'Gengenbach → ~66 km · ca. 1 Std. 4 Min.',
+    anfahrt:'Gengenbach → ~55 km · ca. 55 Min.',
     tipp:'Freudenstadt liegt auf 730 m — angenehm kühl auch im Hochsommer. Guter Ausgangspunkt für Schwarzwald-Wanderungen am nächsten Morgen.',
-    beschreibung:'Freudenstadt liegt auf einem Hochplateau und besitzt den größten Marktplatz Deutschlands — über 200 m lang, umgeben von Arkadengängen aus dem 17. Jahrhundert. Die Stadt wurde im Zweiten Weltkrieg fast vollständig zerstört und danach rekonstruiert. Heute ist sie idealer Ausgangspunkt für Wanderungen auf dem Schwarzwald-Panoramaweg. Gegründet wurde die Stadt 1599 von Herzog Friedrich I. von Württemberg als Bergbausiedlung für Tiroler Glaubensflüchtlinge — daher auch die für eine Schwarzwaldstadt ungewöhnlich großzügige, schachbrettartige Anlage rund um den riesigen zentralen Platz.',
-    infoUrl:'https://www.freudenstadt.de/Tourismus',
+    beschreibung:'Freudenstadt liegt auf einem Hochplateau und besitzt den größten Marktplatz Deutschlands — über 200 m lang, umgeben von Arkadengängen aus dem 17. Jahrhundert. Die Stadt wurde im Zweiten Weltkrieg fast vollständig zerstört und danach rekonstruiert. Heute ist sie idealer Ausgangspunkt für Wanderungen auf dem Schwarzwald-Panoramaweg.',
     highlights:['🏛️ Größter Marktplatz Deutschlands (216×216 m)','🏔️ Schwarzwaldmuseum','🥾 Panoramaweg & Murgtäler Wanderwege','🌲 Schwarzwald-Hochstraße (Panoramastraße)','🧖 Vital-Therme Freudenstadt'] },
 
   { nr:4,  id:'tri',  name:'Triberg',           region:'Schwarzwald', farbe:'#3b82f6',
-    lat:48.1295, lon:8.2340, distKm:58, dauerMin:70, tageszeit:'Vormittag',
+    lat:48.1295, lon:8.2340,
     tag:'Tag 3', datum:'27.07.', aufenthalt:'Halbtag (~3–4 Std.)',
-    anfahrt:'Freudenstadt → ~58 km · ca. 1 Std. 10 Min.',
+    anfahrt:'Freudenstadt → ~65 km · ca. 1 Std.',
     tipp:'Die Wasserfälle sind morgens bei weniger Besuchern am schönsten. Danach unbedingt Schwarzwälder Kirschtorte essen!',
-    beschreibung:'Triberg ist die unbestrittene Kuckucksuhr-Hauptstadt der Welt und beherbergt die höchsten Wasserfälle Deutschlands. Sieben Kaskaden stürzen insgesamt 163 Meter in die Tiefe — beeindruckend fotogen und gut erreichbar über beleuchtete Waldwege. Die Guinness-Weltrekord-Kuckucksuhr ist ein Pflichtfoto. Die Kuckucksuhr selbst hat ihren Ursprung im 18. Jahrhundert im Schwarzwald — entlang der „Deutschen Uhrenstraße", die durch Triberg führt, lässt sich diese Handwerkstradition bis heute in mehreren Uhrenmanufakturen live erleben.',
-    infoUrl:'https://www.triberg.de/tourismus-freizeit/tourismus-freizeit/natur-erlebnis/deutschlands-hoechste-wasserfaelle',
+    beschreibung:'Triberg ist die unbestrittene Kuckucksuhr-Hauptstadt der Welt und beherbergt die höchsten Wasserfälle Deutschlands. Sieben Kaskaden stürzen insgesamt 163 Meter in die Tiefe — beeindruckend fotogen und gut erreichbar über beleuchtete Waldwege. Die Guinness-Weltrekord-Kuckucksuhr ist ein Pflichtfoto.',
     highlights:['💧 Triberger Wasserfälle (163 m, höchste in D)','🕐 Weltgrößte Kuckucksuhr (Guinness-Rekord)','🏛️ Schwarzwälder Heimatmuseum','🍰 Schwarzwälder Kirschtorte (original!)','🛍️ Kuckucksuhren-Läden'] },
 
   { nr:5,  id:'titi', name:'Titisee',            region:'Schwarzwald', farbe:'#06b6d4',
-    lat:47.8932, lon:8.1469, distKm:50, dauerMin:65, tageszeit:'Nachmittag',
+    lat:47.8932, lon:8.1469,
     tag:'Tag 3–4', datum:'27.–28.07.', aufenthalt:'1 Übernachtung',
-    anfahrt:'Triberg → ~50 km · ca. 1 Std. 5 Min.',
+    anfahrt:'Triberg → ~55 km · ca. 55 Min.',
     tipp:'Boot mieten und auf den See — herrliche Ruhe und Blick auf die Schwarzwald-Wälder. Abends gut Essen direkt am Seeufer.',
-    beschreibung:'Der Titisee ist der bekannteste Bergsee des Schwarzwalds, entstanden durch einen Gletscherwall nach der letzten Eiszeit. Mit 1,5 km Länge und bis 40 m Tiefe ist er überraschend groß. Der Ort drumherum ist zwar touristisch, aber der See selbst ist wunderschön — Bootverleih, Badestrand und Wanderwege rund um den See. Der Sage nach soll ein römischer Legionär namens Titus den See entdeckt und ihm seinen Namen gegeben haben — historisch nicht belegt, aber eine hübsche Geschichte, die bis heute erzählt wird.',
-    infoUrl:'https://www.titisee-neustadt.de/',
+    beschreibung:'Der Titisee ist der bekannteste Bergsee des Schwarzwalds, entstanden durch einen Gletscherwall nach der letzten Eiszeit. Mit 1,5 km Länge und bis 40 m Tiefe ist er überraschend groß. Der Ort drumherum ist zwar touristisch, aber der See selbst ist wunderschön — Bootverleih, Badestrand und Wanderwege rund um den See.',
     highlights:['⛵ Titisee (Bootverleih, Baden)','🥾 Seerundweg (7,5 km)','🌲 Schwarzwälder Freilichtmuseum Vogtsbauernhof (30 km)','🏔️ Feldberg Tagesausflug (15 Min.)','🛍️ Titisee-Promenade'] },
 
   { nr:6,  id:'fel',  name:'Feldberg',           region:'Schwarzwald', farbe:'#8b5cf6',
-    lat:47.8737, lon:8.0043, distKm:15, dauerMin:45, tageszeit:'Vormittag',
-    tag:'Tag 4', datum:'28.07.', aufenthalt:'Ausflug (~3 Std., reine Fahrzeit hin+zurück ca. 1½ Std. extra)',
-    anfahrt:'Titisee → ~15 km · ca. 45 Min. (kurvige Bergstraße — trotz kurzer Distanz keine 20-Min.-Strecke!)',
-    tipp:'Frühmorgens fahren — Aussicht bei Nebel im Tal ist magisch. Festes Schuhwerk empfohlen. Die Bergstraße hoch dauert trotz nur 15 km ca. 45 Min. — Rückweg nach Titisee nochmal genauso lang einplanen, dann weiter Freiburg (siehe dort).',
-    beschreibung:'Mit 1.493 m ist der Feldberg der höchste Gipfel des Schwarzwalds und der höchste Punkt Baden-Württembergs nördlich der Alpen. An klaren Tagen sieht man die gesamten Schweizer Alpen bis hin zum Mont Blanc. Der Feldbergturm bietet ein 360°-Panorama. Rund um den Gipfel verlaufen gut ausgeschilderte Wanderwege. Das Gebiet steht bereits seit den 1930er-Jahren unter Naturschutz — eines der ältesten Schutzgebiete Baden-Württembergs — und beherbergt eine für den Schwarzwald einzigartige alpine Flora oberhalb der Baumgrenze. Im Winter ist der Feldberg zudem das größte Skigebiet des Mittelgebirges.',
-    infoUrl:'https://www.feldberg-erlebnis.de/en/summer/tickets-prices',
+    lat:47.8737, lon:8.0043,
+    tag:'Tag 4', datum:'28.07.', aufenthalt:'Ausflug (~3 Std.)',
+    anfahrt:'Titisee → ~15 km · ca. 20 Min.',
+    tipp:'Frühmorgens fahren — Aussicht bei Nebel im Tal ist magisch. Festes Schuhwerk empfohlen. Rückkehr nach Titisee zum Auschecken, dann weiter Freiburg.',
+    beschreibung:'Mit 1.493 m ist der Feldberg der höchste Gipfel des Schwarzwalds und der höchste Punkt Baden-Württembergs nördlich der Alpen. An klaren Tagen sieht man die gesamten Schweizer Alpen bis hin zum Mont Blanc. Der Feldbergturm bietet ein 360°-Panorama. Rund um den Gipfel verlaufen gut ausgeschilderte Wanderwege.',
     highlights:['⛰️ Feldbergturm (1.493 m, Panorama bis Alpen)','🥾 Feldberg-Steig Wanderung (2–3 h)','🦅 Naturschutzgebiet & Wildtiere','❄️ Bismarckdenkmal','🌄 Alpenblick bei gutem Wetter'] },
 
   { nr:7,  id:'fre',  name:'Freiburg',            region:'Schwarzwald', farbe:'#ef4444',
-    lat:47.9990, lon:7.8421, distKm:50, dauerMin:96, tageszeit:'Nachmittag',
+    lat:47.9990, lon:7.8421,
     tag:'Tag 4–6', datum:'28.–30.07.', aufenthalt:'2 Übernachtungen',
-    anfahrt:'Feldberg → Titisee (Rückweg ~45 Min.) → Freiburg ~36 km/51 Min. — zusammen ~50 km · ca. 1 Std. 36 Min. ab Feldberg',
+    anfahrt:'Titisee/Feldberg → ~25–30 km · ca. 30 Min.',
     tipp:'Die 3 Tage clever aufteilen: Ankunftstag für Münster & Altstadt, der freie Mitteltag (29.07.) ideal für den Halbtagesausflug in den Kaiserstuhl (nur 25 Min. entfernt), am letzten Vormittag vor der Weiterfahrt nach Konstanz noch Schlossberg oder Schauinsland. Münster-Turmbesteigung am besten morgens — Weitsicht auf Schwarzwald und Vogesen. Abends im Studentenviertel auf dem Platz vor dem Münster: Straßenmarkt, lebendige Atmosphäre.',
-    beschreibung:'Freiburg im Breisgau ist die sonnigste Großstadt Deutschlands und die inoffizielle Hauptstadt des Schwarzwalds. Das gotische Münster mit seinem durchbrochenen Sandsteinturm zählt zu den schönsten mittelalterlichen Kathedralen. Die Bächle — kleine Wasserrinnen entlang der Altstadt-Gassen — sind einzigartig in Deutschland. Freiburg hat eine lebendige Universität, exzellente Küche und das Dreisamtal als Ausflugsziel direkt vor der Tür. Die Albert-Ludwigs-Universität wurde bereits 1457 gegründet und zählt zu den ältesten Deutschlands — das prägt bis heute das junge, weltoffene Flair der Stadt. Die Bächle dienten im Mittelalter der Brandbekämpfung und Viehtränke; einer Freiburger Redensart nach soll, wer versehentlich hineintritt, einen Freiburger oder eine Freiburgerin heiraten.',
-    infoUrl:'https://visit.freiburg.de',
+    beschreibung:'Freiburg im Breisgau ist die sonnigste Großstadt Deutschlands und die inoffizielle Hauptstadt des Schwarzwalds. Das gotische Münster mit seinem durchbrochenen Sandsteinturm zählt zu den schönsten mittelalterlichen Kathedralen. Die Bächle — kleine Wasserrinnen entlang der Altstadt-Gassen — sind einzigartig in Deutschland. Freiburg hat eine lebendige Universität, exzellente Küche und das Dreisamtal als Ausflugsziel direkt vor der Tür.',
     highlights:['⛪ Freiburger Münster (Gotik, 116 m — Turmbesteigung!)','💧 Bächle in der Altstadt (einzigartig in DE)','🏔️ Schlossberg mit Aussichtsturm (Seilbahn)','🚡 Schauinsland Gondelbahn (1.284 m)','🖼️ Augustinermuseum (mittelalterliche Kunst)','🛒 Münstermarkt (tägl. außer So)','🍽️ Markthalle (Feinschmecker-Paradies)','🌿 Botanischer Garten Universität'] },
 
   { nr:8,  id:'kai',  name:'Kaiserstuhl',         region:'Schwarzwald', farbe:'#84cc16',
-    lat:48.1044, lon:7.6821, distKm:22, dauerMin:25, retour:true, tageszeit:'Vormittag',
+    lat:48.1044, lon:7.6821,
     tag:'Tag 5', datum:'29.07.', aufenthalt:'Halbtagesausflug (~4–5 Std.)',
-    anfahrt:'Freiburg → ~22 km · ca. 25 Min. (und abends derselbe Weg zurück)',
+    anfahrt:'Freiburg → ~25 km · ca. 30 Min.',
     tipp:'Vormittags starten, dann bleibt nachmittags noch Zeit für Freiburg. Ein Weindorf reicht für den Halbtag — Achkarren oder Oberrotweil sind am zugänglichsten. Wer noch Puste hat: kurzer Spaziergang zum Winzerweg mit Blick übers Rheintal bis zu den Vogesen.',
-    beschreibung:'Der Kaiserstuhl ist ein erloschener Vulkan mitten im Rheintal und Deutschlands wärmste Ecke — deshalb wächst hier auf steilen Terrassen einer der besten Weine des Landes (Spätburgunder, Grauburgunder). Die Hänge sind von Trockenmauern und schmalen Winzerpfaden durchzogen, dazwischen liegen pittoreske Weindörfer wie Achkarren, Oberrotweil und Burkheim. Nur 25 Autominuten von Freiburg entfernt und trotzdem eine komplett andere Landschaft — mediterran, warm, offen. Das warme Mikroklima hat eine für Deutschland einzigartige Pflanzen- und Tierwelt hervorgebracht — mit Orchideenwiesen und Arten wie der Gottesanbeterin, die sonst eher im Mittelmeerraum zu Hause sind.',
-    infoUrl:'https://www.naturgarten-kaiserstuhl.de/de',
+    beschreibung:'Der Kaiserstuhl ist ein erloschener Vulkan mitten im Rheintal und Deutschlands wärmste Ecke — deshalb wächst hier auf steilen Terrassen einer der besten Weine des Landes (Spätburgunder, Grauburgunder). Die Hänge sind von Trockenmauern und schmalen Winzerpfaden durchzogen, dazwischen liegen pittoreske Weindörfer wie Achkarren, Oberrotweil und Burkheim. Nur 25 Autominuten von Freiburg entfernt und trotzdem eine komplett andere Landschaft — mediterran, warm, offen.',
     highlights:['🍷 Weinprobe in einem der Winzerdörfer (Achkarren, Oberrotweil, Burkheim)','🥾 Kurzwanderung auf einem Winzerpfad zwischen den Rebterrassen','🌋 Vulkangestein & Lösshohlwege (einzigartige Geologie)','🦋 Orchideenpfad Bötzingen (im Sommer meist verblüht, aber schöner Weg)','🌄 Blick übers Rheintal bis zu den Vogesen','🏊 Feuerbergsee bei Bötzingen (ehem. Steinbruch, Baden möglich)'] },
 
   { nr:9,  id:'kon',  name:'Konstanz',            region:'Bodensee',    farbe:'#0ea5e9',
-    lat:47.6607, lon:9.1755, distKm:127, dauerMin:109, tageszeit:'Nachmittag',
+    lat:47.6607, lon:9.1755,
     tag:'Tag 7', datum:'31.07.', aufenthalt:'1 Übernachtung',
-    anfahrt:'Freiburg → ~127 km · ca. 1 Std. 49 Min.',
+    anfahrt:'Freiburg → ~130 km · ca. 1½ Std.',
     tipp:'Vom Bahnhof direkt zur Imperia-Statue am Hafen — perfektes erstes Bild vom Bodensee. Abends Altstadt-Bummel bis zur Schweizer Grenze.',
-    beschreibung:'Konstanz ist die größte Stadt am Bodensee und liegt als einzige deutsche Großstadt direkt an der Schweizer Grenze — was ihr im Zweiten Weltkrieg die Bombardierung ersparte und die mittelalterliche Altstadt erhielt. Das Konzilgebäude von 1388 war Schauplatz des größten Kirchenkongresses des Mittelalters. Die Imperia-Statue am Hafen — eine provokante Rotunde von Peter Lenk — ist ein Pflichtfoto. Beim Konstanzer Konzil (1414–1418) wurde die jahrzehntelange Kirchenspaltung mit drei rivalisierenden Päpsten beendet — hier wurde auch der Reformator Jan Hus zum Ketzer erklärt und 1415 verbrannt, ein Wendepunkt der Kirchengeschichte, an den heute mehrere Gedenkorte in der Altstadt erinnern.',
-    infoUrl:'https://www.konstanz-info.com/',
+    beschreibung:'Konstanz ist die größte Stadt am Bodensee und liegt als einzige deutsche Großstadt direkt an der Schweizer Grenze — was ihr im Zweiten Weltkrieg die Bombardierung ersparte und die mittelalterliche Altstadt erhielt. Das Konzilgebäude von 1388 war Schauplatz des größten Kirchenkongresses des Mittelalters. Die Imperia-Statue am Hafen — eine provokante Rotunde von Peter Lenk — ist ein Pflichtfoto.',
     highlights:['🏛️ Konzilgebäude (Papstwahl 1417, Welterbe-Anwärter)','⛪ Münster Unserer Lieben Frau','💃 Imperia-Statue am Hafen (Peter Lenk)','🌉 Rheinbrücke — Blick in die Schweiz','🚢 Fähre nach Meersburg (direkt vom Zentrum)','🌸 Mainau per Rad (7 km)','🍷 Altstadt & Weinstuben'] },
 
   { nr:10, id:'mai',  name:'Mainau',               region:'Bodensee',    farbe:'#ec4899',
-    lat:47.7026, lon:9.1945, distKm:8, dauerMin:16, tageszeit:'Vormittag',
+    lat:47.7026, lon:9.1945,
     tag:'Tag 8', datum:'01.08.', aufenthalt:'Halbtag (~4 Std.)',
-    anfahrt:'Konstanz → ~8 km · ca. 16 Min. (oder Rad)',
+    anfahrt:'Konstanz → ~15 km · ca. 15 Min. (oder Rad)',
     tipp:'Im Juli blühen Dahlien und Seerosen. Früh kommen (9 Uhr) — nachmittags sehr voll. Danach direkt zur Fähre nach Meersburg.',
-    beschreibung:'Die Blumeninsel Mainau im Bodensee gehört der schwedischen Grafenfamilie Bernadotte und ist eine der meistbesuchten Sehenswürdigkeiten Deutschlands. Über 45 Hektar Schloss- und Gartenanlage mit einem atemberaubenden Blütenkalender das ganze Jahr. Das Barockschloss thront malerisch über dem See. Im Juli ein Farbenmeer aus Dahlien, Seerosen und tropischen Gewächsen. Möglich macht das milde Bodensee-Klima, das mediterrane und sogar subtropische Pflanzen wie Palmen und Mammutbäume gedeihen lässt. Graf Lennart Bernadotte, der die Insel ab den 1930er-Jahren zu dem heutigen Schaugarten umgestaltete, ist auch der Ursprung der bis heute engen Verbindung der Insel zum schwedischen Königshaus.',
-    infoUrl:'https://www.mainau.de/en/prices',
+    beschreibung:'Die Blumeninsel Mainau im Bodensee gehört der schwedischen Grafenfamilie Bernadotte und ist eine der meistbesuchten Sehenswürdigkeiten Deutschlands. Über 45 Hektar Schloss- und Gartenanlage mit einem atemberaubenden Blütenkalender das ganze Jahr. Das Barockschloss thront malerisch über dem See. Im Juli ein Farbenmeer aus Dahlien, Seerosen und tropischen Gewächsen.',
     highlights:['🌸 Barockschloss & Schlosskirche','🦋 Schmetterlingshaus (über 120 Arten)','🌹 Dahlien- & Rosengarten (Juli-Highlight)','🌳 Baumkronenpfad (12 m Höhe)','🌅 Panoramablick auf Konstanzer Bucht','🍽️ Schlossrestaurant'] },
 
   { nr:11, id:'mee',  name:'Meersburg',             region:'Bodensee',    farbe:'#d97706',
-    lat:47.6935, lon:9.2724, dauerMin:20, faehre:true, tageszeit:'Nachmittag',
+    lat:47.6935, lon:9.2724,
     tag:'Tag 8', datum:'01.08.', aufenthalt:'1 Übernachtung',
-    anfahrt:'Mainau/Konstanz → Fähre ~20 Min. (Konstanz–Meersburg, Autofähre — Straßenroute wäre ~63 km/57 Min., die Fähre ist die klar bessere Wahl)',
+    anfahrt:'Mainau/Konstanz → Fähre ~20 Min. (Konstanz–Meersburg)',
     tipp:'Fähre Konstanz–Meersburg dauert nur 20 Min. — malerische Überfahrt! In Meersburg eine Weinprobe in der Staatsweinkellerei unbedingt einplanen.',
-    beschreibung:'Meersburg ist das romantischste und steilste Städtchen am gesamten Bodensee. Das Alte Schloss aus dem 7. Jahrhundert ist die älteste dauerhaft bewohnte Burg Deutschlands. Zwischen Ober- und Unterstadt ziehen sich enge Weinbergs-Gassen am Seehang entlang — der Blick über den See auf die Schweizer Alpen ist unvergesslich. Exzellente Weine von der Staatsweinkellerei. Die bedeutende deutsche Dichterin Annette von Droste-Hülshoff verbrachte hier ihre letzten Lebensjahre und starb 1848 im Fürstenhäusle am Schlossberg — ihr Wohnhaus ist heute als Museum zu besichtigen und einer der Gründe, warum Meersburg auch literarisch von Bedeutung ist.',
-    infoUrl:'https://www.meersburg.de/de/Tourismus',
+    beschreibung:'Meersburg ist das romantischste und steilste Städtchen am gesamten Bodensee. Das Alte Schloss aus dem 7. Jahrhundert ist die älteste dauerhaft bewohnte Burg Deutschlands. Zwischen Ober- und Unterstadt ziehen sich enge Weinbergs-Gassen am Seehang entlang — der Blick über den See auf die Schweizer Alpen ist unvergesslich. Exzellente Weine von der Staatsweinkellerei.',
     highlights:['🏰 Altes Schloss (älteste bewohnte Burg DE, 7. Jh.)','🏛️ Neues Schloss (ehem. Bischofsresidenz)','🍷 Staatsweinkellerei Meersburg (Weinprobe)','⛴️ Fähre Konstanz–Meersburg','✍️ Annette-von-Droste-Hülshoff-Museum','🌄 Seesterrasse mit Alpenblick','🛍️ Steile Altstadt-Gassen'] },
 
   { nr:12, id:'uel',  name:'Überlingen',             region:'Bodensee',    farbe:'#059669',
-    lat:47.7710, lon:9.1633, distKm:17, dauerMin:17, tageszeit:'Vormittag',
+    lat:47.7710, lon:9.1633,
     tag:'Tag 9', datum:'02.08.', aufenthalt:'~2 Std.',
-    anfahrt:'Meersburg → ~17 km · ca. 17 Min. (kurzer Abstecher Richtung Westen, danach wieder zurück Richtung Friedrichshafen)',
-    tipp:'Promenade am See entlang spazieren, Münster anschauen, Kaffee in der Altstadt — dann weiter nach Friedrichshafen. Ja, das ist ein kleiner Umweg (~28 Min. mehr als direkt Meersburg→Friedrichshafen) — für das hübsche Städtchen aber lohnend.',
-    beschreibung:'Überlingen gilt als heimliche Schönheit am Bodensee — eine der besterhaltenen mittelalterlichen Städte, die weniger bekannt ist als ihre Nachbarn. Das gotische Münster St. Nikolaus besitzt einen der bedeutendsten Schnitzaltäre Deutschlands. Die Seepromenade mit dem Lindengarten bietet traumhafte Aussicht auf die Schweizer Alpen. Auch Überlingen war einst Freie Reichsstadt und blieb dem alten Glauben treu, während weite Teile Süddeutschlands protestantisch wurden — das über Jahrhunderte gewachsene Münster (13. bis 15. Jahrhundert) spiegelt diese lange, ungebrochene katholische Tradition der Stadt wider.',
-    infoUrl:'https://www.ueberlingen-bodensee.de/',
+    anfahrt:'Meersburg → ~22 km · ca. 20 Min.',
+    tipp:'Promenade am See entlang spazieren, Münster anschauen, Kaffee in der Altstadt — dann weiter nach Friedrichshafen.',
+    beschreibung:'Überlingen gilt als heimliche Schönheit am Bodensee — eine der besterhaltenen mittelalterlichen Städte, die weniger bekannt ist als ihre Nachbarn. Das gotische Münster St. Nikolaus besitzt einen der bedeutendsten Schnitzaltäre Deutschlands. Die Seepromenade mit dem Lindengarten bietet traumhafte Aussicht auf die Schweizer Alpen.',
     highlights:['⛪ Münster St. Nikolaus (Marienaltar, Meisterwerk)','🌳 Seepromenade & Lindengarten','🏛️ Stadtmauer mit Türmen','🛒 Wochenmarkt (Sa)','🌅 Alpenblick von der Promenade'] },
 
   { nr:13, id:'fn',   name:'Friedrichshafen',        region:'Bodensee',    farbe:'#7c3aed',
-    lat:47.6549, lon:9.4782, distKm:34, dauerMin:34, tageszeit:'Nachmittag',
+    lat:47.6549, lon:9.4782,
     tag:'Tag 9', datum:'02.08.', aufenthalt:'~3 Std.',
-    anfahrt:'Überlingen → ~34 km · ca. 34 Min.',
+    anfahrt:'Überlingen → ~35 km · ca. 30 Min.',
     tipp:'Das Zeppelin Museum ist wirklich außergewöhnlich — 3 Stunden einplanen! Originalteile des Hindenburg-Zeppelins sind zu sehen.',
-    beschreibung:'Friedrichshafen ist die Stadt des Zeppelins — hier startete Graf Ferdinand von Zeppelin am 2. Juli 1900 seinen ersten Luftschiffflug über den Bodensee. Das Zeppelin Museum direkt am See gehört zu den bedeutendsten technischen Museen Europas und zeigt eine originalgetreue Rekonstruktion des Luftschiffs "Hindenburg". Außerdem: Dornier Museum und wunderschöne Seepromenade. Gerade weil hier Zeppeline und später Flugzeuge (Dornier) gebaut wurden, war Friedrichshafen im Zweiten Weltkrieg eines der am schwersten bombardierten Ziele am Bodensee und musste nach 1945 fast komplett neu aufgebaut werden — die moderne Seepromenade ist auch ein Ergebnis dieses Wiederaufbaus.',
-    infoUrl:'https://www.zeppelin-museum.de/besuch/zeiten-preise',
+    beschreibung:'Friedrichshafen ist die Stadt des Zeppelins — hier startete Graf Ferdinand von Zeppelin am 2. Juli 1900 seinen ersten Luftschiffflug über den Bodensee. Das Zeppelin Museum direkt am See gehört zu den bedeutendsten technischen Museen Europas und zeigt eine originalgetreue Rekonstruktion des Luftschiffs "Hindenburg". Außerdem: Dornier Museum und wunderschöne Seepromenade.',
     highlights:['🚁 Zeppelin Museum (Weltklasse, Hindenburg-Gondel)','✈️ Dornier Museum','🏰 Schloss Friedrichshafen','🌊 Seepromenade (3 km)','⛴️ Fähre nach Romanshorn (CH)','🛁 Bodensee-Therme'] },
 
   { nr:14, id:'lin',  name:'Lindau',                 region:'Bodensee',    farbe:'#2563eb',
-    lat:47.5456, lon:9.6872, distKm:27, dauerMin:31, tageszeit:'Abend',
+    lat:47.5456, lon:9.6872,
     tag:'Tag 9–10', datum:'02.–03.08.', aufenthalt:'1 Übernachtung',
-    anfahrt:'Friedrichshafen → ~27 km · ca. 31 Min.',
+    anfahrt:'Friedrichshafen → ~30 km · ca. 25 Min.',
     tipp:'Abends auf dem Hafen-Steg stehen wenn die Berge in der Abendsonne leuchten — eines der schönsten Bilder der ganzen Reise!',
-    beschreibung:'Lindau liegt auf einer kleinen Insel im Bodensee, verbunden durch einen Damm mit dem Festland. Der Hafen mit dem bayerischen Löwen (6 m hoch) und dem alten Leuchtturm ist das bekannteste Postkartenmotiv vom Bodensee. Die Altstadtinsel ist kompakt und zu Fuß in 1–2 Stunden vollständig zu erkunden — Altes Rathaus, Diebsturm, Maximilianstraße. Seit 1951 finden hier jährlich die weltberühmten Lindauer Nobelpreisträgertagungen statt, bei denen sich Nobelpreisträger mit jungen Nachwuchswissenschaftlern aus aller Welt treffen — ein Grund, warum die kleine Inselstadt international einen erstaunlich klangvollen Namen hat.',
-    infoUrl:'https://www.lindau.de/',
+    beschreibung:'Lindau liegt auf einer kleinen Insel im Bodensee, verbunden durch einen Damm mit dem Festland. Der Hafen mit dem bayerischen Löwen (6 m hoch) und dem alten Leuchtturm ist das bekannteste Postkartenmotiv vom Bodensee. Die Altstadtinsel ist kompakt und zu Fuß in 1–2 Stunden vollständig zu erkunden — Altes Rathaus, Diebsturm, Maximilianstraße.',
     highlights:['🦁 Hafen mit Bayerischem Löwe & Leuchtturm','🏛️ Altes Rathaus (15. Jh.)','🗼 Diebsturm (Stadtturm)','🛍️ Maximilianstraße (Flaniermeile)','🏊 Strandbad Eichwald','🌅 Alpenblick über den See (Abendstimmung)','🇦🇹 Bregenz direkt sichtbar (15 Min.)'] },
 
   { nr:15, id:'bre',  name:'Bregenz',                region:'Österreich',  farbe:'#dc2626',
-    lat:47.5031, lon:9.7471, distKm:10, dauerMin:19, tageszeit:'Nachmittag',
+    lat:47.5031, lon:9.7471,
     tag:'Tag 10', datum:'03.08.', aufenthalt:'1 Übernachtung',
-    anfahrt:'Lindau → ~10 km · ca. 19 Min. (Grenzübertritt, meist zügig)',
+    anfahrt:'Lindau → ~15 km · ca. 15 Min.',
     tipp:'Nur 1 Nacht zum Ausklang: Pfänder-Gondelbahn fürs Alpenpanorama (8 Min. hinauf, Alpenwildpark oben) und ein Bummel durch die Oberstadt mit dem Martinsturm, bevor es am 04.08. weiter zu Steffi nach Kaufering geht.',
-    beschreibung:'Bregenz ist die Hauptstadt Vorarlbergs und weltweit bekannt für die Bregenzer Festspiele mit der größten Seebühne der Welt. Jährlich im Juli/August finden hier Opernaufführungen mit Bühnenbildern statt, die Maßstäbe setzen — der Bodensee selbst ist der Hintergrund. Der Pfänder (1.064 m) ist mit der Gondelbahn in 8 Minuten erreichbar und bietet das wohl spektakulärste Alpenpanorama dieser Reise. Die Oberstadt mit dem Martinsturm, dem Wahrzeichen Vorarlbergs, lohnt einen ausgiebigen Bummel. Die Wurzeln der Stadt reichen bis in die Römerzeit zurück, als hier die Siedlung „Brigantium" lag — der Name Bregenz leitet sich direkt davon ab. Die Bregenzer Festspiele selbst gibt es seit 1946, gegründet in den ersten Nachkriegsjahren als kulturelles Aufbruchssignal.',
-    infoUrl:'https://www.pfaenderbahn.at/de/pfaenderbahn',
+    beschreibung:'Bregenz ist die Hauptstadt Vorarlbergs und weltweit bekannt für die Bregenzer Festspiele mit der größten Seebühne der Welt. Jährlich im Juli/August finden hier Opernaufführungen mit Bühnenbildern statt, die Maßstäbe setzen — der Bodensee selbst ist der Hintergrund. Der Pfänder (1.064 m) ist mit der Gondelbahn in 8 Minuten erreichbar und bietet das wohl spektakulärste Alpenpanorama dieser Reise. Die Oberstadt mit dem Martinsturm, dem Wahrzeichen Vorarlbergs, lohnt einen ausgiebigen Bummel.',
     highlights:['🎭 Seebühne der Bregenzer Festspiele (weltgrößte Seebühne — von außen sehenswert)','🚡 Pfänder-Gondelbahn (1.064 m, Alpenpanorama)','🐺 Alpenwildpark auf dem Pfänder','🗼 Martinsturm (Vorarlberger Wahrzeichen)','🏛️ Vorarlberg Museum','⛵ Hafenpromenade & Seeblick','🇦🇹 Österreichisches Flair, Vorarlberger Küche'] },
 ];
-
-// Tag N (aus 'tag'-Feld, z.B. "Tag 3–4" -> [3,4]) auf echtes Kalenderdatum umrechnen.
-// Tag 1 = 25.07.2026 — daraus lässt sich für jede Station der Wochentag herleiten,
-// ohne das 'datum'-Textfeld fehleranfällig zu parsen.
-const SR_TRIP_START = new Date(2026, 6, 25); // Monat 0-indiziert: 6 = Juli
-const SR_WOCHENTAGE = ['So','Mo','Di','Mi','Do','Fr','Sa'];
-const SR_WOCHENTAGE_VOLL = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
-function srTagRange(tagStr) {
-  const nums = (tagStr || '').match(/\d+/g) || ['1'];
-  return [parseInt(nums[0], 10), parseInt(nums[nums.length - 1], 10)];
-}
-function srDateForTag(n) {
-  const d = new Date(SR_TRIP_START);
-  d.setDate(d.getDate() + (n - 1));
-  return d;
-}
-function srWeekdayLabel(o) {
-  const [n1, n2] = srTagRange(o.tag);
-  const wd1 = SR_WOCHENTAGE[srDateForTag(n1).getDay()];
-  if (n2 === n1) return `${wd1} ${o.datum}`;
-  const wd2 = SR_WOCHENTAGE[srDateForTag(n2).getDay()];
-  return `${wd1}–${wd2} ${o.datum}`;
-}
-// Voller Wochentag + Tageszeit fürs Word-Dokument, z.B. "Sonntag Nachmittag, 26.07."
-// Tageszeit kommt aus dem 'tageszeit'-Feld (aus Tipp/Aufenthalt abgeleitet, nicht erfunden).
-function srWeekdayTageszeitLabel(o) {
-  const [n1] = srTagRange(o.tag);
-  const wdVoll = SR_WOCHENTAGE_VOLL[srDateForTag(n1).getDay()];
-  return o.tageszeit ? `${wdVoll} ${o.tageszeit}, ${o.datum}` : `${wdVoll}, ${o.datum}`;
-}
 
 // Stationsnummerierung: nur Übernachtungen sind Haupt-Stationen (1,2,3…);
 // Tagesstopps hängen als Buchstabe an der vorigen Übernachtung (1a,1b…).
@@ -12885,33 +12771,8 @@ function srWeekdayTageszeitLabel(o) {
     o.ueber = /Übernachtung/i.test(o.aufenthalt);
     if (o.ueber) { main++; sub = 0; o.snr = String(main); }
     else { sub++; o.snr = main + String.fromCharCode(96 + sub); }
-    o.wd = srWeekdayLabel(o);
-    o.mapsUrl = `https://www.google.com/maps/search/?api=1&query=${o.lat},${o.lon}`;
   });
 })();
-
-// Fahrstationen nach Reisetag gruppiert — für die Tagesübersicht mit
-// aufsummierter Fahrzeit (wichtig an Tagen mit mehreren Stopps).
-function srDayGroups() {
-  const groups = {};
-  const order = [];
-  SR_ROUTE.forEach(o => {
-    const dn = srTagRange(o.tag)[0];
-    if (!groups[dn]) { groups[dn] = []; order.push(dn); }
-    groups[dn].push(o);
-  });
-  return order.map(dn => {
-    const stations = groups[dn];
-    let km = 0, min = 0, hasFaehre = false, legs = 0;
-    stations.forEach(o => {
-      const mult = o.retour ? 2 : 1;
-      if (o.distKm) { km += o.distKm * mult; }
-      if (o.dauerMin) { min += o.dauerMin * mult; legs++; }
-      if (o.faehre) hasFaehre = true;
-    });
-    return { dayNum: dn, stations, km, min, legs, hasFaehre, wd: stations[0].wd };
-  });
-}
 
 let _srMap = null;
 let _srMarkers = {};
@@ -12920,7 +12781,6 @@ let _reiseData = {};
 let _reiseRefreshInterval = null;
 function initSommerreise() {
   srRenderStationen();
-  srRenderTagesuebersicht();
   srInitMap();
   reiseLoadNotizen();
   // Stilles Auto-Polling: solange die Urlaub-Seite offen ist, alle 2 Min die
@@ -12955,35 +12815,15 @@ function srRenderStationen() {
     html += `<div onclick="srShowDetail('${o.id}')" style="${o.ueber?'':'margin-left:18px;'}display:flex;align-items:center;gap:7px;cursor:pointer;padding:4px 6px;border-radius:6px;transition:background .15s"
       onmouseenter="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background='transparent'">
       <div style="width:${_sz}px;height:${_sz}px;border-radius:50%;background:${o.farbe};display:flex;align-items:center;justify-content:center;color:#fff;font-size:${o.ueber?10:8.5}px;font-weight:700;flex-shrink:0${o.ueber?'':';opacity:.82'}">${o.snr}</div>
-      <div style="min-width:0;flex:1">
+      <div style="min-width:0">
         <div style="font-size:${o.ueber?12:11}px;font-weight:600;color:var(--bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.name}</div>
-        <div style="font-size:10px;color:var(--dim)">${o.wd} · ${o.aufenthalt.split('(')[0].trim()}${_gebucht}</div>
+        <div style="font-size:10px;color:var(--dim)">${o.datum} · ${o.aufenthalt.split('(')[0].trim()}${_gebucht}</div>
       </div>
-      <a href="${o.mapsUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="In Google Maps öffnen" style="flex-shrink:0;font-size:13px;text-decoration:none;opacity:.55;padding:2px">🗺️</a>
     </div>`;
   });
   html += `<div style="margin-top:10px;padding:8px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3);border-radius:7px;font-size:11px;color:#fbbf24;line-height:1.5">
     📍 <b>Weiterfahrt 04.08.</b><br>Bregenz → Kaufering<br>~160 km · ~1½ Std.<br><span style="color:var(--dim)">Steffi + 4 Enkel 🥰</span></div>`;
   el.innerHTML = html;
-}
-
-function srRenderTagesuebersicht() {
-  const el = document.getElementById('sr-tagesuebersicht');
-  if (!el) return;
-  const groups = srDayGroups();
-  el.innerHTML = groups.map(g => {
-    const namen = g.stations.map(o => o.name).join(' → ');
-    const zeit = g.min >= 60 ? `${Math.floor(g.min/60)} Std.${g.min%60 ? ' ' + (g.min%60) + ' Min.' : ''}` : `${g.min} Min.`;
-    const stark = g.legs >= 2;
-    const fahrtHtml = g.legs > 0
-      ? `<div style="font-size:11px;font-weight:${stark?'700':'400'};color:${stark?'#60a5fa':'var(--dim)'};margin-top:4px">🚗 ${g.km} km · ${zeit}${g.hasFaehre?' · ⛴️ + Fähre':''}${stark ? ` <span style="color:var(--dim);font-weight:400">(${g.legs} Etappen heute)</span>` : ''}</div>`
-      : '';
-    return `<div style="min-width:165px;flex-shrink:0;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:8px 11px">
-      <div style="font-size:10px;font-weight:700;color:#fbbf24;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap">Tag ${g.dayNum} · ${g.wd}</div>
-      <div style="font-size:12px;color:var(--bright);font-weight:600;margin-top:4px;line-height:1.35">${namen}</div>
-      ${fahrtHtml}
-    </div>`;
-  }).join('');
 }
 
 function srInitMap() {
@@ -13021,7 +12861,7 @@ function srUpdateMap() {
     });
     const m = L.marker([o.lat, o.lon], {icon})
       .addTo(_srMap)
-      .bindPopup(`<b>${o.snr}. ${o.name}</b><br><span style="font-size:11px;color:#555">${o.wd} · ${o.aufenthalt}</span><br><span style="font-size:11px;color:#888">${o.anfahrt}</span><br><a href="${o.mapsUrl}" target="_blank" rel="noopener" style="font-size:11px">🗺️ In Google Maps öffnen</a>`)
+      .bindPopup(`<b>${o.snr}. ${o.name}</b><br><span style="font-size:11px;color:#555">${o.datum} · ${o.aufenthalt}</span><br><span style="font-size:11px;color:#888">${o.anfahrt}</span>`)
       .on('click', () => srShowDetail(o.id));
     _srMarkers[o.id] = m;
   });
@@ -13045,7 +12885,7 @@ function srShowDetail(id) {
           <div style="width:36px;height:36px;border-radius:50%;background:${o.farbe};display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;flex-shrink:0">${o.snr}</div>
           <div>
             <div style="font-size:17px;font-weight:700;color:${o.farbe}">${o.name}</div>
-            <div style="font-size:11px;color:var(--dim)">${o.region} · ${o.wd} · ${o.aufenthalt}</div>
+            <div style="font-size:11px;color:var(--dim)">${o.region} · ${o.datum} · ${o.aufenthalt}</div>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
@@ -13064,13 +12904,10 @@ function srShowDetail(id) {
         <div style="display:flex;flex-wrap:wrap;gap:5px">
           ${o.highlights.map(h => `<span style="font-size:11px;background:${o.farbe}22;color:${o.farbe};border:1px solid ${o.farbe}44;border-radius:5px;padding:2px 8px">${h}</span>`).join('')}
         </div>
-        ${o.infoUrl ? `<div style="margin-top:10px"><a href="${o.infoUrl}" target="_blank" rel="noopener" style="font-size:12px;color:#60a5fa;text-decoration:none">ℹ️ Aktuelle Preise &amp; Öffnungszeiten auf der offiziellen Seite</a></div>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <button onclick="if(_srMap&&_srMarkers['${id}']){_srMap.setView([${o.lat},${o.lon}],13);_srMarkers['${id}'].openPopup();}"
           style="padding:6px 12px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;cursor:pointer">🗺️ Auf Karte</button>
-        <a href="${o.mapsUrl}" target="_blank" rel="noopener"
-          style="padding:6px 12px;background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.35);border-radius:7px;color:#60a5fa;font-size:12px;cursor:pointer;text-decoration:none;text-align:center">📍 Google Maps öffnen</a>
         <button onclick="document.getElementById('sr-detail').style.display='none'"
           style="padding:6px 12px;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--dim);font-size:12px;cursor:pointer">✕ Schließen</button>
       </div>
@@ -13166,7 +13003,7 @@ function srDownloadWord(teil) {
   const stationHtml = stationen.map(o => `
     <h2 style="color:${o.farbe};border-bottom:2px solid ${o.farbe};padding-bottom:4px;margin-top:24pt">
       ${o.ueber ? `Station ${o.snr}` : `Zwischenstopp ${o.snr}`}: ${o.name}
-      <span style="font-size:12pt;color:#666;font-weight:normal"> — ${srWeekdayTageszeitLabel(o)} · ${o.aufenthalt}</span>
+      <span style="font-size:12pt;color:#666;font-weight:normal"> — ${o.datum} · ${o.aufenthalt}</span>
     </h2>
     <table style="width:100%;border-collapse:collapse;margin-bottom:8pt;font-size:10pt">
       <tr>
@@ -13194,7 +13031,6 @@ function srDownloadWord(teil) {
     <p style="font-size:11pt;line-height:1.7;color:#333;margin-bottom:8pt">${o.beschreibung}</p>
     <p style="font-weight:bold;color:#444;font-size:10pt;margin-bottom:4pt">Highlights &amp; Sehenswürdigkeiten:</p>
     <ul style="font-size:11pt;color:#333;line-height:1.8;margin-bottom:4pt">${o.highlights.map(h=>`<li>${h}</li>`).join('')}</ul>
-    ${o.infoUrl ? `<p style="font-size:9pt;color:#666;margin-top:2pt">ℹ️ Preise &amp; Öffnungszeiten: <a href="${o.infoUrl}">${o.infoUrl}</a></p>` : ''}
   `).join('');
 
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
@@ -14474,7 +14310,7 @@ function sunoSetMode(mode) {
     if (kontext.value === SUNO_DEFAULT_KONTEXT) kontext.value = '';
     kontext.placeholder = 'Thema (optional) — z.B. Neuanfang, Sommer, Fernweh …';
     if (kontextLabel) kontextLabel.innerHTML = 'Thema <span style="opacity:0.6">(optional)</span>';
-    hint.innerHTML = '🌊 <b>bollawave-Stil:</b> Song wird in deiner Feel-Good-Marken-Stimme erzeugt (warm, eingängig, mit Augenzwinkern) — bereit für DistroKid. Thema optional, Hit-Orientierung &amp; Sprache wie gewohnt. <span style="opacity:0.7">Details: „🚀 Profil" oben.</span><br><span style="display:inline-block;margin-top:6px;color:#4ade80">➜ Danach: Text in <b>Suno</b> erzeugen → unten Titel eintippen → grüner Knopf <b>„🚀 Für DistroKid fertig machen"</b> macht den Rest.</span>';
+    hint.innerHTML = '🚀 <b>Veröffentlichungs-Modus:</b> Song wird in deiner Feel-Good-Marken-Stimme erzeugt (warm, eingängig, mit Augenzwinkern) — bereit für DistroKid. Thema optional, Hit-Orientierung & Sprache wie gewohnt. <span style="opacity:0.7">Details: „🚀 Profil" oben.</span>';
     hint.style.display = 'block';
   }
   sunoKontextChanged();
@@ -14596,14 +14432,6 @@ function sunoReset() {
   document.getElementById('suno-result-grid').style.display = 'none';
   document.getElementById('suno-lyrics-placeholder').style.display = 'block';
   document.getElementById('suno-status').textContent = '';
-  // Download- + Veröffentlichen-Karte ebenfalls zurücksetzen
-  document.getElementById('suno-dl-title').value = '';
-  document.getElementById('suno-dl-status').textContent = '';
-  document.getElementById('suno-pub-genre').value = 'Pop';
-  document.getElementById('suno-pub-lyrics').value = '';
-  document.getElementById('suno-pub-status').innerHTML = '';
-  document.getElementById('suno-pub-fetch').checked = true;
-  sunoPubLang('de');
 }
 function sunoCopy(id) {
   const el = document.getElementById(id);
@@ -14881,59 +14709,6 @@ async function sunoDownloadCover() {
     if (data.error) throw new Error(data.error);
     status.style.color = '#34c759';
     status.textContent = `✅ Fertig! MP3: ${data.mp3.split('/').pop()} | Cover: ${data.cover.split('/').pop()}`;
-  } catch(e) {
-    status.style.color = '#ff453a';
-    status.textContent = '❌ ' + e.message;
-  } finally {
-    btn.disabled = false; btn.style.opacity = '1';
-  }
-}
-
-// ── 🚀 Veröffentlichen: komplette DistroKid-Vorbereitung in einem Klick ──
-let _sunoPubLang = 'de';
-function sunoPubLang(lang) {
-  _sunoPubLang = lang;
-  const de = document.getElementById('suno-pub-de'), en = document.getElementById('suno-pub-en');
-  de.style.background = lang === 'de' ? '#22c55e' : 'transparent';
-  de.style.color = lang === 'de' ? 'white' : 'var(--dim)';
-  de.style.fontWeight = lang === 'de' ? '700' : '600';
-  en.style.background = lang === 'en' ? '#22c55e' : 'transparent';
-  en.style.color = lang === 'en' ? 'white' : 'var(--dim)';
-  en.style.fontWeight = lang === 'en' ? '700' : '600';
-}
-
-async function sunoPublish() {
-  const title = document.getElementById('suno-dl-title').value.trim();
-  const status = document.getElementById('suno-pub-status');
-  if (!title) { status.style.color = '#ff9500'; status.textContent = '⚠️ Bitte oben den Song-Titel eingeben (genau wie in Suno).'; return; }
-  const genre  = document.getElementById('suno-pub-genre').value.trim() || 'Pop';
-  const lyrics = document.getElementById('suno-pub-lyrics').value;
-  const fetch_ = document.getElementById('suno-pub-fetch').checked;
-  const btn = document.getElementById('suno-pub-btn');
-  btn.disabled = true; btn.style.opacity = '0.5';
-  status.style.color = 'var(--dim)';
-  status.innerHTML = '⏳ Bereite alles vor — aufräumen, ' + (fetch_ ? 'MP3+Cover holen, ' : '') + 'Ordner &amp; TikTok/Insta-Video bauen… <i>(kann 1–2 Min dauern)</i>';
-  try {
-    const res = await fetch(API + '/api/suno/publish', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({title, genre, sprache: _sunoPubLang, lyrics, fetch: fetch_, engine: _sunoEngine})
-    });
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || (data.warnings || []).join(' · ') || 'Unbekannter Fehler');
-    const folder = (data.folder || '').split('/').pop();
-    let html = `✅ <b>Fertig!</b> Ordner „${folder}" auf dem Desktop (${(data.files||[]).length} Dateien inkl. Video).`;
-    const warns = (data.warnings || []).filter(w => w && w.trim());
-    if (warns.length) {
-      // ℹ️-Zeilen sind harmlose Infos (grau), echte Warnungen bleiben gelb
-      html += '<div style="margin-top:6px">' + warns.map(w => {
-        const info = w.trim().startsWith('ℹ️');
-        return '<span style="color:' + (info ? 'var(--dim)' : '#fbbf24') + '">• ' + w + '</span>';
-      }).join('<br>') + '</div>';
-    }
-    html += '<div style="margin-top:5px;color:var(--dim)">Jetzt nur noch bei DistroKid hochladen (Checkliste liegt im Ordner). Video/Captions erst NACH Release posten.</div>';
-    status.style.color = '#34c759';
-    status.innerHTML = html;
   } catch(e) {
     status.style.color = '#ff453a';
     status.textContent = '❌ ' + e.message;

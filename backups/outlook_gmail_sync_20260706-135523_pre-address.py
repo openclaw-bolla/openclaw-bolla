@@ -57,7 +57,7 @@ def get_outlook_contacts(token):
     contacts = []
     url = ("https://graph.microsoft.com/v1.0/me/contacts?$top=100"
            "&$select=id,displayName,givenName,surname,emailAddresses,mobilePhone,"
-           "homePhones,businessPhones,birthday,personalNotes,companyName,jobTitle,homeAddress")
+           "homePhones,businessPhones,birthday,personalNotes,companyName,jobTitle")
     while url:
         r = requests.get(url, headers=headers)
         data = r.json()
@@ -97,7 +97,7 @@ def get_google_contacts(token):
     page_token = None
     while True:
         params = {
-            "personFields": "names,emailAddresses,phoneNumbers,biographies,birthdays,photos,organizations,addresses",
+            "personFields": "names,emailAddresses,phoneNumbers,biographies,birthdays,photos,organizations",
             "pageSize": 100
         }
         if page_token:
@@ -163,17 +163,6 @@ def outlook_to_google_body(contact):
         body["biographies"] = [{"value": notes, "contentType": "TEXT_PLAIN"}]
     if company or title:
         body["organizations"] = [{"name": company or "", "title": title or ""}]
-    # Postadresse: MS homeAddress → Google addresses
-    ha = contact.get("homeAddress") or {}
-    if any(ha.get(k) for k in ("street", "city", "state", "postalCode", "countryOrRegion")):
-        body["addresses"] = [{
-            "type": "home",
-            "streetAddress": ha.get("street", ""),
-            "city": ha.get("city", ""),
-            "region": ha.get("state", ""),
-            "postalCode": ha.get("postalCode", ""),
-            "country": ha.get("countryOrRegion", ""),
-        }]
     if birthday:
         try:
             parts = birthday.split("T")[0].split("-")
@@ -220,21 +209,7 @@ def google_to_outlook_body(contact):
         if d.get("month") and d.get("day"):
             year = d.get("year", 0) or 1
             body["birthday"] = f"{year:04d}-{d['month']:02d}-{d['day']:02d}T00:00:00Z"
-
-    # Postadresse: Google addresses → MS homeAddress
-    addresses = contact.get("addresses", [])
-    if addresses:
-        a = addresses[0]
-        ms_addr = {
-            "street": a.get("streetAddress", ""),
-            "city": a.get("city", ""),
-            "state": a.get("region", ""),
-            "postalCode": a.get("postalCode", ""),
-            "countryOrRegion": a.get("country", ""),
-        }
-        if any(ms_addr.values()):
-            body["homeAddress"] = ms_addr
-
+    
     return body
 
 # ── Index aufbauen ─────────────────────────────────────────────────────────────
@@ -328,7 +303,7 @@ def sync_outlook_to_gmail(ms_token, g_token, outlook_contacts, google_index):
             r = requests.patch(
                 f"https://people.googleapis.com/v1/{resource_name}:updateContact",
                 headers=headers,
-                params={"updatePersonFields": "names,emailAddresses,phoneNumbers,biographies,birthdays,organizations,addresses"},
+                params={"updatePersonFields": "names,emailAddresses,phoneNumbers,biographies,birthdays,organizations"},
                 json=body
             )
             if r.status_code == 200:

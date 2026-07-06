@@ -2317,43 +2317,6 @@ def board_action_delete(pid, aid):
     _board_save(data)
     return {"ok": True}
 
-def board_action_nudge(pid, aid):
-    """Baut einen scharfen Anstups-Prompt für EINE einzelne Aktion, hängt ihn
-    hinten an die Queue (Reihenfolge = Chris' Klick-Folge = seine Priorität)."""
-    data = _board_load()
-    proj = next((p for p in data.get("projects", []) if p.get("id") == pid), None)
-    if not proj:
-        return {"ok": False, "error": "Projekt nicht gefunden"}
-    act = next((a for a in proj.get("actions", []) if a.get("id") == aid), None)
-    if not act:
-        return {"ok": False, "error": "Aktion nicht gefunden"}
-    ptitle = proj.get("title", "")
-    atext = act.get("text", "")
-    note = act.get("note", "")
-    prompt = (f"Bitte kümmere dich um genau diese eine Aktion aus dem Projekt \"{ptitle}\":\n\n"
-              f"→ {atext}\n\n"
-              + (f"Notiz/Einschätzung: {note}\n\n" if note else "")
-              + f"Projekt-Stand: {proj.get('summary','')}\n\n"
-              f"Details stehen im MP-Projekt-Board (data/board.json) und in aktuell.md.")
-    q = {"nudges": []}
-    if os.path.exists(BOARD_NUDGES_FILE):
-        try:
-            with open(BOARD_NUDGES_FILE, encoding="utf-8") as f:
-                q = json.load(f)
-        except Exception:
-            pass
-    # kurzer Aktionstitel für die Queue-Anzeige (Hook zeigt title + prompt)
-    short = atext if len(atext) <= 70 else atext[:67] + "…"
-    q.setdefault("nudges", []).append({
-        "projId": pid, "actId": aid,
-        "title": f"▸ {ptitle}: {short}",
-        "ts": datetime.now().isoformat(timespec="seconds"), "prompt": prompt})
-    os.makedirs(os.path.dirname(BOARD_NUDGES_FILE), exist_ok=True)
-    with open(BOARD_NUDGES_FILE, "w", encoding="utf-8") as f:
-        json.dump(q, f, ensure_ascii=False, indent=2)
-    append_clipboard(prompt, source="nudge")  # Aktions-Anstups auch in die MP-Clipboard-Liste
-    return {"ok": True, "prompt": prompt}
-
 BOARD_NUDGES_FILE = os.path.join(WORKSPACE, "data/board_nudges.json")
 
 def board_nudge(pid):
@@ -2382,7 +2345,6 @@ def board_nudge(pid):
     os.makedirs(os.path.dirname(BOARD_NUDGES_FILE), exist_ok=True)
     with open(BOARD_NUDGES_FILE, "w", encoding="utf-8") as f:
         json.dump(q, f, ensure_ascii=False, indent=2)
-    append_clipboard(prompt, source="nudge")  # Anstups auch in die MP-Clipboard-Liste
     return {"ok": True, "prompt": prompt}
 
 WORKSHOP_FORTSCHRITT = os.path.join(WORKSPACE, "projektwoche-ki-workshop/fortschritt.json")
@@ -5447,115 +5409,6 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass
 
-    def _suno_fetch_assets(self, title, cover_engine="pollinations", want_cover=True):
-        """Holt MP3 (320 kbps) aus dem Suno-Feed + erzeugt 3000²-Cover ins Archiv.
-        Wiederverwendbar aus /api/suno/download-cover UND /api/suno/publish.
-        Rückgabe: {'ok':True,'mp3':...,'cover':...|None} oder {'error':...}."""
-        import subprocess as _sp_ff, urllib.parse as _urlparse_cv, io as _io_cv
-        title = (title or "").strip()
-        if not title:
-            return {"error": "Kein Titel angegeben"}
-        token = _suno_token()
-        if not token:
-            return {"error": "Kein Suno-Token gefunden"}
-        feed_req = urllib.request.Request(
-            SUNO_API_BASE + "/api/feed/?page=0",
-            headers={"Authorization": f"Bearer {token}", "User-Agent": "BollaMC/1.0"})
-        try:
-            with urllib.request.urlopen(feed_req, timeout=20) as resp:
-                feed_data = json.loads(resp.read())
-        except Exception as e:
-            return {"error": f"Suno Feed Fehler: {e}"}
-        songs = feed_data if isinstance(feed_data, list) else feed_data.get("clips", feed_data.get("data", []))
-        found = None
-        for s in songs:
-            sname = (s.get("title") or s.get("display_name") or "")
-            if title.lower() in sname.lower():
-                found = s; break
-        if not found:
-            return {"error": f"Song '{title}' nicht in Suno-Feed gefunden"}
-        audio_url = found.get("audio_url") or found.get("mp3_url") or ""
-        if not audio_url:
-            return {"error": "Kein audio_url im Song-Objekt"}
-        SUNO_DISTROKID_DIR.mkdir(parents=True, exist_ok=True)
-        safe_title = "".join(c for c in title if c.isalnum() or c in " _-").strip()
-        mp3_path = SUNO_DISTROKID_DIR / f"{safe_title}.mp3"
-        try:
-            mp3_req = urllib.request.Request(audio_url, headers={"User-Agent": "BollaMC/1.0"})
-            with urllib.request.urlopen(mp3_req, timeout=60) as resp:
-                mp3_data = resp.read()
-            tmp_path = SUNO_DISTROKID_DIR / f"{safe_title}_tmp.mp3"
-            tmp_path.write_bytes(mp3_data)
-            _ff = _sp_ff.run(["ffmpeg", "-y", "-i", str(tmp_path), "-b:a", "320k", "-ar", "44100", str(mp3_path)],
-                             capture_output=True, timeout=120)
-            tmp_path.unlink(missing_ok=True)
-            if _ff.returncode != 0 or not mp3_path.exists():
-                raise Exception("ffmpeg Konvertierung fehlgeschlagen")
-        except Exception as e:
-            return {"error": f"MP3-Download Fehler: {e}"}
-        if not want_cover:
-            return {"ok": True, "mp3": str(mp3_path), "cover": None}
-        # Bildprompt (Claude) → Cover (Pollinations/Gemini)
-        try:
-            import shutil as _sh2
-            _claude_bin2 = _sh2.which("claude") or os.path.expanduser("~/.local/bin/claude")
-            _cover_prompt_instr = (
-                f"Create an ULTRA-SPECTACULAR, eye-catching album cover image prompt in English for the song '{title}'. "
-                f"This cover must be SO STUNNING that listeners STOP SCROLLING and MUST click play. "
-                f"Think: award-winning photography, viral visual impact, magazine cover quality. "
-                f"IMPORTANT: The artist is optimistic and life-affirming — always interpret the title POSITIVELY. "
-                f"Choose ONE of these visual power styles that fits the title: "
-                f"(1) EPIC GOLDEN HOUR; (2) NEON NOIR; (3) COSMIC WONDER; (4) HYPERREAL NATURE; (5) CINEMATIC EXPLOSION. "
-                f"Be EXTREMELY specific: exact colors, lighting direction, camera angle, materials, mood, a unique focal element. "
-                f"3000x3000px, square format, ultra high detail, professional color grading. "
-                f"End with: '— absolutely NO text, NO letters, NO words, NO typography anywhere in the image.' "
-                f"Reply with ONLY the image prompt, nothing else.")
-            _cp_result = _sp_ff.run(
-                [_claude_bin2, "-p", "--model", "claude-sonnet-5", "--output-format", "json", _cover_prompt_instr],
-                capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~"))
-            img_prompt = json.loads(_cp_result.stdout).get("result", "").strip() if _cp_result.returncode == 0 else ""
-            if not img_prompt:
-                raise Exception("Kein Prompt")
-        except Exception:
-            img_prompt = (f"Ultra-spectacular album cover for '{title}': epic golden hour light rays bursting through "
-                          f"dramatic storm clouds, god rays, deep burnt orange and electric violet sky, extreme low-angle, "
-                          f"hyper-detailed, cinematic depth, Spotify editorial quality — absolutely NO text, NO letters in the image.")
-        try:
-            from PIL import Image as _PILImage
-            if cover_engine == "gemini":
-                import base64 as _b64_cv
-                gemini_key = _gemini_key()
-                if not gemini_key:
-                    return {"error": "Kein Gemini API Key"}
-                _gem_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent"
-                _gem_payload = json.dumps({"contents": [{"parts": [{"text": img_prompt}]}],
-                    "generationConfig": {"responseModalities": ["TEXT", "IMAGE"], "imageConfig": {"aspectRatio": "1:1"}}}).encode()
-                _gem_req = urllib.request.Request(_gem_url, data=_gem_payload,
-                    headers={"x-goog-api-key": gemini_key, "Content-Type": "application/json"})
-                with urllib.request.urlopen(_gem_req, timeout=90) as resp:
-                    _gem_data = json.loads(resp.read())
-                img_b64 = None
-                for part in _gem_data.get("candidates", [{}])[0].get("content", {}).get("parts", []):
-                    if "inlineData" in part:
-                        img_b64 = part["inlineData"]["data"]; break
-                if not img_b64:
-                    return {"error": "Gemini lieferte kein Bild"}
-                img_bytes = _b64_cv.b64decode(img_b64)
-            else:
-                _poll_url = (f"https://image.pollinations.ai/prompt/{_urlparse_cv.quote(img_prompt)}"
-                             f"?width=3000&height=3000&nologo=true&enhance=true&model=flux-realism")
-                _poll_req = urllib.request.Request(_poll_url, headers={"User-Agent": "Bolla/1.0"})
-                with urllib.request.urlopen(_poll_req, timeout=120) as resp:
-                    img_bytes = resp.read()
-            img = _PILImage.open(_io_cv.BytesIO(img_bytes)).convert("RGB")
-            if img.size != (3000, 3000):
-                img = img.resize((3000, 3000), _PILImage.LANCZOS)
-            cover_path = SUNO_DISTROKID_DIR / f"{safe_title}_cover.jpg"
-            img.save(str(cover_path), "JPEG", quality=95)
-        except Exception as e:
-            return {"error": f"Cover-Generierung Fehler: {e}"}
-        return {"ok": True, "mp3": str(mp3_path), "cover": str(cover_path)}
-
     def _handle_share(self, raw):
         """Web Share Target: empfängt ein Handy-Foto (multipart/form-data),
         speichert es in den OneDrive-Ordner Handy-Clip und legt es in die
@@ -6811,8 +6664,6 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 self._send_json(board_action_delete(body.get("projId",""), body.get("actId","")))
             elif self.path == "/api/board/nudge":
                 self._send_json(board_nudge(body.get("projId","")))
-            elif self.path == "/api/board/action-nudge":
-                self._send_json(board_action_nudge(body.get("projId",""), body.get("actId","")))
             elif self.path == "/api/kosten/guthaben":
                 self._send_json(kosten_update_guthaben(body.get("name",""), body.get("betrag", 0), body.get("info")))
             elif self.path == "/api/travel/recommendation":
@@ -7992,66 +7843,131 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     self._send_json({"error": "Kein Token"}, status=400); return
                 self._send_json(_suno_token_save(token))
             elif self.path == "/api/suno/download-cover":
-                # MP3 (320k) + 3000²-Cover aus dem Suno-Feed ins Archiv — jetzt über die
-                # wiederverwendbare Helper-Methode (auch von /api/suno/publish genutzt).
                 title = body.get("title", "").strip()
-                cover_engine = body.get("engine", "pollinations")
+                cover_engine = body.get("engine", "pollinations")  # "pollinations" oder "gemini"
                 if not title:
                     self._send_json({"error": "Kein Titel angegeben"}, status=400); return
-                r = self._suno_fetch_assets(title, cover_engine)
-                self._send_json(r, status=200 if r.get("ok") else 500)
-
-            elif self.path == "/api/suno/publish":
-                # „Veröffentlichen"-Knopf: verkettet die KOMPLETTE DistroKid-Vorbereitung.
-                #   (optional MP3+Cover frisch aus Suno holen) → Desktop aufräumen →
-                #   Staging-Ordner mit MP3/Cover/Lyrics/Checkliste + Social-Paket (Video+Captions).
-                import subprocess as _sp_pub, tempfile as _tmp_pub
-                title   = body.get("title", "").strip()
-                sprache = body.get("sprache", "de")
-                genre   = body.get("genre", "Pop").strip() or "Pop"
-                lyrics  = body.get("lyrics", "")
-                engine  = body.get("engine", "pollinations")
-                fetch   = body.get("fetch", True)          # MP3+Cover frisch aus Suno holen?
-                fetch_cover = body.get("fetch_cover", True) # dabei auch Cover neu erzeugen?
-                if not title:
-                    self._send_json({"error": "Kein Titel angegeben"}, status=400); return
-                warnings = []
-                # 1) MP3 (+ ggf. Cover) aus Suno holen — Fehler nur fatal, wenn nichts im Archiv liegt
-                if fetch:
-                    fr = self._suno_fetch_assets(title, engine, want_cover=fetch_cover)
-                    if not fr.get("ok"):
-                        _safe = "".join(c for c in title if c.isalnum() or c in " _-").strip()
-                        _have_mp3 = (SUNO_DISTROKID_DIR / f"{_safe}.mp3").exists()
-                        if _have_mp3:
-                            warnings.append(f"Suno-Download übersprungen ({fr.get('error')}), nutze Archiv-Datei.")
-                        else:
-                            self._send_json({"error": f"Suno-Download fehlgeschlagen: {fr.get('error')}"}, status=500); return
-                # 2) Lyrics in Temp-Datei (für den Orchestrator + Lyrics-Scan)
-                lyr_file = ""
-                if lyrics.strip():
-                    tf = _tmp_pub.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8")
-                    tf.write(lyrics); tf.close(); lyr_file = tf.name
-                # 3) Orchestrator: aufräumen + Staging + Social-Paket
-                _pub = os.path.join(WORKSPACE, "scripts", "distrokid_publish.py")
-                cmd = [sys.executable, _pub, title, "--sprache", sprache, "--genre", genre]
-                if lyr_file:
-                    cmd += ["--lyrics-file", lyr_file]
+                # 1. Suno Feed abfragen
+                token = _suno_token()
+                if not token:
+                    self._send_json({"error": "Kein Suno-Token gefunden"}, status=500); return
+                feed_req = urllib.request.Request(
+                    SUNO_API_BASE + "/api/feed/?page=0",
+                    headers={"Authorization": f"Bearer {token}", "User-Agent": "BollaMC/1.0"}
+                )
                 try:
-                    pr = _sp_pub.run(cmd, capture_output=True, text=True, timeout=600)
-                finally:
-                    if lyr_file:
-                        try: os.unlink(lyr_file)
-                        except Exception: pass
-                result = {"ok": False, "warnings": warnings, "raw": (pr.stdout or "")[-400:]}
-                for line in (pr.stdout or "").splitlines():
-                    if line.startswith("__RESULT__ "):
-                        try:
-                            parsed = json.loads(line[len("__RESULT__ "):])
-                            parsed["warnings"] = warnings + parsed.get("warnings", [])
-                            result = parsed
-                        except Exception:
-                            pass
-                self._send_json(result, status=200 if result.get("ok") else 500)
+                    with urllib.request.urlopen(feed_req, timeout=20) as resp:
+                        feed_data = json.loads(resp.read())
+                except Exception as e:
+                    self._send_json({"error": f"Suno Feed Fehler: {e}"}, status=500); return
+                # 2. Song mit Titel suchen
+                songs = feed_data if isinstance(feed_data, list) else feed_data.get("clips", feed_data.get("data", []))
+                found = None
+                for s in songs:
+                    sname = (s.get("title") or s.get("display_name") or "")
+                    if title.lower() in sname.lower():
+                        found = s; break
+                if not found:
+                    self._send_json({"error": f"Song '{title}' nicht in Suno-Feed gefunden"}); return
+                audio_url = found.get("audio_url") or found.get("mp3_url") or ""
+                if not audio_url:
+                    self._send_json({"error": "Kein audio_url im Song-Objekt"}); return
+                # 3. MP3 herunterladen + auf 320kbps konvertieren (DistroKid-Anforderung)
+                SUNO_DISTROKID_DIR.mkdir(parents=True, exist_ok=True)
+                safe_title = "".join(c for c in title if c.isalnum() or c in " _-").strip()
+                mp3_path = SUNO_DISTROKID_DIR / f"{safe_title}.mp3"
+                try:
+                    mp3_req = urllib.request.Request(audio_url, headers={"User-Agent": "BollaMC/1.0"})
+                    with urllib.request.urlopen(mp3_req, timeout=60) as resp:
+                        mp3_data = resp.read()
+                    tmp_path = SUNO_DISTROKID_DIR / f"{safe_title}_tmp.mp3"
+                    tmp_path.write_bytes(mp3_data)
+                    # ffmpeg: auf 320kbps konvertieren (Suno liefert nur 64kbps)
+                    import subprocess as _sp_ff
+                    _ff = _sp_ff.run(
+                        ["ffmpeg", "-y", "-i", str(tmp_path), "-b:a", "320k", "-ar", "44100", str(mp3_path)],
+                        capture_output=True, timeout=120
+                    )
+                    tmp_path.unlink(missing_ok=True)
+                    if _ff.returncode != 0 or not mp3_path.exists():
+                        raise Exception("ffmpeg Konvertierung fehlgeschlagen")
+                except Exception as e:
+                    self._send_json({"error": f"MP3-Download Fehler: {e}"}); return
+                # 4. Bildprompt mit Claude Haiku generieren
+                try:
+                    import subprocess as _sp2, shutil as _sh2
+                    _claude_bin2 = _sh2.which("claude") or os.path.expanduser("~/.local/bin/claude")
+                    _cover_prompt_instr = (
+                        f"Create an ULTRA-SPECTACULAR, eye-catching album cover image prompt in English for the song '{title}'. "
+                        f"This cover must be SO STUNNING that listeners STOP SCROLLING and MUST click play. "
+                        f"Think: award-winning photography, viral visual impact, magazine cover quality. "
+                        f"IMPORTANT: The artist is optimistic and life-affirming — always interpret the title POSITIVELY. "
+                        f"Choose ONE of these visual power styles that fits the title: "
+                        f"(1) EPIC GOLDEN HOUR — blazing sun rays, god rays through clouds, silhouettes, warm orange-gold atmosphere; "
+                        f"(2) NEON NOIR — glowing neon reflections in rain puddles, dramatic urban night, electric blues and purples; "
+                        f"(3) COSMIC WONDER — nebulas, galaxies, bioluminescent ocean meeting space, impossible scales; "
+                        f"(4) HYPERREAL NATURE — macro textures, impossibly vivid flowers or waves, saturated dream colors; "
+                        f"(5) CINEMATIC EXPLOSION — motion blur, particles, sparks, dust, dramatic action frozen in time. "
+                        f"Be EXTREMELY specific: name exact colors (e.g. 'burnt sienna', 'electric cyan'), lighting direction, "
+                        f"camera angle (low angle, bird's eye, extreme close-up), materials (chrome, glass, velvet, water droplets), "
+                        f"mood (euphoric, mysterious, triumphant), and a unique focal element that anchors the composition. "
+                        f"The result must look like it belongs on Spotify's editorial playlists. "
+                        f"3000x3000px, square format, ultra high detail, professional color grading. "
+                        f"End with: '— absolutely NO text, NO letters, NO words, NO typography anywhere in the image.' "
+                        f"Reply with ONLY the image prompt, nothing else."
+                    )
+                    _cp_result = _sp2.run(
+                        [_claude_bin2, "-p", "--model", "claude-sonnet-5", "--output-format", "json", _cover_prompt_instr],
+                        capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~")
+                    )
+                    img_prompt = json.loads(_cp_result.stdout).get("result", "").strip() if _cp_result.returncode == 0 else ""
+                    if not img_prompt:
+                        raise Exception("Kein Prompt")
+                except Exception:
+                    img_prompt = f"Ultra-spectacular album cover for '{title}': epic golden hour light rays bursting through dramatic storm clouds over a vast landscape, god rays illuminating swirling particles of gold dust, deep burnt orange and electric violet sky, extreme low-angle shot, hyper-detailed textures, cinematic depth of field, Spotify editorial quality, viral visual impact, award-winning photography style — absolutely NO text, NO letters, NO words, NO typography in the image."
+                # 5. Cover generieren — Pollinations (default) oder Gemini
+                try:
+                    import urllib.parse as _urlparse_cv, io as _io_cv
+                    from PIL import Image as _PILImage
+                    if cover_engine == "gemini":
+                        import base64 as _b64_cv
+                        gemini_key = _gemini_key()
+                        if not gemini_key:
+                            self._send_json({"error": "Kein Gemini API Key"}); return
+                        _gem_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent"
+                        _gem_payload = json.dumps({
+                            "contents": [{"parts": [{"text": img_prompt}]}],
+                            "generationConfig": {"responseModalities": ["TEXT", "IMAGE"], "imageConfig": {"aspectRatio": "1:1"}}
+                        }).encode()
+                        _gem_req = urllib.request.Request(
+                            _gem_url, data=_gem_payload,
+                            headers={"x-goog-api-key": gemini_key, "Content-Type": "application/json"}
+                        )
+                        with urllib.request.urlopen(_gem_req, timeout=90) as resp:
+                            _gem_data = json.loads(resp.read())
+                        img_b64 = None
+                        for part in _gem_data.get("candidates", [{}])[0].get("content", {}).get("parts", []):
+                            if "inlineData" in part:
+                                img_b64 = part["inlineData"]["data"]; break
+                        if not img_b64:
+                            self._send_json({"error": "Gemini lieferte kein Bild"}); return
+                        img_bytes = _b64_cv.b64decode(img_b64)
+                    else:
+                        _poll_url = (
+                            f"https://image.pollinations.ai/prompt/{_urlparse_cv.quote(img_prompt)}"
+                            f"?width=3000&height=3000&nologo=true&enhance=true&model=flux-realism"
+                        )
+                        _poll_req = urllib.request.Request(_poll_url, headers={"User-Agent": "Bolla/1.0"})
+                        with urllib.request.urlopen(_poll_req, timeout=120) as resp:
+                            img_bytes = resp.read()
+                    img = _PILImage.open(_io_cv.BytesIO(img_bytes)).convert("RGB")
+                    if img.size != (3000, 3000):
+                        img = img.resize((3000, 3000), _PILImage.LANCZOS)
+                    cover_path = SUNO_DISTROKID_DIR / f"{safe_title}_cover.jpg"
+                    img.save(str(cover_path), "JPEG", quality=95)
+                except Exception as e:
+                    self._send_json({"error": f"Cover-Generierung Fehler: {e}"}); return
+                self._send_json({"ok": True, "mp3": str(mp3_path), "cover": str(cover_path)})
 
             elif self.path == "/api/kiforum/respond":
                 import subprocess as _sp2, uuid as _uuid3, base64 as _b64
