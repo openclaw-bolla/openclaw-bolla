@@ -4,223 +4,263 @@
 <meta charset="UTF-8">
 <title>Mission Control</title>
 <style>
-  @import url('data:text/css;base64,');
+  @keyframes blink { 0%,50%{opacity:1;} 51%,100%{opacity:0;} }
+  @keyframes flicker {
+    0%{opacity:0.98;} 5%{opacity:0.95;} 10%{opacity:0.98;} 15%{opacity:0.94;}
+    20%{opacity:0.98;} 100%{opacity:0.98;}
+  }
+  @keyframes scan {
+    0%{ transform: translateY(-100%); }
+    100%{ transform: translateY(100%); }
+  }
   * { box-sizing: border-box; }
-  html,body {
-    margin:0; padding:0; height:100%;
-    font-family: 'Segoe Print','Comic Sans MS','Bradley Hand',cursive, sans-serif;
-    background:
-      radial-gradient(circle at 20% 30%, rgba(0,0,0,0.02) 0%, transparent 40%),
-      radial-gradient(circle at 80% 70%, rgba(0,0,0,0.02) 0%, transparent 40%),
-      #e8dcc4;
-    color:#4a3c28;
-  }
   body {
-    background-image:
-      repeating-linear-gradient(0deg, rgba(120,100,70,0.04) 0px, rgba(120,100,70,0.04) 1px, transparent 1px, transparent 28px),
-      linear-gradient(#e8dcc4,#e3d5b8);
+    margin:0; padding:0;
+    background:#0d0d0d;
+    color:#00ff41;
+    font-family: "Consolas","Courier New",monospace;
+    font-size:14px;
+    height:100vh;
+    overflow:hidden;
+    animation: flicker 6s infinite;
   }
-  .app { display:flex; height:100vh; }
-
-  /* Sidebar */
-  .sidebar {
-    width: 220px;
-    background: #d9c9a3;
-    border-right: 3px dashed #a8905f;
-    padding: 24px 14px;
-    position: relative;
-  }
-  .sidebar::before {
+  body::before {
     content:"";
-    position:absolute; top:0; left:0; right:0; height:14px;
-    background: repeating-linear-gradient(45deg, #c9622f 0 10px, #b5541f 10px 20px);
-    opacity:0.5;
+    position:fixed; top:0; left:0; right:0; bottom:0;
+    background: repeating-linear-gradient(
+      0deg, rgba(0,255,65,0.04) 0px, rgba(0,255,65,0.04) 1px,
+      transparent 1px, transparent 3px
+    );
+    pointer-events:none;
+    z-index:50;
   }
-  .brand {
-    font-size: 22px; font-weight:bold; color:#7a3b17;
-    margin: 10px 0 26px 4px;
-    transform: rotate(-1.5deg);
-    border-bottom: 3px solid #c9622f;
-    display:inline-block;
-    padding-bottom:4px;
+  body::after {
+    content:"";
+    position:fixed; left:0; right:0; height:120px;
+    background: linear-gradient(rgba(0,255,65,0) 0%, rgba(0,255,65,0.06) 50%, rgba(0,255,65,0) 100%);
+    animation: scan 7s linear infinite;
+    pointer-events:none;
+    z-index:51;
   }
-  .brand span { font-size:16px; display:block; color:#8a7350; font-weight:normal; }
-  nav ul { list-style:none; padding:0; margin:0; }
-  nav li {
-    padding: 12px 14px;
-    margin-bottom: 8px;
-    border-radius: 12px 4px 12px 4px;
-    font-size: 16px;
-    cursor: pointer;
-    border: 2px solid transparent;
-    display:flex; align-items:center; gap:10px;
-    transform: rotate(-0.3deg);
+  .layout {
+    display:flex;
+    height:100vh;
   }
-  nav li:nth-child(even){ transform: rotate(0.4deg); }
-  nav li:hover, nav li.active {
-    background: #f2e8d0;
-    border: 2px solid #a8905f;
-    border-style: dashed;
+  /* SIDEBAR */
+  .sidebar {
+    width:220px;
+    border-right:1px solid #00ff41;
+    padding:20px 0;
+    background: #0a0a0a;
+    display:flex;
+    flex-direction:column;
   }
-  nav li.active { background:#fff3de; border-color:#c9622f; font-weight:bold; }
-  .icon { font-size:18px; }
-
-  .pin {
-    position:absolute; width:16px; height:16px; border-radius:50%;
-    background: radial-gradient(circle at 35% 35%, #e88, #a33);
-    box-shadow: 1px 2px 3px rgba(0,0,0,0.4);
-    top: 90px; left: 100px;
+  .sidebar .logo {
+    padding:0 20px 20px 20px;
+    font-size:16px;
+    font-weight:bold;
+    text-shadow:0 0 8px #00ff41;
+    border-bottom:1px dashed #036b1c;
+    margin-bottom:10px;
   }
-
-  /* Main */
-  .main { flex:1; padding: 22px 32px; overflow-y:auto; }
+  .sidebar .logo span { color:#5eff8f; }
+  .nav-item {
+    padding:10px 20px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:14px;
+    border-left:3px solid transparent;
+  }
+  .nav-item:hover, .nav-item.active {
+    background: rgba(0,255,65,0.08);
+    border-left:3px solid #00ff41;
+    text-shadow:0 0 6px #00ff41;
+  }
+  .nav-item .arrow { opacity:0; }
+  .nav-item.active .arrow { opacity:1; }
+  .sidebar-footer {
+    margin-top:auto;
+    padding:15px 20px;
+    font-size:12px;
+    color:#036b1c;
+    border-top:1px dashed #036b1c;
+  }
+  /* MAIN */
+  .main {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    overflow-y:auto;
+  }
   .topbar {
-    display:flex; justify-content:space-between; align-items:center;
-    padding-bottom: 14px; margin-bottom: 22px;
-    border-bottom: 3px solid #b5541f;
-    border-bottom-style: dotted;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:16px 30px;
+    border-bottom:1px solid #00ff41;
+    background:#0a0a0a;
   }
   .topbar h1 {
-    font-size: 30px; margin:0; color:#5c3a1e;
-    transform: rotate(-0.5deg);
+    font-size:18px;
+    margin:0;
+    text-shadow:0 0 8px #00ff41;
+    letter-spacing:1px;
   }
+  .topbar h1::before { content:"$ "; color:#5eff8f; }
   .clock {
-    background:#fff8ea;
-    border: 2px solid #7a3b17;
-    border-radius: 14px 6px 14px 6px;
-    padding: 8px 18px;
-    font-size: 22px; font-weight:bold; color:#7a3b17;
-    box-shadow: 3px 3px 0 rgba(122,59,23,0.25);
-    transform: rotate(1deg);
+    font-size:20px;
+    font-weight:bold;
+    text-shadow:0 0 10px #00ff41;
   }
-
+  .cursor {
+    display:inline-block;
+    width:9px;
+    height:18px;
+    background:#00ff41;
+    margin-left:4px;
+    vertical-align:middle;
+    animation: blink 1s steps(1) infinite;
+  }
+  .content {
+    padding:30px;
+    flex:1;
+  }
+  .prompt-line {
+    margin-bottom:20px;
+    color:#5eff8f;
+    font-size:13px;
+  }
+  .prompt-line .path { color:#00ff41; }
   .grid {
     display:grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 22px;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap:20px;
   }
-
   .card {
-    background: #fdf6e6;
-    border: 2.5px solid #6b4a2a;
-    border-radius: 16px 6px 16px 6px / 6px 16px 6px 16px;
-    padding: 18px 20px;
-    position: relative;
-    box-shadow: 4px 5px 0 rgba(107,74,42,0.18);
-    transition: transform .15s;
+    border:1px solid #00ff41;
+    background: rgba(0,255,65,0.03);
+    padding:18px;
+    position:relative;
+    box-shadow: 0 0 12px rgba(0,255,65,0.15) inset;
   }
-  .card:nth-child(2n) { transform: rotate(-0.8deg); }
-  .card:nth-child(2n+1) { transform: rotate(0.7deg); }
-  .card:hover { transform: rotate(0deg) scale(1.02); }
-
-  .card .tape {
-    position:absolute; top:-12px; left:50%; transform:translateX(-50%) rotate(-3deg);
-    width:70px; height:22px;
-    background: rgba(201,98,47,0.55);
-    border: 1px solid rgba(122,59,23,0.3);
+  .card::before {
+    content: "//";
+    position:absolute;
+    top:8px; right:12px;
+    color:#036b1c;
+    font-size:12px;
   }
-
-  .card h3 {
-    margin: 6px 0 10px; font-size:17px; color:#7a3b17;
-    display:flex; align-items:center; gap:8px;
+  .card-title {
+    font-size:12px;
+    color:#5eff8f;
+    text-transform:uppercase;
+    letter-spacing:2px;
+    margin-bottom:12px;
   }
-  .big-num { font-size: 34px; font-weight:bold; color:#4a3c28; }
-  .unit { font-size:16px; color:#8a7350; }
-
+  .card-value {
+    font-size:32px;
+    font-weight:bold;
+    text-shadow:0 0 10px #00ff41;
+    margin-bottom:10px;
+  }
   .bar-track {
-    width:100%; height:16px; margin-top:10px;
-    background: repeating-linear-gradient(90deg, #e3d5b8 0 4px, #d9c9a3 4px 8px);
-    border: 2px solid #6b4a2a; border-radius: 8px;
+    width:100%;
+    height:8px;
+    border:1px solid #036b1c;
+    background:#050505;
     overflow:hidden;
   }
   .bar-fill {
     height:100%;
-    background: repeating-linear-gradient(45deg, #c9622f, #c9622f 6px, #d97a45 6px 12px);
-    border-right: 2px solid #7a3b17;
+    background: repeating-linear-gradient(90deg, #00ff41 0px, #00ff41 4px, #0a2e0f 4px, #0a2e0f 6px);
+    box-shadow:0 0 8px #00ff41;
   }
-
-  .mail-list { list-style:none; padding:0; margin:8px 0 0; font-size:14px; }
-  .mail-list li { padding:5px 0; border-bottom: 1px dashed #c9b988; }
+  .card-sub {
+    margin-top:10px;
+    font-size:12px;
+    color:#5eff8f;
+  }
+  .mail-list { list-style:none; margin:0; padding:0; font-size:13px; }
+  .mail-list li { padding:6px 0; border-bottom:1px dashed #063d13; }
   .mail-list li:last-child { border-bottom:none; }
-  .badge {
-    display:inline-block; background:#c9622f; color:#fff8ea;
-    font-size:12px; font-weight:bold; padding:2px 9px; border-radius:10px;
-    transform: rotate(-4deg);
+  .mail-list .from { color:#5eff8f; }
+  .weather-icon { font-size:36px; margin-bottom:6px; }
+  .footer-note {
+    margin-top:30px;
+    font-size:12px;
+    color:#036b1c;
   }
-
-  .weather-icon { font-size:44px; }
-  .doodle { font-size:13px; color:#a8905f; margin-top:8px; font-style:italic; }
-
-  footer.note {
-    margin-top:26px; font-size:13px; color:#8a7350; text-align:center;
-    border-top: 2px dotted #c9b988; padding-top:10px;
-  }
+  ::-webkit-scrollbar { width:8px; }
+  ::-webkit-scrollbar-track { background:#0a0a0a; }
+  ::-webkit-scrollbar-thumb { background:#036b1c; }
 </style>
 </head>
 <body>
-<div class="app">
+<div class="layout">
+
   <div class="sidebar">
-    <div class="pin"></div>
-    <div class="brand">🐾 Bolla <span>Mission Control</span></div>
-    <nav>
-      <ul>
-        <li class="active"><span class="icon">🏠</span> Dashboard</li>
-        <li><span class="icon">🤖</span> Bolla</li>
-        <li><span class="icon">🎓</span> Schule</li>
-        <li><span class="icon">📅</span> Kalender</li>
-        <li><span class="icon">✉️</span> E-Mail</li>
-        <li><span class="icon">🌤️</span> Wetter</li>
-        <li><span class="icon">🖥️</span> System Info</li>
-      </ul>
-    </nav>
+    <div class="logo">[ MISSION_<span>CONTROL</span> ]</div>
+    <div class="nav-item active"><span class="arrow">&gt;</span> Dashboard</div>
+    <div class="nav-item">&nbsp;&nbsp;Bolla</div>
+    <div class="nav-item">&nbsp;&nbsp;Schule</div>
+    <div class="nav-item">&nbsp;&nbsp;Kalender</div>
+    <div class="nav-item">&nbsp;&nbsp;E-Mail</div>
+    <div class="nav-item">&nbsp;&nbsp;Wetter</div>
+    <div class="nav-item">&nbsp;&nbsp;System Info</div>
+    <div class="sidebar-footer">
+      user@bolla:~$<br>
+      status: <span style="color:#00ff41;">ONLINE</span>
+    </div>
   </div>
 
   <div class="main">
     <div class="topbar">
-      <h1>~ Dashboard ~</h1>
-      <div class="clock">🕗 20:14</div>
+      <h1>dashboard</h1>
+      <div class="clock">20:14<span class="cursor"></span></div>
     </div>
 
-    <div class="grid">
-      <div class="card">
-        <div class="tape"></div>
-        <h3>🖥️ RAM-Nutzung</h3>
-        <div class="big-num">34<span class="unit">%</span></div>
-        <div class="bar-track"><div class="bar-fill" style="width:34%"></div></div>
-        <div class="doodle">alles ruhig hier &#9998;</div>
-      </div>
+    <div class="content">
+      <div class="prompt-line"><span class="path">chris@norderstedt</span>:~$ status --all</div>
 
-      <div class="card">
-        <div class="tape"></div>
-        <h3>⚙️ CPU-Last</h3>
-        <div class="big-num">12<span class="unit">%</span></div>
-        <div class="bar-track"><div class="bar-fill" style="width:12%"></div></div>
-        <div class="doodle">entspannt am Nachmittag</div>
-      </div>
-
-      <div class="card">
-        <div class="tape"></div>
-        <h3>✉️ Postfach <span class="badge">3 neu</span></h3>
-        <ul class="mail-list">
-          <li>📩 Anne — Neue Adresse Mössingen</li>
-          <li>📩 KDP — Update wird geprüft</li>
-          <li>📩 Amazon — Verifizierung Kindle</li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <div class="tape"></div>
-        <h3>🌤️ Wetter Hamburg</h3>
-        <div style="display:flex; align-items:center; gap:14px;">
-          <div class="weather-icon">⛅</div>
-          <div class="big-num">18<span class="unit">°C</span></div>
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">RAM Auslastung</div>
+          <div class="card-value">34%</div>
+          <div class="bar-track"><div class="bar-fill" style="width:34%;"></div></div>
+          <div class="card-sub">10.9 GB / 32 GB belegt</div>
         </div>
-        <div class="doodle">leicht bewölkt, Wind schwach</div>
-      </div>
-    </div>
 
-    <footer class="note">— Seite 1 von vielen, Notizbuch bleibt offen —</footer>
+        <div class="card">
+          <div class="card-title">CPU Last</div>
+          <div class="card-value">12%</div>
+          <div class="bar-track"><div class="bar-fill" style="width:12%;"></div></div>
+          <div class="card-sub">4 Kerne · 3.4 GHz · idle</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Posteingang</div>
+          <div class="card-value">3 <span style="font-size:16px;">neu</span></div>
+          <ul class="mail-list">
+            <li><span class="from">md@lg-n.de</span> — Stundenplan Update</li>
+            <li><span class="from">KDP-Support</span> — Titel freigeschaltet</li>
+            <li><span class="from">R. Weinmann</span> — Re: Treffen Oberstaufen</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Wetter Hamburg</div>
+          <div class="weather-icon">☁</div>
+          <div class="card-value">18°C</div>
+          <div class="card-sub">Bewölkt · Wind 14 km/h · Luftf. 72%</div>
+        </div>
+      </div>
+
+      <div class="footer-note">last login: Mon Jul 6 20:14:02 2026 from 127.0.0.1 :: all systems nominal_</div>
+    </div>
   </div>
+
 </div>
 </body>
 </html>

@@ -2263,90 +2263,6 @@ def stichworte_delete(sid):
     _stichworte_save_raw(data)
     return {"ok": True}
 
-BOARD_FILE = os.path.join(WORKSPACE, "data/board.json")
-
-def _board_load():
-    if os.path.exists(BOARD_FILE):
-        try:
-            with open(BOARD_FILE, encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {"projects": []}
-
-def _board_save(data):
-    os.makedirs(os.path.dirname(BOARD_FILE), exist_ok=True)
-    with open(BOARD_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-def _board_ensure_ids(data):
-    """Vergibt jeder Aktion ohne id eine eindeutige id (idempotent)."""
-    changed = False
-    n = int(datetime.now().timestamp() * 1000)
-    for p in data.get("projects", []):
-        for a in p.get("actions", []):
-            if not a.get("id"):
-                a["id"] = f"a{n}"; n += 1; changed = True
-    if changed:
-        _board_save(data)
-    return data
-
-def board_list():
-    return _board_ensure_ids(_board_load())
-
-def board_action_toggle(pid, aid):
-    """Toggelt eine Aktion erledigt <-> offen."""
-    data = _board_load()
-    for p in data.get("projects", []):
-        if p.get("id") != pid:
-            continue
-        for a in p.get("actions", []):
-            if a.get("id") == aid:
-                a["status"] = "open" if a.get("status") == "done" else "done"
-                break
-    _board_save(data)
-    return {"ok": True}
-
-def board_action_delete(pid, aid):
-    """Löscht eine Aktion aus einem Projekt."""
-    data = _board_load()
-    for p in data.get("projects", []):
-        if p.get("id") == pid:
-            p["actions"] = [a for a in p.get("actions", []) if a.get("id") != aid]
-            break
-    _board_save(data)
-    return {"ok": True}
-
-BOARD_NUDGES_FILE = os.path.join(WORKSPACE, "data/board_nudges.json")
-
-def board_nudge(pid):
-    """Baut einen Anstups-Prompt für ein Projekt, legt ihn in die Queue,
-    gibt ihn zurück (Frontend kopiert ihn in die Zwischenablage)."""
-    data = _board_load()
-    proj = next((p for p in data.get("projects", []) if p.get("id") == pid), None)
-    if not proj:
-        return {"ok": False, "error": "Projekt nicht gefunden"}
-    offen = [a.get("text", "") for a in proj.get("actions", []) if a.get("status") in ("open", "doing")]
-    lines = "\n".join("- " + t for t in offen) or "- (keine offenen Punkte notiert)"
-    prompt = (f"Bitte kümmere dich um das Projekt \"{proj.get('title','')}\".\n\n"
-              f"Stand: {proj.get('summary','')}\n\n"
-              f"Offene Punkte:\n{lines}\n\n"
-              f"Details stehen im MP-Projekt-Board (data/board.json) und in aktuell.md.")
-    q = {"nudges": []}
-    if os.path.exists(BOARD_NUDGES_FILE):
-        try:
-            with open(BOARD_NUDGES_FILE, encoding="utf-8") as f:
-                q = json.load(f)
-        except Exception:
-            pass
-    q.setdefault("nudges", []).append({
-        "projId": pid, "title": proj.get("title", ""),
-        "ts": datetime.now().isoformat(timespec="seconds"), "prompt": prompt})
-    os.makedirs(os.path.dirname(BOARD_NUDGES_FILE), exist_ok=True)
-    with open(BOARD_NUDGES_FILE, "w", encoding="utf-8") as f:
-        json.dump(q, f, ensure_ascii=False, indent=2)
-    return {"ok": True, "prompt": prompt}
-
 WORKSHOP_FORTSCHRITT = os.path.join(WORKSPACE, "projektwoche-ki-workshop/fortschritt.json")
 
 def get_workshop_fortschritt():
@@ -6158,9 +6074,6 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 else:
                     self._send_json({"titel": "Thriller-Projekt", "status": "Planung", "kriterien": {}, "kapitel": [], "kommentare": [], "naechsterSchritt": ""})
 
-            elif self.path == "/api/board":
-                self._send_json(board_list())
-
             elif self.path == "/api/sidebar-state":
                 sf = os.path.join(WORKSPACE, "data/sidebar_state.json")
                 if os.path.isfile(sf):
@@ -6658,12 +6571,6 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 self._send_json(stichworte_toggle(body.get("id","")))
             elif self.path == "/api/stichworte/delete":
                 self._send_json(stichworte_delete(body.get("id","")))
-            elif self.path == "/api/board/action-toggle":
-                self._send_json(board_action_toggle(body.get("projId",""), body.get("actId","")))
-            elif self.path == "/api/board/action-delete":
-                self._send_json(board_action_delete(body.get("projId",""), body.get("actId","")))
-            elif self.path == "/api/board/nudge":
-                self._send_json(board_nudge(body.get("projId","")))
             elif self.path == "/api/kosten/guthaben":
                 self._send_json(kosten_update_guthaben(body.get("name",""), body.get("betrag", 0), body.get("info")))
             elif self.path == "/api/travel/recommendation":

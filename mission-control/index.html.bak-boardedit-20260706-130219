@@ -846,7 +846,7 @@ html, body {
             <div class="nav-group-header" id="nav-group-header-projekte" onclick="event.stopPropagation();toggleNavGroup('projekte')">
               <span class="nav-group-grip">⠿</span><span class="icon">🗂️</span>
               <span>Projekte</span>
-              <span class="nav-group-count">3</span>
+              <span class="nav-group-count">2</span>
               <span class="nav-group-chevron" id="nav-chevron-projekte">▶</span>
             </div>
             <div class="nav-group-items" id="nav-group-items-projekte">
@@ -5893,16 +5893,10 @@ async function loadBoard() {
         if (a.date) meta.push(escHtml(a.date));
         const metaLine = meta.length ? `<div style="font-size:12px;color:var(--dim);margin-top:3px">${meta.join(' · ')}</div>` : '';
         const replyBadge = a.reply ? `<span style="flex-shrink:0;align-self:center;font-size:12px;font-weight:700;color:#22c55e;background:rgba(34,197,94,.16);border:1px solid rgba(34,197,94,.42);padding:3px 9px;border-radius:10px">✉️ Antwort${a.reply_date ? ' ' + escHtml(a.reply_date) : ''}</span>` : '';
-        const isDone = a.status === 'done';
-        const actBtns = `<div style="flex-shrink:0;display:flex;gap:4px;align-self:center">
-            <button onclick="boardActionToggle('${p.id}','${a.id}')" title="${isDone ? 'wieder auf offen' : 'als erledigt markieren'}" style="background:none;border:1px solid var(--border);border-radius:6px;color:${isDone ? '#22c55e' : 'var(--dim)'};font-size:13px;line-height:1;cursor:pointer;padding:4px 8px">${isDone ? '↩' : '✓'}</button>
-            ${isDone ? `<button onclick="boardActionDelete('${p.id}','${a.id}')" title="löschen" style="background:none;border:1px solid var(--border);border-radius:6px;color:#ef5350;font-size:13px;line-height:1;cursor:pointer;padding:4px 8px">✕</button>` : ''}
-          </div>`;
         rows += `<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 11px;margin-bottom:7px;background:${as.bg};border:1px solid ${as.bd};border-radius:7px">
           <span style="font-size:15px;line-height:1.4;flex-shrink:0" title="${as.label}">${as.icon}</span>
           <div style="flex:1;min-width:0"><div style="font-size:14px;line-height:1.45;${dim}${strike}">${escHtml(a.text)}</div>${metaLine}</div>
           ${replyBadge}
-          ${actBtns}
         </div>`;
       });
       html += `<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
@@ -5912,7 +5906,6 @@ async function loadBoard() {
             <div style="font-size:17px;font-weight:700;color:var(--bright)">${escHtml(p.title || 'Projekt')}</div>
             ${p.summary ? `<div style="font-size:13px;color:var(--dim);line-height:1.45;margin-top:3px">${escHtml(p.summary)}</div>` : ''}
           </div>
-          <button onclick="boardNudge(event,'${p.id}')" title="Anstupsen: Auftrag in Zwischenablage kopieren + in Bolla-Queue legen" style="flex-shrink:0;background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;padding:5px 10px">📌 Anstupsen</button>
           ${hasReply ? '<span style="flex-shrink:0;font-size:12px;font-weight:700;color:#22c55e;background:rgba(34,197,94,.16);border:1px solid rgba(34,197,94,.42);padding:3px 9px;border-radius:10px">✉️ Antwort</span>' : ''}
           <span style="flex-shrink:0;font-size:12px;font-weight:600;color:${st.color};background:${st.bg};border:1px solid ${st.bd};padding:3px 10px;border-radius:11px">${st.icon} ${doneN}/${totalN}</span>
           <span id="board-chev-${p.id}" style="flex-shrink:0;color:var(--dim);font-size:13px;width:14px;text-align:center">${openState ? '▼' : '▶'}</span>
@@ -5934,39 +5927,6 @@ function toggleBoard(id) {
   el.style.display = isOpen ? 'none' : 'block';
   if (chev) chev.textContent = isOpen ? '▶' : '▼';
   localStorage.setItem('board-open-' + id, isOpen ? '0' : '1');
-}
-
-async function boardActionToggle(pid, aid) {
-  try {
-    await fetch(API + '/api/board/action-toggle', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({projId: pid, actId: aid})});
-  } catch(e) {}
-  loadBoard();
-}
-
-async function boardActionDelete(pid, aid) {
-  if (!confirm('Diese Aktion wirklich aus dem Board löschen?')) return;
-  try {
-    await fetch(API + '/api/board/action-delete', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({projId: pid, actId: aid})});
-  } catch(e) {}
-  loadBoard();
-}
-
-async function boardNudge(ev, pid) {
-  ev.stopPropagation();
-  const btn = ev.currentTarget;
-  const orig = btn.textContent;
-  try {
-    const r = await fetch(API + '/api/board/nudge', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({projId: pid})});
-    const d = await r.json();
-    if (d && d.prompt) {
-      let copied = false;
-      try { await navigator.clipboard.writeText(d.prompt); copied = true; } catch(e) {}
-      btn.textContent = copied ? '✓ kopiert + gemerkt' : '✓ gemerkt (Kopieren blockiert)';
-    } else {
-      btn.textContent = '⚠️ Fehler';
-    }
-  } catch(e) { btn.textContent = '⚠️ Fehler'; }
-  setTimeout(() => { btn.textContent = orig; }, 2400);
 }
 
 async function loadStichworte() {
