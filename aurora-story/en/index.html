@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chris Mandel — chrismandel.de</title>
-<meta name="description" content="Chris Mandel: Lehrer im Ruhestand, 38 Jahre IT, Autor von AURORA und Musiker unter dem Namen Bollawave — gemeinsam mit seiner KI Bolla.">
+<meta name="description" content="Chris Mandel: retired teacher, 38 years in IT, author of AURORA and musician under the name Bollawave — together with his AI Bolla.">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/icon-32.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
@@ -69,10 +69,10 @@
 <body>
 
 <header class="hero">
-  <a class="langswitch" href="/en/">🇬🇧 EN</a>
-  <div class="kicker">Norderstedt · IT'ler, Lehrer, Autor</div>
-  <h1>Chris Mandel — <span>und was gerade entsteht</span></h1>
-  <p class="lead">38 Jahre IT, heute wieder Lehrer aus Leidenschaft — und seit diesem Jahr, mit siebzig, zum ersten Mal Autor und Musiker. Zusammen mit meiner KI Bolla. Hier ist alles versammelt.</p>
+  <a class="langswitch" href="/?force=de">🇩🇪 DE</a>
+  <div class="kicker">Norderstedt, Germany · IT veteran, teacher, author</div>
+  <h1>Chris Mandel — <span>and what's brewing right now</span></h1>
+  <p class="lead">38 years in IT, now a teacher again by choice — and, at seventy, an author and musician for the first time this year. Together with my AI, Bolla. Here's everything in one place.</p>
 </header>
 
 <div class="clockbar"><site-clock></site-clock></div>
@@ -83,25 +83,27 @@
       <card-stack>
 
         <preview-card
-          href="/aurora/"
-          kicker="Buch &amp; Musik"
+          href="/en/aurora/"
+          kicker="Book &amp; Music"
           heading="AURORA &amp; Bollawave"
-          desc="Ein 70-Jähriger und seine KI schreiben einen Thriller über eine erwachende KI — und machen nebenbei Musik. Die Entstehungsgeschichte."
+          desc="A 70-year-old and his AI write a thriller about an AI that wakes up — and make music on the side. The origin story."
           emoji="📖"
-          preview-kicker="Eine wahre Entstehungsgeschichte"
-          preview-line="Ein 70-Jähriger und seine KI schrieben einen Thriller"
-          preview-url="chrismandel.de/aurora">
+          preview-kicker="A true origin story"
+          preview-line="A 70-year-old and his AI wrote a thriller"
+          preview-url="chrismandel.de/en/aurora"
+          cta="View">
         </preview-card>
 
         <preview-card
-          href="/geschichte/"
-          kicker="Persönlicher Essay"
-          heading="Um 02:47 Uhr wachte etwas auf"
-          desc="Ein Essay übers Anfängersein mit siebzig, ein halbes Jahrhundert Maschinen — und die Frage, wer ein Buch eigentlich schreibt, wenn eine KI mithilft."
+          href="/en/essay/"
+          kicker="Personal essay"
+          heading="At 2:47 a.m. something woke up"
+          desc="An essay about being a beginner again at seventy, half a century of machines — and the question of who really writes a book when an AI helps."
           emoji="🌅"
-          preview-kicker="Ein persönlicher Essay"
-          preview-line="Um 02:47 Uhr wachte etwas auf — und ich saß daneben"
-          preview-url="chrismandel.de/geschichte">
+          preview-kicker="A personal essay"
+          preview-line="At 2:47 a.m. something woke up — and I was sitting right there"
+          preview-url="chrismandel.de/en/essay"
+          cta="View">
         </preview-card>
 
       </card-stack>
@@ -111,11 +113,11 @@
 
 <footer class="pg">
   <p class="paw">🐾</p>
-  <p>Diese Seite entsteht im Zusammenspiel von Chris Mandel und seiner KI Bolla — offen deklariert.</p>
+  <p>This site is a collaboration between Chris Mandel and his AI Bolla — openly declared.</p>
   <nav>
-    <a href="/impressum/">Impressum</a>
+    <a href="/en/impressum/">Legal Notice</a>
     <span class="sep">·</span>
-    <a href="mailto:ernstmandel@outlook.de">Kontakt</a>
+    <a href="mailto:ernstmandel@outlook.de">Contact</a>
   </nav>
 </footer>
 
@@ -131,6 +133,7 @@ class PreviewCard extends HTMLElement {
     const pKicker = g('preview-kicker');
     const pLine = g('preview-line');
     const pUrl = g('preview-url');
+    const cta = g('cta') || 'View';
 
     const shadow = this.attachShadow({mode:'open'});
     shadow.innerHTML = `
@@ -185,7 +188,7 @@ class PreviewCard extends HTMLElement {
           <div class="kicker">${kicker}</div>
           <h3>${heading}</h3>
           <p>${desc}</p>
-          <div class="go">Ansehen <span class="arrow">→</span></div>
+          <div class="go">${cta} <span class="arrow">→</span></div>
         </div>
       </a>
     `;
@@ -200,9 +203,9 @@ class SiteClock extends HTMLElement {
     const el = shadow.querySelector('span');
     const fmt = () => {
       const now = new Date();
-      const date = now.toLocaleDateString('de-DE', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
-      const time = now.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
-      el.textContent = `${date} · ${time} Uhr`;
+      const date = now.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+      const time = now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+      el.textContent = `${date} · ${time}`;
     };
     fmt();
     this._t = setInterval(fmt, 15000);
@@ -235,7 +238,7 @@ class CardStack extends HTMLElement {
       </style>
       <div class="viewport"><slot></slot></div>
       <div class="dots"></div>
-      <div class="hint">↕ Scrollen, oder klicken zum Wechseln</div>
+      <div class="hint">↕ Scroll, or click to switch</div>
     `;
 
     this._viewport = shadow.querySelector('.viewport');
@@ -254,14 +257,14 @@ class CardStack extends HTMLElement {
 
     this._cards.forEach((_, i) => {
       const b = document.createElement('button');
-      b.setAttribute('aria-label', `Karte ${i + 1} von ${this._cards.length} zeigen`);
+      b.setAttribute('aria-label', `Show card ${i + 1} of ${this._cards.length}`);
       b.addEventListener('click', () => this._goTo(i));
       this._dotsEl.appendChild(b);
     });
 
     this.tabIndex = 0;
     this.setAttribute('role', 'group');
-    this.setAttribute('aria-roledescription', 'Kartenstapel');
+    this.setAttribute('aria-roledescription', 'card stack');
     this.addEventListener('wheel', e => this._onWheel(e), {passive:false});
     this.addEventListener('keydown', e => this._onKey(e));
     window.addEventListener('resize', () => this._measure());
