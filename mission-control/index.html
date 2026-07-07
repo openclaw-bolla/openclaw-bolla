@@ -5908,14 +5908,53 @@ async function loadSchuljahr2627() {
     const r = await fetch(API + '/api/schuljahr2627');
     const d = await r.json();
     const klassen = (d.klassen || []).map(k => `<span style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:14px;font-weight:600;color:var(--bright)">${k}</span>`).join('');
+    const slots = (d.slots_geplant || []).map(s => `<span style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:14px;font-weight:600;color:var(--bright)">${s.tag} ${s.zeit}</span>`).join('');
     const module = (d.module_vorjahr || []).map(m => `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--text)">${m}</div>`).join('');
-    const fragen = (d.offene_fragen || []).map(f => `
-      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px">
-        <div style="font-size:14px;color:var(--bright);font-weight:600;margin-bottom:6px">❓ ${f.frage}</div>
-        <div style="font-size:14px;color:${f.antwort ? 'var(--text)' : 'var(--dim)'};font-style:${f.antwort ? 'normal' : 'italic'}">${f.antwort ? '✅ ' + f.antwort : 'noch offen'}</div>
-      </div>`).join('');
+
+    const termine = d.termine || [];
+    let monthRows = '';
+    let lastMonth = '';
+    const monthNames = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+    termine.forEach(t => {
+      const dt = new Date(t.datum + 'T00:00:00');
+      const monthKey = dt.getFullYear() + '-' + dt.getMonth();
+      if (monthKey !== lastMonth) {
+        lastMonth = monthKey;
+        monthRows += `<tr><td colspan="6" style="padding:14px 10px 6px;font-size:13px;font-weight:700;color:var(--accent)">${monthNames[dt.getMonth()]} ${dt.getFullYear()}</td></tr>`;
+      }
+      const tagFmt = dt.toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit'});
+      const bez = t.bezeichnung ? `<span style="color:var(--bright);font-weight:600">${escHtml(t.bezeichnung)}</span>` : `<span style="color:var(--dim);font-style:italic">offen</span>`;
+      const gruppeColor = t.gruppe === 'II' ? '#fbbf24' : '#60a5fa';
+      const gruppe = t.gruppe ? `<span style="background:${gruppeColor}22;border:1px solid ${gruppeColor}66;color:${gruppeColor};border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700">${t.gruppe}</span>` : '';
+      const themaVal = escHtml(t.thema || '').replace(/"/g, '&quot;');
+      const datumAttr = t.datum, zeitAttr = t.zeit.replace(/"/g, '&quot;');
+      monthRows += `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:7px 10px;font-size:14px;color:var(--text);white-space:nowrap">${tagFmt}</td>
+        <td style="padding:7px 10px;font-size:14px;color:var(--text)">${t.wochentag}</td>
+        <td style="padding:7px 10px;font-size:14px;color:var(--text);white-space:nowrap">${t.zeit}</td>
+        <td style="padding:7px 10px;text-align:center">${gruppe}</td>
+        <td style="padding:7px 10px">${bez}</td>
+        <td style="padding:7px 10px">
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="text" value="${themaVal}" placeholder="Thema eintragen…"
+              data-datum="${datumAttr}" data-zeit="${zeitAttr}"
+              onchange="sj2627SaveThema(this)"
+              style="flex:1;min-width:120px;background:rgba(0,0,0,0.25);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:14px;color:var(--bright)">
+            <button onclick="sj2627Nudge(this)" data-datum="${datumAttr}" data-zeit="${zeitAttr}"
+              title="Auftrag zu diesem Thema anstupsen (z.B. Arbeitsblatt erstellen)"
+              style="flex-shrink:0;background:none;border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:13px;line-height:1;cursor:pointer;padding:6px 8px">📌</button>
+          </div>
+        </td>
+      </tr>`;
+    });
+
+    const ferien = (d.ferien_ausschluss || []).map(f => {
+      const range = f.von && f.bis ? `${f.von} – ${f.bis}` : (f.bis ? `bis ${f.bis}` : (f.ab ? `ab ${f.ab}` : ''));
+      return `<span style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--dim)">${f.grund}: ${range}</span>`;
+    }).join('');
+
     box.innerHTML = `
-      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:14px;padding:24px 26px;margin-bottom:16px">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px 26px;margin-bottom:16px">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
           <div style="font-size:32px">🗓️</div>
           <div>
@@ -5923,21 +5962,79 @@ async function loadSchuljahr2627() {
             <div style="font-size:13px;color:var(--dim)">${d.wochenstunden || '?'} Std./Woche · Klassen: ${(d.klassen||[]).join(', ')}</div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:12px">${klassen}</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">${klassen}</div>
         <div style="font-size:14px;color:var(--text);line-height:1.6">${d.hinweis || ''}</div>
       </div>
-      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:16px">
-        <div style="font-size:16px;font-weight:700;color:var(--bright);margin-bottom:10px">📚 Module aus dem Vorjahr (25/26)</div>
-        <div style="font-size:12px;color:var(--dim);margin-bottom:10px">Quelle: ${d.quelle_vorjahr || ''} — Reihenfolge noch zu bestätigen</div>
-        ${module}
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:16px">
+        <div style="font-size:16px;font-weight:700;color:var(--bright);margin-bottom:10px">⏰ Geplante Wochen-Slots</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">${slots}</div>
+        <div style="font-size:13px;color:var(--dim);line-height:1.6">${d.slots_hinweis || ''}</div>
       </div>
-      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:14px;padding:20px 22px">
-        <div style="font-size:16px;font-weight:700;color:var(--bright);margin-bottom:12px">❓ Offene Fragen für die Planung</div>
-        ${fragen || '<div style="color:var(--dim);font-size:14px">Keine offenen Fragen mehr 🎉</div>'}
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:16px">
+        <div style="font-size:16px;font-weight:700;color:var(--bright);margin-bottom:6px">📅 Termine ${d.schuljahr || ''} (${termine.length})</div>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:12px">Quelle Ferienkalender: ${d.ferienkalender_quelle || ''} · ${d.hinweis_ausfall || ''}</div>
+        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">${ferien}</div>
+        <div style="max-height:600px;overflow-y:auto;border:1px solid var(--border);border-radius:10px">
+          <table style="width:100%;border-collapse:collapse">
+            <thead style="position:sticky;top:0;background:var(--card2);z-index:1">
+              <tr>
+                <th style="padding:9px 10px;text-align:left;font-size:12px;color:var(--dim)">Datum</th>
+                <th style="padding:9px 10px;text-align:left;font-size:12px;color:var(--dim)">Tag</th>
+                <th style="padding:9px 10px;text-align:left;font-size:12px;color:var(--dim)">Zeit</th>
+                <th style="padding:9px 10px;text-align:center;font-size:12px;color:var(--dim)">Gr.</th>
+                <th style="padding:9px 10px;text-align:left;font-size:12px;color:var(--dim)">Bezeichnung</th>
+                <th style="padding:9px 10px;text-align:left;font-size:12px;color:var(--dim)">Thema</th>
+              </tr>
+            </thead>
+            <tbody>${monthRows}</tbody>
+          </table>
+        </div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px">
+        <div style="font-size:16px;font-weight:700;color:var(--bright);margin-bottom:10px">📚 Module aus dem Vorjahr (25/26)</div>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:10px">Quelle: ${d.quelle_vorjahr || ''} — Reihenfolge noch zu bestätigen, Basis für die Thema-Spalte oben</div>
+        ${module}
       </div>`;
   } catch (e) {
     box.innerHTML = '<div style="color:var(--dim);font-size:14px">Konnte Planung nicht laden.</div>';
   }
+}
+
+async function sj2627SaveThema(input) {
+  const datum = input.dataset.datum, zeit = input.dataset.zeit;
+  input.style.borderColor = 'var(--accent)';
+  try {
+    await fetch(API + '/api/schuljahr2627/update', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({datum, zeit, thema: input.value})});
+    input.style.borderColor = 'var(--success)';
+    setTimeout(() => { input.style.borderColor = 'var(--border)'; }, 1200);
+  } catch(e) {
+    input.style.borderColor = 'var(--danger)';
+  }
+}
+
+async function sj2627Nudge(btn) {
+  const datum = btn.dataset.datum, zeit = btn.dataset.zeit;
+  const row = btn.closest('tr');
+  const input = row.querySelector('input[type="text"]');
+  const orig = btn.textContent;
+  // erst sicherstellen, dass das aktuell eingetippte Thema gespeichert ist
+  if (input) await sj2627SaveThema(input);
+  try {
+    const r = await fetch(API + '/api/schuljahr2627/nudge', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({datum, zeit})});
+    const d = await r.json();
+    if (d && d.ok) {
+      let copied = false;
+      try { await navigator.clipboard.writeText(d.prompt); copied = true; } catch(e) {}
+      btn.textContent = copied ? '✓📋' : '✓';
+      btn.title = copied ? 'Angestupst + in Zwischenablage kopiert' : 'Angestupst (Kopieren blockiert)';
+    } else {
+      btn.textContent = '⚠️';
+      btn.title = (d && d.error) || 'Fehler — erst Thema eintragen';
+    }
+  } catch(e) { btn.textContent = '⚠️'; }
+  setTimeout(() => { btn.textContent = orig; }, 2400);
 }
 
 async function loadBoard() {
@@ -12797,10 +12894,11 @@ const SR_ROUTE = [
     lat:47.9990, lon:7.8421, distKm:50, dauerMin:96, tageszeit:'Nachmittag',
     tag:'Tag 4–6', datum:'28.–30.07.', aufenthalt:'2 Übernachtungen',
     anfahrt:'Feldberg → Titisee (Rückweg ~45 Min.) → Freiburg ~36 km/51 Min. — zusammen ~50 km · ca. 1 Std. 36 Min. ab Feldberg',
-    tipp:'Die 3 Tage clever aufteilen: Ankunftstag für Münster & Altstadt, der freie Mitteltag (29.07.) ideal für den Halbtagesausflug in den Kaiserstuhl (nur 25 Min. entfernt), am letzten Vormittag vor der Weiterfahrt nach Konstanz noch Schlossberg oder Schauinsland. Münster-Turmbesteigung am besten morgens — Weitsicht auf Schwarzwald und Vogesen. Abends im Studentenviertel auf dem Platz vor dem Münster: Straßenmarkt, lebendige Atmosphäre.',
+    tipp:'Zwei entspannte Tage: Ankunft mit Freibad-Nachmittag, dann Kaiserstuhl-Ausflug, dazwischen Altstadt, Schlossberg und Markthalle — genaue Tagesplanung siehe Tagesprogramm. Münster-Turmbesteigung am besten morgens — Weitsicht auf Schwarzwald und Vogesen. Abends im Studentenviertel auf dem Platz vor dem Münster: Straßenmarkt, lebendige Atmosphäre.',
     beschreibung:'Freiburg im Breisgau ist die sonnigste Großstadt Deutschlands und die inoffizielle Hauptstadt des Schwarzwalds. Das gotische Münster mit seinem durchbrochenen Sandsteinturm zählt zu den schönsten mittelalterlichen Kathedralen. Die Bächle — kleine Wasserrinnen entlang der Altstadt-Gassen — sind einzigartig in Deutschland. Freiburg hat eine lebendige Universität, exzellente Küche und das Dreisamtal als Ausflugsziel direkt vor der Tür. Die Albert-Ludwigs-Universität wurde bereits 1457 gegründet und zählt zu den ältesten Deutschlands — das prägt bis heute das junge, weltoffene Flair der Stadt. Die Bächle dienten im Mittelalter der Brandbekämpfung und Viehtränke; einer Freiburger Redensart nach soll, wer versehentlich hineintritt, einen Freiburger oder eine Freiburgerin heiraten.',
     infoUrl:'https://visit.freiburg.de',
-    highlights:['⛪ Freiburger Münster (Gotik, 116 m — Turmbesteigung!)','💧 Bächle in der Altstadt (einzigartig in DE)','🏔️ Schlossberg mit Aussichtsturm (Seilbahn)','🚡 Schauinsland Gondelbahn (1.284 m)','🖼️ Augustinermuseum (mittelalterliche Kunst)','🛒 Münstermarkt (tägl. außer So)','🍽️ Markthalle (Feinschmecker-Paradies)','🌿 Botanischer Garten Universität'] },
+    tagesplan:['4|Nachmittag|Ankunft & Lorettobad|Nach dem Feldberg-Vormittag Ankunft in Freiburg — heute lieber ausklingen lassen statt gleich Sightseeing-Programm: Das Lorettobad direkt am Fuß des Schlossbergs ist Deutschlands ältestes Familienfreibad (erste Badesaison 1842) und bis heute das einzige Bad in Deutschland mit eigenem Damenbad. Geöffnet von Mai bis September — im Juli also bestens badetauglich. Abends dann ein erster ruhiger Bummel durch die Altstadt.','5|Nachmittag|Altstadt, Münster & Bächle|Zurück aus dem Kaiserstuhl geht es in die Freiburger Altstadt: das gotische Münster mit seinem durchbrochenen Sandsteinturm lohnt die Turmbesteigung (Weitsicht bis zu den Vogesen), dazwischen plätschern die berühmten Bächle durch die Gassen. Am Münsterplatz abends Markttreiben und Studentenflair.','6|Vormittag|Schlossberg|Mit der Schlossbergbahn hinauf zum Aussichtsturm — der beste Blick auf Freiburg, den Schwarzwald und bei klarer Sicht bis zu den Vogesen. Ein kurzer, lohnender Spaziergang oben auf dem bewaldeten Bergrücken rundet den Vormittag ab.','6|Nachmittag|Markthalle & Münstermarkt|Nachmittags Feinschmecker-Zeit: die Markthalle direkt am Münster bietet Spezialitäten aus aller Welt, dazu (außer sonntags) der traditionelle Münstermarkt gleich nebenan — ideal für ein spätes Mittagessen oder Mitbringsel.'],
+    highlights:['⛪ Freiburger Münster (Gotik, 116 m — Turmbesteigung!)','💧 Bächle in der Altstadt (einzigartig in DE)','🏔️ Schlossberg mit Aussichtsturm (Seilbahn)','🏊 Lorettobad (histor. Freibad, ältestes Familienbad Deutschlands)','🚡 Schauinsland Gondelbahn (1.284 m)','🖼️ Augustinermuseum (mittelalterliche Kunst)','🛒 Münstermarkt (tägl. außer So)','🍽️ Markthalle (Feinschmecker-Paradies)','🌿 Botanischer Garten Universität'] },
 
   { nr:8,  id:'kai',  name:'Kaiserstuhl',         region:'Schwarzwald', farbe:'#84cc16',
     lat:48.1044, lon:7.6821, distKm:22, dauerMin:25, retour:true, tageszeit:'Vormittag',

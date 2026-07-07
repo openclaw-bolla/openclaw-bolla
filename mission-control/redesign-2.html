@@ -2,265 +2,361 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Mission Control</title>
+<title>Mission Control — Skizzenheft</title>
 <style>
-  @keyframes blink { 0%,50%{opacity:1;} 51%,100%{opacity:0;} }
-  @keyframes flicker {
-    0%{opacity:0.98;} 5%{opacity:0.95;} 10%{opacity:0.98;} 15%{opacity:0.94;}
-    20%{opacity:0.98;} 100%{opacity:0.98;}
+  :root{
+    --paper: #f4ecd8;
+    --paper-dark: #ece0c4;
+    --ink: #2f2a22;
+    --ink-soft: #6b6153;
+    --accent: #d1723a;
+    --accent-dark: #b85a26;
+    --teal: #2f4a44;
+    --teal-light: #4c6f66;
+    --tape: #f2d17a;
+    --card-shadow: rgba(47,42,34,0.25);
   }
-  @keyframes scan {
-    0%{ transform: translateY(-100%); }
-    100%{ transform: translateY(100%); }
+  *{ box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0; height:100%;
+    background-color: var(--paper);
+    background-image:
+      repeating-linear-gradient(180deg, rgba(150,130,90,0.08) 0px, rgba(150,130,90,0.08) 1px, transparent 1px, transparent 34px),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.18  0 0 0 0 0.14  0 0 0 0 0.08  0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+      radial-gradient(ellipse at 20% 0%, rgba(255,255,255,0.35), transparent 60%);
+    font-family: 'Segoe Print','Bradley Hand','Comic Sans MS', cursive, sans-serif;
+    color: var(--ink);
   }
-  * { box-sizing: border-box; }
-  body {
-    margin:0; padding:0;
-    background:#0d0d0d;
-    color:#00ff41;
-    font-family: "Consolas","Courier New",monospace;
-    font-size:14px;
-    height:100vh;
-    overflow:hidden;
-    animation: flicker 6s infinite;
-  }
-  body::before {
-    content:"";
-    position:fixed; top:0; left:0; right:0; bottom:0;
-    background: repeating-linear-gradient(
-      0deg, rgba(0,255,65,0.04) 0px, rgba(0,255,65,0.04) 1px,
-      transparent 1px, transparent 3px
-    );
-    pointer-events:none;
-    z-index:50;
-  }
-  body::after {
-    content:"";
-    position:fixed; left:0; right:0; height:120px;
-    background: linear-gradient(rgba(0,255,65,0) 0%, rgba(0,255,65,0.06) 50%, rgba(0,255,65,0) 100%);
-    animation: scan 7s linear infinite;
-    pointer-events:none;
-    z-index:51;
-  }
-  .layout {
+  .app{
     display:flex;
-    height:100vh;
+    min-height:100vh;
   }
-  /* SIDEBAR */
-  .sidebar {
-    width:220px;
-    border-right:1px solid #00ff41;
-    padding:20px 0;
-    background: #0a0a0a;
-    display:flex;
-    flex-direction:column;
-  }
-  .sidebar .logo {
-    padding:0 20px 20px 20px;
-    font-size:16px;
-    font-weight:bold;
-    text-shadow:0 0 8px #00ff41;
-    border-bottom:1px dashed #036b1c;
-    margin-bottom:10px;
-  }
-  .sidebar .logo span { color:#5eff8f; }
-  .nav-item {
-    padding:10px 20px;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    gap:10px;
-    font-size:14px;
-    border-left:3px solid transparent;
-  }
-  .nav-item:hover, .nav-item.active {
-    background: rgba(0,255,65,0.08);
-    border-left:3px solid #00ff41;
-    text-shadow:0 0 6px #00ff41;
-  }
-  .nav-item .arrow { opacity:0; }
-  .nav-item.active .arrow { opacity:1; }
-  .sidebar-footer {
-    margin-top:auto;
-    padding:15px 20px;
-    font-size:12px;
-    color:#036b1c;
-    border-top:1px dashed #036b1c;
-  }
-  /* MAIN */
-  .main {
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    overflow-y:auto;
-  }
-  .topbar {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:16px 30px;
-    border-bottom:1px solid #00ff41;
-    background:#0a0a0a;
-  }
-  .topbar h1 {
-    font-size:18px;
-    margin:0;
-    text-shadow:0 0 8px #00ff41;
-    letter-spacing:1px;
-  }
-  .topbar h1::before { content:"$ "; color:#5eff8f; }
-  .clock {
-    font-size:20px;
-    font-weight:bold;
-    text-shadow:0 0 10px #00ff41;
-  }
-  .cursor {
-    display:inline-block;
-    width:9px;
-    height:18px;
-    background:#00ff41;
-    margin-left:4px;
-    vertical-align:middle;
-    animation: blink 1s steps(1) infinite;
-  }
-  .content {
-    padding:30px;
-    flex:1;
-  }
-  .prompt-line {
-    margin-bottom:20px;
-    color:#5eff8f;
-    font-size:13px;
-  }
-  .prompt-line .path { color:#00ff41; }
-  .grid {
-    display:grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap:20px;
-  }
-  .card {
-    border:1px solid #00ff41;
-    background: rgba(0,255,65,0.03);
-    padding:18px;
+
+  /* ---------- SIDEBAR ---------- */
+  .sidebar{
+    width: 230px;
+    flex-shrink:0;
+    background: var(--paper-dark);
+    padding: 26px 0 26px 22px;
     position:relative;
-    box-shadow: 0 0 12px rgba(0,255,65,0.15) inset;
+    clip-path: polygon(
+      0 0, 100% 0, 96% 4%, 100% 9%, 95% 15%, 100% 22%, 96% 30%,
+      100% 38%, 94% 45%, 100% 52%, 96% 60%, 100% 68%, 95% 75%,
+      100% 83%, 96% 91%, 100% 96%, 94% 100%, 0 100%
+    );
+    box-shadow: 3px 0 14px rgba(47,42,34,0.18);
   }
-  .card::before {
-    content: "//";
-    position:absolute;
-    top:8px; right:12px;
-    color:#036b1c;
-    font-size:12px;
+  .brand{
+    display:flex; align-items:center; gap:10px;
+    font-size: 24px; font-weight:bold;
+    color: var(--teal);
+    margin: 4px 0 30px 2px;
+    transform: rotate(-1.5deg);
   }
-  .card-title {
-    font-size:12px;
-    color:#5eff8f;
-    text-transform:uppercase;
-    letter-spacing:2px;
-    margin-bottom:12px;
+  .brand .paw{ font-size: 22px; }
+  .brand .under{
+    display:block; font-size:12px; color:var(--ink-soft); font-weight:normal;
+    transform: rotate(0.5deg);
+    margin-top:-4px;
   }
-  .card-value {
-    font-size:32px;
+  nav.navlist{ display:flex; flex-direction:column; gap:6px; margin-right:14px;}
+  .navitem{
+    display:flex; align-items:center; gap:12px;
+    padding:10px 14px;
+    font-size:16px;
+    border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+    cursor:pointer;
+    color: var(--ink);
+    border: 2px solid transparent;
+    transition: transform .15s ease;
+    position:relative;
+  }
+  .navitem:hover{ transform: translateX(3px) rotate(-0.5deg); }
+  .navitem .ico{ font-size:19px; width:22px; text-align:center;}
+  .navitem.active{
+    background: rgba(209,114,58,0.14);
+    border: 2px dashed var(--accent);
     font-weight:bold;
-    text-shadow:0 0 10px #00ff41;
-    margin-bottom:10px;
+    transform: rotate(-0.8deg);
   }
-  .bar-track {
-    width:100%;
-    height:8px;
-    border:1px solid #036b1c;
-    background:#050505;
-    overflow:hidden;
+  .navitem.active::after{
+    content:"";
+    position:absolute; left:14px; right:20px; bottom:3px; height:6px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='8'%3E%3Cpath d='M0 4 Q 8 0, 16 4 T 32 4 T 48 4 T 64 4 T 80 4 T 96 4' stroke='%23d1723a' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+    background-repeat: repeat-x;
+    background-size: 40px 8px;
+    opacity:0.9;
   }
-  .bar-fill {
-    height:100%;
-    background: repeating-linear-gradient(90deg, #00ff41 0px, #00ff41 4px, #0a2e0f 4px, #0a2e0f 6px);
-    box-shadow:0 0 8px #00ff41;
+  .sidebar-foot{
+    margin-top: 40px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    padding: 10px 14px;
+    transform: rotate(-1deg);
+    border-top: 1px dashed rgba(107,97,83,0.4);
   }
-  .card-sub {
-    margin-top:10px;
-    font-size:12px;
-    color:#5eff8f;
+
+  /* ---------- MAIN ---------- */
+  .main-col{ flex:1; padding: 22px 30px 40px; min-width:0; }
+
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding-bottom: 14px;
+    border-bottom: 2px solid rgba(47,42,34,0.15);
+    margin-bottom: 26px;
+    position:relative;
   }
-  .mail-list { list-style:none; margin:0; padding:0; font-size:13px; }
-  .mail-list li { padding:6px 0; border-bottom:1px dashed #063d13; }
-  .mail-list li:last-child { border-bottom:none; }
-  .mail-list .from { color:#5eff8f; }
-  .weather-icon { font-size:36px; margin-bottom:6px; }
-  .footer-note {
-    margin-top:30px;
-    font-size:12px;
-    color:#036b1c;
+  .topbar h1{
+    font-size: 30px; margin:0; color:var(--ink);
+    transform: rotate(-1deg);
   }
-  ::-webkit-scrollbar { width:8px; }
-  ::-webkit-scrollbar-track { background:#0a0a0a; }
-  ::-webkit-scrollbar-thumb { background:#036b1c; }
+  .topbar .sub{
+    font-size:13px; color:var(--ink-soft); margin-top:2px;
+  }
+  .clockbox{
+    background: var(--paper);
+    border: 2px solid var(--teal);
+    border-radius: 225px 15px 225px 15px/15px 225px 15px 225px;
+    padding: 8px 20px;
+    text-align:center;
+    box-shadow: 3px 3px 0 var(--card-shadow);
+    transform: rotate(2deg);
+  }
+  .clockbox .time{ font-size:26px; font-weight:bold; color:var(--teal); line-height:1; }
+  .clockbox .date{ font-size:11px; color:var(--ink-soft); }
+  .pin{
+    position:absolute; top:-10px; left:50%;
+    width:14px; height:14px; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #ff8a65, var(--accent-dark));
+    box-shadow: 0 2px 3px rgba(0,0,0,0.4);
+  }
+
+  .dashboard-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px,1fr));
+    gap: 26px;
+  }
+
+  .card{
+    background: #fffdf6;
+    border: 2px solid rgba(47,42,34,0.55);
+    border-radius: 8px 180px 10px 180px/180px 10px 180px 10px;
+    padding: 20px 20px 16px;
+    position:relative;
+    box-shadow: 5px 6px 0 var(--card-shadow);
+  }
+  .card:nth-child(1){ transform: rotate(-1.2deg); }
+  .card:nth-child(2){ transform: rotate(0.8deg); }
+  .card:nth-child(3){ transform: rotate(-0.5deg); }
+  .card:nth-child(4){ transform: rotate(1.1deg); }
+  .card:nth-child(5){ transform: rotate(-1deg); }
+  .card:hover{ transform: rotate(0deg) translateY(-3px); transition: .2s ease; }
+
+  .tape{
+    position:absolute; top:-14px; left:26px;
+    width:60px; height:24px;
+    background: var(--tape);
+    opacity:0.85;
+    transform: rotate(-6deg);
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+  }
+  .card:nth-child(2) .tape{ left: auto; right:26px; transform: rotate(7deg); background:#c9dfd6;}
+  .card:nth-child(3) .tape{ transform: rotate(-4deg); background:#f0b8ab;}
+  .card:nth-child(4) .tape{ left:auto; right:30px; transform: rotate(5deg); background:#f2d17a;}
+  .card:nth-child(5) .tape{ transform: rotate(3deg); background:#c9dfd6;}
+
+  .card h2{
+    margin:6px 0 14px; font-size:18px; display:flex; align-items:center; gap:8px;
+    color: var(--teal);
+  }
+  .card h2 .ico{ font-size:20px; }
+
+  /* Gauge widgets */
+  .gaugewrap{ display:flex; align-items:center; gap:18px; }
+  .gauge{ position:relative; width:96px; height:96px; flex-shrink:0; }
+  .gauge svg{ transform: rotate(-90deg); }
+  .gauge .val{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:22px; font-weight:bold; color:var(--ink);
+  }
+  .gauge-label{ font-size:13px; color:var(--ink-soft); }
+  .gauge-note{ font-size:12px; margin-top:6px; color:var(--ink-soft); }
+
+  /* Mail widget */
+  .mail-count{
+    font-size:40px; font-weight:bold; color:var(--accent-dark);
+    line-height:1; margin-bottom:6px;
+  }
+  .mail-list{ list-style:none; padding:0; margin:10px 0 0; }
+  .mail-list li{
+    padding: 7px 0; font-size:14px;
+    border-bottom: 1px dashed rgba(47,42,34,0.25);
+    display:flex; gap:8px; align-items:baseline;
+  }
+  .mail-list li:last-child{ border-bottom:none; }
+  .mail-from{ font-weight:bold; color:var(--teal); flex-shrink:0; }
+  .mail-subj{ color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* weather widget */
+  .weather-main{ display:flex; align-items:center; gap:16px; }
+  .weather-icon{ font-size:52px; }
+  .weather-temp{ font-size:34px; font-weight:bold; color:var(--accent-dark); }
+  .weather-city{ font-size:14px; color:var(--ink-soft); }
+  .forecast-row{ display:flex; justify-content:space-between; margin-top:14px; }
+  .forecast-row div{ text-align:center; font-size:12px; color:var(--ink-soft); }
+  .forecast-row .f-temp{ font-weight:bold; color:var(--ink); font-size:14px; }
+
+  /* sticky note */
+  .stickynote{
+    background: #fbe9a8;
+    border: none;
+    box-shadow: 4px 5px 0 var(--card-shadow);
+  }
+  .stickynote .tape{ background:#e07a5f; }
+  .stickynote ul{ margin:0; padding-left:20px; font-size:14px; line-height:1.7; }
+  .stickynote li::marker{ color: var(--accent-dark); }
+
+  ::-webkit-scrollbar{ width:10px; }
+  ::-webkit-scrollbar-thumb{ background: rgba(47,42,34,0.3); border-radius:6px; }
 </style>
 </head>
 <body>
-<div class="layout">
+<div class="app">
 
-  <div class="sidebar">
-    <div class="logo">[ MISSION_<span>CONTROL</span> ]</div>
-    <div class="nav-item active"><span class="arrow">&gt;</span> Dashboard</div>
-    <div class="nav-item">&nbsp;&nbsp;Bolla</div>
-    <div class="nav-item">&nbsp;&nbsp;Schule</div>
-    <div class="nav-item">&nbsp;&nbsp;Kalender</div>
-    <div class="nav-item">&nbsp;&nbsp;E-Mail</div>
-    <div class="nav-item">&nbsp;&nbsp;Wetter</div>
-    <div class="nav-item">&nbsp;&nbsp;System Info</div>
-    <div class="sidebar-footer">
-      user@bolla:~$<br>
-      status: <span style="color:#00ff41;">ONLINE</span>
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="paw">🐾</span>
+      <span>Mission Control
+        <span class="under">Chris' Kommandozentrale</span>
+      </span>
     </div>
-  </div>
-
-  <div class="main">
-    <div class="topbar">
-      <h1>dashboard</h1>
-      <div class="clock">20:14<span class="cursor"></span></div>
+    <nav class="navlist" id="nav">
+      <div class="navitem active" data-target="Dashboard"><span class="ico">📊</span> Dashboard</div>
+      <div class="navitem" data-target="Bolla"><span class="ico">🐾</span> Bolla</div>
+      <div class="navitem" data-target="Schule"><span class="ico">🎓</span> Schule</div>
+      <div class="navitem" data-target="Kalender"><span class="ico">📅</span> Kalender</div>
+      <div class="navitem" data-target="E-Mail"><span class="ico">✉️</span> E-Mail</div>
+      <div class="navitem" data-target="Wetter"><span class="ico">🌤️</span> Wetter</div>
+      <div class="navitem" data-target="System Info"><span class="ico">🖥️</span> System Info</div>
+    </nav>
+    <div class="sidebar-foot">
+      ✎ läuft seit 07:12 Uhr — <br>alles im grünen Bereich.
     </div>
+  </aside>
 
-    <div class="content">
-      <div class="prompt-line"><span class="path">chris@norderstedt</span>:~$ status --all</div>
+  <div class="main-col">
+    <header class="topbar">
+      <div>
+        <h1 id="pagetitle">Dashboard</h1>
+        <div class="sub">Montag, 7. Juli 2026 · alles ruhig heute Abend</div>
+      </div>
+      <div class="clockbox">
+        <div class="pin"></div>
+        <div class="time" id="clock">20:14</div>
+        <div class="date">Ortszeit Norderstedt</div>
+      </div>
+    </header>
 
-      <div class="grid">
-        <div class="card">
-          <div class="card-title">RAM Auslastung</div>
-          <div class="card-value">34%</div>
-          <div class="bar-track"><div class="bar-fill" style="width:34%;"></div></div>
-          <div class="card-sub">10.9 GB / 32 GB belegt</div>
-        </div>
+    <main class="dashboard-grid">
 
-        <div class="card">
-          <div class="card-title">CPU Last</div>
-          <div class="card-value">12%</div>
-          <div class="bar-track"><div class="bar-fill" style="width:12%;"></div></div>
-          <div class="card-sub">4 Kerne · 3.4 GHz · idle</div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Posteingang</div>
-          <div class="card-value">3 <span style="font-size:16px;">neu</span></div>
-          <ul class="mail-list">
-            <li><span class="from">md@lg-n.de</span> — Stundenplan Update</li>
-            <li><span class="from">KDP-Support</span> — Titel freigeschaltet</li>
-            <li><span class="from">R. Weinmann</span> — Re: Treffen Oberstaufen</li>
-          </ul>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Wetter Hamburg</div>
-          <div class="weather-icon">☁</div>
-          <div class="card-value">18°C</div>
-          <div class="card-sub">Bewölkt · Wind 14 km/h · Luftf. 72%</div>
+      <div class="card">
+        <div class="tape"></div>
+        <h2><span class="ico">🧠</span> Arbeitsspeicher</h2>
+        <div class="gaugewrap">
+          <div class="gauge">
+            <svg width="96" height="96" viewBox="0 0 96 96">
+              <circle cx="48" cy="48" r="40" fill="none" stroke="rgba(47,42,34,0.15)" stroke-width="10"/>
+              <circle cx="48" cy="48" r="40" fill="none" stroke="#2f4a44" stroke-width="10"
+                stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="165.8"/>
+            </svg>
+            <div class="val">34%</div>
+          </div>
+          <div>
+            <div class="gauge-label">RAM belegt</div>
+            <div class="gauge-note">5,4 GB / 16 GB<br>ruhig, kein Grund zur Sorge</div>
+          </div>
         </div>
       </div>
 
-      <div class="footer-note">last login: Mon Jul 6 20:14:02 2026 from 127.0.0.1 :: all systems nominal_</div>
-    </div>
-  </div>
+      <div class="card">
+        <div class="tape"></div>
+        <h2><span class="ico">⚙️</span> Prozessor</h2>
+        <div class="gaugewrap">
+          <div class="gauge">
+            <svg width="96" height="96" viewBox="0 0 96 96">
+              <circle cx="48" cy="48" r="40" fill="none" stroke="rgba(47,42,34,0.15)" stroke-width="10"/>
+              <circle cx="48" cy="48" r="40" fill="none" stroke="#d1723a" stroke-width="10"
+                stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="221"/>
+            </svg>
+            <div class="val">12%</div>
+          </div>
+          <div>
+            <div class="gauge-label">CPU-Last</div>
+            <div class="gauge-note">4 Kerne aktiv<br>Bolla döst gerade 😴</div>
+          </div>
+        </div>
+      </div>
 
+      <div class="card">
+        <div class="tape"></div>
+        <h2><span class="ico">✉️</span> Postfach</h2>
+        <div class="mail-count">3 neue</div>
+        <ul class="mail-list">
+          <li><span class="mail-from">Reni:</span><span class="mail-subj">Termin beim Zahnarzt verschoben</span></li>
+          <li><span class="mail-from">Schule:</span><span class="mail-subj">Notenkonferenz 7. Klassen</span></li>
+          <li><span class="mail-from">DistroKid:</span><span class="mail-subj">Deine Auszahlung ist unterwegs</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="tape"></div>
+        <h2><span class="ico">🌤️</span> Wetter Hamburg</h2>
+        <div class="weather-main">
+          <div class="weather-icon">⛅</div>
+          <div>
+            <div class="weather-temp">18°C</div>
+            <div class="weather-city">leicht bewölkt, Wind 12 km/h</div>
+          </div>
+        </div>
+        <div class="forecast-row">
+          <div>Mo<br><span class="f-temp">18°</span></div>
+          <div>Di<br><span class="f-temp">21°</span></div>
+          <div>Mi<br><span class="f-temp">19°</span></div>
+          <div>Do<br><span class="f-temp">22°</span></div>
+        </div>
+      </div>
+
+      <div class="card stickynote">
+        <div class="tape"></div>
+        <h2><span class="ico">📌</span> Nicht vergessen</h2>
+        <ul>
+          <li>Reiseplan Freiburg-Frage klären</li>
+          <li>Word-Export final abnehmen</li>
+          <li>Abends Zeit für Kaffee ☕</li>
+        </ul>
+      </div>
+
+    </main>
+  </div>
 </div>
+
+<script>
+  document.getElementById('nav').addEventListener('click', function(e){
+    var item = e.target.closest('.navitem');
+    if(!item) return;
+    document.querySelectorAll('.navitem').forEach(function(n){ n.classList.remove('active'); });
+    item.classList.add('active');
+    document.getElementById('pagetitle').textContent = item.dataset.target;
+  });
+
+  function tick(){
+    var d = new Date();
+    var hh = String(d.getHours()).padStart(2,'0');
+    var mm = String(d.getMinutes()).padStart(2,'0');
+    document.getElementById('clock').textContent = hh + ':' + mm;
+  }
+  tick();
+  setInterval(tick, 1000*30);
+</script>
 </body>
 </html>

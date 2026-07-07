@@ -2,325 +2,328 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Mission Control — Notizbuch</title>
+<title>Mission Control</title>
 <style>
   :root{
-    --paper:#f4ecdd;
-    --paper-dark:#ead9bc;
-    --ink:#4a3826;
-    --ink-soft:#7a6046;
-    --accent:#c98a4b;
-    --accent2:#8faa79;
-    --accent3:#c85c4e;
-    --tape:#e9d9a8;
-    --shadow: rgba(74,56,38,0.25);
+    --bg:#05070d;
+    --panel:#0b0f1a;
+    --panel-2:#0f1424;
+    --border:rgba(10,255,157,0.25);
+    --cyan:#0aff9d;
+    --magenta:#ff2ec4;
+    --blue:#3ec9ff;
+    --text:#d6f5ea;
+    --text-dim:#6f8a86;
   }
-  *{box-sizing:border-box;}
-  html,body{height:100%;margin:0;}
+  *{box-sizing:border-box;margin:0;padding:0;}
   body{
-    font-family:'Segoe Print','Bradley Hand','Comic Sans MS',cursive;
-    color:var(--ink);
-    background-color:var(--paper);
-    background-image:
-      repeating-linear-gradient(0deg, rgba(74,56,38,0.035) 0px, rgba(74,56,38,0.035) 1px, transparent 1px, transparent 26px),
-      radial-gradient(circle at 20% 10%, rgba(255,255,255,0.5), transparent 60%),
-      radial-gradient(circle at 90% 90%, rgba(0,0,0,0.05), transparent 50%);
-    font-size:16px;
-    display:flex;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(10,255,157,0.06), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(255,46,196,0.08), transparent 45%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Segoe UI', 'Consolas', monospace;
     min-height:100vh;
+    display:flex;
+    overflow:hidden;
+    position:relative;
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background:repeating-linear-gradient(
+      to bottom, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px,
+      transparent 1px, transparent 3px
+    );
+    pointer-events:none;
+    z-index:999;
   }
 
-  /* ---------- SIDEBAR ---------- */
+  /* SIDEBAR */
   .sidebar{
-    width:220px;
-    background:var(--paper-dark);
-    border-right:3px dashed var(--ink-soft);
-    padding:24px 14px;
-    position:relative;
-    flex-shrink:0;
+    width:230px;
+    background:linear-gradient(180deg, #070a12, #0a0e18);
+    border-right:1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    padding:22px 0;
+    box-shadow: inset -1px 0 20px rgba(10,255,157,0.05);
   }
-  .sidebar::before{
-    content:"";
-    position:absolute;
-    top:0;left:0;right:0;height:100%;
-    background-image: repeating-linear-gradient(180deg, transparent 0 39px, rgba(74,56,38,0.06) 39px 40px);
-    pointer-events:none;
+  .logo{
+    padding:0 24px 24px 24px;
+    font-size:20px;
+    font-weight:700;
+    letter-spacing:3px;
+    color:var(--cyan);
+    text-shadow:0 0 12px rgba(10,255,157,0.8), 0 0 30px rgba(10,255,157,0.3);
+    border-bottom:1px solid var(--border);
+    margin-bottom:16px;
   }
-  .brand{
-    font-size:26px;
-    font-weight:bold;
-    color:var(--ink);
-    margin:0 0 6px 6px;
-    transform:rotate(-2deg);
-  }
-  .brand span{
-    display:inline-block;
-    background:var(--tape);
-    padding:2px 8px;
-    transform:rotate(1deg);
-    box-shadow:1px 1px 3px var(--shadow);
-    font-size:13px;
-    border-radius:2px;
-    margin-left:4px;
-  }
-  nav{margin-top:28px;}
+  .logo span{color:var(--magenta); text-shadow:0 0 12px rgba(255,46,196,0.8);}
   .nav-item{
     display:flex;
     align-items:center;
-    gap:10px;
-    padding:11px 12px;
-    margin:6px 2px;
-    border-radius:14px 6px 14px 6px / 8px 14px 6px 14px;
-    cursor:pointer;
-    font-size:16px;
-    border:2px solid transparent;
-    transition:transform .15s ease;
-    color:var(--ink-soft);
-  }
-  .nav-item:hover{ transform:rotate(-1deg) scale(1.02); }
-  .nav-item .ic{ font-size:19px; }
-  .nav-item.active{
-    background:var(--paper);
-    border:2px solid var(--ink);
-    color:var(--ink);
-    box-shadow:2px 2px 0 var(--shadow);
-    transform:rotate(-1deg);
-    font-weight:bold;
-  }
-  .paw{
-    margin-top:40px;
-    text-align:center;
+    gap:12px;
+    padding:13px 24px;
     font-size:13px;
-    color:var(--ink-soft);
-    opacity:.8;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    cursor:pointer;
+    border-left:3px solid transparent;
+    transition:all .2s ease;
+    position:relative;
   }
+  .nav-item .ic{width:18px; text-align:center; filter:drop-shadow(0 0 4px currentColor);}
+  .nav-item:hover{
+    color:var(--cyan);
+    background:rgba(10,255,157,0.05);
+    border-left:3px solid var(--cyan);
+  }
+  .nav-item.active{
+    color:var(--bg);
+    background:linear-gradient(90deg, rgba(10,255,157,0.9), rgba(10,255,157,0.15));
+    border-left:3px solid var(--cyan);
+    font-weight:700;
+    text-shadow:none;
+  }
+  .sidebar-foot{
+    margin-top:auto;
+    padding:16px 24px 0 24px;
+    border-top:1px solid var(--border);
+    font-size:11px;
+    color:var(--text-dim);
+    letter-spacing:1px;
+  }
+  .pulse-dot{
+    display:inline-block; width:7px; height:7px; border-radius:50%;
+    background:var(--cyan); box-shadow:0 0 8px var(--cyan), 0 0 16px var(--cyan);
+    margin-right:6px;
+    animation:blink 1.6s infinite ease-in-out;
+  }
+  @keyframes blink{0%,100%{opacity:1;} 50%{opacity:.3;}}
 
-  /* ---------- MAIN ---------- */
+  /* MAIN */
   .main{
     flex:1;
-    padding:22px 30px 40px;
+    display:flex;
+    flex-direction:column;
     min-width:0;
   }
   .topbar{
     display:flex;
-    align-items:baseline;
     justify-content:space-between;
-    border-bottom:3px solid var(--ink);
-    padding-bottom:10px;
-    margin-bottom:26px;
-    position:relative;
+    align-items:center;
+    padding:18px 32px;
+    border-bottom:1px solid var(--border);
+    background:rgba(10,14,24,0.6);
+    backdrop-filter:blur(6px);
   }
   .topbar h1{
-    margin:0;
-    font-size:32px;
-    transform:rotate(-1deg);
+    font-size:22px;
+    letter-spacing:2px;
+    font-weight:600;
+    color:var(--text);
   }
-  .topbar h1::after{
-    content:"";
-    display:block;
-    width:120px;
-    height:8px;
-    background:var(--accent2);
-    opacity:.5;
-    margin-top:-6px;
-    transform:rotate(-1deg);
-    border-radius:40%;
+  .topbar h1 em{
+    font-style:normal;
+    color:var(--cyan);
+    text-shadow:0 0 10px rgba(10,255,157,0.6);
   }
   .clock{
-    font-size:22px;
-    background:var(--paper);
-    border:2px solid var(--ink);
-    padding:6px 16px;
-    border-radius:50% 50% 45% 55% / 60% 55% 45% 40%;
-    box-shadow:2px 3px 0 var(--shadow);
-    transform:rotate(2deg);
+    font-size:28px;
+    font-weight:700;
+    letter-spacing:3px;
+    color:var(--magenta);
+    text-shadow:0 0 14px rgba(255,46,196,0.7), 0 0 30px rgba(255,46,196,0.25);
+    font-variant-numeric:tabular-nums;
+  }
+  .clock small{
+    display:block;
+    font-size:11px;
+    color:var(--text-dim);
+    letter-spacing:2px;
+    text-align:right;
+    font-weight:400;
+    text-shadow:none;
   }
 
-  .grid{
+  .content{
+    flex:1;
+    padding:28px 32px;
+    overflow-y:auto;
     display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(220px,1fr));
-    gap:26px;
+    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    gap:22px;
+    align-content:start;
   }
 
   .card{
-    background:var(--paper);
-    border:2.5px solid var(--ink);
-    border-radius:16px 6px 18px 8px / 10px 16px 8px 20px;
-    padding:18px 20px;
-    box-shadow:4px 5px 0 var(--shadow);
+    background:linear-gradient(160deg, var(--panel), var(--panel-2));
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:20px;
     position:relative;
-    transform:rotate(var(--tilt,-1deg));
+    overflow:hidden;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.02), 0 10px 30px rgba(0,0,0,0.4);
+    transition:transform .2s ease, box-shadow .2s ease;
   }
-  .card:nth-child(1){--tilt:-1.4deg;}
-  .card:nth-child(2){--tilt:0.8deg;}
-  .card:nth-child(3){--tilt:-0.6deg;}
-  .card:nth-child(4){--tilt:1.3deg;}
-
-  .card .washi{
-    position:absolute;
-    top:-14px;
-    left:50%;
-    transform:translateX(-50%) rotate(-3deg);
-    width:70px;
-    height:22px;
-    background:var(--tape);
-    opacity:.85;
-    box-shadow:1px 1px 2px var(--shadow);
+  .card::after{
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, var(--cyan), var(--magenta));
+    opacity:0.8;
   }
-
-  .card h3{
-    margin:6px 0 14px;
-    font-size:18px;
+  .card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 0 0 1px rgba(10,255,157,0.3), 0 14px 34px rgba(0,0,0,0.5), 0 0 24px rgba(10,255,157,0.1);
+  }
+  .card-head{
     display:flex;
+    justify-content:space-between;
     align-items:center;
-    gap:8px;
+    margin-bottom:14px;
   }
-  .card h3 .emoji{font-size:22px;}
+  .card-title{
+    font-size:11px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--text-dim);
+  }
+  .card-icon{font-size:18px; filter:drop-shadow(0 0 6px currentColor);}
 
-  .metric-row{
-    display:flex;
-    align-items:center;
-    gap:16px;
+  .big-metric{
+    font-size:38px;
+    font-weight:700;
+    letter-spacing:1px;
+    color:var(--cyan);
+    text-shadow:0 0 16px rgba(10,255,157,0.5);
   }
-  .metric-value{
-    font-size:34px;
-    font-weight:bold;
-  }
-  .metric-value.ram{color:var(--accent);}
-  .metric-value.cpu{color:var(--accent2);}
+  .big-metric.magenta{color:var(--magenta); text-shadow:0 0 16px rgba(255,46,196,0.5);}
+  .big-metric.blue{color:var(--blue); text-shadow:0 0 16px rgba(62,201,255,0.5);}
 
   .bar-track{
-    flex:1;
-    height:16px;
-    border:2px solid var(--ink);
-    border-radius:10px;
-    background:repeating-linear-gradient(45deg, transparent 0 6px, rgba(74,56,38,0.06) 6px 12px);
+    margin-top:12px;
+    height:8px;
+    border-radius:6px;
+    background:rgba(255,255,255,0.06);
     overflow:hidden;
-    position:relative;
   }
   .bar-fill{
     height:100%;
-    border-radius:8px 2px 8px 2px;
+    border-radius:6px;
+    background:linear-gradient(90deg, var(--cyan), var(--blue));
+    box-shadow:0 0 10px rgba(10,255,157,0.6);
   }
-  .bar-fill.ram{ width:34%; background:var(--accent); }
-  .bar-fill.cpu{ width:12%; background:var(--accent2); }
+  .bar-fill.magenta{background:linear-gradient(90deg, var(--magenta), #ff8ae0); box-shadow:0 0 10px rgba(255,46,196,0.6);}
 
-  .mail-list{ font-size:14.5px; }
+  .sub-text{margin-top:10px; font-size:12px; color:var(--text-dim); letter-spacing:.5px;}
+
+  .mail-list{list-style:none; margin-top:6px;}
   .mail-list li{
-    list-style:none;
-    padding:6px 0 6px 22px;
-    border-bottom:1.5px dashed rgba(74,56,38,0.3);
-    position:relative;
-  }
-  .mail-list li:last-child{border-bottom:none;}
-  .mail-list li::before{
-    content:"✉";
-    position:absolute;
-    left:0;
-    color:var(--accent3);
-  }
-  .mail-count{
-    font-size:38px;
-    font-weight:bold;
-    color:var(--accent3);
-  }
-  .mail-sub{ color:var(--ink-soft); font-size:13.5px; margin-top:-8px;}
-
-  .weather-box{
+    font-size:12.5px;
+    padding:7px 0;
+    border-bottom:1px dashed rgba(255,255,255,0.08);
+    color:var(--text);
     display:flex;
-    align-items:center;
     justify-content:space-between;
   }
-  .weather-temp{
-    font-size:42px;
-    font-weight:bold;
-    color:var(--accent);
-  }
-  .weather-city{
-    font-size:14.5px;
-    color:var(--ink-soft);
-  }
-  .weather-icon{ font-size:52px; transform:rotate(-4deg); }
+  .mail-list li:last-child{border-bottom:none;}
+  .mail-list li span{color:var(--text-dim); font-size:11px;}
 
-  .doodle{
-    position:absolute;
-    bottom:6px;
-    right:12px;
-    font-size:14px;
-    opacity:.45;
-  }
+  .weather-row{display:flex; align-items:center; gap:16px;}
+  .weather-emoji{font-size:44px; filter:drop-shadow(0 0 10px rgba(62,201,255,0.6));}
+
+  .grid-span2{grid-column:span 2;}
+  @media (max-width:700px){.grid-span2{grid-column:span 1;}}
 </style>
 </head>
 <body>
 
-  <aside class="sidebar">
-    <div class="brand">Mission <span>Control 🐾</span></div>
-    <nav>
-      <div class="nav-item active"><span class="ic">📋</span> Dashboard</div>
-      <div class="nav-item"><span class="ic">🐺</span> Bolla</div>
-      <div class="nav-item"><span class="ic">🏫</span> Schule</div>
-      <div class="nav-item"><span class="ic">📅</span> Kalender</div>
-      <div class="nav-item"><span class="ic">✉️</span> E-Mail</div>
-      <div class="nav-item"><span class="ic">🌤️</span> Wetter</div>
-      <div class="nav-item"><span class="ic">🖥️</span> System Info</div>
-    </nav>
-    <div class="paw">— handgeführt seit 2026 —</div>
-  </aside>
+  <div class="sidebar">
+    <div class="logo">MISSION<span>CTRL</span></div>
+    <div class="nav-item active"><span class="ic">◆</span> Dashboard</div>
+    <div class="nav-item"><span class="ic">🐾</span> Bolla</div>
+    <div class="nav-item"><span class="ic">🏫</span> Schule</div>
+    <div class="nav-item"><span class="ic">📅</span> Kalender</div>
+    <div class="nav-item"><span class="ic">✉</span> E-Mail</div>
+    <div class="nav-item"><span class="ic">☁</span> Wetter</div>
+    <div class="nav-item"><span class="ic">🖥</span> System Info</div>
+    <div class="sidebar-foot">
+      <span class="pulse-dot"></span>SYSTEM ONLINE<br>
+      <span style="opacity:.6">v2.4.1 — Norderstedt Node</span>
+    </div>
+  </div>
 
-  <main class="main">
+  <div class="main">
     <div class="topbar">
-      <h1>Dashboard</h1>
-      <div class="clock">20:14 Uhr</div>
+      <h1>MISSION <em>CONTROL</em></h1>
+      <div class="clock">20:14<small>DIENSTAG · 07 JUL 2026</small></div>
     </div>
 
-    <div class="grid">
+    <div class="content">
 
       <div class="card">
-        <div class="washi"></div>
-        <h3><span class="emoji">🧠</span> Arbeitsspeicher</h3>
-        <div class="metric-row">
-          <div class="metric-value ram">34%</div>
-          <div class="bar-track"><div class="bar-fill ram"></div></div>
+        <div class="card-head">
+          <span class="card-title">Arbeitsspeicher</span>
+          <span class="card-icon" style="color:var(--cyan)">▣</span>
         </div>
-        <div class="doodle">~5,4 GB / 16 GB</div>
+        <div class="big-metric">34<span style="font-size:20px">%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:34%"></div></div>
+        <div class="sub-text">5,4 GB / 16 GB belegt</div>
       </div>
 
       <div class="card">
-        <div class="washi"></div>
-        <h3><span class="emoji">⚙️</span> Prozessor</h3>
-        <div class="metric-row">
-          <div class="metric-value cpu">12%</div>
-          <div class="bar-track"><div class="bar-fill cpu"></div></div>
+        <div class="card-head">
+          <span class="card-title">Prozessor</span>
+          <span class="card-icon" style="color:var(--magenta)">◈</span>
         </div>
-        <div class="doodle">ruhig unterwegs, alles im Rahmen</div>
+        <div class="big-metric magenta">12<span style="font-size:20px">%</span></div>
+        <div class="bar-track"><div class="bar-fill magenta" style="width:12%"></div></div>
+        <div class="sub-text">Kühl &amp; ruhig — 41°C</div>
       </div>
 
       <div class="card">
-        <div class="washi"></div>
-        <h3><span class="emoji">📬</span> Postfach</h3>
-        <div class="mail-count">3</div>
-        <div class="mail-sub">neue Nachrichten</div>
-        <ul class="mail-list" style="margin-top:12px;">
-          <li>Norderstedter Zeitung — Rückfrage Presse</li>
-          <li>KDP — Statusänderung Taschenbuch</li>
-          <li>Robin — Grüße aus Ulm</li>
+        <div class="card-head">
+          <span class="card-title">Posteingang</span>
+          <span class="card-icon" style="color:var(--blue)">✉</span>
+        </div>
+        <div class="big-metric blue">3</div>
+        <ul class="mail-list">
+          <li>DistroKid Auszahlung <span>09:12</span></li>
+          <li>Lessing-Gymnasium News <span>08:47</span></li>
+          <li>Amazon KDP Bericht <span>07:30</span></li>
         </ul>
       </div>
 
       <div class="card">
-        <div class="washi"></div>
-        <h3><span class="emoji">🌦️</span> Wetter Hamburg</h3>
-        <div class="weather-box">
+        <div class="card-head">
+          <span class="card-title">Wetter Hamburg</span>
+          <span class="card-icon" style="color:var(--cyan)">☁</span>
+        </div>
+        <div class="weather-row">
+          <div class="weather-emoji">⛅</div>
           <div>
-            <div class="weather-temp">18°C</div>
-            <div class="weather-city">leicht bewölkt · Wind 12 km/h</div>
+            <div class="big-metric" style="font-size:32px">18°C</div>
+            <div class="sub-text" style="margin-top:2px">Wechselnd bewölkt · Wind 14 km/h</div>
           </div>
-          <div class="weather-icon">⛅</div>
         </div>
       </div>
 
+      <div class="card grid-span2">
+        <div class="card-head">
+          <span class="card-title">Nächste Termine</span>
+          <span class="card-icon" style="color:var(--magenta)">📅</span>
+        </div>
+        <ul class="mail-list">
+          <li>7d — EDV Unterricht <span>08:00 · Mo</span></li>
+          <li>Gesundheitszentrum <span>16:30 · Di</span></li>
+          <li>Reiseplan Feinschliff mit Bolla <span>20:30 · Heute</span></li>
+        </ul>
+      </div>
+
     </div>
-  </main>
+  </div>
 
 </body>
 </html>

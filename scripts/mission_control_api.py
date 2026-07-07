@@ -1539,6 +1539,7 @@ def _reise_stationen_full():
 
         aufenthalt = f(r"\baufenthalt:'([^']*)'")
         highlights = re.findall(r"'((?:[^'\\]|\\.)*)'", f(r"highlights:\[(.*?)\]"))
+        tagesplan = re.findall(r"'((?:[^'\\]|\\.)*)'", f(r"tagesplan:\[(.*?)\]"))
         out.append({
             "id": f(r"\bid:'([^']*)'"),
             "name": f(r"\bname:'([^']*)'"),
@@ -1559,6 +1560,7 @@ def _reise_stationen_full():
             "retour": bool(re.search(r"\bretour:\s*true", b)),
             "faehre": bool(re.search(r"\bfaehre:\s*true", b)),
             "highlights": highlights,
+            "tagesplan": tagesplan,  # halbtags-genaue Zusatzplanung für Standquartier-Tage, Format 'Tag|Halbtag|Titel|Text'
             "ueber": bool(re.search(r"Übernachtung", aufenthalt, re.I)),  # jede Übernachtung = Hauptstation (wie im Frontend)
             "lang": "Übernachtungen" in aufenthalt,  # 2+ Nächte = Laufplan-Kandidat
         })
@@ -2389,6 +2391,57 @@ def board_nudge(pid):
     with open(BOARD_NUDGES_FILE, "w", encoding="utf-8") as f:
         json.dump(q, f, ensure_ascii=False, indent=2)
     append_clipboard(prompt, source="nudge")  # Anstups auch in die MP-Clipboard-Liste
+    return {"ok": True, "prompt": prompt}
+
+SCHULJAHR_FILE = os.path.join(WORKSPACE, "data/schuljahr2627.json")
+
+def _schuljahr_load():
+    if os.path.isfile(SCHULJAHR_FILE):
+        with open(SCHULJAHR_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    return {"termine": []}
+
+def _schuljahr_save(data):
+    with open(SCHULJAHR_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def schuljahr_update_termin(datum, zeit, thema):
+    """Speichert das von Chris eingetragene Thema für einen Termin (Datum+Zeit = eindeutiger Schlüssel)."""
+    data = _schuljahr_load()
+    for t in data.get("termine", []):
+        if t.get("datum") == datum and t.get("zeit") == zeit:
+            t["thema"] = thema
+            _schuljahr_save(data)
+            return {"ok": True}
+    return {"ok": False, "error": "Termin nicht gefunden"}
+
+def schuljahr_nudge_termin(datum, zeit):
+    """Baut aus Thema+Termin einen Anstups-Prompt (z.B. 'erstelle dazu ein Arbeitsblatt') und legt ihn in die Bolla-Queue."""
+    data = _schuljahr_load()
+    t = next((t for t in data.get("termine", []) if t.get("datum") == datum and t.get("zeit") == zeit), None)
+    if not t:
+        return {"ok": False, "error": "Termin nicht gefunden"}
+    thema = t.get("thema", "")
+    if not thema:
+        return {"ok": False, "error": "Kein Thema eingetragen"}
+    bez = t.get("bezeichnung") or f"Gruppe {t.get('gruppe','')}".strip()
+    prompt = (f"EDV-Stunde am {datum} ({t.get('wochentag','')} {t.get('zeit','')}"
+              + (f", {bez}" if bez else "") + f") zum Thema \"{thema}\".\n\n"
+              f"Auftrag: erstelle dazu passendes Unterrichtsmaterial (z.B. Arbeitsblatt).")
+    q = {"nudges": []}
+    if os.path.exists(BOARD_NUDGES_FILE):
+        try:
+            with open(BOARD_NUDGES_FILE, encoding="utf-8") as f:
+                q = json.load(f)
+        except Exception:
+            pass
+    q.setdefault("nudges", []).append({
+        "projId": "schuljahr2627", "title": f"▸ Schuljahr 26/27: {thema}",
+        "ts": datetime.now().isoformat(timespec="seconds"), "prompt": prompt})
+    os.makedirs(os.path.dirname(BOARD_NUDGES_FILE), exist_ok=True)
+    with open(BOARD_NUDGES_FILE, "w", encoding="utf-8") as f:
+        json.dump(q, f, ensure_ascii=False, indent=2)
+    append_clipboard(prompt, source="nudge")
     return {"ok": True, "prompt": prompt}
 
 WORKSHOP_FORTSCHRITT = os.path.join(WORKSPACE, "projektwoche-ki-workshop/fortschritt.json")
@@ -6827,6 +6880,10 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 self._send_json(board_nudge(body.get("projId","")))
             elif self.path == "/api/board/action-nudge":
                 self._send_json(board_action_nudge(body.get("projId",""), body.get("actId","")))
+            elif self.path == "/api/schuljahr2627/update":
+                self._send_json(schuljahr_update_termin(body.get("datum",""), body.get("zeit",""), body.get("thema","")))
+            elif self.path == "/api/schuljahr2627/nudge":
+                self._send_json(schuljahr_nudge_termin(body.get("datum",""), body.get("zeit","")))
             elif self.path == "/api/kosten/guthaben":
                 self._send_json(kosten_update_guthaben(body.get("name",""), body.get("betrag", 0), body.get("info")))
             elif self.path == "/api/travel/recommendation":
@@ -8887,6 +8944,23 @@ def _reise_day_groups(stationen):
     return out
 
 
+def _reise_tagesplan_items(stationen, dn):
+    """Halbtags-genaue Zusatzplanung (z.B. Freiburgs Standquartier-Tage) für Reisetag dn —
+    durchsucht ALLE Stationen nach passenden tagesplan-Einträgen, unabhängig davon,
+    welchem Tag die Station selbst zugeordnet ist (Format je Eintrag: 'Tag|Halbtag|Titel|Text')."""
+    items = []
+    for o in stationen:
+        for raw in (o.get('tagesplan') or []):
+            parts = raw.split('|', 3)
+            if len(parts) != 4:
+                continue
+            tag, halbtag, titel, text = parts
+            if tag.strip() == str(dn):
+                items.append({'halbtag': halbtag, 'titel': titel, 'text': text,
+                              'farbe': o.get('farbe', '#6366f1')})
+    return items
+
+
 def _reise_overview_map(stationen):
     """Gesamtstrecken-Übersicht: farbige, nummerierte Punkte mit Datum + Verbindungslinie über die
     ganze Route (Auto-Zoom auf alle Stationen). Modelliert auf _reise_walk_map. Gibt PNG-Pfad zurück."""
@@ -9030,6 +9104,22 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
     gr.font.size = Pt(9)
     gr.font.color.rgb = GREY
 
+    def _add_tagesplan_block(item):
+        """Rendert einen halbtags-genauen Tagesplan-Eintrag (z.B. Freiburg-Standquartier) als
+        eigenen Mini-Abschnitt — gleiche Optik wie eine Station, nur etwas kompakter."""
+        h = doc.add_paragraph()
+        r = h.add_run(f"{item['halbtag']}: {item['titel']}")
+        r.font.size = Pt(14)
+        r.font.bold = True
+        r.font.color.rgb = hexrgb(item['farbe'])
+        h.paragraph_format.space_before = Pt(8)
+        h.paragraph_format.space_after = Pt(3)
+        tp = doc.add_paragraph(item['text'])
+        tp.runs[0].font.size = Pt(11)
+        tp.runs[0].font.color.rgb = DARK
+        tp.paragraph_format.line_spacing = 1.25
+        tp.paragraph_format.space_after = Pt(5)
+
     # ── Ab hier: je Reisetag eine eigene Seite ──
     for grp in _reise_day_groups(stationen):
         doc.add_page_break()
@@ -9042,32 +9132,38 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
         hd.paragraph_format.space_before = Pt(0)
         hd.paragraph_format.space_after = Pt(2)
 
+        tagesplan_heute = _reise_tagesplan_items(stationen, dn)
+
         if grp['frei']:
             base = grp.get('base')
             bname = base['name'] if base else "Standquartier"
             fp = doc.add_paragraph()
-            fr0 = fp.add_run(f"🏡 Freier Tag — Standquartier {bname}")
-            fr0.font.size = Pt(14)
+            fr0 = fp.add_run(f"🏡 {bname} — Standquartier")
+            fr0.font.size = Pt(13)
             fr0.font.bold = True
             fr0.font.color.rgb = hexrgb(base['farbe']) if base else BLUE
-            fp.paragraph_format.space_before = Pt(4)
-            fp.paragraph_format.space_after = Pt(4)
-            hint = doc.add_paragraph()
-            hr2 = hint.add_run("Zeit zur freien Verfügung — Umgebung erkunden, Ausflüge in der Region "
-                               "oder einfach ausruhen. Ideen siehe Tipps & Highlights zu "
-                               f"{bname} an den vorigen Tagen.")
-            hr2.font.size = Pt(11)
-            hr2.font.color.rgb = DARK
-            if base and base.get('tipp'):
-                tp = doc.add_paragraph()
-                tp.paragraph_format.space_before = Pt(6)
-                b = tp.add_run("💡 Tipp: ")
-                b.font.bold = True
-                b.font.size = Pt(11)
-                b.font.color.rgb = TIPP_B
-                rr = tp.add_run(base['tipp'])
-                rr.font.size = Pt(11)
-                rr.font.color.rgb = TIPP_T
+            fp.paragraph_format.space_before = Pt(2)
+            fp.paragraph_format.space_after = Pt(2)
+            if tagesplan_heute:
+                for item in tagesplan_heute:
+                    _add_tagesplan_block(item)
+            else:
+                hint = doc.add_paragraph()
+                hr2 = hint.add_run("Zeit zur freien Verfügung — Umgebung erkunden, Ausflüge in der Region "
+                                   "oder einfach ausruhen. Ideen siehe Tipps & Highlights zu "
+                                   f"{bname} an den vorigen Tagen.")
+                hr2.font.size = Pt(11)
+                hr2.font.color.rgb = DARK
+                if base and base.get('tipp'):
+                    tp = doc.add_paragraph()
+                    tp.paragraph_format.space_before = Pt(6)
+                    b = tp.add_run("💡 Tipp: ")
+                    b.font.bold = True
+                    b.font.size = Pt(11)
+                    b.font.color.rgb = TIPP_B
+                    rr = tp.add_run(base['tipp'])
+                    rr.font.size = Pt(11)
+                    rr.font.color.rgb = TIPP_T
             continue
 
         if grp['legs']:
@@ -9143,6 +9239,9 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
                 ir.font.size = Pt(9)
                 ir.font.color.rgb = GREY
                 ip.paragraph_format.space_after = Pt(3)
+
+        for item in tagesplan_heute:
+            _add_tagesplan_block(item)
 
     # Weiterfahrt-Hinweis am Ende (Bregenz → Kaufering)
     wf = doc.add_paragraph()
