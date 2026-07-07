@@ -1540,6 +1540,14 @@ def _reise_stationen_full():
         aufenthalt = f(r"\baufenthalt:'([^']*)'")
         highlights = re.findall(r"'((?:[^'\\]|\\.)*)'", f(r"highlights:\[(.*?)\]"))
         tagesplan = re.findall(r"'((?:[^'\\]|\\.)*)'", f(r"tagesplan:\[(.*?)\]"))
+        hlinfo_raw = re.findall(r"'((?:[^'\\]|\\.)*)'", f(r"hlInfo:\[(.*?)\]"))
+        hlinfo = {}
+        for entry in hlinfo_raw:
+            parts = entry.split("|")
+            if len(parts) == 3:
+                hl, txt, park = parts
+                if txt or park:
+                    hlinfo[hl] = {"text": txt, "park": park}
         out.append({
             "id": f(r"\bid:'([^']*)'"),
             "name": f(r"\bname:'([^']*)'"),
@@ -1560,6 +1568,7 @@ def _reise_stationen_full():
             "retour": bool(re.search(r"\bretour:\s*true", b)),
             "faehre": bool(re.search(r"\bfaehre:\s*true", b)),
             "highlights": highlights,
+            "hlinfo": hlinfo,  # {highlight_text: {text, park}} — 1-2 Sätze Zusatzinfo + Parkhinweis je Sehenswürdigkeit
             "tagesplan": tagesplan,  # halbtags-genaue Zusatzplanung für Standquartier-Tage, Format 'Tag|Halbtag|Titel|Text'
             "ueber": bool(re.search(r"Übernachtung", aufenthalt, re.I)),  # jede Übernachtung = Hauptstation (wie im Frontend)
             "lang": "Übernachtungen" in aufenthalt,  # 2+ Nächte = Laufplan-Kandidat
@@ -8974,7 +8983,7 @@ def _reise_overview_map(stationen):
         return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
 
     pts = [o for o in stationen if o.get('lat') and o.get('lon')]
-    m = StaticMap(1100, 850, padding_x=80, padding_y=80,
+    m = StaticMap(1300, 1000, padding_x=25, padding_y=25,
                   url_template="https://tile.openstreetmap.org/{z}/{x}/{y}.png")
     coords = [(o['lon'], o['lat']) for o in pts]
     if len(coords) > 1:
@@ -9012,8 +9021,8 @@ def _reise_overview_map(stationen):
 
     entries = [(o.get('nr', i + 1), o['name'], o.get('farbe', '#6366f1')) for i, o in enumerate(pts)]
     lh = 26 + len(entries) * 18 + 6
-    lw = 250
-    lx0, ly0 = 8, img.height - lh - 8
+    lw = 200
+    lx0, ly0 = 8, 8  # oben links — bei enger gezoomter Route unten links sonst Gefahr, Stationen zu verdecken
     draw.rectangle([lx0, ly0, lx0 + lw, ly0 + lh], fill=(255, 255, 255), outline=(150, 150, 150))
     draw.text((lx0 + 8, ly0 + 6), "SOMMERREISE 2026", font=font_hd, fill=(30, 30, 30))
     for i, (nr, nm, fb) in enumerate(entries):
@@ -9021,7 +9030,7 @@ def _reise_overview_map(stationen):
         rgb = hex2rgb(fb)
         r2 = 6
         draw.ellipse([lx0 + 8, ry + 2, lx0 + 8 + r2 * 2, ry + 2 + r2 * 2], fill=rgb)
-        draw.text((lx0 + 26, ry), f"{nr}. {nm}"[:34], font=font_lg, fill=(30, 30, 30))
+        draw.text((lx0 + 26, ry), f"{nr}. {nm}"[:28], font=font_lg, fill=(30, 30, 30))
 
     tf = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
     img.save(tf.name, quality=92)
@@ -9036,6 +9045,7 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
     from docx.shared import Inches, Pt, RGBColor, Cm
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     import io
+    import re
 
     def hexrgb(h):
         h = h.lstrip('#')
@@ -9104,6 +9114,28 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
     gr.font.size = Pt(9)
     gr.font.color.rgb = GREY
 
+    def _add_labeled_text(paragraph, text, farbe):
+        """Rendert Text mit **Label:**-Markierungen als fette, farbige Zwischenüberschriften
+        (je auf eigener Zeile), Rest normal — macht dichte Tagesplan-Texte übersichtlicher."""
+        parts = re.split(r"(\*\*[^*]+\*\*)", text)
+        label_count = 0
+        for part in parts:
+            if not part:
+                continue
+            m = re.match(r"^\*\*(.+)\*\*$", part)
+            if m:
+                if label_count > 0:
+                    paragraph.add_run().add_break()
+                r = paragraph.add_run(m.group(1))
+                r.font.bold = True
+                r.font.size = Pt(11)
+                r.font.color.rgb = hexrgb(farbe)
+                label_count += 1
+            else:
+                r = paragraph.add_run(part)
+                r.font.size = Pt(11)
+                r.font.color.rgb = DARK
+
     def _add_tagesplan_block(item):
         """Rendert einen halbtags-genauen Tagesplan-Eintrag (z.B. Freiburg-Standquartier) als
         eigenen Mini-Abschnitt — gleiche Optik wie eine Station, nur etwas kompakter."""
@@ -9114,9 +9146,8 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
         r.font.color.rgb = hexrgb(item['farbe'])
         h.paragraph_format.space_before = Pt(8)
         h.paragraph_format.space_after = Pt(3)
-        tp = doc.add_paragraph(item['text'])
-        tp.runs[0].font.size = Pt(11)
-        tp.runs[0].font.color.rgb = DARK
+        tp = doc.add_paragraph()
+        _add_labeled_text(tp, item['text'], item['farbe'])
         tp.paragraph_format.line_spacing = 1.25
         tp.paragraph_format.space_after = Pt(5)
 
@@ -9227,11 +9258,33 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
                 hb.font.size = Pt(10.5)
                 hb.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
                 lbl.paragraph_format.space_after = Pt(1)
+                hlinfo = st.get('hlinfo') or {}
                 for hl in st['highlights']:
                     bpp = doc.add_paragraph(style="List Bullet")
                     br = bpp.add_run(hl)
                     br.font.size = Pt(11)
                     bpp.paragraph_format.space_after = Pt(1)
+                    info = hlinfo.get(hl)
+                    if info:
+                        if info.get('text'):
+                            ip = doc.add_paragraph()
+                            ip.paragraph_format.left_indent = Cm(0.9)
+                            ip.paragraph_format.space_after = Pt(1)
+                            ir = ip.add_run(info['text'])
+                            ir.font.size = Pt(9.5)
+                            ir.font.italic = True
+                            ir.font.color.rgb = GREY
+                        if info.get('park'):
+                            pp = doc.add_paragraph()
+                            pp.paragraph_format.left_indent = Cm(0.9)
+                            pp.paragraph_format.space_after = Pt(3)
+                            pb = pp.add_run("🅿️ ")
+                            pb.font.size = Pt(9.5)
+                            pb.font.bold = True
+                            pb.font.color.rgb = TIPP_B
+                            pr = pp.add_run(info['park'])
+                            pr.font.size = Pt(9.5)
+                            pr.font.color.rgb = TIPP_T
 
             if st.get('infoUrl'):
                 ip = doc.add_paragraph()
