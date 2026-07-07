@@ -36,7 +36,8 @@
 
   /* CARDS */
   main{padding:8px 0 64px}
-  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:26px; margin-top:8px}
+  .stackwrap{display:flex; justify-content:center; margin-top:8px}
+  card-stack{width:100%; max-width:440px}
 
   /* CLOCK */
   .clockbar{display:flex; justify-content:center; margin:-40px 0 44px; position:relative; z-index:3}
@@ -66,30 +67,32 @@
 
 <main>
   <div class="wrap">
-    <div class="grid">
+    <div class="stackwrap">
+      <card-stack>
 
-      <preview-card
-        href="/aurora/"
-        kicker="Buch &amp; Musik"
-        heading="AURORA &amp; Bollawave"
-        desc="Ein 70-Jähriger und seine KI schreiben einen Thriller über eine erwachende KI — und machen nebenbei Musik. Die Entstehungsgeschichte."
-        emoji="📖"
-        preview-kicker="Eine wahre Entstehungsgeschichte"
-        preview-line="Ein 70-Jähriger und seine KI schrieben einen Thriller"
-        preview-url="chrismandel.de/aurora">
-      </preview-card>
+        <preview-card
+          href="/aurora/"
+          kicker="Buch &amp; Musik"
+          heading="AURORA &amp; Bollawave"
+          desc="Ein 70-Jähriger und seine KI schreiben einen Thriller über eine erwachende KI — und machen nebenbei Musik. Die Entstehungsgeschichte."
+          emoji="📖"
+          preview-kicker="Eine wahre Entstehungsgeschichte"
+          preview-line="Ein 70-Jähriger und seine KI schrieben einen Thriller"
+          preview-url="chrismandel.de/aurora">
+        </preview-card>
 
-      <preview-card
-        href="/geschichte/"
-        kicker="Persönlicher Essay"
-        heading="Um 02:47 Uhr wachte etwas auf"
-        desc="Ein Essay übers Anfängersein mit siebzig, ein halbes Jahrhundert Maschinen — und die Frage, wer ein Buch eigentlich schreibt, wenn eine KI mithilft."
-        emoji="🌅"
-        preview-kicker="Ein persönlicher Essay"
-        preview-line="Um 02:47 Uhr wachte etwas auf — und ich saß daneben"
-        preview-url="chrismandel.de/geschichte">
-      </preview-card>
+        <preview-card
+          href="/geschichte/"
+          kicker="Persönlicher Essay"
+          heading="Um 02:47 Uhr wachte etwas auf"
+          desc="Ein Essay übers Anfängersein mit siebzig, ein halbes Jahrhundert Maschinen — und die Frage, wer ein Buch eigentlich schreibt, wenn eine KI mithilft."
+          emoji="🌅"
+          preview-kicker="Ein persönlicher Essay"
+          preview-line="Um 02:47 Uhr wachte etwas auf — und ich saß daneben"
+          preview-url="chrismandel.de/geschichte">
+        </preview-card>
 
+      </card-stack>
     </div>
   </div>
 </main>
@@ -195,6 +198,134 @@ class SiteClock extends HTMLElement {
   disconnectedCallback(){ clearInterval(this._t); }
 }
 customElements.define('site-clock', SiteClock);
+
+class CardStack extends HTMLElement {
+  connectedCallback(){
+    this._index = 0;
+    this._locked = false;
+
+    const shadow = this.attachShadow({mode:'open'});
+    shadow.innerHTML = `
+      <style>
+        :host{display:block}
+        .viewport{position:relative; transition:height .35s cubic-bezier(.2,.8,.2,1)}
+        .dots{display:flex; justify-content:center; gap:8px; margin-top:20px}
+        .dots button{
+          width:9px; height:9px; padding:0; border-radius:50%; border:none;
+          background:#e0d3bd; cursor:pointer; transition:background .2s, transform .2s;
+        }
+        .dots button.active{background:var(--glut); transform:scale(1.2)}
+        .hint{
+          text-align:center; font-size:13px; color:var(--grau); margin-top:14px;
+          opacity:.85; transition:opacity .5s ease;
+        }
+        .hint.gone{opacity:0}
+      </style>
+      <div class="viewport"><slot></slot></div>
+      <div class="dots"></div>
+      <div class="hint">↕ Scrollen, oder klicken zum Wechseln</div>
+    `;
+
+    this._viewport = shadow.querySelector('.viewport');
+    this._dotsEl = shadow.querySelector('.dots');
+    this._hintEl = shadow.querySelector('.hint');
+    this._cards = shadow.querySelector('slot').assignedElements();
+
+    this._cards.forEach((card, i) => {
+      card.style.position = 'absolute';
+      card.style.top = '0'; card.style.left = '0'; card.style.right = '0';
+      card.style.transition = 'transform .4s cubic-bezier(.2,.8,.2,1), opacity .4s ease';
+      card.addEventListener('click', e => {
+        if(i !== this._index){ e.preventDefault(); this._goTo(i); }
+      });
+    });
+
+    this._cards.forEach((_, i) => {
+      const b = document.createElement('button');
+      b.setAttribute('aria-label', `Karte ${i + 1} von ${this._cards.length} zeigen`);
+      b.addEventListener('click', () => this._goTo(i));
+      this._dotsEl.appendChild(b);
+    });
+
+    this.tabIndex = 0;
+    this.setAttribute('role', 'group');
+    this.setAttribute('aria-roledescription', 'Kartenstapel');
+    this.addEventListener('wheel', e => this._onWheel(e), {passive:false});
+    this.addEventListener('keydown', e => this._onKey(e));
+    window.addEventListener('resize', () => this._measure());
+
+    this._layout();
+  }
+
+  _goTo(i){
+    if(i === this._index) return;
+    this._index = i;
+    this._layout();
+    this._dismissHint();
+  }
+
+  _advance(dir){
+    const n = this._cards.length;
+    this._index = (this._index + dir + n) % n;
+    this._layout();
+    this._locked = true;
+    clearTimeout(this._lockT);
+    this._lockT = setTimeout(() => { this._locked = false; }, 420);
+  }
+
+  _onWheel(e){
+    e.preventDefault();
+    if(this._locked || this._cards.length < 2) return;
+    this._dismissHint();
+    this._advance(e.deltaY > 0 ? 1 : -1);
+  }
+
+  _onKey(e){
+    if(this._cards.length < 2) return;
+    if(e.key === 'ArrowDown' || e.key === 'ArrowRight'){ this._dismissHint(); this._advance(1); }
+    else if(e.key === 'ArrowUp' || e.key === 'ArrowLeft'){ this._dismissHint(); this._advance(-1); }
+  }
+
+  _dismissHint(){
+    this._hintEl.classList.add('gone');
+  }
+
+  _layout(){
+    const n = this._cards.length;
+    this._cards.forEach((card, i) => {
+      const rel = (i - this._index + n) % n;
+      if(rel === 0){
+        card.style.transform = 'translate(0,0) scale(1)';
+        card.style.opacity = '1';
+        card.style.zIndex = String(n + 10);
+        card.style.pointerEvents = 'auto';
+        card.style.visibility = 'visible';
+      } else if(rel <= 2){
+        card.style.transform = `translate(${rel * 14}px, ${rel * 16}px) scale(${1 - rel * 0.05})`;
+        card.style.opacity = String(Math.max(0.35, 0.85 - (rel - 1) * 0.3));
+        card.style.zIndex = String(n + 10 - rel);
+        card.style.pointerEvents = 'auto';
+        card.style.visibility = 'visible';
+      } else {
+        card.style.transform = 'translate(40px,48px) scale(0.85)';
+        card.style.opacity = '0';
+        card.style.zIndex = '1';
+        card.style.pointerEvents = 'none';
+        card.style.visibility = 'hidden';
+      }
+    });
+    Array.from(this._dotsEl.children).forEach((d, i) => d.classList.toggle('active', i === this._index));
+    if(this._cards.length < 2) this._dotsEl.style.display = 'none';
+    requestAnimationFrame(() => this._measure());
+  }
+
+  _measure(){
+    const front = this._cards[this._index];
+    const h = front.getBoundingClientRect().height;
+    if(h > 0) this._viewport.style.height = (h + 40) + 'px';
+  }
+}
+customElements.define('card-stack', CardStack);
 </script>
 
 </body>
