@@ -28,6 +28,9 @@ TEST    = "--test" in sys.argv
 TG    = json.loads((CFG / "telegram_bot.json").read_text())
 OAUTH = json.loads((CFG / "outlook_oauth2.json").read_text())
 TOKF  = CFG / "outlook_token.json"
+# Zwei Postfächer: Chris' eigenes + Renates (seit 08.07. Booking.com-Konto auf
+# renatemandel@outlook.de umgestellt) — beide auf Buchungsmails scannen.
+ACCOUNTS = [("ernstmandel", TOKF), ("renatemandel", CFG / "renate_outlook_token.json")]
 
 MONATE = {  # deutsche Monatskürzel & -namen → Nummer
     "jan": 1, "feb": 2, "mrz": 3, "mär": 3, "apr": 4, "mai": 5, "jun": 6,
@@ -52,8 +55,8 @@ def tg(text):
         print("tg err", e)
 
 
-def token():
-    tok = json.loads(TOKF.read_text())
+def token(tokf=TOKF):
+    tok = json.loads(tokf.read_text())
     data = urllib.parse.urlencode({
         "client_id": OAUTH["client_id"], "client_secret": OAUTH["client_secret"],
         "refresh_token": tok["refresh_token"], "grant_type": "refresh_token",
@@ -61,7 +64,7 @@ def token():
     new = json.loads(urllib.request.urlopen(urllib.request.Request(
         "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
         data=data, method="POST")).read())
-    tok.update(new); TOKF.write_text(json.dumps(tok, indent=2)); TOKF.chmod(0o600)
+    tok.update(new); tokf.write_text(json.dumps(tok, indent=2)); tokf.chmod(0o600)
     return new["access_token"]
 
 
@@ -412,116 +415,119 @@ def main():
     done_keys = {bkey(b) for b in st.get("bookings", [])}
     etappen = load_etappen()
 
-    at = token()
-    qs = urllib.parse.urlencode({"$top": "40", "$orderby": "receivedDateTime desc",
-                                 "$select": "id,subject,from,receivedDateTime,body"})
-    res = json.loads(urllib.request.urlopen(urllib.request.Request(
-        "https://graph.microsoft.com/v1.0/me/messages?" + qs,
-        headers={"Authorization": f"Bearer {at}"})).read())
-
     neu = 0
-    for m in res.get("value", []):
-        mid = m["id"]
-        if mid in seen_mids:
-            continue
-        frm = (m.get("from", {}).get("emailAddress", {}).get("address", "") or "").lower()
-        subj = m.get("subject") or ""
-        if "booking.com" not in frm:
-            continue
-        # reine Nachrichten-/Chat-Mails der Unterkunft sind keine Buchungen
-        if re.search(r"Sie haben eine Nachricht|Nachricht von der Unterkunft", subj, re.I):
-            seen_mids.add(mid)
-            continue
-        raw_html = m.get("body", {}).get("content", "")
-        text = html_to_text(raw_html)
+    for label, tokf in ACCOUNTS:
+        if not tokf.exists():
+            continue  # Postfach noch nicht per Reauth eingerichtet
+        at = token(tokf)
+        qs = urllib.parse.urlencode({"$top": "40", "$orderby": "receivedDateTime desc",
+                                     "$select": "id,subject,from,receivedDateTime,body"})
+        res = json.loads(urllib.request.urlopen(urllib.request.Request(
+            "https://graph.microsoft.com/v1.0/me/messages?" + qs,
+            headers={"Authorization": f"Bearer {at}"})).read())
 
-        # ── Stornierung? ("Buchung storniert für die Unterkunft X") ──
-        sm = re.search(r"storniert\s+f[üu]r\s+die\s+Unterkunft\s+(.+?)\s*$", subj, re.I) \
-             or re.search(r"Stornierung\s+(?:Ihrer\s+Buchung\s+)?(?:in\s+der\s+Unterkunft\s+)?(.+?)\s*$", subj, re.I)
-        if sm and ("storniert" in subj.lower() or "stornierung" in subj.lower()):
+        for m in res.get("value", []):
+            mid = m["id"]
+            if mid in seen_mids:
+                continue
+            frm = (m.get("from", {}).get("emailAddress", {}).get("address", "") or "").lower()
+            subj = m.get("subject") or ""
+            if "booking.com" not in frm:
+                continue
+            # reine Nachrichten-/Chat-Mails der Unterkunft sind keine Buchungen
+            if re.search(r"Sie haben eine Nachricht|Nachricht von der Unterkunft", subj, re.I):
+                seen_mids.add(mid)
+                continue
+            raw_html = m.get("body", {}).get("content", "")
+            text = html_to_text(raw_html)
+
+            # ── Stornierung? ("Buchung storniert für die Unterkunft X") ──
+            sm = re.search(r"storniert\s+f[üu]r\s+die\s+Unterkunft\s+(.+?)\s*$", subj, re.I) \
+                 or re.search(r"Stornierung\s+(?:Ihrer\s+Buchung\s+)?(?:in\s+der\s+Unterkunft\s+)?(.+?)\s*$", subj, re.I)
+            if sm and ("storniert" in subj.lower() or "stornierung" in subj.lower()):
+                seen_mids.add(mid)
+                hotel = re.sub(r"^[^\w]+", "", sm.group(1).strip())
+                neu += 1
+                handle_storno(hotel, etappen, st)
+                continue
+
+            b = parse_booking(subj, text)
             seen_mids.add(mid)
-            hotel = re.sub(r"^[^\w]+", "", sm.group(1).strip())
+            if not b:
+                continue
+            b["link"] = extract_booking_link(raw_html)
+            if bkey(b) in done_keys:
+                continue  # dieser Aufenthalt schon verarbeitet (mehrere Mails pro Buchung)
+            done_keys.add(bkey(b))
+
+            e, match_info = match_etappe(b, etappen)
             neu += 1
-            handle_storno(hotel, etappen, st)
-            continue
+            if TEST:
+                print(f"── [{label}] {subj[:60]}")
+                print(f"   Hotel:   {b['hotel']}\n   Ort:     {b['ort']}")
+                print(f"   Check-in:{b['checkin']}  Check-out:{b['checkout']}  Storno:{b['stornofrist']}")
+                print(f"   Buchung: {b['buchungsnr']}  Link: {b['link'] or '—'}")
+                print(f"   →  Etappe: {e['name'] if e else '— NICHT zugeordnet —'}"
+                      f"{'  (' + match_info + ')' if match_info else ''}\n")
 
-        b = parse_booking(subj, text)
-        seen_mids.add(mid)
-        if not b:
-            continue
-        b["link"] = extract_booking_link(raw_html)
-        if bkey(b) in done_keys:
-            continue  # dieser Aufenthalt schon verarbeitet (mehrere Mails pro Buchung)
-        done_keys.add(bkey(b))
+            if not e:
+                tg(f"🏨 *Neue Booking-Buchung — konnte ich nicht zuordnen*\n\n"
+                   f"*{b['hotel'] or subj}*\n📍 {b['ort'] or '?'}\n"
+                   f"📅 {b['checkin']} → {b['checkout']}\n"
+                   f"⏰ Storno frei bis: {b['stornofrist'] or '?'}\n\n"
+                   f"_Bitte in MP → Reiseplaner manuell der richtigen Etappe zuordnen._ 🐾")
+                st.setdefault("bookings", []).append({**b, "etappe": None})
+                continue
 
-        e, match_info = match_etappe(b, etappen)
-        neu += 1
-        if TEST:
-            print(f"── {subj[:60]}")
-            print(f"   Hotel:   {b['hotel']}\n   Ort:     {b['ort']}")
-            print(f"   Check-in:{b['checkin']}  Check-out:{b['checkout']}  Storno:{b['stornofrist']}")
-            print(f"   Buchung: {b['buchungsnr']}  Link: {b['link'] or '—'}")
-            print(f"   →  Etappe: {e['name'] if e else '— NICHT zugeordnet —'}"
-                  f"{'  (' + match_info + ')' if match_info else ''}\n")
-
-        if not e:
-            tg(f"🏨 *Neue Booking-Buchung — konnte ich nicht zuordnen*\n\n"
-               f"*{b['hotel'] or subj}*\n📍 {b['ort'] or '?'}\n"
-               f"📅 {b['checkin']} → {b['checkout']}\n"
-               f"⏰ Storno frei bis: {b['stornofrist'] or '?'}\n\n"
-               f"_Bitte in MP → Reiseplaner manuell der richtigen Etappe zuordnen._ 🐾")
-            st.setdefault("bookings", []).append({**b, "etappe": None})
-            continue
-
-        # Schon ein (anderes) Hotel an dieser Etappe? → nicht überschreiben, nur melden
-        existing = ""
-        rd = WS / "data" / "reise_notizen.json"
-        if rd.exists():
-            try:
-                existing = (json.loads(rd.read_text()).get(e["id"], {}) or {}).get("unterkunft_name", "")
-            except Exception:
-                existing = ""
-        if existing and existing.strip().lower() != (b["hotel"] or "").strip().lower():
-            tg(f"⚠️ *Booking-Konflikt — Etappe {e['name']}*\n\n"
-               f"Dort steht schon: *{existing}*\nNeue Buchung: *{b['hotel']}*\n"
-               f"📅 {b['checkin']} → {b['checkout']}\n\n"
-               f"_Ich habe nichts überschrieben — bitte in MP prüfen._ 🐾")
-            st.setdefault("bookings", []).append({**b, "etappe": e["id"], "konflikt": True})
-            continue
-
-        # Frühstück-Zeile in die Notiz übernehmen (bestehende Notiz erhalten)
-        payload = {
-            "id": e["id"], "unterkunft_name": b["hotel"],
-            "checkin": b["checkin"], "checkout": b["checkout"],
-            "stornofrist": b["stornofrist"],
-            "unterkunft_link": b["link"], "buchungsnr": b["buchungsnr"]}
-        fr_line = "🍳 Frühstück inklusive" if b.get("fruehstueck") is True else \
-                  ("⚠️ Ohne Frühstück" if b.get("fruehstueck") is False else "")
-        if fr_line:
-            alt = ""
+            # Schon ein (anderes) Hotel an dieser Etappe? → nicht überschreiben, nur melden
+            existing = ""
+            rd = WS / "data" / "reise_notizen.json"
             if rd.exists():
                 try:
-                    alt = (json.loads(rd.read_text()).get(e["id"], {}) or {}).get("notiz", "")
+                    existing = (json.loads(rd.read_text()).get(e["id"], {}) or {}).get("unterkunft_name", "")
                 except Exception:
-                    alt = ""
-            if "rühstück" not in alt:
-                payload["notiz"] = (alt + "\n" + fr_line).strip()
+                    existing = ""
+            if existing and existing.strip().lower() != (b["hotel"] or "").strip().lower():
+                tg(f"⚠️ *Booking-Konflikt — Etappe {e['name']}*\n\n"
+                   f"Dort steht schon: *{existing}*\nNeue Buchung: *{b['hotel']}*\n"
+                   f"📅 {b['checkin']} → {b['checkout']}\n\n"
+                   f"_Ich habe nichts überschrieben — bitte in MP prüfen._ 🐾")
+                st.setdefault("bookings", []).append({**b, "etappe": e["id"], "konflikt": True})
+                continue
 
-        # Eintragen — reise_save rechnet Fahrstrecke Hotel→Ziel + legt Aufenthalt/Storno im Kalender an
-        payload["hotel_adresse"] = b.get("hotel_adresse", "")
-        _r = mc_post("/api/reise-notizen", payload)
-        _entry = _r.get("entry", {}) if isinstance(_r, dict) else {}
-        dist = ""
-        if _entry.get("ziel_dist_km") is not None:
-            dist = f"🚗 {_entry['ziel_dist_km']} km · {_entry.get('ziel_dauer_min','?')} Min bis {_entry.get('ziel_name', e['name'])}\n"
-        cal = "📅 Aufenthalt + Storno im Kalender\n" if b["stornofrist"] else "📅 Aufenthalt im Kalender\n"
-        st.setdefault("bookings", []).append({**b, "etappe": e["id"]})
-        fr_tg = {True: "🍳 Frühstück inklusive\n", False: "⚠️ *Ohne Frühstück!*\n"}.get(b.get("fruehstueck"), "")
-        via = f"📍 zugeordnet über {match_info}\n" if match_info else ""
-        tg(f"✅ *Buchung zugeordnet → Etappe {e['name']}*\n\n"
-           f"🏨 *{b['hotel']}*\n{via}📅 {b['checkin']} → {b['checkout']}\n"
-           f"{fr_tg}{dist}⏰ Storno frei bis: *{b['stornofrist'] or '—'}*\n{cal}\n"
-           f"_Eingetragen im Reiseplaner._ 🐾")
+            # Frühstück-Zeile in die Notiz übernehmen (bestehende Notiz erhalten)
+            payload = {
+                "id": e["id"], "unterkunft_name": b["hotel"],
+                "checkin": b["checkin"], "checkout": b["checkout"],
+                "stornofrist": b["stornofrist"],
+                "unterkunft_link": b["link"], "buchungsnr": b["buchungsnr"]}
+            fr_line = "🍳 Frühstück inklusive" if b.get("fruehstueck") is True else \
+                      ("⚠️ Ohne Frühstück" if b.get("fruehstueck") is False else "")
+            if fr_line:
+                alt = ""
+                if rd.exists():
+                    try:
+                        alt = (json.loads(rd.read_text()).get(e["id"], {}) or {}).get("notiz", "")
+                    except Exception:
+                        alt = ""
+                if "rühstück" not in alt:
+                    payload["notiz"] = (alt + "\n" + fr_line).strip()
+
+            # Eintragen — reise_save rechnet Fahrstrecke Hotel→Ziel + legt Aufenthalt/Storno im Kalender an
+            payload["hotel_adresse"] = b.get("hotel_adresse", "")
+            _r = mc_post("/api/reise-notizen", payload)
+            _entry = _r.get("entry", {}) if isinstance(_r, dict) else {}
+            dist = ""
+            if _entry.get("ziel_dist_km") is not None:
+                dist = f"🚗 {_entry['ziel_dist_km']} km · {_entry.get('ziel_dauer_min','?')} Min bis {_entry.get('ziel_name', e['name'])}\n"
+            cal = "📅 Aufenthalt + Storno im Kalender\n" if b["stornofrist"] else "📅 Aufenthalt im Kalender\n"
+            st.setdefault("bookings", []).append({**b, "etappe": e["id"]})
+            fr_tg = {True: "🍳 Frühstück inklusive\n", False: "⚠️ *Ohne Frühstück!*\n"}.get(b.get("fruehstueck"), "")
+            via = f"📍 zugeordnet über {match_info}\n" if match_info else ""
+            tg(f"✅ *Buchung zugeordnet → Etappe {e['name']}*\n\n"
+               f"🏨 *{b['hotel']}*\n{via}📅 {b['checkin']} → {b['checkout']}\n"
+               f"{fr_tg}{dist}⏰ Storno frei bis: *{b['stornofrist'] or '—'}*\n{cal}\n"
+               f"_Eingetragen im Reiseplaner._ 🐾")
 
     st["seen_mids"] = list(seen_mids)[-400:]
     if not TEST:
