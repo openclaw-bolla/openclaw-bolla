@@ -29,6 +29,7 @@ SENDERS = {
     "sheconomy.media":      "Sheconomy",
     "montrealethics.ai":    "Montreal AI Ethics",
     "diversityinai@gmail.com": "Women in AI Ethics",
+    "cheyenne@maivenscommunity.com": "M(AI)VENS Buchclub",
 }
 AUTOREPLY = ["this is an automated", "automatic reply", "out of office",
              "auto-reply", "automatische antwort", "abwesenheit",
