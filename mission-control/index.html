@@ -12944,11 +12944,8 @@ const SR_ROUTE = [
     tipp:'Vormittags starten, dann bleibt nachmittags noch Zeit für Freiburg. Ein Weindorf reicht für den Halbtag — Achkarren oder Oberrotweil sind am zugänglichsten. Wer noch Puste hat: kurzer Spaziergang zum Winzerweg mit Blick übers Rheintal bis zu den Vogesen.',
     beschreibung:'Der Kaiserstuhl ist ein erloschener Vulkan mitten im Rheintal und Deutschlands wärmste Ecke — deshalb wächst hier auf steilen Terrassen einer der besten Weine des Landes (Spätburgunder, Grauburgunder). Die Hänge sind von Trockenmauern und schmalen Winzerpfaden durchzogen, dazwischen liegen pittoreske Weindörfer wie Achkarren, Oberrotweil und Burkheim. Nur 25 Autominuten von Freiburg entfernt und trotzdem eine komplett andere Landschaft — mediterran, warm, offen. Das warme Mikroklima hat eine für Deutschland einzigartige Pflanzen- und Tierwelt hervorgebracht — mit Orchideenwiesen und Arten wie der Gottesanbeterin, die sonst eher im Mittelmeerraum zu Hause sind.',
     infoUrl:'https://www.naturgarten-kaiserstuhl.de/de',
-    highlights:['🍷 Weinprobe in einem der Winzerdörfer (Achkarren, Oberrotweil, Burkheim)','🥾 Kurzwanderung auf einem Winzerpfad zwischen den Rebterrassen','🌋 Vulkangestein & Lösshohlwege (einzigartige Geologie)','🦋 Orchideenpfad Bötzingen (im Sommer meist verblüht, aber schöner Weg)','🌄 Blick übers Rheintal bis zu den Vogesen','🏊 Burkheimer Baggersee (ehem. Kiesgrube, Baden möglich)'],
+    highlights:['🍷 Weinprobe in einem der Winzerdörfer (Achkarren, Oberrotweil, Burkheim)','🌄 Blick übers Rheintal bis zu den Vogesen','🏊 Burkheimer Baggersee (ehem. Kiesgrube, Baden möglich)'],
     hlInfo:['🍷 Weinprobe in einem der Winzerdörfer (Achkarren, Oberrotweil, Burkheim)|Feste Termine: Achkarrer Winzer mittwochs 10 Uhr Kellerführung mit Probe, Burkheimer Winzer donnerstags 15 Uhr (Ostern–Oktober), Oberrotweiler Winzerverein mittwochs 14 Uhr „Wii-Wägli"-Fahrt durch die Reblagen.|Eigene Kundenparkplätze bei den Winzergenossenschaften, kostenlos.',
-      '🥾 Kurzwanderung auf einem Winzerpfad zwischen den Rebterrassen|Beliebter ca. 5 km Rundweg ab Vituskapelle Wasenweiler über einen sonnigen Bergrücken mit Rastplatz mitten in den Reblagen.|Kostenloser Parkplatz an der Vituskapelle (Friedhof) Wasenweiler.',
-      '🌋 Vulkangestein & Lösshohlwege (einzigartige Geologie)|Der Vulkan war vor 16–19 Mio. Jahren (Miozän) aktiv; hier finden sich Karbonatite, ein in Mitteleuropa einmaliges Gestein. Die Lösshohlwege entstanden durch jahrhundertelange Bewirtschaftung des eiszeitlichen Lössbodens.|',
-      '🦋 Orchideenpfad Bötzingen (im Sommer meist verblüht, aber schöner Weg)|Offizieller Name „Knabenkrautpfad" (21 km, Breisach–Bötzingen); der Kaiserstuhl zählt mit über 30 Arten zu den orchideenreichsten Regionen Europas, Hauptblüte ab April.|',
       '🌄 Blick übers Rheintal bis zu den Vogesen|Guter Aussichtspunkt: Eichelspitzturm (42,5 m, 127 Stufen), zweithöchste Erhebung des Kaiserstuhls; bei klarer Sicht bis zur Hornisgrinde und zum Schweizer Jura.|Parkplatz „Fohrenbuck" (ca. 1 km Fußweg zum Turm), Alternativen bei Bötzingen oder Bahlingen.',
       '🏊 Burkheimer Baggersee (ehem. Kiesgrube, Baden möglich)|Ehemalige Kiesgrube bei Vogtsburg-Burkheim, rund 40 Hektar groß, offiziell als Badestelle ausgewiesen (ohne Bademeister).|Parkflächen direkt am Baggersee, keine Gebühr bekannt.'] },
 
@@ -13113,6 +13110,7 @@ function srDayGroups() {
 
 let _srMap = null;
 let _srMarkers = {};
+let _srLegend = null;
 
 let _reiseData = {};
 let _reiseRefreshInterval = null;
@@ -13189,6 +13187,14 @@ function srInitMap() {
     const l = document.createElement('link'); l.id='leaflet-css-trip'; l.rel='stylesheet';
     l.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(l);
   }
+  if (!document.getElementById('sr-map-style')) {
+    const st = document.createElement('style'); st.id = 'sr-map-style';
+    st.textContent = `.sr-date-tip{background:transparent;border:none;box-shadow:none;padding:0}
+      .sr-date-tip::before{display:none}
+      .sr-date-tip .sr-date-box{display:inline-block;background:#fff;color:#1e1e1e;font-weight:700;
+        font-size:11px;padding:2px 5px;border-radius:2px;white-space:nowrap}`;
+    document.head.appendChild(st);
+  }
   function _doInit() {
     if (_srMap) { _srMap.remove(); _srMap = null; }
     _srMap = L.map('sr-map').setView([48.0, 8.8], 7);
@@ -13221,11 +13227,33 @@ function srUpdateMap() {
       .addTo(_srMap)
       .bindPopup(`<b>${o.snr}. ${o.name}</b><br><span style="font-size:11px;color:#555">${o.wd} · ${o.aufenthalt}</span><br><span style="font-size:11px;color:#888">${o.anfahrt}</span><br><a href="${o.mapsUrl}" target="_blank" rel="noopener" style="font-size:11px">🗺️ In Google Maps öffnen</a>`)
       .on('click', () => srShowDetail(o.id));
+    if (o.datum) {
+      m.bindTooltip(`<span class="sr-date-box" style="border:1.5px solid ${o.farbe}">${o.datum}</span>`,
+        {permanent:true, direction:'right', offset:[o.ueber?16:12, -8], className:'sr-date-tip', opacity:1});
+    }
     _srMarkers[o.id] = m;
   });
-  const linie = L.polyline(SR_ROUTE.map(o => [o.lat, o.lon]), {color:'rgba(251,191,36,0.6)', weight:2.5, dashArray:'7,5'}).addTo(_srMap);
+  // Route als durchgezogene Linie, wie in der Word-Übersichtskarte (statt gestrichelt-gold)
+  const linie = L.polyline(SR_ROUTE.map(o => [o.lat, o.lon]), {color:'#1e40af', weight:3}).addTo(_srMap);
   _srMarkers['__line__'] = linie;
   _srMap.fitBounds(linie.getBounds(), {padding:[30,30]});
+
+  // Legende oben links, analog zur Word-Übersichtskarte
+  if (_srLegend) { _srMap.removeControl(_srLegend); }
+  _srLegend = L.control({position:'topleft'});
+  _srLegend.onAdd = function() {
+    const div = L.DomUtil.create('div', 'sr-legend');
+    div.style.cssText = 'background:#fff;border:1px solid #969696;border-radius:4px;padding:6px 10px;font-family:sans-serif;max-height:380px;overflow-y:auto;box-shadow:0 1px 4px rgba(0,0,0,0.3)';
+    let html = `<div style="font-size:12px;font-weight:700;color:#1e1e1e;margin-bottom:5px;white-space:nowrap">SOMMERREISE 2026</div>`;
+    SR_ROUTE.forEach(o => {
+      html += `<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#1e1e1e;line-height:1.6;white-space:nowrap">
+        <span style="width:10px;height:10px;border-radius:50%;background:${o.farbe};flex-shrink:0;display:inline-block"></span>${o.snr}. ${o.name}</div>`;
+    });
+    div.innerHTML = html;
+    L.DomEvent.disableClickPropagation(div);
+    return div;
+  };
+  _srLegend.addTo(_srMap);
 }
 
 function srShowDetail(id) {

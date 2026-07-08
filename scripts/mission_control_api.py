@@ -8970,6 +8970,52 @@ def _reise_tagesplan_items(stationen, dn):
     return items
 
 
+def _reise_tagesuebersicht_rows(stationen):
+    """Eine Zeile pro Reisetag: Vormittag/Nachmittag/Abend auf einen Blick + Übernachtungsort —
+    für die schnelle Orientierungs-Tabelle auf Seite 1, unabhängig von den Detailseiten."""
+    groups = _reise_day_groups(stationen)
+    current_base = None
+    rows = []
+    for grp in groups:
+        dn = grp['daynum']
+        slots = {'Vormittag': [], 'Nachmittag': [], 'Abend': []}
+
+        if grp['frei']:
+            base = grp.get('base')
+            if base:
+                current_base = base['name']
+            for item in _reise_tagesplan_items(stationen, dn):
+                slots.setdefault(item['halbtag'], []).append(item['titel'])
+            if not any(slots.values()):
+                slots['Vormittag'].append(f"{current_base or 'Standquartier'} — zur freien Verfügung")
+        else:
+            tagesplan_heute = _reise_tagesplan_items(stationen, dn)
+            titel_by_halbtag = {}
+            for item in tagesplan_heute:
+                titel_by_halbtag.setdefault(item['halbtag'], []).append(item['titel'])
+            for st in grp['stations']:
+                if st.get('ueber'):
+                    current_base = st['name']
+                hb = st.get('tageszeit', 'Nachmittag')
+                # Wenn es für dasselbe Halbtag schon einen spezifischeren Tagesplan-Titel gibt
+                # (z.B. „Ankunft & Lorettobad" statt nur „Freiburg"), den nehmen statt der Station.
+                if hb in titel_by_halbtag:
+                    continue
+                slots.setdefault(hb, []).append(st['name'])
+            for hb, titel in titel_by_halbtag.items():
+                slots.setdefault(hb, []).extend(titel)
+
+        rows.append({
+            'daynum': dn,
+            'label': _sr_day_label(dn),
+            'vormittag': ' + '.join(slots['Vormittag']) or '—',
+            'nachmittag': ' + '.join(slots['Nachmittag']) or '—',
+            'abend': ' + '.join(slots['Abend']),
+            'uebernachtung': current_base or '—',
+        })
+    return rows
+
+
 def _reise_overview_map(stationen):
     """Gesamtstrecken-Übersicht: farbige, nummerierte Punkte mit Datum + Verbindungslinie über die
     ganze Route (Auto-Zoom auf alle Stationen). Modelliert auf _reise_walk_map. Gibt PNG-Pfad zurück."""
@@ -9114,6 +9160,41 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
     gr.font.size = Pt(9)
     gr.font.color.rgb = GREY
 
+    # ── Tagesübersicht-Tabelle: schneller Überblick über alle Tage/Halbtage, unabhängig
+    # davon wie die Detailseiten danach paginieren ──
+    doc.add_page_break()
+    ov = doc.add_heading("📅 Tagesübersicht", level=1)
+    ov.runs[0].font.size = Pt(16)
+    ov.runs[0].font.color.rgb = BLUE
+    ov.paragraph_format.space_after = Pt(6)
+
+    rows = _reise_tagesuebersicht_rows(stationen)
+    tbl = doc.add_table(rows=1, cols=5)
+    tbl.style = 'Light Grid Accent 1'
+    head = tbl.rows[0].cells
+    for i, htxt in enumerate(["Tag", "Vormittag", "Nachmittag", "Abend", "Übernachtung"]):
+        head[i].text = htxt
+        for p in head[i].paragraphs:
+            for r in p.runs:
+                r.font.bold = True
+                r.font.size = Pt(10)
+    for row in rows:
+        cells = tbl.add_row().cells
+        vals = [f"Tag {row['daynum']} — {row['label']}", row['vormittag'], row['nachmittag'],
+                row['abend'] or '–', row['uebernachtung']]
+        for i, v in enumerate(vals):
+            cells[i].text = v
+            for p in cells[i].paragraphs:
+                p.paragraph_format.space_after = Pt(0)
+                for r in p.runs:
+                    r.font.size = Pt(9.5)
+                    if i == 0:
+                        r.font.bold = True
+    widths = [Cm(3.4), Cm(3.6), Cm(3.6), Cm(2.4), Cm(3.2)]
+    for row in tbl.rows:
+        for i, w in enumerate(widths):
+            row.cells[i].width = w
+
     def _add_labeled_text(paragraph, text, farbe):
         """Rendert Text mit **Label:**-Markierungen als fette, farbige Zwischenüberschriften
         (je auf eigener Zeile), Rest normal — macht dichte Tagesplan-Texte übersichtlicher."""
@@ -9146,22 +9227,37 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
         r.font.color.rgb = hexrgb(item['farbe'])
         h.paragraph_format.space_before = Pt(8)
         h.paragraph_format.space_after = Pt(3)
+        h.paragraph_format.keep_with_next = True  # Überschrift nie allein am Seitenende
         tp = doc.add_paragraph()
         _add_labeled_text(tp, item['text'], item['farbe'])
         tp.paragraph_format.line_spacing = 1.25
         tp.paragraph_format.space_after = Pt(5)
+        tp.paragraph_format.keep_together = True
 
-    # ── Ab hier: je Reisetag eine eigene Seite ──
+    # ── Ab hier: Reisetage im Fließtext, aber neue Seite nur beim Wechsel der
+    # Übernachtungs-Station — so bleiben mehrtägige Standquartiere (z.B. Freiburg über
+    # Tag 4–6) als ein zusammenhängender Abschnitt lesbar statt in Tages-Häppchen zerlegt.
+    # Der Umbruch sitzt bewusst VOR der Tagesüberschrift (nicht erst vor der Übernachtungs-
+    # Station mittendrin) — sonst hängt ein Tag mit Zwischenstopp (z.B. Tag 8: Mainau tags,
+    # Übernachtung erst in Meersburg) mit Überschrift+Zwischenstopp noch auf der alten Seite.
+    doc.add_page_break()
+    _current_base_id = [None]  # Liste als einfache mutable Zelle für die verschachtelte Schleife
+    _first_station_done = [False]
+
     for grp in _reise_day_groups(stationen):
-        doc.add_page_break()
         dn = grp['daynum']
+        new_base_today = any(s.get('ueber') and s.get('id') != _current_base_id[0]
+                              for s in grp['stations'])
+        if new_base_today and _first_station_done[0]:
+            doc.add_page_break()
         hd = doc.add_paragraph()
         hr = hd.add_run(f"Tag {dn} — {_sr_day_label(dn)}")
         hr.font.size = Pt(19)
         hr.font.bold = True
         hr.font.color.rgb = BLUE
-        hd.paragraph_format.space_before = Pt(0)
+        hd.paragraph_format.space_before = Pt(10)
         hd.paragraph_format.space_after = Pt(2)
+        hd.paragraph_format.keep_with_next = True
 
         tagesplan_heute = _reise_tagesplan_items(stationen, dn)
 
@@ -9213,6 +9309,9 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
             fr.paragraph_format.space_after = Pt(8)
 
         for st in grp['stations']:
+            if st.get('ueber'):
+                _current_base_id[0] = st.get('id')
+            _first_station_done[0] = True
             h = doc.add_paragraph()
             r = h.add_run(st['name'])
             r.font.size = Pt(17)
@@ -9225,6 +9324,7 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
                 r2.font.color.rgb = GREY
             h.paragraph_format.space_before = Pt(8)
             h.paragraph_format.space_after = Pt(3)
+            h.paragraph_format.keep_with_next = True  # Stationsüberschrift nie allein am Seitenende
 
             if st.get('anfahrt'):
                 ap = doc.add_paragraph()
@@ -9258,6 +9358,7 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
                 hb.font.size = Pt(10.5)
                 hb.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
                 lbl.paragraph_format.space_after = Pt(1)
+                lbl.paragraph_format.keep_with_next = True
                 hlinfo = st.get('hlinfo') or {}
                 for hl in st['highlights']:
                     bpp = doc.add_paragraph(style="List Bullet")
