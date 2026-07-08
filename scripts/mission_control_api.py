@@ -9392,11 +9392,11 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
         for item in tagesplan_heute:
             _add_tagesplan_block(item)
 
-    # Weiterfahrt-Hinweis am Ende (Bregenz → Kaufering)
+    # Weiterfahrt-Hinweis am Ende (Neukirch → Kaufering)
     wf = doc.add_paragraph()
     wf.paragraph_format.space_before = Pt(14)
-    wfr = wf.add_run("🚗 Weiterfahrt 04.08.: Bregenz → Kaufering (Steffi & Familie, "
-                     "Thomas-Morus-Str. 12b) · ~160 km · ~1½ Std.")
+    wfr = wf.add_run("🚗 Weiterfahrt 04.08.: Neukirch → Kaufering (Steffi & Familie, "
+                     "Thomas-Morus-Str. 12b) · ~116 km · ~1 Std. 15 Min.")
     wfr.font.size = Pt(11)
     wfr.font.bold = True
     wfr.font.color.rgb = BLUE
