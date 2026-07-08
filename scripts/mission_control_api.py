@@ -9108,6 +9108,8 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
 
     doc = Document()
     for sec in doc.sections:
+        sec.page_width = Cm(21.0)
+        sec.page_height = Cm(29.7)
         sec.top_margin = Cm(1.5)
         sec.bottom_margin = Cm(1.5)
         sec.left_margin = Cm(1.8)
@@ -9164,8 +9166,11 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
 
     # ── Tagesübersicht-Tabelle: schneller Überblick über alle Tage/Halbtage, unabhängig
     # davon wie die Detailseiten danach paginieren ──
-    doc.add_page_break()
+    # page_break_before statt add_page_break(): eine harte Umbruch-Markierung erzwingt IMMER
+    # eine neue Seite, auch wenn die vorige bereits exakt am Rand endet → leere Seite. Die
+    # Absatz-Eigenschaft ist dagegen ein Zustand ("diese Seite beginnt neu") und verdoppelt sich nie.
     ov = doc.add_heading("📅 Tagesübersicht", level=1)
+    ov.paragraph_format.page_break_before = True
     ov.runs[0].font.size = Pt(16)
     ov.runs[0].font.color.rgb = BLUE
     ov.paragraph_format.space_after = Pt(6)
@@ -9239,15 +9244,14 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
     # ── Ab hier: jeder Reisetag bekommt seine eigene Seite (finale Layout-Entscheidung
     # 08.07. — auch Standquartier-Fortsetzungstage wie Tag 5/6 in Freiburg), damit jede
     # Tagesüberschrift oben auf einer neuen Seite steht statt am Fuß der Vorseite zu hängen.
-    doc.add_page_break()
+    # page_break_before auf der Tagesüberschrift selbst (statt add_page_break() davor) —
+    # verhindert leere Seiten, wenn der Vortag schon exakt bis zum Seitenrand reicht.
     _current_base_id = [None]  # Liste als einfache mutable Zelle für die verschachtelte Schleife
-    _first_station_done = [False]
 
     for grp in _reise_day_groups(stationen):
         dn = grp['daynum']
-        if _first_station_done[0]:
-            doc.add_page_break()
         hd = doc.add_paragraph()
+        hd.paragraph_format.page_break_before = True
         hr = hd.add_run(f"Tag {dn} — {_sr_day_label(dn)}")
         hr.font.size = Pt(19)
         hr.font.bold = True
@@ -9306,12 +9310,11 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
             fr.paragraph_format.space_after = Pt(8)
 
         for st in grp['stations']:
-            if st.get('id') == 'fre' and st is not grp['stations'][0]:
-                doc.add_page_break()  # Freiburg (3 Nächte) startet immer auf eigener Seite, auch mitten im Tag
             if st.get('ueber'):
                 _current_base_id[0] = st.get('id')
-            _first_station_done[0] = True
             h = doc.add_paragraph()
+            if st.get('id') == 'fre' and st is not grp['stations'][0]:
+                h.paragraph_format.page_break_before = True  # Freiburg (3 Nächte) startet immer auf eigener Seite, auch mitten im Tag
             r = h.add_run(st['name'])
             r.font.size = Pt(17)
             r.font.bold = True
@@ -9325,7 +9328,7 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
             h.paragraph_format.space_after = Pt(3)
             h.paragraph_format.keep_with_next = True  # Stationsüberschrift nie allein am Seitenende
 
-            if st.get('ueber'):
+            def _hotel_block():
                 buchung = reise_data.get(st['id'], {})
                 hotel_bits = [x for x in [buchung.get('unterkunft_name'), buchung.get('hotel_adresse')] if x]
                 if hotel_bits:
@@ -9335,6 +9338,14 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
                     hr.font.color.rgb = hexrgb('#0e7490')
                     hp.paragraph_format.space_after = Pt(4)
                     hp.paragraph_format.keep_with_next = True
+
+            # Baden-Baden & Freiburg: Hotel wird direkt nach Ankunft bezogen → Adresse
+            # gleich unter dem Namen. Bei den übrigen Übernachtungsorten (Freudenstadt,
+            # Titisee, Konstanz, Meersburg, Lindau) wird erst abends nach dem Besichtigen
+            # eingecheckt → Adresse steht am Ende des Stationsblocks, nicht am Anfang.
+            hotel_oben = st['id'] in ('bb', 'fre')
+            if st.get('ueber') and hotel_oben:
+                _hotel_block()
 
             if st.get('anfahrt'):
                 ap = doc.add_paragraph()
@@ -9403,6 +9414,9 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
                 ir.font.size = Pt(9)
                 ir.font.color.rgb = GREY
                 ip.paragraph_format.space_after = Pt(3)
+
+            if st.get('ueber') and not hotel_oben:
+                _hotel_block()
 
         for item in tagesplan_heute:
             _add_tagesplan_block(item)

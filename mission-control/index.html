@@ -7055,9 +7055,10 @@ function rainWindowsCompact(windows) {
 
 function loadWeatherFull() {
   const d = window._weather;
-  // Daten fehlen oder sind älter als 10 Min → frisch holen (loadWeather rendert dann selbst, da Seite aktiv)
-  const stale = !window._weatherTs || (Date.now() - window._weatherTs) > 600000;
-  if (!d || stale) { loadWeather(); return; }
+  if (!d) { loadWeather(); return; }
+  // Beim Reinklicken sofort den Cache zeigen, aber immer im Hintergrund frisch nachladen
+  // (loadWeather() rendert danach selbst neu, da die Seite aktiv ist)
+  loadWeather();
   const c = d.current;
   const bs   = window._brightsky;
   // Tag/Nacht aus Sonnenauf-/-untergang bestimmen
