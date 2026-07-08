@@ -9104,6 +9104,8 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
     TIPP_B = RGBColor(0xb4, 0x5f, 0x06)
     TIPP_T = RGBColor(0x44, 0x55, 0x6b)
 
+    reise_data = reise_get()
+
     doc = Document()
     for sec in doc.sections:
         sec.top_margin = Cm(1.5)
@@ -9304,6 +9306,8 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
             fr.paragraph_format.space_after = Pt(8)
 
         for st in grp['stations']:
+            if st.get('id') == 'fre' and st is not grp['stations'][0]:
+                doc.add_page_break()  # Freiburg (3 Nächte) startet immer auf eigener Seite, auch mitten im Tag
             if st.get('ueber'):
                 _current_base_id[0] = st.get('id')
             _first_station_done[0] = True
@@ -9320,6 +9324,17 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
             h.paragraph_format.space_before = Pt(8)
             h.paragraph_format.space_after = Pt(3)
             h.paragraph_format.keep_with_next = True  # Stationsüberschrift nie allein am Seitenende
+
+            if st.get('ueber'):
+                buchung = reise_data.get(st['id'], {})
+                hotel_bits = [x for x in [buchung.get('unterkunft_name'), buchung.get('hotel_adresse')] if x]
+                if hotel_bits:
+                    hp = doc.add_paragraph()
+                    hr = hp.add_run("🏨 " + " · ".join(hotel_bits))
+                    hr.font.size = Pt(10.5)
+                    hr.font.color.rgb = hexrgb('#0e7490')
+                    hp.paragraph_format.space_after = Pt(4)
+                    hp.paragraph_format.keep_with_next = True
 
             if st.get('anfahrt'):
                 ap = doc.add_paragraph()
