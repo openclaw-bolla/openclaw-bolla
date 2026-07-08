@@ -30,6 +30,7 @@ def main():
         "scope":         SCOPE,
         "response_mode": "query",
         "prompt":        "select_account",
+        "login_hint":    "renatemandel@outlook.de",
     })
     url = f"{AUTH_URL}?{auth_params}"
 
@@ -57,7 +58,10 @@ def main():
     subprocess.run([clip], input=url.encode(), check=True)
     print("\n" + "="*60)
     print("URL wurde in die Zwischenablage kopiert!")
-    print("Bitte in Edge einfügen und mit renatemandel@outlook.de anmelden.")
+    print("WICHTIG: NICHT im normalen Edge-Fenster öffnen (Edge ist dort mit")
+    print("ernstmandel@outlook.de angemeldet und übernimmt das automatisch).")
+    print("Stattdessen NEUES INPRIVATE-FENSTER öffnen: Strg+Umschalt+N in Edge,")
+    print("dort die URL einfügen und mit renatemandel@outlook.de anmelden.")
     print("="*60 + "\n")
     print(f"URL (falls nötig):\n{url}\n")
     print("Warte auf Weiterleitung... (max. 3 Minuten)")
