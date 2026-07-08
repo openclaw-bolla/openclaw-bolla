@@ -9234,21 +9234,16 @@ def reise_sightseeing_docx(stationen, titel="🗺️ Sommerreise 2026", subtitle
         tp.paragraph_format.space_after = Pt(5)
         tp.paragraph_format.keep_together = True
 
-    # ── Ab hier: Reisetage im Fließtext, aber neue Seite nur beim Wechsel der
-    # Übernachtungs-Station — so bleiben mehrtägige Standquartiere (z.B. Freiburg über
-    # Tag 4–6) als ein zusammenhängender Abschnitt lesbar statt in Tages-Häppchen zerlegt.
-    # Der Umbruch sitzt bewusst VOR der Tagesüberschrift (nicht erst vor der Übernachtungs-
-    # Station mittendrin) — sonst hängt ein Tag mit Zwischenstopp (z.B. Tag 8: Mainau tags,
-    # Übernachtung erst in Meersburg) mit Überschrift+Zwischenstopp noch auf der alten Seite.
+    # ── Ab hier: jeder Reisetag bekommt seine eigene Seite (finale Layout-Entscheidung
+    # 08.07. — auch Standquartier-Fortsetzungstage wie Tag 5/6 in Freiburg), damit jede
+    # Tagesüberschrift oben auf einer neuen Seite steht statt am Fuß der Vorseite zu hängen.
     doc.add_page_break()
     _current_base_id = [None]  # Liste als einfache mutable Zelle für die verschachtelte Schleife
     _first_station_done = [False]
 
     for grp in _reise_day_groups(stationen):
         dn = grp['daynum']
-        new_base_today = any(s.get('ueber') and s.get('id') != _current_base_id[0]
-                              for s in grp['stations'])
-        if new_base_today and _first_station_done[0]:
+        if _first_station_done[0]:
             doc.add_page_break()
         hd = doc.add_paragraph()
         hr = hd.add_run(f"Tag {dn} — {_sr_day_label(dn)}")
