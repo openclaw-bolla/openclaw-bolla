@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """
-Outlook OAuth2 Reauth für renatemandel@outlook.de (separates Postfach, Booking.com-Konto).
-Speichert NICHT in outlook_token.json (Chris' eigenes Konto), sondern in
-config/renate_outlook_token.json — beide Konten laufen unabhängig nebeneinander.
+Outlook OAuth2 Reauth für renatemandel@outlook.de (Renates eigenes, separates Postfach).
+Voller Zugriff analog zu Chris' outlook_token.json: Mail lesen/schreiben/senden,
+Kalender, Kontakte, Tasks. Speichert NICHT in outlook_token.json (Chris' eigenes
+Konto), sondern in config/renate_outlook_token.json — beide Konten laufen
+unabhängig nebeneinander. Dank offline_access + Refresh-Token muss sich Reni
+nur EINMAL einloggen; token()-Funktionen in den Skripten holen sich den
+Access-Token danach automatisch und still über den Refresh-Token nach.
 Starten: python3 renate_outlook_reauth.py
 """
 import json, urllib.request, urllib.parse, subprocess, sys
@@ -15,7 +19,7 @@ TOKEN_FILE = Path("/home/bolla/workspace/config/renate_outlook_token.json")
 TOKEN_URL  = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token"
 AUTH_URL   = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize"
 REDIRECT   = "http://localhost:8765"
-SCOPE      = "Mail.ReadWrite Calendars.ReadWrite Contacts.Read offline_access"
+SCOPE      = "Mail.ReadWrite Mail.Send Calendars.ReadWrite Contacts.ReadWrite Tasks.ReadWrite offline_access"
 
 def main():
     cfg = json.loads(CFG_FILE.read_text())
