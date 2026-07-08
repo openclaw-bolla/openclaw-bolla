@@ -307,6 +307,9 @@ class CardStack extends HTMLElement {
 
   _layout(){
     const n = this._cards.length;
+    const boxW = this.getBoundingClientRect().width || 440;
+    const offsetX = boxW * 0.32;
+    const offsetY = boxW * 0.09;
     this._cards.forEach((card, i) => {
       const rel = (i - this._index + n) % n;
       if(rel === 0){
@@ -316,13 +319,13 @@ class CardStack extends HTMLElement {
         card.style.pointerEvents = 'auto';
         card.style.visibility = 'visible';
       } else if(rel <= 2){
-        card.style.transform = `translate(${rel * 14}px, ${rel * 16}px) scale(${1 - rel * 0.05})`;
+        card.style.transform = `translate(${rel * offsetX}px, ${rel * offsetY}px) scale(${1 - rel * 0.05})`;
         card.style.opacity = String(Math.max(0.35, 0.85 - (rel - 1) * 0.3));
         card.style.zIndex = String(n + 10 - rel);
         card.style.pointerEvents = 'auto';
         card.style.visibility = 'visible';
       } else {
-        card.style.transform = 'translate(40px,48px) scale(0.85)';
+        card.style.transform = `translate(${offsetX * 2.5}px, ${offsetY * 2.5}px) scale(0.85)`;
         card.style.opacity = '0';
         card.style.zIndex = '1';
         card.style.pointerEvents = 'none';
@@ -331,13 +334,13 @@ class CardStack extends HTMLElement {
     });
     Array.from(this._dotsEl.children).forEach((d, i) => d.classList.toggle('active', i === this._index));
     if(this._cards.length < 2) this._dotsEl.style.display = 'none';
-    requestAnimationFrame(() => this._measure());
+    requestAnimationFrame(() => this._measure(offsetY));
   }
 
-  _measure(){
+  _measure(extraY){
     const front = this._cards[this._index];
     const h = front.getBoundingClientRect().height;
-    if(h > 0) this._viewport.style.height = (h + 40) + 'px';
+    if(h > 0) this._viewport.style.height = (h + (extraY || 34) + 24) + 'px';
   }
 }
 customElements.define('card-stack', CardStack);
