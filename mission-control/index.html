@@ -5923,25 +5923,25 @@ async function loadSchuljahr2627() {
         monthRows += `<tr><td colspan="6" style="padding:14px 10px 6px;font-size:13px;font-weight:700;color:var(--accent)">${monthNames[dt.getMonth()]} ${dt.getFullYear()}</td></tr>`;
       }
       const tagFmt = dt.toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit'});
-      const bez = t.bezeichnung ? `<span style="color:var(--bright);font-weight:600">${escHtml(t.bezeichnung)}</span>` : `<span style="color:var(--dim);font-style:italic">offen</span>`;
+      const themaAnzeige = t.thema ? `<span style="font-size:14px;color:var(--bright);font-weight:600">${escHtml(t.thema)}</span>` : `<span style="font-size:14px;color:var(--dim);font-style:italic">offen</span>`;
       const gruppeColor = t.gruppe === 'II' ? '#fbbf24' : '#60a5fa';
       const gruppe = t.gruppe ? `<span style="background:${gruppeColor}22;border:1px solid ${gruppeColor}66;color:${gruppeColor};border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700">${t.gruppe}</span>` : '';
-      const themaVal = escHtml(t.thema || '').replace(/"/g, '&quot;');
+      const auftragVal = escHtml(t.auftrag || '').replace(/"/g, '&quot;');
       const datumAttr = t.datum, zeitAttr = t.zeit.replace(/"/g, '&quot;');
       monthRows += `<tr style="border-bottom:1px solid var(--border)">
         <td style="padding:7px 10px;font-size:14px;color:var(--text);white-space:nowrap">${tagFmt}</td>
         <td style="padding:7px 10px;font-size:14px;color:var(--text)">${t.wochentag}</td>
         <td style="padding:7px 10px;font-size:14px;color:var(--text);white-space:nowrap">${t.zeit}</td>
         <td style="padding:7px 10px;text-align:center">${gruppe}</td>
-        <td style="padding:7px 10px">${bez}</td>
+        <td style="padding:7px 10px">${themaAnzeige}</td>
         <td style="padding:7px 10px">
           <div style="display:flex;gap:6px;align-items:center">
-            <input type="text" value="${themaVal}" placeholder="Thema eintragen…"
+            <input type="text" value="${auftragVal}" placeholder="Auftrag eintragen (z.B. „Arbeitsblatt erstellen“)…"
               data-datum="${datumAttr}" data-zeit="${zeitAttr}"
-              onchange="sj2627SaveThema(this)"
+              onchange="sj2627SaveAuftrag(this)"
               style="flex:1;min-width:120px;background:rgba(0,0,0,0.25);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:14px;color:var(--bright)">
             <button onclick="sj2627Nudge(this)" data-datum="${datumAttr}" data-zeit="${zeitAttr}"
-              title="Auftrag zu diesem Thema anstupsen (z.B. Arbeitsblatt erstellen)"
+              title="Auftrag an Bolla anstupsen"
               style="flex-shrink:0;background:none;border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:13px;line-height:1;cursor:pointer;padding:6px 8px">📌</button>
           </div>
         </td>
@@ -5982,8 +5982,8 @@ async function loadSchuljahr2627() {
                 <th style="padding:9px 10px;text-align:left;font-size:12px;color:var(--dim)">Tag</th>
                 <th style="padding:9px 10px;text-align:left;font-size:12px;color:var(--dim)">Zeit</th>
                 <th style="padding:9px 10px;text-align:center;font-size:12px;color:var(--dim)">Gr.</th>
-                <th style="padding:9px 10px;text-align:left;font-size:12px;color:var(--dim)">Bezeichnung</th>
                 <th style="padding:9px 10px;text-align:left;font-size:12px;color:var(--dim)">Thema</th>
+                <th style="padding:9px 10px;text-align:left;font-size:12px;color:var(--dim)">Aufträge</th>
               </tr>
             </thead>
             <tbody>${monthRows}</tbody>
@@ -6000,12 +6000,12 @@ async function loadSchuljahr2627() {
   }
 }
 
-async function sj2627SaveThema(input) {
+async function sj2627SaveAuftrag(input) {
   const datum = input.dataset.datum, zeit = input.dataset.zeit;
   input.style.borderColor = 'var(--accent)';
   try {
     await fetch(API + '/api/schuljahr2627/update', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({datum, zeit, thema: input.value})});
+      body: JSON.stringify({datum, zeit, auftrag: input.value})});
     input.style.borderColor = 'var(--success)';
     setTimeout(() => { input.style.borderColor = 'var(--border)'; }, 1200);
   } catch(e) {
@@ -6018,8 +6018,8 @@ async function sj2627Nudge(btn) {
   const row = btn.closest('tr');
   const input = row.querySelector('input[type="text"]');
   const orig = btn.textContent;
-  // erst sicherstellen, dass das aktuell eingetippte Thema gespeichert ist
-  if (input) await sj2627SaveThema(input);
+  // erst sicherstellen, dass der aktuell eingetippte Auftrag gespeichert ist
+  if (input) await sj2627SaveAuftrag(input);
   try {
     const r = await fetch(API + '/api/schuljahr2627/nudge', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({datum, zeit})});

@@ -2414,29 +2414,31 @@ def _schuljahr_save(data):
     with open(SCHULJAHR_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-def schuljahr_update_termin(datum, zeit, thema):
-    """Speichert das von Chris eingetragene Thema für einen Termin (Datum+Zeit = eindeutiger Schlüssel)."""
+def schuljahr_update_termin(datum, zeit, auftrag):
+    """Speichert den von Chris eingetragenen Auftrag für einen Termin (Datum+Zeit = eindeutiger Schlüssel)."""
     data = _schuljahr_load()
     for t in data.get("termine", []):
         if t.get("datum") == datum and t.get("zeit") == zeit:
-            t["thema"] = thema
+            t["auftrag"] = auftrag
             _schuljahr_save(data)
             return {"ok": True}
     return {"ok": False, "error": "Termin nicht gefunden"}
 
 def schuljahr_nudge_termin(datum, zeit):
-    """Baut aus Thema+Termin einen Anstups-Prompt (z.B. 'erstelle dazu ein Arbeitsblatt') und legt ihn in die Bolla-Queue."""
+    """Baut aus dem eingetragenen Auftrag (freier Text von Chris) + Themen-Kontext einen Anstups-Prompt
+    und legt ihn in die Bolla-Queue. Der Auftragstext wird unverändert übernommen, nicht in eine feste
+    Schablone gepackt — Chris kann direkt konkrete Aufträge formulieren."""
     data = _schuljahr_load()
     t = next((t for t in data.get("termine", []) if t.get("datum") == datum and t.get("zeit") == zeit), None)
     if not t:
         return {"ok": False, "error": "Termin nicht gefunden"}
+    auftrag = t.get("auftrag", "")
+    if not auftrag:
+        return {"ok": False, "error": "Kein Auftrag eingetragen"}
     thema = t.get("thema", "")
-    if not thema:
-        return {"ok": False, "error": "Kein Thema eingetragen"}
-    bez = t.get("bezeichnung") or f"Gruppe {t.get('gruppe','')}".strip()
-    prompt = (f"EDV-Stunde am {datum} ({t.get('wochentag','')} {t.get('zeit','')}"
-              + (f", {bez}" if bez else "") + f") zum Thema \"{thema}\".\n\n"
-              f"Auftrag: erstelle dazu passendes Unterrichtsmaterial (z.B. Arbeitsblatt).")
+    kontext = f", Thema: {thema}" if thema else ""
+    prompt = (f"EDV-Stunde am {datum} ({t.get('wochentag','')} {t.get('zeit','')}{kontext}).\n\n"
+              f"Auftrag von Chris: {auftrag}")
     q = {"nudges": []}
     if os.path.exists(BOARD_NUDGES_FILE):
         try:
@@ -6890,7 +6892,7 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
             elif self.path == "/api/board/action-nudge":
                 self._send_json(board_action_nudge(body.get("projId",""), body.get("actId","")))
             elif self.path == "/api/schuljahr2627/update":
-                self._send_json(schuljahr_update_termin(body.get("datum",""), body.get("zeit",""), body.get("thema","")))
+                self._send_json(schuljahr_update_termin(body.get("datum",""), body.get("zeit",""), body.get("auftrag","")))
             elif self.path == "/api/schuljahr2627/nudge":
                 self._send_json(schuljahr_nudge_termin(body.get("datum",""), body.get("zeit","")))
             elif self.path == "/api/kosten/guthaben":
