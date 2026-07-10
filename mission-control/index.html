@@ -71,6 +71,77 @@ html, body {
     center center / cover no-repeat;
 }
 
+/* ===== THEMEN-HINTERGRÜNDE (pro Seite, gesetzt in showPage) =====
+   Gleiche lila Folie wie der Standard — nur das Motiv wechselt.
+   Ohne theme-Klasse gilt die Wolkenkratzer-Silhouette aus html,body.
+   html behält immer den Standard → dient als Fallback beim Nachladen. */
+body.theme-musik {   /* 🎵 Bolla Songs: Mikrofon im Bühnenlicht */
+  background:
+    linear-gradient(rgba(15,6,24,0.55), rgba(30,10,50,0.50)),
+    url('https://images.unsplash.com/photo-1453090927415-5f45085b65c0?w=1920&q=90&fm=jpg&sat=-100')
+    center center / cover no-repeat;
+}
+body.theme-buehne {  /* 🎡 Musik-Quiz: Bühne mit Schlagzeug & Mikro */
+  background:
+    linear-gradient(rgba(15,6,24,0.55), rgba(30,10,50,0.50)),
+    url('https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=1920&q=90&fm=jpg&sat=-100')
+    center center / cover no-repeat;
+}
+body.theme-buch {    /* 📖 AURORA: Bücherwand */
+  background:
+    linear-gradient(rgba(15,6,24,0.55), rgba(30,10,50,0.50)),
+    url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1920&q=90&fm=jpg&sat=-100')
+    center center / cover no-repeat;
+}
+body.theme-reise {   /* ✈️ Reiseplaner: Flugzeugflügel über den Wolken */
+  background:
+    linear-gradient(rgba(15,6,24,0.55), rgba(30,10,50,0.50)),
+    url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=1920&q=90&fm=jpg&sat=-100')
+    center center / cover no-repeat;
+}
+body.theme-wetter {  /* 🌤️ Wetter: dramatische Wolkenlandschaft */
+  background:
+    linear-gradient(rgba(15,6,24,0.55), rgba(30,10,50,0.50)),
+    url('https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?w=1920&q=90&fm=jpg&sat=-100')
+    center center / cover no-repeat;
+}
+body.theme-muenchen {/* 🏡 Immobilienkauf Bayern: München (Marienplatz) im Abendlicht */
+  background:
+    linear-gradient(rgba(15,6,24,0.55), rgba(30,10,50,0.50)),
+    url('https://images.unsplash.com/photo-1595867818082-083862f3d630?w=1920&q=90&fm=jpg&sat=-100')
+    center center / cover no-repeat;
+}
+body.theme-tech {    /* 🧠 KI-News & KI-Forum: Platinen-Makro */
+  background:
+    linear-gradient(rgba(15,6,24,0.55), rgba(30,10,50,0.50)),
+    url('https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=90&fm=jpg&sat=-100')
+    center center / cover no-repeat;
+}
+body.theme-klassenzimmer { /* 📅 Schule-Gruppe: Hörsaal mit Tafel & Bankreihen */
+  background:
+    linear-gradient(rgba(15,6,24,0.55), rgba(30,10,50,0.50)),
+    url('https://images.unsplash.com/photo-1777259759623-b39589cfff9b?w=1920&q=90&fm=jpg&sat=-100')
+    center center / cover no-repeat;
+}
+body.theme-kamera {  /* 🔍 Foto-Analyse: Hand hält Objektiv vor Berglandschaft */
+  background:
+    linear-gradient(rgba(15,6,24,0.55), rgba(30,10,50,0.50)),
+    url('https://images.unsplash.com/photo-1453728013993-6d66e9c9123a?w=1920&q=90&fm=jpg&sat=-100')
+    center center / cover no-repeat;
+}
+body.theme-malerei { /* 🍌 BildGen: Pinsel zieht Farbstrich über Leinwand */
+  background:
+    linear-gradient(rgba(15,6,24,0.55), rgba(30,10,50,0.50)),
+    url('https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=1920&q=90&fm=jpg&sat=-100')
+    center center / cover no-repeat;
+}
+body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
+  background:
+    linear-gradient(rgba(15,6,24,0.55), rgba(30,10,50,0.50)),
+    url('https://images.unsplash.com/photo-1517981834318-5f56734fe518?w=1920&q=90&fm=jpg&sat=-100')
+    center center / cover no-repeat;
+}
+
 #app {
   display: flex;
   width: 100%; height: 100vh;
@@ -100,6 +171,10 @@ html, body {
   font-weight: 700;
   color: var(--accent);
   letter-spacing: 1px;
+  background: linear-gradient(90deg, var(--accent), #c084fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 #sidebar-header .sub {
@@ -122,17 +197,24 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 14px 8px 16px;
-  margin-left: 10px;
+  padding: 8px 12px 8px 16px;
+  margin: 1px 8px 1px 10px;
   cursor: pointer;
   border-left: 3px solid transparent;
+  border-radius: 10px;
   font-size: 13px;
-  transition: all 0.15s;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
-.nav-item:hover { background: rgba(255,102,153,0.08); color: var(--bright); }
-.nav-item.active { background: rgba(255,102,153,0.15); border-left-color: var(--accent); color: var(--accent); }
-.nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+.nav-item:hover { background: rgba(255,102,153,0.10); color: var(--bright); transform: translateX(2px); }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(255,102,153,0.24), rgba(124,58,237,0.14));
+  border-left-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 2px 10px rgba(255,102,153,0.12), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.nav-item .icon { font-size: 16px; width: 20px; text-align: center; transition: transform 0.18s ease; }
+.nav-item:hover .icon { transform: scale(1.12); }
 .nav-item .badge {
   margin-left: auto;
   background: var(--accent2);
@@ -152,10 +234,10 @@ html, body {
   font-size: 13px;
   color: var(--text);
   background: rgba(37,99,235,0.08);
-  transition: all 0.15s;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
   user-select: none;
-  margin: 2px 6px 2px 0;
-  border-radius: 8px;
+  margin: 2px 8px 2px 0;
+  border-radius: 10px;
 }
 .nav-group-header:hover { background: rgba(37,99,235,0.16); border-left-color: rgba(96,165,250,0.7); }
 .nav-group-header .icon { font-size: 15px; width: 20px; text-align: center; }
@@ -191,17 +273,17 @@ html, body {
   justify-content: flex-start;
   cursor: pointer;
   user-select: none;
-  border-radius: 4px;
-  margin: 6px 0 2px 0;
+  border-radius: 8px;
+  margin: 6px 8px 2px 0;
   padding: 6px 10px 4px 4px !important;
   color: var(--accent) !important;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  transition: color 0.15s;
+  transition: color 0.18s ease, background 0.18s ease;
 }
-.nav-section:hover { color: var(--bright) !important; }
+.nav-section:hover { color: var(--bright) !important; background: rgba(255,255,255,0.05); }
 .nav-section-chevron {
   font-size: 10px;
   color: rgba(255,255,255,0.25);
@@ -220,7 +302,7 @@ html, body {
 .nav-block + .nav-block { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); }
 .nav-block.dragging { opacity: 0.4; }
 .nav-block.drag-over > .nav-section { background: rgba(255,102,153,0.15); color: var(--accent); }
-.nav-item-drag-over { background: rgba(255,102,153,0.12) !important; border-left-color: var(--accent) !important; border-radius: 6px; }
+.nav-item-drag-over { background: rgba(255,102,153,0.12) !important; border-left-color: var(--accent) !important; border-radius: 10px; }
 .nav-section-grip {
   font-size: 11px;
   color: rgba(255,255,255,0.15);
@@ -4440,6 +4522,27 @@ let _clipRefreshInterval = null;
 let _clipEntries = [];
 let _clipEditing = false;
 
+// Themen-Hintergrund pro Seite (body-Klasse → CSS body.theme-XXX).
+// Seiten ohne Eintrag behalten die Standard-Wolkenkratzer-Silhouette.
+const PAGE_THEMES = {
+  'suno':       'musik',     // 🎵 Bolla Songs
+  'gluecksrad': 'buehne',    // 🎡 Musik-Quiz
+  'ki-buch':    'buch',      // 📖 AURORA
+  'urlaub':     'reise',     // ✈️ Reiseplaner
+  'wetter':     'wetter',    // 🌤️ Wetter
+  'projekte':   'muenchen',  // 🏡 Immobilienkauf Bayern
+  'ki-news':    'tech',      // 🧠 KI-News
+  'kiforum':    'tech',      // 🧠 KI-Forum
+  'schule':          'klassenzimmer', // 📅 Schule Übersicht
+  'korrektur':       'klassenzimmer', // ✏️ KI-Korrektur
+  'differenzierung': 'klassenzimmer', // 🎯 Differenzierung
+  'entschaerfer':    'klassenzimmer', // 🕊️ Elternbrief-Entschärfer
+  'schuljahr2627':   'klassenzimmer', // 🗓️ Schuljahr 26/27
+  'fotoanalyse': 'kamera',   // 🔍 Foto-Analyse
+  'bildgen':     'malerei',  // 🍌 BildGen
+  'geburtstage': 'ballons'   // 🎂 Geburtstage
+};
+
 function showPage(page) {
   if (_clipRefreshInterval) { clearInterval(_clipRefreshInterval); _clipRefreshInterval = null; }
   if (_reiseRefreshInterval) { clearInterval(_reiseRefreshInterval); _reiseRefreshInterval = null; }
@@ -4451,6 +4554,9 @@ function showPage(page) {
   if (item) item.classList.add('active');
   const pageEl = document.getElementById('page-' + page);
   if (pageEl) pageEl.classList.add('active');
+  // Themen-Hintergrund: alte theme-Klasse entfernen, ggf. passende setzen
+  [...document.body.classList].forEach(c => { if (c.startsWith('theme-')) document.body.classList.remove(c); });
+  if (PAGE_THEMES[page]) document.body.classList.add('theme-' + PAGE_THEMES[page]);
   if (item) document.getElementById('page-title').textContent = item.querySelector('span:nth-child(2)')?.textContent || '';
   else { const _t = {'ki-buch':'Thriller-Projekt','ki-workshop':'Projekte-Workspace'}[page]; if (_t) document.getElementById('page-title').textContent = _t; }
   const cmdBar = document.getElementById('mail-cmd-bar');
