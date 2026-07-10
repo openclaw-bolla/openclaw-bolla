@@ -4692,10 +4692,14 @@ def azure_tts(text, voice, rate_percent=0):
 
 
 # ============ ADB / SURFACE ============
-def _adb_run(args, timeout=15):
+def _adb_run(args, timeout=15, device=None):
     import subprocess
     try:
-        r = subprocess.run(["adb"] + list(args), capture_output=True, timeout=timeout)
+        cmd = ["adb"]
+        if device:
+            cmd += ["-s", device]
+        cmd += list(args)
+        r = subprocess.run(cmd, capture_output=True, timeout=timeout)
         return r.returncode, r.stdout, r.stderr.decode("utf-8", "replace").strip()
     except subprocess.TimeoutExpired:
         return -1, b"", "Timeout — Gerät nicht erreichbar?"
@@ -4710,7 +4714,12 @@ def adb_devices():
     for line in out.decode("utf-8", "replace").splitlines()[1:]:
         parts = line.strip().split()
         if len(parts) >= 2:
-            devices.append({"id": parts[0], "state": parts[1]})
+            dev = {"id": parts[0], "state": parts[1]}
+            if dev["state"] == "device":
+                mrc, mout, _ = _adb_run(["shell", "getprop", "ro.product.model"], timeout=5, device=dev["id"])
+                if mrc == 0:
+                    dev["model"] = mout.decode("utf-8", "replace").strip()
+            devices.append(dev)
     return {"devices": devices, "error": None if rc == 0 else (err or "Fehler")}
 
 def adb_packages(filter_str="", kind="all"):
@@ -4778,13 +4787,13 @@ def adb_disconnect(host=""):
     rc, out, err = _adb_run(args, timeout=5)
     return {"ok": rc == 0, "message": (out.decode("utf-8","replace") + " " + err).strip()}
 
-def adb_screenshot():
-    rc, png, err = _adb_run(["exec-out", "screencap", "-p"], timeout=15)
+def adb_screenshot(device=None):
+    rc, png, err = _adb_run(["exec-out", "screencap", "-p"], timeout=15, device=device)
     if rc != 0 or not png:
         return None, err or "Screenshot fehlgeschlagen"
     return png, None
 
-def adb_push(filename, remote_dir, data_bytes):
+def adb_push(filename, remote_dir, data_bytes, device=None):
     import tempfile
     filename = (filename or "").strip()
     remote_dir = (remote_dir or "").strip()
@@ -4799,7 +4808,7 @@ def adb_push(filename, remote_dir, data_bytes):
         local = tf.name
     try:
         remote = remote_dir.rstrip("/") + "/" + filename
-        rc, out, err = _adb_run(["push", local, remote], timeout=300)
+        rc, out, err = _adb_run(["push", local, remote], timeout=300, device=device)
         if rc != 0:
             return {"ok": False, "error": err or "Push fehlgeschlagen"}
         return {"ok": True, "message": f"→ {remote} ({len(data_bytes)} Bytes)", "bytes": len(data_bytes)}
@@ -4854,7 +4863,7 @@ def adb_ls(path="/storage/emulated/0"):
         parent = "/".join(normalized.split("/")[:-1]) or "/"
     return {"path": normalized, "parent": parent, "entries": entries, "error": None}
 
-def adb_info(kind="device"):
+def adb_info(kind="device", device=None):
     kind = (kind or "device").strip().lower()
     if kind == "device":
         rc, out, err = _adb_run([
@@ -4864,7 +4873,7 @@ def adb_info(kind="device"):
             "echo ANDROID=$(getprop ro.build.version.release); "
             "echo SDK=$(getprop ro.build.version.sdk); "
             "echo SIZE=$(wm size 2>/dev/null | grep -oE '[0-9]+x[0-9]+' | head -1)"
-        ], timeout=10)
+        ], timeout=10, device=device)
         if rc != 0:
             return {"error": err or "adb-Fehler"}
         props = {}
@@ -4874,7 +4883,7 @@ def adb_info(kind="device"):
                 props[k.strip()] = v.strip()
         return {"kind": "device", "props": props, "error": None}
     if kind == "battery":
-        rc, out, err = _adb_run(["shell", "dumpsys", "battery"], timeout=10)
+        rc, out, err = _adb_run(["shell", "dumpsys", "battery"], timeout=10, device=device)
         if rc != 0:
             return {"error": err or "adb-Fehler"}
         props = {}
@@ -4888,7 +4897,7 @@ def adb_info(kind="device"):
             props["status_text"] = status_map.get(props["status"], props["status"])
         return {"kind": "battery", "props": props, "error": None}
     if kind == "foreground":
-        rc, out, err = _adb_run(["shell", "dumpsys", "activity", "activities"], timeout=10)
+        rc, out, err = _adb_run(["shell", "dumpsys", "activity", "activities"], timeout=10, device=device)
         if rc != 0:
             return {"error": err or "adb-Fehler"}
         import re
@@ -4903,7 +4912,7 @@ def adb_info(kind="device"):
         return {"error": "Keine aktive App erkennbar"}
     return {"error": f"Unbekannter Info-Typ: {kind}"}
 
-def adb_pull(remote):
+def adb_pull(remote, device=None):
     import tempfile
     remote = (remote or "").strip()
     if not remote or "\0" in remote or "\n" in remote:
@@ -4911,7 +4920,7 @@ def adb_pull(remote):
     with tempfile.NamedTemporaryFile(delete=False) as tf:
         local = tf.name
     try:
-        rc, _, err = _adb_run(["pull", remote, local], timeout=120)
+        rc, _, err = _adb_run(["pull", remote, local], timeout=120, device=device)
         if rc != 0:
             return None, err or "Pull fehlgeschlagen"
         with open(local, "rb") as f:
@@ -6032,7 +6041,7 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 import urllib.parse as _up
                 qs = _up.urlparse(self.path).query
                 params = dict(_up.parse_qsl(qs))
-                self._send_json(adb_info(params.get("kind", "device")))
+                self._send_json(adb_info(params.get("kind", "device"), params.get("device")))
                 return
 
             if self.path.startswith("/api/adb/ls"):
@@ -6646,7 +6655,10 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 out_path = os.path.join(CLIPBOARD_IMAGES_DIR, out_name)
                 cmd = ["python3", os.path.join(WORKSPACE, "scripts/aufpeppen.py"), tmp_in,
                        "--platform", platform, "--style", style, "--out", out_path]
-                if text: cmd += ["--text", text]
+                if text:
+                    cmd += ["--text", text]
+                else:
+                    cmd += ["--ai"]  # kein Text eingegeben -> Fable schaut sich's an, schreibt content-bezogenen Hook
                 if music == "song":
                     try:
                         arch = "/mnt/d/OneDrive/Dokumente/Bolla/Suno_DistroKid"
@@ -7058,7 +7070,7 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
             elif self.path == "/api/adb/disconnect":
                 self._send_json(adb_disconnect(body.get("host", "")))
             elif self.path == "/api/adb/screenshot":
-                png, err = adb_screenshot()
+                png, err = adb_screenshot(body.get("device") or None)
                 if err or not png:
                     self._send_json({"error": err or "Screenshot fehlgeschlagen"}, status=500)
                     return
@@ -7075,10 +7087,10 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 except Exception:
                     self._send_json({"ok": False, "error": "Ungültige Datei-Daten"}, status=400)
                     return
-                self._send_json(adb_push(body.get("filename", ""), body.get("remote_dir", "/sdcard/"), data))
+                self._send_json(adb_push(body.get("filename", ""), body.get("remote_dir", "/sdcard/"), data, body.get("device") or None))
             elif self.path == "/api/adb/pull":
                 remote = body.get("remote", "")
-                data, err = adb_pull(remote)
+                data, err = adb_pull(remote, body.get("device") or None)
                 if err or data is None:
                     self._send_json({"error": err or "Pull fehlgeschlagen"}, status=500)
                     return

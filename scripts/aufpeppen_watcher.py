@@ -21,6 +21,7 @@ import os, sys, json, subprocess, hashlib, datetime, urllib.request, shutil, fcn
 
 HOME = "/home/bolla"
 WS = f"{HOME}/workspace"
+sys.path.insert(0, f"{WS}/scripts")
 EINGANG = "/mnt/d/OneDrive/Dokumente/Bolla/Aufpeppen_Eingang"
 VERARB = os.path.join(EINGANG, "_verarbeitet")
 DESKTOP_OUT = "/mnt/d/OneDrive/Desktop/Aufgepeppt"
@@ -100,7 +101,10 @@ def process_one(src):
     out = os.path.join(DESKTOP_OUT, f"{stem}_aufgepeppt{out_ext}")
     os.makedirs(DESKTOP_OUT, exist_ok=True)
     cmd = ["python3", ENGINE, src, "--platform", platform, "--style", style, "--out", out]
-    if text: cmd += ["--text", text]
+    if text:
+        cmd += ["--text", text]
+    else:
+        cmd += ["--ai"]  # kein Text von Chris vorgegeben -> Fable schaut sich's an und schreibt content-bezogenen Hook
     if music:
         m = latest_song_mp3()
         if m: cmd += ["--music", m]
@@ -116,6 +120,22 @@ def process_one(src):
     log(f"OK: {os.path.basename(src)} -> {os.path.basename(out)} ({platform}/{style})")
 
 
+def build_batch_montage(new_files):
+    """Mehrere Dateien auf einmal reingekippt -> EIN spektakuläres Reel statt viele Einzel-Clips."""
+    import aufpeppen_montage as amon
+    stems = "+".join(os.path.splitext(os.path.basename(f))[0] for f in new_files[:3])
+    out = os.path.join(DESKTOP_OUT, f"Reel_{stems[:60]}_{len(new_files)}x.mp4")
+    ok, hook_or_err = amon.build_montage(new_files, out, music=None, style="auto", hook=None, max_clips=8)
+    if not ok:
+        log(f"FEHLER Montage ({len(new_files)} Dateien): {hook_or_err}")
+        post_clip(f"⚠️ Reel-Montage fehlgeschlagen ({len(new_files)} Dateien)")
+        return
+    pub = os.path.basename(out).replace(" ", "_")
+    shutil.copy2(out, os.path.join(CLIP_IMAGES, pub))
+    post_clip(f"🎬 Spektakel-Reel aus {len(new_files)} Fotos/Videos: {PUBLIC}/api/clipboard/image/{pub}")
+    log(f"OK Montage: {len(new_files)} Dateien -> {os.path.basename(out)} (Hook: {hook_or_err})")
+
+
 def main():
     os.makedirs(EINGANG, exist_ok=True)
     os.makedirs(VERARB, exist_ok=True)
@@ -123,6 +143,7 @@ def main():
     try: fcntl.flock(lf, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError: return
     seen = load_state(); changed = False
+    new_files = []
     for f in sorted(os.listdir(EINGANG)):
         src = os.path.join(EINGANG, f)
         if not os.path.isfile(src): continue
@@ -130,18 +151,30 @@ def main():
         if ext not in IMG_EXT + VID_EXT: continue
         h = hashlib.md5(f.encode()).hexdigest()[:12]
         if h in seen: continue
+        new_files.append((f, src, h))
+
+    for f, src, h in new_files:
         log(f"Neue Datei: {f}")
         try:
             process_one(src)
         except Exception as e:
             log(f"Ausnahme {f}: {e}")
         seen.add(h); changed = True
-        # Original + Sidecar wegräumen
+
+    if len(new_files) >= 2:
+        try:
+            build_batch_montage([src for _, src, _ in new_files])
+        except Exception as e:
+            log(f"Ausnahme Montage: {e}")
+
+    # Originale + Sidecars wegräumen (erst NACH Einzel- und Montage-Verarbeitung)
+    for f, src, h in new_files:
         try:
             shutil.move(src, os.path.join(VERARB, f))
             sc = os.path.join(EINGANG, os.path.splitext(f)[0] + ".txt")
             if os.path.isfile(sc): shutil.move(sc, os.path.join(VERARB, os.path.basename(sc)))
         except Exception: pass
+
     if changed: save_state(seen)
 
 

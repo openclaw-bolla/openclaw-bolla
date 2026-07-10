@@ -1989,6 +1989,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #a78bfa"><div style="font-size:12px;font-weight:600;color:var(--bright)">👤 Windows Username Book</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Book-Username ist "ernst", nicht "chris" — wichtig für Pfade</div></div>
               <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #a78bfa"><div style="font-size:12px;font-weight:600;color:var(--bright)">👤 Chris Profil</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Persönliche Daten, Beruf, Familie, Kontakt</div></div>
               <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #a78bfa"><div style="font-size:12px;font-weight:600;color:var(--bright)">👤 Handys: Duo 2 + P20</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Duo 2 (ADB via WLAN), P20 (kein ADB, Android 11)</div></div>
+              <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #a78bfa"><div style="font-size:12px;font-weight:600;color:var(--bright)">👤 Handy: Z Flip 3 (Renis)</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Samsung Galaxy Z Flip 3, Android 15 (ADB via WLAN, seit 10.07.2026)</div></div>
               <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #a78bfa"><div style="font-size:12px;font-weight:600;color:var(--bright)">👤 F-Secure</div><div style="font-size:11px;color:var(--dim);margin-top:2px">20+ Jahre F-Secure, Banking-Schutz, Einstellungen gelegentlich prüfen</div></div>
               <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #a78bfa"><div style="font-size:12px;font-weight:600;color:var(--bright)">👤 Die OpenClaw-Phase</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Vorgeschichte vor Claude Code (März–April 2026)</div></div>
               <div style="padding:7px 10px;background:rgba(129,140,248,0.06);border-radius:6px;border-left:2px solid #22c55e"><div style="font-size:12px;font-weight:600;color:var(--bright)">📌 Studio Peripherie/Verkabelung</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Sonnet Echo 11 Dock (Monitor/Ethernet/3TB) vs. direkt am Studio (DVB-T-Stick + D:-Backup); DVB-T am Dock = Device-Descriptor-Failed (Strombudget)</div></div>
@@ -2386,8 +2387,13 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               <div class="card-head"><span class="card-title">Health</span><span class="card-icon">📱</span></div>
               <div id="duo-health-body"><div class="loading">Lade...</div></div>
             </div>
+            <!-- Z Flip Health (Renis Handy) -->
+            <div class="card" id="zflip-health-card">
+              <div class="card-head"><span class="card-title">Z Flip 3 (Renis)</span><span class="card-icon">📱</span></div>
+              <div id="zflip-health-body"><div class="loading">Lade...</div></div>
+            </div>
             <!-- Duo Funktionen -->
-            <div class="card">
+            <div class="card" data-device-hint="duo">
               <div class="card-head"><span class="card-title">Funktionen</span><span class="card-icon">🛠️</span></div>
               <div style="display:flex;flex-direction:column;gap:8px">
                 <!-- Koppeln (einmalig, Android 11+) -->
@@ -2406,6 +2412,49 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 <div style="font-size:12px;color:rgba(255,255,255,0.35)">Port von Hauptbildschirm „Kabelloses Debugging" (nicht Koppeln-Port).</div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
                   <input class="adb-input" data-role="connect-ip" placeholder="192.168.178.20" style="flex:2;min-width:120px">
+                  <input class="adb-input" data-role="connect-port" placeholder="Port" style="flex:1;min-width:60px;max-width:80px">
+                  <button class="adb-btn" data-act="connect">🔗 Verbinden</button>
+                  <button class="adb-btn" data-act="disconnect">✂ Trennen</button>
+                </div>
+                <button class="adb-btn" data-act="devices" style="width:fit-content">📡 Verbundene Geräte</button>
+                <div class="adb-result" data-for="devices"></div>
+                <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:4px">Screenshot</div>
+                <button class="adb-btn" data-act="screenshot" style="width:fit-content">📸 Screenshot machen</button>
+                <div class="adb-result" data-for="screenshot"></div>
+                <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:4px">Dateien</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <input class="adb-input" data-role="pull-path" placeholder="/storage/emulated/0/..." style="flex:1;min-width:160px">
+                  <button class="adb-btn" data-act="pull">⬇ Pullen</button>
+                </div>
+                <div class="adb-result" data-for="pull"></div>
+                <input type="file" class="adb-input" data-role="push-file" style="width:100%;margin-top:2px">
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <input class="adb-input" data-role="push-dir" placeholder="/storage/emulated/0/Download/" value="/storage/emulated/0/Download/" style="flex:1;min-width:140px">
+                  <button class="adb-btn" data-act="push">⬆ Pushen</button>
+                </div>
+                <div class="adb-result" data-for="push"></div>
+              </div>
+            </div>
+            <!-- Z Flip Funktionen (Renis Handy) -->
+            <div class="card" data-device-hint="sm-f711b">
+              <div class="card-head"><span class="card-title">Renis Z Flip — Funktionen</span><span class="card-icon">🛠️</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <!-- Koppeln (einmalig, Android 11+) -->
+                <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600">Koppeln — einmalig (Android 11+)</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.5">
+                  Einstellungen → Entwickleroptionen → <strong style="color:rgba(255,255,255,0.5)">Kabelloses Debugging</strong> → <em>Gerät mit Kopplungscode koppeln</em> → IP:Port + 6-stelligen Code hier eingeben.
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                  <input class="adb-input" data-role="pair-ip" placeholder="192.168.178.xx:45321" style="flex:3;min-width:160px">
+                  <input class="adb-input" data-role="pair-code" placeholder="123456" maxlength="6" style="flex:1;min-width:70px;max-width:90px;letter-spacing:3px">
+                  <button class="adb-btn" data-act="pair">🔑 Koppeln</button>
+                </div>
+                <div class="adb-result" data-for="pair"></div>
+                <!-- Verbinden -->
+                <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:4px">ADB Verbindung</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.35)">Port von Hauptbildschirm „Kabelloses Debugging" (nicht Koppeln-Port).</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                  <input class="adb-input" data-role="connect-ip" placeholder="192.168.178.xx" style="flex:2;min-width:120px">
                   <input class="adb-input" data-role="connect-port" placeholder="Port" style="flex:1;min-width:60px;max-width:80px">
                   <button class="adb-btn" data-act="connect">🔗 Verbinden</button>
                   <button class="adb-btn" data-act="disconnect">✂ Trennen</button>
@@ -7162,9 +7211,12 @@ function rainWindowsCompact(windows) {
 function loadWeatherFull() {
   const d = window._weather;
   if (!d) { loadWeather(); return; }
-  // Beim Reinklicken sofort den Cache zeigen, aber immer im Hintergrund frisch nachladen
-  // (loadWeather() rendert danach selbst neu, da die Seite aktiv ist)
-  loadWeather();
+  // Cache sofort zeigen, im Hintergrund nur nachladen wenn er älter als 10 Min ist.
+  // ⚠️ NICHT unconditional loadWeather() aufrufen: das ruft am Ende (wenn Seite aktiv)
+  // wieder loadWeatherFull() auf -> Endlosschleife aus Refetch+Rebuild, die #wetter-content
+  // ständig neu aufbaut und dabei Klicks auf die Tageskarten killt (10.07.2026 gefunden/gefixt).
+  const stale = !window._weatherTs || (Date.now() - window._weatherTs) > 600000;
+  if (stale) loadWeather();
   const c = d.current;
   const bs   = window._brightsky;
   // Tag/Nacht aus Sonnenauf-/-untergang bestimmen
@@ -11550,21 +11602,26 @@ function adbRender() {
   page.querySelectorAll('.adb-btn[data-act]').forEach(btn => {
     btn.addEventListener('click', () => adbAction(btn.dataset.act, btn));
   });
-  // Pre-fill last IP + Port
-  const ipInput = page.querySelector('[data-role="connect-ip"]');
-  const portInput = page.querySelector('[data-role="connect-port"]');
-  if (ipInput) ipInput.value = localStorage.getItem('adb-last-ip') || '192.168.178.20';
-  if (portInput) portInput.value = localStorage.getItem('adb-last-port') || '';
+  // Pre-fill last IP + Port, getrennt pro Gerät (data-device-hint)
+  const ADB_DEFAULT_IP = {duo: '192.168.178.20', 'sm-f711b': '192.168.178.57'};
+  page.querySelectorAll('.card[data-device-hint]').forEach(card => {
+    const hint = card.dataset.deviceHint;
+    const ipInput = card.querySelector('[data-role="connect-ip"]');
+    const portInput = card.querySelector('[data-role="connect-port"]');
+    if (ipInput) ipInput.value = localStorage.getItem('adb-last-ip-' + hint) || ADB_DEFAULT_IP[hint] || '';
+    if (portInput) portInput.value = localStorage.getItem('adb-last-port-' + hint) || '';
+  });
   page.dataset.adbReady = '1';
   // Load health data
   loadDuoHealth();
+  loadZFlipHealth();
   loadBookHealth();
   loadProHealth();
   loadStudioHealth();
   loadSurfaceEnergie();
   setInterval(loadSurfaceEnergie, 5 * 60 * 1000);
   setInterval(() => { loadBookHealth(); loadProHealth(); }, 2 * 60 * 1000);
-  setInterval(() => { loadDuoHealth(); loadStudioHealth(); }, 2 * 60 * 1000);
+  setInterval(() => { loadDuoHealth(); loadZFlipHealth(); loadStudioHealth(); }, 2 * 60 * 1000);
 }
 
 function surfaceBar(pct, color) {
@@ -11581,25 +11638,29 @@ function surfaceRow(label, val, bar) {
     </div>${bar || ''}</div>`;
 }
 
-async function loadDuoHealth() {
-  const el = document.getElementById('duo-health-body');
+// Gemeinsame Health-Karte für ein ADB-Gerät, per Modell-Namen aus der Geräteliste gefiltert
+// (nötig weil mehrere Geräte gleichzeitig verbunden sein können UND IP:Port bei jedem
+// Neu-Koppeln wechseln — nie eine feste ID hartkodieren).
+async function loadAdbHealth(elId, modelMatch) {
+  const el = document.getElementById(elId);
   try {
     const r = await fetch(API + '/api/adb/devices', {signal: AbortSignal.timeout(4000)});
     const d = await r.json();
     const devs = Array.isArray(d.devices) ? d.devices : [];
-    const online = devs.length > 0;
-    const dev = devs[0] || {};
+    const dev = devs.find(x => (x.model || '').toLowerCase().includes(modelMatch)) || null;
+    const online = !!dev;
     let html = surfaceRow('Status',
       online ? `<span style="color:#4ade80">● Verbunden</span>` : `<span style="color:var(--dim)">● Nicht verbunden</span>`);
     if (online) {
       html += surfaceRow('Gerät', dev.id || '–');
       html += surfaceRow('ADB-State', dev.state || '–');
     }
-    html += `<div style="font-size:13px;color:var(--dim);margin-top:8px">ADB via WLAN · ${devs.length} Gerät(e)</div>`;
+    html += `<div style="font-size:13px;color:var(--dim);margin-top:8px">ADB via WLAN · ${devs.length} Gerät(e) gesamt</div>`;
     el.innerHTML = html;
     if (online) {
+      const devQ = '&device=' + encodeURIComponent(dev.id);
       // Akku nachladen
-      fetch(API + '/api/adb/info?kind=battery', {signal: AbortSignal.timeout(8000)})
+      fetch(API + '/api/adb/info?kind=battery' + devQ, {signal: AbortSignal.timeout(8000)})
         .then(r => r.json()).then(b => {
           if (b.error || !b.props) return;
           const p = b.props;
@@ -11612,7 +11673,7 @@ async function loadDuoHealth() {
                           surfaceRow('Temperatur', temp);
         }).catch(()=>{});
       // Aktive App nachladen
-      fetch(API + '/api/adb/info?kind=foreground', {signal: AbortSignal.timeout(8000)})
+      fetch(API + '/api/adb/info?kind=foreground' + devQ, {signal: AbortSignal.timeout(8000)})
         .then(r => r.json()).then(f => {
           if (f.error || !f.package) return;
           const label = f.package.split('.').pop();
@@ -11623,6 +11684,8 @@ async function loadDuoHealth() {
     el.innerHTML = `<div style="color:var(--dim);font-size:14px">ADB nicht erreichbar</div>`;
   }
 }
+async function loadDuoHealth() { return loadAdbHealth('duo-health-body', 'duo'); }
+async function loadZFlipHealth() { return loadAdbHealth('zflip-health-body', 'sm-f711b'); }
 
 async function loadBookHealth() {
   const el = document.getElementById('book-health-body');
@@ -12042,6 +12105,16 @@ async function adbCopy(el, text) {
   }
 }
 
+async function adbResolveDevice(card) {
+  const hint = card.dataset.deviceHint;
+  if (!hint) return {device: null, error: null};
+  const r = await fetch(API + '/api/adb/devices', {signal: AbortSignal.timeout(4000)});
+  const d = await r.json();
+  const devs = Array.isArray(d.devices) ? d.devices : [];
+  const dev = devs.find(x => (x.model || '').toLowerCase().includes(hint) && x.state === 'device');
+  if (!dev) return {device: null, error: 'Gerät nicht verbunden (Modell „' + hint + '" nicht in adb devices gefunden).'};
+  return {device: dev.id, error: null};
+}
 async function adbAction(act, btn) {
   const card = btn.closest('.card');
   const resultKey = {pair:'pair', devices:'devices', apps:'apps', screenshot:'screenshot', pull:'pull', push:'push', connect:'devices', disconnect:'devices', 'device-info':'device-info', battery:'battery', foreground:'foreground'}[act];
@@ -12069,8 +12142,9 @@ async function adbAction(act, btn) {
         if (d.ok) {
           const connectIp = card.querySelector('[data-role="connect-ip"]');
           const connectPort = card.querySelector('[data-role="connect-port"]');
+          const hint = card.dataset.deviceHint || 'duo';
           if (connectIp && host.includes(':')) connectIp.value = host.split(':')[0];
-          if (connectPort && !connectPort.value) connectPort.value = localStorage.getItem('adb-last-port') || '41873';
+          if (connectPort && !connectPort.value) connectPort.value = localStorage.getItem('adb-last-port-' + hint) || '41873';
         }
       }
     } else if (act === 'connect') {
@@ -12082,8 +12156,9 @@ async function adbAction(act, btn) {
       if (!ip) {
         showMsg(`<div style="color:#e57373;font-size:13px;padding:8px">⚠ Bitte IP-Adresse eingeben.</div>`);
       } else {
-        localStorage.setItem('adb-last-ip', ip);
-        if (port) localStorage.setItem('adb-last-port', port);
+        const hint = card.dataset.deviceHint || 'duo';
+        localStorage.setItem('adb-last-ip-' + hint, ip);
+        if (port) localStorage.setItem('adb-last-port-' + hint, port);
         const r = await fetch(API + '/api/adb/connect', {
           method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({host})
@@ -12091,7 +12166,11 @@ async function adbAction(act, btn) {
         const d = await r.json();
         const color = d.ok ? '#66bb6a' : '#e57373';
         showMsg(`<div style="color:${color};font-size:13px;padding:8px;background:${d.ok?'rgba(102,187,106,0.08)':'rgba(229,115,115,0.08)'};border-radius:6px">${d.ok?'✓':'⚠'} ${adbEsc(d.message || d.error || '')}</div>`);
-        if (d.ok) { setTimeout(() => adbAction('devices', card.querySelector('[data-act="devices"]')), 300); setTimeout(loadDuoHealth, 1000); }
+        if (d.ok) {
+          setTimeout(() => adbAction('devices', card.querySelector('[data-act="devices"]')), 300);
+          setTimeout(loadDuoHealth, 1000);
+          setTimeout(loadZFlipHealth, 1000);
+        }
       }
     } else if (act === 'disconnect') {
       const r = await fetch(API + '/api/adb/disconnect', {
@@ -12153,7 +12232,12 @@ async function adbAction(act, btn) {
         origLabel = '📸 Screenshot machen';
         return;
       }
-      const r = await fetch(API + '/api/adb/screenshot', {method:'POST'});
+      const {device, error: devErr} = await adbResolveDevice(card);
+      if (devErr) { out.innerHTML = `<div style="color:#e57373;font-size:13px;padding:8px">⚠ ${adbEsc(devErr)}</div>`; return; }
+      const r = await fetch(API + '/api/adb/screenshot', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({device})
+      });
       if (!r.ok) {
         const err = await r.json().catch(()=>({error:'HTTP '+r.status}));
         out.innerHTML = `<div style="color:#e57373;font-size:13px;padding:8px">⚠ ${adbEsc(err.error)}</div>`;
@@ -12175,6 +12259,8 @@ async function adbAction(act, btn) {
       if (!fileInput.files || !fileInput.files.length) {
         out.innerHTML = `<div style="color:#e57373;font-size:13px;padding:8px">⚠ Bitte Datei auswählen.</div>`;
       } else {
+        const {device, error: devErr} = await adbResolveDevice(card);
+        if (devErr) { out.innerHTML = `<div style="color:#e57373;font-size:13px;padding:8px">⚠ ${adbEsc(devErr)}</div>`; return; }
         const file = fileInput.files[0];
         out.innerHTML = `<div style="color:var(--dim);font-size:13px;padding:8px">⏳ Lade ${adbEsc(file.name)} (${(file.size/1024).toFixed(1)} KB)...</div>`;
         const b64 = await new Promise((res, rej) => {
@@ -12185,7 +12271,7 @@ async function adbAction(act, btn) {
         });
         const r = await fetch(API + '/api/adb/push', {
           method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({filename: file.name, remote_dir: remoteDir, data_b64: b64})
+          body: JSON.stringify({filename: file.name, remote_dir: remoteDir, data_b64: b64, device})
         });
         const d = await r.json();
         const color = d.ok ? '#66bb6a' : '#e57373';
@@ -12271,9 +12357,11 @@ async function adbAction(act, btn) {
       if (!path) {
         out.innerHTML = `<div style="color:#e57373;font-size:13px;padding:8px">⚠ Bitte Pfad angeben.</div>`;
       } else {
+        const {device, error: devErr} = await adbResolveDevice(card);
+        if (devErr) { out.innerHTML = `<div style="color:#e57373;font-size:13px;padding:8px">⚠ ${adbEsc(devErr)}</div>`; return; }
         const r = await fetch(API + '/api/adb/pull', {
           method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({remote: path})
+          body: JSON.stringify({remote: path, device})
         });
         if (!r.ok) {
           const err = await r.json().catch(()=>({error:'HTTP '+r.status}));

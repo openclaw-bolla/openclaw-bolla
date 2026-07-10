@@ -12,9 +12,13 @@ BILD  -> Feel-Good-Grading (Wärme, Sättigung, Kontrast, sanfter Glow, Vignette
 BILD als TikTok -> wird zusätzlich zu einem 6s-Ken-Burns-Video (Hochformat) gemacht.
 VIDEO -> Hochformat 1080x1920 (Blur-Fill), sonniges Grading, optional Musikbett + Musik-Wellen, optional Hook-Text.
 
+--ai -> Fable (claude-fable-5) schaut sich das Bild/Frame an und schreibt einen content-bezogenen
+        Hook-Text + wählt den passenden Stil, statt generischer Standard-Filter (fixt "langweilig").
+        Greift nur, wenn --text leer ist bzw. --style auto ist.
+
 Rückgabe: schreibt Zieldatei, druckt am Ende  RESULT:<pfad>
 """
-import os, sys, subprocess, argparse
+import os, sys, re, json, subprocess, argparse
 
 IMG_EXT = (".jpg", ".jpeg", ".png", ".webp", ".bmp", ".heic")
 VID_EXT = (".mp4", ".mov", ".m4v", ".avi", ".mkv", ".webm")
@@ -31,6 +35,41 @@ def is_video(p): return p.lower().endswith(VID_EXT)
 
 def pick_style(style):
     return IMG_PRESETS.get(style if style in IMG_PRESETS else "vivid")
+
+# ---------------- Fable-Regisseur (content-aware Hook + Stil) ----------------
+def extract_frame(video, out_jpg, at="00:00:01"):
+    cmd = ["ffmpeg", "-y", "-ss", at, "-i", video, "-frames:v", "1", out_jpg]
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=30).returncode == 0
+
+def ai_direct(image_paths, platform):
+    """Fable schaut sich 1-3 Bild(er) an und liefert (hook_text, style) — content-bezogen statt generisch."""
+    imgs = "\n".join(f"- {p}" for p in image_paths[:3])
+    prompt = (
+        "Du bist Bolla, Chris' KI-Assistent. Schau dir mit dem Read-Tool folgende(s) Bild(er) an:\n"
+        f"{imgs}\n\n"
+        "Chris' Marken-Ton (bollawave/Feel-Good-Profil): sonnig, optimistisch, verspielt, mit einem "
+        "Augenzwinkern — NIE Kitsch-Klischee, NIE generisch.\n"
+        f"Schreib dazu einen KURZEN knackigen deutschen Hook-Text für "
+        f"{'TikTok' if platform == 'tiktok' else 'Instagram'}, der sich konkret auf das bezieht, was auf "
+        "dem Bild zu sehen ist (max. 2 kurze Zeilen, zusammen max. ca. 55 Zeichen, gern 1 treffendes Emoji, "
+        "KEINE Hashtags, keine Anführungszeichen).\n"
+        "Empfiehl außerdem den Bildstil je nach Stimmung: 'natural' (dezent-echt), 'vivid' (knallig normal) "
+        "oder 'spectacular' (maximaler Wow-Effekt).\n"
+        'Antworte NUR mit einem JSON-Objekt in einer Zeile, kein Codeblock, keine Erklärung: '
+        '{"hook": "...", "style": "natural|vivid|spectacular"}'
+    )
+    try:
+        r = subprocess.run(["claude", "-p", prompt, "--model", "claude-fable-5"],
+                            capture_output=True, text=True, timeout=120)
+        m = re.search(r"\{.*\}", r.stdout.strip(), re.S)
+        if m:
+            d = json.loads(m.group(0))
+            hook = (d.get("hook") or "").strip()
+            style = d.get("style") if d.get("style") in IMG_PRESETS else "vivid"
+            return hook, style
+    except Exception:
+        pass
+    return "", "vivid"
 
 # ---------------- BILD ----------------
 def pep_image(src, out, platform, style, text):
@@ -90,6 +129,7 @@ def apply_vignette(im, strength):
 
 def draw_text(im, text):
     from PIL import ImageDraw, ImageFont
+    text = re.sub(r"\s{2,}", " ", EMOJI_RE.sub("", text)).strip()
     w, h = im.size
     d = ImageDraw.Draw(im)
     size = int(w / 12)
@@ -126,9 +166,27 @@ def wrap(text, font, d, maxw):
             if cur: lines.append(cur)
             cur = wd
     if cur: lines.append(cur)
-    return lines[:3]
+    return lines[:4]
 
 # ---------------- VIDEO ----------------
+EMOJI_RE = re.compile(
+    "[\U0001F300-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF"
+    "\U00002190-\U000021FF\U00002B00-\U00002BFF️]+")
+
+def for_drawtext(text, max_chars=24, max_lines=2):
+    """Emoji raus (ffmpeg-Font kann sie eh nicht rendern) + Zeilenumbruch, damit nichts überläuft."""
+    clean = re.sub(r"\s{2,}", " ", EMOJI_RE.sub("", text)).strip()
+    words, lines, cur = clean.split(), [], ""
+    for wd in words:
+        t = (cur + " " + wd).strip()
+        if len(t) <= max_chars:
+            cur = t
+        else:
+            if cur: lines.append(cur)
+            cur = wd
+    if cur: lines.append(cur)
+    return "\n".join(lines[:max_lines])
+
 def pep_video(src, out, style, text, music):
     p = pick_style(style if style in IMG_PRESETS else "vivid")
     # sonniges Grading via eq + colorbalance
@@ -138,9 +196,9 @@ def pep_video(src, out, style, text, music):
             + grade)
     draw = ""
     if text:
-        safe = text.replace(":", "\\:").replace("'", "’")
+        safe = for_drawtext(text).replace(":", "\\:").replace("'", "’")
         draw = (f",drawtext=text='{safe}':fontcolor=0xFFF096:fontsize=58:borderw=4:bordercolor=black:"
-                f"x=(w-text_w)/2:y=h-360:box=0")
+                f"x=(w-text_w)/2:y=h-360:box=0:line_spacing=10")
     if music and os.path.isfile(music):
         fc = (f"[0:v]{base}{draw}[v];"
               f"[1:a]showwaves=s=1080x200:mode=cline:rate=30:colors=0xFFFFFF|0xFFD447[w];"
@@ -159,10 +217,15 @@ def image_to_video(src, out, text, music, dur=6):
     """Standbild -> Ken-Burns-Hochformat-Video (für TikTok aus einem Foto)."""
     frames = dur*30
     grade = "eq=saturation=1.25:contrast=1.1:brightness=0.02,colorbalance=rm=0.06:bm=-0.05"
+    draw = ""
+    if text:
+        safe = for_drawtext(text).replace(":", "\\:").replace("'", "’")
+        draw = (f",drawtext=text='{safe}':fontcolor=0xFFF096:fontsize=58:borderw=4:bordercolor=black:"
+                f"x=(w-text_w)/2:y=h-360:box=0:line_spacing=10")
     fc = (f"[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=30:2,{grade}[bg];"
           f"[0:v]scale=1600:1600:flags=lanczos,{grade}[big];"
           f"[big]zoompan=z='min(zoom+0.0008,1.2)':d={frames}:s=1000x1000:fps=30[fg];"
-          f"[bg][fg]overlay=x=(W-w)/2:y=(H-h)/2[vid]")
+          f"[bg][fg]overlay=x=(W-w)/2:y=(H-h)/2{draw}[vid]")
     inp = ["-loop","1","-i",src]
     if music and os.path.isfile(music):
         inp += ["-ss","30","-t",str(dur),"-i",music]
@@ -181,9 +244,24 @@ def main():
     ap.add_argument("--text", default="")
     ap.add_argument("--music", default="")
     ap.add_argument("--out", default="")
+    ap.add_argument("--ai", action="store_true", help="Fable schreibt content-bezogenen Hook + wählt Stil")
     a = ap.parse_args()
     if not os.path.isfile(a.src):
         print("FEHLER: Datei nicht gefunden:", a.src); sys.exit(2)
+    if a.ai and not a.text:
+        frame_src = a.src
+        tmp_frame = None
+        if is_video(a.src):
+            tmp_frame = a.src + ".ai_frame.jpg"
+            if extract_frame(a.src, tmp_frame):
+                frame_src = tmp_frame
+        ai_hook, ai_style = ai_direct([frame_src], a.platform)
+        if ai_hook:
+            a.text = ai_hook
+        if a.style == "auto":
+            a.style = ai_style
+        if tmp_frame and os.path.isfile(tmp_frame):
+            os.remove(tmp_frame)
     style = "vivid" if a.style == "auto" else a.style
     stem, _ = os.path.splitext(a.src)
     if is_image(a.src):
