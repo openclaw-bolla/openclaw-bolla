@@ -4,264 +4,413 @@
 <meta charset="UTF-8">
 <title>Mission Control</title>
 <style>
-  * { box-sizing: border-box; }
-  html, body {
-    margin: 0; padding: 0; height: 100%;
-    font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive, sans-serif;
+  :root{
+    --paper: #f4e8d0;
+    --paper-dark: #ecdcb8;
+    --ink: #3a2e22;
+    --ink-soft: #6b5a45;
+    --accent: #c1440e;
+    --accent-2: #2f6f4f;
+    --accent-3: #2c5f8a;
+    --tape: #f0d98c;
+    --card-shadow: rgba(58,46,34,0.25);
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    font-family: "Segoe Print","Bradley Hand","Comic Sans MS",cursive,sans-serif;
+    color:var(--ink);
     background:
-      radial-gradient(circle at 20% 10%, rgba(255,255,255,0.4), transparent 40%),
-      radial-gradient(circle at 80% 90%, rgba(180,140,90,0.08), transparent 50%),
-      #f2e7d0;
-    color: #3a2f22;
+      repeating-linear-gradient(180deg, transparent 0 27px, rgba(58,46,34,0.06) 27px 28px),
+      radial-gradient(ellipse at 20% 10%, #faf1dd 0%, var(--paper) 55%, var(--paper-dark) 100%);
+    background-attachment: fixed;
+    font-size:15px;
   }
-  body {
-    background-image:
-      repeating-linear-gradient(0deg, transparent, transparent 34px, rgba(120,90,50,0.06) 35px),
-      radial-gradient(circle at 20% 10%, rgba(255,255,255,0.4), transparent 40%),
-      #f2e7d0;
-  }
-  .app { display: flex; min-height: 100vh; }
+  svg.defs{position:absolute;width:0;height:0;}
 
-  /* SIDEBAR */
-  .sidebar {
-    width: 220px;
-    background: #e9d8b5;
-    border-right: 3px solid #7a5c33;
-    padding: 22px 14px;
-    position: relative;
-    box-shadow: inset -6px 0 12px -10px rgba(0,0,0,0.3);
+  .app{
+    display:flex;
+    min-height:100vh;
   }
-  .sidebar::before {
-    content: "";
-    position: absolute;
-    top: 0; left: 0; right: 0; height: 100%;
-    background-image: repeating-linear-gradient(180deg, transparent 0 3px, rgba(0,0,0,0.015) 3px 6px);
-    pointer-events: none;
+
+  /* ===== Sidebar: torn notebook strip with spiral rings ===== */
+  .sidebar{
+    width:210px;
+    flex-shrink:0;
+    background: linear-gradient(180deg, #eadcb8 0%, #e3d2a8 100%);
+    border-right: 3px dashed #b89f6f;
+    position:relative;
+    padding: 26px 0 26px 26px;
+    box-shadow: 4px 0 14px rgba(58,46,34,0.12);
   }
-  .brand {
-    font-size: 24px;
-    font-weight: bold;
-    color: #5c3a1e;
-    margin-bottom: 4px;
-    transform: rotate(-2deg);
-    display: inline-block;
+  .rings{
+    position:absolute;
+    left:-14px; top:0; bottom:0;
+    width:28px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-evenly;
+    align-items:center;
   }
-  .brand-underline {
-    width: 150px; height: 8px;
-    margin-bottom: 24px;
-    border-bottom: 3px solid #c0392b;
-    border-radius: 50%;
-    transform: rotate(-1deg);
-    opacity: 0.6;
+  .ring{
+    width:20px;height:20px;
+    border-radius:50%;
+    background: radial-gradient(circle at 35% 35%, #fdf7e8 0%, #cbb079 45%, #8a7346 70%, #6b5a3a 100%);
+    box-shadow: inset 0 0 0 3px #f4e8d0, 0 1px 2px rgba(0,0,0,0.35);
   }
-  .nav-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
-    border-radius: 10px 14px 12px 16px / 12px 10px 16px 12px;
-    font-size: 15px;
-    color: #4a3620;
-    cursor: pointer;
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:22px;
+    font-weight:bold;
+    color:var(--accent);
+    margin-bottom:28px;
+    transform:rotate(-1.5deg);
+  }
+  .brand .paw{ font-size:20px; }
+  .nav{
+    list-style:none;
+    margin:0;padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .nav li a{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    text-decoration:none;
+    color:var(--ink-soft);
+    font-size:16px;
+    padding:9px 14px;
+    border-radius: 14px 4px 14px 4px / 4px 14px 4px 14px;
+    transition: all .15s ease;
     border: 2px solid transparent;
-    transition: transform 0.15s ease;
+    transform: rotate(-0.4deg);
   }
-  .nav-item:hover { transform: rotate(-1deg) translateX(2px); }
-  .nav-item.active {
-    background: #fff8e8;
-    border: 2px dashed #b5822f;
-    box-shadow: 2px 3px 0 rgba(122,92,51,0.25);
-    font-weight: bold;
-    color: #7a3b12;
+  .nav li:nth-child(even) a{ transform: rotate(0.6deg); }
+  .nav li a:hover{
+    background: rgba(193,68,14,0.08);
+    border-color: rgba(193,68,14,0.25);
   }
-  .nav-icon { font-size: 18px; }
-  .tape {
-    position: absolute;
-    width: 70px; height: 24px;
-    background: rgba(233, 196, 106, 0.55);
-    border: 1px solid rgba(180,140,60,0.4);
-    top: 8px; right: -10px;
-    transform: rotate(8deg);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  .nav li a.active{
+    background: var(--paper);
+    border: 2px dashed var(--accent);
+    color: var(--accent);
+    font-weight:bold;
+    box-shadow: 2px 3px 0 rgba(193,68,14,0.18);
   }
+  .nav .ico{ font-size:18px; }
 
-  /* MAIN */
-  .main { flex: 1; padding: 24px 32px; position: relative; }
-  .topbar {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 28px;
-    border-bottom: 3px solid #8a6a3a;
-    padding-bottom: 10px;
-  }
-  .page-title {
-    font-size: 30px;
-    color: #5c3a1e;
+  .sidebar-footer{
+    position:absolute;
+    bottom:18px; left:26px; right:14px;
+    font-size:12px;
+    color:var(--ink-soft);
+    opacity:0.75;
     transform: rotate(-1deg);
-    position: relative;
+    border-top: 2px dotted #b89f6f;
+    padding-top:8px;
   }
-  .page-title::after {
-    content: "";
-    position: absolute;
-    left: -4px; right: -10px; bottom: -6px; height: 10px;
-    background: repeating-linear-gradient(90deg, #e8b84b 0 10px, transparent 10px 16px);
-    opacity: 0.7;
-    border-radius: 4px;
-    transform: rotate(-0.6deg);
+
+  /* ===== Main area ===== */
+  .main-wrap{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-width:0;
   }
-  .clock-box {
-    background: #fffaf0;
-    border: 2px solid #7a5c33;
-    border-radius: 16px 8px 18px 6px / 8px 16px 6px 18px;
-    padding: 10px 18px;
-    font-size: 22px;
-    font-weight: bold;
-    color: #7a3b12;
-    box-shadow: 3px 3px 0 rgba(122,92,51,0.25);
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 18px 34px;
+    border-bottom: 3px dashed #b89f6f;
+    background: rgba(255,251,240,0.35);
+  }
+  .topbar h1{
+    margin:0;
+    font-size:30px;
+    color: var(--ink);
+    position:relative;
+    display:inline-block;
+    transform: rotate(-1deg);
+  }
+  .topbar h1::after{
+    content:"";
+    position:absolute;
+    left:-4px; right:-8px; bottom:-4px;
+    height:10px;
+    background: var(--tape);
+    opacity:0.55;
+    z-index:-1;
+    transform: rotate(-1.2deg);
+  }
+  .clock{
+    background: #fffdf5;
+    border: 2px solid var(--ink);
+    border-radius: 12px 14px 10px 16px / 16px 10px 14px 12px;
+    padding: 10px 20px;
+    font-size:22px;
+    font-weight:bold;
+    color: var(--accent);
+    box-shadow: 3px 4px 0 rgba(58,46,34,0.18);
     transform: rotate(2deg);
+    position:relative;
   }
-  .clock-sub { font-size: 12px; font-weight: normal; color: #8a7355; text-align: center; }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 24px;
+  .clock::before{
+    content:"📌";
+    position:absolute;
+    top:-14px; left:50%;
+    transform:translateX(-50%) rotate(-8deg);
+    font-size:18px;
   }
-  .card {
-    background: #fffaf0;
-    border: 2px solid #a9895a;
-    border-radius: 14px 20px 16px 22px / 20px 14px 24px 16px;
-    padding: 18px 20px;
-    position: relative;
-    box-shadow: 4px 5px 0 rgba(122,92,51,0.18);
-  }
-  .card:nth-child(odd) { transform: rotate(-1deg); }
-  .card:nth-child(even) { transform: rotate(1.2deg); }
-  .card:hover { transform: rotate(0deg) scale(1.02); transition: 0.2s ease; }
-
-  .card-title {
-    font-size: 15px;
-    color: #8a6a3a;
-    margin-bottom: 6px;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .card-value {
-    font-size: 34px;
-    font-weight: bold;
-    color: #3a2f22;
-  }
-  .card-note { font-size: 13px; color: #a08860; margin-top: 4px; }
-
-  .pin {
-    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-    width: 18px; height: 18px; border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #e57373, #b23c3c);
-    box-shadow: 0 2px 3px rgba(0,0,0,0.35);
+  .clock small{
+    display:block;
+    font-size:11px;
+    font-weight:normal;
+    color:var(--ink-soft);
+    text-align:center;
   }
 
-  .meter {
-    width: 100%; height: 14px;
-    border: 2px solid #7a5c33;
+  .content{
+    padding: 30px 34px 40px;
+    flex:1;
+    overflow-y:auto;
+  }
+  .greeting{
+    font-size:15px;
+    color:var(--ink-soft);
+    margin: 0 0 22px 4px;
+    transform: rotate(-0.3deg);
+  }
+
+  .cards-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 26px;
+  }
+
+  .card{
+    background: #fffdf6;
+    border: 2.5px solid var(--ink);
+    border-radius: 14px 18px 12px 20px / 20px 12px 18px 14px;
+    padding: 18px 20px 20px;
+    position:relative;
+    box-shadow: 5px 6px 0 var(--card-shadow);
+    filter: url(#roughpaper);
+  }
+  .card:nth-child(1){ transform: rotate(-1.4deg); }
+  .card:nth-child(2){ transform: rotate(1.1deg); }
+  .card:nth-child(3){ transform: rotate(-0.7deg); }
+  .card:nth-child(4){ transform: rotate(1.6deg); }
+  .card:nth-child(5){ transform: rotate(-1.1deg); }
+  .card:nth-child(6){ transform: rotate(0.8deg); }
+  .card:hover{ transform: scale(1.03) rotate(0deg) !important; transition:.2s ease; z-index:5; }
+
+  .tape{
+    position:absolute;
+    top:-12px; left:50%;
+    transform: translateX(-50%) rotate(-4deg);
+    width:70px; height:24px;
+    background: var(--tape);
+    opacity:0.7;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  }
+  .card:nth-child(2) .tape{ transform: translateX(-50%) rotate(5deg); background:#d7e8c9;}
+  .card:nth-child(3) .tape{ transform: translateX(-50%) rotate(-6deg); background:#cfe0ee;}
+  .card:nth-child(4) .tape{ transform: translateX(-50%) rotate(3deg); background:#f0c9c0;}
+  .card:nth-child(5) .tape{ transform: translateX(-50%) rotate(-3deg); background:#e6d3f0;}
+  .card:nth-child(6) .tape{ transform: translateX(-50%) rotate(6deg); background:var(--tape);}
+
+  .card-head{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .card-head .emoji{ font-size:26px; }
+  .card-head h3{
+    margin:0;
+    font-size:18px;
+    color:var(--ink);
+  }
+
+  .big-stat{
+    font-size:40px;
+    font-weight:bold;
+    color:var(--accent);
+    line-height:1;
+    margin-bottom:6px;
+  }
+  .card.green .big-stat{ color:var(--accent-2); }
+  .card.blue .big-stat{ color:var(--accent-3); }
+
+  .bar-track{
+    width:100%;
+    height:14px;
+    border:2px solid var(--ink);
     border-radius: 8px;
-    margin-top: 10px;
-    overflow: hidden;
-    background: #f2e7d0;
+    background: #fff;
+    overflow:hidden;
+    margin-bottom:8px;
   }
-  .meter-fill {
-    height: 100%;
-    background: repeating-linear-gradient(45deg, #c0392b, #c0392b 6px, #a83226 6px, #a83226 12px);
+  .bar-fill{
+    height:100%;
+    background: repeating-linear-gradient(45deg, var(--accent), var(--accent) 6px, #e0703a 6px, #e0703a 12px);
   }
-  .meter-fill.green {
-    background: repeating-linear-gradient(45deg, #5a8f3c, #5a8f3c 6px, #47702f 6px, #47702f 12px);
+  .bar-fill.green{ background: repeating-linear-gradient(45deg, var(--accent-2), var(--accent-2) 6px, #4f9971 6px, #4f9971 12px); }
+  .bar-fill.blue{ background: repeating-linear-gradient(45deg, var(--accent-3), var(--accent-3) 6px, #5a90bb 6px, #5a90bb 12px); }
+
+  .card-sub{
+    font-size:13px;
+    color:var(--ink-soft);
   }
 
-  .mail-list { list-style: none; padding: 0; margin: 10px 0 0; }
-  .mail-list li {
-    font-size: 13px;
-    padding: 5px 0;
-    border-bottom: 1px dashed #cbb385;
-    color: #4a3620;
+  .mail-list{ list-style:none; margin:0; padding:0; font-size:13.5px; }
+  .mail-list li{
+    padding:6px 0;
+    border-bottom:1px dashed #d8c79a;
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
   }
-  .mail-list li:last-child { border-bottom: none; }
+  .mail-list li:last-child{ border-bottom:none; }
+  .mail-from{ font-weight:bold; }
+  .mail-time{ color:var(--ink-soft); font-size:12px; white-space:nowrap;}
 
-  .weather-icon { font-size: 40px; }
-  .doodle {
-    position: absolute; bottom: 8px; right: 12px;
-    font-size: 20px; opacity: 0.35;
+  .weather-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .weather-icon{ font-size:46px; }
+  .weather-temp{ font-size:34px; font-weight:bold; color:var(--accent-3); }
+  .weather-place{ font-size:13px; color:var(--ink-soft); }
+
+  .scrawl{
+    font-size:14px;
+    line-height:1.5;
+    color:var(--ink);
   }
 
-  .footer-note {
+  .agenda-list{ list-style:none; margin:0; padding:0; font-size:13.5px;}
+  .agenda-list li{ padding:5px 0; display:flex; gap:8px; align-items:baseline;}
+  .agenda-list .t{ font-weight:bold; color:var(--accent);}
+
+  .footer-note{
     margin-top: 30px;
-    font-size: 13px;
-    color: #a08860;
-    text-align: center;
-    transform: rotate(-0.5deg);
+    font-size:12px;
+    color:var(--ink-soft);
+    text-align:center;
+    opacity:0.7;
   }
+
+  ::-webkit-scrollbar{ width:10px; }
+  ::-webkit-scrollbar-thumb{ background:#c9b586; border-radius:6px; }
 </style>
 </head>
 <body>
+
+<svg class="defs">
+  <filter id="roughpaper" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" result="noise" seed="7"/>
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
 <div class="app">
-  <div class="sidebar">
-    <div class="tape"></div>
-    <div class="brand">🐾 Bolla</div>
-    <div class="brand-underline"></div>
-    <div class="nav-item active"><span class="nav-icon">🏠</span> Dashboard</div>
-    <div class="nav-item"><span class="nav-icon">🐾</span> Bolla</div>
-    <div class="nav-item"><span class="nav-icon">🎓</span> Schule</div>
-    <div class="nav-item"><span class="nav-icon">📅</span> Kalender</div>
-    <div class="nav-item"><span class="nav-icon">✉️</span> E-Mail</div>
-    <div class="nav-item"><span class="nav-icon">☁️</span> Wetter</div>
-    <div class="nav-item"><span class="nav-icon">🖥️</span> System Info</div>
-  </div>
-
-  <div class="main">
-    <div class="topbar">
-      <div class="page-title">Dashboard</div>
-      <div class="clock-box">20:14<div class="clock-sub">Do, 10. Juli</div></div>
+  <aside class="sidebar">
+    <div class="rings">
+      <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+      <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+      <div class="ring"></div><div class="ring"></div>
     </div>
+    <div class="brand"><span class="paw">🐾</span> Mission Control</div>
+    <ul class="nav">
+      <li><a href="#" class="active"><span class="ico">🗂️</span> Dashboard</a></li>
+      <li><a href="#"><span class="ico">🐾</span> Bolla</a></li>
+      <li><a href="#"><span class="ico">🏫</span> Schule</a></li>
+      <li><a href="#"><span class="ico">📅</span> Kalender</a></li>
+      <li><a href="#"><span class="ico">✉️</span> E-Mail</a></li>
+      <li><a href="#"><span class="ico">🌤️</span> Wetter</a></li>
+      <li><a href="#"><span class="ico">🖥️</span> System Info</a></li>
+    </ul>
+    <div class="sidebar-footer">Stand: heute, 20:14 Uhr &middot; alles im grünen Bereich</div>
+  </aside>
 
-    <div class="grid">
-      <div class="card">
-        <div class="pin"></div>
-        <div class="card-title">🖥️ RAM-Auslastung</div>
-        <div class="card-value">34%</div>
-        <div class="meter"><div class="meter-fill green" style="width:34%"></div></div>
-        <div class="card-note">5,4 GB von 16 GB belegt</div>
-      </div>
+  <div class="main-wrap">
+    <header class="topbar">
+      <h1>Dashboard</h1>
+      <div class="clock">20:14<small>Freitag</small></div>
+    </header>
 
-      <div class="card">
-        <div class="pin"></div>
-        <div class="card-title">⚙️ CPU-Last</div>
-        <div class="card-value">12%</div>
-        <div class="meter"><div class="meter-fill green" style="width:12%"></div></div>
-        <div class="card-note">läuft ruhig vor sich hin</div>
-      </div>
+    <main class="content">
+      <p class="greeting">Guten Abend, Chris — hier der Überblick für heute Abend. ✎</p>
 
-      <div class="card">
-        <div class="pin"></div>
-        <div class="card-title">✉️ Neue Mails</div>
-        <div class="card-value">3</div>
-        <ul class="mail-list">
-          <li>📌 Dr. Rieke Harmsen — Newsletter Anfrage</li>
-          <li>📎 itslearning — Notenübersicht Juli</li>
-          <li>💬 Reni — Tanzkurs Anmeldung ✓</li>
-        </ul>
-      </div>
+      <div class="cards-grid">
 
-      <div class="card">
-        <div class="pin"></div>
-        <div class="card-title">☁️ Wetter Hamburg</div>
-        <div style="display:flex; align-items:center; gap:14px;">
-          <div class="weather-icon">🌤️</div>
-          <div>
-            <div class="card-value" style="font-size:28px;">18°C</div>
-            <div class="card-note">leicht bewölkt, Wind 12 km/h</div>
+        <div class="card">
+          <div class="tape"></div>
+          <div class="card-head"><span class="emoji">🧠</span><h3>Arbeitsspeicher</h3></div>
+          <div class="big-stat">34%</div>
+          <div class="bar-track"><div class="bar-fill" style="width:34%"></div></div>
+          <div class="card-sub">5,4 GB von 16 GB belegt</div>
+        </div>
+
+        <div class="card green">
+          <div class="tape"></div>
+          <div class="card-head"><span class="emoji">⚙️</span><h3>Prozessor</h3></div>
+          <div class="big-stat">12%</div>
+          <div class="bar-track"><div class="bar-fill green" style="width:12%"></div></div>
+          <div class="card-sub">Alles ruhig, kein Lüfterlärm</div>
+        </div>
+
+        <div class="card">
+          <div class="tape"></div>
+          <div class="card-head"><span class="emoji">✉️</span><h3>Neue Mails</h3></div>
+          <ul class="mail-list">
+            <li><span class="mail-from">itslearning</span><span class="mail-time">18:42</span></li>
+            <li><span class="mail-from">Robin</span><span class="mail-time">17:05</span></li>
+            <li><span class="mail-from">Booking.com</span><span class="mail-time">15:20</span></li>
+          </ul>
+          <div class="card-sub" style="margin-top:8px;">3 ungelesen</div>
+        </div>
+
+        <div class="card blue">
+          <div class="tape"></div>
+          <div class="card-head"><span class="emoji">🌤️</span><h3>Wetter</h3></div>
+          <div class="weather-row">
+            <span class="weather-icon">⛅</span>
+            <div>
+              <div class="weather-temp">18°C</div>
+              <div class="weather-place">Hamburg &middot; leicht bewölkt</div>
+            </div>
           </div>
         </div>
-        <div class="doodle">☂️</div>
-      </div>
-    </div>
 
-    <div class="footer-note">— zuletzt aktualisiert vor 2 Minuten, alles im grünen Bereich 🐾 —</div>
+        <div class="card">
+          <div class="tape"></div>
+          <div class="card-head"><span class="emoji">📅</span><h3>Nächster Termin</h3></div>
+          <ul class="agenda-list">
+            <li><span class="t">21:00</span> Sport-Rhythmus Pause</li>
+            <li><span class="t">Mo 09:15</span> EDV 7b, Lessing-Gymnasium</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="tape"></div>
+          <div class="card-head"><span class="emoji">🐾</span><h3>Bolla meint …</h3></div>
+          <div class="scrawl">Alles läuft rund heute Abend. Kein dringender Punkt offen — gute Zeit für einen Kaffee. ☕</div>
+        </div>
+
+      </div>
+
+      <p class="footer-note">— handgezeichnet mit Sorgfalt für Chris &middot; Mission Control —</p>
+    </main>
   </div>
 </div>
+
 </body>
 </html>
