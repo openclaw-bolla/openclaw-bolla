@@ -5,412 +5,304 @@
 <title>Mission Control</title>
 <style>
   :root{
-    --paper: #f4e8d0;
-    --paper-dark: #ecdcb8;
-    --ink: #3a2e22;
-    --ink-soft: #6b5a45;
-    --accent: #c1440e;
-    --accent-2: #2f6f4f;
-    --accent-3: #2c5f8a;
-    --tape: #f0d98c;
-    --card-shadow: rgba(58,46,34,0.25);
+    --bg:#05070d;
+    --panel:#0a1220;
+    --panel-2:#0d1626;
+    --cyan:#00fff2;
+    --magenta:#ff2ee6;
+    --amber:#ffb300;
+    --text:#d7f7f5;
+    --muted:#5f7f8c;
+    --border:rgba(0,255,242,0.25);
   }
-  *{box-sizing:border-box;}
-  html,body{
-    margin:0;padding:0;height:100%;
-    font-family: "Segoe Print","Bradley Hand","Comic Sans MS",cursive,sans-serif;
-    color:var(--ink);
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:'Segoe UI',system-ui,sans-serif;
     background:
-      repeating-linear-gradient(180deg, transparent 0 27px, rgba(58,46,34,0.06) 27px 28px),
-      radial-gradient(ellipse at 20% 10%, #faf1dd 0%, var(--paper) 55%, var(--paper-dark) 100%);
-    background-attachment: fixed;
-    font-size:15px;
-  }
-  svg.defs{position:absolute;width:0;height:0;}
-
-  .app{
-    display:flex;
+      radial-gradient(circle at 20% 10%, rgba(0,255,242,0.07), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(255,46,230,0.08), transparent 45%),
+      var(--bg);
+    color:var(--text);
     min-height:100vh;
+    display:flex;
+    overflow:hidden;
   }
-
-  /* ===== Sidebar: torn notebook strip with spiral rings ===== */
+  body::before{
+    content:"";
+    position:fixed;inset:0;
+    background:repeating-linear-gradient(0deg,rgba(255,255,255,0.015) 0px,rgba(255,255,255,0.015) 1px,transparent 1px,transparent 3px);
+    pointer-events:none;
+    z-index:999;
+  }
+  /* Sidebar */
   .sidebar{
-    width:210px;
+    width:220px;
+    background:linear-gradient(180deg, var(--panel), #060a12);
+    border-right:1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    padding:22px 0;
     flex-shrink:0;
-    background: linear-gradient(180deg, #eadcb8 0%, #e3d2a8 100%);
-    border-right: 3px dashed #b89f6f;
-    position:relative;
-    padding: 26px 0 26px 26px;
-    box-shadow: 4px 0 14px rgba(58,46,34,0.12);
   }
-  .rings{
-    position:absolute;
-    left:-14px; top:0; bottom:0;
-    width:28px;
-    display:flex;
-    flex-direction:column;
-    justify-content:space-evenly;
-    align-items:center;
+  .logo{
+    padding:0 20px 24px 20px;
+    font-size:20px;
+    font-weight:700;
+    letter-spacing:2px;
+    color:var(--cyan);
+    text-shadow:0 0 12px rgba(0,255,242,0.7);
+    border-bottom:1px solid var(--border);
+    margin-bottom:18px;
   }
-  .ring{
-    width:20px;height:20px;
-    border-radius:50%;
-    background: radial-gradient(circle at 35% 35%, #fdf7e8 0%, #cbb079 45%, #8a7346 70%, #6b5a3a 100%);
-    box-shadow: inset 0 0 0 3px #f4e8d0, 0 1px 2px rgba(0,0,0,0.35);
-  }
-  .brand{
+  .logo span{color:var(--magenta);text-shadow:0 0 12px rgba(255,46,230,0.7);}
+  .nav-item{
     display:flex;
     align-items:center;
-    gap:8px;
-    font-size:22px;
-    font-weight:bold;
-    color:var(--accent);
-    margin-bottom:28px;
-    transform:rotate(-1.5deg);
+    gap:12px;
+    padding:13px 20px;
+    font-size:14px;
+    color:var(--muted);
+    cursor:pointer;
+    border-left:3px solid transparent;
+    transition:all .2s ease;
+    letter-spacing:0.5px;
   }
-  .brand .paw{ font-size:20px; }
-  .nav{
-    list-style:none;
-    margin:0;padding:0;
-    display:flex;
-    flex-direction:column;
-    gap:8px;
+  .nav-item:hover{
+    color:var(--text);
+    background:rgba(0,255,242,0.05);
   }
-  .nav li a{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    text-decoration:none;
-    color:var(--ink-soft);
-    font-size:16px;
-    padding:9px 14px;
-    border-radius: 14px 4px 14px 4px / 4px 14px 4px 14px;
-    transition: all .15s ease;
-    border: 2px solid transparent;
-    transform: rotate(-0.4deg);
+  .nav-item.active{
+    color:var(--cyan);
+    border-left:3px solid var(--cyan);
+    background:linear-gradient(90deg, rgba(0,255,242,0.12), transparent);
+    text-shadow:0 0 8px rgba(0,255,242,0.6);
   }
-  .nav li:nth-child(even) a{ transform: rotate(0.6deg); }
-  .nav li a:hover{
-    background: rgba(193,68,14,0.08);
-    border-color: rgba(193,68,14,0.25);
+  .nav-item .ic{width:18px;text-align:center;font-size:16px;}
+  .sidebar-foot{
+    margin-top:auto;
+    padding:16px 20px 0 20px;
+    border-top:1px solid var(--border);
+    font-size:11px;
+    color:var(--muted);
+    letter-spacing:1px;
   }
-  .nav li a.active{
-    background: var(--paper);
-    border: 2px dashed var(--accent);
-    color: var(--accent);
-    font-weight:bold;
-    box-shadow: 2px 3px 0 rgba(193,68,14,0.18);
+  .dot-online{
+    display:inline-block;width:8px;height:8px;border-radius:50%;
+    background:var(--cyan);box-shadow:0 0 8px var(--cyan);
+    margin-right:6px;
+    animation:pulse 2s infinite;
   }
-  .nav .ico{ font-size:18px; }
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
 
-  .sidebar-footer{
-    position:absolute;
-    bottom:18px; left:26px; right:14px;
-    font-size:12px;
-    color:var(--ink-soft);
-    opacity:0.75;
-    transform: rotate(-1deg);
-    border-top: 2px dotted #b89f6f;
-    padding-top:8px;
-  }
-
-  /* ===== Main area ===== */
-  .main-wrap{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    min-width:0;
-  }
+  /* Main */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;}
   .topbar{
+    height:64px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding: 18px 34px;
-    border-bottom: 3px dashed #b89f6f;
-    background: rgba(255,251,240,0.35);
+    padding:0 28px;
+    border-bottom:1px solid var(--border);
+    background:rgba(10,18,32,0.6);
+    backdrop-filter:blur(6px);
+    flex-shrink:0;
   }
   .topbar h1{
-    margin:0;
-    font-size:30px;
-    color: var(--ink);
-    position:relative;
-    display:inline-block;
-    transform: rotate(-1deg);
-  }
-  .topbar h1::after{
-    content:"";
-    position:absolute;
-    left:-4px; right:-8px; bottom:-4px;
-    height:10px;
-    background: var(--tape);
-    opacity:0.55;
-    z-index:-1;
-    transform: rotate(-1.2deg);
-  }
-  .clock{
-    background: #fffdf5;
-    border: 2px solid var(--ink);
-    border-radius: 12px 14px 10px 16px / 16px 10px 14px 12px;
-    padding: 10px 20px;
-    font-size:22px;
-    font-weight:bold;
-    color: var(--accent);
-    box-shadow: 3px 4px 0 rgba(58,46,34,0.18);
-    transform: rotate(2deg);
-    position:relative;
-  }
-  .clock::before{
-    content:"📌";
-    position:absolute;
-    top:-14px; left:50%;
-    transform:translateX(-50%) rotate(-8deg);
     font-size:18px;
+    font-weight:600;
+    letter-spacing:1.5px;
+    color:var(--text);
   }
-  .clock small{
-    display:block;
-    font-size:11px;
-    font-weight:normal;
-    color:var(--ink-soft);
-    text-align:center;
+  .topbar h1 .accent{color:var(--cyan);text-shadow:0 0 10px rgba(0,255,242,0.5);}
+  .clock{
+    font-size:26px;
+    font-family:'Consolas','Courier New',monospace;
+    color:var(--magenta);
+    text-shadow:0 0 14px rgba(255,46,230,0.7);
+    letter-spacing:2px;
   }
+  .clock small{font-size:13px;color:var(--muted);display:block;text-align:right;letter-spacing:1px;font-family:'Segoe UI',sans-serif;}
 
   .content{
-    padding: 30px 34px 40px;
     flex:1;
     overflow-y:auto;
+    padding:26px 28px 40px 28px;
   }
-  .greeting{
-    font-size:15px;
-    color:var(--ink-soft);
-    margin: 0 0 22px 4px;
-    transform: rotate(-0.3deg);
-  }
-
-  .cards-grid{
+  .grid{
     display:grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 26px;
+    grid-template-columns:repeat(auto-fit, minmax(230px,1fr));
+    gap:20px;
   }
-
   .card{
-    background: #fffdf6;
-    border: 2.5px solid var(--ink);
-    border-radius: 14px 18px 12px 20px / 20px 12px 18px 14px;
-    padding: 18px 20px 20px;
+    background:linear-gradient(155deg, var(--panel-2), #070d18);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:20px;
     position:relative;
-    box-shadow: 5px 6px 0 var(--card-shadow);
-    filter: url(#roughpaper);
+    overflow:hidden;
+    box-shadow:0 0 0 1px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.35);
   }
-  .card:nth-child(1){ transform: rotate(-1.4deg); }
-  .card:nth-child(2){ transform: rotate(1.1deg); }
-  .card:nth-child(3){ transform: rotate(-0.7deg); }
-  .card:nth-child(4){ transform: rotate(1.6deg); }
-  .card:nth-child(5){ transform: rotate(-1.1deg); }
-  .card:nth-child(6){ transform: rotate(0.8deg); }
-  .card:hover{ transform: scale(1.03) rotate(0deg) !important; transition:.2s ease; z-index:5; }
-
-  .tape{
-    position:absolute;
-    top:-12px; left:50%;
-    transform: translateX(-50%) rotate(-4deg);
-    width:70px; height:24px;
-    background: var(--tape);
-    opacity:0.7;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  .card::before{
+    content:"";
+    position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg, var(--cyan), transparent 70%);
+    opacity:0.8;
   }
-  .card:nth-child(2) .tape{ transform: translateX(-50%) rotate(5deg); background:#d7e8c9;}
-  .card:nth-child(3) .tape{ transform: translateX(-50%) rotate(-6deg); background:#cfe0ee;}
-  .card:nth-child(4) .tape{ transform: translateX(-50%) rotate(3deg); background:#f0c9c0;}
-  .card:nth-child(5) .tape{ transform: translateX(-50%) rotate(-3deg); background:#e6d3f0;}
-  .card:nth-child(6) .tape{ transform: translateX(-50%) rotate(6deg); background:var(--tape);}
-
   .card-head{
     display:flex;
+    justify-content:space-between;
     align-items:center;
-    gap:10px;
-    margin-bottom:12px;
+    margin-bottom:14px;
   }
-  .card-head .emoji{ font-size:26px; }
-  .card-head h3{
-    margin:0;
-    font-size:18px;
-    color:var(--ink);
+  .card-title{
+    font-size:12px;
+    letter-spacing:1.5px;
+    color:var(--muted);
+    text-transform:uppercase;
   }
-
-  .big-stat{
-    font-size:40px;
-    font-weight:bold;
-    color:var(--accent);
-    line-height:1;
-    margin-bottom:6px;
+  .card-icon{font-size:20px;opacity:0.85;}
+  .metric{
+    font-size:34px;
+    font-weight:700;
+    font-family:'Consolas','Courier New',monospace;
+    letter-spacing:1px;
   }
-  .card.green .big-stat{ color:var(--accent-2); }
-  .card.blue .big-stat{ color:var(--accent-3); }
-
+  .metric.cyan{color:var(--cyan);text-shadow:0 0 16px rgba(0,255,242,0.6);}
+  .metric.magenta{color:var(--magenta);text-shadow:0 0 16px rgba(255,46,230,0.6);}
+  .metric.amber{color:var(--amber);text-shadow:0 0 16px rgba(255,179,0,0.6);}
+  .sub{font-size:12px;color:var(--muted);margin-top:6px;}
   .bar-track{
-    width:100%;
-    height:14px;
-    border:2px solid var(--ink);
-    border-radius: 8px;
-    background: #fff;
-    overflow:hidden;
-    margin-bottom:8px;
+    width:100%;height:6px;border-radius:4px;
+    background:rgba(255,255,255,0.06);
+    margin-top:14px;overflow:hidden;
   }
-  .bar-fill{
-    height:100%;
-    background: repeating-linear-gradient(45deg, var(--accent), var(--accent) 6px, #e0703a 6px, #e0703a 12px);
-  }
-  .bar-fill.green{ background: repeating-linear-gradient(45deg, var(--accent-2), var(--accent-2) 6px, #4f9971 6px, #4f9971 12px); }
-  .bar-fill.blue{ background: repeating-linear-gradient(45deg, var(--accent-3), var(--accent-3) 6px, #5a90bb 6px, #5a90bb 12px); }
+  .bar-fill{height:100%;border-radius:4px;}
+  .bar-fill.cyan{background:linear-gradient(90deg,var(--cyan),#00b3ff);box-shadow:0 0 10px var(--cyan);}
+  .bar-fill.magenta{background:linear-gradient(90deg,var(--magenta),#a800ff);box-shadow:0 0 10px var(--magenta);}
+  .bar-fill.amber{background:linear-gradient(90deg,var(--amber),#ff6a00);box-shadow:0 0 10px var(--amber);}
 
-  .card-sub{
-    font-size:13px;
-    color:var(--ink-soft);
-  }
-
-  .mail-list{ list-style:none; margin:0; padding:0; font-size:13.5px; }
-  .mail-list li{
-    padding:6px 0;
-    border-bottom:1px dashed #d8c79a;
+  .card.wide{grid-column:span 2;}
+  .list-row{
     display:flex;
     justify-content:space-between;
-    gap:8px;
+    padding:9px 0;
+    border-bottom:1px dashed rgba(0,255,242,0.12);
+    font-size:13px;
   }
-  .mail-list li:last-child{ border-bottom:none; }
-  .mail-from{ font-weight:bold; }
-  .mail-time{ color:var(--ink-soft); font-size:12px; white-space:nowrap;}
-
-  .weather-row{
-    display:flex;
-    align-items:center;
-    gap:14px;
+  .list-row:last-child{border-bottom:none;}
+  .list-row .from{color:var(--text);font-weight:600;}
+  .list-row .snippet{color:var(--muted);}
+  .badge{
+    background:rgba(255,46,230,0.15);
+    color:var(--magenta);
+    border:1px solid rgba(255,46,230,0.4);
+    border-radius:20px;
+    padding:2px 10px;
+    font-size:11px;
+    letter-spacing:1px;
   }
-  .weather-icon{ font-size:46px; }
-  .weather-temp{ font-size:34px; font-weight:bold; color:var(--accent-3); }
-  .weather-place{ font-size:13px; color:var(--ink-soft); }
+  .weather-icon{font-size:44px;filter:drop-shadow(0 0 10px rgba(0,255,242,0.6));}
+  .weather-row{display:flex;align-items:center;gap:16px;}
+  .weather-temp{font-size:38px;font-weight:700;color:var(--cyan);font-family:'Consolas',monospace;text-shadow:0 0 16px rgba(0,255,242,0.6);}
 
-  .scrawl{
-    font-size:14px;
-    line-height:1.5;
-    color:var(--ink);
-  }
-
-  .agenda-list{ list-style:none; margin:0; padding:0; font-size:13.5px;}
-  .agenda-list li{ padding:5px 0; display:flex; gap:8px; align-items:baseline;}
-  .agenda-list .t{ font-weight:bold; color:var(--accent);}
-
-  .footer-note{
-    margin-top: 30px;
-    font-size:12px;
-    color:var(--ink-soft);
-    text-align:center;
-    opacity:0.7;
-  }
-
-  ::-webkit-scrollbar{ width:10px; }
-  ::-webkit-scrollbar-thumb{ background:#c9b586; border-radius:6px; }
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:rgba(0,255,242,0.25);border-radius:4px;}
 </style>
 </head>
 <body>
 
-<svg class="defs">
-  <filter id="roughpaper" x="-5%" y="-5%" width="110%" height="110%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" result="noise" seed="7"/>
-    <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G"/>
-  </filter>
-</svg>
-
-<div class="app">
-  <aside class="sidebar">
-    <div class="rings">
-      <div class="ring"></div><div class="ring"></div><div class="ring"></div>
-      <div class="ring"></div><div class="ring"></div><div class="ring"></div>
-      <div class="ring"></div><div class="ring"></div>
+  <div class="sidebar">
+    <div class="logo">MISSION<span>CTRL</span></div>
+    <div class="nav-item active"><span class="ic">◈</span> Dashboard</div>
+    <div class="nav-item"><span class="ic">🐾</span> Bolla</div>
+    <div class="nav-item"><span class="ic">🎓</span> Schule</div>
+    <div class="nav-item"><span class="ic">🗓</span> Kalender</div>
+    <div class="nav-item"><span class="ic">✉</span> E-Mail</div>
+    <div class="nav-item"><span class="ic">☁</span> Wetter</div>
+    <div class="nav-item"><span class="ic">⚙</span> System Info</div>
+    <div class="sidebar-foot">
+      <span class="dot-online"></span>ALL SYSTEMS NOMINAL
     </div>
-    <div class="brand"><span class="paw">🐾</span> Mission Control</div>
-    <ul class="nav">
-      <li><a href="#" class="active"><span class="ico">🗂️</span> Dashboard</a></li>
-      <li><a href="#"><span class="ico">🐾</span> Bolla</a></li>
-      <li><a href="#"><span class="ico">🏫</span> Schule</a></li>
-      <li><a href="#"><span class="ico">📅</span> Kalender</a></li>
-      <li><a href="#"><span class="ico">✉️</span> E-Mail</a></li>
-      <li><a href="#"><span class="ico">🌤️</span> Wetter</a></li>
-      <li><a href="#"><span class="ico">🖥️</span> System Info</a></li>
-    </ul>
-    <div class="sidebar-footer">Stand: heute, 20:14 Uhr &middot; alles im grünen Bereich</div>
-  </aside>
+  </div>
 
-  <div class="main-wrap">
-    <header class="topbar">
-      <h1>Dashboard</h1>
-      <div class="clock">20:14<small>Freitag</small></div>
-    </header>
+  <div class="main">
+    <div class="topbar">
+      <h1>&#9670; <span class="accent">DASHBOARD</span> // ÜBERSICHT</h1>
+      <div class="clock">20:14<small>SA · 12.07.2026</small></div>
+    </div>
 
-    <main class="content">
-      <p class="greeting">Guten Abend, Chris — hier der Überblick für heute Abend. ✎</p>
-
-      <div class="cards-grid">
+    <div class="content">
+      <div class="grid">
 
         <div class="card">
-          <div class="tape"></div>
-          <div class="card-head"><span class="emoji">🧠</span><h3>Arbeitsspeicher</h3></div>
-          <div class="big-stat">34%</div>
-          <div class="bar-track"><div class="bar-fill" style="width:34%"></div></div>
-          <div class="card-sub">5,4 GB von 16 GB belegt</div>
-        </div>
-
-        <div class="card green">
-          <div class="tape"></div>
-          <div class="card-head"><span class="emoji">⚙️</span><h3>Prozessor</h3></div>
-          <div class="big-stat">12%</div>
-          <div class="bar-track"><div class="bar-fill green" style="width:12%"></div></div>
-          <div class="card-sub">Alles ruhig, kein Lüfterlärm</div>
+          <div class="card-head">
+            <span class="card-title">RAM Auslastung</span>
+            <span class="card-icon">🧠</span>
+          </div>
+          <div class="metric cyan">34%</div>
+          <div class="sub">10,9 GB / 32 GB belegt</div>
+          <div class="bar-track"><div class="bar-fill cyan" style="width:34%"></div></div>
         </div>
 
         <div class="card">
-          <div class="tape"></div>
-          <div class="card-head"><span class="emoji">✉️</span><h3>Neue Mails</h3></div>
-          <ul class="mail-list">
-            <li><span class="mail-from">itslearning</span><span class="mail-time">18:42</span></li>
-            <li><span class="mail-from">Robin</span><span class="mail-time">17:05</span></li>
-            <li><span class="mail-from">Booking.com</span><span class="mail-time">15:20</span></li>
-          </ul>
-          <div class="card-sub" style="margin-top:8px;">3 ungelesen</div>
+          <div class="card-head">
+            <span class="card-title">CPU Last</span>
+            <span class="card-icon">⚡</span>
+          </div>
+          <div class="metric magenta">12%</div>
+          <div class="sub">8 Kerne · 41°C</div>
+          <div class="bar-track"><div class="bar-fill magenta" style="width:12%"></div></div>
         </div>
 
-        <div class="card blue">
-          <div class="tape"></div>
-          <div class="card-head"><span class="emoji">🌤️</span><h3>Wetter</h3></div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Wetter Hamburg</span>
+            <span class="card-icon">⛅</span>
+          </div>
           <div class="weather-row">
             <span class="weather-icon">⛅</span>
             <div>
               <div class="weather-temp">18°C</div>
-              <div class="weather-place">Hamburg &middot; leicht bewölkt</div>
+              <div class="sub">Bewölkt · Wind 14 km/h</div>
             </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="tape"></div>
-          <div class="card-head"><span class="emoji">📅</span><h3>Nächster Termin</h3></div>
-          <ul class="agenda-list">
-            <li><span class="t">21:00</span> Sport-Rhythmus Pause</li>
-            <li><span class="t">Mo 09:15</span> EDV 7b, Lessing-Gymnasium</li>
-          </ul>
+          <div class="card-head">
+            <span class="card-title">E-Mail Postfach</span>
+            <span class="card-icon">✉</span>
+          </div>
+          <div class="metric amber">3</div>
+          <div class="sub">neue Nachrichten</div>
+          <div class="bar-track"><div class="bar-fill amber" style="width:60%"></div></div>
         </div>
 
-        <div class="card">
-          <div class="tape"></div>
-          <div class="card-head"><span class="emoji">🐾</span><h3>Bolla meint …</h3></div>
-          <div class="scrawl">Alles läuft rund heute Abend. Kein dringender Punkt offen — gute Zeit für einen Kaffee. ☕</div>
+        <div class="card wide">
+          <div class="card-head">
+            <span class="card-title">Letzte Nachrichten</span>
+            <span class="badge">3 UNGELESEN</span>
+          </div>
+          <div class="list-row"><span class="from">Lessing-Gymnasium</span><span class="snippet">Stundenplan-Update KW29 …</span></div>
+          <div class="list-row"><span class="from">Robin Mandel</span><span class="snippet">Kurzes Update aus Ulm …</span></div>
+          <div class="list-row"><span class="from">Booking.com</span><span class="snippet">Ihre Reservierung wurde bestätigt …</span></div>
+        </div>
+
+        <div class="card wide">
+          <div class="card-head">
+            <span class="card-title">System Info</span>
+            <span class="card-icon">🛰</span>
+          </div>
+          <div class="list-row"><span class="from">Host</span><span class="snippet">Studio · WSL2 Ubuntu</span></div>
+          <div class="list-row"><span class="from">Uptime</span><span class="snippet">4 Tage, 07:22 h</span></div>
+          <div class="list-row"><span class="from">Speicher</span><span class="snippet">612 GB frei von 1 TB</span></div>
+          <div class="list-row"><span class="from">Tunnel Status</span><span class="snippet"><span class="dot-online"></span>Cloudflare aktiv</span></div>
         </div>
 
       </div>
-
-      <p class="footer-note">— handgezeichnet mit Sorgfalt für Chris &middot; Mission Control —</p>
-    </main>
+    </div>
   </div>
-</div>
 
 </body>
 </html>
