@@ -2369,6 +2369,9 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:4px">Screenshot</div>
                 <button class="adb-btn" data-act="screenshot" style="width:fit-content">📸 Screenshot machen</button>
                 <div class="adb-result" data-for="screenshot"></div>
+                <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:4px">Foto</div>
+                <button class="adb-btn" data-act="latest-photo" style="width:fit-content">📷 Neuestes Foto → Zwischenablage</button>
+                <div class="adb-result" data-for="latest-photo"></div>
                 <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:4px">Dateien</div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap">
                   <input class="adb-input" data-role="pull-path" placeholder="/storage/emulated/0/..." style="flex:1;min-width:160px">
@@ -12116,7 +12119,7 @@ async function adbResolveDevice(card) {
 }
 async function adbAction(act, btn) {
   const card = btn.closest('.card');
-  const resultKey = {pair:'pair', devices:'devices', apps:'apps', screenshot:'screenshot', pull:'pull', push:'push', connect:'devices', disconnect:'devices', 'device-info':'device-info', battery:'battery', foreground:'foreground'}[act];
+  const resultKey = {pair:'pair', devices:'devices', apps:'apps', screenshot:'screenshot', 'latest-photo':'latest-photo', pull:'pull', push:'push', connect:'devices', disconnect:'devices', 'device-info':'device-info', battery:'battery', foreground:'foreground'}[act];
   const out = resultKey ? card.querySelector(`.adb-result[data-for="${resultKey}"]`) : null;
   const showMsg = (html) => { if (out) out.innerHTML = html; };
   btn.disabled = true;
@@ -12252,6 +12255,17 @@ async function adbAction(act, btn) {
           <a href="${url}" download="surface-duo-${ts}.png" style="display:inline-block;margin-top:6px;padding:4px 10px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:13px;text-decoration:none">⬇ Download</a>
         `;
       }
+    } else if (act === 'latest-photo') {
+      const {device, error: devErr} = await adbResolveDevice(card);
+      if (devErr) { out.innerHTML = `<div style="color:#e57373;font-size:13px;padding:8px">⚠ ${adbEsc(devErr)}</div>`; return; }
+      const r = await fetch(API + '/api/adb/latest-photo', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({device})
+      });
+      const d = await r.json();
+      const color = d.ok ? '#66bb6a' : '#e57373';
+      const bg = d.ok ? 'rgba(102,187,106,0.08)' : 'rgba(229,115,115,0.08)';
+      out.innerHTML = `<div style="color:${color};font-size:13px;padding:8px;background:${bg};border-radius:6px">${d.ok?'✓':'⚠'} ${adbEsc(d.message || d.error || '')}${d.filename ? ' — ' + adbEsc(d.filename) : ''}</div>`;
     } else if (act === 'push') {
       const fileInput = card.querySelector('[data-role="push-file"]');
       const remoteDir = card.querySelector('[data-role="push-dir"]').value.trim() || '/sdcard/Download/';

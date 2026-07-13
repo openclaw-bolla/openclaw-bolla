@@ -4968,6 +4968,77 @@ def adb_pull(remote, device=None):
         try: os.unlink(local)
         except Exception: pass
 
+def _adb_latest_photo_path(device=None):
+    """Pfad des zuletzt aufgenommenen Kamerafotos via MediaStore-Query (robust gegen
+    abweichende Kameraordner), Fallback auf DCIM/Camera per Zeitstempel."""
+    import re as _re
+    rc, out, _err = _adb_run(
+        ["shell", "content", "query", "--uri", "content://media/external/images/media",
+         "--projection", "_data", "--sort", "date_added DESC"],
+        timeout=15, device=device)
+    if rc == 0 and out:
+        m = _re.search(r"_data=(\S+\.(?:jpg|jpeg|png|heic|webp))", out.decode("utf-8", "replace"), _re.IGNORECASE)
+        if m:
+            return m.group(1), None
+    rc, out, err = _adb_run(["shell", "ls", "-t", "/storage/emulated/0/DCIM/Camera"], timeout=15, device=device)
+    if rc == 0 and out:
+        lines = [l.strip() for l in out.decode("utf-8", "replace").splitlines() if l.strip()]
+        if lines:
+            return "/storage/emulated/0/DCIM/Camera/" + lines[0], None
+    return None, err or "Kein Foto gefunden"
+
+def _set_windows_clipboard_image(local_fpath):
+    """Legt eine Bilddatei in die Windows-Zwischenablage (STA-PowerShell nötig)."""
+    import subprocess as _sp, base64 as _b64
+    try:
+        winpath = _sp.run(["wslpath", "-w", local_fpath], capture_output=True, text=True, timeout=10).stdout.strip()
+    except Exception:
+        return False
+    if not winpath:
+        return False
+    winpath_ps = winpath.replace("'", "''")
+    ps = (
+        "$ProgressPreference='SilentlyContinue';"
+        "Add-Type -AssemblyName System.Windows.Forms,System.Drawing;"
+        f"$img=[System.Drawing.Image]::FromFile('{winpath_ps}');"
+        "[System.Windows.Forms.Clipboard]::SetImage($img);$img.Dispose();"
+        "if([System.Windows.Forms.Clipboard]::ContainsImage()){'CLIPOK'}else{'CLIPFAIL'}"
+    )
+    enc = _b64.b64encode(ps.encode("utf-16-le")).decode()
+    try:
+        r = _sp.run(["/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+                     "-STA", "-NoProfile", "-EncodedCommand", enc],
+                    capture_output=True, text=True, timeout=40)
+        out = (r.stdout or "") + (r.stderr or "")
+        return "CLIPOK" in out
+    except Exception:
+        return False
+
+def adb_latest_photo_to_clipboard(device=None):
+    """Neuestes Kamerafoto vom Handy holen und direkt in die Windows-Zwischenablage legen."""
+    import uuid as _uuid
+    remote, err = _adb_latest_photo_path(device)
+    if not remote:
+        return {"ok": False, "error": err or "Kein Foto gefunden"}
+    data, err = adb_pull(remote, device)
+    if not data:
+        return {"ok": False, "error": err or "Pull fehlgeschlagen"}
+    ext = os.path.splitext(remote)[1].lower() or ".jpg"
+    clipdir = "/mnt/d/OneDrive/Bilder/Handy-Clip"
+    try:
+        os.makedirs(clipdir, exist_ok=True)
+    except Exception:
+        clipdir = os.path.join(WORKSPACE, "config/clipboard_images")
+        os.makedirs(clipdir, exist_ok=True)
+    fname = f"handy_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{_uuid.uuid4().hex[:4]}{ext}"
+    fpath = os.path.join(clipdir, fname)
+    with open(fpath, "wb") as f:
+        f.write(data)
+    clip_ok = _set_windows_clipboard_image(fpath)
+    return {"ok": clip_ok, "filename": os.path.basename(remote), "saved_to": fpath,
+            "message": ("✓ Foto ist in der Zwischenablage — jetzt Strg+V." if clip_ok
+                        else "Foto gespeichert, aber Zwischenablage fehlgeschlagen.")}
+
 
 # ═══════════════════════════════════════════════════════════
 # FOTO-ANALYSE (LM Studio / Moondream)
@@ -7130,6 +7201,8 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     self._send_json({"ok": False, "error": "Ungültige Datei-Daten"}, status=400)
                     return
                 self._send_json(adb_push(body.get("filename", ""), body.get("remote_dir", "/sdcard/"), data, body.get("device") or None))
+            elif self.path == "/api/adb/latest-photo":
+                self._send_json(adb_latest_photo_to_clipboard(body.get("device") or None))
             elif self.path == "/api/adb/pull":
                 remote = body.get("remote", "")
                 data, err = adb_pull(remote, body.get("device") or None)
