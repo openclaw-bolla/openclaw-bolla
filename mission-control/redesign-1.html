@@ -2,305 +2,333 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Mission Control</title>
+<title>MISSION CONTROL</title>
 <style>
   :root{
-    --bg:#05070d;
-    --panel:#0a1220;
-    --panel-2:#0d1626;
-    --cyan:#00fff2;
-    --magenta:#ff2ee6;
-    --amber:#ffb300;
-    --text:#d7f7f5;
-    --muted:#5f7f8c;
-    --border:rgba(0,255,242,0.25);
+    --yellow:#FFE500;
+    --blue:#0038FF;
+    --red:#FF3B1F;
+    --green:#00C853;
+    --black:#0A0A0A;
+    --white:#F5F5F0;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
   body{
-    font-family:'Segoe UI',system-ui,sans-serif;
-    background:
-      radial-gradient(circle at 20% 10%, rgba(0,255,242,0.07), transparent 40%),
-      radial-gradient(circle at 85% 80%, rgba(255,46,230,0.08), transparent 45%),
-      var(--bg);
-    color:var(--text);
-    min-height:100vh;
+    font-family:'Arial Black','Helvetica Neue',Helvetica,Arial,sans-serif;
+    background:var(--white);
+    color:var(--black);
     display:flex;
-    overflow:hidden;
+    min-height:100vh;
   }
-  body::before{
-    content:"";
-    position:fixed;inset:0;
-    background:repeating-linear-gradient(0deg,rgba(255,255,255,0.015) 0px,rgba(255,255,255,0.015) 1px,transparent 1px,transparent 3px);
-    pointer-events:none;
-    z-index:999;
-  }
-  /* Sidebar */
+
+  /* ===== SIDEBAR ===== */
   .sidebar{
-    width:220px;
-    background:linear-gradient(180deg, var(--panel), #060a12);
-    border-right:1px solid var(--border);
+    width:230px;
+    background:var(--black);
+    color:var(--white);
+    border-right:6px solid var(--black);
     display:flex;
     flex-direction:column;
-    padding:22px 0;
     flex-shrink:0;
   }
-  .logo{
-    padding:0 20px 24px 20px;
+  .sidebar .logo{
+    padding:24px 20px;
+    background:var(--yellow);
+    color:var(--black);
     font-size:20px;
+    font-weight:900;
+    letter-spacing:1px;
+    border-bottom:6px solid var(--black);
+    text-transform:uppercase;
+  }
+  .sidebar .logo span{
+    display:block;
+    font-size:12px;
     font-weight:700;
     letter-spacing:2px;
-    color:var(--cyan);
-    text-shadow:0 0 12px rgba(0,255,242,0.7);
-    border-bottom:1px solid var(--border);
-    margin-bottom:18px;
+    margin-top:4px;
   }
-  .logo span{color:var(--magenta);text-shadow:0 0 12px rgba(255,46,230,0.7);}
-  .nav-item{
+  nav{
+    display:flex;
+    flex-direction:column;
+    flex:1;
+  }
+  nav a{
     display:flex;
     align-items:center;
     gap:12px;
-    padding:13px 20px;
-    font-size:14px;
-    color:var(--muted);
-    cursor:pointer;
-    border-left:3px solid transparent;
-    transition:all .2s ease;
+    padding:18px 20px;
+    color:var(--white);
+    text-decoration:none;
+    font-size:15px;
+    font-weight:800;
+    text-transform:uppercase;
     letter-spacing:0.5px;
+    border-bottom:3px solid #2a2a2a;
+    transition:background 0.08s ease, color 0.08s ease;
   }
-  .nav-item:hover{
-    color:var(--text);
-    background:rgba(0,255,242,0.05);
-  }
-  .nav-item.active{
-    color:var(--cyan);
-    border-left:3px solid var(--cyan);
-    background:linear-gradient(90deg, rgba(0,255,242,0.12), transparent);
-    text-shadow:0 0 8px rgba(0,255,242,0.6);
-  }
-  .nav-item .ic{width:18px;text-align:center;font-size:16px;}
-  .sidebar-foot{
-    margin-top:auto;
-    padding:16px 20px 0 20px;
-    border-top:1px solid var(--border);
-    font-size:11px;
-    color:var(--muted);
-    letter-spacing:1px;
-  }
-  .dot-online{
-    display:inline-block;width:8px;height:8px;border-radius:50%;
-    background:var(--cyan);box-shadow:0 0 8px var(--cyan);
-    margin-right:6px;
-    animation:pulse 2s infinite;
-  }
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
-
-  /* Main */
-  .main{flex:1;display:flex;flex-direction:column;min-width:0;}
-  .topbar{
-    height:64px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:0 28px;
-    border-bottom:1px solid var(--border);
-    background:rgba(10,18,32,0.6);
-    backdrop-filter:blur(6px);
-    flex-shrink:0;
-  }
-  .topbar h1{
+  nav a .ico{
     font-size:18px;
-    font-weight:600;
-    letter-spacing:1.5px;
-    color:var(--text);
+    width:22px;
+    text-align:center;
   }
-  .topbar h1 .accent{color:var(--cyan);text-shadow:0 0 10px rgba(0,255,242,0.5);}
-  .clock{
-    font-size:26px;
-    font-family:'Consolas','Courier New',monospace;
-    color:var(--magenta);
-    text-shadow:0 0 14px rgba(255,46,230,0.7);
-    letter-spacing:2px;
+  nav a:hover{
+    background:var(--yellow);
+    color:var(--black);
   }
-  .clock small{font-size:13px;color:var(--muted);display:block;text-align:right;letter-spacing:1px;font-family:'Segoe UI',sans-serif;}
-
-  .content{
-    flex:1;
-    overflow-y:auto;
-    padding:26px 28px 40px 28px;
+  nav a.active{
+    background:var(--blue);
+    color:var(--white);
+    border-left:8px solid var(--yellow);
+    padding-left:12px;
   }
-  .grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(230px,1fr));
-    gap:20px;
-  }
-  .card{
-    background:linear-gradient(155deg, var(--panel-2), #070d18);
-    border:1px solid var(--border);
-    border-radius:12px;
-    padding:20px;
-    position:relative;
-    overflow:hidden;
-    box-shadow:0 0 0 1px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.35);
-  }
-  .card::before{
-    content:"";
-    position:absolute;top:0;left:0;right:0;height:2px;
-    background:linear-gradient(90deg, var(--cyan), transparent 70%);
-    opacity:0.8;
-  }
-  .card-head{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:14px;
-  }
-  .card-title{
-    font-size:12px;
-    letter-spacing:1.5px;
-    color:var(--muted);
+  .sidebar-foot{
+    padding:16px 20px;
+    font-size:11px;
+    font-weight:700;
+    color:#888;
+    border-top:3px solid #2a2a2a;
     text-transform:uppercase;
   }
-  .card-icon{font-size:20px;opacity:0.85;}
-  .metric{
-    font-size:34px;
-    font-weight:700;
-    font-family:'Consolas','Courier New',monospace;
-    letter-spacing:1px;
-  }
-  .metric.cyan{color:var(--cyan);text-shadow:0 0 16px rgba(0,255,242,0.6);}
-  .metric.magenta{color:var(--magenta);text-shadow:0 0 16px rgba(255,46,230,0.6);}
-  .metric.amber{color:var(--amber);text-shadow:0 0 16px rgba(255,179,0,0.6);}
-  .sub{font-size:12px;color:var(--muted);margin-top:6px;}
-  .bar-track{
-    width:100%;height:6px;border-radius:4px;
-    background:rgba(255,255,255,0.06);
-    margin-top:14px;overflow:hidden;
-  }
-  .bar-fill{height:100%;border-radius:4px;}
-  .bar-fill.cyan{background:linear-gradient(90deg,var(--cyan),#00b3ff);box-shadow:0 0 10px var(--cyan);}
-  .bar-fill.magenta{background:linear-gradient(90deg,var(--magenta),#a800ff);box-shadow:0 0 10px var(--magenta);}
-  .bar-fill.amber{background:linear-gradient(90deg,var(--amber),#ff6a00);box-shadow:0 0 10px var(--amber);}
 
-  .card.wide{grid-column:span 2;}
-  .list-row{
+  /* ===== MAIN ===== */
+  .main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+  }
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:20px 32px;
+    background:var(--white);
+    border-bottom:6px solid var(--black);
+  }
+  .topbar h1{
+    font-size:28px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    font-weight:900;
+  }
+  .clock{
+    background:var(--black);
+    color:var(--yellow);
+    font-size:26px;
+    font-weight:900;
+    padding:8px 20px;
+    letter-spacing:2px;
+    border:4px solid var(--black);
+    box-shadow:6px 6px 0 var(--red);
+  }
+
+  .content{
+    padding:32px;
+    flex:1;
+    overflow-y:auto;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:24px;
+  }
+
+  .card{
+    background:var(--white);
+    border:5px solid var(--black);
+    box-shadow:8px 8px 0 var(--black);
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    min-height:170px;
+    transition:transform 0.08s ease, box-shadow 0.08s ease;
+  }
+  .card:hover{
+    transform:translate(-4px,-4px);
+    box-shadow:12px 12px 0 var(--black);
+  }
+  .card-label{
+    font-size:13px;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .card-value{
+    font-size:46px;
+    font-weight:900;
+    line-height:1;
+    margin:14px 0;
+  }
+  .card-sub{
+    font-size:12px;
+    font-weight:700;
+    text-transform:uppercase;
+    color:#333;
+  }
+  .bar-track{
+    width:100%;
+    height:16px;
+    border:3px solid var(--black);
+    background:var(--white);
+    margin-top:10px;
+  }
+  .bar-fill{
+    height:100%;
+    background:var(--black);
+  }
+
+  .card.yellow{background:var(--yellow);}
+  .card.blue{background:var(--blue);color:var(--white);}
+  .card.blue .bar-track{border-color:var(--white);}
+  .card.blue .bar-fill{background:var(--white);}
+  .card.red{background:var(--red);color:var(--white);}
+  .card.green{background:var(--green);}
+  .card.black{background:var(--black);color:var(--white);}
+  .card.black .bar-track{border-color:var(--white);}
+  .card.black .bar-fill{background:var(--yellow);}
+
+  .card.wide{
+    grid-column:span 2;
+  }
+
+  .mail-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-top:8px;
+  }
+  .mail-item{
     display:flex;
     justify-content:space-between;
-    padding:9px 0;
-    border-bottom:1px dashed rgba(0,255,242,0.12);
     font-size:13px;
+    font-weight:700;
+    border-left:5px solid var(--black);
+    padding:6px 10px;
+    background:rgba(0,0,0,0.06);
   }
-  .list-row:last-child{border-bottom:none;}
-  .list-row .from{color:var(--text);font-weight:600;}
-  .list-row .snippet{color:var(--muted);}
-  .badge{
-    background:rgba(255,46,230,0.15);
-    color:var(--magenta);
-    border:1px solid rgba(255,46,230,0.4);
-    border-radius:20px;
-    padding:2px 10px;
-    font-size:11px;
-    letter-spacing:1px;
-  }
-  .weather-icon{font-size:44px;filter:drop-shadow(0 0 10px rgba(0,255,242,0.6));}
-  .weather-row{display:flex;align-items:center;gap:16px;}
-  .weather-temp{font-size:38px;font-weight:700;color:var(--cyan);font-family:'Consolas',monospace;text-shadow:0 0 16px rgba(0,255,242,0.6);}
 
-  ::-webkit-scrollbar{width:8px;}
-  ::-webkit-scrollbar-track{background:transparent;}
-  ::-webkit-scrollbar-thumb{background:rgba(0,255,242,0.25);border-radius:4px;}
+  .badge{
+    background:var(--black);
+    color:var(--yellow);
+    font-size:11px;
+    font-weight:900;
+    padding:3px 8px;
+  }
+  .card.red .badge{background:var(--black);color:var(--red);}
+
+  .section-title{
+    font-size:16px;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    margin:36px 0 16px;
+    padding-bottom:8px;
+    border-bottom:5px solid var(--black);
+  }
+
+  .weather-row{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  .weather-icon{
+    font-size:40px;
+  }
 </style>
 </head>
 <body>
 
-  <div class="sidebar">
-    <div class="logo">MISSION<span>CTRL</span></div>
-    <div class="nav-item active"><span class="ic">◈</span> Dashboard</div>
-    <div class="nav-item"><span class="ic">🐾</span> Bolla</div>
-    <div class="nav-item"><span class="ic">🎓</span> Schule</div>
-    <div class="nav-item"><span class="ic">🗓</span> Kalender</div>
-    <div class="nav-item"><span class="ic">✉</span> E-Mail</div>
-    <div class="nav-item"><span class="ic">☁</span> Wetter</div>
-    <div class="nav-item"><span class="ic">⚙</span> System Info</div>
-    <div class="sidebar-foot">
-      <span class="dot-online"></span>ALL SYSTEMS NOMINAL
-    </div>
-  </div>
+  <aside class="sidebar">
+    <div class="logo">MISSION<br>CONTROL<span>BOLLA SYSTEM</span></div>
+    <nav>
+      <a href="#" class="active"><span class="ico">■</span> Dashboard</a>
+      <a href="#"><span class="ico">🐾</span> Bolla</a>
+      <a href="#"><span class="ico">🎓</span> Schule</a>
+      <a href="#"><span class="ico">📅</span> Kalender</a>
+      <a href="#"><span class="ico">✉</span> E-Mail</a>
+      <a href="#"><span class="ico">☁</span> Wetter</a>
+      <a href="#"><span class="ico">⚙</span> System Info</a>
+    </nav>
+    <div class="sidebar-foot">Status: Online<br>v2.4 &mdash; Norderstedt</div>
+  </aside>
 
   <div class="main">
     <div class="topbar">
-      <h1>&#9670; <span class="accent">DASHBOARD</span> // ÜBERSICHT</h1>
-      <div class="clock">20:14<small>SA · 12.07.2026</small></div>
+      <h1>Dashboard</h1>
+      <div class="clock">20:14</div>
     </div>
 
     <div class="content">
+
       <div class="grid">
 
-        <div class="card">
-          <div class="card-head">
-            <span class="card-title">RAM Auslastung</span>
-            <span class="card-icon">🧠</span>
-          </div>
-          <div class="metric cyan">34%</div>
-          <div class="sub">10,9 GB / 32 GB belegt</div>
-          <div class="bar-track"><div class="bar-fill cyan" style="width:34%"></div></div>
+        <div class="card black">
+          <div class="card-label">CPU Last <span>⚡</span></div>
+          <div class="card-value">12%</div>
+          <div class="bar-track"><div class="bar-fill" style="width:12%"></div></div>
+          <div class="card-sub" style="color:#aaa;">4 Kerne aktiv</div>
         </div>
 
-        <div class="card">
-          <div class="card-head">
-            <span class="card-title">CPU Last</span>
-            <span class="card-icon">⚡</span>
-          </div>
-          <div class="metric magenta">12%</div>
-          <div class="sub">8 Kerne · 41°C</div>
-          <div class="bar-track"><div class="bar-fill magenta" style="width:12%"></div></div>
+        <div class="card yellow">
+          <div class="card-label">RAM Auslastung <span>▣</span></div>
+          <div class="card-value">34%</div>
+          <div class="bar-track"><div class="bar-fill" style="width:34%"></div></div>
+          <div class="card-sub">5,4 GB / 16 GB</div>
         </div>
 
-        <div class="card">
-          <div class="card-head">
-            <span class="card-title">Wetter Hamburg</span>
-            <span class="card-icon">⛅</span>
-          </div>
+        <div class="card red">
+          <div class="card-label">Neue Mails <span class="badge">NEU</span></div>
+          <div class="card-value">3</div>
+          <div class="card-sub">Posteingang &mdash; ungelesen</div>
+        </div>
+
+        <div class="card blue">
+          <div class="card-label">Wetter Hamburg <span>☁</span></div>
           <div class="weather-row">
             <span class="weather-icon">⛅</span>
-            <div>
-              <div class="weather-temp">18°C</div>
-              <div class="sub">Bewölkt · Wind 14 km/h</div>
-            </div>
+            <span class="card-value" style="margin:0;">18°C</span>
           </div>
-        </div>
-
-        <div class="card">
-          <div class="card-head">
-            <span class="card-title">E-Mail Postfach</span>
-            <span class="card-icon">✉</span>
-          </div>
-          <div class="metric amber">3</div>
-          <div class="sub">neue Nachrichten</div>
-          <div class="bar-track"><div class="bar-fill amber" style="width:60%"></div></div>
-        </div>
-
-        <div class="card wide">
-          <div class="card-head">
-            <span class="card-title">Letzte Nachrichten</span>
-            <span class="badge">3 UNGELESEN</span>
-          </div>
-          <div class="list-row"><span class="from">Lessing-Gymnasium</span><span class="snippet">Stundenplan-Update KW29 …</span></div>
-          <div class="list-row"><span class="from">Robin Mandel</span><span class="snippet">Kurzes Update aus Ulm …</span></div>
-          <div class="list-row"><span class="from">Booking.com</span><span class="snippet">Ihre Reservierung wurde bestätigt …</span></div>
-        </div>
-
-        <div class="card wide">
-          <div class="card-head">
-            <span class="card-title">System Info</span>
-            <span class="card-icon">🛰</span>
-          </div>
-          <div class="list-row"><span class="from">Host</span><span class="snippet">Studio · WSL2 Ubuntu</span></div>
-          <div class="list-row"><span class="from">Uptime</span><span class="snippet">4 Tage, 07:22 h</span></div>
-          <div class="list-row"><span class="from">Speicher</span><span class="snippet">612 GB frei von 1 TB</span></div>
-          <div class="list-row"><span class="from">Tunnel Status</span><span class="snippet"><span class="dot-online"></span>Cloudflare aktiv</span></div>
+          <div class="card-sub" style="color:#e0e0ff;">Bewölkt &middot; Wind 14 km/h</div>
         </div>
 
       </div>
+
+      <div class="section-title">Übersicht</div>
+
+      <div class="grid">
+
+        <div class="card wide">
+          <div class="card-label">Postfach &mdash; Vorschau <span>✉</span></div>
+          <div class="mail-list">
+            <div class="mail-item"><span>Lessing-Gymnasium &mdash; Stundenplan</span><span>09:12</span></div>
+            <div class="mail-item"><span>DistroKid &mdash; Release Report</span><span>08:47</span></div>
+            <div class="mail-item"><span>Booking.com &mdash; Bestätigung</span><span>Gestern</span></div>
+          </div>
+        </div>
+
+        <div class="card green">
+          <div class="card-label">System Uptime <span>◷</span></div>
+          <div class="card-value" style="font-size:36px;">4T 07H</div>
+          <div class="card-sub">Letzter Neustart: 09.07.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">Speicherplatz <span>▤</span></div>
+          <div class="card-value">61%</div>
+          <div class="bar-track"><div class="bar-fill" style="width:61%"></div></div>
+          <div class="card-sub">610 GB / 1 TB belegt</div>
+        </div>
+
+      </div>
+
     </div>
   </div>
 

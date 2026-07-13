@@ -6012,7 +6012,22 @@ async function loadSchuljahr2627() {
     const d = await r.json();
     const klassen = (d.klassen || []).map(k => `<span style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:14px;font-weight:600;color:var(--bright)">${k}</span>`).join('');
     const slots = (d.slots_geplant || []).map(s => `<span style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:14px;font-weight:600;color:var(--bright)">${s.tag} ${s.zeit}</span>`).join('');
-    const module = (d.module_vorjahr || []).map(m => `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--text)">${m}</div>`).join('');
+    const module = (d.module_vorjahr || []).map(m => {
+      const titel = typeof m === 'string' ? m : (m.titel || '');
+      const auftrag = typeof m === 'string' ? '' : (m.auftrag || '');
+      const titelAttr = escHtml(titel).replace(/"/g, '&quot;');
+      const auftragVal = escHtml(auftrag).replace(/"/g, '&quot;');
+      return `<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;min-width:0;font-size:14px;color:var(--text)">${escHtml(titel)}</div>
+        <input type="text" value="${auftragVal}" placeholder="Auftrag zu dieser PPT…"
+          data-titel="${titelAttr}"
+          onchange="sj2627ModulSaveAuftrag(this)"
+          style="flex:1;min-width:140px;max-width:320px;background:rgba(0,0,0,0.25);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:14px;color:var(--bright)">
+        <button onclick="sj2627ModulNudge(this)" data-titel="${titelAttr}"
+          title="Auftrag an Bolla anstupsen"
+          style="flex-shrink:0;background:none;border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:13px;line-height:1;cursor:pointer;padding:6px 8px">📌</button>
+      </div>`;
+    }).join('');
 
     const termine = d.termine || [];
     let monthRows = '';
@@ -6135,6 +6150,42 @@ async function sj2627Nudge(btn) {
     } else {
       btn.textContent = '⚠️';
       btn.title = (d && d.error) || 'Fehler — erst Thema eintragen';
+    }
+  } catch(e) { btn.textContent = '⚠️'; }
+  setTimeout(() => { btn.textContent = orig; }, 2400);
+}
+
+async function sj2627ModulSaveAuftrag(input) {
+  const titel = input.dataset.titel;
+  input.style.borderColor = 'var(--accent)';
+  try {
+    await fetch(API + '/api/schuljahr2627/modul-update', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({titel, auftrag: input.value})});
+    input.style.borderColor = 'var(--success)';
+    setTimeout(() => { input.style.borderColor = 'var(--border)'; }, 1200);
+  } catch(e) {
+    input.style.borderColor = 'var(--danger)';
+  }
+}
+
+async function sj2627ModulNudge(btn) {
+  const titel = btn.dataset.titel;
+  const row = btn.closest('div');
+  const input = row.querySelector('input[type="text"]');
+  const orig = btn.textContent;
+  if (input) await sj2627ModulSaveAuftrag(input);
+  try {
+    const r = await fetch(API + '/api/schuljahr2627/modul-nudge', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({titel})});
+    const d = await r.json();
+    if (d && d.ok) {
+      let copied = false;
+      try { await navigator.clipboard.writeText(d.prompt); copied = true; } catch(e) {}
+      btn.textContent = copied ? '✓📋' : '✓';
+      btn.title = copied ? 'Angestupst + in Zwischenablage kopiert' : 'Angestupst (Kopieren blockiert)';
+    } else {
+      btn.textContent = '⚠️';
+      btn.title = (d && d.error) || 'Fehler — erst Auftrag eintragen';
     }
   } catch(e) { btn.textContent = '⚠️'; }
   setTimeout(() => { btn.textContent = orig; }, 2400);

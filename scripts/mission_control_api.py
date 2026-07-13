@@ -2455,6 +2455,44 @@ def schuljahr_nudge_termin(datum, zeit):
     append_clipboard(prompt, source="nudge")
     return {"ok": True, "prompt": prompt}
 
+def schuljahr_update_modul(titel, auftrag):
+    """Speichert den von Chris eingetragenen Auftrag zu einem Modul aus dem Vorjahr (Titel = eindeutiger Schlüssel)."""
+    data = _schuljahr_load()
+    for m in data.get("module_vorjahr", []):
+        if isinstance(m, dict) and m.get("titel") == titel:
+            m["auftrag"] = auftrag
+            _schuljahr_save(data)
+            return {"ok": True}
+    return {"ok": False, "error": "Modul nicht gefunden"}
+
+def schuljahr_nudge_modul(titel):
+    """Baut aus dem eingetragenen Auftrag zu einem Vorjahres-Modul (freier Text von Chris) einen Anstups-Prompt
+    und legt ihn in die Bolla-Queue, analog zu schuljahr_nudge_termin."""
+    data = _schuljahr_load()
+    m = next((m for m in data.get("module_vorjahr", []) if isinstance(m, dict) and m.get("titel") == titel), None)
+    if not m:
+        return {"ok": False, "error": "Modul nicht gefunden"}
+    auftrag = m.get("auftrag", "")
+    if not auftrag:
+        return {"ok": False, "error": "Kein Auftrag eingetragen"}
+    prompt = (f"Modul aus dem Vorjahr (25/26): {titel}\n\n"
+              f"Auftrag von Chris: {auftrag}")
+    q = {"nudges": []}
+    if os.path.exists(BOARD_NUDGES_FILE):
+        try:
+            with open(BOARD_NUDGES_FILE, encoding="utf-8") as f:
+                q = json.load(f)
+        except Exception:
+            pass
+    q.setdefault("nudges", []).append({
+        "projId": "schuljahr2627", "title": f"▸ Vorjahres-Modul: {titel}",
+        "ts": datetime.now().isoformat(timespec="seconds"), "prompt": prompt})
+    os.makedirs(os.path.dirname(BOARD_NUDGES_FILE), exist_ok=True)
+    with open(BOARD_NUDGES_FILE, "w", encoding="utf-8") as f:
+        json.dump(q, f, ensure_ascii=False, indent=2)
+    append_clipboard(prompt, source="nudge")
+    return {"ok": True, "prompt": prompt}
+
 WORKSHOP_FORTSCHRITT = os.path.join(WORKSPACE, "projektwoche-ki-workshop/fortschritt.json")
 
 def get_workshop_fortschritt():
@@ -6907,6 +6945,10 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 self._send_json(schuljahr_update_termin(body.get("datum",""), body.get("zeit",""), body.get("auftrag","")))
             elif self.path == "/api/schuljahr2627/nudge":
                 self._send_json(schuljahr_nudge_termin(body.get("datum",""), body.get("zeit","")))
+            elif self.path == "/api/schuljahr2627/modul-update":
+                self._send_json(schuljahr_update_modul(body.get("titel",""), body.get("auftrag","")))
+            elif self.path == "/api/schuljahr2627/modul-nudge":
+                self._send_json(schuljahr_nudge_modul(body.get("titel","")))
             elif self.path == "/api/kosten/guthaben":
                 self._send_json(kosten_update_guthaben(body.get("name",""), body.get("betrag", 0), body.get("info")))
             elif self.path == "/api/travel/recommendation":
