@@ -468,6 +468,8 @@ body {
       <div style="font-size:11px;margin-top:6px;color:var(--text3)">am PC auch mit <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:3px;padding:1px 5px;font-size:11px">Strg+V</kbd></div>
     </div>
     <input type="file" id="clip-file-input" accept="image/*" style="display:none" onchange="clipImgFileSelected(event)">
+    <input type="file" id="clip-camera-input" accept="image/*" capture="environment" style="display:none" onchange="clipCameraFileSelected(event)">
+    <button onclick="document.getElementById('clip-camera-input').click()" class="clip-btn" style="width:100%;background:rgba(52,199,89,0.12);color:var(--green)">📷 Foto aufnehmen → auch Windows-Zwischenablage</button>
     <button onclick="clipImgFromClipboard()" class="clip-btn" style="width:100%">📋 Aus Zwischenablage einfügen</button>
     <span id="clip-img-status" style="display:block;font-size:13px;min-height:18px;text-align:center"></span>
     <div id="clip-img-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px"></div>
@@ -1219,15 +1221,21 @@ async function loadClipboardImages() {
       </div>`).join('');
   } catch(e) { /* ignore */ }
 }
-async function _clipImgUpload(file) {
+async function _clipImgUpload(file, toWindows) {
   if (!file || !file.type.startsWith('image/')) { _clipImgStatus('Kein Bild', false); return; }
   _clipImgStatus('Wird hochgeladen…', true);
   const reader = new FileReader();
   reader.onload = async e => {
     try {
-      await fetch('/api/clipboard/image', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({image_b64:e.target.result.split(',')[1], mime:file.type})});
-      _clipImgStatus('✓ Gespeichert', true);
-      setTimeout(() => _clipImgStatus('', true), 2000);
+      const r = await fetch('/api/clipboard/image', {method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({image_b64:e.target.result.split(',')[1], mime:file.type, to_windows:!!toWindows})});
+      const d = await r.json();
+      if (toWindows) {
+        _clipImgStatus(d.windows_clip_ok ? '✓ Auch in Windows-Zwischenablage (Strg+V am Studio)' : '✓ Gespeichert, Windows-Zwischenablage fehlgeschlagen', !!d.windows_clip_ok);
+      } else {
+        _clipImgStatus('✓ Gespeichert', true);
+      }
+      setTimeout(() => _clipImgStatus('', true), 3000);
       loadClipboardImages();
     } catch(e) { _clipImgStatus('Fehler', false); }
   };
@@ -1248,6 +1256,7 @@ function clipImgDragLeave(e) {
 }
 function clipImgDrop(e) { e.preventDefault(); clipImgDragLeave(e); _clipImgUpload(e.dataTransfer.files[0]); }
 function clipImgFileSelected(e) { _clipImgUpload(e.target.files[0]); e.target.value = ''; }
+function clipCameraFileSelected(e) { _clipImgUpload(e.target.files[0], true); e.target.value = ''; }
 
 // ===== AUFPEPPEN =====
 let _pepFile = null;

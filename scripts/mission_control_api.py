@@ -196,7 +196,7 @@ def get_clipboard_images():
     images.sort(key=lambda x: x["ts"], reverse=True)
     return {"images": images}
 
-def save_clipboard_image(data_b64, mime):
+def save_clipboard_image(data_b64, mime, to_windows=False):
     import base64, uuid
     _ensure_clipboard_images_dir()
     EXT_MAP = {"image/png": ".png", "image/jpeg": ".jpg", "image/jpg": ".jpg",
@@ -207,7 +207,10 @@ def save_clipboard_image(data_b64, mime):
     fpath = os.path.join(CLIPBOARD_IMAGES_DIR, fname)
     with open(fpath, "wb") as f:
         f.write(base64.b64decode(data_b64))
-    return {"ok": True, "filename": fname, "ts": datetime.now().isoformat()}
+    result = {"ok": True, "filename": fname, "ts": datetime.now().isoformat()}
+    if to_windows:
+        result["windows_clip_ok"] = _set_windows_clipboard_image(fpath)
+    return result
 
 def delete_clipboard_image(filename):
     _ensure_clipboard_images_dir()
@@ -5001,6 +5004,13 @@ def _set_windows_clipboard_image(local_fpath):
         "$ProgressPreference='SilentlyContinue';"
         "Add-Type -AssemblyName System.Windows.Forms,System.Drawing;"
         f"$img=[System.Drawing.Image]::FromFile('{winpath_ps}');"
+        # Handy-Fotos tragen die Drehung nur als EXIF-Tag (0x0112) - .NET rendert sonst die rohen,
+        # ungedrehten Pixel. Vor dem Clipboard-Transfer explizit anwenden.
+        "if($img.PropertyIdList -contains 0x0112){"
+        "$o=$img.GetPropertyItem(0x0112).Value[0];"
+        "$rot=switch($o){3{'Rotate180FlipNone'}6{'Rotate90FlipNone'}8{'Rotate270FlipNone'}default{$null}};"
+        "if($rot){$img.RotateFlip([System.Drawing.RotateFlipType]::$rot)}"
+        "}"
         "[System.Windows.Forms.Clipboard]::SetImage($img);$img.Dispose();"
         "if([System.Windows.Forms.Clipboard]::ContainsImage()){'CLIPOK'}else{'CLIPFAIL'}"
     )
@@ -7301,9 +7311,10 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
             elif self.path == "/api/clipboard/image":
                 img_b64 = body.get("image_b64", "")
                 mime = body.get("mime", "image/png")
+                to_windows = bool(body.get("to_windows", False))
                 if not img_b64:
                     self._send_json({"error": "Kein Bild"}, status=400); return
-                self._send_json(save_clipboard_image(img_b64, mime))
+                self._send_json(save_clipboard_image(img_b64, mime, to_windows=to_windows))
             elif self.path == "/api/clipboard/image/delete":
                 filename = body.get("filename", "")
                 if not filename:
