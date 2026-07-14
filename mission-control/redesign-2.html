@@ -5,408 +5,372 @@
 <title>Mission Control — Notizbuch</title>
 <style>
   :root{
-    --paper:#f3e9d8;
-    --paper-dark:#e8dcc4;
-    --ink:#3a2f28;
-    --ink-soft:#6b5d4f;
-    --rust:#c1440e;
-    --olive:#8a9a5b;
-    --mustard:#d9a441;
-    --tape:#f0d97a;
-    --line:#c9b896;
+    --paper:#f3e9d4;
+    --paper-dark:#e9dcc0;
+    --ink:#3a2e22;
+    --ink-soft:#6b5a45;
+    --accent:#c1440e;
+    --accent-soft:#e0813f;
+    --tape:#f4d35e;
+    --tape2:#a8c98a;
+    --line:#c9b898;
+    --card:#fbf5e6;
+    --shadow: 3px 4px 0 rgba(58,46,34,0.18);
   }
-  *{box-sizing:border-box;}
+  * { box-sizing: border-box; }
   html,body{
-    margin:0;padding:0;height:100%;
-    font-family:'Segoe Print','Bradley Hand','Comic Sans MS',cursive;
-    color:var(--ink);
-    background:
-      radial-gradient(circle at 20% 10%, rgba(255,255,255,0.4), transparent 40%),
-      radial-gradient(circle at 80% 90%, rgba(0,0,0,0.04), transparent 50%),
-      repeating-linear-gradient(0deg, transparent, transparent 27px, var(--line) 28px),
-      var(--paper);
-    background-attachment:fixed;
-  }
-  body::before{
-    content:"";
-    position:fixed;inset:0;
+    margin:0; padding:0; height:100%;
+    font-family: 'Segoe Print','Bradley Hand','Comic Sans MS', cursive, sans-serif;
+    color: var(--ink);
+    background-color: var(--paper);
     background-image:
-      radial-gradient(rgba(0,0,0,0.025) 1px, transparent 1px);
-    background-size:3px 3px;
-    pointer-events:none;
-    mix-blend-mode:multiply;
-    opacity:.5;
+      repeating-linear-gradient(0deg, rgba(201,184,152,0.35) 0px, rgba(201,184,152,0.35) 1px, transparent 1px, transparent 32px),
+      radial-gradient(ellipse at top left, rgba(255,255,255,0.5), transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(0,0,0,0.05), transparent 60%);
+    background-attachment: fixed;
   }
+  svg.noise-def{ position:absolute; width:0; height:0; }
+  .paper-noise{
+    position: fixed; inset:0; pointer-events:none; opacity:0.05; mix-blend-mode:multiply;
+    filter: url(#grain);
+  }
+
   .app{
     display:flex;
     min-height:100vh;
   }
 
-  /* ===== SIDEBAR ===== */
+  /* SIDEBAR */
   .sidebar{
-    width:220px;
-    flex-shrink:0;
-    background:var(--paper-dark);
-    border-right:3px dashed var(--ink-soft);
-    padding:26px 16px;
-    position:relative;
-    box-shadow: inset -6px 0 12px -10px rgba(0,0,0,0.25);
+    width: 220px;
+    padding: 26px 16px;
+    background: var(--paper-dark);
+    border-right: 3px solid var(--ink);
+    border-image: repeating-linear-gradient(45deg, var(--ink), var(--ink) 6px, transparent 6px, transparent 10px) 3;
+    position: relative;
   }
   .sidebar::after{
     content:"";
-    position:absolute;
-    top:0;bottom:0;left:0;
-    width:26px;
-    background-image: radial-gradient(circle at 8px 0, transparent 9px, var(--paper) 10px);
-    background-size:26px 34px;
-    background-repeat:repeat-y;
-    opacity:.55;
+    position:absolute; top:0; right:-6px; bottom:0; width:6px;
+    background: repeating-linear-gradient(180deg, transparent 0 6px, rgba(58,46,34,0.15) 6px 8px);
   }
-  .brand{
-    font-size:26px;
+  .logo{
+    font-size: 26px;
     font-weight:bold;
-    color:var(--rust);
-    transform:rotate(-2deg);
-    margin-bottom:6px;
-    text-shadow:1px 1px 0 rgba(0,0,0,0.06);
-  }
-  .brand span{
+    margin-bottom: 6px;
+    transform: rotate(-2deg);
     display:inline-block;
-    background:var(--tape);
-    padding:2px 10px;
-    transform:rotate(3deg);
-    border-radius:2px;
-    box-shadow:0 2px 3px rgba(0,0,0,0.15);
-    font-size:13px;
-    color:var(--ink-soft);
-    margin-left:4px;
   }
-  .brand-sub{
-    font-size:13px;
-    color:var(--ink-soft);
-    margin-bottom:26px;
-    border-bottom:2px dotted var(--ink-soft);
-    padding-bottom:14px;
+  .logo .paw{ font-size:20px; }
+  .logo-sub{
+    font-size:12px;
+    color: var(--ink-soft);
+    margin-bottom: 26px;
+    border-bottom: 2px dashed var(--line);
+    padding-bottom: 14px;
   }
   nav.navlist{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
+    display:flex; flex-direction:column; gap: 10px;
   }
-  .navlink{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:10px 12px;
-    border-radius:9px 14px 11px 16px / 14px 9px 16px 11px;
-    border:2px solid transparent;
-    font-size:15.5px;
-    color:var(--ink);
+  .navitem{
+    display:flex; align-items:center; gap:10px;
+    padding: 9px 12px;
+    font-size: 16px;
+    color: var(--ink);
     text-decoration:none;
+    border: 2px solid transparent;
+    border-radius: 10px 14px 12px 16px / 14px 10px 16px 12px;
     cursor:pointer;
-    transition:transform .12s ease;
+    transition: transform .12s ease;
   }
-  .navlink:hover{
-    transform:translateX(3px) rotate(-0.5deg);
-    border-color:var(--ink-soft);
-    background:rgba(255,255,255,0.35);
+  .navitem:hover{
+    transform: rotate(-1deg) translateX(2px);
+    border-color: var(--ink);
+    background: rgba(255,255,255,0.4);
   }
-  .navlink.active{
-    background:#fff8ea;
-    border:2px dashed var(--rust);
-    transform:rotate(-1deg);
-    box-shadow:2px 3px 0 rgba(0,0,0,0.08);
+  .navitem.active{
+    background: var(--card);
+    border: 2px solid var(--ink);
+    box-shadow: var(--shadow);
+    transform: rotate(-1deg);
     font-weight:bold;
   }
-  .navlink .ic{font-size:19px;}
-  .paperclip{
-    position:absolute;
-    right:14px;
-    bottom:22px;
-    font-size:34px;
-    opacity:.5;
-    transform:rotate(18deg);
+  .navitem .ic{ font-size:18px; }
+
+  .sidebar-footer{
+    margin-top: 30px;
+    font-size: 11px;
+    color: var(--ink-soft);
+    transform: rotate(1deg);
   }
 
-  /* ===== MAIN ===== */
+  /* MAIN */
   .main{
     flex:1;
-    padding:22px 34px 40px;
+    padding: 24px 34px 40px;
     position:relative;
   }
 
   .topbar{
     display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    border-bottom:3px solid var(--ink);
-    padding-bottom:12px;
-    margin-bottom:30px;
-    position:relative;
+    justify-content: space-between;
+    align-items:flex-end;
+    margin-bottom: 26px;
+    border-bottom: 3px solid var(--ink);
+    padding-bottom: 12px;
+    position: relative;
   }
   .topbar h1{
-    font-size:32px;
     margin:0;
-    color:var(--ink);
-    transform:rotate(-0.6deg);
+    font-size: 30px;
+    transform: rotate(-1deg);
   }
-  .topbar h1 em{
-    font-style:normal;
-    border-bottom:4px solid var(--mustard);
+  .topbar h1 .underline{
+    display:block;
+    width: 100%;
+    height: 8px;
+    margin-top: -4px;
   }
-  .clock{
-    font-size:22px;
-    background:#fff;
-    border:2px solid var(--ink);
-    border-radius:50%;
-    width:74px;height:74px;
-    display:flex;align-items:center;justify-content:center;
-    transform:rotate(4deg);
-    box-shadow:3px 3px 0 rgba(0,0,0,0.12);
+  .topbar .underline svg{ width: 260px; height:14px; }
+  .clockbox{
+    background: var(--card);
+    border: 2px solid var(--ink);
+    border-radius: 14px 10px 16px 12px / 10px 16px 10px 18px;
+    padding: 8px 18px;
+    box-shadow: var(--shadow);
+    transform: rotate(2deg);
+    text-align:center;
+  }
+  .clockbox .time{
+    font-size: 24px;
+    font-weight:bold;
+  }
+  .clockbox .date{
+    font-size: 11px;
+    color: var(--ink-soft);
   }
 
   .grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(230px,1fr));
-    gap:26px;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 22px;
   }
 
   .card{
-    background:#fffaf0;
-    border:2px solid var(--ink);
-    border-radius:3px;
-    padding:18px 20px;
-    position:relative;
-    box-shadow:4px 5px 0 rgba(0,0,0,0.10);
-    min-height:150px;
+    background: var(--card);
+    border: 2.5px solid var(--ink);
+    border-radius: 16px 10px 18px 12px / 12px 18px 10px 16px;
+    padding: 18px 18px 16px;
+    box-shadow: var(--shadow);
+    position: relative;
+    transition: transform .15s ease;
   }
-  .card:nth-child(1){transform:rotate(-1.3deg);}
-  .card:nth-child(2){transform:rotate(1deg);}
-  .card:nth-child(3){transform:rotate(-0.6deg);}
-  .card:nth-child(4){transform:rotate(1.6deg);}
-  .card:nth-child(5){transform:rotate(-1.8deg);}
-  .card:nth-child(6){transform:rotate(0.8deg);}
+  .card:nth-child(odd){ transform: rotate(-1.1deg); }
+  .card:nth-child(even){ transform: rotate(1.1deg); }
+  .card:hover{ transform: rotate(0deg) scale(1.015); }
 
-  .pin{
+  .tape{
     position:absolute;
-    top:-12px;left:50%;
-    transform:translateX(-50%);
-    width:20px;height:20px;
-    border-radius:50%;
-    background:radial-gradient(circle at 35% 30%, #ff8f70, var(--rust));
-    box-shadow:0 2px 3px rgba(0,0,0,0.35);
+    top:-14px; left: 30px;
+    width: 70px; height: 26px;
+    background: var(--tape);
+    opacity:0.85;
+    transform: rotate(-6deg);
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
   }
+  .card.tape-green .tape{ background: var(--tape2); left:auto; right:26px; transform: rotate(7deg); }
+
   .card h3{
-    margin:6px 0 12px;
-    font-size:19px;
-    display:flex;
-    align-items:center;
-    gap:8px;
+    margin: 6px 0 10px;
+    font-size: 17px;
+    display:flex; align-items:center; gap:8px;
   }
-  .card .icon{font-size:22px;}
-  .stat-big{
-    font-size:40px;
+  .card h3 .ic{ font-size:20px; }
+
+  .metric-row{
+    display:flex; align-items:baseline; gap:8px;
+  }
+  .metric-value{
+    font-size: 34px;
     font-weight:bold;
-    color:var(--rust);
-    line-height:1;
+    color: var(--accent);
   }
-  .stat-label{
-    color:var(--ink-soft);
-    font-size:13.5px;
-    margin-top:4px;
-  }
+  .metric-unit{ font-size:16px; color: var(--ink-soft); }
 
-  .meter{
-    height:16px;
-    border:2px solid var(--ink);
-    border-radius:8px;
-    margin-top:12px;
-    background:repeating-linear-gradient(45deg, #efe4cd, #efe4cd 6px, #e5d8ba 6px, #e5d8ba 12px);
+  .barwrap{
+    margin-top: 10px;
+    height: 14px;
+    background: repeating-linear-gradient(90deg, transparent, transparent 4px, rgba(58,46,34,0.15) 4px 5px);
+    border: 2px solid var(--ink);
+    border-radius: 8px;
     overflow:hidden;
-    position:relative;
   }
-  .meter-fill{
+  .bar{
     height:100%;
-    background:var(--olive);
-    border-right:2px solid var(--ink);
+    background: repeating-linear-gradient(45deg, var(--accent), var(--accent) 6px, var(--accent-soft) 6px, var(--accent-soft) 12px);
   }
-  .meter-fill.rust{background:var(--rust);}
-  .meter-fill.mustard{background:var(--mustard);}
+  .bar.green{ background: repeating-linear-gradient(45deg, #6b8f4e, #6b8f4e 6px, var(--tape2) 6px, var(--tape2) 12px); }
 
-  .mail-list{list-style:none;margin:0;padding:0;font-size:14.5px;}
-  .mail-list li{
-    padding:6px 0;
-    border-bottom:1px dashed var(--line);
-    display:flex;
-    justify-content:space-between;
-    gap:6px;
-  }
-  .mail-list li:last-child{border-bottom:none;}
-  .badge{
-    background:var(--rust);
-    color:#fff8ea;
-    border-radius:50%;
-    width:26px;height:26px;
-    display:flex;align-items:center;justify-content:center;
-    font-size:14px;
-    position:absolute;
-    top:-10px;right:-8px;
-    transform:rotate(8deg);
-    box-shadow:2px 2px 0 rgba(0,0,0,0.2);
+  .card p.note{
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 10px;
   }
 
-  .weather-row{
-    display:flex;
-    align-items:center;
-    gap:14px;
+  .maillist{ list-style:none; padding:0; margin: 4px 0 0; font-size: 14px; }
+  .maillist li{
+    padding: 5px 0;
+    border-bottom: 1px dashed var(--line);
+    display:flex; justify-content:space-between; gap: 8px;
   }
-  .weather-emoji{font-size:46px;}
-  .weather-temp{font-size:34px;font-weight:bold;color:var(--ink);}
-  .weather-city{color:var(--ink-soft);font-size:14px;}
+  .maillist li:last-child{ border-bottom:none; }
+  .maillist .from{ font-weight:bold; }
+  .maillist .snip{ color: var(--ink-soft); font-size:12px; }
 
-  .doodle{
-    position:absolute;
-    bottom:6px;right:10px;
-    font-size:15px;
-    opacity:.45;
-    transform:rotate(-4deg);
+  .weather-big{
+    display:flex; align-items:center; gap: 14px;
   }
+  .weather-big .icon{ font-size: 46px; }
+  .weather-big .temp{ font-size: 32px; font-weight:bold; color: var(--accent); }
+  .weather-sub{ font-size:12px; color: var(--ink-soft); margin-top:6px; }
 
-  .washi{
-    position:absolute;
-    top:-10px;left:16px;
-    width:60px;height:22px;
-    background:var(--tape);
-    opacity:.75;
-    transform:rotate(-6deg);
-    box-shadow:0 1px 2px rgba(0,0,0,0.15);
+  .doodle-star{
+    position:absolute; bottom:8px; right:14px; font-size:18px; opacity:0.5; transform: rotate(12deg);
   }
 
-  .tasklist{
-    font-size:14.5px;
-    margin:0;padding-left:2px;
-    list-style:none;
+  .stickynote{
+    background: #fff2b8;
+    border: 2px solid var(--ink);
+    border-radius: 2px 14px 4px 12px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+    transform: rotate(-1.5deg);
+    font-size: 14px;
   }
-  .tasklist li{
-    padding:4px 0;
-    display:flex;
-    gap:8px;
-    align-items:flex-start;
-  }
-  .checkbox{
-    width:16px;height:16px;
-    border:2px solid var(--ink);
-    border-radius:4px;
-    flex-shrink:0;
-    margin-top:2px;
-  }
-  .checkbox.done{
-    background:var(--olive);
-  }
-  .strike{text-decoration:line-through;color:var(--ink-soft);}
+  .stickynote h3{ margin-top:0; }
 
-  .footer-note{
-    margin-top:34px;
-    font-size:13px;
-    color:var(--ink-soft);
-    text-align:center;
-    opacity:.7;
-  }
+  .schul-list{ list-style:none; padding:0; margin:4px 0 0; font-size:14px; }
+  .schul-list li{ padding: 4px 0; }
+  .schul-list li::before{ content:"✎ "; color: var(--accent); }
+
+  ::selection{ background: var(--tape); }
 </style>
 </head>
 <body>
+
+<svg class="noise-def">
+  <filter id="grain">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+    <feColorMatrix type="saturate" values="0"/>
+  </filter>
+</svg>
+<div class="paper-noise"></div>
+
 <div class="app">
 
   <aside class="sidebar">
-    <div class="brand">Bolla <span>Kontrollzentrum</span></div>
-    <div class="brand-sub">🐾 dein persönliches Notizbuch</div>
+    <div class="logo"><span class="paw">🐾</span> Bolla</div>
+    <div class="logo-sub">Mission Control — Notizbuch</div>
     <nav class="navlist">
-      <a class="navlink active"><span class="ic">🏠</span> Dashboard</a>
-      <a class="navlink"><span class="ic">🐾</span> Bolla</a>
-      <a class="navlink"><span class="ic">🎓</span> Schule</a>
-      <a class="navlink"><span class="ic">📅</span> Kalender</a>
-      <a class="navlink"><span class="ic">✉️</span> E-Mail</a>
-      <a class="navlink"><span class="ic">🌤️</span> Wetter</a>
-      <a class="navlink"><span class="ic">🖥️</span> System Info</a>
+      <a class="navitem active"><span class="ic">🏠</span> Dashboard</a>
+      <a class="navitem"><span class="ic">🐾</span> Bolla</a>
+      <a class="navitem"><span class="ic">🎓</span> Schule</a>
+      <a class="navitem"><span class="ic">📅</span> Kalender</a>
+      <a class="navitem"><span class="ic">✉️</span> E-Mail</a>
+      <a class="navitem"><span class="ic">🌤️</span> Wetter</a>
+      <a class="navitem"><span class="ic">🖥️</span> System Info</a>
     </nav>
-    <div class="paperclip">📎</div>
+    <div class="sidebar-footer">
+      ✎ zuletzt aktualisiert<br>
+      vor 2 Minuten
+    </div>
   </aside>
 
   <main class="main">
     <div class="topbar">
-      <h1><em>Dashboard</em></h1>
-      <div class="clock">20:14</div>
+      <h1>Dashboard
+        <span class="underline">
+          <svg viewBox="0 0 260 14"><path d="M2 8 C 60 2, 120 12, 180 6 S 240 2, 258 8" stroke="#c1440e" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+        </span>
+      </h1>
+      <div class="clockbox">
+        <div class="time">20:14</div>
+        <div class="date">Di, 14. Juli</div>
+      </div>
     </div>
 
     <div class="grid">
 
       <div class="card">
-        <div class="washi"></div>
-        <div class="pin"></div>
-        <h3><span class="icon">🖥️</span> Arbeitsspeicher</h3>
-        <div class="stat-big">34%</div>
-        <div class="stat-label">belegt · 5,4 GB von 16 GB</div>
-        <div class="meter"><div class="meter-fill olive" style="width:34%;background:var(--olive);"></div></div>
-      </div>
-
-      <div class="card">
-        <div class="washi" style="background:var(--olive);"></div>
-        <div class="pin" style="background:radial-gradient(circle at 35% 30%, #a8bb7a, var(--olive));"></div>
-        <h3><span class="icon">⚙️</span> Prozessor</h3>
-        <div class="stat-big" style="color:var(--olive);">12%</div>
-        <div class="stat-label">Auslastung · ruhig unterwegs</div>
-        <div class="meter"><div class="meter-fill" style="width:12%;background:var(--mustard);"></div></div>
-      </div>
-
-      <div class="card" style="position:relative;">
-        <div class="badge">3</div>
-        <div class="pin"></div>
-        <h3><span class="icon">✉️</span> Neue Mails</h3>
-        <ul class="mail-list">
-          <li><span>Tourist-Info Schönberg</span><span>10:12</span></li>
-          <li><span>Lessing-Gymnasium — Stundenplan</span><span>08:47</span></li>
-          <li><span>DistroKid Auszahlung</span><span>gestern</span></li>
-        </ul>
-        <div class="doodle">✎ noch lesen…</div>
-      </div>
-
-      <div class="card">
-        <div class="pin" style="background:radial-gradient(circle at 35% 30%, #f2c975, var(--mustard));"></div>
-        <h3><span class="icon">🌤️</span> Wetter Hamburg</h3>
-        <div class="weather-row">
-          <div class="weather-emoji">⛅</div>
-          <div>
-            <div class="weather-temp">18°C</div>
-            <div class="weather-city">leicht bewölkt · Wind 12 km/h</div>
-          </div>
+        <div class="tape"></div>
+        <h3><span class="ic">🖥️</span> Arbeitsspeicher</h3>
+        <div class="metric-row">
+          <span class="metric-value">34</span><span class="metric-unit">%</span>
         </div>
-        <div class="doodle">☂ heute Abend evtl. Regen</div>
+        <div class="barwrap"><div class="bar" style="width:34%"></div></div>
+        <p class="note">5,4 GB von 16 GB belegt</p>
+      </div>
+
+      <div class="card tape-green">
+        <div class="tape"></div>
+        <h3><span class="ic">⚙️</span> Prozessor</h3>
+        <div class="metric-row">
+          <span class="metric-value">12</span><span class="metric-unit">%</span>
+        </div>
+        <div class="barwrap"><div class="bar green" style="width:12%"></div></div>
+        <p class="note">alles ruhig, kein Lüfterlärm 🙂</p>
       </div>
 
       <div class="card">
-        <div class="pin"></div>
-        <h3><span class="icon">📌</span> Heute ansteh.</h3>
-        <ul class="tasklist">
-          <li><span class="checkbox done"></span><span class="strike">Nachtsicherung laufen lassen</span></li>
-          <li><span class="checkbox"></span><span>AURORA Preis-Fix nachschauen</span></li>
-          <li><span class="checkbox"></span><span>Schulordner 7er sortieren</span></li>
+        <div class="tape"></div>
+        <h3><span class="ic">✉️</span> Neue Mails</h3>
+        <div class="metric-row">
+          <span class="metric-value">3</span><span class="metric-unit">ungelesen</span>
+        </div>
+        <ul class="maillist">
+          <li><span class="from">itslearning</span><span class="snip">Plan aktualisiert</span></li>
+          <li><span class="from">ADAC Service</span><span class="snip">Automatische Antwort</span></li>
+          <li><span class="from">Robin Mandel</span><span class="snip">Famulatur Tansania…</span></li>
+        </ul>
+        <span class="doodle-star">✦</span>
+      </div>
+
+      <div class="card tape-green">
+        <div class="tape"></div>
+        <h3><span class="ic">🌤️</span> Wetter Hamburg</h3>
+        <div class="weather-big">
+          <span class="icon">⛅</span>
+          <span class="temp">18°C</span>
+        </div>
+        <div class="weather-sub">leicht bewölkt · Wind 12 km/h · morgen 21°C</div>
+      </div>
+
+      <div class="card">
+        <div class="tape"></div>
+        <h3><span class="ic">🎓</span> Schule</h3>
+        <ul class="schul-list">
+          <li>Modul-Auftrag: 2 Folien offen</li>
+          <li>7er-Ordner: Prakt 1 aktualisiert</li>
+          <li>Nächste Stunde: Fr 08:00</li>
         </ul>
       </div>
 
       <div class="card">
-        <div class="washi" style="background:var(--rust);opacity:.5;"></div>
-        <div class="pin"></div>
-        <h3><span class="icon">🖥️</span> System Info</h3>
-        <div style="font-size:14.5px;line-height:1.7;">
-          Uptime: <b>4 Tage 6 Std</b><br>
-          Speicher frei: <b>212 GB</b><br>
-          Letztes Backup: <b>heute Nacht ✓</b>
-        </div>
+        <div class="tape"></div>
+        <h3><span class="ic">📅</span> Kalender heute</h3>
+        <ul class="schul-list">
+          <li>17:00 Gesundheitszentrum</li>
+          <li>19:30 Abendessen mit Reni</li>
+        </ul>
+      </div>
+
+      <div class="stickynote">
+        <h3>📌 Notiz an mich</h3>
+        Duo per ADB verbinden und den neuen<br>
+        Foto-Knopf endlich live testen!
       </div>
 
     </div>
-
-    <div class="footer-note">— handgeführt von Bolla, Stand 20:14 —</div>
   </main>
 
 </div>

@@ -11,8 +11,9 @@ Telegram-Hinweis, das Formular erneut auszufüllen oder anzurufen (089 76 76 17 
 
 Cron: 0 */4 * * * python3 /home/bolla/workspace/scripts/adac_kreditkarte_watcher.py
 """
-import json, urllib.parse, urllib.request
+import imaplib, json, urllib.parse, urllib.request
 from datetime import datetime, timezone
+from email.header import decode_header, make_header
 from pathlib import Path
 
 CFGDIR = Path("/home/bolla/workspace/config")
@@ -20,6 +21,7 @@ TG = json.loads((CFGDIR / "telegram_bot.json").read_text())
 BOT, CHRIS = TG["bot_token"], TG["chris_id"]
 OAUTH = json.loads((CFGDIR / "outlook_oauth2.json").read_text())
 TOKF = CFGDIR / "outlook_token.json"
+WTNET_CONFIG = CFGDIR / "wtnet_account.json"
 STATE = CFGDIR / "adac_kreditkarte_watcher_state.json"
 
 SENT_DATE = "2026-07-13"
@@ -54,6 +56,53 @@ def read_token():
     TOKF.write_text(json.dumps(tok, indent=2))
     TOKF.chmod(0o600)
     return new['access_token']
+
+
+def check_wtnet(seen):
+    """Prüft chrismandel@wtnet.de per IMAP — Chris' eigene ADAC-Anfrage lief über dieses Konto,
+    nicht über Outlook, deshalb muss dieses Postfach gleichwertig mitgeprüft werden."""
+    cfg = json.loads(WTNET_CONFIG.read_text())
+    m = imaplib.IMAP4_SSL(cfg["imap_host"], cfg["imap_port"])
+    m.login(cfg["email"], cfg["password"])
+    m.select("INBOX")
+    status, data = m.search(None, "ALL")
+    ids = data[0].split()
+
+    for mid in ids[-100:]:
+        key = f"wtnet:{mid.decode()}"
+        if key in seen:
+            continue
+        seen.add(key)
+        t, d = m.fetch(mid, "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT)])")
+        if not d or not d[0]:
+            continue
+        raw = d[0][1].decode("utf-8", "replace")
+        subject, sender = "", ""
+        for line in raw.splitlines():
+            low = line.lower()
+            if low.startswith("subject:"):
+                try:
+                    subject = str(make_header(decode_header(line[8:].strip())))
+                except Exception:
+                    subject = line[8:].strip()
+            elif low.startswith("from:"):
+                try:
+                    sender = str(make_header(decode_header(line[5:].strip())))
+                except Exception:
+                    sender = line[5:].strip()
+        if not any(s in sender.lower() for s in SENDER_MARKERS):
+            continue
+        body_low = subject.lower()
+        if any(p in body_low for p in AUTOREPLY):
+            continue
+        t2, d2 = m.fetch(mid, "(BODY.PEEK[TEXT])")
+        preview = ""
+        if d2 and d2[0]:
+            preview = d2[0][1].decode("utf-8", "replace")[:400]
+        m.logout()
+        return subject, sender, preview
+    m.logout()
+    return None
 
 
 def load_state():
@@ -96,12 +145,26 @@ def main():
             continue
         when = (m.get("receivedDateTime") or "")[:16].replace("T", " ")
         preview = m.get("bodyPreview") or ""
-        tg(f"📬 *ADAC-Kreditkarte hat geantwortet!*\n\n*{subj}*\nvon `{frm}`, {when}\n\n{preview[:400]}\n\n"
+        tg(f"📬 *ADAC-Kreditkarte hat geantwortet!* (Outlook)\n\n*{subj}*\nvon `{frm}`, {when}\n\n{preview[:400]}\n\n"
            f"Frage zur Kopplung Mitgliedschaft/Karte damit beantwortet. 🐾")
         st["done"] = True
         found = True
         break
-    st["seen"] = list(seen)[-200:]
+
+    if not found:
+        try:
+            hit = check_wtnet(seen)
+        except Exception as e:
+            hit = None
+            print("wtnet-Fehler:", e)
+        if hit:
+            subj, frm, preview = hit
+            tg(f"📬 *ADAC-Kreditkarte hat geantwortet!* (wtnet)\n\n*{subj}*\nvon `{frm}`\n\n{preview}\n\n"
+               f"Frage zur Kopplung Mitgliedschaft/Karte damit beantwortet. 🐾")
+            st["done"] = True
+            found = True
+
+    st["seen"] = list(seen)[-300:]
 
     if not found and not st.get("done"):
         sent_dt = datetime.strptime(SENT_DATE, "%Y-%m-%d").replace(tzinfo=timezone.utc)
