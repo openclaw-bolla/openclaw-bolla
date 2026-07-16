@@ -9,12 +9,13 @@ Nutzung:
   python3 reni_mail.py --setpass                 # Passwort verdeckt setzen
   python3 reni_mail.py --to X --subject Y --body Z
 """
-import argparse, json, os, smtplib, ssl, getpass, stat
+import argparse, imaplib, json, os, smtplib, ssl, getpass, stat
 from email.message import EmailMessage
 from pathlib import Path
 
 CFG = Path("/home/bolla/workspace/config/reni_smtp.json")
-DEFAULTS = {"email": "renatemandel@wtnet.de", "smtp": "mail.wtnet.de", "port": 465, "password": ""}
+DEFAULTS = {"email": "renatemandel@wtnet.de", "smtp": "mail.wtnet.de", "port": 465,
+            "imap": "mail.wtnet.de", "imap_port": 993, "sent_folder": "Gesendet", "password": ""}
 
 
 def load():
@@ -55,6 +56,15 @@ def send_mail(to, subject, body):
         s.login(d["email"], d["password"])
         s.send_message(msg)
     print(f"✓ Mail von {d['email']} an {to} gesendet.")
+
+    try:
+        with imaplib.IMAP4_SSL(d["imap"], d["imap_port"]) as m:
+            m.login(d["email"], d["password"])
+            m.append(d["sent_folder"], "\\Seen", imaplib.Time2Internaldate(__import__("time").time()),
+                     msg.as_bytes())
+        print(f"✓ Kopie in {d['sent_folder']} abgelegt.")
+    except Exception as e:
+        print(f"⚠ Kopie konnte nicht in {d['sent_folder']} abgelegt werden: {e}")
 
 
 if __name__ == "__main__":

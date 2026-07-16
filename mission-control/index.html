@@ -7585,7 +7585,7 @@ async function loadPhoto() {
 // ===== WITZ =====
 async function loadJoke() {
   try {
-    const r = await fetch('https://v2.jokeapi.dev/joke/Any');
+    const r = await fetch('https://v2.jokeapi.dev/joke/Any?blacklistFlags=racist,sexist,religious,political,nsfw,explicit&safe-mode');
     const d = await r.json();
     if (d.type === 'twopart') {
       document.getElementById('joke-card').innerHTML = `
