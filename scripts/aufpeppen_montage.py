@@ -18,7 +18,9 @@ import aufpeppen as ap
 
 W, H = 1080, 1920
 CLIP_DUR = 3.0
-XFADE = 0.5
+XFADE = 0.35
+# kurze, knackige Cuts statt immer nur "fade" -> fühlt sich nach echtem Edit an, nicht nach Diashow.
+TRANSITIONS = ["zoomin", "circleopen", "wipeleft", "slideup", "smoothleft", "wiperight"]
 
 IMG_EXT = ap.IMG_EXT
 VID_EXT = ap.VID_EXT
@@ -39,10 +41,11 @@ def make_segment(src, out, is_img, style):
              f"colorbalance=rm=0.06:bm=-0.05")
     if is_img:
         frames = int(CLIP_DUR * 30)
-        fc = (f"[0:v]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},boxblur=30:2,{grade}[bg];"
-              f"[0:v]scale=1500:1500:flags=lanczos,{grade}[big];"
-              f"[big]zoompan=z='min(zoom+0.0012,1.18)':d={frames}:s=1100x1100:fps=30[fg];"
-              f"[bg][fg]overlay=x=(W-w)/2:y=(H-h)/2[vid]")
+        # vollflächiger Crop+Zoom statt Blur-Rand mit kleinem zentriertem Bild -> füllt den Screen wie TikTok.
+        base = f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},{grade}"
+        fc = (f"[0:v]{base}[base];"
+              f"[base]zoompan=z='min(zoom+0.0014,1.22)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+              f"d={frames}:s={W}x{H}:fps=30[vid]")
         cmd = ["ffmpeg", "-y", "-loop", "1", "-i", src, "-t", str(CLIP_DUR), "-filter_complex", fc,
                "-map", "[vid]", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30", "-an", out]
     else:
@@ -67,7 +70,8 @@ def chain_xfade(segments, out_video):
     for i in range(1, n):
         tag = f"v{i}"
         offset = running - XFADE
-        filters.append(f"[{cur}][{i}:v]xfade=transition=fade:duration={XFADE}:offset={offset:.2f}[{tag}]")
+        trans = TRANSITIONS[(i - 1) % len(TRANSITIONS)]
+        filters.append(f"[{cur}][{i}:v]xfade=transition={trans}:duration={XFADE}:offset={offset:.2f}[{tag}]")
         cur = tag
         running += CLIP_DUR - XFADE
     fc = ";".join(filters)
@@ -82,8 +86,8 @@ def finalize(video_in, out, hook, music, total_dur):
     draw = ""
     if hook:
         safe = ap.for_drawtext(hook).replace(":", "\\:").replace("'", "’")
-        draw = (f"drawtext=text='{safe}':fontcolor=0xFFF096:fontsize=64:borderw=5:bordercolor=black:"
-                f"x=(w-text_w)/2:y=180:box=0:line_spacing=10:enable='between(t\\,0\\,3.2)'")
+        clause = ap.drawtext_clause(safe, y=180, fontsize=64)
+        draw = clause + ":enable='between(t\\,0\\,3.2)'"
     if music and os.path.isfile(music):
         vf = draw if draw else "null"
         fc = (f"[0:v]{vf}[vid];"

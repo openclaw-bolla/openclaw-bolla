@@ -31,6 +31,7 @@ CLIPBOARD_FILE = os.path.join(WORKSPACE, "config/clipboard.json")
 CLIPBOARD_TRASH_FILE = os.path.join(WORKSPACE, "config/clipboard_trash.json")
 CLIPBOARD_TRASH_DAYS = 14  # so lange bleiben gelöschte Einträge im Papierkorb
 CLIPBOARD_IMAGES_DIR = os.path.join(WORKSPACE, "config/clipboard_images")
+DESKTOP_AUFGEPEPPT_DIR = "/mnt/d/OneDrive/Desktop/Aufgepeppt"
 IMMO_BOOKMARKS_FILE  = Path(os.path.join(WORKSPACE, "config/immo_bookmarks.json"))
 IMMO_CRITERIA_FILE   = Path(os.path.join(WORKSPACE, "config/immo_criteria.json"))
 TRAVEL_FILE          = Path(os.path.join(WORKSPACE, "cache/travel.json"))
@@ -6788,6 +6789,10 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                     r = _spa.run(cmd, capture_output=True, text=True, timeout=360)
                     ok = r.returncode == 0 and os.path.isfile(out_path)
                     if ok:
+                        try:
+                            os.makedirs(DESKTOP_AUFGEPEPPT_DIR, exist_ok=True)
+                            _sha.copy2(out_path, os.path.join(DESKTOP_AUFGEPEPPT_DIR, out_name))
+                        except Exception: pass
                         self._send_json({"ok": True, "url": f"/api/clipboard/image/{out_name}",
                                          "filename": out_name, "kind": "image" if out_ext == ".jpg" else "video"})
                     else:
@@ -6797,6 +6802,58 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 finally:
                     try: os.remove(tmp_in)
                     except Exception: pass
+            elif self.path == "/api/aufpeppen-multi":
+                import base64 as _b64b, subprocess as _spb, shutil as _shb, uuid as _uuidb, tempfile as _tmpb
+                files_in = body.get("files") or []  # [{file_b64, filename}, ...]
+                style = body.get("style", "auto")
+                music = body.get("music", "")
+                if len(files_in) < 2:
+                    self._send_json({"error": "Mindestens 2 Dateien für ein Reel"}, status=400); return
+                if len(files_in) > 8:
+                    files_in = files_in[:8]
+                _ensure_clipboard_images_dir()
+                with _tmpb.TemporaryDirectory() as td:
+                    srcs = []
+                    for i, fo in enumerate(files_in):
+                        fb64 = fo.get("file_b64", "")
+                        fname_in = (fo.get("filename", "") or "upload").strip()
+                        ext = os.path.splitext(fname_in)[1].lower() or ".jpg"
+                        if ext not in (".jpg",".jpeg",".png",".webp",".bmp",".mp4",".mov",".m4v",".avi",".mkv"):
+                            continue
+                        p = os.path.join(td, f"in_{i:02d}{ext}")
+                        try:
+                            with open(p, "wb") as f:
+                                f.write(_b64b.b64decode(fb64))
+                            srcs.append(p)
+                        except Exception:
+                            continue
+                    if len(srcs) < 2:
+                        self._send_json({"error": "Konnte Dateien nicht dekodieren"}, status=400); return
+                    out_name = f"reel_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{_uuidb.uuid4().hex[:6]}.mp4"
+                    out_path = os.path.join(CLIPBOARD_IMAGES_DIR, out_name)
+                    music_arg = []
+                    if music == "song":
+                        try:
+                            arch = "/mnt/d/OneDrive/Dokumente/Bolla/Suno_DistroKid"
+                            mp3s = [os.path.join(arch, f) for f in os.listdir(arch) if f.lower().endswith(".mp3")]
+                            if mp3s: music_arg = ["--music", max(mp3s, key=os.path.getmtime)]
+                        except Exception: pass
+                    cmd = ["python3", os.path.join(WORKSPACE, "scripts/aufpeppen_montage.py"), *srcs,
+                           "--style", style, "--out", out_path, *music_arg]
+                    try:
+                        r = _spb.run(cmd, capture_output=True, text=True, timeout=420)
+                        ok = r.returncode == 0 and os.path.isfile(out_path)
+                        if ok:
+                            try:
+                                os.makedirs(DESKTOP_AUFGEPEPPT_DIR, exist_ok=True)
+                                _shb.copy2(out_path, os.path.join(DESKTOP_AUFGEPEPPT_DIR, out_name))
+                            except Exception: pass
+                            self._send_json({"ok": True, "url": f"/api/clipboard/image/{out_name}",
+                                             "filename": out_name, "kind": "video"})
+                        else:
+                            self._send_json({"error": (r.stderr or r.stdout or "Reel fehlgeschlagen")[-300:]}, status=500)
+                    except Exception as e:
+                        self._send_json({"error": str(e)}, status=500)
             elif self.path == "/api/ki-buch/generiere":
                 global _ki_buch_job
                 if _ki_buch_job["status"] == "running":

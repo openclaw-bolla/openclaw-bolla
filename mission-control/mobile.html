@@ -492,17 +492,19 @@ body {
       onclick="document.getElementById('pep-file').click()"
       style="border:2px dashed var(--sep);border-radius:10px;padding:22px 16px;text-align:center;cursor:pointer;color:var(--text3)">
       <div style="font-size:32px;margin-bottom:6px">✨📷</div>
-      <div style="font-size:15px;font-weight:600;color:var(--text2)">Bild oder Video wählen</div>
-      <div style="font-size:13px;margin-top:3px">wird im Feel-Good-Stil aufgepeppt</div>
+      <div style="font-size:15px;font-weight:600;color:var(--text2)">Bild(er) oder Video wählen</div>
+      <div style="font-size:13px;margin-top:3px">1 Datei = Post, 2+ Fotos = ein Reel daraus</div>
     </div>
-    <input type="file" id="pep-file" accept="image/*,video/*" style="display:none" onchange="pepFileSelected(event)">
+    <input type="file" id="pep-file" accept="image/*,video/*" multiple style="display:none" onchange="pepFileSelected(event)">
     <div id="pep-preview" style="display:none;text-align:center"></div>
 
-    <label style="font-size:14px;font-weight:600;color:var(--text2)">Plattform / Format</label>
-    <select id="pep-platform" class="pep-sel">
-      <option value="insta">📸 Instagram (Bild 4:5)</option>
-      <option value="tiktok">🎵 TikTok (Hochformat-Video)</option>
-    </select>
+    <div id="pep-single-opts" style="display:flex;flex-direction:column;gap:12px">
+      <label style="font-size:14px;font-weight:600;color:var(--text2)">Plattform / Format</label>
+      <select id="pep-platform" class="pep-sel">
+        <option value="insta">📸 Instagram (Bild 4:5)</option>
+        <option value="tiktok">🎵 TikTok (Hochformat-Video)</option>
+      </select>
+    </div>
 
     <label style="font-size:14px;font-weight:600;color:var(--text2)">Pepp-Stärke</label>
     <select id="pep-style" class="pep-sel">
@@ -512,16 +514,19 @@ body {
       <option value="spectacular">🎆 Spektakulär</option>
     </select>
 
-    <label style="font-size:14px;font-weight:600;color:var(--text2)">Text im Bild (optional)</label>
-    <input id="pep-text" class="clip-textarea" style="min-height:0;padding:10px" placeholder="z.B. Läuft, Sommer! 🌞">
+    <div id="pep-text-opt" style="display:flex;flex-direction:column;gap:12px">
+      <label style="font-size:14px;font-weight:600;color:var(--text2)">Text im Bild (optional)</label>
+      <input id="pep-text" class="clip-textarea" style="min-height:0;padding:10px" placeholder="z.B. Läuft, Sommer! 🌞">
+    </div>
 
     <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text2)">
-      <input type="checkbox" id="pep-music" style="width:20px;height:20px"> 🎶 Aktuellen Song als Tonspur drunterlegen (nur Video)
+      <input type="checkbox" id="pep-music" style="width:20px;height:20px"> 🎶 Aktuellen Song als Tonspur drunterlegen (nur Video/Reel)
     </label>
 
     <button onclick="pepStart()" id="pep-btn" class="clip-btn green" style="width:100%;font-size:16px;padding:14px">✨ Aufpeppen</button>
     <div id="pep-status" style="text-align:center;font-size:14px;min-height:20px"></div>
     <div id="pep-result" style="display:none;flex-direction:column;gap:8px;text-align:center"></div>
+    <button onclick="pepReset()" id="pep-reset-btn" style="display:none;width:100%;font-size:14px;padding:10px;background:transparent;border:1px solid var(--sep);border-radius:8px;color:var(--text2)">🔄 Neu (nächstes Foto/Video)</button>
   </div>
 </div>
 
@@ -1259,47 +1264,71 @@ function clipImgFileSelected(e) { _clipImgUpload(e.target.files[0]); e.target.va
 function clipCameraFileSelected(e) { _clipImgUpload(e.target.files[0], true); e.target.value = ''; }
 
 // ===== AUFPEPPEN =====
-let _pepFile = null;
+let _pepFiles = [];
 function pepFileSelected(e) {
-  const f = e.target.files[0];
-  if (!f) return;
-  _pepFile = f;
-  const isVid = f.type.startsWith('video');
-  // Plattform sinnvoll vorbelegen
-  document.getElementById('pep-platform').value = isVid ? 'tiktok' : 'insta';
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
+  _pepFiles = files;
+  const multi = files.length > 1;
+  document.getElementById('pep-single-opts').style.display = multi ? 'none' : 'flex';
+  document.getElementById('pep-text-opt').style.display = multi ? 'none' : 'flex';
+  const isVid = !multi && files[0].type.startsWith('video');
+  if (!multi) document.getElementById('pep-platform').value = isVid ? 'tiktok' : 'insta';
   const prev = document.getElementById('pep-preview');
-  const url = URL.createObjectURL(f);
   prev.style.display = 'block';
-  prev.innerHTML = isVid
-    ? `<video src="${url}" style="max-width:100%;max-height:240px;border-radius:10px" muted playsinline></video>`
-    : `<img src="${url}" style="max-width:100%;max-height:240px;border-radius:10px">`;
-  document.getElementById('pep-drop').querySelector('div:nth-child(2)').textContent = f.name;
+  if (multi) {
+    prev.innerHTML = files.map(f =>
+      `<img src="${URL.createObjectURL(f)}" style="width:70px;height:70px;object-fit:cover;border-radius:8px;margin:3px">`
+    ).join('');
+  } else {
+    const url = URL.createObjectURL(files[0]);
+    prev.innerHTML = isVid
+      ? `<video src="${url}" style="max-width:100%;max-height:240px;border-radius:10px" muted playsinline></video>`
+      : `<img src="${url}" style="max-width:100%;max-height:240px;border-radius:10px">`;
+  }
+  document.getElementById('pep-drop').querySelector('div:nth-child(2)').textContent =
+    multi ? `${files.length} Fotos ausgewählt → wird EIN Reel` : files[0].name;
+}
+function _pepFileB64(f) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res({ file_b64: r.result.split(',')[1], filename: f.name });
+    r.onerror = rej;
+    r.readAsDataURL(f);
+  });
 }
 async function pepStart() {
-  if (!_pepFile) { pepStatus('Erst ein Bild/Video wählen 📷', false); return; }
+  if (!_pepFiles.length) { pepStatus('Erst Bild(er)/Video wählen 📷', false); return; }
   const btn = document.getElementById('pep-btn');
   btn.disabled = true; btn.style.opacity = '0.5';
   pepStatus('✨ Wird aufgepeppt … einen Moment', true);
   document.getElementById('pep-result').style.display = 'none';
   try {
-    const b64 = await new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onload = () => res(r.result.split(',')[1]);
-      r.onerror = rej;
-      r.readAsDataURL(_pepFile);
-    });
-    const payload = {
-      file_b64: b64,
-      filename: _pepFile.name,
-      platform: document.getElementById('pep-platform').value,
-      style: document.getElementById('pep-style').value,
-      text: document.getElementById('pep-text').value.trim(),
-      music: document.getElementById('pep-music').checked ? 'song' : ''
-    };
-    const r = await fetch('/api/aufpeppen', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(payload)
-    });
+    const multi = _pepFiles.length > 1;
+    let r;
+    if (multi) {
+      const files = await Promise.all(_pepFiles.map(_pepFileB64));
+      r = await fetch('/api/aufpeppen-multi', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          files,
+          style: document.getElementById('pep-style').value,
+          music: document.getElementById('pep-music').checked ? 'song' : ''
+        })
+      });
+    } else {
+      const { file_b64, filename } = await _pepFileB64(_pepFiles[0]);
+      r = await fetch('/api/aufpeppen', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          file_b64, filename,
+          platform: document.getElementById('pep-platform').value,
+          style: document.getElementById('pep-style').value,
+          text: document.getElementById('pep-text').value.trim(),
+          music: document.getElementById('pep-music').checked ? 'song' : ''
+        })
+      });
+    }
     const d = await r.json();
     if (!r.ok || d.error) { pepStatus('⚠️ ' + (d.error || 'Fehlgeschlagen'), false); return; }
     pepStatus('✅ Fertig!', true);
@@ -1310,7 +1339,8 @@ async function pepStart() {
       : `<img src="${d.url}" style="max-width:100%;border-radius:10px">`;
     res.innerHTML = media
       + `<a href="${d.url}" download="${d.filename}" style="display:inline-block;margin-top:4px;padding:12px;background:rgba(34,197,94,0.15);color:#22c55e;border-radius:8px;font-size:15px;font-weight:600;text-decoration:none">⬇ Auf Handy speichern</a>`
-      + `<div style="font-size:12px;color:var(--text3)">Danach in Insta/TikTok posten. Bei TikTok KI-Haken beim Upload setzen.</div>`;
+      + `<div style="font-size:12px;color:var(--text3)">Liegt auch auf dem Desktop unter Aufgepeppt\\. Danach in Insta/TikTok posten. Bei TikTok KI-Haken beim Upload setzen.</div>`;
+    document.getElementById('pep-reset-btn').style.display = 'block';
   } catch (e) {
     pepStatus('⚠️ Fehler: ' + e.message, false);
   } finally {
@@ -1320,6 +1350,20 @@ async function pepStart() {
 function pepStatus(msg, ok) {
   const el = document.getElementById('pep-status');
   el.textContent = msg; el.style.color = ok ? 'var(--green)' : 'var(--red)';
+}
+function pepReset() {
+  _pepFiles = [];
+  document.getElementById('pep-file').value = '';
+  document.getElementById('pep-preview').style.display = 'none';
+  document.getElementById('pep-preview').innerHTML = '';
+  document.getElementById('pep-single-opts').style.display = 'flex';
+  document.getElementById('pep-text-opt').style.display = 'flex';
+  document.getElementById('pep-text').value = '';
+  document.getElementById('pep-music').checked = false;
+  document.getElementById('pep-drop').querySelector('div:nth-child(2)').textContent = 'Bild(er) oder Video wählen';
+  document.getElementById('pep-result').style.display = 'none';
+  document.getElementById('pep-reset-btn').style.display = 'none';
+  pepStatus('', true);
 }
 
 document.addEventListener('paste', e => {

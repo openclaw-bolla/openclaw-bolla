@@ -23,6 +23,20 @@ import os, sys, re, json, subprocess, argparse
 IMG_EXT = (".jpg", ".jpeg", ".png", ".webp", ".bmp", ".heic")
 VID_EXT = (".mp4", ".mov", ".m4v", ".avi", ".mkv", ".webm")
 
+# Meme/TikTok-Caption-Look: fette, laute Schrift statt braver DejaVu-Standardschrift.
+CAPTION_FONTS = [
+    "/mnt/c/Windows/Fonts/impact.ttf",
+    "/mnt/c/Windows/Fonts/ariblk.ttf",
+    "/mnt/c/Windows/Fonts/arialbd.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+]
+
+def caption_font_path():
+    for fp in CAPTION_FONTS:
+        if os.path.isfile(fp):
+            return fp
+    return None
+
 # Grading-Presets (Bild): (Sättigung, Kontrast, Helligkeit, Wärme-R, Wärme-B, Glow, Vignette)
 IMG_PRESETS = {
     "natural":     dict(sat=1.10, con=1.05, bri=1.03, warm=1.03, cool=0.99, glow=0.12, vig=0.10),
@@ -129,13 +143,12 @@ def apply_vignette(im, strength):
 
 def draw_text(im, text):
     from PIL import ImageDraw, ImageFont
-    text = re.sub(r"\s{2,}", " ", EMOJI_RE.sub("", text)).strip()
+    text = re.sub(r"\s{2,}", " ", EMOJI_RE.sub("", text)).strip().upper()
     w, h = im.size
     d = ImageDraw.Draw(im)
     size = int(w / 12)
     font = None
-    for fp in ["/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-               "/mnt/c/Windows/Fonts/ ariblk.ttf", "/mnt/c/Windows/Fonts/arialbd.ttf"]:
+    for fp in CAPTION_FONTS:
         if os.path.isfile(fp):
             try: font = ImageFont.truetype(fp, size); break
             except Exception: pass
@@ -173,9 +186,10 @@ EMOJI_RE = re.compile(
     "[\U0001F300-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF"
     "\U00002190-\U000021FF\U00002B00-\U00002BFF️]+")
 
-def for_drawtext(text, max_chars=24, max_lines=2):
-    """Emoji raus (ffmpeg-Font kann sie eh nicht rendern) + Zeilenumbruch, damit nichts überläuft."""
-    clean = re.sub(r"\s{2,}", " ", EMOJI_RE.sub("", text)).strip()
+def for_drawtext(text, max_chars=30, max_lines=3):
+    """Emoji raus (ffmpeg-Font kann sie eh nicht rendern), GROSSSCHRIFT (Meme-Caption-Look) +
+    Zeilenumbruch. Bricht bei echtem Überlauf mit „…" statt Wörter kommentarlos zu verschlucken."""
+    clean = re.sub(r"\s{2,}", " ", EMOJI_RE.sub("", text)).strip().upper()
     words, lines, cur = clean.split(), [], ""
     for wd in words:
         t = (cur + " " + wd).strip()
@@ -185,7 +199,20 @@ def for_drawtext(text, max_chars=24, max_lines=2):
             if cur: lines.append(cur)
             cur = wd
     if cur: lines.append(cur)
-    return "\n".join(lines[:max_lines])
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+        lines[-1] = lines[-1].rstrip(".,!?") + " …"
+    return "\n".join(lines)
+
+def drawtext_clause(safe_text, y, fontsize=58, pop_in=True):
+    """Baut die drawtext-Filterklausel: feste Caption-Schriftart + kurzer Pop-in-Fade statt
+    stumpf-statischem Text die ganze Laufzeit."""
+    fp = caption_font_path()
+    fontfile = f"fontfile='{fp}':" if fp else ""
+    alpha = ":alpha='if(lt(t,0.35),t/0.35,1)'" if pop_in else ""
+    return (f"drawtext={fontfile}text='{safe_text}':fontcolor=0xFFF096:fontsize={fontsize}:"
+            f"borderw=4:bordercolor=black:x=(w-text_w)/2:y={y}:box=0:line_spacing=10{alpha}")
+
 
 def pep_video(src, out, style, text, music):
     p = pick_style(style if style in IMG_PRESETS else "vivid")
@@ -197,8 +224,7 @@ def pep_video(src, out, style, text, music):
     draw = ""
     if text:
         safe = for_drawtext(text).replace(":", "\\:").replace("'", "’")
-        draw = (f",drawtext=text='{safe}':fontcolor=0xFFF096:fontsize=58:borderw=4:bordercolor=black:"
-                f"x=(w-text_w)/2:y=h-360:box=0:line_spacing=10")
+        draw = (f",{drawtext_clause(safe, y='h-360', fontsize=58)}")
     if music and os.path.isfile(music):
         fc = (f"[0:v]{base}{draw}[v];"
               f"[1:a]showwaves=s=1080x200:mode=cline:rate=30:colors=0xFFFFFF|0xFFD447[w];"
@@ -214,18 +240,21 @@ def pep_video(src, out, style, text, music):
     return subprocess.run(cmd, capture_output=True, text=True, timeout=300).returncode == 0
 
 def image_to_video(src, out, text, music, dur=6):
-    """Standbild -> Ken-Burns-Hochformat-Video (für TikTok aus einem Foto)."""
+    """Standbild -> Ken-Burns-Hochformat-Video (für TikTok aus einem Foto).
+    Vollflächiger Crop+Zoom (wie TikTok/Reels), KEIN verschwommener Rand mit kleinem
+    zentriertem Bild mehr — Querformat wird direkt hochkant beschnitten und füllt den Screen."""
     frames = dur*30
     grade = "eq=saturation=1.25:contrast=1.1:brightness=0.02,colorbalance=rm=0.06:bm=-0.05"
     draw = ""
     if text:
         safe = for_drawtext(text).replace(":", "\\:").replace("'", "’")
-        draw = (f",drawtext=text='{safe}':fontcolor=0xFFF096:fontsize=58:borderw=4:bordercolor=black:"
-                f"x=(w-text_w)/2:y=h-360:box=0:line_spacing=10")
-    fc = (f"[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=30:2,{grade}[bg];"
-          f"[0:v]scale=1600:1600:flags=lanczos,{grade}[big];"
-          f"[big]zoompan=z='min(zoom+0.0008,1.2)':d={frames}:s=1000x1000:fps=30[fg];"
-          f"[bg][fg]overlay=x=(W-w)/2:y=(H-h)/2{draw}[vid]")
+        draw = f",{drawtext_clause(safe, y='h-360', fontsize=58)}"
+    # erst voll auf 9:16 zuschneiden (füllt IMMER den ganzen Screen, egal ob Quer- oder Hochformat-Quelle),
+    # dann in dieses bereits randfüllende Bild langsam reinzoomen -> "lebendiges Foto" statt Blur-Rand.
+    base = f"scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,{grade}"
+    fc = (f"[0:v]{base}[base];"
+          f"[base]zoompan=z='min(zoom+0.0012,1.28)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+          f"d={frames}:s=1080x1920:fps=30{draw}[vid]")
     inp = ["-loop","1","-i",src]
     if music and os.path.isfile(music):
         inp += ["-ss","30","-t",str(dur),"-i",music]
