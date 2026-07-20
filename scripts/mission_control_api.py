@@ -2829,7 +2829,7 @@ def get_chargers(lat: float, lon: float, radius: int = 12000):
         return {"error": str(e), "stations": []}
 
     TIER_MAP = [
-        (['enbw','mobility+','e-wald'], 1, '✅ ~46 ct/kWh', '#34c759'),
+        (['enbw'], 1, '✅ ~46 ct/kWh', '#34c759'),
         (['aral','pulse','total energies','avia'], 2, '🟡 ~55 ct/kWh', '#ff9500'),
     ]
 
@@ -2996,7 +2996,7 @@ def get_chargers_route(ziel, start_lat=None, start_lon=None, start=None, corrido
     data = {"elements": elements}
 
     TIER_MAP = [
-        (['enbw', 'mobility+', 'e-wald'], 1, '✅ EnBW & Partner · ~46 ct/kWh', '#34c759'),
+        (['enbw'], 1, '✅ EnBW · ~46 ct/kWh', '#34c759'),
         (['aral', 'pulse', 'bp '], 2, '🟡 Aral Pulse · ~55 ct/kWh', '#ff9500'),
     ]
     def tier(op):

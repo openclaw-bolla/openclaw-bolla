@@ -5,313 +5,302 @@
 <title>Mission Control</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body {
-    height: 100%;
-    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
-    background: linear-gradient(135deg, #c7d2fe 0%, #fbcfe8 45%, #fde68a 100%);
-    background-attachment: fixed;
-    color: #3f3350;
-    font-size: 16px;
-  }
   body {
-    display: flex;
+    font-family: 'Segoe UI', system-ui, sans-serif;
     min-height: 100vh;
-    overflow-x: hidden;
+    background: linear-gradient(135deg, #a8c0ff 0%, #d9afd9 45%, #ffc3e1 100%);
+    background-attachment: fixed;
+    display: flex;
+    color: #33324a;
   }
   body::before {
     content: "";
     position: fixed;
     top: -20%; left: -10%;
-    width: 60vw; height: 60vw;
-    background: radial-gradient(circle, rgba(167,139,250,0.35), transparent 70%);
+    width: 60%; height: 60%;
+    background: radial-gradient(circle, rgba(255,255,255,0.5), transparent 70%);
     filter: blur(40px);
     z-index: 0;
   }
   body::after {
     content: "";
     position: fixed;
-    bottom: -25%; right: -15%;
-    width: 55vw; height: 55vw;
-    background: radial-gradient(circle, rgba(240,171,252,0.35), transparent 70%);
+    bottom: -20%; right: -10%;
+    width: 55%; height: 55%;
+    background: radial-gradient(circle, rgba(178,255,230,0.5), transparent 70%);
     filter: blur(40px);
     z-index: 0;
   }
 
-  .glass {
-    background: rgba(255,255,255,0.45);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: 1px solid rgba(255,255,255,0.6);
-    box-shadow: 0 8px 32px rgba(120,100,180,0.18);
-  }
-
-  /* Sidebar */
   .sidebar {
     position: relative;
     z-index: 2;
-    width: 240px;
-    flex-shrink: 0;
-    margin: 20px 0 20px 20px;
-    border-radius: 26px;
+    width: 230px;
+    min-height: 100vh;
+    background: rgba(255,255,255,0.28);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255,255,255,0.4);
     padding: 28px 18px;
     display: flex;
     flex-direction: column;
     gap: 6px;
   }
   .brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
     font-size: 20px;
     font-weight: 700;
-    color: #5b21b6;
-    padding: 0 10px 26px 10px;
+    margin-bottom: 30px;
+    padding-left: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #4a3f6b;
   }
   .brand .paw { font-size: 22px; }
   .nav-item {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 13px 16px;
+    gap: 12px;
+    padding: 12px 14px;
     border-radius: 16px;
     font-size: 15px;
-    font-weight: 600;
-    color: #5b4b6b;
+    font-weight: 500;
+    color: #45415e;
     cursor: pointer;
-    transition: background 0.2s ease, transform 0.2s ease;
+    transition: all 0.25s ease;
   }
-  .nav-item .ico { font-size: 18px; width: 22px; text-align: center; }
   .nav-item:hover {
-    background: rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.4);
     transform: translateX(3px);
   }
   .nav-item.active {
-    background: linear-gradient(135deg, rgba(167,139,250,0.55), rgba(240,171,252,0.55));
-    color: #3b1d63;
-    box-shadow: 0 6px 18px rgba(167,139,250,0.35);
+    background: rgba(255,255,255,0.55);
+    box-shadow: 0 4px 18px rgba(120,100,200,0.25);
+    color: #2f2a4d;
   }
+  .nav-item .icon { font-size: 18px; width: 22px; text-align: center; }
 
-  /* Main */
   .main {
     position: relative;
     z-index: 2;
     flex: 1;
-    padding: 20px 24px 24px 24px;
+    padding: 28px 40px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    min-width: 0;
+    gap: 28px;
   }
 
   .topbar {
-    border-radius: 22px;
-    padding: 18px 26px;
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.3);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255,255,255,0.45);
+    border-radius: 22px;
+    padding: 18px 28px;
+    box-shadow: 0 8px 32px rgba(120,100,200,0.15);
   }
   .topbar h1 {
     font-size: 22px;
     font-weight: 700;
-    color: #4c1d95;
+    color: #3c3660;
   }
-  .topbar .clock {
-    font-size: 20px;
+  .topbar .subtitle {
+    font-size: 13px;
+    color: #6a6485;
+    margin-top: 2px;
+  }
+  .clock {
+    font-size: 28px;
     font-weight: 700;
-    color: #6d28d9;
-    background: rgba(255,255,255,0.55);
-    padding: 8px 18px;
-    border-radius: 14px;
+    color: #3c3660;
+    background: rgba(255,255,255,0.5);
+    padding: 8px 22px;
+    border-radius: 16px;
     letter-spacing: 1px;
   }
 
   .grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
+    gap: 22px;
   }
 
   .card {
-    border-radius: 22px;
+    background: rgba(255,255,255,0.32);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 24px;
     padding: 22px;
+    box-shadow: 0 8px 28px rgba(120,100,200,0.14);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    min-height: 150px;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
   }
   .card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 14px 34px rgba(120,100,180,0.25);
+    box-shadow: 0 14px 34px rgba(120,100,200,0.22);
   }
-  .card-head {
+  .card-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
     font-size: 14px;
-    font-weight: 700;
-    color: #6b5b7a;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-weight: 600;
+    color: #5b5578;
   }
-  .card-head .emoji { font-size: 20px; }
+  .card-header .emoji { font-size: 20px; }
   .card-value {
     font-size: 34px;
     font-weight: 800;
-    color: #3f3350;
+    color: #35304f;
   }
-  .card-sub { font-size: 13px; color: #7a6a89; }
+  .card-label { font-size: 13px; color: #6f6a8c; }
 
-  .bar-track {
-    width: 100%;
-    height: 10px;
-    border-radius: 8px;
-    background: rgba(120,100,150,0.15);
-    overflow: hidden;
-    margin-top: 4px;
+  .ring-wrap { display:flex; align-items:center; gap:18px; }
+  .ring {
+    width: 76px; height: 76px;
+    border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    font-weight: 700; font-size: 16px;
+    color: #35304f;
   }
-  .bar-fill {
-    height: 100%;
-    border-radius: 8px;
+  .ring.ram { background: conic-gradient(#a78bfa 0% 34%, rgba(255,255,255,0.35) 34% 100%); }
+  .ring.cpu { background: conic-gradient(#7dd3c0 0% 12%, rgba(255,255,255,0.35) 12% 100%); }
+  .ring-inner {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.65);
+    display:flex; align-items:center; justify-content:center;
+    font-size: 15px;
+    font-weight: 700;
   }
-  .bar-ram { background: linear-gradient(90deg, #a78bfa, #f0abfc); }
-  .bar-cpu { background: linear-gradient(90deg, #7dd3fc, #a78bfa); }
 
-  .mail-list { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
-  .mail-item {
-    background: rgba(255,255,255,0.5);
-    border-radius: 12px;
-    padding: 8px 12px;
+  .mail-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,180,205,0.4);
+    padding: 6px 14px;
+    border-radius: 30px;
     font-size: 13px;
-    color: #4c1d95;
-    display: flex;
-    justify-content: space-between;
+    font-weight: 600;
+    color: #8a3f60;
+    width: fit-content;
   }
-  .mail-item span.time { color: #9a8bb0; font-size: 12px; }
 
   .weather-row {
     display: flex;
     align-items: center;
-    gap: 16px;
+    justify-content: space-between;
   }
   .weather-icon { font-size: 44px; }
-  .weather-temp { font-size: 36px; font-weight: 800; color: #3f3350; }
-  .weather-city { font-size: 14px; color: #7a6a89; }
 
-  .wide { grid-column: span 2; }
-
-  .lower-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 20px;
+  .wide {
+    grid-column: span 2;
   }
 
-  .schedule-item {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 12px 14px;
-    border-radius: 14px;
+  .progress-bg {
+    width: 100%;
+    height: 10px;
     background: rgba(255,255,255,0.4);
-    margin-bottom: 8px;
+    border-radius: 10px;
+    overflow: hidden;
   }
-  .schedule-item .dot {
-    width: 10px; height: 10px; border-radius: 50%;
-    background: linear-gradient(135deg, #a78bfa, #f0abfc);
-    flex-shrink: 0;
+  .progress-fill {
+    height: 100%;
+    border-radius: 10px;
   }
-  .schedule-item .txt { font-size: 14px; color: #4c1d95; font-weight: 600; }
-  .schedule-item .time { margin-left: auto; font-size: 13px; color: #8a7aa0; font-weight: 600; }
 
-  .quote-card {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    gap: 8px;
+  @media (max-width: 1000px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    .wide { grid-column: span 2; }
   }
-  .quote-card .paw-big { font-size: 30px; }
-  .quote-card p { font-size: 14px; color: #5b4b6b; font-style: italic; }
 </style>
 </head>
 <body>
 
-  <div class="sidebar glass">
+  <div class="sidebar">
     <div class="brand"><span class="paw">🐾</span> Mission Control</div>
-    <div class="nav-item active"><span class="ico">🏠</span> Dashboard</div>
-    <div class="nav-item"><span class="ico">🐾</span> Bolla</div>
-    <div class="nav-item"><span class="ico">🎓</span> Schule</div>
-    <div class="nav-item"><span class="ico">📅</span> Kalender</div>
-    <div class="nav-item"><span class="ico">✉️</span> E-Mail</div>
-    <div class="nav-item"><span class="ico">☀️</span> Wetter</div>
-    <div class="nav-item"><span class="ico">🖥️</span> System Info</div>
+    <div class="nav-item active"><span class="icon">🏠</span> Dashboard</div>
+    <div class="nav-item"><span class="icon">🐾</span> Bolla</div>
+    <div class="nav-item"><span class="icon">🎓</span> Schule</div>
+    <div class="nav-item"><span class="icon">📅</span> Kalender</div>
+    <div class="nav-item"><span class="icon">✉️</span> E-Mail</div>
+    <div class="nav-item"><span class="icon">☁️</span> Wetter</div>
+    <div class="nav-item"><span class="icon">🖥️</span> System Info</div>
   </div>
 
   <div class="main">
-
-    <div class="topbar glass">
-      <h1>Dashboard</h1>
+    <div class="topbar">
+      <div>
+        <h1>Dashboard</h1>
+        <div class="subtitle">Willkommen zurück, Chris 👋</div>
+      </div>
       <div class="clock">20:14</div>
     </div>
 
     <div class="grid">
 
-      <div class="card glass">
-        <div class="card-head"><span>RAM</span><span class="emoji">🧠</span></div>
-        <div class="card-value">34%</div>
-        <div class="bar-track"><div class="bar-fill bar-ram" style="width:34%"></div></div>
-        <div class="card-sub">5,4 GB von 16 GB belegt</div>
-      </div>
-
-      <div class="card glass">
-        <div class="card-head"><span>CPU</span><span class="emoji">⚙️</span></div>
-        <div class="card-value">12%</div>
-        <div class="bar-track"><div class="bar-fill bar-cpu" style="width:12%"></div></div>
-        <div class="card-sub">Ruhig — 8 Kerne, 41 °C</div>
-      </div>
-
-      <div class="card glass">
-        <div class="card-head"><span>E-Mail</span><span class="emoji">✉️</span></div>
-        <div class="card-value">3 neu</div>
-        <div class="mail-list">
-          <div class="mail-item">Amazon Founderholics <span class="time">09:12</span></div>
-          <div class="mail-item">Lessing-Gymnasium <span class="time">08:47</span></div>
-          <div class="mail-item">itslearning <span class="time">Gestern</span></div>
-        </div>
-      </div>
-
-      <div class="card glass">
-        <div class="card-head"><span>Wetter</span><span class="emoji">🌤️</span></div>
-        <div class="weather-row">
-          <div class="weather-icon">⛅</div>
+      <div class="card">
+        <div class="card-header"><span>RAM-Auslastung</span><span class="emoji">💾</span></div>
+        <div class="ring-wrap">
+          <div class="ring ram"><div class="ring-inner">34%</div></div>
           <div>
-            <div class="weather-temp">18°C</div>
-            <div class="weather-city">Hamburg</div>
+            <div class="card-value" style="font-size:22px;">5,4 GB</div>
+            <div class="card-label">von 16 GB belegt</div>
           </div>
         </div>
-        <div class="card-sub">Leicht bewölkt · Wind 12 km/h</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span>CPU-Auslastung</span><span class="emoji">⚙️</span></div>
+        <div class="ring-wrap">
+          <div class="ring cpu"><div class="ring-inner">12%</div></div>
+          <div>
+            <div class="card-value" style="font-size:22px;">4 Kerne</div>
+            <div class="card-label">Alles ruhig 😌</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span>Postfach</span><span class="emoji">✉️</span></div>
+        <div class="card-value">3</div>
+        <div class="mail-badge">📬 neue Nachrichten</div>
+        <div class="card-label">ernstmandel@outlook.de</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span>Wetter</span><span class="emoji">📍</span></div>
+        <div class="weather-row">
+          <div>
+            <div class="card-value">18°C</div>
+            <div class="card-label">Hamburg · leicht bewölkt</div>
+          </div>
+          <div class="weather-icon">⛅</div>
+        </div>
+      </div>
+
+      <div class="card wide">
+        <div class="card-header"><span>Speicherplatz (Studio)</span><span class="emoji">🗄️</span></div>
+        <div class="progress-bg">
+          <div class="progress-fill" style="width:58%; background:linear-gradient(90deg,#a78bfa,#f9a8d4);"></div>
+        </div>
+        <div class="card-label">1,1 TB von 2 TB frei</div>
+      </div>
+
+      <div class="card wide">
+        <div class="card-header"><span>Nächster Termin</span><span class="emoji">📅</span></div>
+        <div class="card-value" style="font-size:20px;">EDV 7b – Lessing-Gymnasium</div>
+        <div class="card-label">Morgen, 09:45 Uhr · Raum C12</div>
       </div>
 
     </div>
-
-    <div class="lower-grid">
-
-      <div class="card glass">
-        <div class="card-head"><span>Heute</span><span class="emoji">📅</span></div>
-        <div class="schedule-item"><div class="dot"></div><div class="txt">EDV 7b — Lessing-Gymnasium</div><div class="time">08:00 – 09:30</div></div>
-        <div class="schedule-item"><div class="dot"></div><div class="txt">Gesundheitszentrum</div><div class="time">17:00 – 19:00</div></div>
-        <div class="schedule-item"><div class="dot"></div><div class="txt">Backup & Sync check</div><div class="time">23:00</div></div>
-      </div>
-
-      <div class="card glass quote-card">
-        <div class="paw-big">🐾</div>
-        <p>„Alles im grünen Bereich — RAM ruhig, CPU entspannt, Bolla wacht."</p>
-        <div class="card-sub">Letztes Backup: heute, 04:12 Uhr</div>
-      </div>
-
-    </div>
-
   </div>
 
 </body>

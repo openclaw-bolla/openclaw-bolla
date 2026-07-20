@@ -394,7 +394,7 @@ body {
 <!-- LADEN (Ladeplaner entlang Route) -->
 <div class="page" id="p-laden">
   <div class="card" style="flex-direction:column;gap:10px">
-    <div style="font-size:13px;color:var(--text2);line-height:1.45">Ziel eingeben → alle Ladesäulen <b>entlang der Fahrroute</b>. EnBW &amp; Partner zuerst, Aral Pulse in eigener Liste.</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.45">Ziel eingeben → nur <b>EnBW</b>-Ladesäulen <b>entlang der Fahrroute</b> (keine Partner-Netzwerke).</div>
     <input id="laden-ziel" class="clip-textarea" style="min-height:0;padding:12px 13px" placeholder="Ziel — z. B. Herrsching, München, Ostsee…" enterkeyhint="search" autocomplete="off">
     <input id="laden-start" class="clip-textarea" style="min-height:0;padding:12px 13px" placeholder="Start (leer lassen = aktueller Standort)" autocomplete="off">
     <button class="primary-btn" style="margin:0" onclick="ladenRouteSearch()">🔌 Ladesäulen entlang Route</button>
@@ -1492,19 +1492,10 @@ function ladenRenderRoute(d) {
   </div>`;
 
   if (d.enbw && d.enbw.length) {
-    h += `<div class="section-head" style="color:var(--green)">✅ EnBW &amp; Partner · ~46 ct/kWh</div>`;
+    h += `<div class="section-head" style="color:var(--green)">✅ EnBW · ~46 ct/kWh</div>`;
     h += d.enbw.map(s => ladenStationCard(s, '#34c759')).join('');
-  }
-  if (d.aral && d.aral.length) {
-    h += `<div class="section-head" style="color:var(--orange)">🟡 Aral Pulse · ~55 ct/kWh</div>`;
-    h += d.aral.map(s => ladenStationCard(s, '#ff9500')).join('');
-  }
-  if (d.sonstige && d.sonstige.length) {
-    h += `<div class="section-head">⚙️ Sonstige Anbieter (${d.sonstige.length})</div>`;
-    h += d.sonstige.slice(0, 20).map(s => ladenStationCard(s, '#8e8e93')).join('');
-  }
-  if (!(d.enbw||[]).length && !(d.aral||[]).length && !(d.sonstige||[]).length) {
-    h += '<div class="empty"><div class="big">🔌</div>Keine Säulen entlang dieser Route gefunden</div>';
+  } else {
+    h += '<div class="empty"><div class="big">🔌</div>Keine EnBW-Säulen entlang dieser Route gefunden</div>';
   }
   el.innerHTML = h;
 }
