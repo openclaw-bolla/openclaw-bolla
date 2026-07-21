@@ -31,6 +31,7 @@ SENDERS = {
     "diversityinai@gmail.com": "Women in AI Ethics",
     "cheyenne@maivenscommunity.com": "M(AI)VENS Buchclub",
     "sarbecker@deloitte.de": "Dr. Sarah J. Becker (Deloitte)",
+    "speaking@vanessacann.com": "Vanessa Cann (Accenture)",
 }
 AUTOREPLY = ["this is an automated", "automatic reply", "out of office",
              "auto-reply", "automatische antwort", "abwesenheit",
