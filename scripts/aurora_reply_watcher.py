@@ -32,6 +32,8 @@ SENDERS = {
     "cheyenne@maivenscommunity.com": "M(AI)VENS Buchclub",
     "sarbecker@deloitte.de": "Dr. Sarah J. Becker (Deloitte)",
     "speaking@vanessacann.com": "Vanessa Cann (Accenture)",
+    "beena@humansforai.com": "Beena Ammanath (Deloitte AI Institute)",
+    "iam@yaseminefiloglu.com": "Yasemin Efiloğlu (Accenture Song)",
 }
 AUTOREPLY = ["this is an automated", "automatic reply", "out of office",
              "auto-reply", "automatische antwort", "abwesenheit",
