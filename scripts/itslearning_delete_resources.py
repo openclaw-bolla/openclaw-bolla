@@ -55,49 +55,50 @@ with sync_playwright() as p:
     its.wait_for_load_state("load", timeout=20000)
     its.wait_for_timeout(2000)
 
-    for name, cid in COURSES:
-        print(f"\n=== {name} ===")
-        its.goto(f"https://moin.itslearning.com/main.aspx?CourseID={cid}", timeout=20000)
-        its.wait_for_timeout(2000)
-        click_first(its, ["text=Ressourcen"])
-        its.wait_for_timeout(1500)
-
-        checked = 0
-        for bn in BASENAMES:
-            row = its.get_by_text(bn, exact=False)
-            if row.count() == 0:
-                print(f"  ⏭ '{bn}' nicht (mehr) vorhanden")
-                continue
-            cb = row.first.locator("xpath=preceding::input[@type='checkbox'][1]")
-            cb.evaluate("el => el.click()")
-            checked += 1
-            its.wait_for_timeout(300)
-
-        if checked == 0:
-            print("  Nichts zu loeschen")
-            continue
-
-        del_candidates = its.get_by_role("button", name="Löschen", exact=True)
-        del_btn = None
-        for i in range(del_candidates.count()):
-            if del_candidates.nth(i).is_visible():
-                del_btn = del_candidates.nth(i)
-                break
-        if del_btn is None:
-            print("  ❌ Loeschen-Aktion nicht gefunden")
-            its.screenshot(path=f"{OUT_DIR}/FAILRES_{name}.png", full_page=True)
-            continue
-        del_btn.click()
-        its.wait_for_timeout(800)
-
-        confirm = its.locator("div.prom-modal2__footer button.prom-button__destructive")
-        if confirm.count() > 0:
-            confirm.first.click(timeout=5000)
+    try:
+        for name, cid in COURSES:
+            print(f"\n=== {name} ===")
+            its.goto(f"https://moin.itslearning.com/main.aspx?CourseID={cid}", timeout=20000)
+            its.wait_for_timeout(2000)
+            click_first(its, ["text=Ressourcen"])
             its.wait_for_timeout(1500)
-            print(f"  ✅ {checked} Ressource(n) geloescht")
-        else:
-            print("  ❌ Bestaetigungs-Button nicht gefunden")
-            its.screenshot(path=f"{OUT_DIR}/FAILRES_{name}_confirm.png", full_page=True)
 
-    browser.close()
+            checked = 0
+            for bn in BASENAMES:
+                row = its.get_by_text(bn, exact=False)
+                if row.count() == 0:
+                    print(f"  ⏭ '{bn}' nicht (mehr) vorhanden")
+                    continue
+                cb = row.first.locator("xpath=preceding::input[@type='checkbox'][1]")
+                cb.evaluate("el => el.click()")
+                checked += 1
+                its.wait_for_timeout(300)
+
+            if checked == 0:
+                print("  Nichts zu loeschen")
+                continue
+
+            del_candidates = its.get_by_role("button", name="Löschen", exact=True)
+            del_btn = None
+            for i in range(del_candidates.count()):
+                if del_candidates.nth(i).is_visible():
+                    del_btn = del_candidates.nth(i)
+                    break
+            if del_btn is None:
+                print("  ❌ Loeschen-Aktion nicht gefunden")
+                its.screenshot(path=f"{OUT_DIR}/FAILRES_{name}.png", full_page=True)
+                continue
+            del_btn.click()
+            its.wait_for_timeout(800)
+
+            confirm = its.locator("div.prom-modal2__footer button.prom-button__destructive")
+            if confirm.count() > 0:
+                confirm.first.click(timeout=5000)
+                its.wait_for_timeout(1500)
+                print(f"  ✅ {checked} Ressource(n) geloescht")
+            else:
+                print("  ❌ Bestaetigungs-Button nicht gefunden")
+                its.screenshot(path=f"{OUT_DIR}/FAILRES_{name}_confirm.png", full_page=True)
+    finally:
+        browser.close()
 print("\nFERTIG")

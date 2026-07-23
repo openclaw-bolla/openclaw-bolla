@@ -19,6 +19,23 @@ HANDOUTS = "/mnt/d/OneDrive/Dokumente/Office/7. Klassen/Handouts"
 OUT_DIR = "/tmp/its_debug"
 os.makedirs(OUT_DIR, exist_ok=True)
 
+# Selbst-Bremse: siehe reference_wsl.md — Freeze am 23.07.2026 kam vermutlich aus genau so einem
+# Lauf. Der externe wsl_memory_watchdog.py greift erst ab 88%/94%; hier soll das Skript sich VORHER
+# selbst und sauber (mit browser.close()) beenden, statt vom Wächter hart abgeschossen zu werden.
+MEM_ABORT_PCT = 80
+
+
+def mem_ok():
+    with open("/proc/meminfo") as f:
+        info = {}
+        for line in f:
+            k, v = line.split(":")
+            info[k.strip()] = int(v.strip().split()[0])
+    total = info["MemTotal"]
+    available = info["MemAvailable"]
+    used_pct = (total - available) / total * 100
+    return used_pct < MEM_ABORT_PCT, used_pct
+
 # ⚠️ Vor jedem Lauf anpassen: Tagesnummer (zweistellig, siehe [[project_schuljahr2627]]-Konvention),
 # die 4 Ziel-Kurse (Kurs-IDs bleiben das ganze Schuljahr stabil, siehe Tabelle unten) und je einen
 # individuell formulierten Mitteilungstext (NIE denselben Text kopieren, NIE "vorher/schon jetzt
@@ -243,15 +260,23 @@ if __name__ == "__main__":
     results = []
     with sync_playwright() as p:
         browser, its = login(p)
-        for c in COURSES:
-            print(f"\n=== {c['kuerzel']} (CourseID {c['id']}) ===")
-            up_ok = upload_files(its, c["id"], files)
-            if not up_ok:
-                results.append((c["kuerzel"], "UPLOAD FEHLGESCHLAGEN"))
-                continue
-            post_ok = post_message(its, c["id"], c["text"], files)
-            results.append((c["kuerzel"], "OK" if post_ok else "MITTEILUNG FEHLGESCHLAGEN"))
-        browser.close()
+        try:
+            for c in COURSES:
+                ok, used_pct = mem_ok()
+                if not ok:
+                    print(f"\n⚠️ Speicher bei {used_pct:.0f}% (Abbruch-Schwelle {MEM_ABORT_PCT}%) "
+                          f"— breche VOR '{c['kuerzel']}' sauber ab, statt weiterzumachen.")
+                    results.append((c["kuerzel"], f"ABGEBROCHEN (Speicher {used_pct:.0f}%)"))
+                    break
+                print(f"\n=== {c['kuerzel']} (CourseID {c['id']}) ===")
+                up_ok = upload_files(its, c["id"], files)
+                if not up_ok:
+                    results.append((c["kuerzel"], "UPLOAD FEHLGESCHLAGEN"))
+                    continue
+                post_ok = post_message(its, c["id"], c["text"], files)
+                results.append((c["kuerzel"], "OK" if post_ok else "MITTEILUNG FEHLGESCHLAGEN"))
+        finally:
+            browser.close()
 
     print("\n=== ZUSAMMENFASSUNG ===")
     for kuerzel, status in results:

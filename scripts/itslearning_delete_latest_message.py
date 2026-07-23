@@ -52,34 +52,35 @@ with sync_playwright() as p:
     its.wait_for_load_state("load", timeout=20000)
     its.wait_for_timeout(2000)
 
-    for name, cid in COURSES:
-        print(f"\n=== {name} ===")
-        its.goto(f"https://moin.itslearning.com/main.aspx?CourseID={cid}", timeout=20000)
-        its.wait_for_timeout(2000)
+    try:
+        for name, cid in COURSES:
+            print(f"\n=== {name} ===")
+            its.goto(f"https://moin.itslearning.com/main.aspx?CourseID={cid}", timeout=20000)
+            its.wait_for_timeout(2000)
 
-        opt_btn = its.locator("button.itsl-announcement-drop-down-menu__button").first
-        if opt_btn.count() == 0:
-            print("  ❌ Kein Options-Button gefunden (evtl. keine Mitteilung vorhanden)")
-            continue
-        opt_btn.click()
-        its.wait_for_timeout(500)
+            opt_btn = its.locator("button.itsl-announcement-drop-down-menu__button").first
+            if opt_btn.count() == 0:
+                print("  ❌ Kein Options-Button gefunden (evtl. keine Mitteilung vorhanden)")
+                continue
+            opt_btn.click()
+            its.wait_for_timeout(500)
 
-        del_link = its.get_by_text("Löschen", exact=True)
-        if del_link.count() == 0:
-            print("  ❌ 'Löschen' nicht im Menue gefunden")
-            its.screenshot(path=f"{OUT_DIR}/FAILDEL_{name}_menu.png", full_page=True)
-            continue
-        del_link.first.click()
-        its.wait_for_timeout(800)
+            del_link = its.get_by_text("Löschen", exact=True)
+            if del_link.count() == 0:
+                print("  ❌ 'Löschen' nicht im Menue gefunden")
+                its.screenshot(path=f"{OUT_DIR}/FAILDEL_{name}_menu.png", full_page=True)
+                continue
+            del_link.first.click()
+            its.wait_for_timeout(800)
 
-        confirm_btn = its.locator("div.prom-modal2__footer button.prom-button__destructive")
-        try:
-            confirm_btn.first.click(timeout=5000)
-            print("  ✅ Mitteilung geloescht")
-        except Exception as e:
-            print("  ❌ Bestaetigungs-Klick fehlgeschlagen:", e)
-            its.screenshot(path=f"{OUT_DIR}/FAILDEL_{name}_confirm.png", full_page=True)
-        its.wait_for_timeout(1000)
-
-    browser.close()
+            confirm_btn = its.locator("div.prom-modal2__footer button.prom-button__destructive")
+            try:
+                confirm_btn.first.click(timeout=5000)
+                print("  ✅ Mitteilung geloescht")
+            except Exception as e:
+                print("  ❌ Bestaetigungs-Klick fehlgeschlagen:", e)
+                its.screenshot(path=f"{OUT_DIR}/FAILDEL_{name}_confirm.png", full_page=True)
+            its.wait_for_timeout(1000)
+    finally:
+        browser.close()
 print("\nFERTIG")
