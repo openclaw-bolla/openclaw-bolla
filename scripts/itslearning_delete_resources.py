@@ -19,7 +19,7 @@ with open(CREDS_PATH) as f:
     creds = json.load(f)
 
 # Basisnamen OHNE Dateiendung (Name+Endung stehen im DOM in getrennten <span>-Elementen)
-BASENAMES = ["01-The Basics - Grundbegriffe - I", "01-Praktikum"]
+BASENAMES = ["01-The Basics - Grundbegriffe - I", "01-Praktikum", "01-Editor-Anleitung"]
 
 # Kurs-IDs (Schuljahr 26/27, stabil): 7a I=190735 7a II=190738 7b I=190741 7b II=190743
 #                                     7c I=190861 7c II=190878 7d I=190860 7d II=190877

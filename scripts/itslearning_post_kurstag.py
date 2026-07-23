@@ -46,21 +46,22 @@ DAY_PREFIX = "01"
 #                                     7c I=190861 7c II=190878 7d I=190860 7d II=190877
 COURSES = [
     {"id": 190735, "kuerzel": "7a I", "text":
-        "👋 Willkommen im neuen Schuljahr, liebe 7a! Am 19.08. starten wir mit den ersten "
-        "EDV-Grundbegriffen. 📎 Die Materialien dazu (Folien + Praktikum) findet ihr hier - "
-        "in der Stunde laden wir sie gemeinsam auf euren Stick. Bis bald! 🙂"},
+        "👋 Hallo liebe 7a! Am 19.08. starten wir ins EDV-Schuljahr mit den ersten "
+        "Computer-Grundbegriffen. 📎 Folien, ein Praktikum und eine kurze Editor-Anleitung liegen "
+        "hier schon bereit - wir laden alles gemeinsam zu Beginn der Stunde herunter. "
+        "Freu mich auf euch! 😊"},
     {"id": 190741, "kuerzel": "7b I", "text":
-        "🎉 Hallo 7b! Neues Schuljahr, neues Fach: EDV. Hier schon mal die Materialien für unseren "
-        "Start am 19.08. - Folien und ein erstes Praktikum. 💾 Wie man das runterlädt, zeige ich "
-        "euch gleich zu Beginn der Stunde."},
+        "🎉 Liebe 7b, unser EDV-Abenteuer beginnt am 19.08. mit den Grundbegriffen rund um den "
+        "Computer. 📎 Folien, Praktikum und eine Anleitung für den Editor findet ihr hier - "
+        "heruntergeladen wird alles gemeinsam in der Stunde. Bis bald! 🙂"},
     {"id": 190861, "kuerzel": "7c I", "text":
-        "💻 Liebe 7c, hier ist schon der Stoff für unsere erste EDV-Stunde am 19.08.! Folien als PDF "
-        "und eine interaktive Übungsdatei zum Thema Grundbegriffe - wir laden beides zusammen zu "
-        "Beginn der Stunde herunter. 🚀"},
+        "💻 Hallo 7c! Zum Auftakt unseres EDV-Unterrichts am 19.08. geht's um Computer-Grundbegriffe. "
+        "📎 Materialien (Folien, Praktikum, Editor-Anleitung) sind hier hinterlegt - wir holen sie "
+        "uns zusammen zu Stundenbeginn. Ich freu mich drauf! 🚀"},
     {"id": 190860, "kuerzel": "7d I", "text":
-        "🙌 Hey 7d! Für unseren Start ins EDV-Schuljahr am 19.08. liegen hier schon die Materialien "
-        "bereit: Folien und ein kleines Praktikum zum Ausprobieren. Wie ihr die runterladet, "
-        "besprechen wir gemeinsam in der Stunde. Freue mich auf euch! 😊"},
+        "🙌 Liebe 7d, am 19.08. starten wir mit EDV und den ersten Computer-Grundbegriffen. 📎 Ihr "
+        "findet hier Folien, ein Praktikum und eine kleine Editor-Anleitung - heruntergeladen wird "
+        "alles zusammen in der Stunde. Bis dann! 😊"},
 ]
 
 
