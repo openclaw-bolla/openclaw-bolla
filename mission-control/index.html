@@ -7098,6 +7098,16 @@ async function loadWeather(lat, lon, mode) {
     } else {
       window._weatherCurrent = d; window._weatherCurrentTs = Date.now(); window._brightskyCurrent = bsData;
       window._weatherCurrentCoords = { lat: _lat, lon: _lon };
+      // Ortsname zur Standort-Anzeige auflösen (kostenlos, kein API-Key nötig)
+      fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${_lat}&longitude=${_lon}&localityLanguage=de`)
+        .then(res => res.json())
+        .then(g => {
+          window._weatherCurrentPlace = g.city || g.locality || g.principalSubdivision || null;
+          if ((window._wetterMode || 'home') === 'current' && document.getElementById('wetter-content') && document.getElementById('page-wetter').classList.contains('active')) {
+            loadWeatherFull();
+          }
+        })
+        .catch(() => {});
     }
 
     if (m === 'home') {
@@ -7371,7 +7381,7 @@ function loadWeatherFull() {
 
       <!-- Links: Temp + Beschreibung -->
       <div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.82);margin-bottom:8px;letter-spacing:.04em">📍 ${window._wetterMode==='current'?'MEIN STANDORT':'NORDERSTEDT'} · JETZT</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.82);margin-bottom:8px;letter-spacing:.04em">📍 ${window._wetterMode==='current'?(window._weatherCurrentPlace ? window._weatherCurrentPlace.toUpperCase() : 'MEIN STANDORT'):'NORDERSTEDT'} · JETZT</div>
         <div style="display:flex;align-items:flex-end;gap:10px;line-height:1">
           <span style="font-size:90px;font-weight:100;color:#fff;letter-spacing:-4px">${temp}°</span>
           <span style="font-size:52px;margin-bottom:6px">${icon}</span>
