@@ -1089,7 +1089,13 @@ async function loadClipboard() {
       const srcIcon = s => s==='voice'?'🎤':s==='bolla-anweisung'?'🤖':'✏️';
       // Linkify URLs + Audio-Player für Audio-Links
       const linkify = (text) => {
-        const esc = text.replace(/</g,'&lt;');
+        let esc = text.replace(/</g,'&lt;');
+        // Abschnitts-Überschriften "--- TITEL ---" fett hervorheben
+        esc = esc.replace(/^---\s*(.+?)\s*---$/gm, '<b>$1</b>');
+        // **fett** wie Markdown
+        esc = esc.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+        // Zeilenumbrüche erhalten (sonst verschluckt der Browser sie)
+        esc = esc.replace(/\n/g, '<br>');
         return esc.replace(/(https?:\/\/[^\s]+)/g, (url) => {
           if (/\.(mp4|mov|m4v|avi)(\?|$)/i.test(url)) {
             const fn = url.split('/').pop().split('?')[0] || 'bolla-video.mp4';

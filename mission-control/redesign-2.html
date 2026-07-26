@@ -2,427 +2,270 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>MISSION CONTROL // root@bolla</title>
+<title>Mission Control</title>
 <style>
   :root{
-    --grn: #00ff41;
-    --grn-dim: #008f11;
-    --grn-faint: #0a3d0a;
-    --bg: #000000;
-    --panel: #060a06;
-    --border: #0f3d0f;
+    --cyan:#05eaff;
+    --magenta:#ff2fd4;
+    --bg:#05070d;
+    --panel:#0b0f1a;
+    --panel-2:#0e1422;
+    --line:#1c2740;
+    --text:#dbe9ff;
+    --muted:#7186ad;
   }
-  *{box-sizing:border-box; margin:0; padding:0;}
+  *{box-sizing:border-box;}
   html,body{
-    height:100%;
+    margin:0;padding:0;height:100%;
     background:var(--bg);
-    color:var(--grn);
-    font-family:"Courier New", Courier, monospace;
+    color:var(--text);
+    font-family:'Consolas','Segoe UI',monospace;
     font-size:15px;
     overflow:hidden;
   }
-  body::before{
-    content:"";
-    position:fixed; inset:0;
-    background:repeating-linear-gradient(
-      to bottom,
-      rgba(0,255,65,0.035) 0px,
-      rgba(0,255,65,0.035) 1px,
-      transparent 2px,
-      transparent 4px
-    );
-    pointer-events:none;
-    z-index:999;
-    mix-blend-mode:overlay;
+  body{
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(5,234,255,0.08), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(255,47,212,0.08), transparent 40%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
   }
-  body::after{
-    content:"";
-    position:fixed; inset:0;
-    background:radial-gradient(ellipse at center, rgba(0,255,65,0.06) 0%, rgba(0,0,0,0.5) 100%);
-    pointer-events:none;
-    z-index:998;
-  }
-  .layout{
-    display:flex;
-    height:100vh;
-    width:100vw;
-  }
+  .app{display:flex;height:100vh;width:100vw;}
 
   /* SIDEBAR */
   .sidebar{
-    width:220px;
-    min-width:220px;
-    background:var(--panel);
-    border-right:1px solid var(--border);
-    display:flex;
-    flex-direction:column;
-    padding:20px 0;
+    width:230px;
+    background:linear-gradient(180deg,#080b14,#060810);
+    border-right:1px solid var(--line);
+    display:flex;flex-direction:column;
+    padding:22px 0;
+    box-shadow: inset -1px 0 0 rgba(5,234,255,0.08);
   }
   .brand{
-    padding:0 20px 18px 20px;
-    border-bottom:1px solid var(--border);
+    padding:0 22px 22px 22px;
+    font-size:20px;
+    letter-spacing:3px;
+    color:var(--cyan);
+    text-shadow:0 0 8px rgba(5,234,255,0.8), 0 0 22px rgba(5,234,255,0.4);
+    border-bottom:1px solid var(--line);
     margin-bottom:14px;
   }
-  .brand .logo{
-    font-size:20px;
-    font-weight:bold;
-    letter-spacing:2px;
-    text-shadow:0 0 8px var(--grn), 0 0 16px var(--grn);
-  }
-  .brand .sub{
-    font-size:11px;
-    color:var(--grn-dim);
-    margin-top:4px;
-    letter-spacing:1px;
-  }
-  nav{
-    display:flex;
-    flex-direction:column;
-    gap:2px;
-    padding:0 10px;
-  }
-  nav a{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:11px 12px;
-    color:var(--grn-dim);
-    text-decoration:none;
+  .brand span{color:var(--magenta);text-shadow:0 0 8px rgba(255,47,212,0.8);}
+  .nav{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;}
+  .nav li{
+    padding:12px 22px;
+    color:var(--muted);
     font-size:14px;
     letter-spacing:1px;
+    cursor:pointer;
     border-left:3px solid transparent;
-    transition:all .12s ease;
+    display:flex;align-items:center;gap:12px;
+    transition:all .15s ease;
   }
-  nav a .tag{
-    color:var(--grn-faint);
-    font-size:12px;
+  .nav li .ic{width:18px;text-align:center;font-size:15px;}
+  .nav li:hover{
+    color:var(--text);
+    background:rgba(5,234,255,0.05);
+    border-left:3px solid var(--cyan);
   }
-  nav a:hover{
-    color:var(--grn);
-    background:rgba(0,255,65,0.06);
-    border-left:3px solid var(--grn-dim);
+  .nav li.active{
+    color:var(--cyan);
+    background:rgba(5,234,255,0.09);
+    border-left:3px solid var(--cyan);
+    text-shadow:0 0 6px rgba(5,234,255,0.6);
   }
-  nav a.active{
-    color:var(--grn);
-    background:rgba(0,255,65,0.1);
-    border-left:3px solid var(--grn);
-    text-shadow:0 0 6px var(--grn);
-  }
-  .sidebar-footer{
+  .sidebar-foot{
     margin-top:auto;
-    padding:14px 20px 4px 20px;
-    border-top:1px solid var(--border);
+    padding:14px 22px 0 22px;
+    border-top:1px solid var(--line);
     font-size:11px;
-    color:var(--grn-faint);
-    line-height:1.6;
+    color:var(--muted);
+    letter-spacing:1px;
   }
-  .dot{
-    display:inline-block;
-    width:7px; height:7px;
-    border-radius:50%;
-    background:var(--grn);
-    box-shadow:0 0 6px var(--grn);
-    margin-right:6px;
-    animation:pulse 1.6s infinite;
-  }
-  @keyframes pulse{
-    0%,100%{opacity:1;}
-    50%{opacity:.35;}
+  .sidebar-foot .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:#00ffa2;display:inline-block;margin-right:6px;
+    box-shadow:0 0 8px #00ffa2;
   }
 
   /* MAIN */
-  .main{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    height:100vh;
-    overflow:hidden;
-  }
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;}
   .topbar{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:16px 26px;
-    border-bottom:1px solid var(--border);
-    background:linear-gradient(to bottom, rgba(0,255,65,0.03), transparent);
+    height:66px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 32px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(90deg, rgba(5,234,255,0.04), transparent 60%);
   }
-  .topbar .title{
-    font-size:19px;
+  .topbar h1{
+    font-size:18px;font-weight:normal;letter-spacing:2px;
+    color:var(--text);
+    margin:0;
+  }
+  .topbar h1 small{
+    display:block;font-size:11px;color:var(--muted);letter-spacing:2px;margin-top:2px;
+  }
+  .clock{
+    font-size:28px;
     letter-spacing:3px;
-    text-shadow:0 0 8px var(--grn);
+    color:var(--magenta);
+    text-shadow:0 0 10px rgba(255,47,212,0.7), 0 0 26px rgba(255,47,212,0.3);
+    font-variant-numeric: tabular-nums;
   }
-  .topbar .title .path{
-    color:var(--grn-dim);
-    font-size:13px;
-    letter-spacing:1px;
-    display:block;
-    margin-top:3px;
-  }
-  .topbar .clock{
-    font-size:26px;
-    letter-spacing:2px;
-    text-shadow:0 0 10px var(--grn);
-  }
-  .topbar .clock .blink{
-    animation:blink 1s steps(1) infinite;
-  }
-  @keyframes blink{
-    50%{opacity:0;}
-  }
-  .topbar .clock .date{
-    display:block;
-    text-align:right;
-    font-size:11px;
-    color:var(--grn-dim);
-    letter-spacing:1px;
-    margin-top:2px;
+  .clock small{
+    display:block;text-align:right;font-size:11px;color:var(--muted);letter-spacing:2px;text-shadow:none;
   }
 
   .content{
-    flex:1;
-    overflow-y:auto;
-    padding:24px 26px 40px 26px;
+    flex:1;padding:28px 32px;overflow:auto;
   }
-  .content::-webkit-scrollbar{width:8px;}
-  .content::-webkit-scrollbar-thumb{background:var(--grn-faint);}
-  .content::-webkit-scrollbar-track{background:var(--bg);}
-
   .grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
-    gap:18px;
+    grid-template-columns:repeat(4, 1fr);
+    gap:20px;
   }
   .card{
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:2px;
-    padding:16px 18px;
+    background:linear-gradient(180deg, var(--panel), var(--panel-2));
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:18px 20px;
     position:relative;
-    box-shadow:0 0 14px rgba(0,255,65,0.04) inset;
-  }
-  .card::before{
-    content:"";
-    position:absolute;
-    top:0; left:0;
-    width:100%;
-    height:2px;
-    background:linear-gradient(to right, var(--grn), transparent);
-    opacity:.6;
-  }
-  .card h3{
-    font-size:12px;
-    letter-spacing:2px;
-    color:var(--grn-dim);
-    margin-bottom:12px;
-    display:flex;
-    justify-content:space-between;
-  }
-  .card h3 .icon{color:var(--grn);}
-  .metric{
-    font-size:34px;
-    font-weight:bold;
-    text-shadow:0 0 10px var(--grn);
-    line-height:1;
-  }
-  .metric .unit{
-    font-size:16px;
-    color:var(--grn-dim);
-  }
-  .metric-label{
-    font-size:11px;
-    color:var(--grn-dim);
-    margin-top:6px;
-    letter-spacing:1px;
-  }
-  .bar{
-    width:100%;
-    height:8px;
-    background:#041004;
-    border:1px solid var(--border);
-    margin-top:12px;
     overflow:hidden;
   }
-  .bar-fill{
-    height:100%;
-    background:repeating-linear-gradient(
-      45deg, var(--grn), var(--grn) 4px, var(--grn-dim) 4px, var(--grn-dim) 8px
-    );
-    box-shadow:0 0 8px var(--grn);
+  .card::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg, var(--cyan), var(--magenta));
+    opacity:.7;
   }
+  .card .label{
+    font-size:11px;letter-spacing:2px;color:var(--muted);margin-bottom:10px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .card .label .badge{
+    font-size:10px;color:var(--cyan);border:1px solid rgba(5,234,255,0.4);
+    padding:1px 6px;border-radius:4px;
+  }
+  .card .value{
+    font-size:34px;letter-spacing:1px;color:var(--text);
+  }
+  .card .value.cyan{color:var(--cyan);text-shadow:0 0 12px rgba(5,234,255,0.5);}
+  .card .value.magenta{color:var(--magenta);text-shadow:0 0 12px rgba(255,47,212,0.5);}
+  .card .sub{font-size:12px;color:var(--muted);margin-top:6px;}
 
-  .list{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    font-size:13px;
+  .meter{
+    height:8px;border-radius:4px;background:#131b2e;margin-top:14px;overflow:hidden;
+    border:1px solid var(--line);
   }
-  .list .row{
-    display:flex;
-    justify-content:space-between;
-    padding:6px 8px;
-    background:rgba(0,255,65,0.03);
-    border-left:2px solid var(--grn-dim);
-  }
-  .list .row .from{color:var(--grn);}
-  .list .row .time{color:var(--grn-faint); font-size:11px;}
+  .meter i{display:block;height:100%;border-radius:4px;}
+  .meter.ram i{width:34%;background:linear-gradient(90deg,var(--cyan),#00ffd5);box-shadow:0 0 10px rgba(5,234,255,0.7);}
+  .meter.cpu i{width:12%;background:linear-gradient(90deg,#00ffa2,#05eaff);box-shadow:0 0 10px rgba(0,255,162,0.6);}
 
-  .weather-icon{
-    font-size:34px;
-    line-height:1;
-    text-shadow:0 0 10px var(--grn);
-  }
-  .weather-row{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-  }
-  .weather-details{
-    font-size:11px;
-    color:var(--grn-dim);
-    margin-top:10px;
-    display:flex;
-    gap:14px;
-  }
+  .wide{grid-column:span 2;}
+  .tall .value{font-size:40px;}
 
-  .full-width{
-    grid-column:1 / -1;
+  .mail-list{margin-top:10px;display:flex;flex-direction:column;gap:8px;}
+  .mail-item{
+    display:flex;justify-content:space-between;font-size:12.5px;
+    color:var(--muted);border-bottom:1px dashed var(--line);padding-bottom:6px;
   }
-  .sysinfo{
-    display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(160px,1fr));
-    gap:10px;
-    font-size:12px;
-  }
-  .sysinfo div{
-    padding:8px 10px;
-    background:rgba(0,255,65,0.03);
-    border:1px solid var(--border);
-  }
-  .sysinfo span{color:var(--grn-dim); display:block; font-size:10px; letter-spacing:1px; margin-bottom:4px;}
+  .mail-item b{color:var(--text);font-weight:normal;}
+  .mail-item .new-dot{color:var(--magenta);}
 
-  .prompt-line{
-    font-size:12px;
-    color:var(--grn-dim);
-    margin-top:14px;
-    letter-spacing:1px;
-  }
-  .prompt-line .cur{
-    display:inline-block;
-    width:8px; height:14px;
-    background:var(--grn);
-    margin-left:4px;
-    vertical-align:middle;
-    animation:blink 1s steps(1) infinite;
-    box-shadow:0 0 6px var(--grn);
-  }
+  .weather-row{display:flex;align-items:center;gap:18px;margin-top:6px;}
+  .weather-icon{font-size:44px;filter:drop-shadow(0 0 10px rgba(5,234,255,0.5));}
+  .weather-temp{font-size:38px;color:var(--cyan);text-shadow:0 0 14px rgba(5,234,255,0.6);}
+  .weather-city{font-size:12px;color:var(--muted);letter-spacing:1px;}
 
-  .status-ok{color:var(--grn); text-shadow:0 0 6px var(--grn);}
-  .status-warn{color:#ffb000; text-shadow:0 0 6px #ffb000;}
+  .sysinfo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;margin-top:12px;font-size:12.5px;}
+  .sysinfo-grid div span{color:var(--muted);}
+  .sysinfo-grid div b{color:var(--text);float:right;}
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
 </style>
 </head>
 <body>
-<div class="layout">
+<div class="app">
 
   <div class="sidebar">
-    <div class="brand">
-      <div class="logo">▓ BOLLA_OS</div>
-      <div class="sub">MISSION CONTROL v3.4</div>
-    </div>
-    <nav>
-      <a href="#" class="active"><span>▶</span> Dashboard <span class="tag">[01]</span></a>
-      <a href="#"><span>▶</span> Bolla <span class="tag">[02]</span></a>
-      <a href="#"><span>▶</span> Schule <span class="tag">[03]</span></a>
-      <a href="#"><span>▶</span> Kalender <span class="tag">[04]</span></a>
-      <a href="#"><span>▶</span> E-Mail <span class="tag">[05]</span></a>
-      <a href="#"><span>▶</span> Wetter <span class="tag">[06]</span></a>
-      <a href="#"><span>▶</span> System Info <span class="tag">[07]</span></a>
-    </nav>
-    <div class="sidebar-footer">
-      <div><span class="dot"></span>CONNECTION: SECURE</div>
-      <div>UPTIME: 14d 06h 22m</div>
-      <div>USER: chris@norderstedt</div>
+    <div class="brand">MISSION <span>CONTROL</span></div>
+    <ul class="nav">
+      <li class="active"><span class="ic">◆</span> Dashboard</li>
+      <li><span class="ic">🐾</span> Bolla</li>
+      <li><span class="ic">🎓</span> Schule</li>
+      <li><span class="ic">📅</span> Kalender</li>
+      <li><span class="ic">✉</span> E-Mail</li>
+      <li><span class="ic">☁</span> Wetter</li>
+      <li><span class="ic">⚙</span> System Info</li>
+    </ul>
+    <div class="sidebar-foot">
+      <span class="dot"></span> ONLINE · Tunnel aktiv
     </div>
   </div>
 
   <div class="main">
     <div class="topbar">
-      <div class="title">
-        DASHBOARD
-        <span class="path">/root/mission-control/overview</span>
-      </div>
-      <div class="clock">
-        20<span class="blink">:</span>14<span class="blink">:</span>07
-        <span class="date">FR · 25.07.2026</span>
-      </div>
+      <h1>DASHBOARD <small>ÜBERSICHT · ALLE SYSTEME</small></h1>
+      <div class="clock">20:14<small>SA · 26 JUL 2026</small></div>
     </div>
 
     <div class="content">
       <div class="grid">
 
         <div class="card">
-          <h3><span>MEM_USAGE</span><span class="icon">◆</span></h3>
-          <div class="metric">34<span class="unit">%</span></div>
-          <div class="metric-label">5.4 GB / 16 GB BELEGT</div>
-          <div class="bar"><div class="bar-fill" style="width:34%;"></div></div>
+          <div class="label">ARBEITSSPEICHER <span class="badge">RAM</span></div>
+          <div class="value cyan">34%</div>
+          <div class="meter ram"><i></i></div>
+          <div class="sub">5.4 GB / 16 GB belegt</div>
         </div>
 
         <div class="card">
-          <h3><span>CPU_LOAD</span><span class="icon">◆</span></h3>
-          <div class="metric">12<span class="unit">%</span></div>
-          <div class="metric-label">4 CORES · 41°C</div>
-          <div class="bar"><div class="bar-fill" style="width:12%;"></div></div>
+          <div class="label">PROZESSOR <span class="badge">CPU</span></div>
+          <div class="value">12%</div>
+          <div class="meter cpu"><i></i></div>
+          <div class="sub">4 Kerne · 38°C</div>
         </div>
 
         <div class="card">
-          <h3><span>INBOX</span><span class="icon">✉</span></h3>
-          <div class="metric">3<span class="unit"> NEU</span></div>
-          <div class="metric-label">ernstmandel@outlook.de</div>
-          <div class="list" style="margin-top:12px;">
-            <div class="row"><span class="from">Lessing-Gymnasium</span><span class="time">09:14</span></div>
-            <div class="row"><span class="from">Robin Mandel</span><span class="time">08:02</span></div>
-            <div class="row"><span class="from">itslearning</span><span class="time">gestern</span></div>
+          <div class="label">POSTEINGANG <span class="badge">MAIL</span></div>
+          <div class="value magenta">3 <small style="font-size:14px;color:var(--muted);">neu</small></div>
+          <div class="mail-list">
+            <div class="mail-item"><span class="new-dot">●</span> <b>Lessing-Gymnasium</b> Stundenplan 26/27</div>
+            <div class="mail-item"><span class="new-dot">●</span> <b>Booking.com</b> Bestätigung Rastatt</div>
+            <div class="mail-item"><span class="new-dot">●</span> <b>Robin</b> Famulatur Tansania</div>
           </div>
         </div>
 
         <div class="card">
-          <h3><span>WETTER // HAMBURG</span><span class="icon">☁</span></h3>
+          <div class="label">WETTER <span class="badge">HH</span></div>
           <div class="weather-row">
             <div class="weather-icon">⛅</div>
-            <div class="metric">18<span class="unit">°C</span></div>
+            <div>
+              <div class="weather-temp">18°C</div>
+              <div class="weather-city">Hamburg · leicht bewölkt</div>
+            </div>
           </div>
-          <div class="weather-details">
-            <span>WIND 14 KM/H</span>
-            <span>LF 62%</span>
-            <span>REGEN 20%</span>
+          <div class="sub">Wind 12 km/h · Luftfeuchte 64%</div>
+        </div>
+
+        <div class="card wide">
+          <div class="label">SYSTEM INFO <span class="badge">HOST</span></div>
+          <div class="sysinfo-grid">
+            <div><span>Uptime</span><b>4d 07h</b></div>
+            <div><span>WSL2</span><b>Ubuntu 24.04</b></div>
+            <div><span>Speicher (Disk)</span><b>212 / 512 GB</b></div>
+            <div><span>Netzwerk</span><b>↑ 1.2 Mb/s</b></div>
+            <div><span>Tunnel</span><b>bolla.chrismandel.de</b></div>
+            <div><span>Cron-Jobs aktiv</span><b>7</b></div>
           </div>
         </div>
 
-        <div class="card">
-          <h3><span>SCHULE // NÄCHSTER TERMIN</span><span class="icon">🎓</span></h3>
-          <div class="metric" style="font-size:22px;">7b EDV</div>
-          <div class="metric-label">MO 27.07. · 10:15 UHR · RAUM 214</div>
-          <div class="prompt-line">status: unterlagen bereit <span class="status-ok">[OK]</span></div>
-        </div>
-
-        <div class="card">
-          <h3><span>KALENDER // HEUTE</span><span class="icon">📅</span></h3>
-          <div class="list">
-            <div class="row"><span class="from">Sport Gesundheitszentrum</span><span class="time">17:00</span></div>
-            <div class="row"><span class="from">Backup Nachtlauf</span><span class="time">23:30</span></div>
+        <div class="card wide tall">
+          <div class="label">NÄCHSTE TERMINE <span class="badge">KALENDER</span></div>
+          <div class="sysinfo-grid" style="grid-template-columns:1fr;">
+            <div><span>So 13:00</span><b>Ausflug Gengenbach</b></div>
+            <div><span>Mo 09:00</span><b>Weiterfahrt Triberg</b></div>
+            <div><span>Mi 15:00</span><b>Tanzkurs „Die 3"</b></div>
           </div>
-        </div>
-
-        <div class="card full-width">
-          <h3><span>SYSTEM_INFO // BOLLA-HOST</span><span class="icon">⌁</span></h3>
-          <div class="sysinfo">
-            <div><span>HOSTNAME</span>bolla-wsl2</div>
-            <div><span>OS</span>Ubuntu 22.04 LTS (WSL2)</div>
-            <div><span>DISK</span>212 GB / 500 GB frei</div>
-            <div><span>NETZWERK</span><span class="status-ok">ONLINE</span> · Tunnel aktiv</div>
-            <div><span>PROZESSE</span>187 laufend</div>
-            <div><span>LETZTES BACKUP</span>heute 04:12 <span class="status-ok">[OK]</span></div>
-          </div>
-          <div class="prompt-line">root@bolla:~$ tail -f system.log<span class="cur"></span></div>
         </div>
 
       </div>
