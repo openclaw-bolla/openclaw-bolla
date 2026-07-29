@@ -2,306 +2,392 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Mission Control :: root@bolla</title>
+<title>MISSION CONTROL // root@bolla</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body {
-    height: 100%;
-    background: #0a0d0a;
-    color: #33ff66;
-    font-family: "Consolas", "Courier New", monospace;
-    font-size: 15px;
-    overflow: hidden;
+  :root{
+    --bg:#060a06;
+    --panel:#0a120a;
+    --green:#00ff41;
+    --green-dim:#0aa62f;
+    --green-faint:#0a3d16;
+    --amber:#ffb000;
+    --red:#ff3b3b;
+    --border:#12401d;
   }
-  body {
-    background-image:
-      repeating-linear-gradient(0deg, rgba(0,255,65,0.035) 0px, rgba(0,255,65,0.035) 1px, transparent 1px, transparent 3px);
-    display: flex;
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    background:var(--bg);
+    color:var(--green);
+    font-family:'Consolas','Courier New',monospace;
+    font-size:15px;
+    overflow:hidden;
   }
-  /* subtle CRT vignette */
-  .crt-overlay {
-    pointer-events: none;
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
-    z-index: 999;
+  body{
+    position:relative;
+    display:flex;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(0,255,65,0.06), transparent 60%),
+      var(--bg);
   }
-
-  /* ===== Sidebar ===== */
-  .sidebar {
-    width: 220px;
-    min-width: 220px;
-    height: 100vh;
-    background: #060906;
-    border-right: 1px solid #1c4d2b;
-    padding: 20px 0;
-    display: flex;
-    flex-direction: column;
+  /* CRT scanlines + flicker */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background:repeating-linear-gradient(
+      to bottom,
+      rgba(0,255,65,0.035) 0px,
+      rgba(0,255,65,0.035) 1px,
+      transparent 2px,
+      transparent 3px
+    );
+    pointer-events:none;
+    z-index:50;
+    mix-blend-mode:overlay;
   }
-  .logo {
-    padding: 0 18px 18px 18px;
-    border-bottom: 1px solid #123a1e;
-    margin-bottom: 14px;
-  }
-  .logo .brand {
-    color: #7dffb0;
-    font-weight: bold;
-    font-size: 17px;
-    letter-spacing: 1px;
-    text-shadow: 0 0 8px rgba(51,255,102,0.7);
-  }
-  .logo .sub {
-    color: #2a8a4a;
-    font-size: 12px;
-    margin-top: 4px;
-  }
-  nav.navlist { display: flex; flex-direction: column; gap: 2px; padding: 0 10px; }
-  nav.navlist a {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: #38b566;
-    text-decoration: none;
-    padding: 10px 12px;
-    font-size: 14px;
-    border-left: 3px solid transparent;
-    border-radius: 2px;
-    transition: background .12s ease, color .12s ease;
-  }
-  nav.navlist a .ico { width: 18px; text-align: center; }
-  nav.navlist a:hover {
-    background: rgba(51,255,102,0.08);
-    color: #7dffb0;
-  }
-  nav.navlist a.active {
-    background: rgba(51,255,102,0.12);
-    border-left: 3px solid #33ff66;
-    color: #baffd6;
-    text-shadow: 0 0 6px rgba(51,255,102,0.6);
-  }
-  .sidebar-footer {
-    margin-top: auto;
-    padding: 14px 18px;
-    font-size: 11px;
-    color: #1f6b39;
-    border-top: 1px solid #123a1e;
-  }
-  .dot {
-    display: inline-block;
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: #33ff66;
-    box-shadow: 0 0 6px #33ff66;
-    margin-right: 6px;
-    animation: pulse 1.6s infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.35;} }
-
-  /* ===== Main ===== */
-  .main { flex: 1; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-
-  .topbar {
-    height: 56px;
-    border-bottom: 1px solid #1c4d2b;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 24px;
-    background: #070a07;
-  }
-  .topbar .title {
-    font-size: 16px;
-    color: #baffd6;
-    letter-spacing: 1px;
-  }
-  .topbar .title::before { content: "root@bolla:~$ "; color: #1f6b39; }
-  .topbar .clock {
-    font-size: 20px;
-    color: #33ff66;
-    text-shadow: 0 0 10px rgba(51,255,102,0.65);
-    letter-spacing: 2px;
-  }
-  .topbar .clock .blink { animation: blink 1s steps(1) infinite; }
-  @keyframes blink { 50% { opacity: 0; } }
-
-  .content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 24px;
-  }
-  .content::-webkit-scrollbar { width: 8px; }
-  .content::-webkit-scrollbar-thumb { background: #1c4d2b; }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 18px;
+  body::after{
+    content:"";
+    position:fixed; inset:0;
+    background:radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.55) 100%);
+    pointer-events:none;
+    z-index:51;
   }
 
-  .card {
-    background: #060a06;
-    border: 1px solid #1c4d2b;
-    border-radius: 4px;
-    padding: 16px 18px;
-    position: relative;
-    box-shadow: 0 0 18px rgba(0,255,65,0.03) inset;
+  /* ===== SIDEBAR ===== */
+  .sidebar{
+    width:220px;
+    min-width:220px;
+    height:100vh;
+    background:var(--panel);
+    border-right:1px solid var(--border);
+    padding:18px 0;
+    display:flex;
+    flex-direction:column;
+    z-index:5;
   }
-  .card::before {
-    content: attr(data-tag);
-    position: absolute;
-    top: -9px;
-    left: 12px;
-    background: #0a0d0a;
-    padding: 0 6px;
-    font-size: 10px;
-    color: #1f6b39;
-    letter-spacing: 1px;
+  .brand{
+    padding:0 18px 18px 18px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:14px;
   }
-  .card h3 {
-    font-size: 13px;
-    color: #7dffb0;
-    font-weight: normal;
-    letter-spacing: 1px;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .brand .logo{
+    font-size:17px;
+    font-weight:bold;
+    letter-spacing:1px;
+    text-shadow:0 0 8px var(--green), 0 0 18px rgba(0,255,65,0.5);
   }
-  .card .big {
-    font-size: 32px;
-    color: #33ff66;
-    text-shadow: 0 0 10px rgba(51,255,102,0.5);
+  .brand .sub{
+    font-size:11px;
+    color:var(--green-dim);
+    margin-top:4px;
+    letter-spacing:1px;
   }
-  .card .meta { color: #2a8a4a; font-size: 12px; margin-top: 6px; }
+  nav{flex:1;padding:0 10px;}
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 12px;
+    margin-bottom:2px;
+    color:var(--green-dim);
+    text-decoration:none;
+    font-size:14px;
+    border-left:2px solid transparent;
+    border-radius:2px;
+    cursor:pointer;
+    transition:all .12s ease;
+    white-space:nowrap;
+  }
+  .nav-item .ico{
+    width:16px;
+    display:inline-block;
+    text-align:center;
+    opacity:.9;
+  }
+  .nav-item:hover{
+    color:var(--green);
+    background:rgba(0,255,65,0.06);
+    border-left-color:var(--green-dim);
+  }
+  .nav-item.active{
+    color:var(--green);
+    background:rgba(0,255,65,0.09);
+    border-left-color:var(--green);
+    text-shadow:0 0 6px rgba(0,255,65,0.6);
+  }
+  .nav-item.active::before{
+    content:">";
+    margin-right:-6px;
+  }
+  .sidebar-footer{
+    padding:12px 18px;
+    border-top:1px solid var(--border);
+    font-size:11px;
+    color:var(--green-faint);
+    line-height:1.6;
+  }
+  .dot-online{
+    display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--green);box-shadow:0 0 6px var(--green);
+    margin-right:6px;
+    animation:pulse 2s infinite;
+  }
+  @keyframes pulse{
+    0%,100%{opacity:1;}
+    50%{opacity:.35;}
+  }
 
-  .bar-track {
-    width: 100%;
-    height: 10px;
-    background: #0f1a10;
-    border: 1px solid #1c4d2b;
-    margin-top: 12px;
-    overflow: hidden;
+  /* ===== MAIN ===== */
+  .main{
+    flex:1;
+    height:100vh;
+    overflow-y:auto;
+    z-index:5;
+    display:flex;
+    flex-direction:column;
   }
-  .bar-fill {
-    height: 100%;
-    background: repeating-linear-gradient(90deg, #33ff66 0 6px, #1c8f43 6px 8px);
-    box-shadow: 0 0 8px rgba(51,255,102,0.7);
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 28px;
+    border-bottom:1px solid var(--border);
+    background:linear-gradient(to bottom, rgba(0,255,65,0.04), transparent);
+  }
+  .topbar h1{
+    margin:0;
+    font-size:19px;
+    letter-spacing:2px;
+    text-shadow:0 0 8px rgba(0,255,65,0.5);
+  }
+  .topbar .path{
+    color:var(--green-dim);
+    font-size:12px;
+    margin-top:3px;
+  }
+  .clock-wrap{
+    text-align:right;
+  }
+  .clock{
+    font-size:26px;
+    font-weight:bold;
+    letter-spacing:2px;
+    text-shadow:0 0 10px var(--green), 0 0 22px rgba(0,255,65,0.4);
+  }
+  .clock .cursor{
+    display:inline-block;
+    width:10px;
+    background:var(--green);
+    margin-left:3px;
+    animation:blink 1s steps(1) infinite;
+  }
+  @keyframes blink{
+    50%{opacity:0;}
+  }
+  .date-line{
+    font-size:11px;
+    color:var(--green-dim);
+    margin-top:2px;
   }
 
-  .mail-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 6px 0;
-    border-bottom: 1px dashed #17331f;
-    font-size: 13px;
+  .content{
+    padding:24px 28px 40px 28px;
   }
-  .mail-row:last-child { border-bottom: none; }
-  .mail-row .from { color: #baffd6; }
-  .mail-row .time { color: #2a8a4a; }
-  .tag-new {
-    color: #0a0d0a;
-    background: #33ff66;
-    font-size: 10px;
-    padding: 1px 5px;
-    border-radius: 2px;
-    margin-left: 6px;
+  .section-label{
+    font-size:12px;
+    color:var(--green-dim);
+    letter-spacing:2px;
+    margin-bottom:14px;
+    border-bottom:1px dashed var(--border);
+    padding-bottom:8px;
   }
 
-  .weather-icon { font-size: 34px; }
-  .weather-row { display: flex; align-items: center; gap: 16px; }
-  .weather-temp { font-size: 32px; color: #33ff66; text-shadow: 0 0 10px rgba(51,255,102,0.5); }
-  .weather-detail { color: #2a8a4a; font-size: 12px; margin-top: 4px; }
-
-  .log-card { grid-column: 1 / -1; }
-  .log-line { font-size: 12.5px; color: #2a8a4a; line-height: 1.7; }
-  .log-line .ok { color: #33ff66; }
-  .log-line .warn { color: #ffd033; }
-  .log-line .ts { color: #1f6b39; margin-right: 8px; }
-
-  .cursor-line {
-    margin-top: 10px;
-    font-size: 13px;
-    color: #33ff66;
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));
+    gap:18px;
+    margin-bottom:28px;
   }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:16px 18px;
+    position:relative;
+    overflow:hidden;
+    transition:border-color .15s;
+  }
+  .card:hover{
+    border-color:var(--green-dim);
+    box-shadow:0 0 18px rgba(0,255,65,0.08) inset;
+  }
+  .card::before{
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(to right, var(--green), transparent);
+    opacity:.6;
+  }
+  .card-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .card-title{
+    font-size:12px;
+    letter-spacing:1.5px;
+    color:var(--green-dim);
+  }
+  .card-icon{opacity:.8;font-size:14px;}
+  .card-value{
+    font-size:30px;
+    font-weight:bold;
+    text-shadow:0 0 10px rgba(0,255,65,0.55);
+    line-height:1;
+    margin-bottom:8px;
+  }
+  .card-value.amber{color:var(--amber);text-shadow:0 0 10px rgba(255,176,0,0.5);}
+  .card-sub{
+    font-size:12px;
+    color:var(--green-faint);
+  }
+
+  .bar-track{
+    height:8px;
+    width:100%;
+    background:rgba(0,255,65,0.08);
+    border:1px solid var(--border);
+    border-radius:2px;
+    margin-top:10px;
+    overflow:hidden;
+  }
+  .bar-fill{
+    height:100%;
+    background:repeating-linear-gradient(
+      90deg, var(--green) 0 6px, rgba(0,255,65,0.35) 6px 8px
+    );
+    box-shadow:0 0 8px var(--green);
+  }
+
+  .ascii-list{
+    font-size:12px;
+    color:var(--green-dim);
+    line-height:1.8;
+  }
+  .ascii-list li{list-style:none;}
+  .ascii-list .tag{color:var(--green);}
+
+  /* console / log panel */
+  .console{
+    background:#020402;
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:16px 18px;
+    font-size:13px;
+    line-height:1.9;
+    max-height:220px;
+    overflow-y:auto;
+  }
+  .console .ln{white-space:pre-wrap;}
+  .console .t{color:var(--green-faint);margin-right:8px;}
+  .console .ok{color:var(--green);}
+  .console .warn{color:var(--amber);}
+  .console .err{color:var(--red);}
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--green-faint);border-radius:4px;}
 </style>
 </head>
 <body>
 
-<div class="crt-overlay"></div>
-
-<div class="sidebar">
-  <div class="logo">
-    <div class="brand">▓ MISSION CONTROL</div>
-    <div class="sub">v2.4.1 :: secure shell</div>
-  </div>
-  <nav class="navlist">
-    <a href="#" class="active"><span class="ico">▣</span> Dashboard</a>
-    <a href="#"><span class="ico">🐾</span> Bolla</a>
-    <a href="#"><span class="ico">🎓</span> Schule</a>
-    <a href="#"><span class="ico">📅</span> Kalender</a>
-    <a href="#"><span class="ico">✉</span> E-Mail</a>
-    <a href="#"><span class="ico">☁</span> Wetter</a>
-    <a href="#"><span class="ico">⚙</span> System Info</a>
-  </nav>
-  <div class="sidebar-footer">
-    <span class="dot"></span>CONNECTION: STABLE<br>
-    uptime 4d 07h 12m
-  </div>
-</div>
-
-<div class="main">
-  <div class="topbar">
-    <div class="title">Dashboard</div>
-    <div class="clock">20:14<span class="blink">_</span></div>
-  </div>
-
-  <div class="content">
-    <div class="grid">
-
-      <div class="card" data-tag="SYS/MEM">
-        <h3>🧠 RAM-AUSLASTUNG</h3>
-        <div class="big">34%</div>
-        <div class="bar-track"><div class="bar-fill" style="width:34%"></div></div>
-        <div class="meta">5,4 GB / 16 GB belegt</div>
-      </div>
-
-      <div class="card" data-tag="SYS/CPU">
-        <h3>⚡ CPU-LAST</h3>
-        <div class="big">12%</div>
-        <div class="bar-track"><div class="bar-fill" style="width:12%"></div></div>
-        <div class="meta">4 Kerne · 38°C</div>
-      </div>
-
-      <div class="card" data-tag="MAIL">
-        <h3>✉ POSTEINGANG <span class="tag-new">3 NEU</span></h3>
-        <div class="mail-row"><span class="from">Robin Mandel</span><span class="time">18:42</span></div>
-        <div class="mail-row"><span class="from">Lessing-Gymnasium</span><span class="time">17:05</span></div>
-        <div class="mail-row"><span class="from">Booking.com</span><span class="time">14:23</span></div>
-      </div>
-
-      <div class="card" data-tag="WX/HH">
-        <h3>☁ WETTER · HAMBURG</h3>
-        <div class="weather-row">
-          <div class="weather-icon">⛅</div>
-          <div>
-            <div class="weather-temp">18°C</div>
-            <div class="weather-detail">Wechselnd bewölkt · Wind 14 km/h</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card log-card" data-tag="LOG/STREAM">
-        <h3>📟 SYSTEM-LOG</h3>
-        <div class="log-line"><span class="ts">[20:13:58]</span><span class="ok">OK</span>&nbsp; Cron-Backup abgeschlossen — 0 Fehler</div>
-        <div class="log-line"><span class="ts">[20:11:04]</span><span class="ok">OK</span>&nbsp; Cloudflare Tunnel: Verbindung stabil</div>
-        <div class="log-line"><span class="ts">[19:58:37]</span><span class="warn">WARN</span> Hotel-WLAN Latenz erhöht (322ms)</div>
-        <div class="log-line"><span class="ts">[19:40:12]</span><span class="ok">OK</span>&nbsp; Kalender synchronisiert (2 neue Termine)</div>
-        <div class="cursor-line">root@bolla:~$ <span class="blink">▌</span></div>
-      </div>
-
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">MISSION CONTROL</div>
+      <div class="sub">root@bolla ~ v2.1.220</div>
     </div>
-  </div>
-</div>
+    <nav>
+      <a class="nav-item active"><span class="ico">▣</span> Dashboard</a>
+      <a class="nav-item"><span class="ico">🐾</span> Bolla</a>
+      <a class="nav-item"><span class="ico">🎓</span> Schule</a>
+      <a class="nav-item"><span class="ico">🗓</span> Kalender</a>
+      <a class="nav-item"><span class="ico">✉</span> E-Mail</a>
+      <a class="nav-item"><span class="ico">☁</span> Wetter</a>
+      <a class="nav-item"><span class="ico">⚙</span> System Info</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div><span class="dot-online"></span>ONLINE // WSL2</div>
+      <div>uptime 4d 07:12:33</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1>DASHBOARD</h1>
+        <div class="path">/home/bolla/workspace &gt; overview</div>
+      </div>
+      <div class="clock-wrap">
+        <div class="clock">20:14<span class="cursor">&nbsp;</span></div>
+        <div class="date-line">MI. 29.07.2026 // NORDERSTEDT, SH</div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="section-label">// SYSTEM STATUS</div>
+      <div class="grid">
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">RAM AUSLASTUNG</span>
+            <span class="card-icon">▤</span>
+          </div>
+          <div class="card-value">34%</div>
+          <div class="card-sub">5.4 GB / 16.0 GB belegt</div>
+          <div class="bar-track"><div class="bar-fill" style="width:34%"></div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">CPU AUSLASTUNG</span>
+            <span class="card-icon">▤</span>
+          </div>
+          <div class="card-value">12%</div>
+          <div class="card-sub">4 Kerne // 41°C</div>
+          <div class="bar-track"><div class="bar-fill" style="width:12%"></div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">POSTEINGANG</span>
+            <span class="card-icon">✉</span>
+          </div>
+          <div class="card-value">3 <span style="font-size:14px;color:var(--green-dim);">neu</span></div>
+          <div class="card-sub">ernstmandel@outlook.de</div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">WETTER · HAMBURG</span>
+            <span class="card-icon">☁</span>
+          </div>
+          <div class="card-value amber">18°C</div>
+          <div class="card-sub">bewölkt // Wind 14 km/h // 62% Luftf.</div>
+        </div>
+
+      </div>
+
+      <div class="section-label">// AKTIVITÄTSLOG</div>
+      <div class="console">
+        <div class="ln"><span class="t">[20:13:58]</span><span class="ok">OK</span>  cron: mission_control_api.py heartbeat</div>
+        <div class="ln"><span class="t">[20:12:41]</span><span class="ok">OK</span>  onedrive-sync: 0 Konflikte</div>
+        <div class="ln"><span class="t">[20:09:15]</span><span class="warn">WARN</span> WLAN Signal schwankend (Hotel-Netz)</div>
+        <div class="ln"><span class="t">[20:04:02]</span><span class="ok">OK</span>  cloudflared tunnel bolla-mc: verbunden</div>
+        <div class="ln"><span class="t">[19:58:47]</span><span class="ok">OK</span>  backup: nächtliche Sicherung geplant 02:00</div>
+        <div class="ln"><span class="t">[19:51:30]</span><span class="err">ERR</span> itslearning: Token-Refresh fehlgeschlagen (retry ok)</div>
+      </div>
+    </div>
+  </main>
 
 </body>
 </html>
