@@ -985,7 +985,10 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
     <div id="topbar">
       <button id="hamburger" onclick="toggleSidebar()" title="Menü">☰</button>
       <h2 id="page-title">Dashboard</h2>
-      <div id="clock"></div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div id="topbar-location" style="font-size:14px;color:var(--dim)">📍 Norderstedt</div>
+        <div id="clock"></div>
+      </div>
     </div>
     <div id="pages">
 
@@ -7103,6 +7106,11 @@ async function loadWeather(lat, lon, mode) {
         .then(res => res.json())
         .then(g => {
           window._weatherCurrentPlace = g.city || g.locality || g.principalSubdivision || null;
+          if (window._greetingWeatherMode === 'current') {
+            renderGreetingWeather(d, bsData, 'current');
+            const tl = document.getElementById('topbar-location');
+            if (tl) tl.textContent = '📍 ' + (window._weatherCurrentPlace || 'Unterwegs');
+          }
           if ((window._wetterMode || 'home') === 'current' && document.getElementById('wetter-content') && document.getElementById('page-wetter').classList.contains('active')) {
             loadWeatherFull();
           }
@@ -7110,39 +7118,10 @@ async function loadWeather(lat, lon, mode) {
         .catch(() => {});
     }
 
-    if (m === 'home') {
-      const c = d.current;
-      const bs = bsData;
-      const useBs = bsUsable(bs, c);   // Stationsmessung nur bei Plausibilität (sonst Open-Meteo)
-      // --- Regen-Priorität: ein Niederschlagssignal von Modell/Radar-Nowcast darf NICHT von
-      //     einer trockenen (oft 10 km entfernten) DWD-Station überschrieben werden. Lokale
-      //     Schauer sind an der Station nicht messbar, im 15-Min-Radar aber schon → Regen gewinnt.
-      const now = nowRain(d);          // {mm, code} aus minutely_15 (frischeste Quelle)
-      const bsWet = bs && (BS_WET.has(bs.icon) || (bs.condition && BS_WET.has(bs.condition)));
-      const rainNow = !!WMO_RAIN[now.code] || now.mm > 0 || !!WMO_RAIN[c.weather_code] || (c.precipitation||0) > 0;
-      const rainOverride = rainNow && !bsWet;  // Modell/Radar sieht Regen, Station meldet trocken
-      const rainCode = WMO_RAIN[now.code] ? now.code : c.weather_code;
-      const temp = bs && bs.temperature != null ? Math.round(bs.temperature) : Math.round(c.temperature_2m);
-      const icon = rainOverride ? (WMO_ICONS[rainCode] || '🌧️')
-                 : useBs ? (BS_EMOJI[bs.icon] || WMO_ICONS[c.weather_code] || '🌤️') : (WMO_ICONS[c.weather_code] || '🌤️');
-      const desc = rainOverride ? (WMO_DESC[rainCode] || 'Regen')
-                 : useBs ? (BS_DESC[bs.icon] || WMO_DESC[c.weather_code] || '') : (WMO_DESC[c.weather_code] || '');
-      const daily = d.daily;
-      // Kompakte Anzeige im Greeting-Banner (Wetter linksbündig)
-      const gw = document.getElementById('greeting-weather');
-      if (gw) {
-        const tmax = Math.round(daily.temperature_2m_max[0]);
-        const tmin = Math.round(daily.temperature_2m_min[0]);
-        gw.innerHTML = `
-          <div style="display:flex;align-items:center;gap:24px">
-            <span class="gw-icon">${icon}</span>
-            <div>
-              <div class="gw-temp">${temp}°C</div>
-              <div class="gw-desc">${desc}</div>
-              <div class="gw-extra">↑${tmax}° ↓${tmin}° · gefühlt ${Math.round(c.apparent_temperature)}°</div>
-            </div>
-          </div>`;
-      }
+    // Dashboard-Banner ganz oben zeigt bevorzugt den aktuellen Standort (siehe initGreetingWeather);
+    // bis GPS da ist bzw. falls es fehlschlägt, bleibt/springt es auf Zuhause zurück.
+    if (m === (window._greetingWeatherMode || 'home')) {
+      renderGreetingWeather(d, bsData, m);
     }
 
     // Aktive Anzeige auf der Wetter-Seite nur aktualisieren, wenn dieser Fetch zum sichtbaren Modus passt
@@ -7153,6 +7132,49 @@ async function loadWeather(lat, lon, mode) {
       }
     }
   } catch(e) {}
+}
+
+function renderGreetingWeather(d, bs, m) {
+  const gw = document.getElementById('greeting-weather');
+  if (!gw) return;
+  const c = d.current;
+  const useBs = bsUsable(bs, c);
+  const now = nowRain(d);
+  const bsWet = bs && (BS_WET.has(bs.icon) || (bs.condition && BS_WET.has(bs.condition)));
+  const rainNow = !!WMO_RAIN[now.code] || now.mm > 0 || !!WMO_RAIN[c.weather_code] || (c.precipitation||0) > 0;
+  const rainOverride = rainNow && !bsWet;
+  const rainCode = WMO_RAIN[now.code] ? now.code : c.weather_code;
+  const temp = bs && bs.temperature != null ? Math.round(bs.temperature) : Math.round(c.temperature_2m);
+  const icon = rainOverride ? (WMO_ICONS[rainCode] || '🌧️')
+             : useBs ? (BS_EMOJI[bs.icon] || WMO_ICONS[c.weather_code] || '🌤️') : (WMO_ICONS[c.weather_code] || '🌤️');
+  const desc = rainOverride ? (WMO_DESC[rainCode] || 'Regen')
+             : useBs ? (BS_DESC[bs.icon] || WMO_DESC[c.weather_code] || '') : (WMO_DESC[c.weather_code] || '');
+  const daily = d.daily;
+  const tmax = Math.round(daily.temperature_2m_max[0]);
+  const tmin = Math.round(daily.temperature_2m_min[0]);
+  const place = m === 'current' && window._weatherCurrentPlace ? ` · 📍 ${window._weatherCurrentPlace}` : '';
+  gw.innerHTML = `
+    <div style="display:flex;align-items:center;gap:24px">
+      <span class="gw-icon">${icon}</span>
+      <div>
+        <div class="gw-temp">${temp}°C</div>
+        <div class="gw-desc">${desc}${place}</div>
+        <div class="gw-extra">↑${tmax}° ↓${tmin}° · gefühlt ${Math.round(c.apparent_temperature)}°</div>
+      </div>
+    </div>`;
+}
+
+function initGreetingWeather() {
+  loadWeather();  // Zuhause-Wetter immer laden (Cache für Wetter-Seite + Sofort-Anzeige, bis GPS da ist)
+  if (!navigator.geolocation) { window._greetingWeatherMode = 'home'; return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      window._greetingWeatherMode = 'current';
+      loadWeather(pos.coords.latitude, pos.coords.longitude, 'current');
+    },
+    () => { window._greetingWeatherMode = 'home'; },
+    { timeout: 8000, maximumAge: 600000 }
+  );
 }
 
 // Zeigt die zum aktiven Modus (window._wetterMode) gehörenden Cache-Daten als window._weather/_brightsky an.
@@ -9503,7 +9525,7 @@ async function initialLoad(attempt=0) {
     if (!r.ok) throw 0;
     loadCalendarData();
     loadEmailData();
-    loadWeather();
+    initGreetingWeather();
     loadPhoto();
     loadJoke();
     loadRecipe();
