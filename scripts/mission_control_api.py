@@ -1616,6 +1616,40 @@ def _reise_geocode(query):
     return res
 
 _REISE_REV_CACHE = os.path.join(WORKSPACE, "config/reise_revcache.json")
+_REISE_PLZ_CACHE = os.path.join(WORKSPACE, "config/reise_plzcache.json")
+
+def _reise_plz_ort(postcode):
+    """PLZ → amtlicher Postort via Nominatim-Postleitzahl-Suche (Cache).
+    Grund: reverse-Geocoding auf einen Punkt liefert oft den nächsten Weiler/die
+    kleinste Ortschaft (z.B. 'Marstetten') statt des Postorts, den man fürs Navi
+    braucht (hier 'Aitrach', PLZ 88319) — entdeckt 03.08.2026. Die separate
+    PLZ-Suche trifft zuverlässig den richtigen (größeren) Ort."""
+    import urllib.request, urllib.parse
+    postcode = (postcode or "").strip()
+    if not postcode:
+        return None
+    try:
+        cache = json.loads(open(_REISE_PLZ_CACHE).read()) if os.path.exists(_REISE_PLZ_CACHE) else {}
+    except Exception:
+        cache = {}
+    if postcode in cache:
+        return cache[postcode]
+    res = None
+    try:
+        qs = urllib.parse.urlencode({"postalcode": postcode, "country": "Germany", "format": "json", "addressdetails": "1", "limit": "1"})
+        req = urllib.request.Request("https://nominatim.openstreetmap.org/search?" + qs, headers=_REISE_UA)
+        j = json.loads(urllib.request.urlopen(req, timeout=15).read())
+        if j:
+            a = j[0].get("address", {})
+            res = a.get("city") or a.get("town") or a.get("village") or a.get("municipality")
+    except Exception:
+        res = None
+    cache[postcode] = res
+    try:
+        open(_REISE_PLZ_CACHE, "w").write(json.dumps(cache, ensure_ascii=False, indent=2))
+    except Exception:
+        pass
+    return res
 
 def _reise_reverse_geocode(lat, lon):
     """(lat, lon) → lesbare Adresse via Nominatim reverse (kostenlos), mit Datei-Cache.
@@ -1640,8 +1674,9 @@ def _reise_reverse_geocode(lat, lon):
         j = json.loads(urllib.request.urlopen(req, timeout=15).read())
         a = j.get("address", {})
         street = " ".join(filter(None, [a.get("road"), a.get("house_number")]))
-        city = a.get("city") or a.get("town") or a.get("village") or a.get("municipality") or ""
-        plz_city = " ".join(filter(None, [a.get("postcode"), city]))
+        postcode = a.get("postcode") or ""
+        city = _reise_plz_ort(postcode) or a.get("city") or a.get("town") or a.get("village") or a.get("municipality") or ""
+        plz_city = " ".join(filter(None, [postcode, city]))
         res = ", ".join(filter(None, [street, plz_city])) or j.get("display_name")
     except Exception:
         res = None
