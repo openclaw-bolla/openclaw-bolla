@@ -2873,6 +2873,63 @@ def get_chargers(lat: float, lon: float, radius: int = 12000):
 # entlang des Fahrwegs, EnBW-Familie in einer Liste, Aral Pulse getrennt.
 _LADEN_HOME = (53.6959, 9.9963)   # Buchenweg 67a, Norderstedt — Default-Start
 
+# Kosename → exakter Outlook-Anzeigename. Bewusst hart auf die engste Familie begrenzt
+# (nicht per Fuzzy-Match über ALLE Kontakte — sonst gewinnt z.B. bei "Steffi" ein x-beliebiger
+# Kontakt "Steffi Weiß" statt Tochter "Stephanie Garschagen", getestet 03.08.2026).
+_LADEN_FAMILY_ALIASES = {
+    "steffi": "Stephanie Garschagen", "stephanie": "Stephanie Garschagen",
+    "anne": "Ann-Kristin Mandel", "ann-kristin": "Ann-Kristin Mandel",
+    "robin": "Robin Mandel",
+    "reni": "Renate Mandel", "renate": "Renate Mandel",
+}
+_LADEN_FAMILY_CACHE = {"ts": 0, "map": {}}
+
+def _laden_family_addresses():
+    """Exakter Outlook-Anzeigename → Adresse (homeAddress bevorzugt, sonst businessAddress). Cache 30 Min."""
+    import time as _t
+    if _t.time() - _LADEN_FAMILY_CACHE["ts"] < 1800 and _LADEN_FAMILY_CACHE["map"]:
+        return _LADEN_FAMILY_CACHE["map"]
+    result = {}
+    try:
+        url = "https://graph.microsoft.com/v1.0/me/contacts?$select=displayName,homeAddress,businessAddress&$top=200"
+        while url:
+            data = graph_get(url.replace("https://graph.microsoft.com/v1.0", ""))
+            if not data:
+                break
+            for c in data.get("value", []):
+                name = (c.get("displayName") or "").strip()
+                if not name:
+                    continue
+                addr = c.get("homeAddress") or {}
+                if not (addr.get("street") or addr.get("city")):
+                    addr = c.get("businessAddress") or {}
+                street = (addr.get("street") or "").strip()
+                city = (addr.get("city") or "").strip()
+                if not city:
+                    continue
+                result[name] = ", ".join(filter(None, [street, city]))
+            url = data.get("@odata.nextLink")
+    except Exception:
+        pass
+    if result:
+        _LADEN_FAMILY_CACHE["map"] = result
+        _LADEN_FAMILY_CACHE["ts"] = _t.time()
+    return result or _LADEN_FAMILY_CACHE["map"]
+
+def _laden_resolve_target(text):
+    """Familien-Kosename (z.B. 'Steffi') → Adresse aus Outlook-Kontakten, sonst unverändert.
+    Rückgabe: (adresse_für_geocoding, anzeige_name)."""
+    t = (text or "").strip()
+    if not t or " " in t or "," in t or any(ch.isdigit() for ch in t):
+        return t, t   # sieht schon nach Adresse/Ort aus, nicht anfassen
+    full_name = _LADEN_FAMILY_ALIASES.get(t.lower())
+    if not full_name:
+        return t, t
+    addr = _laden_family_addresses().get(full_name)
+    if addr:
+        return addr, f"{t} ({addr})"
+    return t, t
+
 def _laden_hav(a_lat, a_lon, b_lat, b_lon):
     import math
     dlat = math.radians(b_lat - a_lat); dlon = math.radians(b_lon - a_lon)
@@ -2935,14 +2992,16 @@ def get_chargers_route(ziel, start_lat=None, start_lon=None, start=None, corrido
     if start_lat is not None and start_lon is not None:
         s = (float(start_lat), float(start_lon)); start_name = "Aktueller Standort"
     elif start:
-        g = _reise_geocode(start)
+        start_addr, start_name = _laden_resolve_target(start)
+        g = _reise_geocode(start_addr)
         if not g:
             return {"error": f"Start „{start}“ nicht gefunden.", "enbw": [], "aral": [], "sonstige": []}
-        s = g; start_name = start
+        s = g
     else:
         s = _LADEN_HOME; start_name = "Norderstedt (Zuhause)"
 
-    zc = _reise_geocode(ziel)
+    ziel_addr, ziel_name = _laden_resolve_target(ziel)
+    zc = _reise_geocode(ziel_addr)
     if not zc:
         return {"error": f"Ziel „{ziel}“ nicht gefunden.", "enbw": [], "aral": [], "sonstige": []}
 
@@ -3054,8 +3113,9 @@ def get_chargers_route(ziel, start_lat=None, start_lon=None, start=None, corrido
 
     rows.sort(key=lambda r: r['route_km'])
     return {
-        "start": start_name, "ziel": ziel,
+        "start": start_name, "ziel": ziel_name,
         "dist_km": dist_km, "dauer_min": dauer_min,
+        "route": [[round(la, 5), round(lo, 5)] for la, lo in dec],   # dezimierte Linie fürs Karten-Zeichnen
         "enbw":     [r for r in rows if r['tier'] == 1],
         "aral":     [r for r in rows if r['tier'] == 2],
         "sonstige": [r for r in rows if r['tier'] == 3][:40],   # Rest ist meist Straßen-Lader, nicht routenrelevant
