@@ -1615,6 +1615,43 @@ def _reise_geocode(query):
         pass
     return res
 
+_REISE_REV_CACHE = os.path.join(WORKSPACE, "config/reise_revcache.json")
+
+def _reise_reverse_geocode(lat, lon):
+    """(lat, lon) → lesbare Adresse via Nominatim reverse (kostenlos), mit Datei-Cache.
+    Nur lazy/on-demand aufrufen (z.B. bei Klick auf eine einzelne Station) — NICHT im
+    Batch für viele Punkte, das würde Nominatims Fair-Use-Grenze sprengen."""
+    import urllib.request, urllib.parse
+    try:
+        lat_f, lon_f = round(float(lat), 5), round(float(lon), 5)
+    except (TypeError, ValueError):
+        return None
+    key = f"{lat_f},{lon_f}"
+    try:
+        cache = json.loads(open(_REISE_REV_CACHE).read()) if os.path.exists(_REISE_REV_CACHE) else {}
+    except Exception:
+        cache = {}
+    if key in cache:
+        return cache[key]
+    res = None
+    try:
+        qs = urllib.parse.urlencode({"lat": lat_f, "lon": lon_f, "format": "json", "zoom": "18", "addressdetails": "1"})
+        req = urllib.request.Request("https://nominatim.openstreetmap.org/reverse?" + qs, headers=_REISE_UA)
+        j = json.loads(urllib.request.urlopen(req, timeout=15).read())
+        a = j.get("address", {})
+        street = " ".join(filter(None, [a.get("road"), a.get("house_number")]))
+        city = a.get("city") or a.get("town") or a.get("village") or a.get("municipality") or ""
+        plz_city = " ".join(filter(None, [a.get("postcode"), city]))
+        res = ", ".join(filter(None, [street, plz_city])) or j.get("display_name")
+    except Exception:
+        res = None
+    cache[key] = res
+    try:
+        open(_REISE_REV_CACHE, "w").write(json.dumps(cache, ensure_ascii=False, indent=2))
+    except Exception:
+        pass
+    return res
+
 
 def _reise_osrm(lat1, lon1, lat2, lon2):
     """Fahrstrecke (km) + Fahrzeit (min) via OSRM (kostenlos). None bei Fehlschlag."""
@@ -2873,15 +2910,8 @@ def get_chargers(lat: float, lon: float, radius: int = 12000):
 # entlang des Fahrwegs, EnBW-Familie in einer Liste, Aral Pulse getrennt.
 _LADEN_HOME = (53.6959, 9.9963)   # Buchenweg 67a, Norderstedt — Default-Start
 
-# Kosename → exakter Outlook-Anzeigename. Bewusst hart auf die engste Familie begrenzt
-# (nicht per Fuzzy-Match über ALLE Kontakte — sonst gewinnt z.B. bei "Steffi" ein x-beliebiger
-# Kontakt "Steffi Weiß" statt Tochter "Stephanie Garschagen", getestet 03.08.2026).
-_LADEN_FAMILY_ALIASES = {
-    "steffi": "Stephanie Garschagen", "stephanie": "Stephanie Garschagen",
-    "anne": "Ann-Kristin Mandel", "ann-kristin": "Ann-Kristin Mandel",
-    "robin": "Robin Mandel",
-    "reni": "Renate Mandel", "renate": "Renate Mandel",
-}
+# Vertraute Kosenamen, die vom echten Outlook-Vornamen abweichen (Steffi statt Stephanie etc.).
+_LADEN_NICKNAMES = {"steffi": "stephanie", "reni": "renate", "anne": "ann-kristin"}
 _LADEN_FAMILY_CACHE = {"ts": 0, "map": {}}
 
 def _laden_family_addresses():
@@ -2917,18 +2947,38 @@ def _laden_family_addresses():
     return result or _LADEN_FAMILY_CACHE["map"]
 
 def _laden_resolve_target(text):
-    """Familien-Kosename (z.B. 'Steffi') → Adresse aus Outlook-Kontakten, sonst unverändert.
+    """Kontaktname → Adresse aus ALLEN Outlook-Kontakten, sonst unverändert.
+    Ein Wort = Vorname (z.B. 'Steffi'). Zwei Wörter, zweites ein Einzelbuchstabe
+    (z.B. 'Steffi G') = Vorname + Nachname-Anfangsbuchstabe, zur Unterscheidung
+    bei mehreren Kontakten mit gleichem Vornamen (z.B. Tochter Steffi Garschagen
+    vs. ein x-beliebiger anderer Kontakt "Steffi Weiß" — genau diese Verwechslung
+    ist beim ersten Test am 03.08.2026 passiert, deshalb bei Mehrdeutigkeit lieber
+    GAR NICHT auflösen als raten).
     Rückgabe: (adresse_für_geocoding, anzeige_name)."""
     t = (text or "").strip()
-    if not t or " " in t or "," in t or any(ch.isdigit() for ch in t):
-        return t, t   # sieht schon nach Adresse/Ort aus, nicht anfassen
-    full_name = _LADEN_FAMILY_ALIASES.get(t.lower())
-    if not full_name:
+    if not t:
         return t, t
-    addr = _laden_family_addresses().get(full_name)
-    if addr:
-        return addr, f"{t} ({addr})"
-    return t, t
+    tokens = t.split()
+    last_initial = None
+    if len(tokens) == 1 and not any(ch.isdigit() for ch in t) and "," not in t:
+        first = tokens[0]
+    elif len(tokens) == 2 and len(tokens[1].rstrip(".")) == 1 and tokens[1].rstrip(".").isalpha():
+        first, last_initial = tokens[0], tokens[1].rstrip(".").lower()
+    else:
+        return t, t   # sieht schon nach Adresse/Ort aus, nicht anfassen
+    first_key = _LADEN_NICKNAMES.get(first.lower(), first.lower())
+    matches = []
+    for name, addr in _laden_family_addresses().items():
+        parts = name.split()
+        if not parts or parts[0].lower() != first_key:
+            continue
+        if last_initial and not (len(parts) > 1 and parts[-1].lower().startswith(last_initial)):
+            continue
+        matches.append((name, addr))
+    if len(matches) == 1:
+        addr = matches[0][1]
+        return addr, f"{first} ({addr})"
+    return t, t   # kein oder mehrdeutiger Treffer → unverändert; Nominatim scheitert dann sichtbar
 
 def _laden_hav(a_lat, a_lon, b_lat, b_lon):
     import math
@@ -6491,6 +6541,15 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                     slon = q.get("start_lon", [None])[0]
                     start = (q.get("start", [""])[0]).strip() or None
                     self._send_json(get_chargers_route(ziel, start_lat=slat, start_lon=slon, start=start))
+
+            elif self.path.startswith("/api/laden/adresse"):
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                lat = q.get("lat", [None])[0]
+                lon = q.get("lon", [None])[0]
+                if not lat or not lon:
+                    self._send_json({"error": "lat/lon fehlt"}, status=400)
+                else:
+                    self._send_json({"adresse": _reise_reverse_geocode(lat, lon) or ""})
 
             elif self.path == "/api/ki-news":
                 f = os.path.join(WORKSPACE, "data/ki_news.json")
