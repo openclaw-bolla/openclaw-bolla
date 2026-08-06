@@ -2,13 +2,15 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Mission Control</title>
+<title>MISSION CONTROL // root@bolla</title>
 <style>
+  @import url('data:text/css;base64,');
   :root{
-    --bg:#0a0d0a;
     --green:#00ff41;
     --green-dim:#0a8f2c;
-    --green-faint:#063f16;
+    --green-bright:#7fffb0;
+    --bg:#0d0208;
+    --bg2:#050302;
     --amber:#ffb000;
     --red:#ff3b3b;
   }
@@ -16,123 +18,157 @@
   html,body{
     margin:0;padding:0;height:100%;
     background:var(--bg);
+    font-family:'Consolas','Courier New',monospace;
     color:var(--green);
-    font-family:"Courier New",Courier,monospace;
-    font-size:14px;
     overflow:hidden;
   }
   body::before{
     content:"";
-    position:fixed;inset:0;
+    position:fixed;top:0;left:0;right:0;bottom:0;
     background:repeating-linear-gradient(
-      to bottom,
-      rgba(0,255,65,0.035) 0px,
-      rgba(0,255,65,0.035) 1px,
+      0deg,
+      rgba(0,255,65,0.03) 0px,
+      rgba(0,255,65,0.03) 1px,
       transparent 1px,
       transparent 3px
     );
     pointer-events:none;
     z-index:999;
   }
-  .layout{
+  body::after{
+    content:"";
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    background:radial-gradient(ellipse at center, rgba(0,255,65,0.06) 0%, rgba(0,0,0,0.4) 100%);
+    pointer-events:none;
+    z-index:998;
+  }
+  .wrap{
     display:flex;
     height:100vh;
     width:100vw;
   }
-  /* Sidebar */
+  /* SIDEBAR */
   .sidebar{
     width:220px;
     min-width:220px;
+    background:var(--bg2);
     border-right:1px solid var(--green-dim);
-    background:#060806;
     display:flex;
     flex-direction:column;
     padding:18px 0;
   }
-  .brand{
+  .logo{
     padding:0 18px 18px 18px;
-    border-bottom:1px solid var(--green-faint);
+    border-bottom:1px dashed var(--green-dim);
     margin-bottom:14px;
   }
-  .brand .b1{font-size:18px;font-weight:bold;letter-spacing:1px;}
-  .brand .b2{font-size:11px;color:var(--green-dim);margin-top:3px;}
-  nav{display:flex;flex-direction:column;gap:2px;padding:0 10px;}
-  nav a{
+  .logo .ascii{
+    font-size:11px;
+    line-height:1.1;
+    color:var(--green-bright);
+    text-shadow:0 0 6px var(--green);
+    white-space:pre;
+  }
+  .logo .sub{
+    font-size:11px;
+    color:var(--green-dim);
+    margin-top:6px;
+    letter-spacing:1px;
+  }
+  .nav{
+    list-style:none;
+    margin:0;padding:0;
+    flex:1;
+  }
+  .nav li{
+    padding:11px 18px;
+    font-size:14px;
+    cursor:pointer;
+    border-left:3px solid transparent;
+    letter-spacing:0.5px;
     display:flex;
     align-items:center;
     gap:10px;
-    color:var(--green-dim);
-    text-decoration:none;
-    padding:10px 12px;
-    border-radius:3px;
-    font-size:14px;
-    border:1px solid transparent;
-    transition:all .15s ease;
+    transition:background 0.15s;
   }
-  nav a:hover{
-    color:var(--green);
-    background:rgba(0,255,65,0.06);
-    border-color:var(--green-faint);
+  .nav li:hover{
+    background:rgba(0,255,65,0.08);
   }
-  nav a.active{
-    color:var(--bg);
-    background:var(--green);
-    font-weight:bold;
+  .nav li.active{
+    background:rgba(0,255,65,0.12);
+    border-left:3px solid var(--green-bright);
+    color:var(--green-bright);
+    text-shadow:0 0 6px var(--green);
   }
-  nav a .icon{width:18px;text-align:center;}
+  .nav li .ico{width:18px;text-align:center;}
   .sidebar-footer{
-    margin-top:auto;
     padding:12px 18px 0 18px;
-    border-top:1px solid var(--green-faint);
+    border-top:1px dashed var(--green-dim);
     font-size:11px;
     color:var(--green-dim);
   }
-  .dot{
+  .sidebar-footer .dot{
     display:inline-block;width:7px;height:7px;border-radius:50%;
-    background:var(--green);margin-right:6px;
-    box-shadow:0 0 6px var(--green);
-    animation:pulse 1.6s infinite;
+    background:var(--green-bright);
+    box-shadow:0 0 6px var(--green-bright);
+    margin-right:6px;
+    animation:pulse 1.5s infinite;
   }
   @keyframes pulse{
     0%,100%{opacity:1;}
-    50%{opacity:.35;}
+    50%{opacity:0.3;}
   }
 
-  /* Main */
+  /* MAIN */
   .main{
     flex:1;
     display:flex;
     flex-direction:column;
-    min-width:0;
+    overflow:hidden;
   }
   .topbar{
-    height:54px;
-    min-height:54px;
+    height:56px;
+    min-height:56px;
+    border-bottom:1px solid var(--green-dim);
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:0 22px;
-    border-bottom:1px solid var(--green-dim);
-    background:#060806;
+    padding:0 24px;
+    background:linear-gradient(180deg, rgba(0,255,65,0.05), transparent);
   }
   .topbar .title{
     font-size:16px;
-    letter-spacing:1px;
+    letter-spacing:2px;
+    text-transform:uppercase;
   }
   .topbar .title::before{
     content:"> ";
-    color:var(--green-dim);
+    color:var(--green-bright);
   }
-  .topbar .clock{
-    font-size:15px;
-    color:var(--green);
-    letter-spacing:2px;
-  }
-  .topbar .clock .blink{
+  .topbar .title .cursor{
+    display:inline-block;
+    width:8px;height:15px;
+    background:var(--green);
+    margin-left:4px;
     animation:blink 1s steps(1) infinite;
+    vertical-align:middle;
   }
   @keyframes blink{
-    50%{opacity:0;}
+    0%,49%{opacity:1;}
+    50%,100%{opacity:0;}
+  }
+  .topbar .clock{
+    font-size:20px;
+    letter-spacing:2px;
+    color:var(--green-bright);
+    text-shadow:0 0 8px var(--green);
+  }
+  .topbar .clock .date{
+    font-size:11px;
+    color:var(--green-dim);
+    display:block;
+    text-align:right;
+    letter-spacing:1px;
   }
 
   .content{
@@ -140,179 +176,222 @@
     overflow-y:auto;
     padding:22px;
   }
+  .content::-webkit-scrollbar{width:8px;}
+  .content::-webkit-scrollbar-thumb{background:var(--green-dim);}
+  .content::-webkit-scrollbar-track{background:var(--bg2);}
+
   .grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
-    gap:16px;
+    grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));
+    gap:18px;
   }
   .card{
+    background:rgba(0,255,65,0.03);
     border:1px solid var(--green-dim);
-    background:linear-gradient(180deg, rgba(0,255,65,0.03), transparent);
-    border-radius:4px;
+    border-radius:2px;
     padding:16px 18px;
     position:relative;
+    overflow:hidden;
   }
-  .card .card-title{
-    font-size:11px;
-    color:var(--green-dim);
-    text-transform:uppercase;
-    letter-spacing:1.5px;
-    margin-bottom:10px;
+  .card::before{
+    content:"";
+    position:absolute;
+    top:0;left:0;right:0;
+    height:1px;
+    background:linear-gradient(90deg, transparent, var(--green-bright), transparent);
+    opacity:0.6;
+  }
+  .card-head{
     display:flex;
     justify-content:space-between;
+    align-items:center;
+    font-size:12px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--green-dim);
+    margin-bottom:10px;
   }
-  .card .big-value{
+  .card-head .ico{font-size:15px;color:var(--green);}
+  .card-value{
     font-size:34px;
     font-weight:bold;
-    line-height:1;
+    color:var(--green-bright);
+    text-shadow:0 0 10px rgba(0,255,65,0.6);
+    letter-spacing:1px;
   }
-  .card .sub{
+  .card-value .unit{font-size:16px;color:var(--green-dim);margin-left:4px;}
+  .card-sub{
     font-size:12px;
     color:var(--green-dim);
-    margin-top:8px;
+    margin-top:6px;
   }
-  .bar-track{
-    width:100%;
+  .bar{
     height:8px;
-    background:var(--green-faint);
-    border-radius:4px;
-    margin-top:12px;
+    width:100%;
+    background:rgba(0,255,65,0.1);
+    border:1px solid var(--green-dim);
+    margin-top:10px;
+    position:relative;
     overflow:hidden;
   }
   .bar-fill{
     height:100%;
-    background:var(--green);
+    background:repeating-linear-gradient(90deg, var(--green) 0px, var(--green) 4px, transparent 4px, transparent 6px);
     box-shadow:0 0 8px var(--green);
   }
-  .bar-fill.amber{background:var(--amber);box-shadow:0 0 8px var(--amber);}
+  .bar-fill.amber{background:repeating-linear-gradient(90deg, var(--amber) 0px, var(--amber) 4px, transparent 4px, transparent 6px);box-shadow:0 0 8px var(--amber);}
 
-  .mail-list{
-    margin-top:6px;
-    display:flex;
-    flex-direction:column;
-    gap:6px;
-    font-size:12px;
-  }
+  .card.wide{grid-column:span 2;}
+  .mail-list{list-style:none;margin:10px 0 0 0;padding:0;font-size:13px;}
   .mail-list li{
-    list-style:none;
+    padding:7px 0;
+    border-bottom:1px dashed rgba(0,255,65,0.15);
     display:flex;
     justify-content:space-between;
-    color:var(--green-dim);
-    border-bottom:1px dashed var(--green-faint);
-    padding-bottom:4px;
-  }
-  .mail-list li span.who{color:var(--green);}
-
-  .weather-row{
-    display:flex;
-    align-items:baseline;
     gap:10px;
   }
-  .weather-row .icon{font-size:28px;}
-
-  .wide{grid-column:span 2;}
-
-  .terminal-box{
-    grid-column:1/-1;
-    border:1px solid var(--green-dim);
-    background:#050705;
-    border-radius:4px;
-    padding:14px 18px;
-    font-size:12.5px;
-    color:var(--green-dim);
-    line-height:1.7;
-  }
-  .terminal-box .prompt{color:var(--green);}
-  .terminal-box .cursor{
-    display:inline-block;
-    width:7px;height:14px;
+  .mail-list li:last-child{border-bottom:none;}
+  .mail-list .from{color:var(--green-bright);}
+  .mail-list .time{color:var(--green-dim);font-size:11px;white-space:nowrap;}
+  .badge{
     background:var(--green);
-    margin-left:4px;
-    vertical-align:middle;
-    animation:blink 1s steps(1) infinite;
+    color:var(--bg);
+    font-size:11px;
+    font-weight:bold;
+    padding:1px 7px;
+    border-radius:8px;
   }
 
-  ::-webkit-scrollbar{width:8px;}
-  ::-webkit-scrollbar-track{background:var(--bg);}
-  ::-webkit-scrollbar-thumb{background:var(--green-dim);border-radius:4px;}
+  .terminal-log{
+    font-size:12px;
+    line-height:1.7;
+    color:var(--green-dim);
+    margin-top:8px;
+  }
+  .terminal-log .ok{color:var(--green-bright);}
+  .terminal-log .warn{color:var(--amber);}
+
+  .weather-icon{font-size:38px;line-height:1;}
+  .weather-row{display:flex;align-items:center;gap:14px;}
+  .weather-row .temp{font-size:34px;color:var(--green-bright);text-shadow:0 0 10px rgba(0,255,65,0.6);}
+  .weather-row .details{font-size:12px;color:var(--green-dim);}
+
+  .footer-status{
+    padding:8px 22px;
+    border-top:1px solid var(--green-dim);
+    font-size:11px;
+    color:var(--green-dim);
+    display:flex;
+    justify-content:space-between;
+    background:var(--bg2);
+  }
+  .footer-status span.ok{color:var(--green-bright);}
 </style>
 </head>
 <body>
-<div class="layout">
-
+<div class="wrap">
   <div class="sidebar">
-    <div class="brand">
-      <div class="b1">MISSION_CONTROL</div>
-      <div class="b2">v3.1.0 // secure shell</div>
+    <div class="logo">
+      <div class="ascii">╔══════════════╗
+║  M.C. v2.6   ║
+╚══════════════╝</div>
+      <div class="sub">SYSTEM: BOLLA-CORE</div>
     </div>
-    <nav>
-      <a href="#" class="active"><span class="icon">▣</span> Dashboard</a>
-      <a href="#"><span class="icon">🐾</span> Bolla</a>
-      <a href="#"><span class="icon">🎓</span> Schule</a>
-      <a href="#"><span class="icon">🗓</span> Kalender</a>
-      <a href="#"><span class="icon">✉</span> E-Mail</a>
-      <a href="#"><span class="icon">☁</span> Wetter</a>
-      <a href="#"><span class="icon">⚙</span> System Info</a>
-    </nav>
+    <ul class="nav">
+      <li class="active"><span class="ico">▣</span> Dashboard</li>
+      <li><span class="ico">🐾</span> Bolla</li>
+      <li><span class="ico">🎓</span> Schule</li>
+      <li><span class="ico">🗓</span> Kalender</li>
+      <li><span class="ico">✉</span> E-Mail</li>
+      <li><span class="ico">☁</span> Wetter</li>
+      <li><span class="ico">⚙</span> System Info</li>
+    </ul>
     <div class="sidebar-footer">
-      <div><span class="dot"></span>ONLINE</div>
+      <div><span class="dot"></span>UPLINK STABIL</div>
       <div style="margin-top:6px;">user: chris@norderstedt</div>
     </div>
   </div>
 
   <div class="main">
     <div class="topbar">
-      <div class="title">Dashboard</div>
-      <div class="clock">20:14<span class="blink">_</span></div>
+      <div class="title">dashboard<span class="cursor"></span></div>
+      <div class="clock">20:14:07
+        <span class="date">MI, 06.08.2026</span>
+      </div>
     </div>
 
     <div class="content">
       <div class="grid">
 
         <div class="card">
-          <div class="card-title"><span>RAM</span><span>34%</span></div>
-          <div class="big-value">34<span style="font-size:16px;">%</span></div>
-          <div class="bar-track"><div class="bar-fill" style="width:34%;"></div></div>
-          <div class="sub">5,4 GB / 16 GB belegt</div>
+          <div class="card-head"><span>CPU LOAD</span><span class="ico">⌁</span></div>
+          <div class="card-value">12<span class="unit">%</span></div>
+          <div class="bar"><div class="bar-fill" style="width:12%;"></div></div>
+          <div class="card-sub">4 Kerne · idle nominal</div>
         </div>
 
         <div class="card">
-          <div class="card-title"><span>CPU</span><span>12%</span></div>
-          <div class="big-value">12<span style="font-size:16px;">%</span></div>
-          <div class="bar-track"><div class="bar-fill" style="width:12%;"></div></div>
-          <div class="sub">4 Kerne // Load 0.31</div>
+          <div class="card-head"><span>RAM USAGE</span><span class="ico">▦</span></div>
+          <div class="card-value">34<span class="unit">%</span></div>
+          <div class="bar"><div class="bar-fill amber" style="width:34%;"></div></div>
+          <div class="card-sub">5,4 GB / 16 GB belegt</div>
         </div>
 
         <div class="card">
-          <div class="card-title"><span>E-Mail</span><span>NEU</span></div>
-          <div class="big-value">3</div>
+          <div class="card-head"><span>WETTER · HAMBURG</span><span class="ico">☁</span></div>
+          <div class="weather-row">
+            <div class="weather-icon">⛅</div>
+            <div>
+              <div class="temp">18°C</div>
+              <div class="details">Wechselnd bewölkt · Wind 14 km/h</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span>POSTEINGANG</span><span class="badge">3 NEU</span></div>
           <ul class="mail-list">
-            <li><span class="who">Lessing-Gym</span><span>08:12</span></li>
-            <li><span class="who">Robin</span><span>09:47</span></li>
-            <li><span class="who">DistroKid</span><span>13:05</span></li>
+            <li><span class="from">R. Mandel</span><span class="time">19:47</span></li>
+            <li><span class="from">Lessing-Gym</span><span class="time">18:12</span></li>
+            <li><span class="from">DHL Paket</span><span class="time">16:03</span></li>
           </ul>
         </div>
 
-        <div class="card">
-          <div class="card-title"><span>Wetter // Hamburg</span><span>JETZT</span></div>
-          <div class="weather-row">
-            <span class="icon">☁</span>
-            <span class="big-value">18°C</span>
+        <div class="card wide">
+          <div class="card-head"><span>BOLLA // PROZESS-LOG</span><span class="ico">▶</span></div>
+          <div class="terminal-log">
+            &gt; init sequence complete <span class="ok">[OK]</span><br>
+            &gt; sync memory store... <span class="ok">[OK]</span><br>
+            &gt; check calendar events (3 heute) <span class="ok">[OK]</span><br>
+            &gt; watchdog: RAM-Ueberwachung aktiv <span class="ok">[OK]</span><br>
+            &gt; mail-scan: 3 neue Nachrichten <span class="warn">[PENDING]</span><br>
+            &gt; awaiting input<span class="cursor" style="background:var(--green-dim);"></span>
           </div>
-          <div class="sub">Bewölkt // Wind 14 km/h // Regen 20%</div>
         </div>
 
-        <div class="terminal-box">
-          <div><span class="prompt">bolla@mc</span>:~$ status --all</div>
-          <div>&gt; system nominal. alle dienste laufen.</div>
-          <div>&gt; letzter sync: vor 4 min</div>
-          <div><span class="prompt">bolla@mc</span>:~$ <span class="cursor"></span></div>
+        <div class="card">
+          <div class="card-head"><span>KALENDER · HEUTE</span><span class="ico">🗓</span></div>
+          <div class="terminal-log">
+            09:00 EDV 7b <span class="ok">[bestätigt]</span><br>
+            14:30 Zahnarzt Reni<br>
+            20:30 Sport Gesundheitszentrum
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span>UPTIME</span><span class="ico">⏱</span></div>
+          <div class="card-value" style="font-size:26px;">14d 06h 22m</div>
+          <div class="card-sub">letzter Reboot: 23.07.2026</div>
         </div>
 
       </div>
     </div>
-  </div>
 
+    <div class="footer-status">
+      <div><span class="ok">●</span> ALL SYSTEMS NOMINAL</div>
+      <div>root@bolla-core:~$ // build 2.6.1 // Norderstedt, SH</div>
+    </div>
+  </div>
 </div>
 </body>
 </html>
