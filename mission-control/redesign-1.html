@@ -2,396 +2,358 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>MISSION CONTROL // root@bolla</title>
+<title>Mission Control</title>
 <style>
-  @import url('data:text/css;base64,');
   :root{
-    --green:#00ff41;
-    --green-dim:#0a8f2c;
-    --green-bright:#7fffb0;
-    --bg:#0d0208;
-    --bg2:#050302;
-    --amber:#ffb000;
-    --red:#ff3b3b;
+    --paper:#f3e6c8;
+    --paper-light:#faf2de;
+    --ink:#3a2e22;
+    --ink-soft:#6b5a45;
+    --rust:#b5482f;
+    --teal:#3d7a6e;
+    --mustard:#d69a2d;
+    --tape:#e9d18f;
   }
   *{box-sizing:border-box;}
-  html,body{
-    margin:0;padding:0;height:100%;
-    background:var(--bg);
-    font-family:'Consolas','Courier New',monospace;
-    color:var(--green);
-    overflow:hidden;
-  }
-  body::before{
-    content:"";
-    position:fixed;top:0;left:0;right:0;bottom:0;
-    background:repeating-linear-gradient(
-      0deg,
-      rgba(0,255,65,0.03) 0px,
-      rgba(0,255,65,0.03) 1px,
-      transparent 1px,
-      transparent 3px
-    );
-    pointer-events:none;
-    z-index:999;
-  }
-  body::after{
-    content:"";
-    position:fixed;top:0;left:0;right:0;bottom:0;
-    background:radial-gradient(ellipse at center, rgba(0,255,65,0.06) 0%, rgba(0,0,0,0.4) 100%);
-    pointer-events:none;
-    z-index:998;
-  }
-  .wrap{
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:'Segoe Print','Bradley Hand','Comic Sans MS',cursive,sans-serif;
+    color:var(--ink);
+    background-color:var(--paper);
+    background-image:
+      repeating-linear-gradient(transparent 0 27px, rgba(58,46,34,0.07) 27px 28px),
+      radial-gradient(circle at 8% 12%, rgba(255,255,255,0.5), transparent 40%),
+      radial-gradient(circle at 92% 88%, rgba(181,72,47,0.06), transparent 45%),
+      radial-gradient(circle at 60% 5%, rgba(58,46,34,0.05), transparent 30%);
+    min-height:100vh;
     display:flex;
-    height:100vh;
-    width:100vw;
-  }
-  /* SIDEBAR */
-  .sidebar{
-    width:220px;
-    min-width:220px;
-    background:var(--bg2);
-    border-right:1px solid var(--green-dim);
-    display:flex;
-    flex-direction:column;
-    padding:18px 0;
-  }
-  .logo{
-    padding:0 18px 18px 18px;
-    border-bottom:1px dashed var(--green-dim);
-    margin-bottom:14px;
-  }
-  .logo .ascii{
-    font-size:11px;
-    line-height:1.1;
-    color:var(--green-bright);
-    text-shadow:0 0 6px var(--green);
-    white-space:pre;
-  }
-  .logo .sub{
-    font-size:11px;
-    color:var(--green-dim);
-    margin-top:6px;
-    letter-spacing:1px;
-  }
-  .nav{
-    list-style:none;
-    margin:0;padding:0;
-    flex:1;
-  }
-  .nav li{
-    padding:11px 18px;
-    font-size:14px;
-    cursor:pointer;
-    border-left:3px solid transparent;
-    letter-spacing:0.5px;
-    display:flex;
-    align-items:center;
-    gap:10px;
-    transition:background 0.15s;
-  }
-  .nav li:hover{
-    background:rgba(0,255,65,0.08);
-  }
-  .nav li.active{
-    background:rgba(0,255,65,0.12);
-    border-left:3px solid var(--green-bright);
-    color:var(--green-bright);
-    text-shadow:0 0 6px var(--green);
-  }
-  .nav li .ico{width:18px;text-align:center;}
-  .sidebar-footer{
-    padding:12px 18px 0 18px;
-    border-top:1px dashed var(--green-dim);
-    font-size:11px;
-    color:var(--green-dim);
-  }
-  .sidebar-footer .dot{
-    display:inline-block;width:7px;height:7px;border-radius:50%;
-    background:var(--green-bright);
-    box-shadow:0 0 6px var(--green-bright);
-    margin-right:6px;
-    animation:pulse 1.5s infinite;
-  }
-  @keyframes pulse{
-    0%,100%{opacity:1;}
-    50%{opacity:0.3;}
-  }
-
-  /* MAIN */
-  .main{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
-  }
-  .topbar{
-    height:56px;
-    min-height:56px;
-    border-bottom:1px solid var(--green-dim);
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:0 24px;
-    background:linear-gradient(180deg, rgba(0,255,65,0.05), transparent);
-  }
-  .topbar .title{
     font-size:16px;
-    letter-spacing:2px;
-    text-transform:uppercase;
-  }
-  .topbar .title::before{
-    content:"> ";
-    color:var(--green-bright);
-  }
-  .topbar .title .cursor{
-    display:inline-block;
-    width:8px;height:15px;
-    background:var(--green);
-    margin-left:4px;
-    animation:blink 1s steps(1) infinite;
-    vertical-align:middle;
-  }
-  @keyframes blink{
-    0%,49%{opacity:1;}
-    50%,100%{opacity:0;}
-  }
-  .topbar .clock{
-    font-size:20px;
-    letter-spacing:2px;
-    color:var(--green-bright);
-    text-shadow:0 0 8px var(--green);
-  }
-  .topbar .clock .date{
-    font-size:11px;
-    color:var(--green-dim);
-    display:block;
-    text-align:right;
-    letter-spacing:1px;
   }
 
-  .content{
-    flex:1;
-    overflow-y:auto;
-    padding:22px;
-  }
-  .content::-webkit-scrollbar{width:8px;}
-  .content::-webkit-scrollbar-thumb{background:var(--green-dim);}
-  .content::-webkit-scrollbar-track{background:var(--bg2);}
-
-  .grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));
-    gap:18px;
-  }
-  .card{
-    background:rgba(0,255,65,0.03);
-    border:1px solid var(--green-dim);
-    border-radius:2px;
-    padding:16px 18px;
+  /* ---- Sidebar ---- */
+  .sidebar{
+    width:230px;
+    min-height:100vh;
+    background:var(--paper-light);
+    border-right:2px dashed var(--ink-soft);
+    padding:26px 16px;
     position:relative;
-    overflow:hidden;
+    transform:rotate(-0.4deg);
+    box-shadow:3px 0 10px rgba(58,46,34,0.08);
   }
-  .card::before{
+  .sidebar::before{
     content:"";
     position:absolute;
-    top:0;left:0;right:0;
-    height:1px;
-    background:linear-gradient(90deg, transparent, var(--green-bright), transparent);
-    opacity:0.6;
+    top:0;left:14px;right:14px;
+    height:26px;
+    background:var(--tape);
+    opacity:0.65;
+    transform:rotate(-2deg);
+    box-shadow:0 1px 2px rgba(0,0,0,0.15);
   }
-  .card-head{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    font-size:12px;
-    letter-spacing:1.5px;
-    text-transform:uppercase;
-    color:var(--green-dim);
-    margin-bottom:10px;
+  .brand{
+    text-align:center;
+    margin:22px 0 30px;
   }
-  .card-head .ico{font-size:15px;color:var(--green);}
-  .card-value{
-    font-size:34px;
-    font-weight:bold;
-    color:var(--green-bright);
-    text-shadow:0 0 10px rgba(0,255,65,0.6);
-    letter-spacing:1px;
+  .brand .paw{font-size:26px;display:block;transform:rotate(-8deg);}
+  .brand h1{
+    font-size:22px;
+    margin:4px 0 0;
+    color:var(--ink);
+    text-decoration:underline wavy var(--rust) 2px;
   }
-  .card-value .unit{font-size:16px;color:var(--green-dim);margin-left:4px;}
-  .card-sub{
-    font-size:12px;
-    color:var(--green-dim);
-    margin-top:6px;
-  }
-  .bar{
-    height:8px;
-    width:100%;
-    background:rgba(0,255,65,0.1);
-    border:1px solid var(--green-dim);
-    margin-top:10px;
-    position:relative;
-    overflow:hidden;
-  }
-  .bar-fill{
-    height:100%;
-    background:repeating-linear-gradient(90deg, var(--green) 0px, var(--green) 4px, transparent 4px, transparent 6px);
-    box-shadow:0 0 8px var(--green);
-  }
-  .bar-fill.amber{background:repeating-linear-gradient(90deg, var(--amber) 0px, var(--amber) 4px, transparent 4px, transparent 6px);box-shadow:0 0 8px var(--amber);}
+  .brand span{font-size:12px;color:var(--ink-soft);}
 
-  .card.wide{grid-column:span 2;}
-  .mail-list{list-style:none;margin:10px 0 0 0;padding:0;font-size:13px;}
-  .mail-list li{
-    padding:7px 0;
-    border-bottom:1px dashed rgba(0,255,65,0.15);
+  nav ul{list-style:none;margin:0;padding:0;}
+  nav li{margin-bottom:6px;}
+  nav a{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    text-decoration:none;
+    color:var(--ink);
+    font-size:16px;
+    padding:9px 12px;
+    border-radius:255px 15px 225px 15px/15px 225px 15px 255px;
+    position:relative;
+    transition:transform .15s ease;
+  }
+  nav a .ic{font-size:18px;width:22px;text-align:center;}
+  nav a:hover{transform:translateX(3px) rotate(-0.5deg);}
+  nav li.active a{
+    background:linear-gradient(100deg, transparent 0%, var(--mustard) 8%, var(--mustard) 90%, transparent 100%);
+    opacity:0.9;
+    font-weight:bold;
+    box-shadow:1px 1px 0 var(--ink-soft);
+  }
+
+  .sidebar-footer{
+    position:absolute;
+    bottom:20px;left:16px;right:16px;
+    font-size:11px;
+    color:var(--ink-soft);
+    text-align:center;
+    border-top:1px dashed var(--ink-soft);
+    padding-top:10px;
+  }
+
+  /* ---- Main ---- */
+  .main{
+    flex:1;
+    padding:26px 34px 40px;
+    max-width:1100px;
+  }
+
+  .topbar{
     display:flex;
     justify-content:space-between;
-    gap:10px;
+    align-items:flex-end;
+    border-bottom:3px solid var(--ink);
+    padding-bottom:14px;
+    margin-bottom:28px;
+    position:relative;
+  }
+  .topbar h2{
+    font-size:34px;
+    margin:0;
+    position:relative;
+    display:inline-block;
+  }
+  .topbar h2::after{
+    content:"";
+    position:absolute;
+    left:-4px;bottom:2px;
+    width:108%;height:10px;
+    background:var(--mustard);
+    opacity:0.55;
+    z-index:-1;
+    transform:rotate(-1deg);
+  }
+  .topbar .sub{font-size:13px;color:var(--ink-soft);margin-top:2px;}
+
+  .clock{
+    text-align:right;
+    font-family:'Segoe Print','Comic Sans MS',cursive;
+  }
+  .clock .time{
+    font-size:38px;
+    font-weight:bold;
+    color:var(--rust);
+    position:relative;
+  }
+  .clock .time::before{
+    content:"⏰";
+    font-size:20px;
+    margin-right:8px;
+  }
+  .clock .date{font-size:13px;color:var(--ink-soft);}
+
+  /* ---- Grid ---- */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(230px,1fr));
+    gap:26px;
+  }
+
+  .card{
+    background:var(--paper-light);
+    border:2px solid var(--ink);
+    border-radius:255px 15px 225px 15px/15px 225px 15px 255px;
+    padding:20px 20px 18px;
+    position:relative;
+    box-shadow:4px 5px 0 rgba(58,46,34,0.18);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .card:nth-child(1){transform:rotate(-1.2deg);}
+  .card:nth-child(2){transform:rotate(0.8deg);}
+  .card:nth-child(3){transform:rotate(-0.6deg);}
+  .card:nth-child(4){transform:rotate(1.1deg);}
+  .card:hover{
+    transform:rotate(0deg) translateY(-3px);
+    box-shadow:6px 8px 0 rgba(58,46,34,0.22);
+  }
+  .card .pin{
+    position:absolute;
+    top:-10px;left:50%;
+    transform:translateX(-50%);
+    font-size:20px;
+    filter:drop-shadow(1px 2px 1px rgba(0,0,0,0.3));
+  }
+  .card h3{
+    margin:4px 0 14px;
+    font-size:17px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .card h3 .emoji{font-size:20px;}
+
+  .gauge-wrap{display:flex;align-items:center;gap:16px;}
+  .gauge{width:90px;height:90px;}
+  .gauge-val{font-size:30px;font-weight:bold;}
+  .gauge-label{font-size:12px;color:var(--ink-soft);}
+
+  .mail-list{list-style:none;margin:0;padding:0;font-size:13px;}
+  .mail-list li{
+    padding:6px 0;
+    border-bottom:1px dashed rgba(58,46,34,0.3);
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
   }
   .mail-list li:last-child{border-bottom:none;}
-  .mail-list .from{color:var(--green-bright);}
-  .mail-list .time{color:var(--green-dim);font-size:11px;white-space:nowrap;}
-  .badge{
-    background:var(--green);
-    color:var(--bg);
-    font-size:11px;
+  .mail-list .who{font-weight:bold;}
+  .mail-count{
+    display:inline-block;
+    background:var(--rust);
+    color:#fff8ec;
+    border-radius:50%;
+    width:26px;height:26px;
+    line-height:26px;
+    text-align:center;
+    font-size:14px;
     font-weight:bold;
-    padding:1px 7px;
-    border-radius:8px;
+    transform:rotate(-6deg);
   }
 
-  .terminal-log{
+  .weather-main{display:flex;align-items:center;gap:14px;}
+  .weather-emoji{font-size:44px;}
+  .weather-temp{font-size:32px;font-weight:bold;color:var(--teal);}
+  .weather-place{font-size:13px;color:var(--ink-soft);}
+  .weather-details{
+    margin-top:12px;
     font-size:12px;
-    line-height:1.7;
-    color:var(--green-dim);
-    margin-top:8px;
-  }
-  .terminal-log .ok{color:var(--green-bright);}
-  .terminal-log .warn{color:var(--amber);}
-
-  .weather-icon{font-size:38px;line-height:1;}
-  .weather-row{display:flex;align-items:center;gap:14px;}
-  .weather-row .temp{font-size:34px;color:var(--green-bright);text-shadow:0 0 10px rgba(0,255,65,0.6);}
-  .weather-row .details{font-size:12px;color:var(--green-dim);}
-
-  .footer-status{
-    padding:8px 22px;
-    border-top:1px solid var(--green-dim);
-    font-size:11px;
-    color:var(--green-dim);
+    color:var(--ink-soft);
     display:flex;
-    justify-content:space-between;
-    background:var(--bg2);
+    gap:16px;
   }
-  .footer-status span.ok{color:var(--green-bright);}
+
+  .doodle-underline{
+    border:none;
+    border-top:2px dashed var(--ink-soft);
+    margin:14px 0;
+  }
+
+  footer.note{
+    margin-top:32px;
+    font-size:12px;
+    color:var(--ink-soft);
+    text-align:center;
+  }
+
+  @media (max-width:760px){
+    body{flex-direction:column;}
+    .sidebar{width:100%;min-height:auto;}
+    .main{max-width:100%;}
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="sidebar">
-    <div class="logo">
-      <div class="ascii">╔══════════════╗
-║  M.C. v2.6   ║
-╚══════════════╝</div>
-      <div class="sub">SYSTEM: BOLLA-CORE</div>
-    </div>
-    <ul class="nav">
-      <li class="active"><span class="ico">▣</span> Dashboard</li>
-      <li><span class="ico">🐾</span> Bolla</li>
-      <li><span class="ico">🎓</span> Schule</li>
-      <li><span class="ico">🗓</span> Kalender</li>
-      <li><span class="ico">✉</span> E-Mail</li>
-      <li><span class="ico">☁</span> Wetter</li>
-      <li><span class="ico">⚙</span> System Info</li>
-    </ul>
-    <div class="sidebar-footer">
-      <div><span class="dot"></span>UPLINK STABIL</div>
-      <div style="margin-top:6px;">user: chris@norderstedt</div>
-    </div>
-  </div>
 
-  <div class="main">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="paw">🐾</span>
+      <h1>Mission<br>Control</h1>
+      <span>Bollas Kommandozentrale</span>
+    </div>
+    <nav>
+      <ul>
+        <li class="active"><a href="#"><span class="ic">🏠</span> Dashboard</a></li>
+        <li><a href="#"><span class="ic">🐶</span> Bolla</a></li>
+        <li><a href="#"><span class="ic">🎓</span> Schule</a></li>
+        <li><a href="#"><span class="ic">🗓️</span> Kalender</a></li>
+        <li><a href="#"><span class="ic">✉️</span> E-Mail</a></li>
+        <li><a href="#"><span class="ic">⛅</span> Wetter</a></li>
+        <li><a href="#"><span class="ic">🖥️</span> System Info</a></li>
+      </ul>
+    </nav>
+    <div class="sidebar-footer">v1.0 · handgeschrieben mit ❤</div>
+  </aside>
+
+  <main class="main">
     <div class="topbar">
-      <div class="title">dashboard<span class="cursor"></span></div>
-      <div class="clock">20:14:07
-        <span class="date">MI, 06.08.2026</span>
+      <div>
+        <h2>Dashboard</h2>
+        <div class="sub">Alles auf einen Blick, Chris ✎</div>
+      </div>
+      <div class="clock">
+        <div class="time">20:14</div>
+        <div class="date">Freitag, 7. August 2026</div>
       </div>
     </div>
 
-    <div class="content">
-      <div class="grid">
+    <div class="grid">
 
-        <div class="card">
-          <div class="card-head"><span>CPU LOAD</span><span class="ico">⌁</span></div>
-          <div class="card-value">12<span class="unit">%</span></div>
-          <div class="bar"><div class="bar-fill" style="width:12%;"></div></div>
-          <div class="card-sub">4 Kerne · idle nominal</div>
-        </div>
-
-        <div class="card">
-          <div class="card-head"><span>RAM USAGE</span><span class="ico">▦</span></div>
-          <div class="card-value">34<span class="unit">%</span></div>
-          <div class="bar"><div class="bar-fill amber" style="width:34%;"></div></div>
-          <div class="card-sub">5,4 GB / 16 GB belegt</div>
-        </div>
-
-        <div class="card">
-          <div class="card-head"><span>WETTER · HAMBURG</span><span class="ico">☁</span></div>
-          <div class="weather-row">
-            <div class="weather-icon">⛅</div>
-            <div>
-              <div class="temp">18°C</div>
-              <div class="details">Wechselnd bewölkt · Wind 14 km/h</div>
-            </div>
+      <div class="card">
+        <span class="pin">📌</span>
+        <h3><span class="emoji">💾</span> Arbeitsspeicher</h3>
+        <div class="gauge-wrap">
+          <svg class="gauge" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#e3d3ac" stroke-width="10"/>
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#d69a2d" stroke-width="9"
+              stroke-dasharray="85.4 165.8" stroke-linecap="round"
+              transform="rotate(-90 50 50)"/>
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#b5482f" stroke-width="2" opacity="0.5"
+              stroke-dasharray="83 168" stroke-linecap="round"
+              transform="rotate(-88 50 50)"/>
+          </svg>
+          <div>
+            <div class="gauge-val">34%</div>
+            <div class="gauge-label">5,4 GB / 16 GB belegt</div>
           </div>
         </div>
-
-        <div class="card">
-          <div class="card-head"><span>POSTEINGANG</span><span class="badge">3 NEU</span></div>
-          <ul class="mail-list">
-            <li><span class="from">R. Mandel</span><span class="time">19:47</span></li>
-            <li><span class="from">Lessing-Gym</span><span class="time">18:12</span></li>
-            <li><span class="from">DHL Paket</span><span class="time">16:03</span></li>
-          </ul>
-        </div>
-
-        <div class="card wide">
-          <div class="card-head"><span>BOLLA // PROZESS-LOG</span><span class="ico">▶</span></div>
-          <div class="terminal-log">
-            &gt; init sequence complete <span class="ok">[OK]</span><br>
-            &gt; sync memory store... <span class="ok">[OK]</span><br>
-            &gt; check calendar events (3 heute) <span class="ok">[OK]</span><br>
-            &gt; watchdog: RAM-Ueberwachung aktiv <span class="ok">[OK]</span><br>
-            &gt; mail-scan: 3 neue Nachrichten <span class="warn">[PENDING]</span><br>
-            &gt; awaiting input<span class="cursor" style="background:var(--green-dim);"></span>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-head"><span>KALENDER · HEUTE</span><span class="ico">🗓</span></div>
-          <div class="terminal-log">
-            09:00 EDV 7b <span class="ok">[bestätigt]</span><br>
-            14:30 Zahnarzt Reni<br>
-            20:30 Sport Gesundheitszentrum
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-head"><span>UPTIME</span><span class="ico">⏱</span></div>
-          <div class="card-value" style="font-size:26px;">14d 06h 22m</div>
-          <div class="card-sub">letzter Reboot: 23.07.2026</div>
-        </div>
-
       </div>
+
+      <div class="card">
+        <span class="pin">📌</span>
+        <h3><span class="emoji">🖥️</span> Prozessor</h3>
+        <div class="gauge-wrap">
+          <svg class="gauge" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#e3d3ac" stroke-width="10"/>
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#3d7a6e" stroke-width="9"
+              stroke-dasharray="30.1 221.1" stroke-linecap="round"
+              transform="rotate(-90 50 50)"/>
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#245c52" stroke-width="2" opacity="0.5"
+              stroke-dasharray="29 222" stroke-linecap="round"
+              transform="rotate(-88 50 50)"/>
+          </svg>
+          <div>
+            <div class="gauge-val">12%</div>
+            <div class="gauge-label">Last · 42°C</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="pin">📌</span>
+        <h3><span class="emoji">✉️</span> Neue Mails <span class="mail-count">3</span></h3>
+        <ul class="mail-list">
+          <li><span class="who">Reni</span><span>Terminvorschlag Zahnarzt</span></li>
+          <li><span class="who">Steffi</span><span>Fotos vom Wochenende</span></li>
+          <li><span class="who">Amazon</span><span>Versandbestätigung</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <span class="pin">📌</span>
+        <h3><span class="emoji">⛅</span> Wetter</h3>
+        <div class="weather-main">
+          <span class="weather-emoji">⛅</span>
+          <div>
+            <div class="weather-temp">18°C</div>
+            <div class="weather-place">Hamburg</div>
+          </div>
+        </div>
+        <div class="weather-details">
+          <span>💨 14 km/h</span>
+          <span>💧 Regen 20%</span>
+        </div>
+      </div>
+
     </div>
 
-    <div class="footer-status">
-      <div><span class="ok">●</span> ALL SYSTEMS NOMINAL</div>
-      <div>root@bolla-core:~$ // build 2.6.1 // Norderstedt, SH</div>
-    </div>
-  </div>
-</div>
+    <footer class="note">— gezeichnet und gepflegt von Bolla, deinem digitalen Notizbuch 🐾</footer>
+  </main>
+
 </body>
 </html>

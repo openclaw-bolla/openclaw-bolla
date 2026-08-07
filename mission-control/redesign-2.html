@@ -5,353 +5,423 @@
 <title>Mission Control</title>
 <style>
   :root{
-    --bg:#070a12;
-    --bg2:#0c1120;
-    --panel:#0e1526;
-    --panel-border:#1c2740;
-    --cyan:#39f2e8;
-    --magenta:#ff3ec9;
-    --amber:#ffb020;
-    --green:#39ff8c;
-    --text:#d9e6f2;
-    --text-dim:#7e8ba3;
+    --bg: #F5F5F7;
+    --panel: #FFFFFF;
+    --text: #1D1D1F;
+    --text-secondary: #6E6E73;
+    --accent: #0071E3;
+    --accent-soft: #E8F0FE;
+    --border: #E5E5EA;
+    --radius: 18px;
+    --shadow: 0 2px 20px rgba(0,0,0,0.05);
+    --green: #34C759;
+    --orange: #FF9F0A;
+    --red: #FF3B30;
   }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  html,body{height:100%;}
+  *{ box-sizing: border-box; margin:0; padding:0; }
+  html, body{ height: 100%; }
   body{
-    font-family:'Segoe UI',system-ui,sans-serif;
-    background:
-      radial-gradient(circle at 15% 10%, rgba(57,242,232,0.06), transparent 40%),
-      radial-gradient(circle at 85% 90%, rgba(255,62,201,0.06), transparent 40%),
-      var(--bg);
-    color:var(--text);
-    display:flex;
-    min-height:100vh;
-    font-size:15px;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    min-height: 100vh;
+    font-size: 15px;
   }
+
+  /* Sidebar */
   .sidebar{
-    width:220px;
-    flex-shrink:0;
-    background:linear-gradient(180deg,var(--bg2),var(--bg));
-    border-right:1px solid var(--panel-border);
-    display:flex;
-    flex-direction:column;
-    padding:22px 0;
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 28px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
   .brand{
     display:flex;
     align-items:center;
-    gap:10px;
-    padding:0 20px 24px 20px;
-    border-bottom:1px solid var(--panel-border);
-    margin-bottom:20px;
+    gap: 10px;
+    padding: 6px 10px 26px 10px;
   }
-  .brand-dot{
-    width:12px;height:12px;border-radius:50%;
-    background:var(--cyan);
-    box-shadow:0 0 8px 2px var(--cyan);
+  .brand-icon{
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), #5AC8FA);
+    display:flex; align-items:center; justify-content:center;
+    font-size: 18px;
   }
-  .brand-text{
-    font-size:16px;
-    font-weight:700;
-    letter-spacing:2px;
-    color:var(--cyan);
-    text-shadow:0 0 12px rgba(57,242,232,0.5);
-  }
-  nav{display:flex;flex-direction:column;gap:2px;padding:0 12px;}
+  .brand-name{ font-weight: 700; font-size: 17px; letter-spacing: -0.3px; }
+  .brand-sub{ font-size: 12px; color: var(--text-secondary); }
+
   .nav-item{
     display:flex;
     align-items:center;
-    gap:12px;
-    padding:11px 14px;
-    border-radius:8px;
-    color:var(--text-dim);
-    font-size:14px;
-    cursor:pointer;
-    border-left:2px solid transparent;
-    transition:all .15s ease;
+    gap: 12px;
+    padding: 11px 12px;
+    border-radius: 12px;
+    color: var(--text-secondary);
+    font-size: 14.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+    text-decoration: none;
   }
-  .nav-item:hover{
-    background:rgba(57,242,232,0.06);
-    color:var(--text);
-  }
+  .nav-item .icon{ font-size: 17px; width: 22px; text-align:center; }
+  .nav-item:hover{ background: var(--bg); color: var(--text); }
   .nav-item.active{
-    background:rgba(57,242,232,0.10);
-    color:var(--cyan);
-    border-left:2px solid var(--cyan);
-    text-shadow:0 0 8px rgba(57,242,232,0.5);
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
   }
-  .nav-icon{width:18px;text-align:center;font-size:15px;}
+
   .sidebar-footer{
-    margin-top:auto;
-    padding:14px 20px 4px 20px;
-    font-size:11px;
-    color:var(--text-dim);
-    border-top:1px solid var(--panel-border);
-  }
-  .status-dot{
-    display:inline-block;width:7px;height:7px;border-radius:50%;
-    background:var(--green);box-shadow:0 0 6px var(--green);margin-right:6px;
-  }
-  .main{flex:1;display:flex;flex-direction:column;min-width:0;}
-  .topbar{
+    margin-top: auto;
+    padding: 14px 12px;
+    border-radius: 14px;
+    background: var(--bg);
     display:flex;
     align-items:center;
-    justify-content:space-between;
-    padding:20px 32px;
-    border-bottom:1px solid var(--panel-border);
-    background:linear-gradient(90deg, rgba(57,242,232,0.03), transparent 60%);
+    gap: 10px;
   }
-  .topbar h1{
-    font-size:20px;
-    font-weight:600;
-    letter-spacing:1px;
-    color:var(--text);
+  .avatar{
+    width: 34px; height:34px; border-radius:50%;
+    background: linear-gradient(135deg,#FFD60A,#FF9F0A);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; color:#fff; font-size:14px;
   }
-  .topbar h1 span{color:var(--cyan);}
-  .clock{
-    font-size:26px;
-    font-weight:700;
-    letter-spacing:2px;
-    color:var(--cyan);
-    text-shadow:0 0 14px rgba(57,242,232,0.55);
-    font-variant-numeric:tabular-nums;
+  .sidebar-footer .name{ font-size: 13.5px; font-weight:600; }
+  .sidebar-footer .role{ font-size: 11.5px; color: var(--text-secondary); }
+
+  /* Main */
+  .main{
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
   }
-  .clock .date{
-    display:block;
-    font-size:12px;
-    font-weight:400;
-    letter-spacing:1px;
-    color:var(--text-dim);
-    text-align:right;
-    text-shadow:none;
-    margin-top:2px;
+  .topbar{
+    height: 76px;
+    flex-shrink: 0;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 0 40px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(20px);
+    position: sticky;
+    top: 0;
   }
+  .page-title{ font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+  .page-sub{ font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .clock-wrap{
+    text-align: right;
+  }
+  .clock{ font-size: 26px; font-weight: 700; letter-spacing: -0.5px; font-variant-numeric: tabular-nums; }
+  .date{ font-size: 12.5px; color: var(--text-secondary); }
+
   .content{
-    padding:28px 32px;
-    display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));
-    gap:20px;
+    padding: 36px 40px 60px 40px;
+    overflow-y: auto;
   }
+
+  .grid{
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+  @media (max-width: 1100px){
+    .grid{ grid-template-columns: repeat(2, 1fr); }
+  }
+
   .card{
-    background:linear-gradient(160deg, var(--panel), var(--bg2));
-    border:1px solid var(--panel-border);
-    border-radius:14px;
-    padding:20px;
-    position:relative;
-    overflow:hidden;
-    transition:transform .15s ease, border-color .15s ease;
+    background: var(--panel);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 22px;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: transform .15s ease, box-shadow .15s ease;
   }
-  .card:hover{
-    transform:translateY(-2px);
-    border-color:rgba(57,242,232,0.35);
-  }
-  .card::before{
-    content:"";
-    position:absolute;
-    top:0;left:0;right:0;height:2px;
-    background:linear-gradient(90deg, var(--accent,var(--cyan)), transparent);
-  }
+  .card:hover{ transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.08); }
+
   .card-head{
     display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:14px;
+    align-items: center;
+    justify-content: space-between;
   }
-  .card-title{
-    font-size:12px;
-    letter-spacing:1.5px;
-    text-transform:uppercase;
-    color:var(--text-dim);
+  .card-label{
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
   }
-  .card-icon{font-size:18px;opacity:.85;}
-  .metric-value{
-    font-size:38px;
-    font-weight:700;
-    line-height:1;
-    color:var(--text);
+  .card-icon{
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 16px;
   }
-  .metric-value.cyan{color:var(--cyan);text-shadow:0 0 16px rgba(57,242,232,0.45);}
-  .metric-value.magenta{color:var(--magenta);text-shadow:0 0 16px rgba(255,62,201,0.45);}
-  .metric-value.amber{color:var(--amber);text-shadow:0 0 16px rgba(255,176,32,0.45);}
-  .metric-sub{
-    margin-top:6px;
-    font-size:12px;
-    color:var(--text-dim);
-  }
-  .gauge-track{
-    margin-top:14px;
-    height:6px;
-    border-radius:4px;
-    background:rgba(255,255,255,0.06);
-    overflow:hidden;
-  }
-  .gauge-fill{
-    height:100%;
-    border-radius:4px;
-  }
-  .gauge-fill.cyan{background:linear-gradient(90deg,#0d9c94,var(--cyan));box-shadow:0 0 8px var(--cyan);}
-  .gauge-fill.magenta{background:linear-gradient(90deg,#a8207e,var(--magenta));box-shadow:0 0 8px var(--magenta);}
-  .gauge-fill.amber{background:linear-gradient(90deg,#a86f10,var(--amber));box-shadow:0 0 8px var(--amber);}
-  .mail-list{list-style:none;margin-top:4px;display:flex;flex-direction:column;gap:8px;}
-  .mail-list li{
-    font-size:12.5px;
-    color:var(--text-dim);
+  .icon-blue{ background: #E8F0FE; }
+  .icon-green{ background: #E7F9EC; }
+  .icon-orange{ background: #FFF3E0; }
+  .icon-purple{ background: #F2E8FE; }
+
+  .metric-row{
     display:flex;
-    justify-content:space-between;
-    gap:8px;
-    border-bottom:1px solid rgba(255,255,255,0.04);
-    padding-bottom:6px;
+    align-items: baseline;
+    gap: 6px;
   }
-  .mail-list li span.from{color:var(--text);font-weight:600;}
-  .mail-badge{
-    background:rgba(255,62,201,0.15);
-    color:var(--magenta);
-    border:1px solid rgba(255,62,201,0.4);
-    padding:2px 9px;
-    border-radius:999px;
-    font-size:11px;
-    font-weight:700;
+  .metric{ font-size: 34px; font-weight: 700; letter-spacing: -1px; }
+  .metric-unit{ font-size: 15px; color: var(--text-secondary); font-weight: 500; }
+
+  .progress-track{
+    width: 100%;
+    height: 8px;
+    background: var(--bg);
+    border-radius: 6px;
+    overflow: hidden;
   }
-  .weather-row{
+  .progress-fill{
+    height: 100%;
+    border-radius: 6px;
+  }
+
+  .card-foot{
+    font-size: 12.5px;
+    color: var(--text-secondary);
+  }
+
+  /* wide cards */
+  .wide{ grid-column: span 2; }
+
+  .mail-list{ display:flex; flex-direction:column; gap: 10px; }
+  .mail-item{
     display:flex;
     align-items:center;
-    gap:16px;
-    margin-top:4px;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--bg);
   }
-  .weather-icon{font-size:40px;}
-  .weather-temp{font-size:34px;font-weight:700;color:var(--amber);text-shadow:0 0 14px rgba(255,176,32,0.4);}
-  .weather-city{font-size:12px;color:var(--text-dim);margin-top:2px;}
-  .weather-detail{
-    margin-top:12px;
+  .mail-dot{ width: 8px; height:8px; border-radius:50%; background: var(--accent); flex-shrink:0; }
+  .mail-text{ flex:1; min-width:0; }
+  .mail-sender{ font-size: 13.5px; font-weight: 600; }
+  .mail-subject{ font-size: 12.5px; color: var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mail-time{ font-size: 11.5px; color: var(--text-secondary); flex-shrink:0; }
+
+  .weather-main{
     display:flex;
-    gap:16px;
-    font-size:11.5px;
-    color:var(--text-dim);
+    align-items:center;
+    gap: 18px;
   }
-  .wide{grid-column:span 2;}
-  .sysinfo-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px 20px;
-    margin-top:6px;
+  .weather-emoji{ font-size: 46px; }
+  .weather-temp{ font-size: 40px; font-weight:700; letter-spacing:-1px; }
+  .weather-loc{ font-size: 14px; color: var(--text-secondary); }
+  .weather-days{
+    display:flex;
+    justify-content: space-between;
+    margin-top: 4px;
   }
-  .sysinfo-grid div{font-size:12px;color:var(--text-dim);}
-  .sysinfo-grid div b{display:block;color:var(--text);font-size:14px;font-weight:600;margin-top:2px;}
-  ::-webkit-scrollbar{width:8px;}
-  ::-webkit-scrollbar-thumb{background:var(--panel-border);border-radius:4px;}
+  .weather-day{ text-align:center; font-size:12px; color: var(--text-secondary); }
+  .weather-day .d{ font-weight:600; color: var(--text); margin-top:2px; }
+
+  .school-item{
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+  }
+  .school-item:last-child{ border-bottom: none; }
+  .school-time{ color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+  .tag{
+    display:inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+  }
+  .tag-green{ background:#E7F9EC; color:#248A3D; }
+  .tag-orange{ background:#FFF3E0; color:#C77700; }
 </style>
 </head>
 <body>
 
   <div class="sidebar">
     <div class="brand">
-      <div class="brand-dot"></div>
-      <div class="brand-text">MISSION CONTROL</div>
+      <div class="brand-icon">🐾</div>
+      <div>
+        <div class="brand-name">Mission Control</div>
+        <div class="brand-sub">Bolla Dashboard</div>
+      </div>
     </div>
-    <nav>
-      <div class="nav-item active"><span class="nav-icon">◈</span> Dashboard</div>
-      <div class="nav-item"><span class="nav-icon">🐾</span> Bolla</div>
-      <div class="nav-item"><span class="nav-icon">🎓</span> Schule</div>
-      <div class="nav-item"><span class="nav-icon">📅</span> Kalender</div>
-      <div class="nav-item"><span class="nav-icon">✉</span> E-Mail</div>
-      <div class="nav-item"><span class="nav-icon">☁</span> Wetter</div>
-      <div class="nav-item"><span class="nav-icon">⚙</span> System Info</div>
-    </nav>
+
+    <a class="nav-item active"><span class="icon">🏠</span> Dashboard</a>
+    <a class="nav-item"><span class="icon">🐾</span> Bolla</a>
+    <a class="nav-item"><span class="icon">🎓</span> Schule</a>
+    <a class="nav-item"><span class="icon">📅</span> Kalender</a>
+    <a class="nav-item"><span class="icon">✉️</span> E-Mail</a>
+    <a class="nav-item"><span class="icon">☀️</span> Wetter</a>
+    <a class="nav-item"><span class="icon">🖥️</span> System Info</a>
+
     <div class="sidebar-footer">
-      <span class="status-dot"></span> Alle Systeme online
+      <div class="avatar">CM</div>
+      <div>
+        <div class="name">Chris Mandel</div>
+        <div class="role">Norderstedt</div>
+      </div>
     </div>
   </div>
 
   <div class="main">
     <div class="topbar">
-      <h1>Übersicht <span>// Dashboard</span></h1>
-      <div class="clock">
-        20:14
-        <span class="date">Donnerstag, 06.08.2026</span>
+      <div>
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">Alles im Blick, auf einen Blick</div>
+      </div>
+      <div class="clock-wrap">
+        <div class="clock">20:14</div>
+        <div class="date">Freitag, 7. August 2026</div>
       </div>
     </div>
 
     <div class="content">
+      <div class="grid">
 
-      <div class="card" style="--accent:var(--cyan)">
-        <div class="card-head">
-          <div class="card-title">Arbeitsspeicher</div>
-          <div class="card-icon">🧠</div>
+        <!-- RAM -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-label">Arbeitsspeicher</span>
+            <div class="card-icon icon-blue">🧠</div>
+          </div>
+          <div class="metric-row"><span class="metric">34</span><span class="metric-unit">%</span></div>
+          <div class="progress-track"><div class="progress-fill" style="width:34%; background: var(--accent);"></div></div>
+          <div class="card-foot">5,4 GB von 16 GB belegt</div>
         </div>
-        <div class="metric-value cyan">34%</div>
-        <div class="metric-sub">5,4 GB / 16 GB belegt</div>
-        <div class="gauge-track"><div class="gauge-fill cyan" style="width:34%"></div></div>
-      </div>
 
-      <div class="card" style="--accent:var(--green)">
-        <div class="card-head">
-          <div class="card-title">CPU-Auslastung</div>
-          <div class="card-icon">⚡</div>
+        <!-- CPU -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-label">Prozessor</span>
+            <div class="card-icon icon-green">⚙️</div>
+          </div>
+          <div class="metric-row"><span class="metric">12</span><span class="metric-unit">%</span></div>
+          <div class="progress-track"><div class="progress-fill" style="width:12%; background: var(--green);"></div></div>
+          <div class="card-foot">Ruhig — keine Auffälligkeiten</div>
         </div>
-        <div class="metric-value" style="color:var(--green);text-shadow:0 0 16px rgba(57,255,140,0.45)">12%</div>
-        <div class="metric-sub">4 Kerne · 38°C</div>
-        <div class="gauge-track"><div class="gauge-fill" style="width:12%;background:linear-gradient(90deg,#0f8a4a,var(--green));box-shadow:0 0 8px var(--green)"></div></div>
-      </div>
 
-      <div class="card" style="--accent:var(--magenta)">
-        <div class="card-head">
-          <div class="card-title">Posteingang</div>
-          <div class="card-icon">✉</div>
+        <!-- Mails -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-label">E-Mail</span>
+            <div class="card-icon icon-orange">✉️</div>
+          </div>
+          <div class="metric-row"><span class="metric">3</span><span class="metric-unit">neu</span></div>
+          <div class="card-foot">Posteingang · ernstmandel@outlook.de</div>
         </div>
-        <div class="metric-value magenta">3</div>
-        <div class="metric-sub">neue Nachrichten</div>
-        <ul class="mail-list">
-          <li><span class="from">Lessing-Gymnasium</span> <span class="mail-badge">Neu</span></li>
-          <li><span class="from">Robin Mandel</span> <span class="mail-badge">Neu</span></li>
-          <li><span class="from">DistroKid</span> <span class="mail-badge">Neu</span></li>
-        </ul>
-      </div>
 
-      <div class="card" style="--accent:var(--amber)">
-        <div class="card-head">
-          <div class="card-title">Wetter</div>
-          <div class="card-icon">🌤</div>
+        <!-- Wetter -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-label">Wetter</span>
+            <div class="card-icon icon-purple">☀️</div>
+          </div>
+          <div class="metric-row"><span class="metric">18</span><span class="metric-unit">°C</span></div>
+          <div class="card-foot">Hamburg · leicht bewölkt</div>
         </div>
-        <div class="weather-row">
-          <div class="weather-icon">⛅</div>
-          <div>
-            <div class="weather-temp">18°C</div>
-            <div class="weather-city">Hamburg / Norderstedt</div>
+
+        <!-- Mail wide -->
+        <div class="card wide">
+          <div class="card-head">
+            <span class="card-label">Letzte Mails</span>
+            <div class="card-icon icon-orange">📥</div>
+          </div>
+          <div class="mail-list">
+            <div class="mail-item">
+              <div class="mail-dot"></div>
+              <div class="mail-text">
+                <div class="mail-sender">Robin Mandel</div>
+                <div class="mail-subject">Update Famulatur Tansania – Flüge gebucht</div>
+              </div>
+              <div class="mail-time">18:42</div>
+            </div>
+            <div class="mail-item">
+              <div class="mail-dot"></div>
+              <div class="mail-text">
+                <div class="mail-sender">Lessing-Gymnasium Norderstedt</div>
+                <div class="mail-subject">Stundenplanänderung 7b ab Montag</div>
+              </div>
+              <div class="mail-time">16:05</div>
+            </div>
+            <div class="mail-item">
+              <div class="mail-dot"></div>
+              <div class="mail-text">
+                <div class="mail-sender">Riverty Inkasso</div>
+                <div class="mail-subject">Frist zur Stellungnahme 14.08.2026</div>
+              </div>
+              <div class="mail-time">09:17</div>
+            </div>
           </div>
         </div>
-        <div class="weather-detail">
-          <span>💧 62%</span>
-          <span>💨 14 km/h</span>
-          <span>☔ 10%</span>
-        </div>
-      </div>
 
-      <div class="card wide" style="--accent:var(--cyan)">
-        <div class="card-head">
-          <div class="card-title">System Info</div>
-          <div class="card-icon">🖥</div>
+        <!-- Wetter wide -->
+        <div class="card wide">
+          <div class="card-head">
+            <span class="card-label">Wetter Hamburg</span>
+            <div class="card-icon icon-purple">🌤️</div>
+          </div>
+          <div class="weather-main">
+            <div class="weather-emoji">⛅</div>
+            <div>
+              <div class="weather-temp">18°C</div>
+              <div class="weather-loc">Gefühlt 17°C · Wind 12 km/h</div>
+            </div>
+          </div>
+          <div class="weather-days">
+            <div class="weather-day">Sa<div class="d">19°</div></div>
+            <div class="weather-day">So<div class="d">21°</div></div>
+            <div class="weather-day">Mo<div class="d">17°</div></div>
+            <div class="weather-day">Di<div class="d">16°</div></div>
+            <div class="weather-day">Mi<div class="d">18°</div></div>
+          </div>
         </div>
-        <div class="sysinfo-grid">
-          <div>Uptime<b>4 Tage 07:22</b></div>
-          <div>Host<b>bolla-wsl2</b></div>
-          <div>Datenträger<b>412 GB frei / 953 GB</b></div>
-          <div>Netzwerk<b>online · 84 Mbit/s</b></div>
-          <div>Prozesse<b>187 aktiv</b></div>
-          <div>Temperatur<b>38°C</b></div>
-        </div>
-      </div>
 
-      <div class="card" style="--accent:var(--magenta)">
-        <div class="card-head">
-          <div class="card-title">Kalender</div>
-          <div class="card-icon">📅</div>
+        <!-- Schule -->
+        <div class="card wide">
+          <div class="card-head">
+            <span class="card-label">Schule — heute</span>
+            <div class="card-icon icon-blue">🎓</div>
+          </div>
+          <div>
+            <div class="school-item"><span>EDV 7b — Doppelstunde</span><span class="school-time">08:00 – 09:30</span></div>
+            <div class="school-item"><span>EDV 7c — Doppelstunde</span><span class="school-time">09:50 – 11:20</span></div>
+            <div class="school-item"><span>Konferenz Kollegium <span class="tag tag-orange">Neu</span></span><span class="school-time">14:00</span></div>
+          </div>
         </div>
-        <div class="metric-value" style="font-size:22px;color:var(--text)">Nächster Termin</div>
-        <div class="metric-sub" style="margin-top:8px">18:00 · Gesundheitszentrum (Sport)</div>
-        <div class="metric-sub">21:00 · Freier Abend</div>
-      </div>
 
+        <!-- System Info -->
+        <div class="card wide">
+          <div class="card-head">
+            <span class="card-label">System</span>
+            <div class="card-icon icon-green">🖥️</div>
+          </div>
+          <div>
+            <div class="school-item"><span>MC-Server</span><span class="tag tag-green">Online</span></div>
+            <div class="school-item"><span>Cloudflare Tunnel</span><span class="tag tag-green">Verbunden</span></div>
+            <div class="school-item"><span>Letztes Backup</span><span class="school-time">02:14 Uhr</span></div>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
 
