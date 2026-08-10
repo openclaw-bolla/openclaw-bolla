@@ -5866,7 +5866,13 @@ class Handler(BaseHTTPRequestHandler):
                           f"hyper-detailed, cinematic depth, Spotify editorial quality — absolutely NO text, NO letters in the image.")
         try:
             from PIL import Image as _PILImage
-            if cover_engine == "gemini":
+            if cover_engine == "mai":
+                import base64 as _b64_cv
+                img_b64, mime_or_err = bildgen_mai_generate(img_prompt, model="mai-image-2.5", width=1024, height=1024)
+                if not img_b64:
+                    return {"error": f"MAI-Image Fehler: {mime_or_err}"}
+                img_bytes = _b64_cv.b64decode(img_b64)
+            elif cover_engine == "gemini":
                 import base64 as _b64_cv
                 gemini_key = _gemini_key()
                 if not gemini_key:
@@ -8172,58 +8178,20 @@ Antworte NUR als reines JSON ohne Markdown:
                 def gb_kontext(gb_str, ref=None):
                     if not gb_str:
                         return ""
-                    from datetime import date as _date
-                    ref = ref or _date.today()
                     try:
                         bd = _parse_date(gb_str)
-                        delta = (bd - ref).days
                         ds = bd.strftime("%d.%m.%Y")
-                        ref_info = f" (Abspieltag: {ref.strftime('%d.%m.%Y')})" if ref != _date.today() else ""
-                        if delta == 0:
-                            return f"Geburtstag: heute ({ds}){ref_info}"
-                        elif 1 <= delta <= 7:
-                            return f"Geburtstag: in {delta} Tagen ({ds}){ref_info}"
-                        elif delta > 7:
-                            return f"Geburtstag: am {ds} (in {delta} Tagen){ref_info}"
-                        elif -7 <= delta < 0:
-                            return f"Geburtstag: vor {-delta} Tagen ({ds}){ref_info}"
-                        else:
-                            return f"Geburtstag: {ds} (vor {-delta} Tagen){ref_info}"
+                        return f"Geburtstag: {ds}"
                     except Exception:
                         return f"Geburtstag: {gb_str}"
 
                 def gb_lyrics_hint(gb_str, ref=None):
                     if not gb_str:
                         return ""
-                    from datetime import date as _date
-                    ref = ref or _date.today()
-                    try:
-                        bd = _parse_date(gb_str)
-                        delta = (bd - ref).days
-                        if delta == 0:
-                            timing = "Der Geburtstag ist heute (am Abspieltag)."
-                            tone = "Feier-Stimmung, Gegenwart."
-                        elif delta == 1:
-                            timing = "Der Geburtstag ist morgen (einen Tag nach dem Abspieltag)."
-                            tone = "Vorfreude, Spannung — kreativ umsetzen, NICHT als wäre es heute."
-                        elif 2 <= delta <= 7:
-                            timing = f"Der Geburtstag ist in {delta} Tagen (nach dem Abspieltag)."
-                            tone = "Vorfreude, Countdown-Gefühl — kreativ umsetzen, NICHT als wäre es heute."
-                        elif delta > 7:
-                            timing = f"Der Geburtstag ist in {delta} Tagen (nach dem Abspieltag)."
-                            tone = "Ankündigung, Vorgeschmack — kreativ umsetzen, NICHT als wäre es heute."
-                        elif delta == -1:
-                            timing = "Der Geburtstag war gestern (einen Tag vor dem Abspieltag)."
-                            tone = "Nachträgliche Gratulation, leicht selbstironisch — kreativ umsetzen, NICHT als wäre es heute."
-                        elif -7 <= delta < 0:
-                            timing = f"Der Geburtstag war vor {-delta} Tagen (vor dem Abspieltag)."
-                            tone = "Verspätete Gratulation, Humor über die Verspätung — kreativ umsetzen, NICHT als wäre es heute."
-                        else:
-                            timing = f"Der Geburtstag war vor {-delta} Tagen (vor dem Abspieltag)."
-                            tone = "Deutlich verspätete Gratulation, Augenzwinkern über die Verzögerung — NICHT als wäre es heute."
-                        return f"ZEITLICHER KONTEXT FÜR DIE LYRICS: {timing} Stimmung: {tone} Die sprachliche Umsetzung ist frei — Hauptsache der zeitliche Bezug stimmt."
-                    except Exception:
-                        return ""
+                    return ("ZEITLICHER KONTEXT FÜR DIE LYRICS: Der Liedtext soll zeitlos formuliert sein — "
+                            "KEINE Bezüge auf 'noch X Tage', 'in X Tagen', 'vor X Tagen' o.ä. und KEINE Entschuldigung "
+                            "dafür, dass der Geburtstag schon eine Weile her ist oder erst noch bevorsteht. "
+                            "Einfach fröhliche Geburtstags-/Feierstimmung, unabhängig vom genauen Abspieltag.")
 
                 from datetime import date as _dt_date
                 ref_date = None
@@ -8271,13 +8239,6 @@ Antworte NUR als reines JSON ohne Markdown:
                             f"dass er natürlich klingt und den Takt nicht bricht. "
                             f"Notfalls Kurzform oder Betonung anpassen.")
 
-                # Hinweis wenn Hit-Stil + Zeitkontext kombiniert werden
-                def _style_timing_hint(hit_str, gb_str, ref):
-                    if not hit_str or not gb_str:
-                        return ""
-                    return ("STIL-TIMING: Stelle sicher, dass der zeitliche Ton der Lyrics (Vorfreude/Rückblick) "
-                            "harmonisch mit dem Stil des Referenz-Songs zusammenpasst — kein Widerspruch zwischen Stimmung und Musik-Energie.")
-
                 # Pflichtinhalt-Zeile je nach Name-Typ
                 if is_personal:
                     name_inst = f"- Den Namen '{name}' mehrfach im Liedtext verwenden"
@@ -8294,7 +8255,7 @@ Antworte NUR als reines JSON ohne Markdown:
                     name_inst = ""  # kein Name: nur anlassbezogen
 
                 rhythm_hint = _rhythm_hint(name) if is_personal else ""
-                style_timing_hint = _style_timing_hint(hit, geburtstag, ref_date)
+                style_timing_hint = ""
 
                 # 3. Variante — Veröffentlichungs-Profil (Chris' Release-Marken-Stimme: Feel-good mit Augenzwinkern)
                 if profil:
@@ -8416,6 +8377,48 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                         parts.append(gb)
                     song_data["title"] = " ".join(parts)
                 self._send_json(song_data)
+
+            elif self.path == "/api/suno/style-suggest":
+                # Stil-Hinweis per KI vorschlagen — Chris will die Stärke des Style-Prompts
+                # nicht selbst formulieren müssen, nur Thema + Zielaltersgruppe angeben.
+                kontext_s = body.get("kontext", "").strip()
+                sprache_s = body.get("sprache", "de")
+                altersklasse = body.get("altersklasse", "breit")
+                alter_label = {"12-16": "12–16 Jahre", "17-19": "17–19 Jahre",
+                                "20-24": "20–24 Jahre"}.get(altersklasse, "breites, gemischtes Publikum")
+                de_rule = (
+                    "WICHTIG für deutschen Gesang: Ein klassischer gesungener Pop-Singalong-Refrain kippt auf "
+                    "Deutsch schnell ins Schlagerhafte. Wähle stattdessen bewusst eine Alternative mit echtem "
+                    "Hitpotential für deutsche Ohren: z.B. gerappte Strophen + eingängiger gesungener Hook "
+                    "(Deutschrap-Hybrid), Reggae/Dancehall, Afrobeats/Amapiano oder Dance/House-Groove — "
+                    "was am besten zu Zielgruppe und Thema passt."
+                ) if sprache_s == "de" else ""
+                style_instr = (
+                    f"Du bist ein erfahrener Musikproduzent. Schreibe EINEN kurzen, knackigen Stil-Hinweis "
+                    f"(2-4 Sätze, kein Roman) für einen Song bei Suno.ai — für die Feel-Good-Marke 'bollawave' "
+                    f"(warm, eingängig, mit Augenzwinkern, optimistisch).\n"
+                    f"Thema/Anlass: {kontext_s or 'Feel-Good Pop-Song'}\n"
+                    f"Sprache: {'Deutsch' if sprache_s == 'de' else 'Englisch'}\n"
+                    f"Zielgruppe: {alter_label} — der Song muss für GENAU diese Altersgruppe klares Hitpotential "
+                    f"haben (Sound-Ästhetik und Produktion, die diese Generation gerade hört).\n"
+                    f"{de_rule}\n"
+                    f"Beschreibe: Genre, Haupt-Instrumente/Produktion, Tempo-Gefühl (grobe BPM-Range), "
+                    f"Gesangsstil, Energie/Stimmung.\n"
+                    f"STRIKT VERBOTEN: Künstlernamen, Bandnamen oder Songtitel als Referenz nennen (werden von "
+                    f"Suno gefiltert). Nur beschreibende Begriffe.\n"
+                    f"Antworte NUR mit dem Stil-Hinweis-Text, sonst nichts.")
+                import subprocess as _sp_style, shutil as _sh_style
+                claude_bin_s = _sh_style.which("claude") or os.path.expanduser("~/.local/bin/claude")
+                try:
+                    r_s = _sp_style.run(
+                        [claude_bin_s, "-p", "--model", "claude-sonnet-5", "--output-format", "json", style_instr],
+                        capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~"))
+                    style_hint_out = json.loads(r_s.stdout).get("result", "").strip() if r_s.returncode == 0 else ""
+                except Exception:
+                    style_hint_out = ""
+                if not style_hint_out:
+                    self._send_json({"error": "Stil-Vorschlag fehlgeschlagen (Claude-Aufruf)"}, status=500); return
+                self._send_json({"ok": True, "style_hint": style_hint_out})
 
             elif self.path == "/api/suno/token":
                 token = body.get("token", "").strip()

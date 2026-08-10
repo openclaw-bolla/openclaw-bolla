@@ -11,10 +11,12 @@ Was es tut (Cover-first, ohne DistroKid-Login):
   2. Legt Zielordner  D:/OneDrive/Desktop/DistroKid/Social Media/<Song>/  an
   3. <Song>_PromoCard.jpg   = Cover (für Instagram; = das Promo-Bild)
   4. <Song>_TikTok-Video.mp4 = Cover 1080x1920 + 15s Song-Ausschnitt MIT TON
-  5. <Song>_Insta-Caption.txt + <Song>_TikTok-Caption.txt  (UTF-8 BOM, lebendige Caption via claude -p, Fallback-Template)
-  6. ANLEITUNG_<Song>_Posten.docx  (Aptos, kompakt, KI-Label-Warnung fett)
+  5. <Song>_Instagram-Reel.mp4 = identische Kopie, seit 10.08.2026 dauerhafter Standard (Reels > reine Bildposts bei Reichweite)
+  6. <Song>_Insta-Caption.txt + <Song>_TikTok-Caption.txt  (UTF-8 BOM, lebendige Caption via claude -p, Fallback-Template)
+  7. ANLEITUNG_<Song>_Posten.docx  (Aptos, kompakt, KI-Label-Warnung fett, inkl. Reel-Schritt)
 
-Chris postet selbst in den Desktop-Apps. TikTok: KI-Label beim Upload AN (Mehr anzeigen -> KI-generierte Inhalte).
+Chris postet selbst in den Desktop-Apps: TikTok-Video + Instagram-Bild + Instagram-Reel (3 Posts).
+TikTok: KI-Label beim Upload AN (Mehr anzeigen -> KI-generierte Inhalte).
 Danach Zielordner löschbar.
 """
 import os, re, sys, shutil, subprocess, json, urllib.request
@@ -159,6 +161,13 @@ def make_anleitung(path, title, link):
     bul(doc, "Bildunterschrift: Inhalt aus _Insta-Caption.txt einfügen.", pre="2.  ")
     bul(doc, "Teilen. (KI-Kennzeichnung optional — Suno-Hinweis steht in der Caption.)", pre="3.  ")
 
+    head(doc, "🎬 Instagram (Reel) — zusätzlich, dauerhafter Standard seit 10.08.2026")
+    p = par(doc); p.paragraph_format.left_indent = Pt(12)
+    sf(p.add_run("Gleiches Video wie TikTok (_Instagram-Reel.mp4, identisch zu _TikTok-Video.mp4) — Reels bekommen bei Instagram deutlich mehr Reichweite als reine Bildposts, kostet aber kein zusätzliches Material."), size=9.5, color=(0x66,0x66,0x66))
+    bul(doc, "Erstellen → Reel → _Instagram-Reel.mp4 wählen.", pre="1.  ")
+    bul(doc, "Bildunterschrift: Inhalt aus _Insta-Caption.txt einfügen (gleiche wie beim Bildpost).", pre="2.  ")
+    bul(doc, "Teilen.", pre="3.  ")
+
     head(doc, "🔗 Link")
     bul(doc, link)
 
@@ -196,9 +205,12 @@ def main():
     shutil.copy2(cover, base + "_PromoCard.jpg")
     print("   ✓ PromoCard.jpg")
 
-    # 2) TikTok-Video
+    # 2) TikTok-Video (+ identische Kopie fürs Instagram-Reel, seit 10.08.2026 dauerhafter Standard)
     ok = make_video(cover, mp3, base + "_TikTok-Video.mp4")
     print("   ✓ TikTok-Video.mp4" if ok else "   ⚠️ Video fehlgeschlagen")
+    if ok:
+        shutil.copy2(base + "_TikTok-Video.mp4", base + "_Instagram-Reel.mp4")
+        print("   ✓ Instagram-Reel.mp4 (Kopie)")
 
     # 3) Captions
     write_caption(base + "_Insta-Caption.txt", llm_caption(title, "insta", link), link, title)

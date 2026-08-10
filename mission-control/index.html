@@ -926,7 +926,18 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
           <div class="nav-item" data-page="clipboard"><span class="icon">📋</span><span>Clipboard</span></div>
           <div class="nav-item" data-page="board"><span class="icon">📋</span><span>Projekt-Board</span></div>
           <div class="nav-item" data-page="projekte"><span class="icon">🏡</span><span>Immobilienkauf Bayern</span></div>
-          <div class="nav-item" data-page="urlaub"><span class="icon">✈️</span><span>Reiseplaner</span></div>
+          <div id="nav-group-reise">
+            <div class="nav-group-header" id="nav-group-header-reise" onclick="event.stopPropagation();toggleNavGroup('reise')">
+              <span class="nav-group-grip">⠿</span><span class="icon">✈️</span>
+              <span>Reiseplaner</span>
+              <span class="nav-group-count">2</span>
+              <span class="nav-group-chevron" id="nav-chevron-reise">▶</span>
+            </div>
+            <div class="nav-group-items" id="nav-group-items-reise">
+              <div class="nav-item nav-subitem" data-page="urlaub"><span class="icon">🗺️</span><span>Übersicht</span></div>
+              <div class="nav-item nav-subitem" data-page="reise-sommerreise2026"><span class="icon">🏁</span><span>Sommerreise 2026</span></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -2702,44 +2713,17 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
             </div>
           </div>
 
-          <!-- ═══ BEREICH 0: Sommerreise 2026 ═══ -->
-          <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px;border-top:3px solid #f59e0b">
-
-            <!-- Header -->
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+          <!-- ═══ Archivierte Reisen (Pointer-Karten, Details auf eigener Unterseite) ═══ -->
+          <div style="background:var(--card);border:1px solid rgba(34,197,94,0.35);border-radius:14px;padding:16px 20px;margin-bottom:20px;border-top:3px solid #22c55e;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;cursor:pointer"
+            onclick="showPage('reise-sommerreise2026')">
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font-size:24px">🏁</span>
               <div>
-                <div style="font-size:15px;font-weight:700;color:#fbbf24">🌲 Sommerreise 2026 — Schwarzwald &amp; Bodensee</div>
-                <div style="font-size:12px;color:var(--dim);margin-top:2px">Norderstedt → 15 Stationen → 04.08. Kaufering · ~11 Tage · ~1.270 km (real geprüft)</div>
-              </div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <button id="sr-sightseeing-btn" onclick="srDownloadSightseeing()" title="Kompletter Tages-Reiseplan als Word: Übersichtskarte + je Tag eine Seite mit Programm, Fahrzeiten & Infos" style="padding:7px 16px;background:rgba(251,191,36,0.16);border:1px solid rgba(251,191,36,0.45);border-radius:8px;color:#fbbf24;font-size:13px;cursor:pointer;font-weight:700">📄 Reiseplan als Word</button>
+                <div style="font-size:14px;font-weight:700;color:#4ade80">Sommerreise 2026 — Schwarzwald &amp; Bodensee</div>
+                <div style="font-size:12px;color:var(--dim);margin-top:2px">25.07.–04.08.2026 · 15 Stationen · abgeschlossen &amp; archiviert</div>
               </div>
             </div>
-
-            <!-- ID.3-Hinweis: Fahrzeiten EV-gerecht -->
-            <div style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.35);border-radius:8px;padding:9px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
-              <span style="font-size:16px">⚡</span>
-              <div style="font-size:12px;color:#7dd3fc">Fahrzeiten gelten für den <b>VW ID.3</b> (~200 km pro Ladung im Sommer, mit Puffer; Erfahrung Norderstedt↔Ulm ~720 km: Sommer ~9 h, Winter ~10 h). Nur die lange Anreise braucht Ladestopps — alle Etappen vor Ort liegen unter einer Akkuladung. Heimweg Bregenz → Kaufering (~160 km) ohne Stopp machbar.</div>
-            </div>
-
-            <!-- Tagesübersicht: Wochentag + Fahrzeit-Summe pro Tag, wichtig an Tagen mit mehreren Stopps -->
-            <div style="margin-bottom:14px">
-              <div style="font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">📅 Tagesübersicht (Fahrzeiten real geprüft via Routing)</div>
-              <div id="sr-tagesuebersicht" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px"></div>
-            </div>
-
-            <!-- Hauptlayout -->
-            <div style="display:grid;grid-template-columns:240px 1fr;gap:16px;align-items:start">
-              <!-- Linke Spalte: Stationsliste -->
-              <div style="display:flex;flex-direction:column;gap:2px" id="sr-stationen">
-                <div style="font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">8 Stationen · 7 Tagesstopps</div>
-              </div>
-              <!-- Rechte Spalte: Karte + Detail -->
-              <div style="display:flex;flex-direction:column;gap:12px">
-                <div id="sr-map" style="height:420px;border-radius:10px;overflow:hidden;border:1px solid var(--border)"></div>
-                <div id="sr-detail" style="display:none;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px"></div>
-              </div>
-            </div>
+            <span style="font-size:13px;color:#4ade80;font-weight:600;white-space:nowrap">Reisetagebuch &amp; Route ansehen →</span>
           </div>
 
           <!-- ═══ BEREICH 1: Kurztrip-Planer ═══ -->
@@ -2839,6 +2823,88 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
             <!-- Portal-Buttons -->
             <div id="rs-links" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px"></div>
             <div id="rs-hint" style="font-size:12px;color:var(--dim);margin-top:10px;min-height:16px"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 🏁 ARCHIVIERTE REISE: Sommerreise 2026 -->
+      <div class="page" id="page-reise-sommerreise2026">
+        <div style="max-width:1200px;margin:0 auto">
+
+          <!-- Header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+            <div>
+              <div style="font-size:20px;font-weight:700;color:var(--text)">🏁 Sommerreise 2026</div>
+              <div style="font-size:13px;color:var(--dim);margin-top:2px">Schwarzwald &amp; Bodensee · archivierte Reise</div>
+            </div>
+            <button onclick="showPage('urlaub')" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--dim);padding:7px 14px;cursor:pointer;font-size:13px">← Zurück zum Reiseplaner</button>
+          </div>
+
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px;border-top:3px solid #f59e0b">
+
+            <!-- Header -->
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+              <div>
+                <div style="font-size:15px;font-weight:700;color:#fbbf24">🌲 Sommerreise 2026 — Schwarzwald &amp; Bodensee</div>
+                <div style="font-size:12px;color:var(--dim);margin-top:2px">Norderstedt → 15 Stationen → 04.08. Kaufering · ~11 Tage · ~1.270 km (real geprüft)</div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button id="sr-sightseeing-btn" onclick="srDownloadSightseeing()" title="Kompletter Tages-Reiseplan als Word: Übersichtskarte + je Tag eine Seite mit Programm, Fahrzeiten & Infos" style="padding:7px 16px;background:rgba(251,191,36,0.16);border:1px solid rgba(251,191,36,0.45);border-radius:8px;color:#fbbf24;font-size:13px;cursor:pointer;font-weight:700">📄 Reiseplan als Word</button>
+              </div>
+            </div>
+
+            <!-- 🏁 Reise abgeschlossen & archiviert (10.08.2026) -->
+            <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.35);border-radius:10px;padding:12px 15px;margin-bottom:14px">
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:16px">🏁</span>
+                  <div style="font-size:13px;color:#4ade80;font-weight:700">Reise abgeschlossen &amp; archiviert (25.07.–04.08.2026)</div>
+                </div>
+                <button onclick="const b=document.getElementById('sr-tagebuch');const open=b.style.display!=='none';b.style.display=open?'none':'block';this.textContent=open?'📔 Reisetagebuch anzeigen':'📔 Reisetagebuch ausblenden'"
+                  style="background:var(--card2);border:1px solid var(--border);border-radius:7px;color:#4ade80;font-size:12px;padding:5px 12px;cursor:pointer;white-space:nowrap">📔 Reisetagebuch ausblenden</button>
+              </div>
+              <div style="font-size:13px;color:var(--text);margin-top:8px;line-height:1.5"><b>Chris' Fazit:</b> „Sehr schöne Reise, hat alles geklappt — bis auf das Finden eines Straußes am Kaiserstuhl, vermutlich die falsche Jahreszeit."</div>
+
+              <div id="sr-tagebuch" style="display:block;margin-top:12px;padding-top:12px;border-top:1px solid rgba(34,197,94,0.25);font-size:13px;line-height:1.65;color:var(--text)">
+                <div style="margin-bottom:8px"><b style="color:#4ade80">25.07. · Baden-Baden/Rastatt (Tag 1):</b> Anreise gestartet, alle Etappen durchgebucht. Ausflugspläne für Gengenbach, Triberg, Titisee, Feldberg mit Wetter-Checks und kostenlosen Parkplätzen vorbereitet.</div>
+                <div style="margin-bottom:8px"><b style="color:#4ade80">26.07. · Gengenbach/Freudenstadt (Tag 2):</b> MP-Wetter-Standort-Toggle im Hotel getestet und live gefixt. Duo 2 im Hotel-WLAN neu gekoppelt. Neuer Urlaubsfoto-Workflow gestartet (Ordner pro Ort/Tag — seither fester Standard für alle Reisen). Kniefreundlicher Feldberg/Schluchsee-Plan für Renis Knie erstellt.</div>
+                <div style="margin-bottom:8px"><b style="color:#4ade80">27.07. · Freudenstadt → Titisee (Tag 3):</b> Wetter-Check fürs Tagesprogramm (Triberg vormittags Schauer, danach klar).</div>
+                <div style="margin-bottom:8px"><b style="color:#4ade80">28.07. · Feldberg/Freiburg (Tag 4):</b> Wetter-Alternativen zum Baden durchgesprochen. Fotos sortiert (dabei unvollständig kopierte Dateien entdeckt und nachgeholt — seither Datei-für-Datei-Prüfung vorm Löschen). Kaiserstuhl-Tag geplant: Weinprobe Achkarren, Baggersee, Straußwirtschaft-Idee verworfen (öffnet erst abends).</div>
+                <div style="margin-bottom:8px"><b style="color:#4ade80">29.07. · Kaiserstuhl (Tag 5):</b> Weinprobe & Baggersee wie geplant — der gesuchte Strauß (vermutlich Straußenfarm) blieb unauffindbar, laut Chris vermutlich die falsche Jahreszeit.</div>
+                <div style="margin-bottom:8px"><b style="color:#4ade80">30.07. · Freiburg (Tag 6):</b> Freiburg-Tag lief nach Plan. Akku-Notfall am Studio unterwegs gelöst (Duo+Studio gleichzeitig laden überlastete das Netzteil). Konstanz-Tag fürs nächste Etappenziel vorbereitet.</div>
+                <div style="margin-bottom:8px"><b style="color:#4ade80">31.07. · Konstanz → Singen (Tag 7):</b> Konstanz-Tag lief laut Plan. Strafzettel wegen Falschparkens (25€) — Anhörbogen abwarten, <span style="opacity:0.85">noch offen, siehe Projekt-Board „Verwarnung Konstanz"</span>. Hotelwechsel für 02.–04.08. (Landhaus Köhle storniert → B&amp;B Ravensburg gebucht). Renis Galaxy-Watch-Kopplung unterwegs repariert.</div>
+                <div style="margin-bottom:8px"><b style="color:#4ade80">01.08. · Mainau/Meersburg → Pfullendorf (Tag 8):</b> Duo-WLAN-Pairing im Hotel „Gold" scheiterte (Client-Isolation im Hotel-WLAN) → USB-Kabel-Workaround etabliert, galt für den Rest der Reise. Plan für Überlingen/Friedrichshafen/Lindau vorbereitet.</div>
+                <div style="margin-bottom:8px"><b style="color:#4ade80">02.08. · Überlingen/Friedrichshafen/Lindau (Tag 9):</b> Tag lief nach dem am Vortag verschickten Plan, Check-in B&amp;B Ravensburg.</div>
+                <div style="margin-bottom:8px"><b style="color:#4ade80">03.08. · Bregenz (Tag 10):</b> Programm-Reihenfolge auf Chris' Wunsch angepasst (Pfänderbahn zuerst). Reise-Meilenstein: Schwarzwald/Bodensee-Teil abgeschlossen. MP-Ladeplaner unterwegs live ausgebaut (Kontaktnamen als Ziel, Kartenroute, Adress-Kopie fürs Auto-Navi) — dabei einen Orts-Anzeige-Bug gefunden und gefixt (zeigte „Marstetten" statt „Aitrach").</div>
+                <div><b style="color:#4ade80">04.08. · Weiterfahrt zu Steffi (Kaufering):</b> Zwischenstopp Aitrach zum Laden und Pfandflaschen entsorgen.</div>
+              </div>
+            </div>
+
+            <!-- ID.3-Hinweis: Fahrzeiten EV-gerecht -->
+            <div style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.35);border-radius:8px;padding:9px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px">⚡</span>
+              <div style="font-size:12px;color:#7dd3fc">Fahrzeiten gelten für den <b>VW ID.3</b> (~200 km pro Ladung im Sommer, mit Puffer; Erfahrung Norderstedt↔Ulm ~720 km: Sommer ~9 h, Winter ~10 h). Nur die lange Anreise braucht Ladestopps — alle Etappen vor Ort liegen unter einer Akkuladung. Heimweg Bregenz → Kaufering (~160 km) ohne Stopp machbar.</div>
+            </div>
+
+            <!-- Tagesübersicht: Wochentag + Fahrzeit-Summe pro Tag, wichtig an Tagen mit mehreren Stopps -->
+            <div style="margin-bottom:14px">
+              <div style="font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">📅 Tagesübersicht (Fahrzeiten real geprüft via Routing)</div>
+              <div id="sr-tagesuebersicht" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px"></div>
+            </div>
+
+            <!-- Hauptlayout -->
+            <div style="display:grid;grid-template-columns:240px 1fr;gap:16px;align-items:start">
+              <!-- Linke Spalte: Stationsliste -->
+              <div style="display:flex;flex-direction:column;gap:2px" id="sr-stationen">
+                <div style="font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">8 Stationen · 7 Tagesstopps</div>
+              </div>
+              <!-- Rechte Spalte: Karte + Detail -->
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <div id="sr-map" style="height:420px;border-radius:10px;overflow:hidden;border:1px solid var(--border)"></div>
+                <div id="sr-detail" style="display:none;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px"></div>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -3383,11 +3449,27 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 </div>
               </div>
             </div>
-            <div style="flex:1;min-width:180px">
+            <div style="flex:1 1 100%;min-width:280px">
               <label style="font-size:13px;color:var(--dim);display:block;margin-bottom:3px">Stil-Hinweis <span style="color:var(--accent);font-style:italic">(bei neuen/unbekannten Songs)</span></label>
-              <input id="suno-style-hint" type="text" placeholder="z.B. soft synth-pop, dreamy, piano, melodic"
-                style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
-                       color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
+              <div style="display:flex;gap:6px">
+                <input id="suno-style-hint" type="text" autocomplete="off" spellcheck="false" placeholder="z.B. soft synth-pop, dreamy, piano, melodic — oder rechts von Bolla vorschlagen lassen"
+                  style="flex:1;min-width:160px;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
+                         color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
+                <select id="suno-altersklasse" title="Zielgruppe für den KI-Stil-Vorschlag"
+                  style="background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);
+                         font-size:13px;padding:0 6px;font-family:inherit;flex-shrink:0">
+                  <option value="12-16">12–16</option>
+                  <option value="17-19">17–19</option>
+                  <option value="20-24" selected>20–24</option>
+                  <option value="breit">Breit/gemischt</option>
+                </select>
+                <button id="suno-style-suggest-btn" onclick="sunoSuggestStyle()" title="Bolla schlägt einen Stil mit Hitpotential für die gewählte Altersgruppe vor"
+                  style="background:linear-gradient(135deg,#7c3aed,#ff6699);border:none;border-radius:8px;color:white;
+                         font-size:13px;font-weight:700;padding:8px 12px;cursor:pointer;white-space:nowrap;
+                         box-shadow:0 2px 10px rgba(124,58,237,0.35);transition:opacity .2s;flex-shrink:0">
+                  ✨ Vorschlag
+                </button>
+              </div>
             </div>
             <div style="display:flex;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden">
               <button id="suno-lang-de" onclick="sunoSetLang('de')"
@@ -3466,11 +3548,13 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               <input id="suno-dl-title" type="text" placeholder="Suno-Song-Titel eingeben…"
                 style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;
                        color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
-              <div id="suno-engine-toggle" style="display:flex;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:12px;flex-shrink:0">
+              <div id="suno-engine-toggle" style="display:flex;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:12px;flex-shrink:0" title="Wenn Pollinations mehrfach Anatomie-Fehler liefert: MAI wählen">
                 <button onclick="sunoSetEngine('pollinations',this)" id="eng-poll"
                   style="padding:6px 10px;border:none;cursor:pointer;font-weight:700;background:#7c3aed;color:white;transition:all .2s">🌸 Poll</button>
                 <button onclick="sunoSetEngine('gemini',this)" id="eng-gem"
-                  style="padding:6px 10px;border:none;cursor:pointer;font-weight:600;background:transparent;color:var(--dim);transition:all .2s">✨ Gem</button>
+                  style="padding:6px 10px;border:none;border-left:1px solid var(--border);cursor:pointer;font-weight:600;background:transparent;color:var(--dim);transition:all .2s">✨ Gem</button>
+                <button onclick="sunoSetEngine('mai',this)" id="eng-mai"
+                  style="padding:6px 10px;border:none;border-left:1px solid var(--border);cursor:pointer;font-weight:600;background:transparent;color:var(--dim);transition:all .2s">🌟 MAI</button>
               </div>
               <button id="suno-dl-btn" onclick="sunoDownloadCover()"
                 style="background:linear-gradient(135deg,#7c3aed,#ff6699);border:none;border-radius:8px;color:white;
@@ -4535,6 +4619,7 @@ const PAGE_THEMES = {
   'gluecksrad': 'buehne',    // 🎡 Musik-Quiz
   'ki-buch':    'buch',      // 📖 AURORA
   'urlaub':     'reise',     // ✈️ Reiseplaner
+  'reise-sommerreise2026': 'reise', // 🏁 Sommerreise 2026 (archiviert)
   'wetter':     'wetter',    // 🌤️ Wetter
   'projekte':   'muenchen',  // 🏡 Immobilienkauf Bayern
   'ki-news':    'tech',      // 🧠 KI-News
@@ -4589,13 +4674,14 @@ function showPage(page) {
   if (page === 'ki-workshop') loadKiWorkshop();
   if (page === 'ki-news')    loadKiNews();
   if (page === 'ki-buch')    { loadKiBuch(); loadLektoratStatus(); }
-  if (page === 'urlaub')     { initUrlaub(); initSommerreise(); }
+  if (page === 'urlaub')     initUrlaub();
+  if (page === 'reise-sommerreise2026') initSommerreise();
   if (page === 'fotoanalyse') loadFotoAnalyse();
   if (page === 'bildgen')    bgInitPage();
   if (page === 'kiforum') kifLoad();
   if (page === 'archiv')  renderArchiv();
   // Wenn es ein Unter-Tab einer Gruppe ist → Gruppe aufklappen
-  const groups = ['projekte', 'schule', 'system'];
+  const groups = ['projekte', 'schule', 'system', 'reise'];
   for (const g of groups) {
     const groupItems = document.getElementById('nav-group-items-' + g);
     if (groupItems && groupItems.querySelector(`[data-page="${page}"]`)) {
@@ -4964,6 +5050,7 @@ async function initNavDrag() {
     'clipboard': 'nav-section-items-arbeit',
     'projekte': 'nav-section-items-arbeit',
     'urlaub': 'nav-section-items-arbeit',
+    'reise-sommerreise2026': 'nav-section-items-arbeit',
     'ki-workshop': 'nav-section-items-arbeit',
     'board': 'nav-section-items-familie',
     'robin': 'nav-section-items-familie',
@@ -5228,6 +5315,23 @@ async function initNavDrag() {
   });
 }
 initNavDrag();
+
+// ===== NAV-GRUPPEN-ZÄHLER LIVE HALTEN =====
+// Die Zahl neben einer Gruppe (z.B. "Lehrer 4") stand bisher fest im HTML und lief nach
+// jedem Drag&Drop aus dem Ruder (z.B. "Lehrer 4" bei nur noch 3 Unterpunkten, weil "Übersicht"
+// rausgezogen wurde). Rein additiv per MutationObserver — initNavDrag() bleibt unangetastet.
+function updateNavGroupCounts() {
+  document.querySelectorAll('.nav-group-header').forEach(header => {
+    const suffix = header.id.replace('nav-group-header-', '');
+    const items = document.getElementById('nav-group-items-' + suffix);
+    const countEl = header.querySelector('.nav-group-count');
+    if (items && countEl) countEl.textContent = items.querySelectorAll(':scope > .nav-item').length;
+  });
+}
+updateNavGroupCounts();
+document.querySelectorAll('.nav-group-items').forEach(el => {
+  new MutationObserver(updateNavGroupCounts).observe(el, {childList: true});
+});
 
 // ===== BILDGEN =====
 // ═══ BILDGEN STUDIO (neu) ═══════════════════════════════════════════════════
@@ -15037,6 +15141,28 @@ function sunoKontextChanged() {
   const isDefault = val === SUNO_DEFAULT_KONTEXT;
   document.getElementById('suno-school-fields').style.display = isDefault ? 'grid' : 'none';
 }
+async function sunoSuggestStyle() {
+  const kontext = document.getElementById('suno-kontext').value.trim();
+  const altersklasse = document.getElementById('suno-altersklasse').value;
+  const btn = document.getElementById('suno-style-suggest-btn');
+  const input = document.getElementById('suno-style-hint');
+  const origLabel = btn.textContent;
+  btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = '⏳ …';
+  try {
+    const res = await fetch(API + '/api/suno/style-suggest', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({kontext, sprache: sunoLang, altersklasse})
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    input.value = data.style_hint || '';
+  } catch(e) {
+    alert('❌ Stil-Vorschlag fehlgeschlagen: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.style.opacity = '1'; btn.textContent = origLabel;
+  }
+}
 function sunoSetLang(lang) {
   sunoLang = lang;
   document.getElementById('suno-lang-de').style.background = lang === 'de' ? 'var(--accent)' : 'transparent';
@@ -15413,17 +15539,24 @@ function sunoSetEngine(engine, btn) {
   document.getElementById('eng-poll').style.color = engine === 'pollinations' ? 'white' : 'var(--dim)';
   document.getElementById('eng-gem').style.background = engine === 'gemini' ? '#4285f4' : 'transparent';
   document.getElementById('eng-gem').style.color = engine === 'gemini' ? 'white' : 'var(--dim)';
+  document.getElementById('eng-mai').style.background = engine === 'mai' ? '#f59e0b' : 'transparent';
+  document.getElementById('eng-mai').style.color = engine === 'mai' ? 'white' : 'var(--dim)';
+}
+
+function _sunoEngineLabel() {
+  return _sunoEngine === 'gemini' ? '✨ Gemini' : _sunoEngine === 'mai' ? '🌟 MAI-Image' : '🌸 Pollinations';
 }
 
 async function sunoDownloadCover() {
   const title = document.getElementById('suno-dl-title').value.trim();
   if (!title) { document.getElementById('suno-dl-status').textContent = '⚠️ Bitte Song-Titel eingeben'; return; }
   if (_sunoEngine === 'gemini' && !confirm('✨ Gemini Cover kostet ~€0,04 (Nano Banana).\n\nFortfahren?')) return;
+  if (_sunoEngine === 'mai' && !confirm('🌟 MAI-Image-2.5 Cover kostet ~€0,10.\n\nFortfahren?')) return;
   const btn = document.getElementById('suno-dl-btn');
   const status = document.getElementById('suno-dl-status');
   btn.disabled = true; btn.style.opacity = '0.5';
   status.style.color = 'var(--dim)';
-  status.textContent = `⏳ Suche Song in Suno-Feed… (${_sunoEngine === 'gemini' ? '✨ Gemini' : '🌸 Pollinations'})`;
+  status.textContent = `⏳ Suche Song in Suno-Feed… (${_sunoEngineLabel()})`;
   try {
     const res = await fetch(API + '/api/suno/download-cover', {
       method: 'POST',
@@ -15462,6 +15595,8 @@ async function sunoPublish() {
   const genre  = document.getElementById('suno-pub-genre').value.trim() || 'Pop';
   const lyrics = document.getElementById('suno-pub-lyrics').value;
   const fetch_ = document.getElementById('suno-pub-fetch').checked;
+  if (fetch_ && _sunoEngine === 'gemini' && !confirm('✨ Gemini Cover kostet ~€0,04 (Nano Banana).\n\nFortfahren?')) return;
+  if (fetch_ && _sunoEngine === 'mai' && !confirm('🌟 MAI-Image-2.5 Cover kostet ~€0,10.\n\nFortfahren?')) return;
   const btn = document.getElementById('suno-pub-btn');
   btn.disabled = true; btn.style.opacity = '0.5';
   status.style.color = 'var(--dim)';
