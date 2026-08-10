@@ -2,68 +2,68 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Mission Control</title>
+<title>Mission Control — Kladde &amp; Tinte</title>
 <style>
   :root{
-    --paper:#f3e6c8;
-    --paper-light:#faf2de;
-    --ink:#3a2e22;
-    --ink-soft:#6b5a45;
-    --rust:#b5482f;
-    --teal:#3d7a6e;
-    --mustard:#d69a2d;
-    --tape:#e9d18f;
+    --paper:#ece0c4;
+    --paper-dark:#e2d3ad;
+    --ink:#4a3826;
+    --ink-soft:#6b5642;
+    --terracotta:#b5502f;
+    --moss:#5c7a4f;
+    --mustard:#c99a2e;
+    --sky:#4d7c8a;
+    --line:#c7b389;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;height:100%;}
   body{
-    font-family:'Segoe Print','Bradley Hand','Comic Sans MS',cursive,sans-serif;
+    font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive,sans-serif;
+    background:
+      radial-gradient(circle at 20% 10%, rgba(255,255,255,0.25), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(0,0,0,0.04), transparent 45%),
+      repeating-linear-gradient(0deg, rgba(90,70,40,0.03) 0px, rgba(90,70,40,0.03) 1px, transparent 1px, transparent 26px),
+      var(--paper);
     color:var(--ink);
-    background-color:var(--paper);
-    background-image:
-      repeating-linear-gradient(transparent 0 27px, rgba(58,46,34,0.07) 27px 28px),
-      radial-gradient(circle at 8% 12%, rgba(255,255,255,0.5), transparent 40%),
-      radial-gradient(circle at 92% 88%, rgba(181,72,47,0.06), transparent 45%),
-      radial-gradient(circle at 60% 5%, rgba(58,46,34,0.05), transparent 30%);
-    min-height:100vh;
     display:flex;
-    font-size:16px;
+    min-height:100vh;
   }
 
-  /* ---- Sidebar ---- */
+  svg.defs{position:absolute;width:0;height:0;}
+
+  /* ===== Sidebar ===== */
   .sidebar{
-    width:230px;
-    min-height:100vh;
-    background:var(--paper-light);
-    border-right:2px dashed var(--ink-soft);
-    padding:26px 16px;
+    width:220px;
+    flex-shrink:0;
+    background:var(--paper-dark);
+    border-right:3px solid var(--ink-soft);
+    filter:url(#wobble);
+    padding:24px 14px;
     position:relative;
-    transform:rotate(-0.4deg);
-    box-shadow:3px 0 10px rgba(58,46,34,0.08);
   }
   .sidebar::before{
     content:"";
     position:absolute;
-    top:0;left:14px;right:14px;
-    height:26px;
-    background:var(--tape);
-    opacity:0.65;
-    transform:rotate(-2deg);
-    box-shadow:0 1px 2px rgba(0,0,0,0.15);
+    top:0; right:-3px; bottom:0;
+    width:10px;
+    background:repeating-linear-gradient(180deg, transparent 0 10px, rgba(74,56,38,0.15) 10px 12px);
   }
   .brand{
-    text-align:center;
-    margin:22px 0 30px;
+    font-family:"Segoe Print","Bradley Hand",cursive;
+    font-size:26px;
+    font-weight:bold;
+    color:var(--terracotta);
+    margin:0 0 4px 6px;
+    transform:rotate(-2deg);
+    display:inline-block;
   }
-  .brand .paw{font-size:26px;display:block;transform:rotate(-8deg);}
-  .brand h1{
-    font-size:22px;
-    margin:4px 0 0;
-    color:var(--ink);
-    text-decoration:underline wavy var(--rust) 2px;
+  .brand-sub{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 26px 8px;
+    font-family:Georgia, serif;
+    font-style:italic;
   }
-  .brand span{font-size:12px;color:var(--ink-soft);}
-
   nav ul{list-style:none;margin:0;padding:0;}
   nav li{margin-bottom:6px;}
   nav a{
@@ -74,286 +74,282 @@
     color:var(--ink);
     font-size:16px;
     padding:9px 12px;
-    border-radius:255px 15px 225px 15px/15px 225px 15px 255px;
-    position:relative;
+    border-radius:10px 14px 12px 16px/14px 10px 16px 12px;
     transition:transform .15s ease;
   }
-  nav a .ic{font-size:18px;width:22px;text-align:center;}
-  nav a:hover{transform:translateX(3px) rotate(-0.5deg);}
+  nav a .ic{font-size:18px;}
+  nav a:hover{transform:rotate(-1deg) translateX(2px);}
   nav li.active a{
-    background:linear-gradient(100deg, transparent 0%, var(--mustard) 8%, var(--mustard) 90%, transparent 100%);
-    opacity:0.9;
+    background:#fff8e6;
+    border:2px solid var(--ink-soft);
+    filter:url(#wobble2);
+    box-shadow:2px 2px 0 rgba(74,56,38,0.15);
     font-weight:bold;
-    box-shadow:1px 1px 0 var(--ink-soft);
+    color:var(--terracotta);
   }
-
   .sidebar-footer{
     position:absolute;
-    bottom:20px;left:16px;right:16px;
-    font-size:11px;
+    bottom:18px;
+    left:20px;
+    right:20px;
+    font-size:12px;
     color:var(--ink-soft);
-    text-align:center;
-    border-top:1px dashed var(--ink-soft);
+    border-top:2px dashed var(--line);
     padding-top:10px;
   }
 
-  /* ---- Main ---- */
-  .main{
-    flex:1;
-    padding:26px 34px 40px;
-    max-width:1100px;
-  }
+  /* ===== Main column ===== */
+  .main-col{flex:1; display:flex; flex-direction:column; min-width:0;}
 
+  /* ===== Topbar ===== */
   .topbar{
     display:flex;
+    align-items:center;
     justify-content:space-between;
-    align-items:flex-end;
-    border-bottom:3px solid var(--ink);
-    padding-bottom:14px;
-    margin-bottom:28px;
-    position:relative;
+    padding:20px 32px;
+    border-bottom:3px solid var(--ink-soft);
+    filter:url(#wobble3);
+    background:linear-gradient(180deg, rgba(255,255,255,0.35), transparent);
   }
-  .topbar h2{
-    font-size:34px;
+  .page-title{
+    font-size:30px;
     margin:0;
+    color:var(--ink);
     position:relative;
     display:inline-block;
   }
-  .topbar h2::after{
+  .page-title::after{
     content:"";
     position:absolute;
-    left:-4px;bottom:2px;
-    width:108%;height:10px;
+    left:-4px; right:-6px; bottom:-4px;
+    height:10px;
     background:var(--mustard);
-    opacity:0.55;
+    opacity:.45;
     z-index:-1;
     transform:rotate(-1deg);
+    border-radius:3px 6px 4px 8px;
   }
-  .topbar .sub{font-size:13px;color:var(--ink-soft);margin-top:2px;}
+  .clock-badge{
+    font-family:Georgia, serif;
+    background:#fff8e6;
+    border:2px solid var(--ink-soft);
+    filter:url(#wobble2);
+    padding:8px 18px;
+    border-radius:16px 10px 18px 12px/10px 16px 12px 18px;
+    font-size:22px;
+    letter-spacing:1px;
+    box-shadow:2px 3px 0 rgba(74,56,38,0.18);
+  }
+  .clock-badge .lbl{
+    display:block;
+    font-family:"Segoe Print",cursive;
+    font-size:11px;
+    color:var(--ink-soft);
+    text-align:center;
+  }
 
-  .clock{
-    text-align:right;
-    font-family:'Segoe Print','Comic Sans MS',cursive;
-  }
-  .clock .time{
-    font-size:38px;
-    font-weight:bold;
-    color:var(--rust);
-    position:relative;
-  }
-  .clock .time::before{
-    content:"⏰";
-    font-size:20px;
-    margin-right:8px;
-  }
-  .clock .date{font-size:13px;color:var(--ink-soft);}
-
-  /* ---- Grid ---- */
+  /* ===== Grid ===== */
   .grid{
+    padding:28px 32px;
     display:grid;
     grid-template-columns:repeat(auto-fit, minmax(230px,1fr));
     gap:26px;
+    align-content:start;
   }
 
   .card{
-    background:var(--paper-light);
-    border:2px solid var(--ink);
-    border-radius:255px 15px 225px 15px/15px 225px 15px 255px;
-    padding:20px 20px 18px;
     position:relative;
-    box-shadow:4px 5px 0 rgba(58,46,34,0.18);
-    transition:transform .15s ease, box-shadow .15s ease;
+    background:#fbf3de;
+    border:2.5px solid var(--ink-soft);
+    filter:url(#wobble2);
+    border-radius:14px 10px 16px 12px/10px 16px 12px 14px;
+    padding:20px 20px 18px;
+    box-shadow:4px 5px 0 rgba(74,56,38,0.15);
   }
-  .card:nth-child(1){transform:rotate(-1.2deg);}
-  .card:nth-child(2){transform:rotate(0.8deg);}
-  .card:nth-child(3){transform:rotate(-0.6deg);}
-  .card:nth-child(4){transform:rotate(1.1deg);}
-  .card:hover{
-    transform:rotate(0deg) translateY(-3px);
-    box-shadow:6px 8px 0 rgba(58,46,34,0.22);
-  }
-  .card .pin{
+  .card:nth-child(odd){transform:rotate(-1.1deg);}
+  .card:nth-child(even){transform:rotate(1deg);}
+
+  .tape{
     position:absolute;
-    top:-10px;left:50%;
-    transform:translateX(-50%);
-    font-size:20px;
-    filter:drop-shadow(1px 2px 1px rgba(0,0,0,0.3));
+    top:-14px;
+    left:50%;
+    transform:translateX(-50%) rotate(-3deg);
+    width:70px;
+    height:26px;
+    background:rgba(201,154,46,0.55);
+    border:1px solid rgba(74,56,38,0.2);
+    box-shadow:0 1px 2px rgba(0,0,0,0.15);
   }
-  .card h3{
-    margin:4px 0 14px;
+
+  .card h2{
+    margin:6px 0 14px;
     font-size:17px;
+    color:var(--ink);
     display:flex;
     align-items:center;
     gap:8px;
   }
-  .card h3 .emoji{font-size:20px;}
+  .card h2 .ic{font-size:20px;}
 
-  .gauge-wrap{display:flex;align-items:center;gap:16px;}
-  .gauge{width:90px;height:90px;}
-  .gauge-val{font-size:30px;font-weight:bold;}
-  .gauge-label{font-size:12px;color:var(--ink-soft);}
+  .metric{
+    font-family:Georgia, serif;
+    font-size:38px;
+    font-weight:bold;
+    margin:0;
+  }
+  .metric.terracotta{color:var(--terracotta);}
+  .metric.moss{color:var(--moss);}
+  .metric.sky{color:var(--sky);}
+  .metric.mustard{color:var(--mustard);}
 
-  .mail-list{list-style:none;margin:0;padding:0;font-size:13px;}
+  .sub{
+    font-family:Georgia, serif;
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:4px 0 0;
+  }
+
+  .bar-track{
+    margin-top:14px;
+    height:14px;
+    background:#e6d8b8;
+    border:1.5px solid var(--ink-soft);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .bar-fill{
+    height:100%;
+    border-radius:8px;
+  }
+
+  .mail-list{list-style:none; margin:0; padding:0; font-family:Georgia, serif; font-size:14px;}
   .mail-list li{
-    padding:6px 0;
-    border-bottom:1px dashed rgba(58,46,34,0.3);
+    padding:7px 0;
+    border-bottom:1px dashed var(--line);
     display:flex;
     justify-content:space-between;
     gap:8px;
   }
   .mail-list li:last-child{border-bottom:none;}
-  .mail-list .who{font-weight:bold;}
-  .mail-count{
-    display:inline-block;
-    background:var(--rust);
-    color:#fff8ec;
-    border-radius:50%;
-    width:26px;height:26px;
-    line-height:26px;
-    text-align:center;
-    font-size:14px;
-    font-weight:bold;
-    transform:rotate(-6deg);
+  .mail-list .from{color:var(--ink); font-weight:bold;}
+  .mail-list .time{color:var(--ink-soft); font-size:12px; white-space:nowrap;}
+  .mail-list .subj{display:block; font-size:13px; color:var(--ink-soft); font-weight:normal;}
+
+  .weather-row{display:flex; align-items:center; gap:16px;}
+  .weather-emoji{font-size:46px;}
+  .weather-city{font-family:Georgia, serif; font-size:14px; color:var(--ink-soft); margin:2px 0 0;}
+
+  .pin{
+    position:absolute;
+    top:-10px;
+    right:16px;
+    font-size:22px;
+    transform:rotate(15deg);
+    filter:drop-shadow(1px 2px 1px rgba(0,0,0,0.3));
   }
 
-  .weather-main{display:flex;align-items:center;gap:14px;}
-  .weather-emoji{font-size:44px;}
-  .weather-temp{font-size:32px;font-weight:bold;color:var(--teal);}
-  .weather-place{font-size:13px;color:var(--ink-soft);}
-  .weather-details{
-    margin-top:12px;
-    font-size:12px;
-    color:var(--ink-soft);
-    display:flex;
-    gap:16px;
-  }
-
-  .doodle-underline{
-    border:none;
-    border-top:2px dashed var(--ink-soft);
-    margin:14px 0;
-  }
-
-  footer.note{
-    margin-top:32px;
-    font-size:12px;
-    color:var(--ink-soft);
-    text-align:center;
-  }
-
-  @media (max-width:760px){
-    body{flex-direction:column;}
-    .sidebar{width:100%;min-height:auto;}
-    .main{max-width:100%;}
-  }
+  ::selection{background:var(--mustard); color:#fff;}
 </style>
 </head>
 <body>
 
-  <aside class="sidebar">
-    <div class="brand">
-      <span class="paw">🐾</span>
-      <h1>Mission<br>Control</h1>
-      <span>Bollas Kommandozentrale</span>
+<svg class="defs">
+  <filter id="wobble">
+    <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="6"/>
+  </filter>
+  <filter id="wobble2">
+    <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="4"/>
+  </filter>
+  <filter id="wobble3">
+    <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="1" seed="11" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="5"/>
+  </filter>
+</svg>
+
+<div class="sidebar">
+  <div class="brand">🐾 Bolla</div>
+  <p class="brand-sub">Mission Control</p>
+  <nav>
+    <ul>
+      <li class="active"><a href="#"><span class="ic">🏠</span> Dashboard</a></li>
+      <li><a href="#"><span class="ic">🐾</span> Bolla</a></li>
+      <li><a href="#"><span class="ic">🎓</span> Schule</a></li>
+      <li><a href="#"><span class="ic">📅</span> Kalender</a></li>
+      <li><a href="#"><span class="ic">📧</span> E-Mail</a></li>
+      <li><a href="#"><span class="ic">☀️</span> Wetter</a></li>
+      <li><a href="#"><span class="ic">🖥️</span> System Info</a></li>
+    </ul>
+  </nav>
+  <div class="sidebar-footer">
+    Norderstedt · 08.08.2026<br>
+    alles im grünen Bereich ✓
+  </div>
+</div>
+
+<div class="main-col">
+  <div class="topbar">
+    <h1 class="page-title">Dashboard</h1>
+    <div class="clock-badge">
+      <span class="lbl">Ortszeit</span>
+      20:14
     </div>
-    <nav>
-      <ul>
-        <li class="active"><a href="#"><span class="ic">🏠</span> Dashboard</a></li>
-        <li><a href="#"><span class="ic">🐶</span> Bolla</a></li>
-        <li><a href="#"><span class="ic">🎓</span> Schule</a></li>
-        <li><a href="#"><span class="ic">🗓️</span> Kalender</a></li>
-        <li><a href="#"><span class="ic">✉️</span> E-Mail</a></li>
-        <li><a href="#"><span class="ic">⛅</span> Wetter</a></li>
-        <li><a href="#"><span class="ic">🖥️</span> System Info</a></li>
+  </div>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="tape"></div>
+      <h2><span class="ic">🖥️</span> Arbeitsspeicher</h2>
+      <p class="metric moss">34%</p>
+      <p class="sub">5,4 GB von 16 GB belegt</p>
+      <div class="bar-track"><div class="bar-fill" style="width:34%; background:var(--moss);"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="tape"></div>
+      <h2><span class="ic">⚙️</span> CPU-Auslastung</h2>
+      <p class="metric sky">12%</p>
+      <p class="sub">ruhig, kaum was los</p>
+      <div class="bar-track"><div class="bar-fill" style="width:12%; background:var(--sky);"></div></div>
+    </div>
+
+    <div class="card">
+      <span class="pin">📌</span>
+      <h2><span class="ic">📧</span> Neue Mails</h2>
+      <p class="metric terracotta" style="font-size:30px;">3 ungelesen</p>
+      <ul class="mail-list">
+        <li>
+          <span><span class="from">Robin Mandel</span><span class="subj">Famulatur Tansania – letzte Fragen</span></span>
+          <span class="time">19:02</span>
+        </li>
+        <li>
+          <span><span class="from">itslearning</span><span class="subj">Neue Einreichung Klasse 7b</span></span>
+          <span class="time">17:41</span>
+        </li>
+        <li>
+          <span><span class="from">Riverty Inkasso</span><span class="subj">Fristerinnerung 14.08.</span></span>
+          <span class="time">14:18</span>
+        </li>
       </ul>
-    </nav>
-    <div class="sidebar-footer">v1.0 · handgeschrieben mit ❤</div>
-  </aside>
-
-  <main class="main">
-    <div class="topbar">
-      <div>
-        <h2>Dashboard</h2>
-        <div class="sub">Alles auf einen Blick, Chris ✎</div>
-      </div>
-      <div class="clock">
-        <div class="time">20:14</div>
-        <div class="date">Freitag, 7. August 2026</div>
-      </div>
     </div>
 
-    <div class="grid">
-
-      <div class="card">
-        <span class="pin">📌</span>
-        <h3><span class="emoji">💾</span> Arbeitsspeicher</h3>
-        <div class="gauge-wrap">
-          <svg class="gauge" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="40" fill="none" stroke="#e3d3ac" stroke-width="10"/>
-            <circle cx="50" cy="50" r="40" fill="none" stroke="#d69a2d" stroke-width="9"
-              stroke-dasharray="85.4 165.8" stroke-linecap="round"
-              transform="rotate(-90 50 50)"/>
-            <circle cx="50" cy="50" r="40" fill="none" stroke="#b5482f" stroke-width="2" opacity="0.5"
-              stroke-dasharray="83 168" stroke-linecap="round"
-              transform="rotate(-88 50 50)"/>
-          </svg>
-          <div>
-            <div class="gauge-val">34%</div>
-            <div class="gauge-label">5,4 GB / 16 GB belegt</div>
-          </div>
+    <div class="card">
+      <div class="tape"></div>
+      <h2><span class="ic">☀️</span> Wetter</h2>
+      <div class="weather-row">
+        <span class="weather-emoji">⛅</span>
+        <div>
+          <p class="metric mustard" style="font-size:30px;">18°C</p>
+          <p class="weather-city">Hamburg · leicht bewölkt</p>
         </div>
       </div>
-
-      <div class="card">
-        <span class="pin">📌</span>
-        <h3><span class="emoji">🖥️</span> Prozessor</h3>
-        <div class="gauge-wrap">
-          <svg class="gauge" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="40" fill="none" stroke="#e3d3ac" stroke-width="10"/>
-            <circle cx="50" cy="50" r="40" fill="none" stroke="#3d7a6e" stroke-width="9"
-              stroke-dasharray="30.1 221.1" stroke-linecap="round"
-              transform="rotate(-90 50 50)"/>
-            <circle cx="50" cy="50" r="40" fill="none" stroke="#245c52" stroke-width="2" opacity="0.5"
-              stroke-dasharray="29 222" stroke-linecap="round"
-              transform="rotate(-88 50 50)"/>
-          </svg>
-          <div>
-            <div class="gauge-val">12%</div>
-            <div class="gauge-label">Last · 42°C</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <span class="pin">📌</span>
-        <h3><span class="emoji">✉️</span> Neue Mails <span class="mail-count">3</span></h3>
-        <ul class="mail-list">
-          <li><span class="who">Reni</span><span>Terminvorschlag Zahnarzt</span></li>
-          <li><span class="who">Steffi</span><span>Fotos vom Wochenende</span></li>
-          <li><span class="who">Amazon</span><span>Versandbestätigung</span></li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <span class="pin">📌</span>
-        <h3><span class="emoji">⛅</span> Wetter</h3>
-        <div class="weather-main">
-          <span class="weather-emoji">⛅</span>
-          <div>
-            <div class="weather-temp">18°C</div>
-            <div class="weather-place">Hamburg</div>
-          </div>
-        </div>
-        <div class="weather-details">
-          <span>💨 14 km/h</span>
-          <span>💧 Regen 20%</span>
-        </div>
-      </div>
-
+      <p class="sub" style="margin-top:12px;">Wind 14 km/h · Regen 20%</p>
     </div>
 
-    <footer class="note">— gezeichnet und gepflegt von Bolla, deinem digitalen Notizbuch 🐾</footer>
-  </main>
+  </div>
+</div>
 
 </body>
 </html>
