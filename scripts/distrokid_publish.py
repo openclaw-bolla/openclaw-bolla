@@ -33,6 +33,78 @@ CLEANUP   = os.path.join(os.path.dirname(os.path.abspath(__file__)), "distrokid_
 ARTIST      = "bollawave"
 ARTIST_SLUG = "bollawave"
 SONGWRITER  = "Christoph Mandel"
+CLAUDE_BIN  = os.path.expanduser("~/.local/bin/claude")
+
+# Echte DistroKid-Dropdown-Genres (Stand 11.08.2026, per Recherche — DistroKid hat KEIN
+# "Hyperpop"/"Phonk"/"Drill"/"Amapiano" etc. als eigene Einträge, nur diese groben Kategorien).
+DISTROKID_GENRES = [
+    "Afrobeat", "Afropop", "Alternative", "Big Band", "Blues", "Children's Music",
+    "Christian/Gospel", "Classical", "Comedy", "Contemporary Latin", "Country", "Dance",
+    "Electronic", "Electronica / Downtempo", "Fitness & Workout", "Folk", "French Pop",
+    "German Folk", "German Pop", "Hip Hop/Rap", "Hip-Hop / R&B", "Holiday", "J-Pop", "Jazz",
+    "K-Pop", "Latin", "Latin House", "Latin Jazz", "Latin Urban", "Maskandi", "Metal",
+    "New Age", "Pop", "Pop in Spanish", "Punk", "R&B/Soul", "Reggae", "Rock",
+    "Rock en Español", "Singer/Songwriter", "Soundtrack", "Spoken Word", "Techno", "Vocal",
+]
+
+
+def resolve_distrokid_genre(user_genre, title):
+    """Mappt einen freien Genre-Text (z.B. von Suno-Stilbeschreibungen wie "Hyperpop"/"Drift-Phonk",
+    die es bei DistroKid nicht gibt) auf den nächstliegenden ECHTEN DistroKid-Dropdown-Wert.
+    Gibt (resolved, original_falls_abweichend) zurück."""
+    ug = (user_genre or "").strip()
+    if not ug:
+        return "Pop", None
+    for g in DISTROKID_GENRES:
+        if g.lower() == ug.lower():
+            return g, None
+    prompt = (
+        f"Der Nutzer hat für den Song \"{title}\" das Genre \"{ug}\" eingegeben — das ist KEIN "
+        f"gültiger DistroKid-Dropdown-Wert. Wähle aus DIESER Liste exakt EINEN Eintrag, der am "
+        f"besten zum eingegebenen Stil passt:\n{', '.join(DISTROKID_GENRES)}\n"
+        f"Antworte NUR mit dem exakten Listen-Eintrag, sonst nichts.")
+    try:
+        r = subprocess.run([CLAUDE_BIN, "-p", "--model", "claude-sonnet-5", "--output-format", "json", prompt],
+                            capture_output=True, text=True, timeout=30)
+        out = json.loads(r.stdout).get("result", "").strip() if r.returncode == 0 else ""
+        for g in DISTROKID_GENRES:
+            if g.lower() == out.lower():
+                return g, ug
+    except Exception:
+        pass
+    return "Pop", ug
+
+
+# DistroKid zeigt bei Primärgenre "Electronic" zusätzlich ein Subgenre-Dropdown (Chris-Wunsch 11.08.2026:
+# das immer mit vorschlagen). Andere Primärgenres haben KEIN eigenes Subgenre-Feld bei DistroKid.
+ELECTRONIC_SUBGENRES = [
+    "Big Room", "Breaks", "Chill Out", "Deep House", "Drum & Bass", "Dubstep", "Electro House",
+    "Electronica / Downtempo", "Funk / Soul / Disco", "Glitch Hop", "Hard Dance",
+    "Hardcore / Hard Techno", "Hip-Hop / R&B", "House", "Indie Dance / Nu Disco",
+    "Minimal / Deep Tech", "Progressive House", "Psy-Trance", "Reggae / Dancehall / Dub",
+    "Tech House", "Techno", "Trance",
+]
+
+
+def resolve_electronic_subgenre(user_genre, title):
+    """Nur relevant wenn das Primärgenre "Electronic" ist — DistroKid fragt dann zusätzlich ein
+    Subgenre ab. Wählt aus ELECTRONIC_SUBGENRES das am besten passende."""
+    ug = (user_genre or "").strip()
+    prompt = (
+        f"Der Song \"{title}\" wurde als Suno-Stil/Genre-Text \"{ug or 'Electronic'}\" beschrieben und "
+        f"bekommt bei DistroKid das Primärgenre \"Electronic\" — dafür ist ZUSÄTZLICH ein Subgenre nötig. "
+        f"Wähle aus DIESER Liste exakt EINEN Eintrag, der am besten passt:\n{', '.join(ELECTRONIC_SUBGENRES)}\n"
+        f"Antworte NUR mit dem exakten Listen-Eintrag, sonst nichts.")
+    try:
+        r = subprocess.run([CLAUDE_BIN, "-p", "--model", "claude-sonnet-5", "--output-format", "json", prompt],
+                            capture_output=True, text=True, timeout=30)
+        out = json.loads(r.stdout).get("result", "").strip() if r.returncode == 0 else ""
+        for g in ELECTRONIC_SUBGENRES:
+            if g.lower() == out.lower():
+                return g
+    except Exception:
+        pass
+    return "House"
 
 # Lyrics-Scan: was NICHT im veröffentlichten Text stehen darf (Schul-/Personen-/Künstlerbezug)
 SCAN_PATTERNS = {
@@ -67,8 +139,11 @@ def lyrics_scan(lyrics):
     return warns
 
 
-def write_checklist(path, title, sprache, genre, link, warns):
+def write_checklist(path, title, sprache, genre, link, warns, genre_original=None, subgenre=None):
     lang = "Deutsch" if sprache == "de" else "Englisch"
+    genre_line = f"  [ ] Primäres Genre    : {genre}"
+    if genre_original:
+        genre_line += f"  (dein Text „{genre_original}\" gibt's bei DistroKid nicht als Dropdown-Wert — nächstliegender echter Eintrag)"
     lines = [
         f"DISTROKID-UPLOAD — {title}",
         "=" * 48,
@@ -80,7 +155,11 @@ def write_checklist(path, title, sprache, genre, link, warns):
         f"  [ ] Künstler          : {ARTIST}",
         "  [ ] Songtitel exakt — KEIN Leerzeichen vor Apostroph",
         f"  [ ] Sprache           : {lang}  ⚠ (English bei EN-Song / German bei DE-Song)",
-        f"  [ ] Primäres Genre    : {genre}",
+        genre_line,
+    ]
+    if subgenre:
+        lines.append(f"  [ ] Subgenre (Electronic) : {subgenre}  — DistroKid fragt das nur bei Primärgenre \"Electronic\" extra ab")
+    lines += [
         "  [ ] Zweites Genre     : Singer/Songwriter (oder Dance)",
         "  [ ] Stadt             : Norderstedt (NICHT Hamburg!)",
         "  [ ] Explicit          : Nein (bollawave = Feel-Good-Profil — Lyrics trotzdem gegenchecken)",
@@ -177,8 +256,16 @@ def build(title, sprache="de", genre="Pop", lyrics="", do_cleanup=True):
 
     warns = lyrics_scan(lyrics)
     link = f"https://distrokid.com/hyperfollow/{ARTIST_SLUG}/{slug(title)}"
+    resolved_genre, genre_original = resolve_distrokid_genre(genre, title)
+    if genre_original:
+        result["warnings"].append(
+            f"ℹ️ Genre „{genre_original}\" gibt's bei DistroKid nicht — Checkliste nutzt stattdessen „{resolved_genre}\".")
+    subgenre = None
+    if resolved_genre == "Electronic":
+        subgenre = resolve_electronic_subgenre(genre_original or genre, title)
+        result["warnings"].append(f"ℹ️ Electronic-Subgenre-Vorschlag: „{subgenre}\".")
     write_checklist(os.path.join(dest, "DistroKid-Checkliste.txt"),
-                    title, sprache, genre, link, warns)
+                    title, sprache, resolved_genre, link, warns, genre_original, subgenre)
     result["files"].append("DistroKid-Checkliste.txt")
     result["warnings"].extend(warns)
 

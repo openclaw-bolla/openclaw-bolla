@@ -518,13 +518,57 @@ def interactive_claude_running():
     return False
 
 
-def ask_claude(message, sender_name, file_path=None, media_label=None):
+SESSION_STATE_FILE = os.path.expanduser("~/workspace/data/telegram_claude_sessions.json")
+
+
+def _load_sessions():
+    if not os.path.isfile(SESSION_STATE_FILE):
+        return {}
+    try:
+        with open(SESSION_STATE_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _save_session(chat_id, session_id):
+    if not session_id:
+        return
+    os.makedirs(os.path.dirname(SESSION_STATE_FILE), exist_ok=True)
+    sessions = _load_sessions()
+    sessions[str(chat_id)] = session_id
+    with open(SESSION_STATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(sessions, f)
+
+
+def _run_claude(cmd, timeout):
+    """Führt claude -p aus, gibt (data_dict, error_str) zurück."""
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout,
+            cwd=os.path.expanduser("~")
+        )
+        if result.returncode != 0:
+            return None, result.stderr[:200]
+        return json.loads(result.stdout), None
+    except subprocess.TimeoutExpired:
+        return None, "timeout"
+    except Exception as e:
+        return None, str(e)
+
+
+def ask_claude(message, sender_name, chat_id, file_path=None, media_label=None):
     """Fragt Claude Code und gibt die Antwort zurück.
 
     Hinweis: 'claude -p' läuft problemlos PARALLEL zu einer interaktiven
     Terminal-Session (gemessen: ~3s parallel). Daher KEIN Session-Check mehr —
     der senkte früher nur unnötig den Timeout und produzierte irreführende
     'aktive Session'-Fehlmeldungen. Funktioniert jetzt wie der MC-Bolla-Chat.
+
+    Setzt den Gesprächsfaden pro Chat fort (--resume), wie im MP-Chat: die
+    session_id aus der letzten Antwort wird pro chat_id gespeichert und beim
+    nächsten Mal wieder übergeben. Ist die alte Session abgelaufen/ungültig,
+    wird automatisch ohne --resume neu gestartet.
     """
     if file_path and media_label:
         prompt = (f"[Telegram-Nachricht von {sender_name}]: {message or '(kein Text)'}\n\n"
@@ -532,23 +576,32 @@ def ask_claude(message, sender_name, file_path=None, media_label=None):
     else:
         prompt = f"[Telegram-Nachricht von {sender_name}]: {message}"
     claude_bin = os.path.expanduser("~/.local/bin/claude")
-    cmd = [claude_bin, "-p", "--output-format", "json", prompt]
     timeout = 180
-    try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=timeout,
-            cwd=os.path.expanduser("~")
-        )
-        if result.returncode != 0:
-            log.error(f"Claude Fehler: {result.stderr[:200]}")
-            return None
-        data = json.loads(result.stdout)
-        return data.get("result", "")
-    except subprocess.TimeoutExpired:
+
+    sessions = _load_sessions()
+    sid = sessions.get(str(chat_id))
+
+    if sid:
+        cmd = [claude_bin, "-p", "--output-format", "json", "--resume", sid, prompt]
+        data, err = _run_claude(cmd, timeout)
+        if err == "timeout":
+            return "Sorry, das hat zu lange gedauert — versuch's nochmal! 🐾"
+        if data is None:
+            log.warning(f"Resume fehlgeschlagen ({err}), starte frischen Chat für chat_id={chat_id}")
+            sid = None
+        else:
+            _save_session(chat_id, data.get("session_id"))
+            return data.get("result", "")
+
+    cmd = [claude_bin, "-p", "--output-format", "json", prompt]
+    data, err = _run_claude(cmd, timeout)
+    if err == "timeout":
         return "Sorry, das hat zu lange gedauert — versuch's nochmal! 🐾"
-    except Exception as e:
-        log.error(f"Claude Fehler: {e}")
+    if data is None:
+        log.error(f"Claude Fehler: {err}")
         return None
+    _save_session(chat_id, data.get("session_id"))
+    return data.get("result", "")
 
 
 def should_respond(msg):
@@ -659,7 +712,7 @@ def main():
                         continue
 
                 try:
-                    reply = ask_claude(text, sender_name, local_path, media_label)
+                    reply = ask_claude(text, sender_name, chat_id, local_path, media_label)
                 finally:
                     if local_path:
                         try:

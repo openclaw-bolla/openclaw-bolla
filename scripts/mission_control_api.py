@@ -8386,17 +8386,25 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 altersklasse = body.get("altersklasse", "breit")
                 alter_label = {"12-16": "12–16 Jahre", "17-19": "17–19 Jahre",
                                 "20-24": "20–24 Jahre"}.get(altersklasse, "breites, gemischtes Publikum")
+                # Altersklassen-eigenes Genre-Menü statt einer für alle Altersklassen IDENTISCHEN Liste —
+                # sonst konvergiert der Suno-Output trotz unterschiedlichem Label auf denselben Sound
+                # (Chris-Feedback 11.08.2026: "klingt immer gleich, egal was ich einstelle").
+                de_genre_menu = {
+                    "12-16": "Hyperpop-Elemente, Phonk/Drift-Phonk-Groove, schneller Drill/Trap-Beat, "
+                             "glitchige/verzerrte Produktion, TikTok-Dance-Energie — schnell, kantig, laut",
+                    "17-19": "Deutschrap-Hybrid (gerappte Strophen + gesungener Hook), Melodic Rap mit "
+                             "Autotune, Afrobeats-getunter Trap",
+                    "20-24": "Amapiano/Afro-House, Deep-House-Groove, R&B-Pop-Crossover, "
+                             "gepflegter Dance-Floor-Sound statt Rap-Fokus",
+                }.get(altersklasse, "Deutschrap-Hybrid, Reggae/Dancehall, Afrobeats/Amapiano, Dance/House-Groove")
                 de_rule = (
-                    "WICHTIG für deutschen Gesang: Ein klassischer gesungener Pop-Singalong-Refrain kippt auf "
-                    "Deutsch schnell ins Schlagerhafte. Wähle stattdessen bewusst eine Alternative mit echtem "
-                    "Hitpotential für deutsche Ohren: z.B. gerappte Strophen + eingängiger gesungener Hook "
-                    "(Deutschrap-Hybrid), Reggae/Dancehall, Afrobeats/Amapiano oder Dance/House-Groove — "
-                    "was am besten zu Zielgruppe und Thema passt."
+                    f"WICHTIG für deutschen Gesang: Ein klassischer gesungener Pop-Singalong-Refrain kippt auf "
+                    f"Deutsch schnell ins Schlagerhafte. Wähle für GENAU diese Altersgruppe aus DIESEM Menü "
+                    f"(nicht aus anderen Altersklassen mischen): {de_genre_menu}."
                 ) if sprache_s == "de" else ""
                 style_instr = (
                     f"Du bist ein erfahrener Musikproduzent. Schreibe EINEN kurzen, knackigen Stil-Hinweis "
-                    f"(2-4 Sätze, kein Roman) für einen Song bei Suno.ai — für die Feel-Good-Marke 'bollawave' "
-                    f"(warm, eingängig, mit Augenzwinkern, optimistisch).\n"
+                    f"(2-4 Sätze, kein Roman) für einen Song bei Suno.ai — für die Feel-Good-Marke 'bollawave'.\n"
                     f"Thema/Anlass: {kontext_s or 'Feel-Good Pop-Song'}\n"
                     f"Sprache: {'Deutsch' if sprache_s == 'de' else 'Englisch'}\n"
                     f"Zielgruppe: {alter_label} — der Song muss für GENAU diese Altersgruppe klares Hitpotential "
@@ -8404,6 +8412,9 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     f"{de_rule}\n"
                     f"Beschreibe: Genre, Haupt-Instrumente/Produktion, Tempo-Gefühl (grobe BPM-Range), "
                     f"Gesangsstil, Energie/Stimmung.\n"
+                    f"WICHTIG für Abwechslung: Nutze eigene, zur Altersgruppe passende Stimmungs-/Produktionswörter — "
+                    f"NICHT bei jedem Vorschlag dieselben Adjektive wie 'warm', 'eingängig' oder 'Augenzwinkern' "
+                    f"wiederholen, das lässt am Ende jeden Song gleich klingen. Optimistisch/positiv soll es trotzdem bleiben.\n"
                     f"STRIKT VERBOTEN: Künstlernamen, Bandnamen oder Songtitel als Referenz nennen (werden von "
                     f"Suno gefiltert). Nur beschreibende Begriffe.\n"
                     f"Antworte NUR mit dem Stil-Hinweis-Text, sonst nichts.")

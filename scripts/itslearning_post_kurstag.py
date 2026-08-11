@@ -66,19 +66,25 @@ COURSES = [
 
 
 def discover_files(day_prefix):
-    """Sammelt PDF + alle HTML-Dateien mit der Tagesnummer aus dem Handouts-Ordner (Standard-Paket)."""
+    """Sammelt PDF + alle HTML-Dateien mit der Tagesnummer aus dem Handouts-Ordner (Standard-Paket).
+    Durchsucht sowohl den Handouts-Ordner direkt (PDFs, PPTX-Reste) als auch den Unterordner
+    Praktikum/ (seit 11.08.2026, siehe [[project_schuljahr2627]] - Praktikum-HTMLs liegen dort,
+    um den Handouts-Ordner bei wachsender Kurstag-Zahl übersichtlich zu halten)."""
     files = []
-    for fname in sorted(os.listdir(HANDOUTS)):
-        if not fname.startswith(f"{day_prefix}-"):
+    for folder in (HANDOUTS, os.path.join(HANDOUTS, "Praktikum")):
+        if not os.path.isdir(folder):
             continue
-        ext = os.path.splitext(fname)[1].lower()
-        if ext not in (".pdf", ".html"):
-            continue
-        files.append({
-            "path": os.path.join(HANDOUTS, fname),
-            "basename": os.path.splitext(fname)[0],  # DOM splittet Name/Erweiterung in 2 <span> - nie mit Endung suchen
-            "filename": fname,
-        })
+        for fname in sorted(os.listdir(folder)):
+            if not fname.startswith(f"{day_prefix}-"):
+                continue
+            ext = os.path.splitext(fname)[1].lower()
+            if ext not in (".pdf", ".html"):
+                continue
+            files.append({
+                "path": os.path.join(folder, fname),
+                "basename": os.path.splitext(fname)[0],  # DOM splittet Name/Erweiterung in 2 <span> - nie mit Endung suchen
+                "filename": fname,
+            })
     return files
 
 
