@@ -572,6 +572,65 @@ def get_calendar():
 
     return events
 
+def get_schule_calendar():
+    """Dediziertes Kalender-Fenster fuer die 'Uebersicht'-Seite (Naechste-Stunde-Kacheln pro Kurs).
+    Braucht einen laengeren Horizont als das generische Dashboard (get_calendar, 30 Tage/$top=20) -
+    Gruppe-II-Kurse koennen erst in 4-5 Wochen dran sein und fielen sonst aus den ersten 20
+    (mit privaten Terminen gemischten) Events raus. Filtert serverseitig auf Schul-Termine, damit
+    das Frontend nicht selbst gegen ein zu kleines Fenster suchen muss."""
+    now = datetime.now(timezone.utc)
+    end = now + timedelta(days=120)
+    start_str = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    end_str = end.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    cat_colors = get_category_colors()
+
+    data = graph_get(
+        f"/me/calendarView?startDateTime={start_str}&endDateTime={end_str}"
+        f"&$orderby=start/dateTime&$top=250"
+        f"&$select=subject,start,end,categories,location"
+    )
+    if not data:
+        return []
+
+    import re
+    import zoneinfo
+    berlin = zoneinfo.ZoneInfo("Europe/Berlin")
+
+    events = []
+    for ev in data.get("value", []):
+        cats = ev.get("categories", [])
+        cat = cats[0] if cats else ""
+        subj = ev.get("subject", "")
+        is_school = "lessing" in cat.lower() or bool(re.match(r"^7\s*[a-z]", subj, re.I))
+        if not is_school:
+            continue
+
+        start_raw = ev.get("start", {}).get("dateTime", "")
+        try:
+            dt_utc = datetime.fromisoformat(start_raw).replace(tzinfo=timezone.utc)
+            dt_local = dt_utc.astimezone(berlin)
+            date_str = dt_local.strftime("%d.%m.")
+            time_str = dt_local.strftime("%H:%M")
+            weekday = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"][dt_local.weekday()]
+        except Exception:
+            date_str = start_raw[:10]
+            time_str = ""
+            weekday = ""
+
+        rgb = cat_colors.get(cat, PRESET_COLORS["none"])
+        events.append({
+            "title": subj,
+            "date": date_str,
+            "time": time_str,
+            "weekday": weekday,
+            "category": cat,
+            "color": rgb,
+            "location": ev.get("location", {}).get("displayName", "")
+        })
+
+    return events
+
 def search_calendar_events(q, limit=5):
     from datetime import timezone, timedelta
     import zoneinfo, urllib.parse as _up
@@ -6345,6 +6404,7 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
 
             simple = {
                 "/api/calendar": get_calendar,
+                "/api/calendar/schule": get_schule_calendar,
                 "/api/reise-notizen": reise_get,
                 "/api/email": get_emails,
                 "/api/photo": lambda: get_photo_of_day() or {},

@@ -57,7 +57,11 @@ def check_wtnet(seen):
     m = imaplib.IMAP4_SSL(cfg["imap_host"], cfg["imap_port"])
     m.login(cfg["email"], cfg["password"])
     m.select("INBOX")
-    status, data = m.search(None, "SINCE", IMAP_SINCE)
+    # UID statt Sequenznummer verwenden! Sequenznummern verschieben sich, sobald sich der
+    # Mailbox-Inhalt aendert (Mails verschoben/geloescht) - dadurch wurde am 12.08.2026 eine
+    # echte neue Buhl-Antwort stillschweigend uebersprungen, weil ihre (verschobene) Sequenznummer
+    # zufaellig mit einer alten, bereits gesehenen Nummer kollidierte. UIDs bleiben stabil.
+    status, data = m.uid("search", None, "SINCE", IMAP_SINCE)
     ids = data[0].split()
 
     for mid in ids:
@@ -65,7 +69,7 @@ def check_wtnet(seen):
         if key in seen:
             continue
         seen.add(key)
-        t, d = m.fetch(mid, "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT)])")
+        t, d = m.uid("fetch", mid, "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT)])")
         if not d or not d[0]:
             continue
         raw = d[0][1].decode("utf-8", "replace")
@@ -89,7 +93,7 @@ def check_wtnet(seen):
             continue
         if not any(p in subject.lower() for p in SUBJECT_MARKERS):
             continue
-        t2, d2 = m.fetch(mid, "(BODY.PEEK[TEXT])")
+        t2, d2 = m.uid("fetch", mid, "(BODY.PEEK[TEXT])")
         preview = ""
         if d2 and d2[0]:
             preview = d2[0][1].decode("utf-8", "replace")[:500]

@@ -27,7 +27,7 @@ if [ "${BOOK_CONN:-0}" -gt 0 ]; then
     log_w "Port 2222 down, Book aber connected (Port 2200, $BOOK_CONN Sessions) → MC-Restart triggern"
     curl -s -X POST -H "Content-Type: application/json" \
         -d '{"action":"restart_tunnel"}' \
-        http://127.0.0.1:18790/api/book/action >> "$LOG" 2>&1
+        http://127.0.0.1:18790/api/surfaces/book/action >> "$LOG" 2>&1
     echo "$(date +%s)" > "$STATE"
 else
     # Book scheint offline oder hat noch nie connected — wir können nichts tun

@@ -6024,15 +6024,23 @@ updateClock(); setInterval(updateClock, 1000);
 
 // ===== KALENDER =====
 let _events = [];
+let _schulEvents = [];
 async function loadCalendarData() {
   try {
     const r = await fetch(API + '/api/calendar');
     _events = await r.json();
     renderDashboardEvents();
-    renderNextClass();
   } catch(e) {
     document.getElementById('upcoming-events').innerHTML = '<li class="loading">API nicht erreichbar</li>';
   }
+  try {
+    // eigener, langfristigerer Feed (120 Tage, serverseitig auf Schul-Termine gefiltert) — der
+    // generische /api/calendar ist auf $top=20 gedeckelt und mischt private Termine rein, dadurch
+    // fielen Gruppe-II-Kurse (naechster Termin oft erst 4-5 Wochen spaeter) sonst raus.
+    const r2 = await fetch(API + '/api/calendar/schule');
+    _schulEvents = await r2.json();
+  } catch(e) { console.error('schul-events:', e); }
+  renderNextClass();
   loadStichworte();
 }
 
@@ -6075,9 +6083,9 @@ function renderDashboardEvents() {
 function renderNextClass() {
   const today = new Date(); today.setHours(0,0,0,0);
   const cutoff = new Date(today); cutoff.setDate(today.getDate() + 14);
-  const schulEvents = _events.filter(ev => {
+  const schulEvents = _schulEvents.filter(ev => {
     const d = _parseEvDate(ev.date);
-    return d >= today && d < cutoff && _isSchoolEvent(ev);
+    return d >= today && d < cutoff;
   }).sort((a, b) => {
     const da = _parseEvDate(a.date) - _parseEvDate(b.date);
     return da !== 0 ? da : (a.time||'').localeCompare(b.time||'');
@@ -6124,7 +6132,11 @@ async function loadSchuljahr2627() {
     const r = await fetch(API + '/api/schuljahr2627');
     const d = await r.json();
     const klassen = (d.klassen || []).map(k => `<span style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:14px;font-weight:600;color:var(--bright)">${k}</span>`).join('');
-    const slots = (d.slots_geplant || []).map(s => `<span style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:14px;font-weight:600;color:var(--bright)">${s.tag} ${s.zeit}</span>`).join('');
+    const slots = (d.slots_geplant || []).map(s => {
+      const klasse = s.klasse ? `<span style="color:var(--accent)">${s.klasse}</span> · ` : '';
+      const uhrzeit = s.uhrzeit ? ` <span style="color:var(--dim);font-weight:400">(${s.uhrzeit})</span>` : '';
+      return `<span style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:14px;font-weight:600;color:var(--bright)">${klasse}${s.tag} ${s.zeit}${uhrzeit}</span>`;
+    }).join('');
     const module = (d.module_vorjahr || []).map(m => {
       const titel = typeof m === 'string' ? m : (m.titel || '');
       const auftrag = typeof m === 'string' ? '' : (m.auftrag || '');
@@ -6151,18 +6163,21 @@ async function loadSchuljahr2627() {
       const monthKey = dt.getFullYear() + '-' + dt.getMonth();
       if (monthKey !== lastMonth) {
         lastMonth = monthKey;
-        monthRows += `<tr><td colspan="6" style="padding:14px 10px 6px;font-size:13px;font-weight:700;color:var(--accent)">${monthNames[dt.getMonth()]} ${dt.getFullYear()}</td></tr>`;
+        monthRows += `<tr><td colspan="7" style="padding:14px 10px 6px;font-size:13px;font-weight:700;color:var(--accent)">${monthNames[dt.getMonth()]} ${dt.getFullYear()}</td></tr>`;
       }
       const tagFmt = dt.toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit'});
       const themaAnzeige = t.thema ? `<span style="font-size:14px;color:var(--bright);font-weight:600">${escHtml(t.thema)}</span>` : `<span style="font-size:14px;color:var(--dim);font-style:italic">offen</span>`;
       const gruppeColor = t.gruppe === 'II' ? '#fbbf24' : '#60a5fa';
       const gruppe = t.gruppe ? `<span style="background:${gruppeColor}22;border:1px solid ${gruppeColor}66;color:${gruppeColor};border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700">${t.gruppe}</span>` : '';
+      const klasseAnzeige = t.klasse ? `<span style="font-size:14px;color:var(--bright);font-weight:600">${escHtml(t.klasse)}</span>` : '';
+      const zeitAnzeige = t.uhrzeit ? `${t.zeit}<br><span style="font-size:11px;color:var(--dim)">${t.uhrzeit}</span>` : t.zeit;
       const auftragVal = escHtml(t.auftrag || '').replace(/"/g, '&quot;');
       const datumAttr = t.datum, zeitAttr = t.zeit.replace(/"/g, '&quot;');
       monthRows += `<tr style="border-bottom:1px solid var(--border)">
         <td style="padding:7px 10px;font-size:14px;color:var(--text);white-space:nowrap">${tagFmt}</td>
         <td style="padding:7px 10px;font-size:14px;color:var(--text)">${t.wochentag}</td>
-        <td style="padding:7px 10px;font-size:14px;color:var(--text);white-space:nowrap">${t.zeit}</td>
+        <td style="padding:7px 10px;font-size:14px;color:var(--text);white-space:nowrap">${zeitAnzeige}</td>
+        <td style="padding:7px 10px;text-align:center">${klasseAnzeige}</td>
         <td style="padding:7px 10px;text-align:center">${gruppe}</td>
         <td style="padding:7px 10px">${themaAnzeige}</td>
         <td style="padding:7px 10px">
@@ -6212,6 +6227,7 @@ async function loadSchuljahr2627() {
                 <th style="padding:9px 10px;text-align:left;font-size:12px;color:var(--dim)">Datum</th>
                 <th style="padding:9px 10px;text-align:left;font-size:12px;color:var(--dim)">Tag</th>
                 <th style="padding:9px 10px;text-align:left;font-size:12px;color:var(--dim)">Zeit</th>
+                <th style="padding:9px 10px;text-align:center;font-size:12px;color:var(--dim)">Klasse</th>
                 <th style="padding:9px 10px;text-align:center;font-size:12px;color:var(--dim)">Gr.</th>
                 <th style="padding:9px 10px;text-align:left;font-size:12px;color:var(--dim)">Thema</th>
                 <th style="padding:9px 10px;text-align:left;font-size:12px;color:var(--dim)">Aufträge</th>
@@ -7880,23 +7896,37 @@ async function downloadRecipe() {
 }
 
 // ===== SCHULE =====
+// Stundenplan 26/27 (bestätigt 12.08.2026, siehe data/schuljahr2627.json slots_geplant) —
+// 7a Do 1./2., 7b Mi 6./7., 7c Do 6./7., 7d Mi 1./2. Std. Vorjahres-Plan (Di/Mi, ohne 7d) war hier
+// noch hartkodiert stehengeblieben, das war der Bug hinter den falschen Terminen auf dieser Seite.
 const KLASSEN = [
-  {name:'7a I',  day:'Mittwoch', time:'12:30–14:05', key:'7a I',  dot:'dot-b1'},
-  {name:'7a II', day:'Mittwoch', time:'12:30–14:05', key:'7a II', dot:'dot-b2'},
-  {name:'7b I',  day:'Dienstag', time:'12:30–14:05', key:'7b I',  dot:'dot-b1'},
-  {name:'7b II', day:'Dienstag', time:'12:30–14:05', key:'7b II', dot:'dot-b2'},
-  {name:'7c I',  day:'Dienstag', time:'07:50–09:25', key:'7c I',  dot:'dot-b1'},
-  {name:'7c II', day:'Dienstag', time:'07:50–09:25', key:'7c II', dot:'dot-b2'},
+  {name:'7a I',  day:'Donnerstag', time:'07:50–09:25', key:'7a I',  dot:'dot-b1'},
+  {name:'7a II', day:'Donnerstag', time:'07:50–09:25', key:'7a II', dot:'dot-b2'},
+  {name:'7b I',  day:'Mittwoch',   time:'12:30–14:05', key:'7b I',  dot:'dot-b1'},
+  {name:'7b II', day:'Mittwoch',   time:'12:30–14:05', key:'7b II', dot:'dot-b2'},
+  {name:'7c I',  day:'Donnerstag', time:'12:30–14:05', key:'7c I',  dot:'dot-b1'},
+  {name:'7c II', day:'Donnerstag', time:'12:30–14:05', key:'7c II', dot:'dot-b2'},
+  {name:'7d I',  day:'Mittwoch',   time:'07:50–09:25', key:'7d I',  dot:'dot-b1'},
+  {name:'7d II', day:'Mittwoch',   time:'07:50–09:25', key:'7d II', dot:'dot-b2'},
 ];
 
-function loadSchule() {
+async function loadSchule() {
+  let schulEvents = [];
+  try {
+    const r = await fetch(API + '/api/calendar/schule');
+    schulEvents = await r.json();
+  } catch (e) { console.error('loadSchule:', e); }
   const klassen = KLASSEN.map(k => {
-    const next = _events.find(e => e.title.startsWith(k.key + ' -') || e.title === k.key);
+    const next = schulEvents.find(e => e.title.startsWith(k.key + ' -') || e.title === k.key);
     return {...k, next};
   }).sort((a,b) => {
+    // ⚠️ NICHT als String vergleichen (a.next.date+a.next.time).localeCompare(...) — "DD.MM."
+    // sortiert dann falsch (z.B. "16.09." vor "19.08.", weil '6' < '9' an zweiter Stelle,
+    // unabhaengig vom Monat). Echten Datumsvergleich ueber _parseEvDate() nutzen.
     if (!a.next && !b.next) return 0;
     if (!a.next) return 1; if (!b.next) return -1;
-    return (a.next.date+a.next.time).localeCompare(b.next.date+b.next.time);
+    const da = _parseEvDate(a.next.date) - _parseEvDate(b.next.date);
+    return da !== 0 ? da : (a.next.time||'').localeCompare(b.next.time||'');
   });
   let h = '';
   klassen.forEach(k => {
