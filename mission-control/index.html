@@ -971,6 +971,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
         <div class="nav-section" onclick="toggleNavSection('system')" id="nav-sec-system"><span class="nav-section-grip">⠿</span>System <span class="nav-section-chevron">▶</span></div>
         <div class="nav-section-items" id="nav-section-items-system" style="max-height:0">
           <div class="nav-item" data-page="localserver"><span class="icon">🖧</span><span>Local Server</span></div>
+          <div class="nav-item" data-page="worldmonitor"><span class="icon">🌍</span><span>World Monitor</span></div>
           <div class="nav-item" data-page="system"><span class="icon">📊</span><span>Überblick</span></div>
           <div class="nav-item" data-page="claudecode"><span class="icon">🤖</span><span>Claude Code</span></div>
           <div class="nav-item" data-page="surface"><span class="icon">💻</span><span>Surfaces</span></div>
@@ -1618,6 +1619,21 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
       <!-- WETTER -->
       <div class="page" id="page-wetter">
         <div id="wetter-content" style="max-width:960px;margin:0 auto"><div class="loading">Lade…</div></div>
+      </div>
+
+      <!-- WORLD MONITOR -->
+      <div class="page" id="page-worldmonitor" style="padding:0">
+        <div style="position:relative;width:100%;height:calc(100vh - 92px);background:#000">
+          <div id="wm-globe-container" style="width:100%;height:100%"></div>
+
+          <div id="wm-panel" style="position:absolute;top:14px;left:14px;width:270px;max-height:calc(100% - 28px);overflow-y:auto;background:rgba(10,14,22,0.88);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:12px;padding:14px;z-index:5;color:var(--bright);font-size:14px">
+            <div style="font-size:15px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px">🌍 World Monitor</div>
+            <div id="wm-layers" style="display:flex;flex-direction:column;gap:2px"></div>
+          </div>
+
+          <div id="wm-loading" style="position:absolute;top:14px;right:14px;background:rgba(10,14,22,0.88);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--dim);z-index:5;display:none">Loading…</div>
+          <div id="wm-tooltip" style="position:absolute;display:none;background:rgba(10,14,22,0.95);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--bright);z-index:6;max-width:260px;pointer-events:none;line-height:1.5"></div>
+        </div>
       </div>
 
       <!-- SYSTEM -->
@@ -4636,6 +4652,7 @@ const PAGE_THEMES = {
 
 function showPage(page) {
   if (_clipRefreshInterval) { clearInterval(_clipRefreshInterval); _clipRefreshInterval = null; }
+  if (typeof wmRefreshTimer !== 'undefined' && wmRefreshTimer && page !== 'worldmonitor') { clearInterval(wmRefreshTimer); wmRefreshTimer = null; }
   if (_reiseRefreshInterval) { clearInterval(_reiseRefreshInterval); _reiseRefreshInterval = null; }
   closeArchivOverlay();   // beim Seitenwechsel ein offenes Archiv-Overlay schließen
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -4654,6 +4671,7 @@ function showPage(page) {
   if (page !== 'email') { if (cmdBar) cmdBar.style.display='none'; closeMailResult(); _selectedMails=[]; }
   if (page === 'dashboard')  { loadCalendarData(); loadEmailData(); loadClaudeCode(); tbLoad(); loadRecipe(); loadPhoto(); loadBirthdays(); renderGreeting(); loadDashAgents(); }
   if (page === 'system')     { tbInit(); kostenLoad(); loadBollaModel(); }
+  if (page === 'worldmonitor') loadWorldMonitor();
   if (page === 'brain')      initBrain();
   if (page === 'bolla')      loadBollaModel();
   if (page === 'system')     loadSystem();
@@ -9089,6 +9107,262 @@ async function loadSystem() {
         <div style="font-size:13px;color:var(--success);margin-top:8px">✨ ${tok.note||(window._bollaPlanLabel||'Max Plan')+' — keine Kosten'}</div>
       </div>`;
   } catch(e) { document.getElementById('system-content').innerHTML='<div class="loading">System-Daten nicht verfügbar</div>'; }
+}
+
+// ===== WORLD MONITOR =====
+const WM_LAYERS = [
+  { key: 'earthquakes', label: 'Earthquakes', icon: '🌎', color: '#f97316' },
+  { key: 'flights',     label: 'Flight Routes', icon: '✈️', color: '#38bdf8', search: true },
+  { key: 'conflicts',   label: 'Conflicts', icon: '⚔️', color: '#ef4444' },
+  { key: 'satellites',  label: 'Satellites', icon: '🛰️', color: '#a78bfa', search: true, group: true },
+  { key: 'weather',     label: 'Weather (click globe)', icon: '🌦️', color: '#22c55e' },
+  { key: 'wildfires',   label: 'Wildfires', icon: '🔥', color: '#fb923c' },
+  { key: 'volcanoes',   label: 'Volcanoes', icon: '🌋', color: '#dc2626' },
+  { key: 'storms',      label: 'Tropical Storms', icon: '🌀', color: '#60a5fa' },
+];
+const WM_SAT_GROUPS = ['stations','active','starlink','gps-ops','weather','science','geo'];
+let wmGlobe = null;
+let wmActive = new Set();
+let wmData = {};          // key -> array of {lat,lng,alt,size,color,label,type}
+let wmSatRaw = [];        // raw TLE entries for currently loaded group
+let wmSatGroup = 'stations';
+let wmRefreshTimer = null;
+let wmInitialized = false;
+
+function loadWorldMonitor() {
+  renderWmPanel();
+  const boot = () => {
+    if (window.Globe && window.satellite) { initWmGlobe(); return; }
+    const need = [];
+    if (!window.Globe) need.push('https://unpkg.com/globe.gl');
+    if (!window.satellite) need.push('https://unpkg.com/satellite.js@5.0.0/dist/satellite.min.js');
+    let remaining = need.length;
+    need.forEach(src => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = () => { remaining--; if (remaining === 0) initWmGlobe(); };
+      document.head.appendChild(s);
+    });
+  };
+  boot();
+}
+
+function renderWmPanel() {
+  const el = document.getElementById('wm-layers');
+  el.innerHTML = WM_LAYERS.map(l => {
+    let extra = '';
+    if (l.key === 'flights') {
+      extra = `<div id="wm-flights-extra" style="display:none;margin:4px 0 8px 24px">
+        <input id="wm-flight-search" placeholder="Search callsign…" oninput="wmFilterFlights(this.value)"
+          style="width:100%;box-sizing:border-box;font-size:14px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--bright)">
+        <div id="wm-flight-results" style="max-height:140px;overflow-y:auto;margin-top:4px;font-size:13px;color:var(--dim)"></div>
+      </div>`;
+    }
+    if (l.key === 'satellites') {
+      extra = `<div id="wm-sat-extra" style="display:none;margin:4px 0 8px 24px">
+        <select id="wm-sat-group" onchange="wmChangeSatGroup(this.value)" style="width:100%;font-size:14px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--bright);margin-bottom:6px">
+          ${WM_SAT_GROUPS.map(g => `<option value="${g}">${g}</option>`).join('')}
+        </select>
+        <input id="wm-sat-search" placeholder="Search satellite name…" oninput="wmFilterSats(this.value)"
+          style="width:100%;box-sizing:border-box;font-size:14px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--bright)">
+        <div id="wm-sat-results" style="max-height:140px;overflow-y:auto;margin-top:4px;font-size:13px;color:var(--dim)"></div>
+      </div>`;
+    }
+    return `<label style="display:flex;align-items:center;gap:8px;padding:7px 4px;cursor:pointer;border-radius:6px" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background=''">
+        <input type="checkbox" id="wm-cb-${l.key}" onchange="wmToggleLayer('${l.key}', this.checked)" style="width:16px;height:16px;accent-color:${l.color}">
+        <span>${l.icon}</span><span style="flex:1">${l.label}</span>
+        <span id="wm-count-${l.key}" style="font-size:11px;color:var(--dim)"></span>
+      </label>${extra}`;
+  }).join('');
+}
+
+function initWmGlobe() {
+  if (wmInitialized) { setTimeout(() => wmGlobe && wmGlobe.width(document.getElementById('wm-globe-container').clientWidth), 50); return; }
+  wmInitialized = true;
+  const container = document.getElementById('wm-globe-container');
+  wmGlobe = Globe()(container)
+    .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+    .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
+    .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+    .width(container.clientWidth)
+    .height(container.clientHeight)
+    .pointAltitude('alt')
+    .pointColor('color')
+    .pointRadius('size')
+    .pointLabel(d => `<div style="background:rgba(10,14,22,0.95);border:1px solid #333;border-radius:6px;padding:6px 9px;font-size:12px;color:#fff;max-width:240px">${d.label}</div>`)
+    .onPointClick(d => { if (d.type === 'weather-hint') return; })
+    .onGlobeClick(({ lat, lng }) => wmWeatherClick(lat, lng));
+  window.addEventListener('resize', () => {
+    if (!wmGlobe) return;
+    const c = document.getElementById('wm-globe-container');
+    wmGlobe.width(c.clientWidth).height(c.clientHeight);
+  });
+  if (!wmRefreshTimer) wmRefreshTimer = setInterval(wmRefreshActive, 300000); // 5 min — OpenSky anonymous quota is ~400 req/day
+}
+
+function wmSetLoading(on) { document.getElementById('wm-loading').style.display = on ? 'block' : 'none'; }
+
+async function wmToggleLayer(key, on) {
+  if (on) wmActive.add(key); else wmActive.delete(key);
+  if (key === 'flights') document.getElementById('wm-flights-extra').style.display = on ? 'block' : 'none';
+  if (key === 'satellites') document.getElementById('wm-sat-extra').style.display = on ? 'block' : 'none';
+  if (key === 'weather') { wmRebuildPoints(); return; } // weather has no point layer, click-only
+  if (on && !wmData[key]) {
+    wmSetLoading(true);
+    try { await wmFetchLayer(key); } catch (e) { console.error('wm fetch', key, e); }
+    wmSetLoading(false);
+  }
+  wmRebuildPoints();
+}
+
+async function wmFetchLayer(key, opts) {
+  if (key === 'earthquakes') {
+    const j = await (await fetch('/api/worldmonitor/earthquakes')).json();
+    wmData.earthquakes = (j.features || []).map(f => ({
+      lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0],
+      alt: 0.01, size: Math.max(0.15, (f.properties.mag || 1) * 0.13), color: '#f97316',
+      label: `🌎 M${(f.properties.mag||'?')} — ${f.properties.place||''}`, type: 'earthquakes'
+    }));
+  } else if (key === 'wildfires') {
+    const j = await (await fetch('/api/worldmonitor/wildfires')).json();
+    wmData.wildfires = (j.fires || []).map(f => ({
+      lat: f.lat, lng: f.lon, alt: 0.005, size: 0.18, color: '#fb923c',
+      label: `🔥 Fire — FRP ${f.frp} MW · ${f.date}`, type: 'wildfires'
+    }));
+  } else if (key === 'volcanoes') {
+    const j = await (await fetch('/api/worldmonitor/volcanoes')).json();
+    wmData.volcanoes = (j.features || []).map(f => ({
+      lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], alt: 0.008, size: 0.22, color: '#dc2626',
+      label: `🌋 ${f.properties.Volcano_Name} — ${f.properties.Country}<br>Last eruption: ${f.properties.Last_Eruption_Year}`, type: 'volcanoes'
+    }));
+  } else if (key === 'storms') {
+    const j = await (await fetch('/api/worldmonitor/storms')).json();
+    wmData.storms = (j.activeStorms || []).map(s => ({
+      lat: s.latitudeNumeric, lng: s.longitudeNumeric, alt: 0.02, size: 0.4, color: '#60a5fa',
+      label: `🌀 ${s.name} — ${s.classification}, ${s.intensity}kt`, type: 'storms'
+    }));
+  } else if (key === 'conflicts') {
+    const j = await (await fetch('/api/worldmonitor/conflicts')).json();
+    if (j.pending) { wmData.conflicts = []; document.getElementById('wm-count-conflicts').textContent = 'pending activation'; }
+    else wmData.conflicts = (j.data || []).map(c => ({
+      lat: parseFloat(c.latitude), lng: parseFloat(c.longitude), alt: 0.006, size: 0.16, color: '#ef4444',
+      label: `⚔️ ${c.event_type||''} — ${c.location||''}, ${c.country||''}`, type: 'conflicts'
+    })).filter(p => !isNaN(p.lat) && !isNaN(p.lng));
+  } else if (key === 'flights') {
+    const j = await (await fetch('/api/worldmonitor/flights')).json();
+    wmData.flights = (j.states || []).filter(s => s[5] != null && s[6] != null).map(s => ({
+      lat: s[6], lng: s[5], alt: 0.03, size: 0.18, color: '#38bdf8',
+      label: `✈️ ${(s[1]||'?').trim()} — ${s[2]||''}<br>Alt: ${Math.round((s[7]||0))}m`,
+      type: 'flights', callsign: (s[1]||'').trim()
+    }));
+  } else if (key === 'satellites') {
+    const group = (opts && opts.group) || wmSatGroup;
+    const j = await (await fetch('/api/worldmonitor/satellites?group=' + encodeURIComponent(group))).json();
+    wmSatRaw = j.satellites || [];
+    wmData.satellites = wmPropagateSats(wmSatRaw.slice(0, 400));
+  }
+  const cnt = (wmData[key] || []).length;
+  const countEl = document.getElementById('wm-count-' + key);
+  if (countEl && key !== 'conflicts') countEl.textContent = cnt ? cnt : '';
+  if (key === 'conflicts' && cnt) countEl.textContent = cnt;
+}
+
+function wmPropagateSats(list) {
+  const now = new Date();
+  const gmst = satellite.gstime(now);
+  const out = [];
+  for (const s of list) {
+    try {
+      const satrec = satellite.twoline2satrec(s.line1, s.line2);
+      const pv = satellite.propagate(satrec, now);
+      if (!pv.position) continue;
+      const geo = satellite.eciToGeodetic(pv.position, gmst);
+      const lat = satellite.degreesLat(geo.latitude);
+      const lng = satellite.degreesLong(geo.longitude);
+      const altKm = geo.height;
+      out.push({
+        lat, lng, alt: Math.min(3, Math.max(0.05, altKm / 6371)), size: 0.12, color: '#a78bfa',
+        label: `🛰️ ${s.name}<br>Altitude: ${Math.round(altKm)} km`, type: 'satellites', name: s.name
+      });
+    } catch (e) { /* skip bad TLE */ }
+  }
+  return out;
+}
+
+function wmRebuildPoints() {
+  if (!wmGlobe) return;
+  let pts = [];
+  wmActive.forEach(key => { if (wmData[key]) pts = pts.concat(wmData[key]); });
+  wmGlobe.pointsData(pts);
+}
+
+async function wmRefreshActive() {
+  for (const key of wmActive) {
+    if (key === 'weather') continue;
+    try { await wmFetchLayer(key); } catch (e) {}
+  }
+  wmRebuildPoints();
+}
+
+function wmFilterFlights(q) {
+  const box = document.getElementById('wm-flight-results');
+  q = q.trim().toUpperCase();
+  const all = wmData.flights || [];
+  const matches = q ? all.filter(f => f.callsign.toUpperCase().includes(q)) : [];
+  box.innerHTML = matches.slice(0, 40).map(f =>
+    `<div style="padding:3px 0;cursor:pointer" onclick="wmFlyTo(${f.lat},${f.lng})">${f.callsign || '?'}</div>`
+  ).join('') || (q ? '<div style="opacity:0.6">No match</div>' : '');
+}
+
+async function wmChangeSatGroup(group) {
+  wmSatGroup = group;
+  wmSetLoading(true);
+  await wmFetchLayer('satellites', { group });
+  wmSetLoading(false);
+  wmRebuildPoints();
+  document.getElementById('wm-sat-search').value = '';
+  document.getElementById('wm-sat-results').innerHTML = '';
+}
+
+function wmFilterSats(q) {
+  const box = document.getElementById('wm-sat-results');
+  q = q.trim().toUpperCase();
+  if (!q) { box.innerHTML = ''; return; }
+  const matches = wmSatRaw.filter(s => s.name.toUpperCase().includes(q));
+  box.innerHTML = matches.slice(0, 40).map(s =>
+    `<div style="padding:3px 0;cursor:pointer" onclick="wmShowSat('${s.name.replace(/'/g,"\\'")}')">${s.name}</div>`
+  ).join('') || '<div style="opacity:0.6">No match</div>';
+  // ensure searched satellites are represented even if outside the render cap
+  const extra = wmPropagateSats(matches.slice(0, 40));
+  const existingNames = new Set((wmData.satellites || []).map(p => p.name));
+  wmData.satellites = (wmData.satellites || []).concat(extra.filter(p => !existingNames.has(p.name)));
+  wmRebuildPoints();
+}
+
+function wmShowSat(name) {
+  const p = (wmData.satellites || []).find(s => s.name === name);
+  if (p) wmFlyTo(p.lat, p.lng, 2);
+}
+
+function wmFlyTo(lat, lng, alt) {
+  if (!wmGlobe) return;
+  wmGlobe.pointOfView({ lat, lng, altitude: alt || 1.5 }, 1000);
+}
+
+async function wmWeatherClick(lat, lng) {
+  if (!wmActive.has('weather')) return;
+  const tip = document.getElementById('wm-tooltip');
+  tip.style.display = 'block';
+  tip.style.left = '50%'; tip.style.top = '50%'; tip.style.transform = 'translate(-50%,-50%)';
+  tip.innerHTML = 'Loading forecast…';
+  try {
+    const j = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(2)}&longitude=${lng.toFixed(2)}&current_weather=true`)).json();
+    const cw = j.current_weather;
+    tip.innerHTML = cw
+      ? `🌦️ <b>${lat.toFixed(1)}, ${lng.toFixed(1)}</b><br>Temperature: ${cw.temperature}°C<br>Wind: ${cw.windspeed} km/h<br><span style="opacity:0.6;font-size:11px">click elsewhere to close</span>`
+      : 'No data for this point (likely open ocean).';
+  } catch (e) { tip.innerHTML = 'Weather lookup failed.'; }
+  setTimeout(() => { document.addEventListener('click', function h() { tip.style.display = 'none'; document.removeEventListener('click', h); }); }, 50);
 }
 
 // ===== BRAIN =====

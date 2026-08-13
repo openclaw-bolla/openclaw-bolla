@@ -5831,6 +5831,147 @@ def excel_upsert_student(klasse, fach, ka_nr, thema, vorname, nachname, note_str
     return fpath
 
 
+# ===== World Monitor (System > World Monitor) =====
+FIRMS_CRED_FILE = os.path.join(WORKSPACE, "config/firms_credentials.json")
+ACLED_CRED_FILE = os.path.join(WORKSPACE, "config/acled_credentials.json")
+_wm_cache = {}  # key -> (expires_ts, data)
+
+def _wm_cached(key, ttl_seconds, fetch_fn):
+    import time as _time
+    now = _time.time()
+    hit = _wm_cache.get(key)
+    if hit and hit[0] > now:
+        return hit[1]
+    data = fetch_fn()
+    _wm_cache[key] = (now + ttl_seconds, data)
+    return data
+
+def _wm_get_json(url, headers=None, timeout=12):
+    req = urllib.request.Request(url, headers=headers or {"User-Agent": "Mozilla/5.0 (BollaWorldMonitor)"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8", errors="replace"))
+
+def _wm_get_text(url, headers=None, timeout=12):
+    req = urllib.request.Request(url, headers=headers or {"User-Agent": "Mozilla/5.0 (BollaWorldMonitor)"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return resp.read().decode("utf-8", errors="replace")
+
+def wm_earthquakes():
+    def fetch():
+        try:
+            return _wm_get_json("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson")
+        except Exception as e:
+            return {"error": str(e), "features": []}
+    return _wm_cached("earthquakes", 300, fetch)
+
+def wm_flights():
+    def fetch():
+        try:
+            return _wm_get_json("https://opensky-network.org/api/states/all")
+        except Exception as e:
+            return {"error": str(e), "states": []}
+    return _wm_cached("flights", 25, fetch)
+
+_WM_SAT_GROUPS = {"active", "starlink", "gps-ops", "stations", "weather", "science", "geo"}
+
+def wm_satellites(group="stations"):
+    group = group if group in _WM_SAT_GROUPS else "stations"
+    def fetch():
+        try:
+            tle_text = _wm_get_text(f"https://celestrak.org/NORAD/elements/gp.php?GROUP={group}&FORMAT=tle")
+        except Exception as e:
+            return {"error": str(e), "satellites": []}
+        lines = [l for l in tle_text.splitlines() if l.strip()]
+        sats = []
+        for i in range(0, len(lines) - 2, 3):
+            name, l1, l2 = lines[i].strip(), lines[i+1], lines[i+2]
+            if l1.startswith("1 ") and l2.startswith("2 "):
+                sats.append({"name": name, "line1": l1, "line2": l2})
+        return {"group": group, "satellites": sats}
+    return _wm_cached(f"satellites_{group}", 21600, fetch)  # TLEs are slow-changing, 6h cache
+
+def wm_weather():
+    def fetch():
+        try:
+            return _wm_get_json("https://api.rainviewer.com/public/weather-maps.json")
+        except Exception as e:
+            return {"error": str(e)}
+    return _wm_cached("weather", 600, fetch)
+
+def wm_wildfires():
+    def fetch():
+        try:
+            with open(FIRMS_CRED_FILE, encoding="utf-8") as f:
+                key = json.load(f)["map_key"]
+        except Exception:
+            return {"pending": True, "message": "FIRMS MAP_KEY not configured yet."}
+        try:
+            csv_text = _wm_get_text(f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/{key}/VIIRS_SNPP_NRT/world/1")
+        except Exception as e:
+            return {"error": str(e), "fires": []}
+        lines = csv_text.strip().splitlines()
+        if not lines:
+            return {"fires": []}
+        header = lines[0].split(",")
+        fires = []
+        for row in lines[1:]:
+            vals = row.split(",")
+            if len(vals) != len(header):
+                continue
+            d = dict(zip(header, vals))
+            try:
+                fires.append({
+                    "lat": float(d.get("latitude")), "lon": float(d.get("longitude")),
+                    "brightness": float(d.get("bright_ti4", d.get("brightness", 0)) or 0),
+                    "confidence": d.get("confidence"), "date": d.get("acq_date"), "time": d.get("acq_time"),
+                    "frp": float(d.get("frp") or 0),
+                })
+            except (ValueError, TypeError):
+                continue
+        return {"fires": fires, "count": len(fires)}
+    return _wm_cached("wildfires", 600, fetch)
+
+def wm_volcanoes():
+    def fetch():
+        try:
+            data = _wm_get_json(
+                "https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows?service=WFS&version=2.0.0"
+                "&request=GetFeature&typeName=GVP-VOTW:Smithsonian_VOTW_Holocene_Volcanoes"
+                "&outputFormat=application/json"
+            )
+        except Exception as e:
+            return {"error": str(e), "features": []}
+        return data
+    return _wm_cached("volcanoes", 86400, fetch)  # static-ish dataset, daily cache is plenty
+
+def wm_storms():
+    def fetch():
+        try:
+            return _wm_get_json("https://www.nhc.noaa.gov/CurrentStorms.json")
+        except Exception as e:
+            return {"error": str(e), "activeStorms": []}
+    return _wm_cached("storms", 1800, fetch)
+
+def wm_conflicts():
+    def fetch():
+        try:
+            with open(ACLED_CRED_FILE, encoding="utf-8") as f:
+                cred = json.load(f)
+            key = cred.get("api_key") or cred.get("access_token")
+            email = cred.get("email")
+            if not key:
+                raise ValueError("no key")
+        except Exception:
+            return {"pending": True, "message": "ACLED account registered, awaiting email confirmation / API key."}
+        try:
+            url = (f"https://acleddata.com/api/acled/read?key={urllib.parse.quote(key)}"
+                   f"&email={urllib.parse.quote(email)}&limit=1000")
+            return _wm_get_json(url)
+        except Exception as e:
+            return {"error": str(e), "data": []}
+    return _wm_cached("conflicts", 900, fetch)
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass  # silent
@@ -6916,6 +7057,23 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                     qs.get("origin",""), qs.get("dest",""), qs.get("date",""),
                     qs.get("return_date",""), int(qs.get("adults",2))
                 ))
+            elif self.path.startswith("/api/worldmonitor/earthquakes"):
+                self._send_json(wm_earthquakes())
+            elif self.path.startswith("/api/worldmonitor/flights"):
+                self._send_json(wm_flights())
+            elif self.path.startswith("/api/worldmonitor/satellites"):
+                qs = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(self.path).query))
+                self._send_json(wm_satellites(qs.get("group", "stations")))
+            elif self.path.startswith("/api/worldmonitor/weather"):
+                self._send_json(wm_weather())
+            elif self.path.startswith("/api/worldmonitor/wildfires"):
+                self._send_json(wm_wildfires())
+            elif self.path.startswith("/api/worldmonitor/volcanoes"):
+                self._send_json(wm_volcanoes())
+            elif self.path.startswith("/api/worldmonitor/storms"):
+                self._send_json(wm_storms())
+            elif self.path.startswith("/api/worldmonitor/conflicts"):
+                self._send_json(wm_conflicts())
             else:
                 self._send_json({"error": "not found"}, status=404)
         except (BrokenPipeError, ConnectionResetError):

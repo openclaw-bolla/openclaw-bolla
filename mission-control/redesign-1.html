@@ -2,354 +2,402 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Mission Control — Kladde &amp; Tinte</title>
+<title>Mission Control — BLOCKWERK</title>
 <style>
   :root{
-    --paper:#ece0c4;
-    --paper-dark:#e2d3ad;
-    --ink:#4a3826;
-    --ink-soft:#6b5642;
-    --terracotta:#b5502f;
-    --moss:#5c7a4f;
-    --mustard:#c99a2e;
-    --sky:#4d7c8a;
-    --line:#c7b389;
+    --black:#0A0A0A;
+    --white:#FFFFFF;
+    --yellow:#FFE600;
+    --pink:#FF2D55;
+    --blue:#0057FF;
+    --green:#00D26A;
+    --grey:#EDEDED;
   }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;height:100%;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
   body{
-    font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive,sans-serif;
-    background:
-      radial-gradient(circle at 20% 10%, rgba(255,255,255,0.25), transparent 40%),
-      radial-gradient(circle at 80% 80%, rgba(0,0,0,0.04), transparent 45%),
-      repeating-linear-gradient(0deg, rgba(90,70,40,0.03) 0px, rgba(90,70,40,0.03) 1px, transparent 1px, transparent 26px),
-      var(--paper);
-    color:var(--ink);
+    font-family:'Arial Black','Helvetica Neue',Arial,sans-serif;
+    background:var(--grey);
+    color:var(--black);
     display:flex;
     min-height:100vh;
   }
-
-  svg.defs{position:absolute;width:0;height:0;}
-
-  /* ===== Sidebar ===== */
+  /* SIDEBAR */
   .sidebar{
-    width:220px;
+    width:230px;
     flex-shrink:0;
-    background:var(--paper-dark);
-    border-right:3px solid var(--ink-soft);
-    filter:url(#wobble);
-    padding:24px 14px;
-    position:relative;
+    background:var(--black);
+    border-right:6px solid var(--black);
+    box-shadow:6px 0 0 var(--yellow);
+    display:flex;
+    flex-direction:column;
   }
-  .sidebar::before{
-    content:"";
-    position:absolute;
-    top:0; right:-3px; bottom:0;
-    width:10px;
-    background:repeating-linear-gradient(180deg, transparent 0 10px, rgba(74,56,38,0.15) 10px 12px);
+  .sidebar-brand{
+    padding:24px 20px;
+    background:var(--yellow);
+    border-bottom:6px solid var(--black);
   }
-  .brand{
-    font-family:"Segoe Print","Bradley Hand",cursive;
-    font-size:26px;
-    font-weight:bold;
-    color:var(--terracotta);
-    margin:0 0 4px 6px;
-    transform:rotate(-2deg);
-    display:inline-block;
+  .sidebar-brand h1{
+    font-size:22px;
+    letter-spacing:1px;
+    color:var(--black);
+    line-height:1.1;
   }
-  .brand-sub{
-    font-size:13px;
-    color:var(--ink-soft);
-    margin:0 0 26px 8px;
-    font-family:Georgia, serif;
-    font-style:italic;
+  .sidebar-brand span{
+    display:block;
+    font-size:12px;
+    font-weight:normal;
+    font-family:'Courier New',monospace;
+    margin-top:4px;
+    color:var(--black);
   }
-  nav ul{list-style:none;margin:0;padding:0;}
-  nav li{margin-bottom:6px;}
+  nav{
+    list-style:none;
+    display:flex;
+    flex-direction:column;
+  }
+  nav li{
+    border-bottom:3px solid #2A2A2A;
+  }
   nav a{
     display:flex;
     align-items:center;
-    gap:10px;
+    gap:14px;
+    padding:18px 20px;
+    color:var(--white);
     text-decoration:none;
-    color:var(--ink);
-    font-size:16px;
-    padding:9px 12px;
-    border-radius:10px 14px 12px 16px/14px 10px 16px 12px;
-    transition:transform .15s ease;
+    font-size:14px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    border-left:6px solid transparent;
+    transition:none;
   }
-  nav a .ic{font-size:18px;}
-  nav a:hover{transform:rotate(-1deg) translateX(2px);}
+  nav a .dot{
+    width:14px;
+    height:14px;
+    background:var(--pink);
+    flex-shrink:0;
+  }
   nav li.active a{
-    background:#fff8e6;
-    border:2px solid var(--ink-soft);
-    filter:url(#wobble2);
-    box-shadow:2px 2px 0 rgba(74,56,38,0.15);
-    font-weight:bold;
-    color:var(--terracotta);
+    background:var(--pink);
+    border-left:6px solid var(--yellow);
+    color:var(--white);
+  }
+  nav li.active a .dot{
+    background:var(--yellow);
+  }
+  nav a:hover:not(.active a){
+    background:#1E1E1E;
+    border-left:6px solid var(--yellow);
   }
   .sidebar-footer{
-    position:absolute;
-    bottom:18px;
-    left:20px;
-    right:20px;
-    font-size:12px;
-    color:var(--ink-soft);
-    border-top:2px dashed var(--line);
-    padding-top:10px;
+    margin-top:auto;
+    padding:18px 20px;
+    background:#1A1A1A;
+    color:#888;
+    font-family:'Courier New',monospace;
+    font-size:11px;
+    border-top:6px solid var(--black);
   }
 
-  /* ===== Main column ===== */
-  .main-col{flex:1; display:flex; flex-direction:column; min-width:0;}
+  /* MAIN COLUMN */
+  .main-col{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+  }
 
-  /* ===== Topbar ===== */
+  /* TOPBAR */
   .topbar{
+    background:var(--yellow);
+    border-bottom:6px solid var(--black);
+    padding:20px 32px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:20px 32px;
-    border-bottom:3px solid var(--ink-soft);
-    filter:url(#wobble3);
-    background:linear-gradient(180deg, rgba(255,255,255,0.35), transparent);
   }
-  .page-title{
-    font-size:30px;
-    margin:0;
-    color:var(--ink);
-    position:relative;
-    display:inline-block;
-  }
-  .page-title::after{
-    content:"";
-    position:absolute;
-    left:-4px; right:-6px; bottom:-4px;
-    height:10px;
-    background:var(--mustard);
-    opacity:.45;
-    z-index:-1;
-    transform:rotate(-1deg);
-    border-radius:3px 6px 4px 8px;
-  }
-  .clock-badge{
-    font-family:Georgia, serif;
-    background:#fff8e6;
-    border:2px solid var(--ink-soft);
-    filter:url(#wobble2);
-    padding:8px 18px;
-    border-radius:16px 10px 18px 12px/10px 16px 12px 18px;
-    font-size:22px;
+  .topbar h2{
+    font-size:28px;
     letter-spacing:1px;
-    box-shadow:2px 3px 0 rgba(74,56,38,0.18);
+    text-transform:uppercase;
+    color:var(--black);
   }
-  .clock-badge .lbl{
-    display:block;
-    font-family:"Segoe Print",cursive;
-    font-size:11px;
-    color:var(--ink-soft);
-    text-align:center;
+  .topbar .sub{
+    font-family:'Courier New',monospace;
+    font-size:12px;
+    font-weight:normal;
+    margin-top:4px;
+    color:#333;
   }
-
-  /* ===== Grid ===== */
-  .grid{
-    padding:28px 32px;
-    display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(230px,1fr));
-    gap:26px;
-    align-content:start;
-  }
-
-  .card{
-    position:relative;
-    background:#fbf3de;
-    border:2.5px solid var(--ink-soft);
-    filter:url(#wobble2);
-    border-radius:14px 10px 16px 12px/10px 16px 12px 14px;
-    padding:20px 20px 18px;
-    box-shadow:4px 5px 0 rgba(74,56,38,0.15);
-  }
-  .card:nth-child(odd){transform:rotate(-1.1deg);}
-  .card:nth-child(even){transform:rotate(1deg);}
-
-  .tape{
-    position:absolute;
-    top:-14px;
-    left:50%;
-    transform:translateX(-50%) rotate(-3deg);
-    width:70px;
-    height:26px;
-    background:rgba(201,154,46,0.55);
-    border:1px solid rgba(74,56,38,0.2);
-    box-shadow:0 1px 2px rgba(0,0,0,0.15);
-  }
-
-  .card h2{
-    margin:6px 0 14px;
-    font-size:17px;
-    color:var(--ink);
-    display:flex;
-    align-items:center;
-    gap:8px;
-  }
-  .card h2 .ic{font-size:20px;}
-
-  .metric{
-    font-family:Georgia, serif;
-    font-size:38px;
+  .clock-block{
+    background:var(--black);
+    color:var(--yellow);
+    font-family:'Courier New',monospace;
+    font-size:32px;
     font-weight:bold;
-    margin:0;
+    padding:10px 22px;
+    border:4px solid var(--black);
+    box-shadow:6px 6px 0 var(--pink);
+    letter-spacing:2px;
   }
-  .metric.terracotta{color:var(--terracotta);}
-  .metric.moss{color:var(--moss);}
-  .metric.sky{color:var(--sky);}
-  .metric.mustard{color:var(--mustard);}
 
-  .sub{
-    font-family:Georgia, serif;
+  /* MAIN CONTENT */
+  main{
+    flex:1;
+    padding:32px;
+  }
+  .section-label{
+    display:inline-block;
+    background:var(--black);
+    color:var(--white);
     font-size:13px;
-    color:var(--ink-soft);
-    margin:4px 0 0;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    padding:6px 14px;
+    margin-bottom:20px;
   }
-
-  .bar-track{
-    margin-top:14px;
-    height:14px;
-    background:#e6d8b8;
-    border:1.5px solid var(--ink-soft);
-    border-radius:8px;
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(240px,1fr));
+    gap:28px;
+  }
+  .card{
+    background:var(--white);
+    border:5px solid var(--black);
+    box-shadow:10px 10px 0 var(--black);
+    padding:0;
+    display:flex;
+    flex-direction:column;
     overflow:hidden;
   }
-  .bar-fill{
+  .card-top{
+    padding:16px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:5px solid var(--black);
+  }
+  .card-top .label{
+    font-size:13px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--white);
+  }
+  .card-top .icon{
+    width:28px;
+    height:28px;
+    background:var(--black);
+    color:inherit;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:16px;
+    font-weight:bold;
+  }
+  .card-body{
+    padding:24px 20px 28px;
+  }
+  .big-number{
+    font-size:56px;
+    line-height:1;
+    letter-spacing:-1px;
+    color:var(--black);
+    margin-bottom:10px;
+  }
+  .meter{
+    height:18px;
+    background:var(--grey);
+    border:3px solid var(--black);
+    margin-bottom:10px;
+    overflow:hidden;
+  }
+  .meter-fill{
     height:100%;
-    border-radius:8px;
+    background:var(--black);
+  }
+  .card-note{
+    font-family:'Courier New',monospace;
+    font-size:12px;
+    color:#444;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
   }
 
-  .mail-list{list-style:none; margin:0; padding:0; font-family:Georgia, serif; font-size:14px;}
+  .card.ram .card-top{background:var(--pink);}
+  .card.cpu .card-top{background:var(--yellow);}
+  .card.mail .card-top{background:var(--blue);}
+  .card.mail .card-top .label,
+  .card.mail .card-top .icon{color:var(--white);}
+  .card.mail .card-top .icon{background:var(--white);color:var(--blue);}
+  .card.weather .card-top{background:var(--green);}
+
+  .card.cpu .card-top .label,
+  .card.cpu .card-top .icon,
+  .card.ram .card-top .label,
+  .card.ram .card-top .icon,
+  .card.weather .card-top .label,
+  .card.weather .card-top .icon{color:var(--black);}
+  .card.cpu .card-top .icon,
+  .card.ram .card-top .icon,
+  .card.weather .card-top .icon{background:var(--black);color:var(--yellow);}
+
+  .mail-list{
+    list-style:none;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-top:14px;
+  }
   .mail-list li{
-    padding:7px 0;
-    border-bottom:1px dashed var(--line);
+    font-family:'Courier New',monospace;
+    font-size:12px;
+    background:var(--grey);
+    border:2px solid var(--black);
+    padding:8px 10px;
     display:flex;
     justify-content:space-between;
     gap:8px;
   }
-  .mail-list li:last-child{border-bottom:none;}
-  .mail-list .from{color:var(--ink); font-weight:bold;}
-  .mail-list .time{color:var(--ink-soft); font-size:12px; white-space:nowrap;}
-  .mail-list .subj{display:block; font-size:13px; color:var(--ink-soft); font-weight:normal;}
+  .mail-list li b{font-family:Arial, sans-serif;}
 
-  .weather-row{display:flex; align-items:center; gap:16px;}
-  .weather-emoji{font-size:46px;}
-  .weather-city{font-family:Georgia, serif; font-size:14px; color:var(--ink-soft); margin:2px 0 0;}
-
-  .pin{
-    position:absolute;
-    top:-10px;
-    right:16px;
+  .weather-row{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  .weather-row .unit{
     font-size:22px;
-    transform:rotate(15deg);
-    filter:drop-shadow(1px 2px 1px rgba(0,0,0,0.3));
+    color:#444;
+  }
+  .weather-city{
+    font-family:'Courier New',monospace;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:#333;
+    margin-bottom:8px;
   }
 
-  ::selection{background:var(--mustard); color:#fff;}
+  footer.status{
+    margin:0 32px 32px;
+    background:var(--black);
+    color:var(--yellow);
+    border:5px solid var(--black);
+    box-shadow:10px 10px 0 var(--pink);
+    padding:16px 24px;
+    font-family:'Courier New',monospace;
+    font-size:12px;
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    letter-spacing:0.5px;
+  }
+  footer.status span{color:var(--white);}
 </style>
 </head>
 <body>
 
-<svg class="defs">
-  <filter id="wobble">
-    <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="7" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="6"/>
-  </filter>
-  <filter id="wobble2">
-    <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="3" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="4"/>
-  </filter>
-  <filter id="wobble3">
-    <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="1" seed="11" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="5"/>
-  </filter>
-</svg>
-
-<div class="sidebar">
-  <div class="brand">🐾 Bolla</div>
-  <p class="brand-sub">Mission Control</p>
-  <nav>
-    <ul>
-      <li class="active"><a href="#"><span class="ic">🏠</span> Dashboard</a></li>
-      <li><a href="#"><span class="ic">🐾</span> Bolla</a></li>
-      <li><a href="#"><span class="ic">🎓</span> Schule</a></li>
-      <li><a href="#"><span class="ic">📅</span> Kalender</a></li>
-      <li><a href="#"><span class="ic">📧</span> E-Mail</a></li>
-      <li><a href="#"><span class="ic">☀️</span> Wetter</a></li>
-      <li><a href="#"><span class="ic">🖥️</span> System Info</a></li>
-    </ul>
-  </nav>
-  <div class="sidebar-footer">
-    Norderstedt · 08.08.2026<br>
-    alles im grünen Bereich ✓
-  </div>
-</div>
-
-<div class="main-col">
-  <div class="topbar">
-    <h1 class="page-title">Dashboard</h1>
-    <div class="clock-badge">
-      <span class="lbl">Ortszeit</span>
-      20:14
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <h1>MISSION<br>CONTROL</h1>
+      <span>// BOLLA SYSTEM v2</span>
     </div>
-  </div>
-
-  <div class="grid">
-
-    <div class="card">
-      <div class="tape"></div>
-      <h2><span class="ic">🖥️</span> Arbeitsspeicher</h2>
-      <p class="metric moss">34%</p>
-      <p class="sub">5,4 GB von 16 GB belegt</p>
-      <div class="bar-track"><div class="bar-fill" style="width:34%; background:var(--moss);"></div></div>
-    </div>
-
-    <div class="card">
-      <div class="tape"></div>
-      <h2><span class="ic">⚙️</span> CPU-Auslastung</h2>
-      <p class="metric sky">12%</p>
-      <p class="sub">ruhig, kaum was los</p>
-      <div class="bar-track"><div class="bar-fill" style="width:12%; background:var(--sky);"></div></div>
-    </div>
-
-    <div class="card">
-      <span class="pin">📌</span>
-      <h2><span class="ic">📧</span> Neue Mails</h2>
-      <p class="metric terracotta" style="font-size:30px;">3 ungelesen</p>
-      <ul class="mail-list">
-        <li>
-          <span><span class="from">Robin Mandel</span><span class="subj">Famulatur Tansania – letzte Fragen</span></span>
-          <span class="time">19:02</span>
-        </li>
-        <li>
-          <span><span class="from">itslearning</span><span class="subj">Neue Einreichung Klasse 7b</span></span>
-          <span class="time">17:41</span>
-        </li>
-        <li>
-          <span><span class="from">Riverty Inkasso</span><span class="subj">Fristerinnerung 14.08.</span></span>
-          <span class="time">14:18</span>
-        </li>
+    <nav>
+      <ul style="display:contents;">
+        <li class="active"><a href="#"><span class="dot"></span>Dashboard</a></li>
+        <li><a href="#"><span class="dot"></span>Bolla</a></li>
+        <li><a href="#"><span class="dot"></span>Schule</a></li>
+        <li><a href="#"><span class="dot"></span>Kalender</a></li>
+        <li><a href="#"><span class="dot"></span>E-Mail</a></li>
+        <li><a href="#"><span class="dot"></span>Wetter</a></li>
+        <li><a href="#"><span class="dot"></span>System Info</a></li>
       </ul>
+    </nav>
+    <div class="sidebar-footer">
+      STATUS: ONLINE<br>
+      LETZTER SYNC: 20:13:47
     </div>
+  </aside>
 
-    <div class="card">
-      <div class="tape"></div>
-      <h2><span class="ic">☀️</span> Wetter</h2>
-      <div class="weather-row">
-        <span class="weather-emoji">⛅</span>
-        <div>
-          <p class="metric mustard" style="font-size:30px;">18°C</p>
-          <p class="weather-city">Hamburg · leicht bewölkt</p>
-        </div>
+  <div class="main-col">
+    <header class="topbar">
+      <div>
+        <h2>Dashboard</h2>
+        <div class="sub">MITTWOCH · 13. AUGUST 2026</div>
       </div>
-      <p class="sub" style="margin-top:12px;">Wind 14 km/h · Regen 20%</p>
-    </div>
+      <div class="clock-block">20:14</div>
+    </header>
 
+    <main>
+      <div class="section-label">Live Übersicht</div>
+      <div class="grid">
+
+        <div class="card ram">
+          <div class="card-top">
+            <span class="label">Arbeitsspeicher</span>
+            <span class="icon">■</span>
+          </div>
+          <div class="card-body">
+            <div class="big-number">34%</div>
+            <div class="meter"><div class="meter-fill" style="width:34%;background:var(--pink);"></div></div>
+            <div class="card-note">5,4 GB / 16 GB belegt</div>
+          </div>
+        </div>
+
+        <div class="card cpu">
+          <div class="card-top">
+            <span class="label">Prozessor</span>
+            <span class="icon">▲</span>
+          </div>
+          <div class="card-body">
+            <div class="big-number">12%</div>
+            <div class="meter"><div class="meter-fill" style="width:12%;background:var(--yellow);"></div></div>
+            <div class="card-note">4 Kerne · 41°C · Ruhig</div>
+          </div>
+        </div>
+
+        <div class="card mail">
+          <div class="card-top">
+            <span class="label">E-Mail Posteingang</span>
+            <span class="icon">✉</span>
+          </div>
+          <div class="card-body">
+            <div class="big-number">3</div>
+            <div class="card-note" style="margin-bottom:4px;">Neue Nachrichten</div>
+            <ul class="mail-list">
+              <li><b>Robin Mandel</b><span>10:42</span></li>
+              <li><b>Lessing-Gymnasium</b><span>09:15</span></li>
+              <li><b>IONOS Rechnung</b><span>07:58</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card weather">
+          <div class="card-top">
+            <span class="label">Wetter</span>
+            <span class="icon">●</span>
+          </div>
+          <div class="card-body">
+            <div class="weather-city">Hamburg / Norderstedt</div>
+            <div class="weather-row">
+              <div class="big-number">18</div>
+              <div class="unit">°C</div>
+            </div>
+            <div class="card-note">Bewölkt · Wind 14 km/h · Regen 20%</div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <footer class="status">
+      <div>SERVER: <span>127.0.0.1:18790 — AKTIV</span></div>
+      <div>TUNNEL: <span>bolla.chrismandel.de — VERBUNDEN</span></div>
+      <div>UPTIME: <span>14 TAGE 06 STD</span></div>
+    </footer>
   </div>
-</div>
 
 </body>
 </html>
