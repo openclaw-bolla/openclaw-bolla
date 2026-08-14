@@ -5886,6 +5886,22 @@ WM_AIRPORTS = {
     "KDEN": "Denver, USA", "KSFO": "San Francisco, USA", "KSEA": "Seattle, USA", "KMIA": "Miami, USA",
     "KBOS": "Boston, USA", "KIAD": "Washington Dulles, USA", "KIAH": "Houston, USA", "KPHX": "Phoenix, USA",
     "KLAS": "Las Vegas, USA", "KMCO": "Orlando, USA", "KMSP": "Minneapolis, USA", "KDTW": "Detroit, USA",
+    "KCLT": "Charlotte, USA", "KPHL": "Philadelphia, USA", "KDCA": "Washington Reagan, USA",
+    "KBWI": "Baltimore, USA", "KMDW": "Chicago Midway, USA", "KHOU": "Houston Hobby, USA",
+    "KSAN": "San Diego, USA", "KTPA": "Tampa, USA", "KPDX": "Portland, USA", "KSLC": "Salt Lake City, USA",
+    "KSTL": "St. Louis, USA", "KBNA": "Nashville, USA", "KRDU": "Raleigh-Durham, USA",
+    "KSMF": "Sacramento, USA", "KSJC": "San Jose, USA", "KOAK": "Oakland, USA", "KSNA": "Orange County, USA",
+    "KMSY": "New Orleans, USA", "KPIT": "Pittsburgh, USA", "KCLE": "Cleveland, USA", "KCMH": "Columbus, USA",
+    "KCVG": "Cincinnati, USA", "KIND": "Indianapolis, USA", "KMCI": "Kansas City, USA", "KOMA": "Omaha, USA",
+    "KMKE": "Milwaukee, USA", "KOKC": "Oklahoma City, USA", "KTUL": "Tulsa, USA", "KABQ": "Albuquerque, USA",
+    "KELP": "El Paso, USA", "KTUS": "Tucson, USA", "KRNO": "Reno, USA", "KBOI": "Boise, USA",
+    "KGEG": "Spokane, USA", "KANC": "Anchorage, USA", "PHNL": "Honolulu, USA", "KBUF": "Buffalo, USA",
+    "KROC": "Rochester, USA", "KSYR": "Syracuse, USA", "KALB": "Albany, USA", "KBDL": "Hartford, USA",
+    "KPVD": "Providence, USA", "KPWM": "Portland, Maine, USA", "KRIC": "Richmond, USA",
+    "KORF": "Norfolk, USA", "KCHS": "Charleston, USA", "KSAV": "Savannah, USA", "KJAX": "Jacksonville, USA",
+    "KFLL": "Fort Lauderdale, USA", "KPBI": "West Palm Beach, USA", "KRSW": "Fort Myers, USA",
+    "KAUS": "Austin, USA", "KSAT": "San Antonio, USA", "KDAL": "Dallas Love Field, USA",
+    "TBPB": "Bridgetown, Barbados",
     "CYYZ": "Toronto, Canada", "CYVR": "Vancouver, Canada", "CYUL": "Montreal, Canada",
     "MMMX": "Mexico City, Mexico", "MMUN": "Cancun, Mexico",
     # Suedamerika
@@ -5924,10 +5940,27 @@ def _wm_save_route_cache(cache):
 def _wm_airport_label(icao):
     return WM_AIRPORTS.get(icao, icao) if icao else None
 
+def _wm_route_from_hexdb(callsign):
+    """hexdb.io hat deutlich bessere Trefferquote als OpenSky (~59% vs ~14% in Stichproben,
+    13.08.2026), kein Key noetig, 1000 req/5min. Route-Format 'KMIA-TBPB-KMIA' (Hin+Rueck moeglich)."""
+    j = _wm_get_json(f"https://hexdb.io/api/v1/route/icao/{urllib.parse.quote(callsign)}")
+    route = (j.get("route") or "").split("-")
+    origin_icao = route[0] if len(route) > 0 and route[0] else None
+    dest_icao = route[1] if len(route) > 1 and route[1] else None
+    return origin_icao, dest_icao
+
+def _wm_route_from_opensky(callsign):
+    j = _wm_get_json(f"https://opensky-network.org/api/routes?callsign={urllib.parse.quote(callsign)}")
+    route = j.get("route") or []
+    origin_icao = route[0] if len(route) > 0 else None
+    dest_icao = route[1] if len(route) > 1 else None
+    return origin_icao, dest_icao
+
 def wm_flight_route(callsign):
-    """Loest einen Callsign (z.B. 'THY1978') zu Start-/Zielflughafen auf, via OpenSky /api/routes.
+    """Loest einen Callsign (z.B. 'THY1978') zu Start-/Zielflughafen auf. Probiert hexdb.io zuerst
+    (bessere Trefferquote), faellt auf OpenSky /api/routes zurueck (teils andere Flüge abgedeckt).
     Disk-persistenter Cache (7 Tage fuer Treffer, 1 Tag fuer Fehlschlaege) -- Routen aendern sich
-    pro Flugnummer praktisch nie, und das schont das knappe anonyme OpenSky-Tageslimit."""
+    pro Flugnummer praktisch nie."""
     import time as _time
     callsign = (callsign or "").strip().upper()
     if not callsign:
@@ -5938,19 +5971,24 @@ def wm_flight_route(callsign):
     if hit and hit.get("expires", 0) > now:
         return hit["data"]
     ttl_hit, ttl_miss = 7 * 86400, 1 * 86400
-    try:
-        j = _wm_get_json(f"https://opensky-network.org/api/routes?callsign={urllib.parse.quote(callsign)}")
-        route = j.get("route") or []
-        origin_icao = route[0] if len(route) > 0 else None
-        dest_icao = route[1] if len(route) > 1 else None
+    origin_icao = dest_icao = None
+    err = None
+    for source_fn in (_wm_route_from_hexdb, _wm_route_from_opensky):
+        try:
+            origin_icao, dest_icao = source_fn(callsign)
+            if origin_icao or dest_icao:
+                break
+        except Exception as e:
+            err = str(e)
+    if origin_icao or dest_icao:
         data = {
             "callsign": callsign,
             "origin_icao": origin_icao, "origin_city": _wm_airport_label(origin_icao),
             "dest_icao": dest_icao, "dest_city": _wm_airport_label(dest_icao),
         }
-        ttl = ttl_hit if (origin_icao or dest_icao) else ttl_miss
-    except Exception as e:
-        data = {"callsign": callsign, "error": str(e)}
+        ttl = ttl_hit
+    else:
+        data = {"callsign": callsign, "error": err or "no route found"}
         ttl = ttl_miss
     cache[callsign] = {"expires": now + ttl, "data": data}
     _wm_save_route_cache(cache)

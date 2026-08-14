@@ -3,7 +3,7 @@
 
 import json, os, zipfile, html, re, base64, urllib.request, time, uuid
 
-EPUB_PATH = "/mnt/d/OneDrive/Dokumente/AURORA/AURORA_deutsch.epub"
+EPUB_PATH = "/mnt/d/OneDrive/Dokumente/Bolla/AURORA/2_eBook/AURORA_deutsch.epub"
 KI_BUCH   = "/home/bolla/workspace/data/ki_buch.json"
 MC_URL    = "http://127.0.0.1:18790"
 AUTOR     = "Chris Mandel"

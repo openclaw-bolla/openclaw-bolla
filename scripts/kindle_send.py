@@ -44,8 +44,8 @@ def send_epub(token, path, subject):
 if __name__ == "__main__":
     token = refresh_access_token()
     jobs = [
-        ("/mnt/d/OneDrive/Dokumente/AURORA/AURORA_deutsch.epub", "AURORA (deutsch)"),
-        ("/mnt/d/OneDrive/Dokumente/AURORA/AURORA_english.epub", "AURORA (English)"),
+        ("/mnt/d/OneDrive/Dokumente/Bolla/AURORA/2_eBook/AURORA_deutsch.epub", "AURORA (deutsch)"),
+        ("/mnt/d/OneDrive/Dokumente/Bolla/AURORA/2_eBook/AURORA_english.epub", "AURORA (English)"),
     ]
     for path, subj in jobs:
         send_epub(token, path, subj)

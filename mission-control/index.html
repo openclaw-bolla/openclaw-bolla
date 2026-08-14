@@ -9254,7 +9254,14 @@ function initWmGlobe() {
     .pointAltitude('alt')
     .pointColor('color')
     .pointRadius('size')
-    .pointLabel(d => `<div style="background:rgba(10,14,22,0.97);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 11px;font-size:13px;color:#fff;max-width:250px;box-shadow:0 8px 28px rgba(0,0,0,0.55)">${d.label}</div>`)
+    .pointLabel(d => {
+      let extra = '';
+      if (d.type === 'flights' && d.callsign) {
+        const r = wmFlightRouteCache[d.callsign];
+        if (r && r.dest_city) extra = `<br>To: ${r.dest_city}${r.origin_city ? ` (from ${r.origin_city})` : ''}`;
+      }
+      return `<div style="background:rgba(10,14,22,0.97);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 11px;font-size:13px;color:#fff;max-width:250px;box-shadow:0 8px 28px rgba(0,0,0,0.55)">${d.label}${extra}</div>`;
+    })
     .onPointClick(d => { if (d.type === 'weather-hint') return; })
     .onGlobeClick(({ lat, lng }) => wmWeatherClick(lat, lng));
   window.addEventListener('resize', () => {

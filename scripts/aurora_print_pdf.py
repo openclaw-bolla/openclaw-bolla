@@ -26,13 +26,13 @@ from reportlab.platypus.doctemplate import NextPageTemplate
 LANG = (sys.argv[1] if len(sys.argv) > 1 else "de").lower()
 CFG = {
     "de": dict(json="/home/bolla/workspace/data/ki_buch.json",
-               out="/mnt/d/OneDrive/Dokumente/AURORA/AURORA_innenteil_de.pdf",
+               out="/mnt/d/OneDrive/Dokumente/Bolla/AURORA/3_Taschenbuch/1_DE_Innenteil.pdf",
                hyph="de_DE", autor="Chris Mandel",
                t_epilog="Epilog", t_autor="Über den Autor",
                t_dank="Danksagung", t_rezension=None,
                t_prolog="Prolog", t_vorwort="Vorwort"),
     "en": dict(json="/home/bolla/workspace/data/ki_buch_en_adapted.json",
-               out="/mnt/d/OneDrive/Dokumente/AURORA/AURORA_innenteil_en.pdf",
+               out="/mnt/d/OneDrive/Dokumente/Bolla/AURORA/3_Taschenbuch/3_EN_Innenteil.pdf",
                hyph="en_US", autor="Chris Mandel",
                t_epilog="Epilogue", t_autor="About the Author",
                t_dank="Acknowledgements", t_rezension=None,

@@ -24,9 +24,9 @@ def px(inch): return int(round(inch * DPI))
 
 CW, CH = px(COVER_W_IN), px(COVER_H_IN)
 FB = "/home/bolla/workspace/fonts/ebgaramond"
-FRONT_IMG = "/mnt/d/OneDrive/Dokumente/AURORA/cover_kdp.jpg"
+FRONT_IMG = "/mnt/d/OneDrive/Dokumente/Bolla/AURORA/4_Cover_Quellen/AURORA_Cover_Master.png"
 BLURB = Path(f"/home/bolla/workspace/data/klappentext_{LANG}.txt").read_text().strip()
-OUT = f"/mnt/d/OneDrive/Dokumente/AURORA/AURORA_cover_{LANG}.pdf"
+OUT = f"/mnt/d/OneDrive/Dokumente/Bolla/AURORA/3_Taschenbuch/{'2_DE_Cover' if LANG=='de' else '4_EN_Cover'}.pdf"
 
 # Farben (aus Cover gesampelt: dunkles Braun-Schwarz, warmes Orange)
 BG      = (13, 8, 5)
