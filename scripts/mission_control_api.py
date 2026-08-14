@@ -5834,7 +5834,127 @@ def excel_upsert_student(klasse, fach, ka_nr, thema, vorname, nachname, note_str
 # ===== World Monitor (System > World Monitor) =====
 FIRMS_CRED_FILE = os.path.join(WORKSPACE, "config/firms_credentials.json")
 ACLED_CRED_FILE = os.path.join(WORKSPACE, "config/acled_credentials.json")
+WM_FLIGHTROUTE_CACHE_FILE = os.path.join(WORKSPACE, "config/wm_flightroutes_cache.json")
 _wm_cache = {}  # key -> (expires_ts, data)
+
+# ICAO-Code -> "Stadt, Land" fuer die wichtigsten internationalen Flughaefen (keine Vollstaendigkeit,
+# nur die grossen Hubs + alles was man in DE/EU auf Anzeigetafeln sieht). Unbekannte Codes -> roher ICAO-Code.
+WM_AIRPORTS = {
+    # Deutschland
+    "EDDF": "Frankfurt, Germany", "EDDM": "Munich, Germany", "EDDB": "Berlin, Germany",
+    "EDDH": "Hamburg, Germany", "EDDL": "Duesseldorf, Germany", "EDDK": "Cologne, Germany",
+    "EDDS": "Stuttgart, Germany", "EDDN": "Nuremberg, Germany", "EDDW": "Bremen, Germany",
+    "EDDP": "Leipzig, Germany", "EDDV": "Hanover, Germany", "EDDG": "Muenster/Osnabrueck, Germany",
+    "EDLW": "Dortmund, Germany", "EDDC": "Dresden, Germany",
+    # Oesterreich / Schweiz
+    "LOWW": "Vienna, Austria", "LOWS": "Salzburg, Austria", "LOWI": "Innsbruck, Austria",
+    "LSZH": "Zurich, Switzerland", "LSGG": "Geneva, Switzerland", "LSZB": "Bern, Switzerland",
+    # Grossbritannien / Irland
+    "EGLL": "London Heathrow, UK", "EGKK": "London Gatwick, UK", "EGSS": "London Stansted, UK",
+    "EGLC": "London City, UK", "EGCC": "Manchester, UK", "EGPH": "Edinburgh, UK",
+    "EGPF": "Glasgow, UK", "EGGD": "Bristol, UK", "EIDW": "Dublin, Ireland",
+    # Frankreich / Benelux
+    "LFPG": "Paris Charles de Gaulle, France", "LFPO": "Paris Orly, France", "LFMN": "Nice, France",
+    "LFML": "Marseille, France", "LFLL": "Lyon, France", "LFBO": "Toulouse, France",
+    "EBBR": "Brussels, Belgium", "EHAM": "Amsterdam, Netherlands", "ELLX": "Luxembourg",
+    # Spanien / Portugal / Italien
+    "LEMD": "Madrid, Spain", "LEBL": "Barcelona, Spain", "LEPA": "Palma de Mallorca, Spain",
+    "LEMG": "Malaga, Spain", "LEAL": "Alicante, Spain", "LPPT": "Lisbon, Portugal",
+    "LPPR": "Porto, Portugal", "LIRF": "Rome Fiumicino, Italy", "LIMC": "Milan Malpensa, Italy",
+    "LIME": "Bergamo, Italy", "LIRN": "Naples, Italy", "LICJ": "Palermo, Italy", "LIPZ": "Venice, Italy",
+    # Skandinavien / Baltikum
+    "EKCH": "Copenhagen, Denmark", "ENGM": "Oslo, Norway", "ESSA": "Stockholm, Sweden",
+    "EFHK": "Helsinki, Finland", "EETN": "Tallinn, Estonia", "EVRA": "Riga, Latvia", "EYVI": "Vilnius, Lithuania",
+    # Osteuropa / Balkan / Tuerkei
+    "EPWA": "Warsaw, Poland", "EPKK": "Krakow, Poland", "LKPR": "Prague, Czechia",
+    "LHBP": "Budapest, Hungary", "LROP": "Bucharest, Romania", "LBSF": "Sofia, Bulgaria",
+    "LDZA": "Zagreb, Croatia", "LWSK": "Skopje, North Macedonia", "LYBE": "Belgrade, Serbia",
+    "LTFM": "Istanbul, Turkey", "LTFJ": "Istanbul Sabiha Gokcen, Turkey", "LTAI": "Antalya, Turkey",
+    "LTBS": "Dalaman, Turkey", "LTAC": "Ankara, Turkey", "LGAV": "Athens, Greece", "LGIR": "Heraklion, Greece",
+    "UUEE": "Moscow Sheremetyevo, Russia", "UUDD": "Moscow Domodedovo, Russia", "UKBB": "Kyiv, Ukraine",
+    # Naher Osten
+    "OMDB": "Dubai, UAE", "OMAA": "Abu Dhabi, UAE", "OTHH": "Doha, Qatar", "OERK": "Riyadh, Saudi Arabia",
+    "OEJN": "Jeddah, Saudi Arabia", "OKBK": "Kuwait City, Kuwait", "OBBI": "Bahrain",
+    "LLBG": "Tel Aviv, Israel", "OJAI": "Amman, Jordan", "OIIE": "Tehran, Iran",
+    # Afrika
+    "HECA": "Cairo, Egypt", "FACT": "Cape Town, South Africa", "FAOR": "Johannesburg, South Africa",
+    "HKJK": "Nairobi, Kenya", "GMMN": "Casablanca, Morocco", "DTTA": "Tunis, Tunisia", "DAAG": "Algiers, Algeria",
+    "DNMM": "Lagos, Nigeria", "HAAB": "Addis Ababa, Ethiopia",
+    # Nordamerika
+    "KJFK": "New York JFK, USA", "KLGA": "New York LaGuardia, USA", "KEWR": "Newark, USA",
+    "KLAX": "Los Angeles, USA", "KORD": "Chicago, USA", "KATL": "Atlanta, USA", "KDFW": "Dallas, USA",
+    "KDEN": "Denver, USA", "KSFO": "San Francisco, USA", "KSEA": "Seattle, USA", "KMIA": "Miami, USA",
+    "KBOS": "Boston, USA", "KIAD": "Washington Dulles, USA", "KIAH": "Houston, USA", "KPHX": "Phoenix, USA",
+    "KLAS": "Las Vegas, USA", "KMCO": "Orlando, USA", "KMSP": "Minneapolis, USA", "KDTW": "Detroit, USA",
+    "CYYZ": "Toronto, Canada", "CYVR": "Vancouver, Canada", "CYUL": "Montreal, Canada",
+    "MMMX": "Mexico City, Mexico", "MMUN": "Cancun, Mexico",
+    # Suedamerika
+    "SBGR": "Sao Paulo, Brazil", "SBGL": "Rio de Janeiro, Brazil", "SAEZ": "Buenos Aires, Argentina",
+    "SCEL": "Santiago, Chile", "SKBO": "Bogota, Colombia", "SPJC": "Lima, Peru",
+    # Asien
+    "RJTT": "Tokyo Haneda, Japan", "RJAA": "Tokyo Narita, Japan", "RJBB": "Osaka, Japan",
+    "RKSI": "Seoul Incheon, South Korea", "ZBAA": "Beijing, China", "ZBAD": "Beijing Daxing, China",
+    "ZSPD": "Shanghai Pudong, China", "ZSSS": "Shanghai Hongqiao, China", "ZGGG": "Guangzhou, China",
+    "ZUCK": "Chongqing, China", "VHHH": "Hong Kong", "RCTP": "Taipei, Taiwan",
+    "WSSS": "Singapore", "WMKK": "Kuala Lumpur, Malaysia", "VTBS": "Bangkok, Thailand",
+    "VTBD": "Bangkok Don Mueang, Thailand", "WIII": "Jakarta, Indonesia", "RPLL": "Manila, Philippines",
+    "VVTS": "Ho Chi Minh City, Vietnam", "VVNB": "Hanoi, Vietnam", "VABB": "Mumbai, India",
+    "VIDP": "Delhi, India", "VOBL": "Bangalore, India", "VECC": "Kolkata, India", "VOMM": "Chennai, India",
+    "UAAA": "Almaty, Kazakhstan", "UTTT": "Tashkent, Uzbekistan",
+    # Ozeanien
+    "YSSY": "Sydney, Australia", "YMML": "Melbourne, Australia", "YBBN": "Brisbane, Australia",
+    "YPPH": "Perth, Australia", "NZAA": "Auckland, New Zealand",
+}
+
+def _wm_load_route_cache():
+    try:
+        with open(WM_FLIGHTROUTE_CACHE_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def _wm_save_route_cache(cache):
+    try:
+        os.makedirs(os.path.dirname(WM_FLIGHTROUTE_CACHE_FILE), exist_ok=True)
+        with open(WM_FLIGHTROUTE_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(cache, f)
+    except Exception:
+        pass
+
+def _wm_airport_label(icao):
+    return WM_AIRPORTS.get(icao, icao) if icao else None
+
+def wm_flight_route(callsign):
+    """Loest einen Callsign (z.B. 'THY1978') zu Start-/Zielflughafen auf, via OpenSky /api/routes.
+    Disk-persistenter Cache (7 Tage fuer Treffer, 1 Tag fuer Fehlschlaege) -- Routen aendern sich
+    pro Flugnummer praktisch nie, und das schont das knappe anonyme OpenSky-Tageslimit."""
+    import time as _time
+    callsign = (callsign or "").strip().upper()
+    if not callsign:
+        return {"error": "no callsign"}
+    cache = _wm_load_route_cache()
+    hit = cache.get(callsign)
+    now = _time.time()
+    if hit and hit.get("expires", 0) > now:
+        return hit["data"]
+    ttl_hit, ttl_miss = 7 * 86400, 1 * 86400
+    try:
+        j = _wm_get_json(f"https://opensky-network.org/api/routes?callsign={urllib.parse.quote(callsign)}")
+        route = j.get("route") or []
+        origin_icao = route[0] if len(route) > 0 else None
+        dest_icao = route[1] if len(route) > 1 else None
+        data = {
+            "callsign": callsign,
+            "origin_icao": origin_icao, "origin_city": _wm_airport_label(origin_icao),
+            "dest_icao": dest_icao, "dest_city": _wm_airport_label(dest_icao),
+        }
+        ttl = ttl_hit if (origin_icao or dest_icao) else ttl_miss
+    except Exception as e:
+        data = {"callsign": callsign, "error": str(e)}
+        ttl = ttl_miss
+    cache[callsign] = {"expires": now + ttl, "data": data}
+    _wm_save_route_cache(cache)
+    return data
 
 def _wm_cached(key, ttl_seconds, fetch_fn):
     import time as _time
@@ -7118,6 +7238,9 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 self._send_json(wm_storms())
             elif self.path.startswith("/api/worldmonitor/conflicts"):
                 self._send_json(wm_conflicts())
+            elif self.path.startswith("/api/worldmonitor/flightroute"):
+                qs = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(self.path).query))
+                self._send_json(wm_flight_route(qs.get("callsign", "")))
             else:
                 self._send_json({"error": "not found"}, status=404)
         except (BrokenPipeError, ConnectionResetError):
