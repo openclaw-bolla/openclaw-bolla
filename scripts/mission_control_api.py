@@ -5952,23 +5952,67 @@ def wm_storms():
             return {"error": str(e), "activeStorms": []}
     return _wm_cached("storms", 1800, fetch)
 
+_GDELT_CONFLICT_ROOT_CODES = {"18", "19", "20"}  # Assault, Fight, Use of unconventional mass violence
+
+def _gdelt_slot_urls(n_slots=4):
+    """Letzte n_slots GDELT-2.0-15-Minuten-Exportdateien (Namensmuster ist deterministisch,
+    kein API-Call nötig um sie zu finden)."""
+    import datetime as _dt
+    now = _dt.datetime.now(_dt.timezone.utc)
+    minute = (now.minute // 15) * 15
+    slot = now.replace(minute=minute, second=0, microsecond=0) - _dt.timedelta(minutes=15)  # letzte fertige Datei
+    urls = []
+    for _ in range(n_slots):
+        ts = slot.strftime("%Y%m%d%H%M%S")
+        urls.append(f"http://data.gdeltproject.org/gdeltv2/{ts}.export.CSV.zip")
+        slot -= _dt.timedelta(minutes=15)
+    return urls
+
 def wm_conflicts():
+    """GDELT 2.0 Event Database (offen, kein Key/Login) statt ACLED — ACLED erlaubt auf der
+    kostenlosen 'Open'-Stufe grundsaetzlich keinen API-Zugriff (403, dokumentierte Grenze).
+    GDELT liefert automatisch aus Nachrichtenartikeln CAMEO-kodierte Ereignisse; das ist deutlich
+    rauschiger als eine kuratierte Konfliktdatenbank (Fehlkodierungen kommen vor), aber die einzige
+    komplett self-service verfuegbare Quelle mit Geo-Koordinaten in Echtzeit."""
     def fetch():
-        try:
-            with open(ACLED_CRED_FILE, encoding="utf-8") as f:
-                cred = json.load(f)
-            key = cred.get("api_key") or cred.get("access_token")
-            email = cred.get("email")
-            if not key:
-                raise ValueError("no key")
-        except Exception:
-            return {"pending": True, "message": "ACLED account registered, awaiting email confirmation / API key."}
-        try:
-            url = (f"https://acleddata.com/api/acled/read?key={urllib.parse.quote(key)}"
-                   f"&email={urllib.parse.quote(email)}&limit=1000")
-            return _wm_get_json(url)
-        except Exception as e:
-            return {"error": str(e), "data": []}
+        import io, zipfile
+        seen = {}  # (round(lat,1), round(lon,1), root_code) -> best row (dedupe gegen Artikel-Dubletten)
+        for url in _gdelt_slot_urls(4):  # letzte ~60 Min
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (BollaWorldMonitor)"})
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    raw = resp.read()
+                with zipfile.ZipFile(io.BytesIO(raw)) as z:
+                    text = z.read(z.namelist()[0]).decode("utf-8", errors="replace")
+            except Exception:
+                continue  # einzelnes fehlendes/verzoegertes Slot ist normal, einfach ueberspringen
+            for line in text.splitlines():
+                c = line.split("\t")
+                if len(c) != 61:
+                    continue
+                if c[29] != "4" or c[28] not in _GDELT_CONFLICT_ROOT_CODES:  # QuadClass 4 = Material Conflict
+                    continue
+                try:
+                    lat, lon, mentions = float(c[56]), float(c[57]), float(c[31])
+                except ValueError:
+                    continue
+                if mentions < 4 or (lat == 0 and lon == 0):
+                    continue
+                dkey = (round(lat, 1), round(lon, 1), c[28])
+                if dkey in seen and seen[dkey]["mentions"] >= mentions:
+                    continue
+                seen[dkey] = {
+                    "lat": lat, "lon": lon, "location": c[52], "event_code": c[26],
+                    "root_code": c[28], "goldstein": c[30], "mentions": mentions,
+                    "articles": c[33], "date_added": c[59], "url": c[60],
+                }
+        events = sorted(seen.values(), key=lambda e: -e["mentions"])[:300]
+        return {
+            "conflicts": events, "count": len(events),
+            "source": "GDELT 2.0 Event Database (automated news event-coding, last ~60 min) — "
+                      "experimental global unrest signal, NOT a curated conflict database like ACLED/UCDP. "
+                      "Coding is automated from news text and can misclassify unrelated stories.",
+        }
     return _wm_cached("conflicts", 900, fetch)
 
 

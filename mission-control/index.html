@@ -9113,7 +9113,7 @@ async function loadSystem() {
 const WM_LAYERS = [
   { key: 'earthquakes', label: 'Earthquakes', icon: '🌎', color: '#f97316' },
   { key: 'flights',     label: 'Flight Routes', icon: '✈️', color: '#38bdf8', search: true },
-  { key: 'conflicts',   label: 'Conflicts', icon: '⚔️', color: '#ef4444' },
+  { key: 'conflicts',   label: 'Conflicts (beta)', icon: '⚔️', color: '#ef4444', title: 'Automated news event-coding (GDELT) — experimental, not a curated conflict database' },
   { key: 'satellites',  label: 'Satellites', icon: '🛰️', color: '#a78bfa', search: true, group: true },
   { key: 'weather',     label: 'Weather (click globe)', icon: '🌦️', color: '#22c55e' },
   { key: 'wildfires',   label: 'Wildfires', icon: '🔥', color: '#fb923c' },
@@ -9168,7 +9168,7 @@ function renderWmPanel() {
         <div id="wm-sat-results" style="max-height:140px;overflow-y:auto;margin-top:4px;font-size:13px;color:var(--dim)"></div>
       </div>`;
     }
-    return `<label style="display:flex;align-items:center;gap:8px;padding:7px 4px;cursor:pointer;border-radius:6px" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background=''">
+    return `<label title="${l.title||''}" style="display:flex;align-items:center;gap:8px;padding:7px 4px;cursor:pointer;border-radius:6px" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background=''">
         <input type="checkbox" id="wm-cb-${l.key}" onchange="wmToggleLayer('${l.key}', this.checked)" style="width:16px;height:16px;accent-color:${l.color}">
         <span>${l.icon}</span><span style="flex:1">${l.label}</span>
         <span id="wm-count-${l.key}" style="font-size:11px;color:var(--dim)"></span>
@@ -9243,10 +9243,11 @@ async function wmFetchLayer(key, opts) {
     }));
   } else if (key === 'conflicts') {
     const j = await (await fetch('/api/worldmonitor/conflicts')).json();
-    if (j.pending) { wmData.conflicts = []; document.getElementById('wm-count-conflicts').textContent = 'pending activation'; }
-    else wmData.conflicts = (j.data || []).map(c => ({
-      lat: parseFloat(c.latitude), lng: parseFloat(c.longitude), alt: 0.006, size: 0.16, color: '#ef4444',
-      label: `⚔️ ${c.event_type||''} — ${c.location||''}, ${c.country||''}`, type: 'conflicts'
+    const rootLabel = { '18': 'Assault', '19': 'Fight', '20': 'Mass violence' };
+    wmData.conflicts = (j.conflicts || []).map(c => ({
+      lat: c.lat, lng: c.lon, alt: 0.006, size: 0.16, color: '#ef4444',
+      label: `⚔️ ${rootLabel[c.root_code]||'Conflict'} — ${c.location||''}<br>Mentions: ${Math.round(c.mentions)} · <a href="${c.url}" target="_blank" style="color:#93c5fd">source</a>`,
+      type: 'conflicts'
     })).filter(p => !isNaN(p.lat) && !isNaN(p.lng));
   } else if (key === 'flights') {
     const j = await (await fetch('/api/worldmonitor/flights')).json();
