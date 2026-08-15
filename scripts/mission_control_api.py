@@ -5835,6 +5835,7 @@ def excel_upsert_student(klasse, fach, ka_nr, thema, vorname, nachname, note_str
 FIRMS_CRED_FILE = os.path.join(WORKSPACE, "config/firms_credentials.json")
 ACLED_CRED_FILE = os.path.join(WORKSPACE, "config/acled_credentials.json")
 WM_FLIGHTROUTE_CACHE_FILE = os.path.join(WORKSPACE, "config/wm_flightroutes_cache.json")
+WM_AIRPORTCOORD_CACHE_FILE = os.path.join(WORKSPACE, "config/wm_airportcoords_cache.json")
 _wm_cache = {}  # key -> (expires_ts, data)
 
 # ICAO-Code -> "Stadt, Land" fuer die wichtigsten internationalen Flughaefen (keine Vollstaendigkeit,
@@ -5940,6 +5941,39 @@ def _wm_save_route_cache(cache):
 def _wm_airport_label(icao):
     return WM_AIRPORTS.get(icao, icao) if icao else None
 
+def _wm_load_airportcoord_cache():
+    try:
+        with open(WM_AIRPORTCOORD_CACHE_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def _wm_save_airportcoord_cache(cache):
+    try:
+        os.makedirs(os.path.dirname(WM_AIRPORTCOORD_CACHE_FILE), exist_ok=True)
+        with open(WM_AIRPORTCOORD_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(cache, f)
+    except Exception:
+        pass
+
+def _wm_airport_coords(icao):
+    """Koordinaten + Vollname eines Flughafens via hexdb.io (fuer die Routenlinie auf dem Globus).
+    Dauerhaft gecacht -- Flughaefen bewegen sich nicht, anders als der Routen-Cache oben keine TTL noetig."""
+    if not icao:
+        return None
+    cache = _wm_load_airportcoord_cache()
+    if icao in cache:
+        return cache[icao]
+    try:
+        j = _wm_get_json(f"https://hexdb.io/api/v1/airport/icao/{urllib.parse.quote(icao)}")
+        lat, lon = j.get("latitude"), j.get("longitude")
+        data = None if lat is None or lon is None else {"lat": lat, "lon": lon, "name": j.get("airport") or icao}
+    except Exception:
+        data = None
+    cache[icao] = data
+    _wm_save_airportcoord_cache(cache)
+    return data
+
 def _wm_route_from_hexdb(callsign):
     """hexdb.io hat deutlich bessere Trefferquote als OpenSky (~59% vs ~14% in Stichproben,
     13.08.2026), kein Key noetig, 1000 req/5min. Route-Format 'KMIA-TBPB-KMIA' (Hin+Rueck moeglich)."""
@@ -5981,10 +6015,16 @@ def wm_flight_route(callsign):
         except Exception as e:
             err = str(e)
     if origin_icao or dest_icao:
+        origin_coord = _wm_airport_coords(origin_icao)
+        dest_coord = _wm_airport_coords(dest_icao)
         data = {
             "callsign": callsign,
             "origin_icao": origin_icao, "origin_city": _wm_airport_label(origin_icao),
+            "origin_name": (origin_coord or {}).get("name"),
+            "origin_lat": (origin_coord or {}).get("lat"), "origin_lon": (origin_coord or {}).get("lon"),
             "dest_icao": dest_icao, "dest_city": _wm_airport_label(dest_icao),
+            "dest_name": (dest_coord or {}).get("name"),
+            "dest_lat": (dest_coord or {}).get("lat"), "dest_lon": (dest_coord or {}).get("lon"),
         }
         ttl = ttl_hit
     else:
@@ -6025,7 +6065,11 @@ def wm_earthquakes():
 def wm_flights():
     def fetch():
         try:
-            return _wm_get_json("https://opensky-network.org/api/states/all")
+            # Europa-Ausschnitt statt global: weltweit sind das 13000+ Flugzeuge gleichzeitig, wovon
+            # nur eine Handvoll je ein DE/EU-Ziel hat -- Zielort-Suche (Stuttgart, Muenchen, ...) fand
+            # praktisch nie etwas. Kleinerer Bbox kostet OpenSky-seitig auch weniger Anfrage-Budget.
+            url = "https://opensky-network.org/api/states/all?lamin=34&lomin=-25&lamax=72&lomax=45"
+            return _wm_get_json(url)
         except Exception as e:
             return {"error": str(e), "states": []}
     return _wm_cached("flights", 25, fetch)

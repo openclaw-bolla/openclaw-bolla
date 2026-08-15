@@ -9124,6 +9124,15 @@ const WM_LAYERS = [
   { key: 'storms',      label: 'Tropical Storms', icon: '🌀', color: '#60a5fa' },
 ];
 const WM_SAT_GROUPS = ['stations','active','starlink','gps-ops','weather','science','geo'];
+const WM_SAT_GROUP_INFO = {
+  stations: 'Space stations — ISS, Tiangong and their modules. A small, specific group, not "all satellites".',
+  active: 'Every currently active satellite — by far the largest group.',
+  starlink: 'SpaceX Starlink internet constellation.',
+  'gps-ops': 'Operational GPS navigation satellites.',
+  weather: 'Weather observation satellites.',
+  science: 'Science & research satellites.',
+  geo: 'Geostationary satellites — TV/communications, fixed position over the equator.',
+};
 const WM_SAT_REGIONS = {
   global:   null,
   europe:   { latMin: 34, latMax: 72, ranges: [[-25, 45]] },
@@ -9142,6 +9151,10 @@ let wmSatGroup = 'stations';
 let wmSatRegion = 'global';
 let wmFlightRouteCache = {}; // callsign -> {dest_city,...} resolved via /api/worldmonitor/flightroute (session-scoped, rate-limit-safe)
 let wmFlightsTrickleDone = false;
+let wmFlightResolveBudget = 300; // session-wide cap on route lookups, shared by trickle+search+selection — protects OpenSky/hexdb quota
+let wmFlightDeepSearched = new Set(); // destination-text queries already deep-resolved this session, don't re-burn budget on every keystroke
+let wmSelectedFlight = null; // {callsign,lat,lng} of the one flight isolated on the globe, or null for normal multi-layer view
+let wmSelectedSat = null; // {name,lat,lng,altKm,velKmS,periodMin,inclDeg} of the one satellite shown as a 🛰️ marker instead of a bar
 let wmRefreshTimer = null;
 let wmInitialized = false;
 
@@ -9193,6 +9206,7 @@ function wmInjectCss() {
 function loadWorldMonitor() {
   wmInjectCss();
   renderWmPanel();
+  wmPrefetchCounts(); // fire-and-forget: numbers should already sit there the moment you click a topic, not after
   const boot = () => {
     if (window.Globe && window.satellite) { initWmGlobe(); return; }
     const need = [];
@@ -9215,12 +9229,14 @@ function renderWmPanel() {
     let extra = '';
     if (l.key === 'flights') {
       extra = `<div id="wm-flights-extra" class="wm-extra" style="display:none">
+        <div id="wm-flight-selected" style="display:none"></div>
         <input id="wm-flight-search" placeholder="🔍 Callsign or destination city…" oninput="wmFilterFlights(this.value)" class="wm-input">
         <div id="wm-flight-results" class="wm-results"></div>
       </div>`;
     }
     if (l.key === 'satellites') {
       extra = `<div id="wm-sat-extra" class="wm-extra" style="display:none">
+        <div id="wm-sat-selected" style="display:none"></div>
         <div style="display:flex;gap:6px">
           <select id="wm-sat-group" onchange="wmChangeSatGroup(this.value)" class="wm-input" style="flex:1">
             ${WM_SAT_GROUPS.map(g => `<option value="${g}">${g}</option>`).join('')}
@@ -9229,6 +9245,7 @@ function renderWmPanel() {
             ${Object.keys(WM_SAT_REGION_LABELS).map(k => `<option value="${k}">${WM_SAT_REGION_LABELS[k]}</option>`).join('')}
           </select>
         </div>
+        <div id="wm-sat-groupinfo" style="font-size:12px;color:var(--dim);margin:-2px 0 2px 2px">${WM_SAT_GROUP_INFO[wmSatGroup]||''}</div>
         <input id="wm-sat-search" placeholder="🔍 Search satellite name…" oninput="wmFilterSats(this.value)" class="wm-input">
         <div id="wm-sat-results" class="wm-results"></div>
       </div>`;
@@ -9262,7 +9279,10 @@ function initWmGlobe() {
       }
       return `<div style="background:rgba(10,14,22,0.97);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 11px;font-size:13px;color:#fff;max-width:250px;box-shadow:0 8px 28px rgba(0,0,0,0.55)">${d.label}${extra}</div>`;
     })
-    .onPointClick(d => { if (d.type === 'weather-hint') return; })
+    .onPointClick(d => {
+      if (d.type === 'flights' && d.callsign) wmSelectFlight(d.callsign);
+      else if (d.type === 'satellites' && d.name) wmSelectSat(d.name);
+    })
     .onGlobeClick(({ lat, lng }) => wmWeatherClick(lat, lng));
   window.addEventListener('resize', () => {
     if (!wmGlobe) return;
@@ -9270,9 +9290,21 @@ function initWmGlobe() {
     wmGlobe.width(c.clientWidth).height(c.clientHeight);
   });
   if (!wmRefreshTimer) wmRefreshTimer = setInterval(wmRefreshActive, 300000); // 5 min — OpenSky anonymous quota is ~400 req/day
+  if (wmSatRaw.length) wmRecomputeSatPoints(); // satellite.js just finished loading — redo any prefetch that came back empty because of it
 }
 
 function wmSetLoading(on) { document.getElementById('wm-loading').style.display = on ? 'flex' : 'none'; }
+
+// Prefetch every layer's data in the background as soon as the panel renders, so the count badge
+// is already sitting there the instant you click a topic — not fetched-on-click with a visible delay.
+// Flights: fetch the state list for the count, but skip the destination trickle-resolve (that one
+// burns OpenSky's tight anonymous route-lookup quota and should only run once flights is actually active).
+async function wmPrefetchCounts() {
+  await Promise.all(WM_LAYERS.filter(l => l.key !== 'weather').map(async l => {
+    if (wmData[l.key]) return;
+    try { await wmFetchLayer(l.key, { noTrickle: true }); } catch (e) { console.error('wm prefetch', l.key, e); }
+  }));
+}
 
 async function wmToggleLayer(key, on) {
   if (on) wmActive.add(key); else wmActive.delete(key);
@@ -9282,7 +9314,10 @@ async function wmToggleLayer(key, on) {
     row.classList.toggle('active', on);
     row.style.borderLeftColor = on ? color : color + '55';
   }
-  if (key === 'flights') document.getElementById('wm-flights-extra').style.display = on ? 'flex' : 'none';
+  if (key === 'flights') {
+    document.getElementById('wm-flights-extra').style.display = on ? 'flex' : 'none';
+    if (on) wmTrickleResolveFlights(); else wmClearFlightSelection();
+  }
   if (key === 'satellites') document.getElementById('wm-sat-extra').style.display = on ? 'flex' : 'none';
   if (key === 'weather') { wmRebuildPoints(); return; } // weather has no point layer, click-only
   if (on && !wmData[key]) {
@@ -9334,7 +9369,7 @@ async function wmFetchLayer(key, opts) {
       label: `✈️ ${(s[1]||'?').trim()} — ${s[2]||''}<br>Alt: ${Math.round((s[7]||0))}m`,
       type: 'flights', callsign: (s[1]||'').trim()
     }));
-    wmTrickleResolveFlights(); // fire-and-forget: resolve a small batch of destinations so city search has data to work with
+    if (!(opts && opts.noTrickle)) wmTrickleResolveFlights(); // resolve a small batch of destinations so city search has data to work with
   } else if (key === 'satellites') {
     const group = (opts && opts.group) || wmSatGroup;
     const j = await (await fetch('/api/worldmonitor/satellites?group=' + encodeURIComponent(group))).json();
@@ -9348,6 +9383,7 @@ async function wmFetchLayer(key, opts) {
 }
 
 function wmPropagateSats(list) {
+  if (!window.satellite) return []; // satellite.js still loading (e.g. during background prefetch) — retried once it's ready
   const now = new Date();
   const gmst = satellite.gstime(now);
   const out = [];
@@ -9360,9 +9396,16 @@ function wmPropagateSats(list) {
       const lat = satellite.degreesLat(geo.latitude);
       const lng = satellite.degreesLong(geo.longitude);
       const altKm = geo.height;
+      const velKmS = pv.velocity ? Math.sqrt(pv.velocity.x ** 2 + pv.velocity.y ** 2 + pv.velocity.z ** 2) : null;
+      const periodMin = satrec.no ? (2 * Math.PI / satrec.no) : null; // satrec.no = mean motion in rad/min
+      const inclDeg = satrec.inclo != null ? satrec.inclo * (180 / Math.PI) : null;
       out.push({
-        lat, lng, alt: Math.min(3, Math.max(0.05, altKm / 6371)), size: 0.12, color: '#a78bfa',
-        label: `🛰️ ${s.name}<br>Altitude: ${Math.round(altKm)} km`, type: 'satellites', name: s.name
+        lat, lng, alt: Math.min(3, Math.max(0.05, altKm / 6371)), size: 0.17, color: '#a78bfa',
+        label: `🛰️ ${s.name}<br>Altitude: ${Math.round(altKm)} km` +
+          (velKmS != null ? `<br>Speed: ${velKmS.toFixed(2)} km/s` : '') +
+          (periodMin != null ? `<br>Orbit period: ${periodMin.toFixed(1)} min` : '') +
+          (inclDeg != null ? `<br>Inclination: ${inclDeg.toFixed(1)}°` : ''),
+        type: 'satellites', name: s.name, altKm, velKmS, periodMin, inclDeg
       });
     } catch (e) { /* skip bad TLE */ }
   }
@@ -9373,8 +9416,17 @@ function wmRebuildPoints() {
   wmUpdateStatsBar();
   if (!wmGlobe) return;
   let pts = [];
-  wmActive.forEach(key => { if (wmData[key]) pts = pts.concat(wmData[key]); });
+  wmActive.forEach(key => {
+    if (!wmData[key]) return;
+    if (key === 'flights' && wmSelectedFlight) return; // replaced below by just the one selected flight
+    pts = pts.concat(wmData[key]);
+  });
+  if (wmSelectedFlight) {
+    pts.push({ lat: wmSelectedFlight.lat, lng: wmSelectedFlight.lng, alt: 0.03, size: 0.24, color: '#38bdf8',
+      label: `✈️ ${wmSelectedFlight.callsign}`, type: 'flights', callsign: wmSelectedFlight.callsign });
+  }
   wmGlobe.pointsData(pts);
+  wmRenderOverlays();
 }
 
 function wmUpdateStatsBar() {
@@ -9402,28 +9454,116 @@ async function wmRefreshActive() {
 
 // ── Flights: callsign search (instant) + destination-city search (via resolved-routes cache) ──
 async function wmResolveRoute(callsign) {
+  if (wmFlightResolveBudget <= 0) { wmFlightRouteCache[callsign] = wmFlightRouteCache[callsign] || { callsign, error: 'budget exhausted' }; return; }
+  wmFlightResolveBudget--;
   try {
     wmFlightRouteCache[callsign] = await (await fetch('/api/worldmonitor/flightroute?callsign=' + encodeURIComponent(callsign))).json();
   } catch (e) { wmFlightRouteCache[callsign] = { callsign, error: 'lookup failed' }; }
 }
 
 async function wmTrickleResolveFlights() {
-  // One-time, capped background resolve so destination-city search has data from the start —
-  // NEVER bulk-resolve all visible flights, OpenSky's anonymous route lookups share a tight daily quota.
+  // One-time, capped background resolve so destination-city search has real data from the start.
+  // Flights layer is now Europe-scoped (a few thousand, not 13000+ worldwide), so a bigger sample here
+  // gives city search realistic odds — still bounded by wmFlightResolveBudget, never unlimited.
   if (wmFlightsTrickleDone) return;
   wmFlightsTrickleDone = true;
-  const sample = [...new Set((wmData.flights || []).map(f => f.callsign))].filter(cs => cs && !(cs in wmFlightRouteCache)).slice(0, 30);
+  const sample = [...new Set((wmData.flights || []).map(f => f.callsign))].filter(cs => cs && !(cs in wmFlightRouteCache)).slice(0, 120);
   for (const cs of sample) { await wmResolveRoute(cs); }
   if (document.getElementById('wm-flight-search')) wmFilterFlights(document.getElementById('wm-flight-search').value);
 }
 
-function wmRenderFlightResults(matches, q) {
+function wmRenderFlightResults(matches, q, searching) {
   const box = document.getElementById('wm-flight-results');
+  if (searching) { box.innerHTML = '<div style="opacity:0.6">🔍 Searching more flights…</div>'; return; }
   box.innerHTML = matches.slice(0, 40).map(f => {
     const r = wmFlightRouteCache[f.callsign];
     const dest = r ? (r.dest_city ? `→ ${r.dest_city}` : '') : '<span style="opacity:.5">resolving…</span>';
-    return `<div class="wm-result-item" onclick="wmFlyTo(${f.lat},${f.lng})"><b>${f.callsign || '?'}</b> <span class="wm-result-dest">${dest}</span></div>`;
-  }).join('') || (q ? '<div style="opacity:0.6">No match</div>' : '');
+    return `<div class="wm-result-item" onclick="wmSelectFlight('${(f.callsign||'').replace(/'/g,"\\'")}')"><b>${f.callsign || '?'}</b> <span class="wm-result-dest">${dest}</span></div>`;
+  }).join('') || (q ? '<div style="opacity:0.6">No match right now — live snapshot, try again shortly</div>' : '');
+}
+
+// ── Flight selection: isolate one flight, draw its route as an arc with named airport labels + a live plane marker ──
+async function wmSelectFlight(callsign) {
+  const f = (wmData.flights || []).find(x => x.callsign === callsign);
+  if (!f) return;
+  if (!(callsign in wmFlightRouteCache)) {
+    wmSetLoading(true);
+    await wmResolveRoute(callsign);
+    wmSetLoading(false);
+  }
+  wmSelectedFlight = { callsign, lat: f.lat, lng: f.lng };
+  wmUpdateSelectedFlightUI();
+  wmRebuildPoints();
+  wmGlobe.pointOfView({ lat: f.lat, lng: f.lng, altitude: 1.6 }, 800);
+}
+
+function wmClearFlightSelection() {
+  if (!wmSelectedFlight) return;
+  wmSelectedFlight = null;
+  wmUpdateSelectedFlightUI();
+  wmRebuildPoints();
+}
+
+function wmUpdateSelectedFlightUI() {
+  const box = document.getElementById('wm-flight-selected');
+  if (!box) return;
+  if (!wmSelectedFlight) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  const r = wmFlightRouteCache[wmSelectedFlight.callsign] || {};
+  const from = r.origin_name || r.origin_city || r.origin_icao || '?';
+  const to = r.dest_name || r.dest_city || r.dest_icao || '?';
+  box.style.cssText = 'display:block;padding:8px 9px;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.3);border-radius:8px;font-size:13px;margin-bottom:2px';
+  box.innerHTML = `<b>✈️ ${wmSelectedFlight.callsign}</b><br><span style="color:var(--dim);font-size:12px">${from} → ${to}</span><br>
+    <span onclick="wmClearFlightSelection()" style="cursor:pointer;color:#93c5fd;font-size:12px">✕ Auswahl aufheben — alle Flüge wieder anzeigen</span>`;
+}
+
+function wmRenderOverlays() {
+  // Combined arc/label/marker layer for whatever's currently selected (flight and/or satellite) —
+  // Globe.gl only has one htmlElementsData layer, so a plane and a satellite marker must share it.
+  if (!wmGlobe) return;
+  if (!wmSelectedFlight) {
+    wmGlobe.arcsData([]).labelsData([]);
+  } else {
+    const r = wmFlightRouteCache[wmSelectedFlight.callsign] || {};
+    const arcs = [];
+    if (r.origin_lat != null && r.dest_lat != null) {
+      arcs.push({ startLat: r.origin_lat, startLng: r.origin_lon, endLat: r.dest_lat, endLng: r.dest_lon, color: '#38bdf8' });
+    }
+    wmGlobe.arcsData(arcs)
+      .arcColor('color')
+      .arcStroke(0.6)
+      .arcDashLength(0.4)
+      .arcDashGap(0.25)
+      .arcDashAnimateTime(2200);
+    const labels = [];
+    if (r.origin_lat != null) labels.push({ lat: r.origin_lat, lng: r.origin_lon, text: r.origin_name || r.origin_city || r.origin_icao });
+    if (r.dest_lat != null) labels.push({ lat: r.dest_lat, lng: r.dest_lon, text: r.dest_name || r.dest_city || r.dest_icao });
+    wmGlobe.labelsData(labels)
+      .labelLat('lat').labelLng('lng').labelText('text')
+      .labelSize(1.1).labelDotRadius(0.35).labelResolution(2)
+      .labelColor(() => 'rgba(255,255,255,0.92)');
+  }
+  const markers = [];
+  if (wmSelectedFlight) markers.push({ kind: 'plane', lat: wmSelectedFlight.lat, lng: wmSelectedFlight.lng });
+  if (wmSelectedSat) markers.push({ kind: 'sat', lat: wmSelectedSat.lat, lng: wmSelectedSat.lng });
+  wmGlobe.htmlElementsData(markers)
+    .htmlLat('lat').htmlLng('lng')
+    .htmlElement(d => {
+      const el = document.createElement('div');
+      el.textContent = d.kind === 'plane' ? '✈️' : '🛰️';
+      const color = d.kind === 'plane' ? '#38bdf8' : '#a78bfa';
+      el.style.cssText = `font-size:${d.kind === 'plane' ? 20 : 18}px;transform:translate(-50%,-50%);filter:drop-shadow(0 0 5px ${color})`;
+      return el;
+    });
+}
+
+function wmMatchFlights(all, q) {
+  let m = all.filter(f => f.callsign.toUpperCase().includes(q));
+  m = m.concat(all.filter(f => {
+    if (m.includes(f)) return false;
+    const r = wmFlightRouteCache[f.callsign];
+    return r && r.dest_city && r.dest_city.toUpperCase().includes(q);
+  }));
+  return m;
 }
 
 async function wmFilterFlights(q) {
@@ -9431,25 +9571,27 @@ async function wmFilterFlights(q) {
   const box = document.getElementById('wm-flight-results');
   if (!q) { box.innerHTML = ''; return; }
   const all = wmData.flights || [];
-  let matches = all.filter(f => f.callsign.toUpperCase().includes(q));
-  // also surface flights whose destination (already resolved, from the trickle-batch or an earlier search) matches
-  matches = matches.concat(all.filter(f => {
-    if (matches.includes(f)) return false;
-    const r = wmFlightRouteCache[f.callsign];
-    return r && r.dest_city && r.dest_city.toUpperCase().includes(q);
-  }));
+  let matches = wmMatchFlights(all, q);
   wmRenderFlightResults(matches, q);
   // resolve destinations for the callsign-matched candidates (capped, cached — cheap on repeat searches)
   const toLookup = [...new Set(matches.map(f => f.callsign))].filter(cs => cs && !(cs in wmFlightRouteCache)).slice(0, 18);
-  if (!toLookup.length) return;
-  await Promise.all(toLookup.map(wmResolveRoute));
-  if (document.getElementById('wm-flight-search').value.trim().toUpperCase() !== q) return; // input changed meanwhile, a newer search will render
-  const finalMatches = all.filter(f => {
-    if (f.callsign.toUpperCase().includes(q)) return true;
-    const r = wmFlightRouteCache[f.callsign];
-    return r && r.dest_city && r.dest_city.toUpperCase().includes(q);
-  });
-  wmRenderFlightResults(finalMatches, q);
+  if (toLookup.length) {
+    await Promise.all(toLookup.map(wmResolveRoute));
+    if (document.getElementById('wm-flight-search').value.trim().toUpperCase() !== q) return; // input changed meanwhile, a newer search will render
+    matches = wmMatchFlights(all, q);
+    wmRenderFlightResults(matches, q);
+  }
+  // Destination text (e.g. a city) with zero hits so far: nothing among the resolved sample matched —
+  // dig through a much bigger batch of still-unresolved flights, once per distinct search term.
+  const looksLikeCallsign = all.some(f => f.callsign.toUpperCase().startsWith(q));
+  if (matches.length || looksLikeCallsign || wmFlightDeepSearched.has(q) || wmFlightResolveBudget <= 0) return;
+  wmFlightDeepSearched.add(q);
+  wmRenderFlightResults([], q, true);
+  const unresolved = all.filter(f => f.callsign && !(f.callsign in wmFlightRouteCache));
+  const batch = unresolved.slice(0, Math.min(150, wmFlightResolveBudget));
+  await Promise.all(batch.map(f => wmResolveRoute(f.callsign)));
+  if (document.getElementById('wm-flight-search').value.trim().toUpperCase() !== q) return;
+  wmRenderFlightResults(wmMatchFlights(all, q), q);
 }
 
 // ── Satellites: group + region + name, all combinable ──
@@ -9460,6 +9602,14 @@ function wmSatInRegion(lat, lng, key) {
   return r.ranges.some(([lo, hi]) => lng >= lo && lng <= hi);
 }
 
+function wmRenderSatList(pts) {
+  const box = document.getElementById('wm-sat-results');
+  if (!box) return;
+  box.innerHTML = pts.slice(0, 60).map(p =>
+    `<div class="wm-result-item" onclick="wmSelectSat('${p.name.replace(/'/g,"\\'")}')"><b>${p.name}</b> <span class="wm-result-dest">· ${Math.round(p.altKm)} km</span></div>`
+  ).join('') || '<div style="opacity:0.6">No satellites in this view</div>';
+}
+
 function wmRecomputeSatPoints() {
   const q = (document.getElementById('wm-sat-search') ? document.getElementById('wm-sat-search').value : '').trim().toUpperCase();
   let raw;
@@ -9468,17 +9618,21 @@ function wmRecomputeSatPoints() {
   else raw = wmSatRaw.slice(0, 600);
   let pts = wmPropagateSats(raw);
   if (wmSatRegion !== 'global') pts = pts.filter(p => wmSatInRegion(p.lat, p.lng, wmSatRegion));
+  if (wmSelectedSat) pts = pts.filter(p => p.name !== wmSelectedSat.name); // shown as a 🛰️ marker instead, not a bar
   wmData.satellites = pts;
   const countEl = document.getElementById('wm-count-satellites');
   if (countEl) countEl.textContent = pts.length || '';
+  wmRenderSatList(pts); // the list Chris expected when picking a group/region — was missing before, only appeared while typing a search
   wmRebuildPoints();
 }
 
 async function wmChangeSatGroup(group) {
   wmSatGroup = group;
+  wmClearSatSelection(); // a different group may no longer contain the pinned satellite
   wmSetLoading(true);
   document.getElementById('wm-sat-search').value = '';
-  document.getElementById('wm-sat-results').innerHTML = '';
+  const info = document.getElementById('wm-sat-groupinfo');
+  if (info) info.textContent = WM_SAT_GROUP_INFO[group] || '';
   await wmFetchLayer('satellites', { group });
   wmSetLoading(false);
 }
@@ -9489,22 +9643,41 @@ function wmChangeSatRegion(region) {
 }
 
 function wmFilterSats(q) {
-  const box = document.getElementById('wm-sat-results');
-  q = q.trim().toUpperCase();
-  if (!q) { box.innerHTML = ''; wmRecomputeSatPoints(); return; }
-  const matches = wmSatRaw.filter(s => s.name.toUpperCase().includes(q));
-  box.innerHTML = matches.slice(0, 40).map(s =>
-    `<div class="wm-result-item" onclick="wmShowSat('${s.name.replace(/'/g,"\\'")}')">${s.name}</div>`
-  ).join('') || '<div style="opacity:0.6">No match</div>';
-  wmRecomputeSatPoints();
+  wmRecomputeSatPoints(); // reads the search box itself; also drives the results list now, not just the globe points
 }
 
-function wmShowSat(name) {
+// ── Satellite selection: swap the (rather ugly) altitude bar for a small 🛰️ marker + a proper info card ──
+function wmSelectSat(name) {
   const raw = wmSatRaw.find(s => s.name === name);
   if (!raw) return;
   const pts = wmPropagateSats([raw]);
-  if (pts[0]) wmFlyTo(pts[0].lat, pts[0].lng, 2);
+  if (!pts[0]) return;
+  const p = pts[0];
+  wmSelectedSat = { name, lat: p.lat, lng: p.lng, altKm: p.altKm, velKmS: p.velKmS, periodMin: p.periodMin, inclDeg: p.inclDeg };
+  wmUpdateSelectedSatUI();
+  wmRecomputeSatPoints(); // rebuilds points (excludes the selected one) and calls wmRebuildPoints/overlay
+  wmGlobe.pointOfView({ lat: p.lat, lng: p.lng, altitude: 2 }, 800);
 }
+
+function wmClearSatSelection() {
+  if (!wmSelectedSat) return;
+  wmSelectedSat = null;
+  wmUpdateSelectedSatUI();
+  wmRecomputeSatPoints();
+}
+
+function wmUpdateSelectedSatUI() {
+  const box = document.getElementById('wm-sat-selected');
+  if (!box) return;
+  if (!wmSelectedSat) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  const s = wmSelectedSat;
+  box.style.cssText = 'display:block;padding:8px 9px;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.35);border-radius:8px;font-size:13px;margin-bottom:2px';
+  box.innerHTML = `<b>🛰️ ${s.name}</b><br><span style="color:var(--dim);font-size:12px">
+    Altitude: ${Math.round(s.altKm)} km${s.velKmS != null ? ` · Speed: ${s.velKmS.toFixed(2)} km/s` : ''}<br>
+    ${s.periodMin != null ? `Orbit: ${s.periodMin.toFixed(1)} min` : ''}${s.inclDeg != null ? ` · Incl: ${s.inclDeg.toFixed(1)}°` : ''}</span><br>
+    <span onclick="wmClearSatSelection()" style="cursor:pointer;color:#c4b5fd;font-size:12px">✕ Auswahl aufheben</span>`;
+}
+
 
 function wmFlyTo(lat, lng, alt) {
   if (!wmGlobe) return;
