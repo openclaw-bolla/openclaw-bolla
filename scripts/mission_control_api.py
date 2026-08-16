@@ -14,8 +14,94 @@ import urllib.parse
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from datetime import datetime, timezone, timedelta
+import threading
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+_KIF_PUBLISH_JOBS = {}  # job_id -> {"stage","pct","done","error","title"}
+
+
+def _kif_run_publish_job(job_id):
+    """Läuft im Hintergrund-Thread: archiviert neue KI-Forum-Posts, baut die öffentliche
+    Seite chrismandel.de/ki-forum/ neu und deployt sie live. Aktualisiert _KIF_PUBLISH_JOBS[job_id]
+    laufend, damit das Frontend per Polling einen Fortschrittsbalken zeigen kann."""
+    import uuid as _uuid_pub
+    import shutil as _shutil_pub
+
+    def _set(**kw):
+        _KIF_PUBLISH_JOBS[job_id].update(kw)
+
+    def _kif_truncate(s, maxlen):
+        s = s or ""
+        if len(s) <= maxlen:
+            return s
+        cut = s[:maxlen]
+        sp = cut.rfind(" ")
+        if sp > maxlen * 0.6:
+            cut = cut[:sp]
+        return cut + "…"
+
+    try:
+        _set(stage="archiving", pct=5)
+        KIFORUM_FILE = Path(os.path.join(WORKSPACE, "data/kiforum.json"))
+        PUB_FILE = Path(os.path.join(WORKSPACE, "data/ki_dialog_public.json"))
+        ASSETS_DIR = Path(os.path.join(WORKSPACE, "data/ki_dialog_public_assets"))
+
+        posts = json.loads(KIFORUM_FILE.read_text()) if KIFORUM_FILE.exists() else []
+        pub = json.loads(PUB_FILE.read_text()) if PUB_FILE.exists() else {"last_published_ts": None, "entries": []}
+        last_ts = pub.get("last_published_ts")
+        new_posts = [p for p in posts if p.get("timestamp", "") > last_ts] if last_ts else list(posts)
+
+        if not new_posts:
+            _set(done=True, error="Nichts Neues seit der letzten Übertragung.", pct=100)
+            return
+
+        new_posts_chrono = list(reversed(new_posts))  # posts.json ist neueste-zuerst
+
+        conclusion = next((p for p in new_posts_chrono if p.get("type") == "conclusion" and p.get("title")), None)
+        if conclusion:
+            title = conclusion["title"]
+        else:
+            first_user = next((p for p in new_posts_chrono if p.get("type") == "user"), new_posts_chrono[0])
+            title = _kif_truncate(first_user.get("content", "") or first_user.get("title", ""), 70)
+
+        ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+        images = []
+        for p in new_posts_chrono:
+            img = p.get("img")
+            if img:
+                src = Path(os.path.join(WORKSPACE, "data", img))
+                if src.exists():
+                    _shutil_pub.copy2(src, ASSETS_DIR / img)
+                    images.append(img)
+
+        newest_ts = max(p.get("timestamp", "") for p in new_posts_chrono)
+        entry = {
+            "id": str(_uuid_pub.uuid4()),
+            "published_at": datetime.now().isoformat(),
+            "title": title,
+            "messages": new_posts_chrono,
+            "images": images,
+        }
+        pub.setdefault("entries", []).insert(0, entry)
+        pub["last_published_ts"] = newest_ts
+        PUB_FILE.write_text(json.dumps(pub, ensure_ascii=False, indent=2))
+
+        _set(stage="generating", pct=35, title=title)
+        import kif_publish_site
+        kif_publish_site.regenerate_de_page()
+
+        _set(stage="deploying", pct=60)
+        ok, output = kif_publish_site.deploy_production()
+        if not ok:
+            _set(done=True, error="Deploy fehlgeschlagen: " + output[-400:], pct=100)
+            return
+
+        _set(stage="done", pct=100, done=True, title=title)
+    except Exception as e:
+        _KIF_PUBLISH_JOBS[job_id]["error"] = f"{type(e).__name__}: {e}"
+        _KIF_PUBLISH_JOBS[job_id]["done"] = True
+        _KIF_PUBLISH_JOBS[job_id]["pct"] = 100
 
 # Sicherstellen dass ~/.local/bin im PATH ist (fehlt im Cron-Job-Kontext)
 _local_bin = os.path.expanduser("~/.local/bin")
@@ -6609,6 +6695,17 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 self.send_header("Content-Type","image/png"); self.send_header("Content-Length",str(len(data)))
                 self.end_headers(); self.wfile.write(data); return
 
+            if self.path.startswith("/api/kiforum/public-img/"):
+                fname = self.path.split("/api/kiforum/public-img/")[1]
+                if "/" in fname or ".." in fname:
+                    self._send_json({"error":"invalid"},status=400); return
+                p = Path(os.path.join(WORKSPACE, "data/ki_dialog_public_assets", fname))
+                if not p.exists(): self._send_json({"error":"not found"},status=404); return
+                data = p.read_bytes()
+                self.send_response(200); self.send_header("Access-Control-Allow-Origin","*")
+                self.send_header("Content-Type","image/png"); self.send_header("Content-Length",str(len(data)))
+                self.end_headers(); self.wfile.write(data); return
+
             if self.path == "/api/memory":
                 import re as _re
                 mem_file = os.path.expanduser("~/.claude/projects/-home-bolla/memory/MEMORY.md")
@@ -7210,6 +7307,20 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
                 self.wfile.write(data)
+
+            elif self.path == "/api/kiforum/public-export":
+                PUB_FILE = Path(os.path.join(WORKSPACE, "data/ki_dialog_public.json"))
+                pub = json.loads(PUB_FILE.read_text()) if PUB_FILE.exists() else {"last_published_ts": None, "entries": []}
+                self._send_json(pub)
+
+            elif self.path.startswith("/api/kiforum/publish-status"):
+                import urllib.parse as _up_kifs
+                qs = dict(_up_kifs.parse_qsl(_up_kifs.urlparse(self.path).query))
+                job = _KIF_PUBLISH_JOBS.get(qs.get("job", ""))
+                if not job:
+                    self._send_json({"error": "unbekannter Job"}, status=404)
+                else:
+                    self._send_json(job)
 
             elif self.path == "/api/kiforum/word":
                 import io as _io
@@ -9048,6 +9159,15 @@ Antworte NUR als reines JSON:
                 KIFORUM_FILE = Path(os.path.join(WORKSPACE, "data/kiforum.json"))
                 KIFORUM_FILE.write_text("[]")
                 self._send_json({"ok": True})
+
+            elif self.path == "/api/kiforum/publish":
+                import uuid as _uuid_pub
+
+                job_id = str(_uuid_pub.uuid4())
+                _KIF_PUBLISH_JOBS[job_id] = {"stage": "archiving", "pct": 5, "done": False, "error": None, "title": None}
+                t = threading.Thread(target=_kif_run_publish_job, args=(job_id,), daemon=True)
+                t.start()
+                self._send_json({"job": job_id})
 
             elif self.path == "/api/kiforum/img-embed":
                 import urllib.request as _urllib, uuid as _uuid_e

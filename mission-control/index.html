@@ -2976,10 +2976,10 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
             <div style="font-size:13px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">📅 Kommende Events</div>
             <div id="ki-events-list" style="display:flex;flex-direction:column;gap:10px"><div class="loading">Lade…</div></div>
             <div id="ki-events-archive-toggle" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-              <div onclick="kiToggleArchive()" style="cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);font-weight:600">
-                <span id="ki-archive-arrow">▸</span> <span id="ki-archive-label">Archiv</span>
+              <div onclick="kiToggleArchive()" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--bright);font-weight:700;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:8px;padding:8px 14px">
+                <span id="ki-archive-arrow" style="font-size:15px">▸</span> <span id="ki-archive-label">Archiv</span>
               </div>
-              <div id="ki-events-archive-list" style="display:none;flex-direction:column;gap:6px;margin-top:10px"></div>
+              <div id="ki-events-archive-list" style="display:none;flex-direction:column;gap:6px;margin-top:10px;font-size:14px"></div>
             </div>
           </div>
 
@@ -4002,6 +4002,16 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
         .kif-topbtn { background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.6); border-radius:6px; padding:4px 9px; font-size:11px; cursor:pointer; backdrop-filter:blur(4px); transition:all .15s; }
         .kif-topbtn:hover { background:rgba(255,255,255,0.1); color:#fff; }
 
+        /* Publish-Fortschrittsbalken */
+        #kif-publish-progress { display:none; position:absolute; top:44px; right:10px; z-index:41; width:240px;
+          background:rgba(0,0,0,0.65); border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:10px 12px;
+          backdrop-filter:blur(6px); box-shadow:0 6px 20px rgba(0,0,0,0.4); }
+        #kif-publish-track { width:100%; height:7px; border-radius:4px; background:rgba(255,255,255,0.12); overflow:hidden; margin-bottom:7px; }
+        #kif-publish-bar { height:100%; width:0%; background:linear-gradient(90deg,#4ade80,#22c55e); border-radius:4px; transition:width .35s ease; }
+        #kif-publish-text { font-size:12px; color:rgba(255,255,255,0.8); }
+        #kif-publish-link { display:none; margin-top:6px; font-size:12px; color:#4ade80; text-decoration:none; }
+        #kif-publish-link:hover { text-decoration:underline; }
+
         /* Chris input modal */
         #kif-input-modal { display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:50; background:#0f1e35; border:1px solid rgba(255,160,50,0.4); border-radius:16px; padding:18px; width:320px; box-shadow:0 20px 60px rgba(0,0,0,0.7); }
         #kif-input-modal textarea { width:100%; background:#1a2d45; border:1px solid #2a4060; border-radius:8px; color:#e0e6ed; font-size:13px; padding:10px; resize:none; font-family:inherit; outline:none; box-sizing:border-box; }
@@ -4137,6 +4147,11 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
           <div id="kif-room">
             <div id="kif-title-overlay">🧠 KI-Forum</div>
             <div id="kif-topbar"></div>
+            <div id="kif-publish-progress">
+              <div id="kif-publish-track"><div id="kif-publish-bar"></div></div>
+              <div id="kif-publish-text">Archiviere…</div>
+              <a id="kif-publish-link" href="https://chrismandel.de/ki-forum/" target="_blank">🔗 Live ansehen</a>
+            </div>
             <div id="kif-room-bg"></div>
 
             <!-- Bolla denkt: grafische Sprechblase -->
@@ -4205,6 +4220,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
             <button class="kif-topbtn" onclick="kifClearAll()" style="background:rgba(229,115,115,0.1);border-color:rgba(229,115,115,0.4);color:#e57373">🗑 Alles löschen</button>
             <button class="kif-topbtn" onclick="kifWordExport()" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa">📄 Word</button>
             <button class="kif-topbtn" onclick="kifJsonExport()">📤 JSON</button>
+            <button class="kif-topbtn" onclick="kifPublish()" style="background:rgba(74,222,128,0.12);border-color:rgba(74,222,128,0.4);color:#4ade80">🔗 Nach „Bolla im Dialog" übertragen</button>
           </div>
           <div id="kif-feed-area">
             <div id="kif-feed-inner">
@@ -4586,6 +4602,52 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
           await fetch('/api/kiforum/clear', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
           _kifPosts = [];
           kifRenderAll();
+        }
+
+        const KIF_STAGE_TEXT = {
+          archiving: 'Archiviere…',
+          generating: 'Baue Seite neu…',
+          deploying: 'Stelle live…',
+          done: 'Fertig ✓'
+        };
+
+        async function kifPublish() {
+          const box = document.getElementById('kif-publish-progress');
+          const bar = document.getElementById('kif-publish-bar');
+          const text = document.getElementById('kif-publish-text');
+          const link = document.getElementById('kif-publish-link');
+          box.style.display = 'block';
+          link.style.display = 'none';
+          bar.style.width = '0%';
+          text.textContent = 'Starte…';
+          try {
+            const start = await fetch('/api/kiforum/publish', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'}).then(r=>r.json());
+            if (start.error) { text.textContent = start.error; bar.style.width = '100%'; bar.style.background = '#e57373'; setTimeout(() => box.style.display = 'none', 3000); return; }
+            const jobId = start.job;
+            const poll = async () => {
+              const job = await fetch('/api/kiforum/publish-status?job=' + encodeURIComponent(jobId)).then(r => r.json());
+              bar.style.width = (job.pct || 0) + '%';
+              if (job.error) {
+                text.textContent = '⚠️ ' + job.error;
+                bar.style.background = '#e57373';
+                setTimeout(() => box.style.display = 'none', 4000);
+                return;
+              }
+              text.textContent = KIF_STAGE_TEXT[job.stage] || job.stage || '…';
+              if (job.done) {
+                text.textContent = 'Fertig ✓ „' + (job.title || '') + '“ ist live.';
+                link.style.display = 'inline-block';
+                setTimeout(() => box.style.display = 'none', 6000);
+                return;
+              }
+              setTimeout(poll, 700);
+            };
+            poll();
+          } catch (e) {
+            text.textContent = 'Fehler beim Übertragen.';
+            bar.style.width = '100%'; bar.style.background = '#e57373';
+            setTimeout(() => box.style.display = 'none', 3000);
+          }
         }
         </script>
       </div><!-- end page-kiforum -->
@@ -9190,6 +9252,11 @@ function wmInjectCss() {
     .wm-input{width:100%;box-sizing:border-box;font-size:14px;padding:7px 9px;border-radius:8px;
       border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:var(--bright)}
     .wm-input:focus{outline:none;border-color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.08)}
+    .wm-dropdown-list{position:absolute;top:100%;left:0;right:0;margin-top:4px;max-height:220px;overflow-y:auto;
+      background:#131a28;border:1px solid rgba(255,255,255,0.18);border-radius:8px;z-index:20;
+      box-shadow:0 10px 30px rgba(0,0,0,0.5)}
+    .wm-dropdown-item{padding:9px 12px;font-size:14px;color:var(--bright);cursor:pointer}
+    .wm-dropdown-item:hover{background:rgba(255,255,255,0.1)}
     .wm-results{max-height:150px;overflow-y:auto;font-size:13px;color:var(--dim)}
     .wm-result-item{padding:5px 6px;cursor:pointer;border-radius:6px;font-size:13px}
     .wm-result-item:hover{background:rgba(255,255,255,0.08)}
@@ -9212,22 +9279,36 @@ function wmInjectCss() {
   document.head.appendChild(s);
 }
 
+function wmLoadThree() {
+  // globe.gl bundles its own three.js internally but doesn't expose it — icon sprites need a THREE
+  // reference of our own, loaded as an ES module (three.js dropped the classic UMD build).
+  return new Promise(resolve => {
+    if (window.THREE) { resolve(); return; }
+    window.addEventListener('wm-three-ready', () => resolve(), { once: true });
+    const s = document.createElement('script');
+    s.type = 'module';
+    s.textContent = "import * as THREE from 'https://unpkg.com/three@0.183.0/build/three.module.js'; window.THREE = THREE; window.dispatchEvent(new Event('wm-three-ready'));";
+    document.head.appendChild(s);
+  });
+}
+
 function loadWorldMonitor() {
   wmInjectCss();
   renderWmPanel();
   wmPrefetchCounts(); // fire-and-forget: numbers should already sit there the moment you click a topic, not after
   const boot = () => {
-    if (window.Globe && window.satellite) { initWmGlobe(); return; }
+    if (window.Globe && window.satellite && window.THREE) { initWmGlobe(); return; }
     const need = [];
     if (!window.Globe) need.push('https://unpkg.com/globe.gl');
     if (!window.satellite) need.push('https://unpkg.com/satellite.js@5.0.0/dist/satellite.min.js');
-    let remaining = need.length;
-    need.forEach(src => {
+    const loaders = need.map(src => new Promise(resolve => {
       const s = document.createElement('script');
       s.src = src;
-      s.onload = () => { remaining--; if (remaining === 0) initWmGlobe(); };
+      s.onload = resolve;
       document.head.appendChild(s);
-    });
+    }));
+    if (!window.THREE) loaders.push(wmLoadThree());
+    Promise.all(loaders).then(initWmGlobe);
   };
   boot();
 }
@@ -9246,17 +9327,31 @@ function renderWmPanel() {
     if (l.key === 'satellites') {
       extra = `<div id="wm-sat-extra" class="wm-extra" style="display:none">
         <div id="wm-sat-selected" style="display:none"></div>
+        <div style="font-size:14px;color:var(--bright);margin:-2px 0 2px 2px">Pick a category and region — both are dropdown menus, click to change:</div>
         <div style="display:flex;gap:6px">
-          <select id="wm-sat-group" onchange="wmChangeSatGroup(this.value)" class="wm-input" style="flex:1">
-            ${WM_SAT_GROUPS.map(g => `<option value="${g}">${g}</option>`).join('')}
-          </select>
-          <select id="wm-sat-region" onchange="wmChangeSatRegion(this.value)" class="wm-input" style="flex:1">
-            ${Object.keys(WM_SAT_REGION_LABELS).map(k => `<option value="${k}">${WM_SAT_REGION_LABELS[k]}</option>`).join('')}
-          </select>
+          <div class="wm-dropdown-wrap" style="flex:1;display:flex;flex-direction:column;gap:2px;position:relative">
+            <label style="font-size:14px;font-weight:700;color:var(--bright)">Category</label>
+            <button type="button" onclick="wmToggleSatDropdown('group')" class="wm-input" style="text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:var(--bright)">
+              <span id="wm-sat-group-label">${wmSatGroup}</span><span>▾</span>
+            </button>
+            <div id="wm-sat-group-list" class="wm-dropdown-list" style="display:none">
+              ${WM_SAT_GROUPS.map(g => `<div class="wm-dropdown-item" onclick="wmSatGroupPick('${g}')">${g}</div>`).join('')}
+            </div>
+          </div>
+          <div class="wm-dropdown-wrap" style="flex:1;display:flex;flex-direction:column;gap:2px;position:relative">
+            <label style="font-size:14px;font-weight:700;color:var(--bright)">Region</label>
+            <button type="button" onclick="wmToggleSatDropdown('region')" class="wm-input" style="text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:var(--bright)">
+              <span id="wm-sat-region-label">${WM_SAT_REGION_LABELS[wmSatRegion]}</span><span>▾</span>
+            </button>
+            <div id="wm-sat-region-list" class="wm-dropdown-list" style="display:none">
+              ${Object.keys(WM_SAT_REGION_LABELS).map(k => `<div class="wm-dropdown-item" onclick="wmSatRegionPick('${k}')">${WM_SAT_REGION_LABELS[k]}</div>`).join('')}
+            </div>
+          </div>
         </div>
-        <div id="wm-sat-groupinfo" style="font-size:12px;color:var(--dim);margin:-2px 0 2px 2px">${WM_SAT_GROUP_INFO[wmSatGroup]||''}</div>
+        <div id="wm-sat-groupinfo" style="font-size:14px;color:var(--dim);margin:-2px 0 2px 2px">${WM_SAT_GROUP_INFO[wmSatGroup]||''}</div>
         <input id="wm-sat-search" placeholder="🔍 Search satellite name…" oninput="wmFilterSats(this.value)" class="wm-input">
-        <div id="wm-sat-results" class="wm-results"></div>
+        <div style="font-size:14px;font-weight:700;color:var(--bright);margin:4px 0 -3px 2px">🛰️ In view</div>
+        <div id="wm-sat-results" class="wm-results" style="font-size:14px"></div>
       </div>`;
     }
     return `<label title="${l.title||''}" id="wm-row-${l.key}" class="wm-layer-row" style="border-left-color:${l.color}55">
@@ -9265,6 +9360,44 @@ function renderWmPanel() {
         <span id="wm-count-${l.key}" class="wm-count-badge" style="color:${l.color}"></span>
       </label>${extra}`;
   }).join('');
+}
+
+function wmPointLabelHtml(d) {
+  let extra = '';
+  if (d.type === 'flights' && d.callsign) {
+    const r = wmFlightRouteCache[d.callsign];
+    if (r && r.dest_city) extra = `<br>To: ${r.dest_city}${r.origin_city ? ` (from ${r.origin_city})` : ''}`;
+  }
+  return `<div style="background:rgba(10,14,22,0.97);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 11px;font-size:13px;color:#fff;max-width:250px;box-shadow:0 8px 28px rgba(0,0,0,0.55)">${d.label}${extra}</div>`;
+}
+
+// ── Icon markers: real WebGL sprites (billboards), not DOM elements — a layer like wildfires can be
+// tens of thousands of points, way too many for CSS/htmlElementsData. Sprites are true 3D objects placed
+// on the globe, so unlike the old fixed-CSS-pixel markers, their on-screen size naturally grows/shrinks
+// with camera zoom, same as everything else on the globe.
+const WM_ICON_TEXTURES = {};
+function wmIconTexture(emoji) {
+  if (WM_ICON_TEXTURES[emoji]) return WM_ICON_TEXTURES[emoji];
+  const cvs = document.createElement('canvas');
+  cvs.width = cvs.height = 64;
+  const ctx = cvs.getContext('2d');
+  ctx.font = '46px "Apple Color Emoji","Segoe UI Emoji",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(emoji, 32, 34);
+  const tex = new THREE.CanvasTexture(cvs);
+  WM_ICON_TEXTURES[emoji] = tex;
+  return tex;
+}
+function wmIconForType(type) {
+  if (type === 'satellites') return '🛰️';
+  const l = WM_LAYERS.find(x => x.key === type);
+  return l ? l.icon : '❔';
+}
+function wmMakeIconSprite(d) {
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: wmIconTexture(wmIconForType(d.type)), transparent: true, depthWrite: false }));
+  sprite.scale.set(3.4, 3.4, 1); // three-globe's globe radius is 100 units — this reads as a small, legible icon at default zoom
+  return sprite;
 }
 
 function initWmGlobe() {
@@ -9280,18 +9413,12 @@ function initWmGlobe() {
     .pointAltitude('alt')
     .pointColor('color')
     .pointRadius('size')
-    .pointLabel(d => {
-      let extra = '';
-      if (d.type === 'flights' && d.callsign) {
-        const r = wmFlightRouteCache[d.callsign];
-        if (r && r.dest_city) extra = `<br>To: ${r.dest_city}${r.origin_city ? ` (from ${r.origin_city})` : ''}`;
-      }
-      return `<div style="background:rgba(10,14,22,0.97);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 11px;font-size:13px;color:#fff;max-width:250px;box-shadow:0 8px 28px rgba(0,0,0,0.55)">${d.label}${extra}</div>`;
-    })
-    .onPointClick(d => {
-      if (d.type === 'flights' && d.callsign) wmSelectFlight(d.callsign);
-      else if (d.type === 'satellites' && d.name) wmSelectSat(d.name);
-    })
+    .pointLabel(wmPointLabelHtml)
+    .onPointClick(d => { if (d.type === 'flights' && d.callsign) wmSelectFlight(d.callsign); })
+    .objectLat('lat').objectLng('lng').objectAltitude('alt')
+    .objectThreeObject(wmMakeIconSprite)
+    .objectLabel(wmPointLabelHtml)
+    .onObjectClick(d => { if (d.type === 'satellites' && d.name) wmSelectSat(d.name); })
     .onGlobeClick(({ lat, lng }) => wmWeatherClick(lat, lng));
   window.addEventListener('resize', () => {
     if (!wmGlobe) return;
@@ -9348,9 +9475,9 @@ async function wmFetchLayer(key, opts) {
   } else if (key === 'wildfires') {
     const j = await (await fetch('/api/worldmonitor/wildfires')).json();
     wmData.wildfires = (j.fires || []).map(f => ({
-      lat: f.lat, lng: f.lon, alt: 0.005, size: 0.18, color: '#fb923c',
+      lat: f.lat, lng: f.lon, alt: 0.005, size: 0.18, color: '#fb923c', frp: parseFloat(f.frp) || 0,
       label: `🔥 Fire — FRP ${f.frp} MW · ${f.date}`, type: 'wildfires'
-    }));
+    })).sort((a, b) => b.frp - a.frp); // strongest fires first — matters once wmRebuildPoints caps the icon layer (can be 30k+ raw detections)
   } else if (key === 'volcanoes') {
     const j = await (await fetch('/api/worldmonitor/volcanoes')).json();
     wmData.volcanoes = (j.features || []).map(f => ({
@@ -9409,7 +9536,9 @@ function wmPropagateSats(list) {
       const periodMin = satrec.no ? (2 * Math.PI / satrec.no) : null; // satrec.no = mean motion in rad/min
       const inclDeg = satrec.inclo != null ? satrec.inclo * (180 / Math.PI) : null;
       out.push({
-        lat, lng, alt: Math.min(3, Math.max(0.05, altKm / 6371)), size: 0.17, color: '#a78bfa',
+        // real altitude scaled way down and capped — satellites now render as icon sprites, not the old
+        // pointsData bars, so there's no need to stretch a GEO satellite (~33000km) 5x past the globe radius
+        lat, lng, alt: Math.min(0.5, Math.max(0.04, (altKm / 6371) * 0.12)), size: 0.17, color: '#a78bfa',
         label: `🛰️ ${s.name}<br>Altitude: ${Math.round(altKm)} km` +
           (velKmS != null ? `<br>Speed: ${velKmS.toFixed(2)} km/s` : '') +
           (periodMin != null ? `<br>Orbit period: ${periodMin.toFixed(1)} min` : '') +
@@ -9421,20 +9550,33 @@ function wmPropagateSats(list) {
   return out;
 }
 
+const WM_ICON_RENDER_CAP = 1200; // per layer — a WebGL sprite per point is cheap, but wildfires alone can be 30k+ raw detections
+
 function wmRebuildPoints() {
   wmUpdateStatsBar();
   if (!wmGlobe) return;
-  let pts = [];
+  let dotPts = [];   // flights: still plain pointsData bars — too many (thousands) for individual icon sprites to matter visually
+  let iconPts = [];  // satellites + earthquakes/conflicts/wildfires/volcanoes/storms: icon-sprite billboards
   wmActive.forEach(key => {
     if (!wmData[key]) return;
-    if (key === 'flights' && wmSelectedFlight) return; // replaced below by just the one selected flight
-    pts = pts.concat(wmData[key]);
+    if (key === 'flights') {
+      if (wmSelectedFlight) return; // replaced below by just the one selected flight
+      dotPts = dotPts.concat(wmData[key]);
+    } else {
+      const arr = wmData[key];
+      iconPts = iconPts.concat(arr.length > WM_ICON_RENDER_CAP ? arr.slice(0, WM_ICON_RENDER_CAP) : arr);
+    }
   });
   if (wmSelectedFlight) {
-    pts.push({ lat: wmSelectedFlight.lat, lng: wmSelectedFlight.lng, alt: 0.03, size: 0.24, color: '#38bdf8',
+    dotPts.push({ lat: wmSelectedFlight.lat, lng: wmSelectedFlight.lng, alt: 0.03, size: 0.24, color: '#38bdf8',
       label: `✈️ ${wmSelectedFlight.callsign}`, type: 'flights', callsign: wmSelectedFlight.callsign });
   }
-  wmGlobe.pointsData(pts);
+  if (wmSelectedSat) {
+    iconPts.push({ lat: wmSelectedSat.lat, lng: wmSelectedSat.lng, alt: 0.08,
+      label: `🛰️ ${wmSelectedSat.name}`, type: 'satellites', name: wmSelectedSat.name });
+  }
+  wmGlobe.pointsData(dotPts);
+  wmGlobe.objectsData(iconPts);
   wmRenderOverlays();
 }
 
@@ -9526,8 +9668,8 @@ function wmUpdateSelectedFlightUI() {
 }
 
 function wmRenderOverlays() {
-  // Combined arc/label/marker layer for whatever's currently selected (flight and/or satellite) —
-  // Globe.gl only has one htmlElementsData layer, so a plane and a satellite marker must share it.
+  // Arc + airport-name overlay for a selected flight's route. The selected satellite no longer needs
+  // a marker here — it's just another point in the objectsData icon layer now (see wmRebuildPoints).
   if (!wmGlobe) return;
   if (!wmSelectedFlight) {
     wmGlobe.arcsData([]).labelsData([]);
@@ -9553,14 +9695,12 @@ function wmRenderOverlays() {
   }
   const markers = [];
   if (wmSelectedFlight) markers.push({ kind: 'plane', lat: wmSelectedFlight.lat, lng: wmSelectedFlight.lng });
-  if (wmSelectedSat) markers.push({ kind: 'sat', lat: wmSelectedSat.lat, lng: wmSelectedSat.lng });
   wmGlobe.htmlElementsData(markers)
     .htmlLat('lat').htmlLng('lng')
-    .htmlElement(d => {
+    .htmlElement(() => {
       const el = document.createElement('div');
-      el.textContent = d.kind === 'plane' ? '✈️' : '🛰️';
-      const color = d.kind === 'plane' ? '#38bdf8' : '#a78bfa';
-      el.style.cssText = `font-size:${d.kind === 'plane' ? 20 : 18}px;transform:translate(-50%,-50%);filter:drop-shadow(0 0 5px ${color})`;
+      el.textContent = '✈️';
+      el.style.cssText = 'font-size:20px;transform:translate(-50%,-50%);filter:drop-shadow(0 0 5px #38bdf8)';
       return el;
     });
 }
@@ -9633,6 +9773,30 @@ function wmRecomputeSatPoints() {
   if (countEl) countEl.textContent = pts.length || '';
   wmRenderSatList(pts); // the list Chris expected when picking a group/region — was missing before, only appeared while typing a search
   wmRebuildPoints();
+}
+
+// Custom dropdowns for Category/Region — replaces native <select>, which rendered its option list
+// empty/broken on at least one real browser (Edge, confirmed via screenshot) even though the DOM had
+// all 7 options. Own-drawn list sidesteps whatever OS/browser quirk caused that.
+function wmToggleSatDropdown(which) {
+  const list = document.getElementById(which === 'group' ? 'wm-sat-group-list' : 'wm-sat-region-list');
+  const other = document.getElementById(which === 'group' ? 'wm-sat-region-list' : 'wm-sat-group-list');
+  if (other) other.style.display = 'none';
+  if (list) list.style.display = list.style.display === 'block' ? 'none' : 'block';
+}
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.wm-dropdown-wrap')) return;
+  document.querySelectorAll('.wm-dropdown-list').forEach(l => l.style.display = 'none');
+});
+function wmSatGroupPick(group) {
+  document.getElementById('wm-sat-group-label').textContent = group;
+  document.getElementById('wm-sat-group-list').style.display = 'none';
+  wmChangeSatGroup(group);
+}
+function wmSatRegionPick(region) {
+  document.getElementById('wm-sat-region-label').textContent = WM_SAT_REGION_LABELS[region];
+  document.getElementById('wm-sat-region-list').style.display = 'none';
+  wmChangeSatRegion(region);
 }
 
 async function wmChangeSatGroup(group) {
@@ -10972,8 +11136,8 @@ async function loadKiNews() {
         archiveLabel.textContent = `Archiv (${archived.length})`;
         archiveList.innerHTML = archived.map(({e}) => {
           const recap = (data.news || []).find(n => n.id === e.id);
-          return `<div ${recap?`onclick="kiOpenRecap('${recap.id}')" style="cursor:pointer"`:''} style="display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--dim);padding:5px 4px;${recap?'':''}">
-            <span>${e.datum} — ${e.titel}${recap?' <span style="color:#06b6d4">▶</span>':''}</span>
+          return `<div ${recap?`onclick="kiOpenRecap('${recap.id}')" style="cursor:pointer"`:''} style="display:flex;justify-content:space-between;gap:10px;font-size:14px;color:var(--dim);padding:6px 4px;${recap?'':''}">
+            <span>${e.datum} — ${e.titel}${recap?' <span style="color:#06b6d4;font-weight:700">▶ Recap</span>':''}</span>
           </div>`;
         }).join('');
       } else {
