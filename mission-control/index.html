@@ -3182,6 +3182,14 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               <span>Pollinations</span>
               <span style="font-size:11px;font-weight:400;color:rgba(74,222,128,0.7)">kostenlos · Flux</span>
             </button>
+            <button onclick="bgSelectEngine('cloudflare')" id="bg-tab-cloudflare"
+              style="flex:1;min-width:140px;padding:12px 10px;border-radius:12px;border:2px solid #444;
+                     background:rgba(255,255,255,0.04);color:var(--dim);font-weight:700;font-size:14px;cursor:pointer;
+                     display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .2s">
+              <span style="font-size:22px">☁️</span>
+              <span>Cloudflare</span>
+              <span style="font-size:11px;font-weight:400">kostenlos · FLUX</span>
+            </button>
             <button onclick="bgSelectEngine('gemini')" id="bg-tab-gemini"
               style="flex:1;min-width:140px;padding:12px 10px;border-radius:12px;border:2px solid #444;
                      background:rgba(255,255,255,0.04);color:var(--dim);font-weight:700;font-size:14px;cursor:pointer;
@@ -3225,6 +3233,10 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 style="display:none;margin-top:4px;background:#1a2a3a;border:1px solid #253a50;border-radius:8px;color:#e0e6ed;
                        font-size:13px;padding:10px;resize:vertical;font-family:inherit;outline:none;width:100%;box-sizing:border-box"></textarea>
             </div>
+          </div>
+          <!-- Cloudflare-spezifisch -->
+          <div id="bg-opts-cloudflare" style="display:none;flex-direction:column;gap:8px">
+            <div style="font-size:12px;color:var(--dim)">FLUX-1-schnell über Cloudflare Workers AI — kostenloses Kontingent, kein Bild-Upload/Edit (nur Text→Bild).</div>
           </div>
           <!-- Gemini-spezifisch -->
           <div id="bg-opts-gemini" style="display:none;flex-direction:column;gap:8px">
@@ -3275,6 +3287,8 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 <input id="bg-file" type="file" accept="image/*" style="display:none" onchange="bgFileChanged(this)">
                 <button onclick="bgPromptHistory()" title="Letzte Prompts"
                   style="padding:8px;background:#1a2a3a;border:1px solid #253a50;border-radius:8px;cursor:pointer;font-size:16px;line-height:1">🕐</button>
+                <button id="bg-improve-btn" onclick="bgImprovePrompt()" title="Prompt verbessern (für Pollinations/Gemini/Cloudflare)"
+                  style="padding:8px;background:#1a2a3a;border:1px solid #253a50;border-radius:8px;cursor:pointer;font-size:16px;line-height:1">✨</button>
               </div>
             </div>
             <!-- History Dropdown -->
@@ -3415,6 +3429,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
             <div>
               <label style="font-size:13px;color:var(--dim);display:block;margin-bottom:3px">Name / Gruppe <span style="font-weight:400;opacity:0.6">(optional)</span></label>
               <input id="suno-name" type="text" placeholder="z.B. Max · Klasse 7a · oder leer lassen"
+                onkeydown="if(event.key==='Tab')sunoAutoFillFromSchuelerliste(this.value)"
                 style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
                        color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
             </div>
@@ -3540,6 +3555,9 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               <button id="chart-tab-party" onclick="sunoChartTab('party')" title="Deutsche Schlager-/Mitsing-Partyhits — familientauglich für Schul-Partys"
                 style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;
                        background:transparent;color:var(--dim);border-left:1px solid var(--border);transition:all .2s">🥳 Party</button>
+              <button id="chart-tab-oktoberfest" onclick="sunoChartTab('oktoberfest')" title="Oktoberfest-/Wiesn-Hits — Bierzelt-Klassiker und Zeltgesänge"
+                style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;
+                       background:transparent;color:var(--dim);border-left:1px solid var(--border);transition:all .2s">🍺 Oktoberfest</button>
               <button id="chart-tab-dance" onclick="sunoChartTab('dance')" title="Aktuelle Dance/Party-Charts (Apple, täglich) — fürs Veröffentlichen"
                 style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;
                        background:transparent;color:var(--dim);border-left:1px solid var(--border);transition:all .2s">💃 Dance</button>
@@ -4017,6 +4035,16 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
         #kif-input-modal textarea { width:100%; background:#1a2d45; border:1px solid #2a4060; border-radius:8px; color:#e0e6ed; font-size:13px; padding:10px; resize:none; font-family:inherit; outline:none; box-sizing:border-box; }
         #kif-input-modal textarea:focus { border-color:#ff9933; }
 
+        /* Archiv-Verwaltung modal */
+        #kif-archive-overlay { display:none; position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; }
+        #kif-archive-modal { background:#0f1e35; border:1px solid rgba(251,191,36,0.35); border-radius:16px; padding:20px; width:min(560px,90vw); max-height:80vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.7); }
+        #kif-archive-modal h3 { font-size:14px; font-weight:700; color:#fbbf24; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; }
+        #kif-archive-list { overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:8px; }
+        .kif-archive-row { display:flex; align-items:center; justify-content:space-between; gap:10px; background:#152238; border:1px solid #223252; border-radius:10px; padding:10px 12px; }
+        .kif-archive-row .ttl { font-size:13px; color:#e0e6ed; font-weight:600; }
+        .kif-archive-row .dt { font-size:11px; color:rgba(255,255,255,0.4); margin-top:2px; }
+        .kif-archive-empty { font-size:13px; color:rgba(255,255,255,0.45); text-align:center; padding:20px 0; }
+
         @keyframes kif-popin { from{transform:scale(.6);opacity:0} to{transform:scale(1);opacity:1} }
 
         /* ── MIC STAND ── */
@@ -4214,12 +4242,23 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
             </div>
           </div><!-- end kif-room -->
 
+          <!-- Archiv-Verwaltung modal -->
+          <div id="kif-archive-overlay" onclick="if(event.target===this)kifHideArchive()">
+            <div id="kif-archive-modal">
+              <h3><span>🗄 Übertragene Dialoge im Archiv</span>
+                <button class="kif-topbtn" onclick="kifHideArchive()">✕</button>
+              </h3>
+              <div id="kif-archive-list"><div class="kif-archive-empty">Lädt…</div></div>
+            </div>
+          </div>
+
           <!-- ═══ DISCUSSION FEED ═══ -->
           <div style="background:#070e1a;border-top:2px solid #152238;padding:6px 16px;display:flex;gap:6px;align-items:center;flex-shrink:0">
             <button class="kif-topbtn" onclick="kifLoad()" style="background:rgba(96,165,250,0.1);border-color:rgba(96,165,250,0.3);color:#60a5fa">🔄 Neu laden</button>
             <button class="kif-topbtn" onclick="kifClearAll()" style="background:rgba(229,115,115,0.1);border-color:rgba(229,115,115,0.4);color:#e57373">🗑 Alles löschen</button>
             <button class="kif-topbtn" onclick="kifWordExport()" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa">📄 Word</button>
             <button class="kif-topbtn" onclick="kifJsonExport()">📤 JSON</button>
+            <button class="kif-topbtn" onclick="kifShowArchive()" style="background:rgba(251,191,36,0.1);border-color:rgba(251,191,36,0.35);color:#fbbf24">🗄 Archiv verwalten</button>
             <button class="kif-topbtn" onclick="kifPublish()" style="background:rgba(74,222,128,0.12);border-color:rgba(74,222,128,0.4);color:#4ade80">🔗 Nach „Bolla im Dialog" übertragen</button>
           </div>
           <div id="kif-feed-area">
@@ -4306,7 +4345,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 ${img}
                 <div class="kif-msg-actions">
                   <span style="font-size:10px;color:rgba(255,255,255,0.22);align-self:center">${kifTs(p)}</span>
-                  <button class="kif-msg-btn" onclick="kifPollImage('${p.id}')">🌸 Bild</button>
+                  <button class="kif-msg-btn" onclick="kifPollImage('${p.id}')">🖼️ Bild</button>
                   <button class="kif-msg-btn" onclick="kifCopy('${p.id}')">📋 Kopieren</button>
                   <button class="kif-msg-btn del" onclick="kifDelete('${p.id}')">🗑</button>
                 </div>
@@ -4358,8 +4397,46 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
           wrap.style.display = 'block';
           let secs = 0;
           const timer = setInterval(()=>{ secs++; const el=document.getElementById('kif-poll-timer-'+id); if(el) el.textContent=`${secs}s…`; }, 1000);
-          wrap.innerHTML = `<div style="color:rgba(255,255,255,0.4);font-size:12px;padding:4px 0">🌸 Bild wird generiert… <span id="kif-poll-timer-${id}">0s…</span></div>`;
+          wrap.innerHTML = `<div style="color:rgba(255,255,255,0.4);font-size:12px;padding:4px 0">☁️ Bild wird generiert (Cloudflare)… <span id="kif-poll-timer-${id}">0s…</span></div>`;
 
+          // Primär: Cloudflare Workers AI (kostenlos, server-seitig, zuverlässig)
+          try {
+            const res = await fetch('/api/kiforum/generate-image', {
+              method: 'POST', headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({id, prompt: promptText})
+            }).then(r=>r.json());
+            if (res.ok) {
+              clearInterval(timer);
+              const src = `/api/kiforum/img/${res.img}?t=${Date.now()}`;
+              const q = _kifPosts.find(x=>x.id===id);
+              if (q) q.img = res.img;
+              const currentWrap = document.getElementById('kif-poll-' + id);
+              if (currentWrap) currentWrap.innerHTML = `
+                <img src="${src}" style="max-width:100%;border-radius:10px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 2px 12px rgba(0,0,0,0.4)">
+                <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px">✅ automatisch eingebunden — kein extra Klick nötig</div>
+                <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end;flex-wrap:wrap">
+                  <button class="kif-msg-btn" onclick="document.getElementById('kif-poll-${id}').innerHTML='';kifPollImage('${id}')">🔄 Neu generieren</button>
+                  <button class="kif-msg-btn" onclick="window.open('${src}','_blank')">⬇ Download</button>
+                  <button class="kif-msg-btn del" onclick="document.getElementById('kif-poll-${id}').style.display='none';document.getElementById('kif-poll-${id}').innerHTML=''">✕</button>
+                </div>`;
+              const msgEl = document.getElementById('kif-fi-' + id);
+              if (msgEl) {
+                let imgEl = msgEl.querySelector('.kif-msg-img');
+                if (!imgEl) {
+                  imgEl = document.createElement('img');
+                  imgEl.className = 'kif-msg-img';
+                  const content = msgEl.querySelector('.kif-msg-content');
+                  if (content) content.insertAdjacentElement('afterend', imgEl);
+                }
+                imgEl.src = src;
+              }
+              return;
+            }
+          } catch(e) { /* faellt durch auf Pollinations-Fallback */ }
+
+          // Fallback: Pollinations (falls Cloudflare mal ausfaellt)
+          const el0 = document.getElementById('kif-poll-timer-'+id);
+          if (el0) el0.textContent = '🌸 Fallback (Pollinations)…';
           let loaded = false;
           for (let mi = 0; mi < models.length && !loaded; mi++) {
             const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=768&height=768&model=${models[mi]}&nologo=true&seed=${seed}&enhance=true`;
@@ -4377,6 +4454,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                   <img src="${safeUrl}" style="max-width:100%;border-radius:10px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 2px 12px rgba(0,0,0,0.4)">
                   <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end;flex-wrap:wrap">
                     <button class="kif-msg-btn" id="kif-embed-btn-${id}" onclick="kifEmbedImage('${id}','${safeUrl}',this)">📌 Einbinden</button>
+                    <button class="kif-msg-btn" onclick="document.getElementById('kif-poll-${id}').innerHTML='';kifPollImage('${id}')">🔄 Neu generieren</button>
                     <button class="kif-msg-btn" onclick="window.open('${safeUrl}','_blank')">⬇ Download</button>
                     <button class="kif-msg-btn" onclick="kifPollCopyImg('${safeUrl}',this)">📋 Kopieren</button>
                     <button class="kif-msg-btn del" onclick="document.getElementById('kif-poll-${id}').style.display='none';document.getElementById('kif-poll-${id}').innerHTML=''">✕</button>
@@ -4395,7 +4473,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
           if (!loaded) {
             clearInterval(timer);
             const currentWrap = document.getElementById('kif-poll-' + id);
-            if (currentWrap) currentWrap.innerHTML = `<div style="color:#e57373;font-size:12px;padding:4px 0">❌ Kein Bild — <button class="kif-msg-btn" onclick="kifPollImage('${id}')">Nochmal</button></div>`;
+            if (currentWrap) currentWrap.innerHTML = `<div style="color:#e57373;font-size:12px;padding:4px 0">❌ Kein Bild — <button class="kif-msg-btn" onclick="document.getElementById('kif-poll-${id}').innerHTML='';kifPollImage('${id}')">Nochmal</button></div>`;
           }
         }
 
@@ -4645,6 +4723,79 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
             poll();
           } catch (e) {
             text.textContent = 'Fehler beim Übertragen.';
+            bar.style.width = '100%'; bar.style.background = '#e57373';
+            setTimeout(() => box.style.display = 'none', 3000);
+          }
+        }
+
+        async function kifShowArchive() {
+          document.getElementById('kif-archive-overlay').style.display = 'flex';
+          await kifRenderArchiveList();
+        }
+
+        function kifHideArchive() {
+          document.getElementById('kif-archive-overlay').style.display = 'none';
+        }
+
+        async function kifRenderArchiveList() {
+          const listEl = document.getElementById('kif-archive-list');
+          listEl.innerHTML = '<div class="kif-archive-empty">Lädt…</div>';
+          try {
+            const pub = await fetch('/api/kiforum/public-export').then(r => r.json());
+            const entries = pub.entries || [];
+            if (!entries.length) {
+              listEl.innerHTML = '<div class="kif-archive-empty">Archiv ist leer.</div>';
+              return;
+            }
+            listEl.innerHTML = entries.map(e => {
+              const dt = e.published_at ? new Date(e.published_at).toLocaleDateString('de-DE') : '';
+              return `<div class="kif-archive-row">
+                <div><div class="ttl">${kifEsc(e.title || '(ohne Titel)')}</div><div class="dt">${dt}</div></div>
+                <button class="kif-topbtn del" style="background:rgba(229,115,115,0.1);border-color:rgba(229,115,115,0.4);color:#e57373" onclick="kifDeleteArchiveEntry('${e.id}')">🗑 Löschen</button>
+              </div>`;
+            }).join('');
+          } catch (e) {
+            listEl.innerHTML = '<div class="kif-archive-empty">Fehler beim Laden.</div>';
+          }
+        }
+
+        async function kifDeleteArchiveEntry(entryId) {
+          if (!confirm('Diesen Dialog endgültig aus dem Archiv löschen und die Seite neu deployen?')) return;
+          const box = document.getElementById('kif-publish-progress');
+          const bar = document.getElementById('kif-publish-bar');
+          const text = document.getElementById('kif-publish-text');
+          const link = document.getElementById('kif-publish-link');
+          kifHideArchive();
+          box.style.display = 'block';
+          link.style.display = 'none';
+          bar.style.background = '';
+          bar.style.width = '0%';
+          text.textContent = 'Starte…';
+          try {
+            const start = await fetch('/api/kiforum/archive-delete', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: entryId})}).then(r=>r.json());
+            if (start.error) { text.textContent = start.error; bar.style.width = '100%'; bar.style.background = '#e57373'; setTimeout(() => box.style.display = 'none', 3000); return; }
+            const jobId = start.job;
+            const poll = async () => {
+              const job = await fetch('/api/kiforum/publish-status?job=' + encodeURIComponent(jobId)).then(r => r.json());
+              bar.style.width = (job.pct || 0) + '%';
+              if (job.error) {
+                text.textContent = '⚠️ ' + job.error;
+                bar.style.background = '#e57373';
+                setTimeout(() => box.style.display = 'none', 4000);
+                return;
+              }
+              text.textContent = KIF_STAGE_TEXT[job.stage] || job.stage || '…';
+              if (job.done) {
+                text.textContent = 'Fertig ✓ Dialog gelöscht, Seite ist live.';
+                link.style.display = 'inline-block';
+                setTimeout(() => box.style.display = 'none', 6000);
+                return;
+              }
+              setTimeout(poll, 700);
+            };
+            poll();
+          } catch (e) {
+            text.textContent = 'Fehler beim Löschen.';
             bar.style.width = '100%'; bar.style.background = '#e57373';
             setTimeout(() => box.style.display = 'none', 3000);
           }
@@ -5440,18 +5591,20 @@ let _bgArchiveItems = [];
 
 const BG_ENGINE_COLORS = {
   pollinations: {border:'#22c55e', bg:'rgba(34,197,94,0.15)', color:'#4ade80'},
+  cloudflare:   {border:'#f6821f', bg:'rgba(246,130,31,0.15)', color:'#fb923c'},
   gemini:       {border:'#fbbc04', bg:'rgba(251,188,4,0.12)', color:'#fbbf24'},
   mai:          {border:'#6366f1', bg:'rgba(99,102,241,0.15)', color:'#818cf8'},
 };
 const BG_ENGINE_GRAD = {
   pollinations: 'linear-gradient(135deg,#16a34a,#4ade80)',
+  cloudflare:   'linear-gradient(135deg,#f6821f,#fb923c)',
   gemini:       'linear-gradient(135deg,#1a73e8,#34a853)',
   mai:          'linear-gradient(135deg,#4f46e5,#818cf8)',
 };
 
 function bgSelectEngine(eng) {
   _bgEngine = eng;
-  ['pollinations','gemini','mai'].forEach(e => {
+  ['pollinations','cloudflare','gemini','mai'].forEach(e => {
     const tab = document.getElementById('bg-tab-' + e);
     const opts = document.getElementById('bg-opts-' + e);
     const c = BG_ENGINE_COLORS[e];
@@ -5471,6 +5624,8 @@ function bgSelectEngine(eng) {
   if (btn) btn.style.background = BG_ENGINE_GRAD[eng];
   const upBtn = document.getElementById('bg-upload-btn');
   if (upBtn) upBtn.style.display = (eng === 'gemini' || eng === 'mai') ? 'block' : 'none';
+  const impBtn = document.getElementById('bg-improve-btn');
+  if (impBtn) impBtn.style.display = (eng === 'mai') ? 'none' : 'block';
   const maiWarn = document.getElementById('bg-mai-warning');
   if (maiWarn && eng === 'mai') {
     fetch('/api/bildgen/mai-config').then(r=>r.json()).then(d => {
@@ -5483,6 +5638,33 @@ function bgToggleNeg() {
   const el = document.getElementById('bg-poll-neg');
   if (!el) return;
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function bgImprovePrompt() {
+  const ta = document.getElementById('bg-prompt');
+  const btn = document.getElementById('bg-improve-btn');
+  const prompt = (ta.value || '').trim();
+  if (!prompt) { alert('Bitte erst einen Text eingeben.'); return; }
+  btn.disabled = true;
+  const origText = btn.textContent;
+  btn.textContent = '⏳';
+  try {
+    const resp = await fetch('/api/bildgen/improve-prompt', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({prompt})
+    });
+    const d = await resp.json();
+    if (d.error) throw new Error(d.error);
+    ta.value = d.improved_prompt;
+    btn.textContent = '✅';
+    setTimeout(()=>{ btn.textContent = origText; }, 1500);
+  } catch(e) {
+    btn.textContent = '❌';
+    alert('Fehler beim Verbessern: ' + e.message);
+    setTimeout(()=>{ btn.textContent = origText; }, 1500);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function bgFileChanged(input) {
@@ -5583,7 +5765,11 @@ async function bgGeneratePollinations(prompt, aspect) {
 async function bgGenerateViaServer(prompt, aspect) {
   const status = document.getElementById('bg-status');
   let model, payload;
-  if (_bgEngine === 'gemini') {
+  if (_bgEngine === 'cloudflare') {
+    model = 'cloudflare-flux';
+    payload = {prompt, model, aspect_ratio: aspect};
+    if (status) status.textContent = 'Cloudflare FLUX generiert… (5–15 Sek)';
+  } else if (_bgEngine === 'gemini') {
     model = document.getElementById('bg-gem-model').value;
     payload = {prompt, model, aspect_ratio: aspect, input_image_b64: _bgInputB64, input_mime_type: _bgInputMime || 'image/png'};
     if (status) status.textContent = 'Nano Banana generiert… (3–10 Sek)';
@@ -5600,7 +5786,8 @@ async function bgGenerateViaServer(prompt, aspect) {
   const arr  = Uint8Array.from(atob(d.image_b64), c => c.charCodeAt(0));
   const blob = new Blob([arr], {type: mime});
   _bgLastBlob = blob; _bgLastMime = mime;
-  const lbl = _bgEngine === 'gemini' ? '🍌 Nano Banana · ' + model : '✨ MAI · ' + model;
+  const lbl = _bgEngine === 'cloudflare' ? '☁️ Cloudflare FLUX'
+            : _bgEngine === 'gemini' ? '🍌 Nano Banana · ' + model : '✨ MAI · ' + model;
   bgShowResult(URL.createObjectURL(blob), lbl + ' · ' + aspect);
   const rem = document.getElementById('bg-daily-remaining');
   if (rem && d.remaining != null) rem.textContent = 'Tageslimit: noch ' + d.remaining + ' Bilder';
@@ -15996,6 +16183,67 @@ async function loadRedesigns() {
   loadBollaProjects();
 }
 
+// ===== Schülerlisten-Lookup (Klasse/Geburtstag beim Bolla-Songs-Formular) =====
+let _schuelerListe = null;
+async function schuelerLoadListe() {
+  if (_schuelerListe) return _schuelerListe;
+  try {
+    _schuelerListe = await fetch(API + '/api/schueler/stammdaten').then(r => r.json());
+  } catch (e) {
+    _schuelerListe = [];
+  }
+  return _schuelerListe;
+}
+function schuelerNorm(s) {
+  return (s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').trim();
+}
+function schuelerFindMatch(input, liste) {
+  const inputNorm = schuelerNorm(input);
+  if (!inputNorm) return null;
+  let candidates;
+  const tokens = input.trim().split(/\s+/);
+  const lastTok = tokens[tokens.length - 1].replace(/\.$/, '');
+  if (input.includes(',')) {
+    const [nachRaw, vorRaw] = input.split(',');
+    const nach = schuelerNorm(nachRaw), vor = schuelerNorm(vorRaw);
+    candidates = liste.filter(s => schuelerNorm(s.nachname) === nach && (!vor || schuelerNorm(s.vorname).startsWith(vor)));
+  } else if (tokens.length > 1 && lastTok.length <= 2) {
+    // Bei mehrfach vorkommendem Vornamen reicht der Anfangsbuchstabe des Nachnamens zum Entschärfen, z.B. "Felix L" -> Löwe
+    const vorQuery = schuelerNorm(tokens.slice(0, -1).join(' '));
+    const initial = schuelerNorm(lastTok);
+    candidates = liste.filter(s => {
+      const vorNorm = schuelerNorm(s.vorname);
+      const vorFirst = vorNorm.split(/\s+/)[0];
+      return (vorNorm === vorQuery || vorFirst === vorQuery) && schuelerNorm(s.nachname).startsWith(initial);
+    });
+  } else {
+    candidates = liste.filter(s => {
+      const vorNorm = schuelerNorm(s.vorname);
+      const nachNorm = schuelerNorm(s.nachname);
+      const vorFirst = vorNorm.split(/\s+/)[0];
+      return vorNorm === inputNorm || vorFirst === inputNorm || nachNorm === inputNorm
+        || `${vorNorm} ${nachNorm}` === inputNorm || `${nachNorm} ${vorNorm}` === inputNorm;
+    });
+  }
+  return candidates.length === 1 ? candidates[0] : null;
+}
+async function sunoAutoFillFromSchuelerliste(name) {
+  name = (name || '').trim();
+  if (!name) return;
+  const liste = await schuelerLoadListe();
+  const match = schuelerFindMatch(name, liste);
+  if (!match) return;
+  const klasseEl = document.getElementById('suno-klasse');
+  const gebEl = document.getElementById('suno-geburtstag');
+  const alterEl = document.getElementById('suno-alter');
+  if (klasseEl && !klasseEl.value.trim()) klasseEl.value = match.klasse;
+  if (gebEl && !gebEl.value.trim()) gebEl.value = match.geburtstag;
+  // Alter fürs diesjährige Geburtstagsdatum, unabhängig davon ob der Tag schon war oder noch kommt
+  if (alterEl && !alterEl.value.trim() && match.geburtsjahr) {
+    alterEl.value = String(new Date().getFullYear() - match.geburtsjahr);
+  }
+}
+
 // ===== SUNO =====
 const SUNO_DEFAULT_KONTEXT = 'Geburtstagssong für Schüler · Computerkurs Herrn Mandel · Lessing-Gymnasium';
 let sunoLang = 'de';
@@ -16225,11 +16473,17 @@ function sunoPopupRefresh() {
 
 // ── Charts ──────────────────────────────────────────────────────
 let _sunoCharts = null;
+let _sunoChartsLoadedAt = 0;
+const _SUNO_CHARTS_MAX_AGE_MS = 24 * 60 * 60 * 1000; // einmal pro Tag neu laden
 let _sunoChartTab = 'de';
+function _sunoChartsStale() {
+  return !_sunoCharts || (Date.now() - _sunoChartsLoadedAt > _SUNO_CHARTS_MAX_AGE_MS);
+}
 async function sunoLoadCharts() {
   try {
     const res = await fetch(API + '/api/charts');
     _sunoCharts = await res.json();
+    _sunoChartsLoadedAt = Date.now();
     sunoRenderChart();
   } catch(e) {
     document.getElementById('suno-chart-list').innerHTML =
@@ -16238,7 +16492,7 @@ async function sunoLoadCharts() {
 }
 function sunoChartTab(tab) {
   _sunoChartTab = tab;
-  ['de','global','party','dance','overall'].forEach(t => {
+  ['de','global','party','oktoberfest','dance','overall'].forEach(t => {
     const btn = document.getElementById('chart-tab-' + t);
     btn.style.background = t === tab ? 'var(--accent)' : 'transparent';
     btn.style.color = t === tab ? 'white' : 'var(--dim)';
@@ -16533,12 +16787,17 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('page-suno') && document.getElementById('page-suno').style.display !== 'none') {
     sunoLoadCharts();
   }
+  // Falls die Seite tagelang offen bleibt: stündlich prüfen und bei >24h neu laden
+  setInterval(() => {
+    const pg = document.getElementById('page-suno');
+    if (pg && pg.style.display !== 'none' && _sunoChartsStale()) sunoLoadCharts();
+  }, 60 * 60 * 1000);
 });
 // Auch beim Tab-Wechsel nachladen (Navigation-Observer)
 (function() {
   const _chartObs = new MutationObserver(() => {
     const pg = document.getElementById('page-suno');
-    if (pg && pg.style.display !== 'none' && !_sunoCharts) sunoLoadCharts();
+    if (pg && pg.style.display !== 'none' && _sunoChartsStale()) sunoLoadCharts();
   });
   const pg = document.getElementById('page-suno');
   if (pg) _chartObs.observe(pg, {attributes: true, attributeFilter: ['style']});

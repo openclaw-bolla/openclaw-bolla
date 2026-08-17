@@ -57,13 +57,16 @@ def _kif_run_publish_job(job_id):
             return
 
         new_posts_chrono = list(reversed(new_posts))  # posts.json ist neueste-zuerst
+        existing_entries = pub.setdefault("entries", [])
+
+        # Jeder Dialog beginnt mit einem "user"-Post (Chris' These). Enthält der neue Batch
+        # keinen einzigen davon, ist es keine neue Diskussion, sondern eine nachträgliche
+        # Fortsetzung (typischerweise ein nachträglich erzeugtes Fazit) eines schon übertragenen
+        # Dialogs -- die muss an den zuletzt übertragenen Eintrag angehängt werden statt einen
+        # neuen, isolierten Archiv-Eintrag zu erzeugen.
+        is_continuation = existing_entries and not any(p.get("type") == "user" for p in new_posts_chrono)
 
         conclusion = next((p for p in new_posts_chrono if p.get("type") == "conclusion" and p.get("title")), None)
-        if conclusion:
-            title = conclusion["title"]
-        else:
-            first_user = next((p for p in new_posts_chrono if p.get("type") == "user"), new_posts_chrono[0])
-            title = _kif_truncate(first_user.get("content", "") or first_user.get("title", ""), 70)
 
         ASSETS_DIR.mkdir(parents=True, exist_ok=True)
         images = []
@@ -76,14 +79,28 @@ def _kif_run_publish_job(job_id):
                     images.append(img)
 
         newest_ts = max(p.get("timestamp", "") for p in new_posts_chrono)
-        entry = {
-            "id": str(_uuid_pub.uuid4()),
-            "published_at": datetime.now().isoformat(),
-            "title": title,
-            "messages": new_posts_chrono,
-            "images": images,
-        }
-        pub.setdefault("entries", []).insert(0, entry)
+
+        if is_continuation:
+            target_entry = existing_entries[0]
+            title = conclusion["title"] if conclusion else target_entry.get("title", "")
+            target_entry["title"] = title
+            target_entry.setdefault("messages", []).extend(new_posts_chrono)
+            target_entry.setdefault("images", []).extend(images)
+        else:
+            if conclusion:
+                title = conclusion["title"]
+            else:
+                first_user = next((p for p in new_posts_chrono if p.get("type") == "user"), new_posts_chrono[0])
+                title = _kif_truncate(first_user.get("content", "") or first_user.get("title", ""), 70)
+            entry = {
+                "id": str(_uuid_pub.uuid4()),
+                "published_at": datetime.now().isoformat(),
+                "title": title,
+                "messages": new_posts_chrono,
+                "images": images,
+            }
+            existing_entries.insert(0, entry)
+
         pub["last_published_ts"] = newest_ts
         PUB_FILE.write_text(json.dumps(pub, ensure_ascii=False, indent=2))
 
@@ -98,6 +115,54 @@ def _kif_run_publish_job(job_id):
             return
 
         _set(stage="done", pct=100, done=True, title=title)
+    except Exception as e:
+        _KIF_PUBLISH_JOBS[job_id]["error"] = f"{type(e).__name__}: {e}"
+        _KIF_PUBLISH_JOBS[job_id]["done"] = True
+        _KIF_PUBLISH_JOBS[job_id]["pct"] = 100
+
+
+def _kif_run_delete_job(job_id, entry_id):
+    """Läuft im Hintergrund-Thread: entfernt einen Archiv-Eintrag aus ki_dialog_public.json,
+    baut die öffentliche Seite neu und deployt sie live. Nutzt denselben Job-Fortschritt
+    wie _kif_run_publish_job, damit das Frontend dieselbe Fortschrittsanzeige pollen kann."""
+    def _set(**kw):
+        _KIF_PUBLISH_JOBS[job_id].update(kw)
+
+    try:
+        _set(stage="archiving", pct=10)
+        PUB_FILE = Path(os.path.join(WORKSPACE, "data/ki_dialog_public.json"))
+        pub = json.loads(PUB_FILE.read_text()) if PUB_FILE.exists() else {"last_published_ts": None, "entries": []}
+        entries = pub.get("entries", [])
+        before = len(entries)
+        entries = [e for e in entries if e.get("id") != entry_id]
+        if len(entries) == before:
+            _set(done=True, error="Eintrag nicht gefunden.", pct=100)
+            return
+        pub["entries"] = entries
+        PUB_FILE.write_text(json.dumps(pub, ensure_ascii=False, indent=2))
+
+        if not entries:
+            _set(stage="generating", pct=35)
+            import kif_publish_site
+            KIF_PAGE = Path(kif_publish_site.KIF_PAGE)
+            if KIF_PAGE.exists():
+                KIF_PAGE.write_text(
+                    kif_publish_site.HEAD
+                    + '    <p class="archive-note" style="margin-top:40px">Weitere Dialoge folgen hier, sobald ich sie übertrage.</p>\n'
+                    + kif_publish_site.FOOT
+                )
+        else:
+            _set(stage="generating", pct=35)
+            import kif_publish_site
+            kif_publish_site.regenerate_de_page()
+
+        _set(stage="deploying", pct=60)
+        ok, output = kif_publish_site.deploy_production()
+        if not ok:
+            _set(done=True, error="Deploy fehlgeschlagen: " + output[-400:], pct=100)
+            return
+
+        _set(stage="done", pct=100, done=True, title="gelöscht")
     except Exception as e:
         _KIF_PUBLISH_JOBS[job_id]["error"] = f"{type(e).__name__}: {e}"
         _KIF_PUBLISH_JOBS[job_id]["done"] = True
@@ -446,6 +511,45 @@ def bildgen_mai_generate(prompt, model="mai-image-2.5", width=1024, height=1024,
     if not items or not items[0].get("b64_json"):
         return None, "Kein Bild in der MAI-Antwort."
     return items[0]["b64_json"], "image/png"
+
+_CF_TOKEN_CFG_PATH = os.path.join(WORKSPACE, "config/cloudflare_token.json")
+
+def _cf_token_config():
+    try:
+        return json.load(open(_CF_TOKEN_CFG_PATH))
+    except Exception:
+        return {}
+
+def cf_workers_ai_generate(prompt, width=1024, height=1024):
+    # Cloudflare Workers AI (FLUX-1-schnell) — kostenloses Kontingent, Account-Scope-Token noetig.
+    import urllib.request, urllib.error
+    cfg = _cf_token_config()
+    token = cfg.get("api_token", "")
+    account = cfg.get("account_id", "")
+    if not token or not account:
+        return None, "Kein Cloudflare API-Token/Account konfiguriert."
+    url = f"https://api.cloudflare.com/client/v4/accounts/{account}/ai/run/@cf/black-forest-labs/flux-1-schnell"
+    # flux-1-schnell akzeptiert nur prompt/steps/seed — width/height sind NICHT im Schema (fuehrt zu 5006-Fehler).
+    payload = json.dumps({"prompt": prompt}).encode()
+    req = urllib.request.Request(url, data=payload, headers={
+        "Authorization": f"Bearer {token}", "Content-Type": "application/json"
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        msg = e.read().decode("utf-8", errors="replace")
+        try: msg = json.loads(msg).get("errors", msg)
+        except Exception: pass
+        return None, f"Cloudflare-Fehler: {msg}"
+    except Exception as e:
+        return None, str(e)
+    if not data.get("success"):
+        return None, f"Cloudflare-Fehler: {data.get('errors')}"
+    img_b64 = data.get("result", {}).get("image")
+    if not img_b64:
+        return None, "Kein Bild in der Cloudflare-Antwort."
+    return img_b64, "image/jpeg"
 
 def bildgen_archive_save(img_b64, mime, prompt, engine, aspect):
     import base64 as _b64
@@ -2853,7 +2957,7 @@ def _fetch_kworb(kworb_slug, limit=10):
 
 # Kuratierter Pool harmloser, sehr bekannter dt. Party-/Mitsing-Hits — familientauglich
 # für ~13-Jährige (Schul-Party). Keine anzüglichen/Alkohol-/skandalträchtigen Titel.
-# Wöchentliche Rotation: _fetch_party_charts() zieht per Wochen-Seed 10 davon.
+# Tägliche Rotation: _fetch_party_charts() zieht per Tages-Seed 10 davon (siehe _daily_sample).
 _PARTY_HITS = [
     {"title": "Atemlos durch die Nacht",          "artist": "Helene Fischer",        "streams": "Partyklassiker"},
     {"title": "Ein Stern der deinen Namen trägt",  "artist": "DJ Ötzi & Nik P.",      "streams": "Partyklassiker"},
@@ -2879,11 +2983,73 @@ _PARTY_HITS = [
     {"title": "Aber bitte mit Sahne",              "artist": "Udo Jürgens",           "streams": "Kult-Klassiker"},
     {"title": "Verdammt, ich lieb dich",           "artist": "Matthias Reim",         "streams": "Kult-Klassiker"},
     {"title": "Cowboy und Indianer",              "artist": "Truck Stop",            "streams": "Partyklassiker"},
+    {"title": "Live is Life",                      "artist": "Opus",                  "streams": "Kult-Klassiker"},
+    {"title": "Über den Wolken",                   "artist": "Reinhard Mey",          "streams": "Kult-Klassiker"},
+    {"title": "Codo (Düse im Sauseschritt)",       "artist": "Deutsch-Österreichisches Feingefühl", "streams": "Kult-Klassiker"},
+    {"title": "Zeit dass sich was dreht",          "artist": "Wise Guys",             "streams": "Mitsing-Hit"},
+    {"title": "Ohne dich (schlaf ich heut nacht nicht ein)", "artist": "Münchener Freiheit", "streams": "Kult-Klassiker"},
+    {"title": "Über sieben Brücken musst du gehn", "artist": "Karat",                 "streams": "Kult-Klassiker"},
+    {"title": "Symphonie",                         "artist": "Silbermond",            "streams": "Mitsing-Hit"},
+    {"title": "Ist da jemand",                     "artist": "Adel Tawil",            "streams": "Mitsing-Hit"},
+    {"title": "Deutschland",                       "artist": "Die Prinzen",           "streams": "Kult-Klassiker"},
+    {"title": "Alles nur geklaut",                 "artist": "Die Prinzen",           "streams": "Kult-Klassiker"},
+    {"title": "Millionär",                         "artist": "Die Prinzen",           "streams": "Kult-Klassiker"},
+    {"title": "Junge",                             "artist": "Die Ärzte",             "streams": "Kult-Klassiker"},
+    {"title": "Kompliment",                        "artist": "Sportfreunde Stiller",  "streams": "Mitsing-Hit"},
+    {"title": "Forever Young",                     "artist": "Alphaville",            "streams": "Kult-Klassiker"},
+    {"title": "Rock Me Amadeus",                   "artist": "Falco",                 "streams": "Kult-Klassiker"},
+    {"title": "Wir sind wir",                      "artist": "Paul van Dyk feat. Peter Heppner", "streams": "Mitsing-Hit"},
+    {"title": "Haus am See",                       "artist": "Peter Fox",             "streams": "Mitsing-Hit"},
+    {"title": "Alles neu",                         "artist": "Peter Fox",             "streams": "Mitsing-Hit"},
+    {"title": "Ich will Spaß",                     "artist": "Markus",                "streams": "Partyklassiker"},
+    {"title": "1000 gute Gründe",                  "artist": "Silbermond",            "streams": "Mitsing-Hit"},
+    {"title": "Das Beste",                         "artist": "Silbermond",            "streams": "Mitsing-Hit"},
+    {"title": "An deiner Seite (Da Da Da)",        "artist": "Unheilig",              "streams": "Mitsing-Hit"},
+    {"title": "Geboren um zu leben",               "artist": "Unheilig",              "streams": "Mitsing-Hit"},
+    {"title": "You Let Me Walk Alone",             "artist": "Michael Schulte",       "streams": "Mitsing-Hit"},
 ]
 
 def _fetch_party_charts():
     """Kuratierte dt. Partyhits — täglich 10 zufällige, Doppelungen zum Vortag vermieden."""
     return _daily_sample(_PARTY_HITS, 10)
+
+# Kuratierter Pool echter Oktoberfest-/Wiesn-Hits (Bierzelt-Klassiker + moderne Zeltgesänge).
+_OKTOBERFEST_HITS = [
+    {"title": "Ein Prosit der Gemütlichkeit",     "artist": "Wiesn-Kapelle",        "streams": "Wiesn-Hymne"},
+    {"title": "Fliegerlied (So ein schöner Tag)", "artist": "Tim Toupet",           "streams": "Wiesn-Hit"},
+    {"title": "In München steht ein Hofbräuhaus", "artist": "Wiesn-Klassiker",      "streams": "Wiesn-Hymne"},
+    {"title": "Layla",                             "artist": "DJ Robin & Schürze",  "streams": "Wiesn-Hit"},
+    {"title": "Skandal im Sperrbezirk",           "artist": "Spider Murphy Gang",   "streams": "Bierzelt-Klassiker"},
+    {"title": "Bergvagabunden",                    "artist": "Marc Pircher",         "streams": "Bierzelt-Klassiker"},
+    {"title": "Country Roads",                     "artist": "John Denver",          "streams": "Zeltgesang"},
+    {"title": "Sweet Caroline",                    "artist": "Neil Diamond",         "streams": "Zeltgesang"},
+    {"title": "Angels",                            "artist": "Robbie Williams",      "streams": "Zeltgesang"},
+    {"title": "Cordula Grün",                      "artist": "Josh.",                "streams": "Wiesn-Hit"},
+    {"title": "Das rote Pferd",                    "artist": "Markus Becker",        "streams": "Bierzelt-Klassiker"},
+    {"title": "Hulapalu",                          "artist": "Andreas Gabalier",     "streams": "Bierzelt-Klassiker"},
+    {"title": "Marmor, Stein und Eisen bricht",    "artist": "Drafi Deutscher",      "streams": "Wiesn-Klassiker"},
+    {"title": "Ein Bett im Kornfeld",              "artist": "Jürgen Drews",         "streams": "Schlager-Klassiker"},
+    {"title": "Herzilein",                         "artist": "Truck Stop",           "streams": "Bierzelt-Klassiker"},
+    {"title": "Rosamunde",                         "artist": "Wiesn-Klassiker",      "streams": "Wiesn-Hymne"},
+    {"title": "Fürstenfeld",                       "artist": "STS",                  "streams": "Zeltgesang"},
+    {"title": "Griechischer Wein",                 "artist": "Udo Jürgens",          "streams": "Bierzelt-Klassiker"},
+    {"title": "Die immer lacht",                   "artist": "Helene Fischer",       "streams": "Wiesn-Hit"},
+    {"title": "Küssen verboten",                   "artist": "Ikke Hüftgold",        "streams": "Wiesn-Hit"},
+    {"title": "Sierra Madre",                      "artist": "Klubbb3",              "streams": "Bierzelt-Klassiker"},
+    {"title": "Böhmischer Traum",                  "artist": "Klostertaler",         "streams": "Bierzelt-Klassiker"},
+    {"title": "Zwei kleine Italiener",             "artist": "Conny Froboess",       "streams": "Wiesn-Klassiker"},
+    {"title": "Living Next Door to Alice",         "artist": "Smokie",               "streams": "Zeltgesang"},
+    {"title": "Sweet Home Alabama",                "artist": "Lynyrd Skynyrd",       "streams": "Zeltgesang"},
+    {"title": "Hey Jude",                          "artist": "The Beatles",          "streams": "Zeltgesang"},
+    {"title": "Verdammt, ich lieb dich",           "artist": "Matthias Reim",        "streams": "Bierzelt-Klassiker"},
+    {"title": "Atemlos durch die Nacht",           "artist": "Helene Fischer",       "streams": "Wiesn-Hit"},
+    {"title": "Wahnsinn",                          "artist": "Wolfgang Petry",       "streams": "Bierzelt-Klassiker"},
+    {"title": "Ein Stern der deinen Namen trägt",  "artist": "DJ Ötzi & Nik P.",     "streams": "Wiesn-Hit"},
+]
+
+def _fetch_oktoberfest_charts():
+    """Kuratierte Oktoberfest-/Wiesn-Hits — täglich 10 zufällige, Doppelungen zum Vortag vermieden."""
+    return _daily_sample(_OKTOBERFEST_HITS, 10)
 
 # Suno-optimierte Style-Tags für bekannte deutsche Party/Schlager-Hits.
 # Schlüssel: Titel lowercase (ohne Sonderpunktierung), Wert: fertige Suno-Tags.
@@ -2913,6 +3079,16 @@ _DE_SONG_STYLE_MAP = {
     "aber bitte mit sahne":              "german schlager, swing feel, male vocals, fun, festive",
     "cowboy und indianer":               "german country pop, fun, upbeat, male vocals, crowd pleaser",
     "80 millionen":                      "german pop, uplifting, piano, male vocals, anthemic, feel-good",
+    "ein prosit der gemütlichkeit":      "german oompah brass band, bierzelt anthem, tuba, communal shout-along, festive, oktoberfest",
+    "fliegerlied so ein schöner tag":    "german party schlager, oompah brass, upbeat, crowd sing-along, festive, bierzelt",
+    "in münchen steht ein hofbräuhaus":  "bavarian folk, oompah brass band, tuba, accordion, festive sing-along, oktoberfest",
+    "layla":                             "german schlager, oompah brass, catchy hook, male vocals, bierzelt anthem, festive",
+    "skandal im sperrbezirk":            "german rock, bavarian rock, saxophone, energetic male vocals, party anthem, 80s",
+    "bergvagabunden":                    "austrian schlager, oompah brass, accordion, male vocals, festive, mountain party anthem",
+    "ein bett im kornfeld":              "german schlager, brass, male vocals, catchy chorus, festive, retro",
+    "herzilein":                         "german oompah, accordion, brass band, crowd sing-along, festive, bierzelt",
+    "rosamunde":                         "bavarian oompah polka, brass band, accordion, festive, communal dance beat",
+    "fürstenfeld":                       "austropop, acoustic guitar, warm male vocals, nostalgic, communal sing-along, mid-tempo",
 }
 
 # Suno-optimierte Style-Tags für bekannte englische Hits.
@@ -2961,6 +3137,9 @@ _EN_SONG_STYLE_MAP = {
     "believer":                 "arena rock, powerful drums, guitar riffs, anthemic, male vocals, aggressive build",
     "thunder":                  "pop rock, electronic elements, punchy beat, male vocals, anthemic, energetic",
     "sucker":                   "pop rock, guitar-driven, upbeat, male group vocals, fun, 138bpm",
+    "country roads":            "folk rock, acoustic guitar, warm male vocals, communal sing-along, anthemic, nostalgic, bierzelt cover",
+    "sweet caroline":           "pop rock, brass stabs, communal sing-along, warm male vocals, anthemic, feel-good",
+    "angels":                   "pop ballad, piano-driven, building strings, emotional male vocals, anthemic sing-along",
 }
 
 def _fetch_kworb_alltime(pick=10):
@@ -3014,7 +3193,7 @@ def _fetch_itunes_genre(genre_id, country="us", limit=10):
         return [{"error": str(e)}]
 
 def get_charts():
-    """Streaming Charts: DE + Global (Spotify via kworb) + Party (Schlager) + Dance (Apple) + Overall Alltime."""
+    """Streaming Charts: DE + Global (Spotify via kworb) + Party (Schlager) + Oktoberfest + Dance (Apple) + Overall Alltime."""
     import time as _time
     now = _time.time()
     if _charts_cache["data"] and now - _charts_cache["ts"] < CHARTS_TTL:
@@ -3022,9 +3201,10 @@ def get_charts():
     de = _fetch_kworb("de_daily")
     gl = _fetch_kworb("global_daily")
     party = _fetch_party_charts()
+    oktoberfest = _fetch_oktoberfest_charts()
     dance = _fetch_itunes_genre(17, "de")   # echte aktuelle Dance/Party-Charts für Release-Songs
     overall = _fetch_kworb_alltime()
-    result = {"de": de, "global": gl, "party": party, "dance": dance, "overall": overall}
+    result = {"de": de, "global": gl, "party": party, "oktoberfest": oktoberfest, "dance": dance, "overall": overall}
     _charts_cache["data"] = result
     _charts_cache["ts"] = now
     return result
@@ -7292,6 +7472,11 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 self.wfile.write(data)
                 return
 
+            elif self.path == "/api/schueler/stammdaten":
+                SCHUELER_FILE = Path(os.path.join(WORKSPACE, "data/schueler_stammdaten.json"))
+                data = json.loads(SCHUELER_FILE.read_text()) if SCHUELER_FILE.exists() else []
+                self._send_json(data)
+
             elif self.path == "/api/kiforum":
                 KIFORUM_FILE = os.path.join(WORKSPACE, "data/kiforum.json")
                 posts = json.loads(Path(KIFORUM_FILE).read_text()) if Path(KIFORUM_FILE).exists() else []
@@ -8022,6 +8207,45 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
                 self.wfile.write(data)
+            elif self.path == "/api/bildgen/improve-prompt":
+                import subprocess as _sp_bgp
+                raw_prompt = (body.get("prompt") or "").strip()
+                if not raw_prompt:
+                    self._send_json({"error": "Kein Prompt angegeben"}, status=400); return
+                sys_prompt = f"""Du bist Experte fuer Prompts bei Diffusions-Bildmodellen (FLUX/Stable-Diffusion-Stil — z.B. Pollinations, Cloudflare Workers AI, Gemini Imagen).
+Diese Modelle brauchen ausfuehrliche ENGLISCHE Szenenbeschreibungen statt kurzer/abstrakter Begriffe, und koennen KEINEN lesbaren Text/Schriftzug ins Bild setzen.
+
+Verwandle die folgende rudimentaere Nutzereingabe in einen starken Bildprompt:
+- Englisch
+- Konkretes visuelles Hauptmotiv statt Abstraktion (z.B. nicht "KI" sondern eine konkrete Darstellung davon)
+- Szene + Handlung + Umgebung + Licht
+- Stil-Schlagworte am Ende (z.B. photorealistic, cinematic, detailed)
+- Verlange KEINE Textelemente/Schilder/Beschriftungen im Bild
+- Maximal 2-3 Saetze
+
+Nutzereingabe: "{raw_prompt}"
+
+Antworte NUR als reines JSON: {{"improved_prompt": "..."}}"""
+                result = _sp_bgp.run(
+                    [CLAUDE_BIN, "-p", "--output-format", "json", sys_prompt],
+                    capture_output=True, text=True, timeout=30, cwd=os.path.expanduser("~")
+                )
+                if result.returncode != 0:
+                    self._send_json({"error": result.stderr[:200]}, status=500); return
+                raw = json.loads(result.stdout).get("result", "").strip()
+                if "```" in raw:
+                    raw = raw.split("```")[1]
+                    if raw.startswith("json"): raw = raw[4:]
+                raw = raw.strip()
+                idx = raw.find('{')
+                if idx < 0:
+                    self._send_json({"error": "Kein JSON in Antwort"}, status=500); return
+                data, _ = json.JSONDecoder().raw_decode(raw, idx)
+                improved = (data.get("improved_prompt") or "").strip()
+                if not improved:
+                    self._send_json({"error": "Kein verbesserter Prompt erhalten"}, status=500); return
+                self._send_json({"improved_prompt": improved})
+
             elif self.path == "/api/bildgen":
                 prompt = body.get("prompt", "").strip()
                 if not prompt:
@@ -8035,11 +8259,14 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 aspect = body.get("aspect_ratio", "1:1")
                 in_img  = body.get("input_image_b64")
                 in_mime = body.get("input_mime_type", "image/png")
-                if model.startswith("mai-"):
+                dim_map = {"1:1":(1024,1024), "16:9":(1360,768), "9:16":(768,1360),
+                           "4:3":(1152,864), "3:4":(864,1152)}
+                if model == "cloudflare-flux":
+                    w, h = dim_map.get(aspect, (1024,1024))
+                    img_b64, mime_or_err = cf_workers_ai_generate(prompt, w, h)
+                elif model.startswith("mai-"):
                     # MAI-Image via Azure AI Foundry — width/height in px.
                     # Constraints: beide ≥768, w×h ≤ 1.048.576. Pro Aspect max. Auflösung im Budget.
-                    dim_map = {"1:1":(1024,1024), "16:9":(1360,768), "9:16":(768,1360),
-                               "4:3":(1152,864), "3:4":(864,1152)}
                     w, h = dim_map.get(aspect, (1024,1024))
                     img_b64, mime_or_err = bildgen_mai_generate(prompt, model, w, h, in_img, in_mime)
                 else:
@@ -8049,10 +8276,10 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 else:
                     _bildgen_counter["count"] += 1
                     remaining = BILDGEN_LIMIT - _bildgen_counter["count"]
-                    # Self-Metering: erfolgreichen Bild-Call mit Kosten verbuchen
+                    # Self-Metering: erfolgreichen Bild-Call mit Kosten verbuchen (Cloudflare = 0€, keine Buchung)
                     if model.startswith("mai-"):
                         kosten_ledger_add("mai_image", MAI_IMG_PREIS, f"MAI {model} {aspect}")
-                    else:
+                    elif model != "cloudflare-flux":
                         kosten_ledger_add("gemini_image", GEMINI_IMG_PREIS, f"{model} {aspect}")
                     self._send_json({"image_b64": img_b64, "mime_type": mime_or_err, "remaining": remaining})
             elif self.path == "/api/bildgen/archive/save":
@@ -8645,6 +8872,24 @@ Antworte NUR als reines JSON ohne Markdown:
                 # Release-/Profil-Modus ist NIE ein Schulsong, auch wenn kein Thema angegeben ist
                 is_school = (not kontext or kontext == SCHOOL_KONTEXT) and not profil
                 import re as _re2
+
+                def _computerkurs_wochentag(klasse_str):
+                    """Echten Wochentag des Computerkurses für die Klasse aus schuljahr2627.json holen — nie raten/erfinden."""
+                    if not klasse_str:
+                        return ""
+                    try:
+                        m = _re2.search(r'(\d{1,2}[a-zA-Z])', klasse_str)
+                        code = (m.group(1) if m else klasse_str).strip().lower()
+                        plan = json.loads(Path(os.path.join(WORKSPACE, "data/schuljahr2627.json")).read_text())
+                        TAG_NAMEN = {"Mo": "Montag", "Di": "Dienstag", "Mi": "Mittwoch", "Do": "Donnerstag", "Fr": "Freitag"}
+                        for slot in plan.get("slots_geplant", []):
+                            if slot.get("klasse", "").strip().lower() == code:
+                                return TAG_NAMEN.get(slot.get("tag", ""), slot.get("tag", ""))
+                    except Exception:
+                        pass
+                    return ""
+
+                computerkurs_tag = _computerkurs_wochentag(klasse)
                 # Klassennamen erkennen: "7a", "10c", "Klasse 7b", "klasse 10" usw.
                 is_class = bool(_re2.match(r'(?i)^(?:klasse\s*)?\d{1,2}\s*[a-zA-Z]?$', name))
                 # Keine Einzelperson: Klassen, Gruppen oder leer
@@ -8683,24 +8928,38 @@ Antworte NUR als reines JSON ohne Markdown:
                                    f"Diese Eigenschaften MÜSSEN den Style-Prompt dominieren — sie beschreiben den echten Sound des Songs.") if style_hint else ""
 
                 def _fetch_song_info(query):
-                    """Sucht im Web nach musikalischen Eigenschaften des Songs."""
+                    """Sucht im Web nach musikalischen Eigenschaften/Einordnung des Songs.
+                    LEHRE (17.08.2026, 'Die Kolibris' Fehlklassifizierung als Kinderlied statt Oktoberfest-Kracher):
+                    Eine Query mit 'genre tempo BPM instruments' zieht bei nischigen/fremdsprachigen Songs fast nur
+                    Songtext-/Ticket-/BPM-Tool-Seiten an (reines Boilerplate, keine echte Stil-Info) — DDGS lieferte
+                    8 Snippets, KEINES davon erwähnte auch nur ansatzweise den tatsächlichen Kontext (Oktoberfest-Party-Hit).
+                    Ohne echte Grundlage rät das Modell dann vom Bandnamen/Klang ('Kolibris' klingt niedlich) und
+                    liegt konfident daneben. Fix: Query auf Einordnung/Kontext statt Technik-Jargon umstellen,
+                    Boilerplate-Snippets herausfiltern, mehrere Queries kombinieren statt nur die erste zu nehmen."""
+                    _JUNK_MARKERS = ("lyrics", "songtext", "tour dates", "buy concert tickets", "bpm finder",
+                                     "upload your audio", "key and tempo", "chords", "chordu", "tab for guitar")
                     try:
                         try:
                             from ddgs import DDGS
                         except ImportError:
                             from duckduckgo_search import DDGS
-                        with DDGS() as ddgs:
-                            results = list(ddgs.text(
-                                f"{query} song genre tempo BPM instruments production style musical characteristics",
-                                max_results=4
-                            ))
-                        if results:
+                        def _search(q):
+                            with DDGS() as ddgs:
+                                results = list(ddgs.text(q, max_results=5))
                             snippets = []
-                            for r in results[:4]:
+                            for r in results[:5]:
                                 body = r.get('body', '').strip()
-                                if body and len(body) > 40:
+                                low = body.lower()
+                                if body and len(body) > 40 and not any(m in low for m in _JUNK_MARKERS):
                                     snippets.append(body[:300])
-                            return "\n".join(snippets[:3])
+                            return snippets
+                        all_snippets = []
+                        for q in (f"{query} Genre Einordnung Party Charts Stimmung Kontext",
+                                  f"{query} music genre description review sound style"):
+                            all_snippets.extend(_search(q))
+                            if len(all_snippets) >= 4:
+                                break
+                        return "\n".join(all_snippets[:4])
                     except Exception:
                         pass
                     return ""
@@ -8710,6 +8969,7 @@ Antworte NUR als reines JSON ohne Markdown:
                                  f"Nutze diese Informationen um den Sound DIESES spezifischen Songs zu verstehen "
                                  f"und in einen präzisen Style-Prompt zu übersetzen.") if web_song_info else ""
 
+                _mapped_style = ""
                 if hit:
                     import re as _re_hit
                     _hit_key = _re_hit.sub(r'[^\w\s]', '', hit.lower()).strip()
@@ -8722,7 +8982,9 @@ Antworte NUR als reines JSON ohne Markdown:
                                     f"KRITISCH — LYRICS-STIL-HARMONIE: Ton und Energie der Lyrics MÜSSEN zum Song passen.")
                     else:
                         hit_inst = (f"REFERENZ-SONG: '{hit}'. "
-                                    f"WICHTIG: Analysiere DIESEN SPEZIFISCHEN SONG — nicht den allgemeinen Stil des Künstlers. "
+                                    f"Das ist vermutlich ein WENIG BEKANNTER/NISCHIGER Song, kein Chart-Hit — verlass dich NICHT "
+                                    f"auf ein vages Bauchgefühl zum Genre. Analysiere DIESEN SPEZIFISCHEN SONG — nicht den "
+                                    f"allgemeinen Stil des Künstlers oder der Genre-Schublade, in die er grob fällt. "
                                     f"Viele Künstler haben verschiedene Songs mit sehr unterschiedlichem Klang. "
                                     f"Extrahiere die konkreten Eigenschaften DIESES Songs: "
                                     f"Tempo, Rhythmik, welche Instrumente dominieren (akustisch/elektrisch/elektronisch), "
@@ -8730,12 +8992,22 @@ Antworte NUR als reines JSON ohne Markdown:
                                     f"Vers/Chorus-Dynamik, Vocal-Charakter (Ton, Ausdruck, Stärke, Textur). "
                                     f"Falls du den Song gut kennst: bleib präzise. Falls unsicher: beschreibe was du weißt, "
                                     f"aber übertrage NICHT den Klischee-Sound des Künstlers auf diesen Song. "
+                                    f"WARNUNG — NICHT VOM BAND-/SONGNAMEN AUF DAS GENRE SCHLIESSEN: Ein niedlicher, verspielter "
+                                    f"oder kindlich klingender Name (z.B. Tiernamen, Diminutive) ist KEIN Hinweis auf ein "
+                                    f"Kinderlied oder sanften Sound — das ist reine Assoziation, keine verlässliche Information. "
+                                    f"Stütze dich AUSSCHLIESSLICH auf die Web-Recherche unten und dein echtes Wissen über den "
+                                    f"Song selbst, niemals auf den Klang des Namens. "
+                                    f"WICHTIG BEI NISCHIGEN SONGS: Generische Tags wie 'pop, upbeat, catchy' verfehlen einen "
+                                    f"unbekannten Song fast immer — lieber 1-2 Tags MEHR und dafür KONKRET/UNTERSCHEIDUNGSKRÄFTIG "
+                                    f"(z.B. spezifisches Instrument, ungewöhnliche Produktionstextur, spezielles Rhythmus-Feel) "
+                                    f"statt kurz und generisch zu bleiben. "
                                     f"KRITISCH — LYRICS-STIL-HARMONIE: Ton und Energie der Lyrics MÜSSEN zum Song passen. "
                                     f"Weicher melodischer Song → warme, fließende Lyrics. "
                                     f"Aggressiver Beat → kraftvolle, pointierte Lyrics. "
                                     f"Style-Prompt: Ausschließlich reine Musik-Eigenschaften — KEIN Künstlername, KEIN Songtitel.")
                 else:
                     hit_inst = ""
+                _known_hit = bool(_mapped_style)
                 if feedback and prev_lyrics:
                     feedback_inst = f"Hier ist der vorherige Liedtext:\n\n{prev_lyrics}\n\nBitte diesen Liedtext gezielt verbessern: {feedback}\nStruktur und gute Passagen beibehalten, nur verbessern was nötig ist."
                 elif feedback:
@@ -8769,7 +9041,22 @@ Antworte NUR als reines JSON ohne Markdown:
                     return ("ZEITLICHER KONTEXT FÜR DIE LYRICS: Der Liedtext soll zeitlos formuliert sein — "
                             "KEINE Bezüge auf 'noch X Tage', 'in X Tagen', 'vor X Tagen' o.ä. und KEINE Entschuldigung "
                             "dafür, dass der Geburtstag schon eine Weile her ist oder erst noch bevorsteht. "
-                            "Einfach fröhliche Geburtstags-/Feierstimmung, unabhängig vom genauen Abspieltag.")
+                            "Einfach fröhliche Geburtstags-/Feierstimmung, unabhängig vom genauen Abspieltag.\n"
+                            "WICHTIG — GANZJÄHRIG EINSETZBAR: Der Song soll ein Geburtstagssong bleiben (Anlass, Datum "
+                            "und Alter dürfen im Text vorkommen), aber NICHT so formuliert sein, dass er nur exakt am "
+                            "Kalendertag selbst passt. Vermeide zentrale 'HEUTE ist dein großer Tag'/'heute feiern wir "
+                            "dich'-Formulierungen als tragendes Songthema — der Text soll auch Wochen oder Monate nach "
+                            "dem eigentlichen Geburtstag noch stimmig klingen, wenn er zwischendurch nochmal gehört wird.\n"
+                            "ALTERSANGABE ZEITLOS HALTEN: Falls das Alter im Text vorkommt, IMMER exakt die oben unter "
+                            "'Alter:' angegebene Zahl verwenden — NICHT selbst nachrechnen, NICHT +1 addieren, egal ob "
+                            "der Geburtstag schon war oder noch bevorsteht (diese Zahl ist bereits die richtige für den "
+                            "Geburtstag, um den es hier geht). Formuliere sie IMMER als Ordnungszahl/Bezeichnung des "
+                            "Geburtstags — z.B. 'dein X. Geburtstag', 'zu deinen X Jahren', 'für deine X Jahre' (X = die "
+                            "angegebene Alter-Zahl, wörtlich übernehmen, nicht durch eine andere Zahl ersetzen). NIEMALS "
+                            "eine Zustandsform wie 'wird bald X' oder 'ist jetzt X Jahre alt' verwenden — die wäre nur "
+                            "zum Erstellungszeitpunkt richtig und stimmt nicht mehr, sobald der eigentliche Geburtstag "
+                            "beim späteren Hören schon verstrichen oder noch nicht da ist. Die Ordnungszahl-Form bleibt "
+                            "dagegen das ganze Jahr über wahr, egal wann der Song gehört wird.")
 
                 from datetime import date as _dt_date
                 ref_date = None
@@ -8780,21 +9067,48 @@ Antworte NUR als reines JSON ohne Markdown:
                         ref_date = None
 
                 lehrer = "Mister Mandel" if sprache != "de" else "Herrn Mandel"
+                # Bei einem NISCHIGEN Referenz-Song (kein Treffer in der kuratierten Hitliste) ist "5-8 kurze
+                # Tags" zu knapp — das quetscht genau die konkreten Details raus, die den Song von einer
+                # generischen Genre-Version unterscheiden. Nur bei bekannten/kuratierten Songs (oder ganz ohne
+                # Referenz) bleibt die knappe Regel, die sich dort bewährt hat.
+                if hit and not _known_hit:
+                    _tag_count_rule = ("MAX 160 characters total. LESS IS *NOT* MORE HERE — this is a niche/lesser-known "
+                                       "reference song, so 8-11 precise, SPECIFIC tags beat a short generic list. "
+                                       "Skip vague filler tags ('catchy', 'upbeat', 'good vibes') unless paired with something "
+                                       "concrete — name the actual instrumentation, production texture and rhythmic feel that "
+                                       "set THIS song apart from a generic version of its genre.")
+                elif sprache == "de":
+                    # LEHRE (17.08.2026): Chris berichtete Qualitätsabfall bei deutschen Songs. Hauptursache
+                    # vermutlich Suno v5.5 selbst (breite, öffentlich bestätigte Community-Beschwerden über
+                    # Rauschen/Verzerrung/schwächere Emotion) — nicht der Text. Trotzdem als Gegenmaßnahme:
+                    # deutsche Songs bekommen jetzt IMMER (nicht nur bei nischigem Referenz-Song) die
+                    # großzügigere Tag-Regel, um dem Modell präzisere Führung zu geben und die Schlager-Falle
+                    # (siehe feedback_suno_deutsch_genre) aktiv zu vermeiden statt nur generisch "catchy, upbeat".
+                    _tag_count_rule = ("MAX 160 characters total. Deutsche Songs brauchen MEHR Präzision als englische, "
+                                       "um nicht automatisch ins generische Schlager-Fach zu rutschen — 7-10 konkrete, "
+                                       "spezifische Tags statt 5-8 generischer. Nenne echte Instrumente/Produktionsmerkmale "
+                                       "statt nur 'catchy, upbeat, fun'. Falls Schlager wirklich passt: das ist erlaubt, "
+                                       "aber bewusst gewählt, nicht der Default-Fallback nur weil der Song auf Deutsch ist.")
+                else:
+                    _tag_count_rule = "MAX 120 characters total. LESS IS MORE — 5-8 precise tags beat a long description."
                 if sprache == "de":
-                    STYLE_RULE = ("Suno style tags in English, comma-separated short tags only, MAX 120 characters total. "
+                    STYLE_RULE = ("Suno style tags in English, comma-separated short tags only. "
                                   "STRICT: NO artist names, NO song titles, NO full sentences — ONLY concise music tags. "
                                   "Cover: genre, tempo feel, main instruments, energy, vocal style, production texture. "
-                                  "LESS IS MORE — 5-8 precise tags beat a long description. "
+                                  f"{_tag_count_rule} "
                                   "IMPORTANT for German songs: Suno recognizes genre tags like 'german pop', 'german schlager', "
                                   "'german folk-pop', 'german party pop', 'german punk rock', 'german new wave', "
                                   "'austrian folk rock', 'volksmusik' — use them when they match the reference song's sound. "
+                                  "German vocals + a bouncy sung sing-along hook default toward Schlager very easily — if that's "
+                                  "NOT the intended mood, actively steer away with genre tags like 'summer deutschrap', 'reggae', "
+                                  "'dancehall', 'afrobeats', 'amapiano', 'house' instead of generic 'german pop'. "
                                   "Example schlager: 'german schlager, accordion, party pop, upbeat, male vocals, festive, catchy hook' "
                                   "Example german pop: 'german pop, upbeat, powerful female vocals, euro dance, arena anthem, 128bpm'")
                 else:
-                    STYLE_RULE = ("Suno style tags in English, comma-separated short tags only, MAX 120 characters total. "
+                    STYLE_RULE = ("Suno style tags in English, comma-separated short tags only. "
                                   "STRICT: NO artist names, NO song titles, NO full sentences — ONLY concise music tags. "
                                   "Cover: genre, tempo feel, main instruments, energy, vocal style, production texture. "
-                                  "LESS IS MORE — 5-8 precise tags beat a long description. "
+                                  f"{_tag_count_rule} "
                                   "Suno understands these well: genre tags (indie pop, pop punk, trap pop, nu-disco, funk, soul pop, "
                                   "dance pop, bedroom pop, r&b, country pop), energy (euphoric, anthemic, melancholic, groovy, bittersweet), "
                                   "production (four-on-the-floor, 808 bass, punchy snare, lo-fi, reverb-heavy, gated reverb), "
@@ -8803,6 +9117,41 @@ Antworte NUR als reines JSON ohne Markdown:
                                   "Example ballad: 'pop ballad, piano, acoustic guitar, heartbreak, powerful female vocals, slow build'")
                 TITLE_RULE = ("kreativer Songtitel mit passenden Emojis"
                               + (" — verwende im Titel immer die ORIGINAL-Schreibweise des Namens, nicht die phonetische" if is_personal else ""))
+
+                # LEHRE (17.08.2026): Liedtexte hatten häufig gezwungene, abstrakte Reim-Füllwörter
+                # (Beispiel: "Maria, wir singen mit Schwung und Verbindung!" — "Verbindung" ist nur wegen
+                # des Reims auf "Schwung" da, hat aber keinen echten Bezug zum Anlass). Ursache: Es gab
+                # bisher KEINE Qualitäts-Anweisung für den Liedtext selbst, nur "vollständiger Liedtext
+                # mit Struktur-Tags". Deshalb jetzt explizite Regel für natürliche, konkrete Sprache.
+                if sprache == "de":
+                    LYRICS_RULE = (
+                        "LYRICS-QUALITÄT (sehr wichtig): Schreibe natürliche, konkrete, alltagssprachliche deutsche "
+                        "Liedtexte — wie ein echter Songtext klingt, nicht wie ein Glückwunschgedicht. "
+                        "VERBOTEN: ein abstraktes Füllwort nur wählen, WEIL es sich reimt (typisches Beispiel für "
+                        "schlechten KI-Text: 'wir singen mit Schwung und Verbindung' — 'Verbindung' hat keinen "
+                        "echten Bezug, ist nur Reim-Füllstoff). Wenn kein Wort mit echtem Bezug zum Anlass/zur "
+                        "Person passt UND sich sauber reimt: lieber unreiner Reim (Assonanz/Halbreim) oder Zeile "
+                        "leicht umformulieren, als eine beliebige abstrakte Worthülse reinzuquetschen. "
+                        "Bevorzuge konkrete, bildhafte Details (was die Person mag, tut, wie sie ist) statt vager "
+                        "Behauptungen wie 'du bist toll' oder 'wir haben Spaß'. Jede Zeile muss auch als gesprochener "
+                        "Satz Sinn ergeben — wenn eine Zeile beim lauten Lesen holprig oder gestelzt klingt, umschreiben. "
+                        "RHYTHMUS: Innerhalb einer Strophe/eines Refrains die Zeilenlängen ähnlich halten (nicht stur "
+                        "gleich, aber keine Zeile doppelt so lang wie ihre Nachbarzeile) — das gibt Suno einen "
+                        "gleichmäßigen Groove zum Vertonen, ohne dass der Text künstlich wirkt."
+                    )
+                else:
+                    LYRICS_RULE = (
+                        "LYRICS QUALITY (very important): Write natural, concrete, conversational lyrics — like a "
+                        "real song, not a greeting-card poem. FORBIDDEN: picking an abstract filler word only "
+                        "BECAUSE it rhymes, with no real connection to the occasion/person. If no word with real "
+                        "relevance rhymes cleanly: prefer a slant rhyme/near-rhyme or rephrase the line, rather than "
+                        "forcing in a vague abstract word. Favor concrete, vivid details (what the person likes, "
+                        "does, how they are) over vague claims like 'you're great' or 'we have fun'. Every line must "
+                        "make sense as a spoken sentence — if a line sounds clunky or stilted read aloud, rewrite it. "
+                        "RHYTHM: Keep line lengths reasonably consistent within a verse/chorus (not rigid, but no line "
+                        "twice as long as its neighbor) — gives Suno a steady groove to set music to without the text "
+                        "feeling artificial."
+                    )
 
                 # Silbenanzahl grob berechnen (Vokalgruppen zählen)
                 def _syllables(word):
@@ -8857,7 +9206,7 @@ Antworte NUR als reines JSON ohne Markdown:
 
 {jugendfrei_inst}{who}
 Klasse: {klasse}
-Alter: {alter}
+Alter: {alter} (dies ist die Zahl für den Geburtstag, um den es geht — wörtlich übernehmen, nicht selbst neu berechnen)
 {gb_kontext(geburtstag, ref_date)}
 {gb_lyrics_hint(geburtstag, ref_date)}
 {hit_inst}
@@ -8870,7 +9219,14 @@ Alter: {alter}
 Pflichtinhalte im Liedtext:
 {name_inst}
 - Lessing-Gymnasium erwähnen
-- Computerkurs bei {lehrer} erwähnen
+- Computerkurs bei {lehrer} erwähnen{f" (findet {computerkurs_tag}s statt — wenn ein Wochentag genannt wird, MUSS es exakt dieser sein)" if computerkurs_tag else " — KEINEN Wochentag nennen/erfinden, der ist hier nicht bekannt"}
+
+HUMOR: Ein bisschen Humor/Augenzwinkern ist ausdrücklich erwünscht — z.B. eine liebevolle Übertreibung, eine
+lustige Anspielung auf den Computerkurs/Schulalltag, eine humorvolle Zeile statt reinem Kitsch. Warmherzig-witzig,
+nie auf Kosten der Person (kein Auslachen, keine peinlichen Anspielungen) — der/die Gefeierte soll beim Hören
+grinsen, nicht zusammenzucken.
+
+{LYRICS_RULE}
 
 Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Outro]
 
@@ -8897,6 +9253,8 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
 {style_timing_hint}
 {feedback_inst}
 {('Pflichtinhalt: ' + name_inst) if name_inst else ''}
+
+{LYRICS_RULE}
 
 Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Outro]
 
@@ -9088,10 +9446,13 @@ Bewerte diese These kurz und knackig:
 - Max. 3 Sätze, direkt und provokativ
 - Extrahiere 3-5 Schlüsselbegriffe aus deiner Antwort
 - Formuliere ein kurzes "Aber..."-Gegenargument (1 Satz) — auch wenn du zustimmst
-- Schluss: ein detaillierter englischer Bildprompt der die Kernaussage stark visualisiert (konkrete Szene, Stimmung, Stil)
+- Schluss: ein detaillierter englischer Bildprompt fuer ein Diffusionsmodell (FLUX-Stil) der die Kernaussage stark visualisiert.
+  Regeln fuer den Bildprompt: konkretes visuelles Hauptmotiv statt Abstraktion (z.B. nicht "AI" sondern eine
+  konkrete Darstellung davon), Szene + Handlung + Umgebung + Licht, Stil-Schlagworte am Ende, KEINE
+  Textelemente/Schilder/Beschriftungen verlangen (das Modell kann keinen lesbaren Text rendern), 2-3 Saetze.
 
 Antworte NUR als reines JSON:
-{{"title": "Kurze Reaktion (max 6 Wörter)", "content": "Deine Bewertung in 2-3 Sätzen.", "emoji": "Emoji", "keywords": ["Begriff1", "Begriff2", "Begriff3"], "aber": "Aber: ein prägnanter Gegenpunkt in einem Satz.", "img_prompt": "Vivid digital illustration: [specific scene directly related to the argument], dramatic lighting, rich colors, detailed, high quality — NOT generic AI imagery"}}"""
+{{"title": "Kurze Reaktion (max 6 Wörter)", "content": "Deine Bewertung in 2-3 Sätzen.", "emoji": "Emoji", "keywords": ["Begriff1", "Begriff2", "Begriff3"], "aber": "Aber: ein prägnanter Gegenpunkt in einem Satz.", "img_prompt": "[concrete scene directly visualizing the argument: specific subject, action, environment, lighting], photorealistic, cinematic, detailed — no text or signage"}}"""
                 result = _sp2.run(
                     [CLAUDE_BIN, "-p", "--output-format", "json", text_prompt],
                     capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~")
@@ -9169,6 +9530,18 @@ Antworte NUR als reines JSON:
                 t.start()
                 self._send_json({"job": job_id})
 
+            elif self.path == "/api/kiforum/archive-delete":
+                import uuid as _uuid_ad
+
+                entry_id = body.get("id", "")
+                if not entry_id:
+                    self._send_json({"error": "id erforderlich"}, status=400); return
+                job_id = str(_uuid_ad.uuid4())
+                _KIF_PUBLISH_JOBS[job_id] = {"stage": "archiving", "pct": 5, "done": False, "error": None, "title": None}
+                t = threading.Thread(target=_kif_run_delete_job, args=(job_id, entry_id), daemon=True)
+                t.start()
+                self._send_json({"job": job_id})
+
             elif self.path == "/api/kiforum/img-embed":
                 import urllib.request as _urllib, uuid as _uuid_e
                 KIFORUM_FILE = Path(os.path.join(WORKSPACE, "data/kiforum.json"))
@@ -9189,6 +9562,26 @@ Antworte NUR als reines JSON:
                 KIFORUM_FILE.write_text(json.dumps(posts, ensure_ascii=False, indent=2))
                 self._send_json({"ok": True, "img": fname})
 
+            elif self.path == "/api/kiforum/generate-image":
+                import base64 as _b64_kif, uuid as _uuid_kif
+                KIFORUM_FILE = Path(os.path.join(WORKSPACE, "data/kiforum.json"))
+                post_id = body.get("id", "")
+                prompt  = (body.get("prompt") or "").strip()
+                if not post_id or not prompt:
+                    self._send_json({"error": "id und prompt erforderlich"}, status=400); return
+                posts = json.loads(KIFORUM_FILE.read_text()) if KIFORUM_FILE.exists() else []
+                post = next((p for p in posts if p.get("id") == post_id), None)
+                if not post:
+                    self._send_json({"error": "Post nicht gefunden"}, status=404); return
+                img_b64, mime_or_err = cf_workers_ai_generate(prompt, 768, 768)
+                if img_b64 is None:
+                    self._send_json({"error": mime_or_err}, status=500); return
+                fname = f"kif_img_{_uuid_kif.uuid4()}.png"
+                Path(os.path.join(WORKSPACE, "data", fname)).write_bytes(_b64_kif.b64decode(img_b64))
+                post["img"] = fname
+                KIFORUM_FILE.write_text(json.dumps(posts, ensure_ascii=False, indent=2))
+                self._send_json({"ok": True, "img": fname})
+
             elif self.path == "/api/kiforum/generate":
                 import subprocess as _sp, uuid as _uuid2
                 today = datetime.now().strftime("%d.%m.%Y")
@@ -9203,7 +9596,10 @@ Antworte NUR als reines JSON:
 Generiere ein spannendes, NEUES KI-Diskussionsthema für ein tägliches Forum.
 Das Thema soll für einen technik-affinen, nicht-Entwickler interessant sein.
 Provokativ, meinungsstark, zum Diskutieren einladend. Max. 3 Sätze Inhalt.
-Schluss: ein detaillierter englischer Bildprompt der das Thema stark visualisiert (konkrete Szene, keine Abstraktion).
+Schluss: ein detaillierter englischer Bildprompt fuer ein Diffusionsmodell (FLUX-Stil) der das Thema stark visualisiert.
+Regeln fuer den Bildprompt: konkretes visuelles Hauptmotiv statt Abstraktion (z.B. nicht "AI" sondern eine konkrete
+Darstellung davon), Szene + Handlung + Umgebung + Licht, Stil-Schlagworte am Ende, KEINE Textelemente/Schilder/
+Beschriftungen verlangen (das Modell kann keinen lesbaren Text rendern), 2-3 Saetze.
 {avoid_block}
 Antworte NUR als reines JSON:
 {{
@@ -9211,7 +9607,7 @@ Antworte NUR als reines JSON:
   "content": "2-3 spannende Sätze zum Thema. Regt zum Nachdenken an.",
   "emoji": "Ein passendes Emoji",
   "keywords": ["Begriff1", "Begriff2", "Begriff3"],
-  "img_prompt": "Vivid digital illustration: [specific scene that powerfully visualizes the topic], dramatic lighting, rich colors, detailed, cinematic — NOT generic tech imagery"
+  "img_prompt": "[specific scene that powerfully visualizes the topic: concrete subject, action, environment, lighting], photorealistic, cinematic, detailed — no text or signage"
 }}"""
                 claude_bin = CLAUDE_BIN
                 result = _sp.run(

@@ -46,22 +46,26 @@ DAY_PREFIX = "01"
 #                                     7c I=190861 7c II=190878 7d I=190860 7d II=190877
 COURSES = [
     {"id": 190735, "kuerzel": "7a I", "text":
-        "👋 Hallo liebe 7a! Am 19.08. starten wir ins EDV-Schuljahr mit den ersten "
-        "Computer-Grundbegriffen. 📎 Folien, ein Praktikum und eine kurze Editor-Anleitung liegen "
-        "hier schon bereit - wir laden alles gemeinsam zu Beginn der Stunde herunter. "
+        "👋 Hallo liebe 7a! Am Donnerstag, 20.08., starten wir gemeinsam ins EDV-Schuljahr mit den "
+        "ersten Computer-Grundbegriffen. 📎 Hier findet ihr die Folien, ein Praktikum, die "
+        "Editor-Anleitung und eine kleine Anleitung, wie das Herunterladen von Dateien aus "
+        "itslearning funktioniert - alles laden wir zu Beginn der Stunde gemeinsam herunter. "
         "Freu mich auf euch! 😊"},
     {"id": 190741, "kuerzel": "7b I", "text":
-        "🎉 Liebe 7b, unser EDV-Abenteuer beginnt am 19.08. mit den Grundbegriffen rund um den "
-        "Computer. 📎 Folien, Praktikum und eine Anleitung für den Editor findet ihr hier - "
-        "heruntergeladen wird alles gemeinsam in der Stunde. Bis bald! 🙂"},
+        "🎉 Liebe 7b, unser EDV-Abenteuer startet am Mittwoch, 19.08.! 📎 Hier liegen die Folien zu "
+        "den Grundbegriffen, ein Praktikum, die Editor-Anleitung und eine Anleitung fürs "
+        "Herunterladen aus itslearning bereit - wir holen uns alles zusammen zu Beginn der Stunde. "
+        "Bis bald! 🙂"},
     {"id": 190861, "kuerzel": "7c I", "text":
-        "💻 Hallo 7c! Zum Auftakt unseres EDV-Unterrichts am 19.08. geht's um Computer-Grundbegriffe. "
-        "📎 Materialien (Folien, Praktikum, Editor-Anleitung) sind hier hinterlegt - wir holen sie "
-        "uns zusammen zu Stundenbeginn. Ich freu mich drauf! 🚀"},
+        "💻 Hallo 7c! Am Donnerstag, 20.08., geht's los mit unserem EDV-Unterricht - Thema: "
+        "Computer-Grundbegriffe. 📎 Materialien (Folien, Praktikum, Editor-Anleitung und eine "
+        "Anleitung zum Herunterladen aus itslearning) sind schon hinterlegt, wir schnappen sie uns "
+        "gemeinsam zu Stundenbeginn. Ich freu mich drauf! 🚀"},
     {"id": 190860, "kuerzel": "7d I", "text":
-        "🙌 Liebe 7d, am 19.08. starten wir mit EDV und den ersten Computer-Grundbegriffen. 📎 Ihr "
-        "findet hier Folien, ein Praktikum und eine kleine Editor-Anleitung - heruntergeladen wird "
-        "alles zusammen in der Stunde. Bis dann! 😊"},
+        "🙌 Liebe 7d, am Mittwoch, 19.08., starten wir mit EDV und den ersten "
+        "Computer-Grundbegriffen. 📎 Hier findet ihr Folien, ein Praktikum, eine kleine "
+        "Editor-Anleitung und eine Anleitung, wie ihr Dateien aus itslearning herunterladet - "
+        "alles laden wir zusammen in der Stunde herunter. Bis dann! 😊"},
 ]
 
 
