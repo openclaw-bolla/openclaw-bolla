@@ -520,36 +520,85 @@ def _cf_token_config():
     except Exception:
         return {}
 
-def cf_workers_ai_generate(prompt, width=1024, height=1024):
-    # Cloudflare Workers AI (FLUX-1-schnell) — kostenloses Kontingent, Account-Scope-Token noetig.
-    import urllib.request, urllib.error
+# Cloudflare Workers AI Bildmodelle — alle mit einfachem prompt(+width/height)->image(base64)-Schema.
+# Neurons/Kachel (512x512) laut developers.cloudflare.com/workers-ai/platform/pricing/ (18.08.2026):
+# flux-1-schnell 4.80, leonardo/phoenix-1.0 530, leonardo/lucid-origin 636. BildGen fragt je nach
+# Seitenverhaeltnis ca. 1024x1024px an (~4 Kacheln) — bei 10.000 Neurons/Tag-Gratiskontingent ergibt
+# das die "Bilder/Tag"-Schaetzung je Modell (Achtung: bei den 100x teureren Leonardo-Modellen ist das
+# Kontingent schnell weg, insbesondere wenn parallel auch KI-Forum oder Testlaeufe draus verbrauchen).
+CF_IMAGE_MODELS = {
+    "flux-1-schnell":   {"path": "@cf/black-forest-labs/flux-1-schnell", "accepts_wh": False,
+                          "label": "FLUX-1-schnell (Standard, schnell)", "per_day": "~500 Bilder/Tag"},
+    "leonardo-phoenix": {"path": "@cf/leonardo/phoenix-1.0", "accepts_wh": True,
+                          "label": "Leonardo Phoenix 1.0 (hochwertiger)", "per_day": "~4-5 Bilder/Tag"},
+    "leonardo-lucid":   {"path": "@cf/leonardo/lucid-origin", "accepts_wh": True,
+                          "label": "Leonardo Lucid Origin (höchste Qualität)", "per_day": "~3-4 Bilder/Tag"},
+}
+
+def _cf_friendly_error(errs):
+    s = str(errs)
+    if "4006" in s:
+        return "Cloudflare-Tageskontingent (10.000 Neurons) für heute aufgebraucht — resettet um Mitternacht UTC (2 Uhr deutscher Sommerzeit)."
+    if "3040" in s:
+        return "Cloudflare-Modell gerade kurzzeitig überlastet (geteiltes Gratis-Kontingent) — bitte nochmal versuchen."
+    return f"Cloudflare-Fehler: {errs}"
+
+def cf_workers_ai_generate(prompt, width=1024, height=1024, cf_model="flux-1-schnell", _retries=3, _retry_delay=2):
+    # Cloudflare Workers AI — kostenloses Kontingent, Account-Scope-Token noetig.
+    # Free-Tier-Kapazitaet wird geteilt und meldet sporadisch Code 3040 "Capacity temporarily
+    # exceeded" — meist reicht ein kurzer Retry, deshalb hier automatisch statt sofort auf den
+    # Pollinations-Fallback im Frontend durchzufallen.
+    import urllib.request, urllib.error, time
     cfg = _cf_token_config()
     token = cfg.get("api_token", "")
     account = cfg.get("account_id", "")
     if not token or not account:
         return None, "Kein Cloudflare API-Token/Account konfiguriert."
-    url = f"https://api.cloudflare.com/client/v4/accounts/{account}/ai/run/@cf/black-forest-labs/flux-1-schnell"
+    model_cfg = CF_IMAGE_MODELS.get(cf_model, CF_IMAGE_MODELS["flux-1-schnell"])
+    url = f"https://api.cloudflare.com/client/v4/accounts/{account}/ai/run/{model_cfg['path']}"
     # flux-1-schnell akzeptiert nur prompt/steps/seed — width/height sind NICHT im Schema (fuehrt zu 5006-Fehler).
-    payload = json.dumps({"prompt": prompt}).encode()
-    req = urllib.request.Request(url, data=payload, headers={
-        "Authorization": f"Bearer {token}", "Content-Type": "application/json"
-    })
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            data = json.loads(resp.read())
-    except urllib.error.HTTPError as e:
-        msg = e.read().decode("utf-8", errors="replace")
-        try: msg = json.loads(msg).get("errors", msg)
-        except Exception: pass
-        return None, f"Cloudflare-Fehler: {msg}"
-    except Exception as e:
-        return None, str(e)
-    if not data.get("success"):
-        return None, f"Cloudflare-Fehler: {data.get('errors')}"
-    img_b64 = data.get("result", {}).get("image")
-    if not img_b64:
-        return None, "Kein Bild in der Cloudflare-Antwort."
-    return img_b64, "image/jpeg"
+    # Die Leonardo-Modelle (phoenix-1.0, lucid-origin) akzeptieren width/height regulaer.
+    req_body = {"prompt": prompt}
+    if model_cfg["accepts_wh"]:
+        req_body["width"] = width
+        req_body["height"] = height
+    payload = json.dumps(req_body).encode()
+    last_err = "Unbekannter Fehler"
+    for attempt in range(_retries):
+        req = urllib.request.Request(url, data=payload, headers={
+            "Authorization": f"Bearer {token}", "Content-Type": "application/json"
+        })
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                raw = resp.read()
+                ctype = resp.headers.get("Content-Type", "")
+                # Manche Modelle (z.B. leonardo/phoenix-1.0) liefern rohe Bildbytes statt
+                # JSON mit base64-"image"-Feld (anders als flux-1-schnell/lucid-origin).
+                if ctype.startswith("image/"):
+                    import base64 as _b64_cf
+                    return _b64_cf.b64encode(raw).decode(), ctype
+                data = json.loads(raw)
+        except urllib.error.HTTPError as e:
+            msg = e.read().decode("utf-8", errors="replace")
+            try: msg = json.loads(msg).get("errors", msg)
+            except Exception: pass
+            last_err = _cf_friendly_error(msg)
+            if "3040" in str(msg) and attempt < _retries - 1:
+                time.sleep(_retry_delay); continue
+            return None, last_err
+        except Exception as e:
+            return None, str(e)
+        if not data.get("success"):
+            errs = data.get("errors")
+            last_err = _cf_friendly_error(errs)
+            if any("3040" in str(err) for err in (errs or [])) and attempt < _retries - 1:
+                time.sleep(_retry_delay); continue
+            return None, last_err
+        img_b64 = data.get("result", {}).get("image")
+        if not img_b64:
+            return None, "Kein Bild in der Cloudflare-Antwort."
+        return img_b64, "image/jpeg"
+    return None, last_err
 
 def bildgen_archive_save(img_b64, mime, prompt, engine, aspect):
     import base64 as _b64
@@ -7088,6 +7137,7 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 "/api/claudequota": get_claude_quota,
                 "/api/bildgen/archive": bildgen_archive_list,
                 "/api/bildgen/mai-config": lambda: {"configured": bool(_mai_config().get("api_key")), "default_model": _mai_config().get("default_model","mai-image-2.5")},
+                "/api/bildgen/cf-models": lambda: CF_IMAGE_MODELS,
                 "/api/kosten": get_kosten,
                 "/api/status": lambda: {"ok": True, "ts": datetime.now().isoformat()},
                 "/api/redesigns-meta": get_redesigns_meta,
@@ -8261,9 +8311,11 @@ Antworte NUR als reines JSON: {{"improved_prompt": "..."}}"""
                 in_mime = body.get("input_mime_type", "image/png")
                 dim_map = {"1:1":(1024,1024), "16:9":(1360,768), "9:16":(768,1360),
                            "4:3":(1152,864), "3:4":(864,1152)}
-                if model == "cloudflare-flux":
+                if model == "cloudflare-flux" or model.startswith("cloudflare-"):
+                    cf_model = model[len("cloudflare-"):] if model.startswith("cloudflare-") else "flux-1-schnell"
+                    if cf_model not in CF_IMAGE_MODELS: cf_model = "flux-1-schnell"
                     w, h = dim_map.get(aspect, (1024,1024))
-                    img_b64, mime_or_err = cf_workers_ai_generate(prompt, w, h)
+                    img_b64, mime_or_err = cf_workers_ai_generate(prompt, w, h, cf_model=cf_model)
                 elif model.startswith("mai-"):
                     # MAI-Image via Azure AI Foundry — width/height in px.
                     # Constraints: beide ≥768, w×h ≤ 1.048.576. Pro Aspect max. Auflösung im Budget.
@@ -8279,7 +8331,7 @@ Antworte NUR als reines JSON: {{"improved_prompt": "..."}}"""
                     # Self-Metering: erfolgreichen Bild-Call mit Kosten verbuchen (Cloudflare = 0€, keine Buchung)
                     if model.startswith("mai-"):
                         kosten_ledger_add("mai_image", MAI_IMG_PREIS, f"MAI {model} {aspect}")
-                    elif model != "cloudflare-flux":
+                    elif not model.startswith("cloudflare-"):
                         kosten_ledger_add("gemini_image", GEMINI_IMG_PREIS, f"{model} {aspect}")
                     self._send_json({"image_b64": img_b64, "mime_type": mime_or_err, "remaining": remaining})
             elif self.path == "/api/bildgen/archive/save":
@@ -8874,9 +8926,11 @@ Antworte NUR als reines JSON ohne Markdown:
                 import re as _re2
 
                 def _computerkurs_wochentag(klasse_str):
-                    """Echten Wochentag des Computerkurses für die Klasse aus schuljahr2627.json holen — nie raten/erfinden."""
+                    """Echten Wochentag + Tageszeit des Computerkurses für die Klasse aus schuljahr2627.json
+                    holen — nie raten/erfinden. Tageszeit wird aus der Startuhrzeit abgeleitet, nicht nur der
+                    Wochentag, sonst erfindet die KI z.B. 'nachmittags' für eine 1.-Stunde-Klasse."""
                     if not klasse_str:
-                        return ""
+                        return "", ""
                     try:
                         m = _re2.search(r'(\d{1,2}[a-zA-Z])', klasse_str)
                         code = (m.group(1) if m else klasse_str).strip().lower()
@@ -8884,12 +8938,25 @@ Antworte NUR als reines JSON ohne Markdown:
                         TAG_NAMEN = {"Mo": "Montag", "Di": "Dienstag", "Mi": "Mittwoch", "Do": "Donnerstag", "Fr": "Freitag"}
                         for slot in plan.get("slots_geplant", []):
                             if slot.get("klasse", "").strip().lower() == code:
-                                return TAG_NAMEN.get(slot.get("tag", ""), slot.get("tag", ""))
+                                tag = TAG_NAMEN.get(slot.get("tag", ""), slot.get("tag", ""))
+                                start_str = (slot.get("uhrzeit", "") or "").split("–")[0].strip()
+                                zeit_hint = ""
+                                try:
+                                    start_h = int(start_str.split(":")[0])
+                                    if start_h < 11:
+                                        zeit_hint = f"vormittags, früh am Morgen ({slot.get('zeit','')}, Beginn {start_str} Uhr)"
+                                    elif start_h < 14:
+                                        zeit_hint = f"mittags, kurz nach der Mittagspause ({slot.get('zeit','')}, Beginn {start_str} Uhr) — NICHT 'nachmittags' nennen"
+                                    else:
+                                        zeit_hint = f"nachmittags ({slot.get('zeit','')}, Beginn {start_str} Uhr)"
+                                except (ValueError, IndexError):
+                                    pass
+                                return tag, zeit_hint
                     except Exception:
                         pass
-                    return ""
+                    return "", ""
 
-                computerkurs_tag = _computerkurs_wochentag(klasse)
+                computerkurs_tag, computerkurs_zeit = _computerkurs_wochentag(klasse)
                 # Klassennamen erkennen: "7a", "10c", "Klasse 7b", "klasse 10" usw.
                 is_class = bool(_re2.match(r'(?i)^(?:klasse\s*)?\d{1,2}\s*[a-zA-Z]?$', name))
                 # Keine Einzelperson: Klassen, Gruppen oder leer
@@ -9219,7 +9286,7 @@ Alter: {alter} (dies ist die Zahl für den Geburtstag, um den es geht — wörtl
 Pflichtinhalte im Liedtext:
 {name_inst}
 - Lessing-Gymnasium erwähnen
-- Computerkurs bei {lehrer} erwähnen{f" (findet {computerkurs_tag}s statt — wenn ein Wochentag genannt wird, MUSS es exakt dieser sein)" if computerkurs_tag else " — KEINEN Wochentag nennen/erfinden, der ist hier nicht bekannt"}
+- Computerkurs bei {lehrer} erwähnen{f" (findet {computerkurs_tag}s statt — wenn ein Wochentag genannt wird, MUSS es exakt dieser sein. Tageszeit: {computerkurs_zeit} — wenn eine Tageszeit genannt wird, MUSS sie exakt dazu passen, NICHTS anderes erfinden)" if computerkurs_tag else " — KEINEN Wochentag/KEINE Tageszeit nennen/erfinden, die sind hier nicht bekannt"}
 
 HUMOR: Ein bisschen Humor/Augenzwinkern ist ausdrücklich erwünscht — z.B. eine liebevolle Übertreibung, eine
 lustige Anspielung auf den Computerkurs/Schulalltag, eine humorvolle Zeile statt reinem Kitsch. Warmherzig-witzig,

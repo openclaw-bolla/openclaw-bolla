@@ -5,341 +5,324 @@
 <title>Mission Control</title>
 <style>
   :root{
-    --bg:#0d0208;
-    --panel:#0a1a0a;
-    --green:#00ff41;
-    --green-dim:#0d8a2e;
-    --green-faint:#053b12;
-    --amber:#ffb000;
-    --text:#c8ffcf;
+    --cyan:#00fff0;
+    --magenta:#ff00c8;
+    --amber:#ffb800;
+    --bg:#05070d;
+    --panel:rgba(15,22,35,0.72);
+    --panel-border:rgba(0,255,240,0.25);
+    --text:#dff7ff;
+    --text-dim:#7c93a8;
   }
-  *{box-sizing:border-box; margin:0; padding:0;}
+  *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
   body{
-    background:var(--bg);
-    color:var(--green);
-    font-family:"Consolas","Courier New",monospace;
-    font-size:15px;
-    display:flex;
+    font-family:'Segoe UI',system-ui,sans-serif;
+    background:
+      radial-gradient(circle at 20% 10%, rgba(0,255,240,0.08), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(255,0,200,0.10), transparent 45%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px),
+      var(--bg);
+    color:var(--text);
     min-height:100vh;
-    overflow-x:hidden;
-    position:relative;
+    display:flex;
+    overflow:hidden;
   }
-  /* CRT scanline overlay */
-  body::before{
-    content:"";
-    position:fixed;
-    top:0; left:0; right:0; bottom:0;
-    background:repeating-linear-gradient(
-      0deg,
-      rgba(0,255,65,0.035) 0px,
-      rgba(0,255,65,0.035) 1px,
-      transparent 1px,
-      transparent 3px
-    );
-    pointer-events:none;
-    z-index:999;
-  }
+
+  /* Scanline overlay */
   body::after{
     content:"";
-    position:fixed;
-    top:0; left:0; right:0; bottom:0;
-    background:radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.55) 100%);
+    position:fixed; inset:0;
+    background:repeating-linear-gradient(180deg, rgba(0,255,240,0.025) 0px, transparent 2px, transparent 4px);
     pointer-events:none;
-    z-index:998;
+    z-index:999;
   }
 
   /* SIDEBAR */
   .sidebar{
     width:220px;
-    min-width:220px;
-    background:var(--panel);
-    border-right:1px solid var(--green-dim);
-    padding:20px 0;
+    background:linear-gradient(180deg, rgba(8,12,20,0.95), rgba(5,7,13,0.98));
+    border-right:1px solid var(--panel-border);
     display:flex;
     flex-direction:column;
+    padding:22px 0;
+    z-index:10;
   }
-  .sidebar .logo{
-    padding:0 20px 20px 20px;
-    border-bottom:1px solid var(--green-faint);
-    margin-bottom:10px;
-  }
-  .sidebar .logo .brackets{color:var(--green-dim);}
-  .sidebar .logo h1{
+  .logo{
     font-size:18px;
+    font-weight:700;
     letter-spacing:2px;
-    text-shadow:0 0 8px var(--green);
+    color:var(--cyan);
+    text-shadow:0 0 12px rgba(0,255,240,0.7);
+    padding:0 24px 26px 24px;
+    border-bottom:1px solid rgba(0,255,240,0.15);
+    margin-bottom:18px;
   }
-  .sidebar .logo .sub{
-    font-size:11px;
-    color:var(--green-dim);
-    margin-top:4px;
-  }
+  .logo span{color:var(--magenta); text-shadow:0 0 12px rgba(255,0,200,0.7);}
   .nav-item{
-    padding:12px 20px;
     display:flex;
     align-items:center;
-    gap:10px;
-    color:var(--green-dim);
+    gap:14px;
+    padding:13px 24px;
+    font-size:14.5px;
+    color:var(--text-dim);
     cursor:pointer;
     border-left:3px solid transparent;
-    transition:all .15s ease;
-    font-size:14px;
-    white-space:nowrap;
+    transition:all .2s ease;
+    position:relative;
   }
   .nav-item:hover{
-    color:var(--green);
-    background:rgba(0,255,65,0.06);
-    border-left-color:var(--green-dim);
+    color:var(--cyan);
+    background:rgba(0,255,240,0.06);
+    border-left-color:rgba(0,255,240,0.4);
   }
   .nav-item.active{
-    color:var(--green);
-    background:rgba(0,255,65,0.09);
-    border-left-color:var(--green);
-    text-shadow:0 0 6px var(--green);
+    color:var(--cyan);
+    background:linear-gradient(90deg, rgba(0,255,240,0.14), transparent);
+    border-left-color:var(--cyan);
+    text-shadow:0 0 8px rgba(0,255,240,0.6);
   }
-  .nav-item .ic{width:18px; display:inline-block; text-align:center;}
+  .nav-icon{width:20px; text-align:center; font-size:16px;}
   .sidebar-footer{
     margin-top:auto;
-    padding:14px 20px;
-    font-size:11px;
-    color:var(--green-faint);
-    border-top:1px solid var(--green-faint);
+    padding:16px 24px;
+    font-size:11.5px;
+    color:var(--text-dim);
+    border-top:1px solid rgba(0,255,240,0.12);
   }
-  .blink-dot{
-    display:inline-block;
-    width:8px;height:8px;
-    border-radius:50%;
-    background:var(--green);
-    box-shadow:0 0 6px var(--green);
-    animation:pulse 1.6s infinite;
+  .status-dot{
+    display:inline-block; width:8px; height:8px; border-radius:50%;
+    background:var(--cyan); box-shadow:0 0 8px var(--cyan);
     margin-right:6px;
+    animation:pulse 2s infinite;
   }
-  @keyframes pulse{
-    0%,100%{opacity:1;}
-    50%{opacity:.25;}
-  }
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
 
   /* MAIN */
   .main{
     flex:1;
     display:flex;
     flex-direction:column;
-    min-width:0;
+    overflow-y:auto;
+    z-index:5;
   }
+
   .topbar{
-    height:60px;
-    border-bottom:1px solid var(--green-dim);
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:0 28px;
-    background:linear-gradient(180deg, rgba(0,255,65,0.04), transparent);
+    padding:20px 34px;
+    border-bottom:1px solid var(--panel-border);
+    background:rgba(8,12,20,0.55);
+    backdrop-filter:blur(6px);
   }
-  .topbar .title{
-    font-size:17px;
+  .page-title{
+    font-size:22px;
+    font-weight:600;
     letter-spacing:1px;
+    color:var(--text);
   }
-  .topbar .title::before{
-    content:"root@bolla:~$ ";
-    color:var(--green-dim);
-  }
-  .topbar .title .cursor{
-    display:inline-block;
-    width:8px; height:16px;
-    background:var(--green);
-    vertical-align:middle;
-    margin-left:4px;
-    animation:blink 1s step-start infinite;
-  }
-  @keyframes blink{50%{opacity:0;}}
-  .clock{
-    text-align:right;
-    font-size:14px;
-    color:var(--green-dim);
-  }
-  .clock .time{
-    font-size:20px;
-    color:var(--green);
-    text-shadow:0 0 8px var(--green);
+  .page-title small{
+    display:block;
+    font-size:12px;
+    font-weight:400;
+    color:var(--text-dim);
     letter-spacing:2px;
+    margin-top:3px;
+  }
+  .clock{
+    font-size:28px;
+    font-weight:300;
+    letter-spacing:3px;
+    color:var(--cyan);
+    text-shadow:0 0 14px rgba(0,255,240,0.6);
+    font-variant-numeric:tabular-nums;
+  }
+  .clock small{
+    display:block;
+    text-align:right;
+    font-size:11px;
+    color:var(--text-dim);
+    letter-spacing:1px;
+    text-shadow:none;
+    margin-top:2px;
   }
 
   .content{
-    padding:28px;
-    overflow-y:auto;
-  }
-  .grid{
+    padding:30px 34px;
     display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
-    gap:20px;
+    grid-template-columns:repeat(auto-fit, minmax(230px,1fr));
+    gap:22px;
   }
+
   .card{
     background:var(--panel);
-    border:1px solid var(--green-dim);
-    border-radius:2px;
-    padding:18px 20px;
+    border:1px solid var(--panel-border);
+    border-radius:10px;
+    padding:22px;
     position:relative;
     overflow:hidden;
+    backdrop-filter:blur(8px);
+    transition:transform .2s ease, box-shadow .2s ease;
   }
   .card::before{
     content:"";
-    position:absolute;
-    top:0; left:0; right:0;
-    height:2px;
-    background:linear-gradient(90deg, var(--green), transparent);
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, var(--cyan), var(--magenta));
+    opacity:0.7;
   }
-  .card .card-head{
+  .card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 8px 30px rgba(0,255,240,0.12);
+  }
+  .card-head{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    font-size:12px;
-    color:var(--green-dim);
-    letter-spacing:1px;
-    text-transform:uppercase;
     margin-bottom:14px;
   }
-  .card .card-head .status-ok{color:var(--green); text-shadow:0 0 4px var(--green);}
-  .card .big-value{
-    font-size:34px;
-    font-weight:bold;
-    text-shadow:0 0 10px var(--green);
+  .card-label{
+    font-size:12px;
+    letter-spacing:1.5px;
+    color:var(--text-dim);
+    text-transform:uppercase;
   }
-  .card .big-value .unit{font-size:16px; color:var(--green-dim);}
+  .card-icon{font-size:18px; opacity:0.8;}
+  .card-value{
+    font-size:34px;
+    font-weight:700;
+    color:var(--text);
+    line-height:1;
+  }
+  .card-value.cyan{color:var(--cyan); text-shadow:0 0 16px rgba(0,255,240,0.45);}
+  .card-value.magenta{color:var(--magenta); text-shadow:0 0 16px rgba(255,0,200,0.45);}
+  .card-value.amber{color:var(--amber); text-shadow:0 0 16px rgba(255,184,0,0.45);}
+  .card-sub{font-size:12.5px; color:var(--text-dim); margin-top:6px;}
+
   .bar-track{
-    width:100%;
-    height:10px;
-    background:var(--green-faint);
-    border-radius:2px;
-    margin-top:12px;
+    height:6px;
+    border-radius:3px;
+    background:rgba(255,255,255,0.08);
+    margin-top:14px;
     overflow:hidden;
-    border:1px solid var(--green-dim);
   }
   .bar-fill{
     height:100%;
-    background:repeating-linear-gradient(90deg, var(--green) 0px, var(--green) 6px, #0a5c1e 6px, #0a5c1e 8px);
-    box-shadow:0 0 8px var(--green);
+    border-radius:3px;
+    background:linear-gradient(90deg, var(--cyan), rgba(0,255,240,0.4));
+    box-shadow:0 0 10px rgba(0,255,240,0.6);
   }
-  .card .sub-info{
-    margin-top:10px;
-    font-size:12px;
-    color:var(--green-dim);
+  .bar-fill.magenta{background:linear-gradient(90deg, var(--magenta), rgba(255,0,200,0.4)); box-shadow:0 0 10px rgba(255,0,200,0.6);}
+  .bar-fill.amber{background:linear-gradient(90deg, var(--amber), rgba(255,184,0,0.4)); box-shadow:0 0 10px rgba(255,184,0,0.6);}
+
+  .mail-list{margin-top:10px; display:flex; flex-direction:column; gap:8px;}
+  .mail-item{
+    display:flex; justify-content:space-between;
+    font-size:12.5px; color:var(--text-dim);
+    padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.06);
   }
-  .mail-list{
-    list-style:none;
-    margin-top:8px;
+  .mail-item span:first-child{color:var(--text);}
+  .badge{
+    background:rgba(255,0,200,0.15);
+    color:var(--magenta);
+    font-size:11px;
+    padding:2px 8px;
+    border-radius:10px;
+    border:1px solid rgba(255,0,200,0.35);
   }
-  .mail-list li{
-    font-size:12px;
-    padding:6px 0;
-    border-bottom:1px dashed var(--green-faint);
-    color:var(--text);
-    display:flex;
-    justify-content:space-between;
-  }
-  .mail-list li:last-child{border-bottom:none;}
-  .mail-list .from{color:var(--green);}
-  .weather-icon{
-    font-size:30px;
-    text-shadow:0 0 10px var(--green);
-  }
-  .weather-row{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-  }
-  .terminal-log{
-    grid-column: 1 / -1;
-    background:#050a05;
-    border:1px solid var(--green-dim);
-    padding:16px 20px;
-    font-size:12.5px;
-    line-height:1.7;
-    max-height:180px;
-    overflow-y:auto;
-  }
-  .terminal-log .line{color:var(--green-dim);}
-  .terminal-log .line .ok{color:var(--green);}
-  .terminal-log .line .warn{color:var(--amber);}
-  .terminal-log .prompt{color:var(--green);}
+
+  .weather-icon{font-size:40px; text-align:right;}
+  .card.weather .card-value{display:flex; align-items:baseline; gap:6px;}
+
+  .wide{grid-column:span 2;}
+  @media (max-width:640px){.wide{grid-column:span 1;}}
 </style>
 </head>
 <body>
 
   <div class="sidebar">
-    <div class="logo">
-      <h1><span class="brackets">[</span>MISSION<span class="brackets">_</span>CONTROL<span class="brackets">]</span></h1>
-      <div class="sub">v2.4.1 // secure shell</div>
-    </div>
-    <nav>
-      <div class="nav-item active"><span class="ic">▣</span> Dashboard</div>
-      <div class="nav-item"><span class="ic">🐾</span> Bolla</div>
-      <div class="nav-item"><span class="ic">🎓</span> Schule</div>
-      <div class="nav-item"><span class="ic">📅</span> Kalender</div>
-      <div class="nav-item"><span class="ic">✉</span> E-Mail</div>
-      <div class="nav-item"><span class="ic">☁</span> Wetter</div>
-      <div class="nav-item"><span class="ic">⚙</span> System Info</div>
-    </nav>
+    <div class="logo">BOLLA<span>://</span>MC</div>
+    <div class="nav-item active"><span class="nav-icon">◈</span> Dashboard</div>
+    <div class="nav-item"><span class="nav-icon">🐾</span> Bolla</div>
+    <div class="nav-item"><span class="nav-icon">🎓</span> Schule</div>
+    <div class="nav-item"><span class="nav-icon">📅</span> Kalender</div>
+    <div class="nav-item"><span class="nav-icon">✉</span> E-Mail</div>
+    <div class="nav-item"><span class="nav-icon">☁</span> Wetter</div>
+    <div class="nav-item"><span class="nav-icon">⚙</span> System Info</div>
     <div class="sidebar-footer">
-      <span class="blink-dot"></span>ONLINE<br>
-      uptime 14:22:07
+      <span class="status-dot"></span> Alle Systeme online
     </div>
   </div>
 
   <div class="main">
     <div class="topbar">
-      <div class="title">dashboard<span class="cursor"></span></div>
-      <div class="clock">
-        <div>Sonntag, 17.08.2026</div>
-        <div class="time">20:14:03</div>
-      </div>
+      <div class="page-title">Dashboard<small>MISSION CONTROL // NORDERSTEDT</small></div>
+      <div class="clock">20:14<small>MO, 18 AUG 2026</small></div>
     </div>
 
     <div class="content">
-      <div class="grid">
 
-        <div class="card">
-          <div class="card-head"><span>RAM Auslastung</span><span class="status-ok">● OK</span></div>
-          <div class="big-value">34<span class="unit">%</span></div>
-          <div class="bar-track"><div class="bar-fill" style="width:34%"></div></div>
-          <div class="sub-info">5.4 GB / 16.0 GB belegt</div>
+      <div class="card">
+        <div class="card-head">
+          <span class="card-label">RAM Auslastung</span>
+          <span class="card-icon">🧠</span>
         </div>
-
-        <div class="card">
-          <div class="card-head"><span>CPU Last</span><span class="status-ok">● OK</span></div>
-          <div class="big-value">12<span class="unit">%</span></div>
-          <div class="bar-track"><div class="bar-fill" style="width:12%"></div></div>
-          <div class="sub-info">4 Kerne // 3.2 GHz // 41°C</div>
-        </div>
-
-        <div class="card">
-          <div class="card-head"><span>Posteingang</span><span class="status-ok">3 NEU</span></div>
-          <ul class="mail-list">
-            <li><span class="from">robin@uni-ulm.de</span><span>19:42</span></li>
-            <li><span class="from">lg-n.de</span><span>18:07</span></li>
-            <li><span class="from">outlook.de</span><span>16:55</span></li>
-          </ul>
-        </div>
-
-        <div class="card">
-          <div class="card-head"><span>Wetter Hamburg</span><span class="status-ok">LIVE</span></div>
-          <div class="weather-row">
-            <div class="big-value">18<span class="unit">°C</span></div>
-            <div class="weather-icon">⛅</div>
-          </div>
-          <div class="sub-info">bewölkt // Wind 14 km/h // Luftf. 68%</div>
-        </div>
-
-        <div class="terminal-log">
-          <div class="line"><span class="prompt">&gt;</span> system_check.sh --all</div>
-          <div class="line">[<span class="ok">OK</span>] alle Dienste laufen</div>
-          <div class="line">[<span class="ok">OK</span>] cloudflared tunnel: verbunden (bolla-mc)</div>
-          <div class="line">[<span class="warn">WARN</span>] onedrive sync: 2 Dateien ausstehend</div>
-          <div class="line">[<span class="ok">OK</span>] backup: letzte Nachtsicherung erfolgreich</div>
-          <div class="line"><span class="prompt">&gt;</span> _<span class="cursor" style="width:8px;height:12px;"></span></div>
-        </div>
-
+        <div class="card-value cyan">34%</div>
+        <div class="card-sub">5,4 GB / 16 GB belegt</div>
+        <div class="bar-track"><div class="bar-fill" style="width:34%"></div></div>
       </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-label">CPU Last</span>
+          <span class="card-icon">⚡</span>
+        </div>
+        <div class="card-value magenta">12%</div>
+        <div class="card-sub">4 Kerne · 38°C</div>
+        <div class="bar-track"><div class="bar-fill magenta" style="width:12%"></div></div>
+      </div>
+
+      <div class="card wide">
+        <div class="card-head">
+          <span class="card-label">Posteingang</span>
+          <span class="badge">3 neu</span>
+        </div>
+        <div class="card-value">3 <span style="font-size:14px;color:var(--text-dim);font-weight:400;">ungelesen</span></div>
+        <div class="mail-list">
+          <div class="mail-item"><span>Robin Mandel</span><span>vor 12 Min</span></div>
+          <div class="mail-item"><span>itslearning · 7c I</span><span>vor 1 Std</span></div>
+          <div class="mail-item"><span>Lessing-Gymnasium</span><span>vor 3 Std</span></div>
+        </div>
+      </div>
+
+      <div class="card weather">
+        <div class="card-head">
+          <span class="card-label">Wetter Hamburg</span>
+          <span class="weather-icon">⛅</span>
+        </div>
+        <div class="card-value amber">18°<span style="font-size:16px;color:var(--text-dim);">C</span></div>
+        <div class="card-sub">Wolkig, Wind 14 km/h · Abends leichter Regen</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-label">Speicher</span>
+          <span class="card-icon">💾</span>
+        </div>
+        <div class="card-value cyan">61%</div>
+        <div class="card-sub">312 GB / 512 GB frei</div>
+        <div class="bar-track"><div class="bar-fill" style="width:61%"></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-label">Nächster Termin</span>
+          <span class="card-icon">📅</span>
+        </div>
+        <div class="card-value" style="font-size:22px;">Sport 19:00</div>
+        <div class="card-sub">Gesundheitszentrum · in 46 Min</div>
+      </div>
+
     </div>
   </div>
 

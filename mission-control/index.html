@@ -3180,7 +3180,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                      display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .2s">
               <span style="font-size:22px">🌸</span>
               <span>Pollinations</span>
-              <span style="font-size:11px;font-weight:400;color:rgba(74,222,128,0.7)">kostenlos · Flux</span>
+              <span style="font-size:11px;font-weight:400;color:rgba(74,222,128,0.7)">kostenlos · Black Forest Labs u.a.</span>
             </button>
             <button onclick="bgSelectEngine('cloudflare')" id="bg-tab-cloudflare"
               style="flex:1;min-width:140px;padding:12px 10px;border-radius:12px;border:2px solid #444;
@@ -3188,7 +3188,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                      display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .2s">
               <span style="font-size:22px">☁️</span>
               <span>Cloudflare</span>
-              <span style="font-size:11px;font-weight:400">kostenlos · FLUX</span>
+              <span style="font-size:11px;font-weight:400">kostenlos · Black Forest Labs & Leonardo.Ai</span>
             </button>
             <button onclick="bgSelectEngine('gemini')" id="bg-tab-gemini"
               style="flex:1;min-width:140px;padding:12px 10px;border-radius:12px;border:2px solid #444;
@@ -3196,7 +3196,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                      display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .2s">
               <span style="font-size:22px">🍌</span>
               <span>Nano Banana</span>
-              <span style="font-size:11px;font-weight:400">~€0.04/Bild · Gemini</span>
+              <span style="font-size:11px;font-weight:400">~€0.04/Bild · Google</span>
             </button>
             <button onclick="bgSelectEngine('mai')" id="bg-tab-mai"
               style="flex:1;min-width:140px;padding:12px 10px;border-radius:12px;border:2px solid #444;
@@ -3204,7 +3204,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                      display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .2s">
               <span style="font-size:22px">✨</span>
               <span>MAI-Image</span>
-              <span style="font-size:11px;font-weight:400">~€0.08–0.13/Bild · Azure</span>
+              <span style="font-size:11px;font-weight:400">~€0.08–0.13/Bild · Microsoft</span>
             </button>
           </div>
 
@@ -3236,7 +3236,17 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
           </div>
           <!-- Cloudflare-spezifisch -->
           <div id="bg-opts-cloudflare" style="display:none;flex-direction:column;gap:8px">
-            <div style="font-size:12px;color:var(--dim)">FLUX-1-schnell über Cloudflare Workers AI — kostenloses Kontingent, kein Bild-Upload/Edit (nur Text→Bild).</div>
+            <div style="font-size:12px;color:var(--dim)">Über Cloudflare Workers AI — kostenloses Kontingent, kein Bild-Upload/Edit (nur Text→Bild).</div>
+            <div style="position:relative;max-width:340px">
+              <button type="button" onclick="bgCfToggleDropdown()" id="bg-cf-model-btn"
+                style="width:100%;box-sizing:border-box;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;
+                       background:#1a2a3a;border:1px solid #253a50;border-radius:6px;color:#e0e6ed;padding:6px 10px;font-size:13px">
+                <span id="bg-cf-model-label">FLUX-1-schnell (Standard, schnell)</span><span>▾</span>
+              </button>
+              <div id="bg-cf-model-list" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;z-index:20;
+                     background:#131a28;border:1px solid rgba(255,255,255,0.18);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.5);overflow:hidden"></div>
+            </div>
+            <div id="bg-cf-model-hint" style="font-size:12px;color:var(--dim)">~500 Bilder/Tag im Gratis-Kontingent (10.000 Neurons/Tag)</div>
           </div>
           <!-- Gemini-spezifisch -->
           <div id="bg-opts-gemini" style="display:none;flex-direction:column;gap:8px">
@@ -3443,19 +3453,19 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
           <div id="suno-school-fields" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">
             <div>
               <label style="font-size:13px;color:var(--dim);display:block;margin-bottom:3px">Klasse</label>
-              <input id="suno-klasse" type="text" placeholder="z.B. 7b"
+              <input id="suno-klasse" type="text" placeholder="z.B. 7b" oninput="delete this.dataset.autofilled"
                 style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
                        color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
             </div>
             <div>
               <label style="font-size:13px;color:var(--dim);display:block;margin-bottom:3px">Alter</label>
-              <input id="suno-alter" type="text" placeholder="z.B. 13"
+              <input id="suno-alter" type="text" placeholder="z.B. 13" oninput="delete this.dataset.autofilled"
                 style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
                        color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
             </div>
             <div>
               <label style="font-size:13px;color:var(--dim);display:block;margin-bottom:3px">Geburtstag</label>
-              <input id="suno-geburtstag" type="text" placeholder="z.B. 21.04."
+              <input id="suno-geburtstag" type="text" placeholder="z.B. 21.04." oninput="delete this.dataset.autofilled"
                 style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
                        color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
             </div>
@@ -5762,13 +5772,52 @@ async function bgGeneratePollinations(prompt, aspect) {
   bgShowResult(URL.createObjectURL(blob), '🌸 Pollinations · ' + model + ' · ' + aspect);
 }
 
+let _bgCfModels = null;
+let _bgCfModel = 'flux-1-schnell';
+
+async function bgCfLoadModels() {
+  if (_bgCfModels) return _bgCfModels;
+  try {
+    _bgCfModels = await fetch('/api/bildgen/cf-models').then(r=>r.json());
+    const list = document.getElementById('bg-cf-model-list');
+    if (list) {
+      list.innerHTML = Object.entries(_bgCfModels).map(([key, m]) =>
+        `<div onclick="bgCfPickModel('${key}')" style="padding:9px 12px;font-size:13px;color:#e0e6ed;cursor:pointer" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">${m.label}<div style="font-size:11px;color:var(--dim)">${m.per_day}</div></div>`
+      ).join('');
+    }
+  } catch(e) { /* Dropdown bleibt beim Default flux-1-schnell */ }
+  return _bgCfModels;
+}
+function bgCfToggleDropdown() {
+  bgCfLoadModels();
+  const list = document.getElementById('bg-cf-model-list');
+  if (list) list.style.display = (list.style.display === 'none' || !list.style.display) ? 'block' : 'none';
+}
+function bgCfPickModel(key) {
+  _bgCfModel = key;
+  const m = (_bgCfModels || {})[key];
+  if (m) {
+    document.getElementById('bg-cf-model-label').textContent = m.label;
+    document.getElementById('bg-cf-model-hint').textContent = m.per_day + ' im Gratis-Kontingent (10.000 Neurons/Tag)';
+  }
+  const list = document.getElementById('bg-cf-model-list');
+  if (list) { list.style.display = 'none'; }
+}
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('bg-cf-model-btn');
+  const list = document.getElementById('bg-cf-model-list');
+  if (list && list.style.display === 'block' && wrap && !wrap.contains(e.target) && !list.contains(e.target)) {
+    list.style.display = 'none';
+  }
+});
+
 async function bgGenerateViaServer(prompt, aspect) {
   const status = document.getElementById('bg-status');
   let model, payload;
   if (_bgEngine === 'cloudflare') {
-    model = 'cloudflare-flux';
+    model = 'cloudflare-' + _bgCfModel;
     payload = {prompt, model, aspect_ratio: aspect};
-    if (status) status.textContent = 'Cloudflare FLUX generiert… (5–15 Sek)';
+    if (status) status.textContent = 'Cloudflare generiert… (5–15 Sek)';
   } else if (_bgEngine === 'gemini') {
     model = document.getElementById('bg-gem-model').value;
     payload = {prompt, model, aspect_ratio: aspect, input_image_b64: _bgInputB64, input_mime_type: _bgInputMime || 'image/png'};
@@ -5786,7 +5835,8 @@ async function bgGenerateViaServer(prompt, aspect) {
   const arr  = Uint8Array.from(atob(d.image_b64), c => c.charCodeAt(0));
   const blob = new Blob([arr], {type: mime});
   _bgLastBlob = blob; _bgLastMime = mime;
-  const lbl = _bgEngine === 'cloudflare' ? '☁️ Cloudflare FLUX'
+  const cfLabel = ((_bgCfModels||{})[_bgCfModel]||{}).label;
+  const lbl = _bgEngine === 'cloudflare' ? '☁️ Cloudflare · ' + (cfLabel || 'FLUX')
             : _bgEngine === 'gemini' ? '🍌 Nano Banana · ' + model : '✨ MAI · ' + model;
   bgShowResult(URL.createObjectURL(blob), lbl + ' · ' + aspect);
   const rem = document.getElementById('bg-daily-remaining');
@@ -16233,14 +16283,25 @@ async function sunoAutoFillFromSchuelerliste(name) {
   const liste = await schuelerLoadListe();
   const match = schuelerFindMatch(name, liste);
   if (!match) return;
+  // Eingaben wie "Ben E" (Nachnamen-Initiale zur Entschärfung bei doppeltem Vornamen,
+  // siehe schuelerFindMatch) sind nur zum Matchen gedacht — sobald der Treffer eindeutig
+  // ist, gehört im Song NUR der echte Vorname rein, sonst landet "Ben E" wörtlich im Text.
+  const nameEl = document.getElementById('suno-name');
+  if (nameEl && match.vorname) nameEl.value = match.vorname;
   const klasseEl = document.getElementById('suno-klasse');
   const gebEl = document.getElementById('suno-geburtstag');
   const alterEl = document.getElementById('suno-alter');
-  if (klasseEl && !klasseEl.value.trim()) klasseEl.value = match.klasse;
-  if (gebEl && !gebEl.value.trim()) gebEl.value = match.geburtstag;
+  // Feld wird befüllt, wenn leer ODER wenn der letzte Wert selbst aus dem Autofill kam
+  // (data-autofilled) — sonst blieben bei einem Namenswechsel die Daten der vorherigen
+  // Person stehen, weil die Felder ja nicht mehr leer waren. Tippt der Nutzer manuell rein,
+  // löscht das oninput-Handler am Feld die Markierung wieder.
+  const darfUeberschreiben = (el) => el && (!el.value.trim() || el.dataset.autofilled === '1');
+  if (darfUeberschreiben(klasseEl)) { klasseEl.value = match.klasse; klasseEl.dataset.autofilled = '1'; }
+  if (darfUeberschreiben(gebEl)) { gebEl.value = match.geburtstag; gebEl.dataset.autofilled = '1'; }
   // Alter fürs diesjährige Geburtstagsdatum, unabhängig davon ob der Tag schon war oder noch kommt
-  if (alterEl && !alterEl.value.trim() && match.geburtsjahr) {
+  if (darfUeberschreiben(alterEl) && match.geburtsjahr) {
     alterEl.value = String(new Date().getFullYear() - match.geburtsjahr);
+    alterEl.dataset.autofilled = '1';
   }
 }
 

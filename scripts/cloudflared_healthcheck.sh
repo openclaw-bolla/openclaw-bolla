@@ -15,17 +15,15 @@ FAIL_FLAG=/tmp/cloudflared_health_fail
 PID_START_FILE=/tmp/cloudflared_start_ts
 RESTART_LOCK=/tmp/cloudflared_restarting
 
-MC_LOG=/home/bolla/workspace/logs/mission_control_api.log
-
 ts() { date '+%Y-%m-%d %H:%M:%S'; }
 log() { echo "[$(ts)] $*" >> "$LOG"; }
 
-# Mission Control API Watchdog
-if ! pgrep -f "mission_control_api.py" >/dev/null; then
-  log "Mission Control API fehlt — starte neu"
-  nohup python3 /home/bolla/workspace/scripts/mission_control_api.py >> "$MC_LOG" 2>&1 &
-  log "Mission Control neu gestartet, PID $!"
-fi
+# Mission Control API Watchdog: bewusst NICHT hier — mc_watchdog.sh (eigener
+# Cron, gleicher 2-Min-Takt) besitzt das exklusiv inkl. Doppelstart-Schutz.
+# Ein zweiter Watchdog hier lief unkoordiniert dagegen und erzeugte bei jedem
+# MC-Neustart ein kurzes Zeitfenster mit zwei konkurrierenden Prozessen
+# (sichtbar als "Doppelstart erkannt" in mc_watchdog.log, mehrfach täglich).
+# Entfernt 2026-08-18.
 
 restart() {
   # Nicht neu starten wenn letzter Restart weniger als 90 Sek her
