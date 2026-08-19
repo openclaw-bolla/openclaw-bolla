@@ -3718,6 +3718,18 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               </div>
               <textarea id="suno-popup-style" rows="3" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:14px;color:var(--accent);font-style:italic;line-height:1.7;resize:vertical;outline:none" placeholder="Style Prompt…" oninput="document.getElementById('suno-style-text').textContent=this.value"></textarea>
             </div>
+            <!-- Exclude -->
+            <div id="suno-popup-exclude-box" style="display:none;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <span style="font-size:14px;font-weight:700;color:var(--bright)">🚫 Exclude Styles</span>
+                <button onclick="sunoPopupCopy('suno-exclude-text')"
+                  style="background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);
+                         padding:4px 12px;cursor:pointer;font-size:13px"
+                  onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">📋 Kopieren</button>
+              </div>
+              <div id="suno-popup-exclude" style="font-size:14px;color:var(--dim);line-height:1.6"></div>
+              <div style="font-size:11px;color:var(--dim);margin-top:6px">bei Suno unter Custom Mode → Advanced Options → "Exclude Styles" einfügen</div>
+            </div>
             <!-- Lyrics -->
             <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -3778,6 +3790,17 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                   onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">📋</button>
               </div>
               <div id="suno-style-text" style="font-size:14px;color:var(--accent);font-style:italic;line-height:1.6"></div>
+            </div>
+            <div id="suno-exclude-box" style="display:none;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <span style="font-size:13px;font-weight:700;color:var(--bright)">🚫 Exclude Styles</span>
+                <button onclick="sunoCopy('suno-exclude-text')"
+                  style="background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);
+                         padding:3px 10px;cursor:pointer;font-size:13px"
+                  onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">📋</button>
+              </div>
+              <div id="suno-exclude-text" style="font-size:14px;color:var(--dim);line-height:1.6"></div>
+              <div style="font-size:11px;color:var(--dim);margin-top:6px">bei Suno unter Custom Mode → Advanced Options → "Exclude Styles" einfügen</div>
             </div>
             <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px">
               <div style="font-size:13px;font-weight:700;color:var(--bright);margin-bottom:8px">🔄 Verbessern</div>
@@ -16406,6 +16429,8 @@ async function sunoGenerate(feedback = '', prevLyrics = '') {
     sunoLastLyrics = data.lyrics || '';
     document.getElementById('suno-lyrics-text').textContent = sunoLastLyrics;
     document.getElementById('suno-style-text').textContent = data.style || '';
+    document.getElementById('suno-exclude-text').textContent = data.exclude || '';
+    document.getElementById('suno-exclude-box').style.display = data.exclude ? '' : 'none';
     document.getElementById('suno-lyrics-placeholder').style.display = 'none';
     document.getElementById('suno-result-grid').style.display = 'grid';
     document.getElementById('suno-feedback').value = '';
@@ -16501,6 +16526,9 @@ function sunoShowPopup() {
     document.getElementById('suno-title-text').textContent || '';
   document.getElementById('suno-popup-style').value =
     document.getElementById('suno-style-text').textContent || '';
+  const excludeVal = document.getElementById('suno-exclude-text').textContent || '';
+  document.getElementById('suno-popup-exclude').textContent = excludeVal;
+  document.getElementById('suno-popup-exclude-box').style.display = excludeVal ? '' : 'none';
   document.getElementById('suno-popup-lyrics').textContent =
     document.getElementById('suno-lyrics-text').textContent || '';
   document.getElementById('suno-popup-feedback').value = '';
@@ -16519,6 +16547,7 @@ function sunoPopupCopy(sourceId) {
     const map = {
       'suno-title-text': '[onclick="sunoPopupCopy(\'suno-title-text\')"]',
       'suno-style-text': '[onclick="sunoPopupCopy(\'suno-style-text\')"]',
+      'suno-exclude-text': '[onclick="sunoPopupCopy(\'suno-exclude-text\')"]',
       'suno-lyrics-text': '[onclick="sunoPopupCopy(\'suno-lyrics-text\')"]',
     };
     const btns = document.querySelectorAll(map[sourceId] || '');

@@ -9041,12 +9041,35 @@ Antworte NUR als reines JSON ohne Markdown:
                     import re as _re_hit
                     _hit_key = _re_hit.sub(r'[^\w\s]', '', hit.lower()).strip()
                     _mapped_style = _DE_SONG_STYLE_MAP.get(_hit_key, "") or _EN_SONG_STYLE_MAP.get(_hit_key, "")
-                    if _mapped_style:
+                    # LEHRE (19.08.2026, Niklas/7b "Hey Baby" von DJ Ötzi): einige kuratierte DE-Mappings
+                    # sind selbst schon Schlager-/Ballermann-typisch (Akkordeon, Crowd-Singalong, ...) — bei
+                    # deutschem Gesang ist "Kerncharakteristik MUSS erhalten bleiben" dann ein Widerspruch
+                    # zur Schlager-Vermeidung weiter unten im STYLE_RULE und erzwingt genau den Klischee-Sound,
+                    # den Chris schon einmal als "schrott/schlagerhaft" verworfen hat (siehe [[feedback_suno_deutsch_genre]]).
+                    # LEHRE (19.08.2026, Opus-Audit): "crowd sing-along"/"festive" sind zu unspezifisch — trafen
+                    # fälschlich Punk-/Indierock-Mappings ("Tage wie diese", "Applaus, Applaus"), während echte
+                    # Schlager-Kandidaten ohne Marker-Wort ("Hulapalu", "Fürstenfeld") durchrutschten. Nur noch
+                    # eindeutige Genre-/Instrument-Marker, keine Stimmungs-Adjektive.
+                    _SCHLAGER_MARKERS = ("schlager", "accordion", "akkordeon", "oompah", "polka", "volksmusik",
+                                         "party pop", "bierzelt", "oktoberfest", "folk-pop", "austrian folk")
+                    _hit_is_schlager_prone = sprache == "de" and bool(_mapped_style) and any(
+                        m in _mapped_style.lower() for m in _SCHLAGER_MARKERS)
+                    if _hit_is_schlager_prone:
+                        hit_inst = (f"REFERENZ-SONG: '{hit}'. "
+                                    f"BEKANNTER SONG — das kuratierte Mapping enthält Schlager-/Ballermann-typische "
+                                    f"Elemente: [{_mapped_style}]. Prüfe SELBST, ob das wirklich zum Original-Sound "
+                                    f"dieses Songs passt oder nur ein grobes Mapping ist — bei deutschem Gesang "
+                                    f"kippt diese Kombination sehr leicht ins Klischeehafte "
+                                    f"(siehe Schlager-Warnung weiter unten). Nutze diese Tags nur als groben "
+                                    f"Ausgangspunkt für Tempo/Energie/Anlass, nicht als Pflicht-Kerncharakteristik. "
+                                    f"Du darfst frei mehrere Tags ersetzen (z.B. Richtung summer deutschrap, reggae, "
+                                    f"dancehall, afrobeats, amapiano, house), wenn das besser zum Songtext und "
+                                    f"Kontext passt — original-treu bleiben ist hier NICHT das Ziel.")
+                    elif _mapped_style:
                         hit_inst = (f"REFERENZ-SONG: '{hit}'. "
                                     f"BEKANNTER SONG — verwende diese erprobten Suno-Style-Tags als Basis: [{_mapped_style}]. "
                                     f"Du kannst maximal 1-2 Tags ergänzen oder tauschen wenn der Anlass es erfordert, "
-                                    f"aber die Kerncharakteristik MUSS erhalten bleiben. "
-                                    f"KRITISCH — LYRICS-STIL-HARMONIE: Ton und Energie der Lyrics MÜSSEN zum Song passen.")
+                                    f"aber die Kerncharakteristik MUSS erhalten bleiben.")
                     else:
                         hit_inst = (f"REFERENZ-SONG: '{hit}'. "
                                     f"Das ist vermutlich ein WENIG BEKANNTER/NISCHIGER Song, kein Chart-Hit — verlass dich NICHT "
@@ -9068,9 +9091,6 @@ Antworte NUR als reines JSON ohne Markdown:
                                     f"unbekannten Song fast immer — lieber 1-2 Tags MEHR und dafür KONKRET/UNTERSCHEIDUNGSKRÄFTIG "
                                     f"(z.B. spezifisches Instrument, ungewöhnliche Produktionstextur, spezielles Rhythmus-Feel) "
                                     f"statt kurz und generisch zu bleiben. "
-                                    f"KRITISCH — LYRICS-STIL-HARMONIE: Ton und Energie der Lyrics MÜSSEN zum Song passen. "
-                                    f"Weicher melodischer Song → warme, fließende Lyrics. "
-                                    f"Aggressiver Beat → kraftvolle, pointierte Lyrics. "
                                     f"Style-Prompt: Ausschließlich reine Musik-Eigenschaften — KEIN Künstlername, KEIN Songtitel.")
                 else:
                     hit_inst = ""
@@ -9138,12 +9158,19 @@ Antworte NUR als reines JSON ohne Markdown:
                 # Tags" zu knapp — das quetscht genau die konkreten Details raus, die den Song von einer
                 # generischen Genre-Version unterscheiden. Nur bei bekannten/kuratierten Songs (oder ganz ohne
                 # Referenz) bleibt die knappe Regel, die sich dort bewährt hat.
+                # LEHRE (19.08.2026, Opus-Audit): 120/160-Zeichen-Deckel war ein v4-Relikt — v5/v5.5 verkraften
+                # ~1000 Zeichen im Style-Feld problemlos. Angehoben auf 250, mit Hinweis die wichtigsten Tags
+                # vorne zu platzieren (greift mit _ORDER_HINT ineinander). Nischen-Obergrenze von 8-11 auf 8-10
+                # gesenkt (4 von 5 recherchierten Community-Quellen sehen die Grenze bei 7-8, darüber "muddy
+                # results"), DE-Range 7-10 bleibt, aber jetzt explizit inkl. Pflicht-Sprach-Tag gezählt.
                 if hit and not _known_hit:
-                    _tag_count_rule = ("MAX 160 characters total. LESS IS *NOT* MORE HERE — this is a niche/lesser-known "
-                                       "reference song, so 8-11 precise, SPECIFIC tags beat a short generic list. "
-                                       "Skip vague filler tags ('catchy', 'upbeat', 'good vibes') unless paired with something "
-                                       "concrete — name the actual instrumentation, production texture and rhythmic feel that "
-                                       "set THIS song apart from a generic version of its genre.")
+                    _tag_count_rule = ("MAX 250 characters total, most important tags in the first ~200. LESS IS "
+                                       "*NOT* MORE HERE — this is a niche/lesser-known reference song, so 8-10 "
+                                       "precise, SPECIFIC tags (total, including the language tag) beat a short "
+                                       "generic list. Skip vague filler tags ('catchy', 'upbeat', 'good vibes') "
+                                       "unless paired with something concrete — name the actual instrumentation, "
+                                       "production texture and rhythmic feel that set THIS song apart from a "
+                                       "generic version of its genre.")
                 elif sprache == "de":
                     # LEHRE (17.08.2026): Chris berichtete Qualitätsabfall bei deutschen Songs. Hauptursache
                     # vermutlich Suno v5.5 selbst (breite, öffentlich bestätigte Community-Beschwerden über
@@ -9151,30 +9178,52 @@ Antworte NUR als reines JSON ohne Markdown:
                     # deutsche Songs bekommen jetzt IMMER (nicht nur bei nischigem Referenz-Song) die
                     # großzügigere Tag-Regel, um dem Modell präzisere Führung zu geben und die Schlager-Falle
                     # (siehe feedback_suno_deutsch_genre) aktiv zu vermeiden statt nur generisch "catchy, upbeat".
-                    _tag_count_rule = ("MAX 160 characters total. Deutsche Songs brauchen MEHR Präzision als englische, "
-                                       "um nicht automatisch ins generische Schlager-Fach zu rutschen — 7-10 konkrete, "
-                                       "spezifische Tags statt 5-8 generischer. Nenne echte Instrumente/Produktionsmerkmale "
-                                       "statt nur 'catchy, upbeat, fun'. Falls Schlager wirklich passt: das ist erlaubt, "
-                                       "aber bewusst gewählt, nicht der Default-Fallback nur weil der Song auf Deutsch ist.")
+                    _tag_count_rule = ("MAX 250 characters total, most important tags in the first ~200. Deutsche "
+                                       "Songs brauchen MEHR Präzision als englische, um nicht automatisch ins "
+                                       "generische Schlager-Fach zu rutschen — 7-10 konkrete, spezifische Tags "
+                                       "(insgesamt, inklusive dem Pflicht-Sprach-Tag) statt 5-8 generischer. Nenne "
+                                       "echte Instrumente/Produktionsmerkmale statt nur 'catchy, upbeat, fun'. "
+                                       "Falls Schlager wirklich passt: das ist erlaubt, aber bewusst gewählt, "
+                                       "nicht der Default-Fallback nur weil der Song auf Deutsch ist.")
                 else:
-                    _tag_count_rule = "MAX 120 characters total. LESS IS MORE — 5-8 precise tags beat a long description."
+                    _tag_count_rule = ("MAX 250 characters total, most important tags in the first ~200. LESS IS "
+                                       "MORE — 5-8 precise tags beat a long description.")
+                _ORDER_HINT = ("ORDER MATTERS: Suno weights earlier tags more heavily than later ones — lead with "
+                               "genre + mood, then instruments, then let vocal style/production/era/reference-flavor "
+                               "tags trail at the end. ")
+                _NO_REDUNDANCY_HINT = ("ONE genre anchor only — no two tags that say the same thing (not 'indie "
+                                       "rock' + 'alternative' + 'garage'). No contradictory production tags (not "
+                                       "'lo-fi' + 'polished' + 'bass-heavy'). Better to drop a tag than keep two "
+                                       "similar ones. Always include exactly ONE concrete BPM value as a tag (e.g. "
+                                       "'112bpm') matching the genre, instead of only a vague word like 'upbeat'. ")
                 if sprache == "de":
                     STYLE_RULE = ("Suno style tags in English, comma-separated short tags only. "
                                   "STRICT: NO artist names, NO song titles, NO full sentences — ONLY concise music tags. "
                                   "Cover: genre, tempo feel, main instruments, energy, vocal style, production texture. "
+                                  f"{_ORDER_HINT}"
+                                  f"{_NO_REDUNDANCY_HINT}"
                                   f"{_tag_count_rule} "
                                   "IMPORTANT for German songs: Suno recognizes genre tags like 'german pop', 'german schlager', "
                                   "'german folk-pop', 'german party pop', 'german punk rock', 'german new wave', "
                                   "'austrian folk rock', 'volksmusik' — use them when they match the reference song's sound. "
+                                  "ALWAYS include one explicit vocal-language tag ('vocals in German', 'singing in German', or "
+                                  "'rapping in German' depending on style) — this measurably improves pronunciation accuracy, "
+                                  "don't rely on the lyrics language alone. "
                                   "German vocals + a bouncy sung sing-along hook default toward Schlager very easily — if that's "
                                   "NOT the intended mood, actively steer away with genre tags like 'summer deutschrap', 'reggae', "
                                   "'dancehall', 'afrobeats', 'amapiano', 'house' instead of generic 'german pop'. "
-                                  "Example schlager: 'german schlager, accordion, party pop, upbeat, male vocals, festive, catchy hook' "
-                                  "Example german pop: 'german pop, upbeat, powerful female vocals, euro dance, arena anthem, 128bpm'")
+                                  "Example modern: 'summer deutschrap, warm dancehall groove, mellow male vocals, 100bpm, "
+                                  "sunny synths, rapping in German' "
+                                  "Example pop: 'german indie pop, driving 4/4 beat, bright synths, female vocals, "
+                                  "polished production, vocals in German' "
+                                  "(schlager itself — accordion, party pop, festive — is a valid genre choice only if "
+                                  "deliberately requested, never the default fallback)")
                 else:
                     STYLE_RULE = ("Suno style tags in English, comma-separated short tags only. "
                                   "STRICT: NO artist names, NO song titles, NO full sentences — ONLY concise music tags. "
                                   "Cover: genre, tempo feel, main instruments, energy, vocal style, production texture. "
+                                  f"{_ORDER_HINT}"
+                                  f"{_NO_REDUNDANCY_HINT}"
                                   f"{_tag_count_rule} "
                                   "Suno understands these well: genre tags (indie pop, pop punk, trap pop, nu-disco, funk, soul pop, "
                                   "dance pop, bedroom pop, r&b, country pop), energy (euphoric, anthemic, melancholic, groovy, bittersweet), "
@@ -9185,6 +9234,22 @@ Antworte NUR als reines JSON ohne Markdown:
                 TITLE_RULE = ("kreativer Songtitel mit passenden Emojis"
                               + (" — verwende im Titel immer die ORIGINAL-Schreibweise des Namens, nicht die phonetische" if is_personal else ""))
 
+                # LEHRE (19.08.2026, Opus-Audit): negative Anweisungen im Style-Feld selbst werden von Suno oft
+                # ignoriert — das dedizierte "Exclude"-Feld (Custom Mode → Advanced Options) unterdrückt hart auf
+                # Parser-Ebene und ist der stärkste verfügbare Hebel gegen ungewollten Schlager-Sound, stärker als
+                # jede Umformulierung im Style-Text. Max 2-3 Einträge (mehr verwässert laut Community die Wirkung).
+                if sprache == "de":
+                    EXCLUDE_RULE = ("1-3 short genre/instrument tags for Suno's separate 'Exclude Styles' field "
+                                    "(hard-suppresses matching sounds on Suno's side) — comma-separated, max 3. "
+                                    "For German songs where Schlager is NOT the deliberately chosen style, default "
+                                    "to excluding schlager-typical elements: 'schlager, accordion, oompah brass'. "
+                                    "If Schlager genuinely IS the chosen style for this song, use an empty string.")
+                else:
+                    EXCLUDE_RULE = ("1-3 short genre/instrument tags for Suno's separate 'Exclude Styles' field "
+                                    "(hard-suppresses matching sounds on Suno's side), comma-separated, max 3 — "
+                                    "only list something if there's a real risk of an unwanted genre/sound sneaking "
+                                    "in for this specific song, otherwise use an empty string.")
+
                 # LEHRE (17.08.2026): Liedtexte hatten häufig gezwungene, abstrakte Reim-Füllwörter
                 # (Beispiel: "Maria, wir singen mit Schwung und Verbindung!" — "Verbindung" ist nur wegen
                 # des Reims auf "Schwung" da, hat aber keinen echten Bezug zum Anlass). Ursache: Es gab
@@ -9194,30 +9259,69 @@ Antworte NUR als reines JSON ohne Markdown:
                     LYRICS_RULE = (
                         "LYRICS-QUALITÄT (sehr wichtig): Schreibe natürliche, konkrete, alltagssprachliche deutsche "
                         "Liedtexte — wie ein echter Songtext klingt, nicht wie ein Glückwunschgedicht. "
-                        "VERBOTEN: ein abstraktes Füllwort nur wählen, WEIL es sich reimt (typisches Beispiel für "
-                        "schlechten KI-Text: 'wir singen mit Schwung und Verbindung' — 'Verbindung' hat keinen "
-                        "echten Bezug, ist nur Reim-Füllstoff). Wenn kein Wort mit echtem Bezug zum Anlass/zur "
-                        "Person passt UND sich sauber reimt: lieber unreiner Reim (Assonanz/Halbreim) oder Zeile "
-                        "leicht umformulieren, als eine beliebige abstrakte Worthülse reinzuquetschen. "
+                        "REIM IST DAS ZIEL, NICHT OPTIONAL: Jede Strophe/jeder Refrain soll sich reimen (Paarreim "
+                        "AABB oder Kreuzreim ABAB) — das ist der Normalfall, den du aktiv anstrebst, nicht nur ein "
+                        "Bonus. Unreiner Reim/Assonanz ist NUR der Notausgang für den seltenen Fall, dass wirklich "
+                        "kein sauber reimendes Wort mit echtem Bezug zum Anlass/zur Person existierst — nicht der "
+                        "Standard-Weg, um Zeit zu sparen. Wenn eine Zeile partout nicht reimt: erst aktiv nach "
+                        "Alternativformulierungen mit echtem Reim suchen, bevor du auf Assonanz ausweichst. "
+                        "VERBOTEN bleibt: ein abstraktes Füllwort nur wählen, WEIL es sich reimt (typisches Beispiel "
+                        "für schlechten KI-Text: 'wir singen mit Schwung und Verbindung' — 'Verbindung' hat keinen "
+                        "echten Bezug, ist nur Reim-Füllstoff) — aber die Lösung dafür ist eine BESSERE Reimzeile "
+                        "finden, nicht aufs Reimen verzichten. "
                         "Bevorzuge konkrete, bildhafte Details (was die Person mag, tut, wie sie ist) statt vager "
                         "Behauptungen wie 'du bist toll' oder 'wir haben Spaß'. Jede Zeile muss auch als gesprochener "
                         "Satz Sinn ergeben — wenn eine Zeile beim lauten Lesen holprig oder gestelzt klingt, umschreiben. "
                         "RHYTHMUS: Innerhalb einer Strophe/eines Refrains die Zeilenlängen ähnlich halten (nicht stur "
                         "gleich, aber keine Zeile doppelt so lang wie ihre Nachbarzeile) — das gibt Suno einen "
-                        "gleichmäßigen Groove zum Vertonen, ohne dass der Text künstlich wirkt."
+                        "gleichmäßigen Groove zum Vertonen, ohne dass der Text künstlich wirkt. "
+                        "ZAHLEN IMMER AUSSCHREIBEN: Im Liedtext niemals Ziffern verwenden — Suno singt sie sonst oft "
+                        "falsch aus. 'dein 13. Geburtstag' → 'deinen dreizehnten Geburtstag', '2026' → "
+                        "'zwanzig-sechsundzwanzig'. Klassenbezeichnungen ausgeschrieben und getrennt: '7b' → "
+                        "'Sieben B'. Nur im Titel und in den Metadaten (nicht im gesungenen Text) bleibt die "
+                        "Ziffernform erlaubt. "
+                        "LÄNGEN: 6-10 Silben pro Zeile als Richtwert (Suno orientiert die Melodie am Silbenmuster "
+                        "der ersten Zeilen — zu lange Zeilen führen zu gehetzten, verschluckten Vocals). Strophen "
+                        "4-6 Zeilen, Refrain 2-4 kurze Zeilen (kurz bleibt besser hängen als lang), Bridge 2-4 "
+                        "Zeilen, Gesamtlänge 200-300 Wörter. "
+                        "STIL-HARMONIE: Ton und Energie der Lyrics müssen zum gewählten Musikstil passen — "
+                        "weicher melodischer Song → warme, fließende Lyrics; aggressiver Beat → kraftvolle, "
+                        "pointierte Lyrics. "
+                        "REFRAIN: Der [Chorus] wird bei JEDEM Vorkommen wörtlich identisch ausgeschrieben (volle "
+                        "Zeilen, keine '(2x)'-Kurzschreibweise, keine Variation) — nur der allerletzte Chorus vor "
+                        "dem Outro darf maximal eine Zeile leicht abwandeln. Eine feste Ankerzeile mit dem "
+                        "Namen/Anlass muss in jedem Chorus vorkommen, das ist der Wiedererkennungs-Hook."
                     )
                 else:
                     LYRICS_RULE = (
                         "LYRICS QUALITY (very important): Write natural, concrete, conversational lyrics — like a "
-                        "real song, not a greeting-card poem. FORBIDDEN: picking an abstract filler word only "
-                        "BECAUSE it rhymes, with no real connection to the occasion/person. If no word with real "
-                        "relevance rhymes cleanly: prefer a slant rhyme/near-rhyme or rephrase the line, rather than "
-                        "forcing in a vague abstract word. Favor concrete, vivid details (what the person likes, "
+                        "real song, not a greeting-card poem. RHYME IS THE GOAL, NOT OPTIONAL: every verse/chorus "
+                        "should rhyme (couplets AABB or alternating ABAB) — that's the default you actively aim "
+                        "for, not a bonus. A slant rhyme/near-rhyme is only the fallback for the rare case where "
+                        "truly no cleanly-rhyming word with real relevance exists — not the default shortcut. If a "
+                        "line doesn't rhyme: actively search for an alternative phrasing with a real rhyme before "
+                        "settling for assonance. FORBIDDEN remains: picking an abstract filler word only BECAUSE it "
+                        "rhymes, with no real connection to the occasion/person — but the fix for that is finding a "
+                        "BETTER rhyming line, not giving up on rhyme. Favor concrete, vivid details (what the person likes, "
                         "does, how they are) over vague claims like 'you're great' or 'we have fun'. Every line must "
                         "make sense as a spoken sentence — if a line sounds clunky or stilted read aloud, rewrite it. "
                         "RHYTHM: Keep line lengths reasonably consistent within a verse/chorus (not rigid, but no line "
                         "twice as long as its neighbor) — gives Suno a steady groove to set music to without the text "
-                        "feeling artificial."
+                        "feeling artificial. "
+                        "ALWAYS SPELL OUT NUMBERS: Never use digits in the sung lyrics — Suno often mispronounces "
+                        "them. 'his 13th birthday' → 'his thirteenth birthday', '2026' → 'twenty twenty-six'. Class "
+                        "labels spelled and split out: '7A' → 'seven A'. Digit form is fine in the title/metadata "
+                        "only, never in the sung text. "
+                        "LENGTHS: 6-10 syllables per line as a guideline (Suno paces the melody off the syllable "
+                        "pattern of the first lines — overly long lines cause rushed, swallowed vocals). Verses "
+                        "4-6 lines, chorus 2-4 short lines (short sticks better than long), bridge 2-4 lines, "
+                        "total length 200-300 words. "
+                        "STYLE-LYRICS HARMONY: Tone and energy of the lyrics must match the chosen music style — "
+                        "soft melodic song → warm, flowing lyrics; aggressive beat → punchy, forceful lyrics. "
+                        "CHORUS: Write the [Chorus] out word-for-word IDENTICAL every time it appears (full lines, "
+                        "no '(x2)' shorthand, no variation) — only the very last chorus before the outro may "
+                        "slightly vary one line. A fixed anchor line with the name/occasion must appear in every "
+                        "chorus — that's the recognizable hook."
                     )
 
                 # Silbenanzahl grob berechnen (Vokalgruppen zählen)
@@ -9249,7 +9353,6 @@ Antworte NUR als reines JSON ohne Markdown:
                     name_inst = ""  # kein Name: nur anlassbezogen
 
                 rhythm_hint = _rhythm_hint(name) if is_personal else ""
-                style_timing_hint = ""
 
                 # 3. Variante — Veröffentlichungs-Profil (Chris' Release-Marken-Stimme: Feel-good mit Augenzwinkern)
                 if profil:
@@ -9280,13 +9383,15 @@ Alter: {alter} (dies ist die Zahl für den Geburtstag, um den es geht — wörtl
 {web_song_inst}
 {style_hint_inst}
 {rhythm_hint}
-{style_timing_hint}
 {feedback_inst}
 
 Pflichtinhalte im Liedtext:
 {name_inst}
 - Lessing-Gymnasium erwähnen
 - Computerkurs bei {lehrer} erwähnen{f" (findet {computerkurs_tag}s statt — wenn ein Wochentag genannt wird, MUSS es exakt dieser sein. Tageszeit: {computerkurs_zeit} — wenn eine Tageszeit genannt wird, MUSS sie exakt dazu passen, NICHTS anderes erfinden)" if computerkurs_tag else " — KEINEN Wochentag/KEINE Tageszeit nennen/erfinden, die sind hier nicht bekannt"}
+VERTEILUNG: Alle diese Pflicht-Fakten gehören in die STROPHEN und höchstens die Bridge. Der Refrain bleibt frei
+davon — er enthält nur den Namen und eine kurze, emotionale Hook-Zeile, sonst klingt er wie eine
+Verwaltungsmeldung statt wie ein Ohrwurm. Jeden Fakt nur einmal nennen, nicht in jeder Strophe wiederholen.
 
 HUMOR: Ein bisschen Humor/Augenzwinkern ist ausdrücklich erwünscht — z.B. eine liebevolle Übertreibung, eine
 lustige Anspielung auf den Computerkurs/Schulalltag, eine humorvolle Zeile statt reinem Kitsch. Warmherzig-witzig,
@@ -9295,13 +9400,18 @@ grinsen, nicht zusammenzucken.
 
 {LYRICS_RULE}
 
-Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Outro]
+Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Chorus], [Outro]
+STRUKTUR-TAGS: exakt diese englischen Tags verwenden, jeder auf einer EIGENEN Zeile (Zeilenumbruch davor und
+danach, nie inline mit Textzeilen vermischt) — sonst singt Suno das Tag-Wort mit. Keine eigenen/deutschen Tags
+erfinden (kein '[Refrain]'). Keine Genre-, Tempo- oder Stimmungsangaben ins Lyrics-Feld schreiben — die gehören
+ausschließlich ins Style-Feld.
 
 Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
 {{
   "title": "{TITLE_RULE}",
   "lyrics": "vollständiger Liedtext mit Struktur-Tags",
-  "style": "{STYLE_RULE}"
+  "style": "{STYLE_RULE}",
+  "exclude": "{EXCLUDE_RULE}"
 }}"""
                 else:
                     who_line = f"Person/Gruppe: {name}" if name else ("Kein spezifischer Adressat — Song fürs Profil/Veröffentlichung" if profil else "Kein spezifischer Adressat (nur Anlass)")
@@ -9317,19 +9427,23 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
 {web_song_inst}
 {style_hint_inst}
 {rhythm_hint}
-{style_timing_hint}
 {feedback_inst}
 {('Pflichtinhalt: ' + name_inst) if name_inst else ''}
 
 {LYRICS_RULE}
 
-Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Outro]
+Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Chorus], [Outro]
+STRUKTUR-TAGS: exakt diese englischen Tags verwenden, jeder auf einer EIGENEN Zeile (Zeilenumbruch davor und
+danach, nie inline mit Textzeilen vermischt) — sonst singt Suno das Tag-Wort mit. Keine eigenen/deutschen Tags
+erfinden (kein '[Refrain]'). Keine Genre-, Tempo- oder Stimmungsangaben ins Lyrics-Feld schreiben — die gehören
+ausschließlich ins Style-Feld.
 
 Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
 {{
   "title": "{TITLE_RULE}",
   "lyrics": "vollständiger Liedtext mit Struktur-Tags",
-  "style": "{STYLE_RULE}"
+  "style": "{STYLE_RULE}",
+  "exclude": "{EXCLUDE_RULE}"
 }}"""
                 import subprocess, shutil
                 claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
@@ -9360,8 +9474,14 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 song_data, _ = json.JSONDecoder().raw_decode(raw, idx)
                 if sprache == "de" and "style" in song_data:
                     s = song_data["style"].rstrip(", ")
-                    if "german lyrics" not in s.lower():
-                        s += ", german lyrics"
+                    # LEHRE (19.08.2026, Opus-Audit): STYLE_RULE verlangt jetzt bereits einen expliziten
+                    # Vokal-Sprach-Tag ("vocals in German"/"singing in German"/"rapping in German") — das alte
+                    # "german lyrics"-Fallback erkannte diese Varianten nicht und hängte praktisch immer
+                    # zusätzlich an, was Zeichenlimit/Tag-Budget unnötig sprengte. Nur noch nachrüsten, wenn
+                    # WIRKLICH kein Sprach-Tag vorhanden ist.
+                    _has_lang_tag = any(m in s.lower() for m in ("in german", "german vocals", "german lyrics"))
+                    if not _has_lang_tag:
+                        s += ", vocals in German"
                     song_data["style"] = s
                 # Englisch: Original-Name im Titel sicherstellen (nur bei Einzelpersonen)
                 if sprache != "de" and is_personal and "title" in song_data:
