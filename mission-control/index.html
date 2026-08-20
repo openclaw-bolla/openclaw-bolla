@@ -2067,6 +2067,16 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
 
           </div>
 
+          <!-- ═══ ZEILE 4.5: MP-API kurz erklärt ═══ -->
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #60a5fa;margin-bottom:14px">
+            <div style="font-size:13px;font-weight:700;color:#60a5fa;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">🔌 Wie MP mit Claude Code spricht (API kurz erklärt)</div>
+            <div style="font-size:13px;color:var(--text);line-height:1.7">
+              MP läuft als eigener Python-Server (<code style="color:#60a5fa">mission_control_api.py</code>, Port 18790) mit vielen Endpunkten unter <code style="color:#60a5fa">/api/...</code> (Quota, Mail, Kalender, Suno, BildGen, Schule, …).<br>
+              Für KI-<b style="color:var(--bright)">Textgenerierung</b> (z.B. Songtexte, Elternbrief-Entschärfer) hat der Server <b style="color:var(--bright)">keinen eigenen bezahlten API-Key</b> — er startet stattdessen die Claude-Code-CLI selbst als Subprozess (<code style="color:#60a5fa">claude -p --model claude-sonnet-5 --output-format json "…Prompt…"</code>) und nutzt damit dasselbe Abo wie Bolla im Terminal-Chat.<br>
+              Für <b style="color:var(--bright)">Bild/Musik/Sprache</b> (Suno, Pollinations BildGen, Azure Speech) spricht MP dagegen echte externe, kostenpflichtige APIs direkt an.
+            </div>
+          </div>
+
           <!-- ═══ ZEILE 5: Tipps & Tricks ═══ -->
           <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid #a78bfa;margin-bottom:14px">
             <div style="font-size:13px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">💡 Tipps & Tricks</div>
@@ -9225,7 +9235,7 @@ async function docsLoad() {
   const GROUPS = [
     { label: '🛟 Claude Code Recovery', color: '#f59e0b', desc: 'Bolla von Grund auf auf einem neuen PC wiederherstellen — komplette Anleitung (2 Backups, 7 Schritte, Fertig-Check, Duo-Hotkey).', files: ['Claude komplett neu.html'] },
     { label: '🤖 Bolla & Setup', color: '#f472b6', files: ['was_ist_bolla.docx','mein_ki_setup.docx','bolla_recovery.docx','Bolla-Notfallplan.pdf','accounts_overview.pdf','00_DOKUMENTATIONS_INDEX.docx'] },
-    { label: '⚙️ Claude Code & Skills', color: '#a78bfa', files: ['Claude Code Skills und Hooks.docx','Bolla-MD-Erklaerung.pdf','Bolla-JSON-Erklaerung.pdf','Tokens-Erklaerung.docx'] },
+    { label: '⚙️ Claude Code & Skills', color: '#a78bfa', files: ['MP-API-Erklaerung.docx','Claude Code Skills und Hooks.docx','Bolla-MD-Erklaerung.pdf','Bolla-JSON-Erklaerung.pdf','Tokens-Erklaerung.docx'] },
     { label: '🔧 Technik & Infrastruktur', color: '#34d399', files: ['WSL_Crash_Erklaerung.docx','ssh-tunnel-erklaerung.pdf','Cloudflare-IONOS-Erklaerung.docx','ADB-Erklaerung.pdf'] },
     { label: '🧠 KI Allgemein', color: '#60a5fa', files: ['KI-Modelle-Jarvis-Bolla optimiert.pdf','ki-modelle-erklaerung.html','openclaw-zusammenfassung.pdf'] },
     { label: '🎵 Musik & Streaming', color: '#fb923c', files: ['DistroKid_Upload_Checkliste.docx'] },

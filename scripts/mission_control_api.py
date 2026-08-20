@@ -9281,9 +9281,9 @@ Antworte NUR als reines JSON ohne Markdown:
                         "'Sieben B'. Nur im Titel und in den Metadaten (nicht im gesungenen Text) bleibt die "
                         "Ziffernform erlaubt. "
                         "LÄNGEN: 6-10 Silben pro Zeile als Richtwert (Suno orientiert die Melodie am Silbenmuster "
-                        "der ersten Zeilen — zu lange Zeilen führen zu gehetzten, verschluckten Vocals). Strophen "
-                        "4-6 Zeilen, Refrain 2-4 kurze Zeilen (kurz bleibt besser hängen als lang), Bridge 2-4 "
-                        "Zeilen, Gesamtlänge 200-300 Wörter. "
+                        "der ersten Zeilen — zu lange Zeilen führen zu gehetzten, verschluckten Vocals). Drei "
+                        "Strophen à 4-6 Zeilen, Refrain 2-4 kurze Zeilen (kurz bleibt besser hängen als lang), "
+                        "Bridge 2-4 Zeilen, Gesamtlänge 260-360 Wörter. "
                         "STIL-HARMONIE: Ton und Energie der Lyrics müssen zum gewählten Musikstil passen — "
                         "weicher melodischer Song → warme, fließende Lyrics; aggressiver Beat → kraftvolle, "
                         "pointierte Lyrics. "
@@ -9313,9 +9313,9 @@ Antworte NUR als reines JSON ohne Markdown:
                         "labels spelled and split out: '7A' → 'seven A'. Digit form is fine in the title/metadata "
                         "only, never in the sung text. "
                         "LENGTHS: 6-10 syllables per line as a guideline (Suno paces the melody off the syllable "
-                        "pattern of the first lines — overly long lines cause rushed, swallowed vocals). Verses "
-                        "4-6 lines, chorus 2-4 short lines (short sticks better than long), bridge 2-4 lines, "
-                        "total length 200-300 words. "
+                        "pattern of the first lines — overly long lines cause rushed, swallowed vocals). Three "
+                        "verses of 4-6 lines each, chorus 2-4 short lines (short sticks better than long), bridge "
+                        "2-4 lines, total length 260-360 words. "
                         "STYLE-LYRICS HARMONY: Tone and energy of the lyrics must match the chosen music style — "
                         "soft melodic song → warm, flowing lyrics; aggressive beat → punchy, forceful lyrics. "
                         "CHORUS: Write the [Chorus] out word-for-word IDENTICAL every time it appears (full lines, "
@@ -9370,6 +9370,27 @@ Antworte NUR als reines JSON ohne Markdown:
                 else:
                     profil_inst = ""
 
+                # LEHRE (20.08.2026, Chris zu Niklas/Oskar-Songs): Humor kam zuletzt nur rudimentär durch —
+                # bei DE-Songs deutlich verbindlicher einfordern (Mindestanzahl witziger Zeilen statt "ein bisschen").
+                if sprache == "de":
+                    humor_inst = (
+                        "HUMOR: Humor/Augenzwinkern ist ausdrücklich gewünscht und darf ruhig mehr Raum bekommen "
+                        "als nur eine einzelne Andeutung — mindestens 2-3 wirklich humorvolle Zeilen im gesamten "
+                        "Song (z.B. eine liebevolle Übertreibung, ein humorvoller Vergleich, eine lustige "
+                        "Anspielung auf den Computerkurs/Schulalltag/typische Eigenheiten der Person). "
+                        "Warmherzig-witzig, nie auf Kosten der Person (kein Auslachen, keine peinlichen "
+                        "Anspielungen) — der/die Gefeierte soll beim Hören grinsen, nicht zusammenzucken. Lieber "
+                        "spürbar mehr Augenzwinkern als zu wenig — reiner Kitsch ohne jede witzige Zeile ist "
+                        "hier ein Fehlschlag."
+                    )
+                else:
+                    humor_inst = (
+                        "HUMOR: A bit of humor/wink is explicitly welcome — e.g. a loving exaggeration, a funny "
+                        "nod to the computer class/school routine, a humorous line instead of pure sentimentality. "
+                        "Warm and witty, never at the person's expense (no mocking, no embarrassing references) — "
+                        "the birthday person should grin while listening, not wince."
+                    )
+
                 if is_school:
                     who = f"Schüler/in: {name}" if is_personal else (f"Gruppe/Klasse: {name}" if name else "Allgemeiner Klassen-Song")
                     prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Geburtstagssong {lang_inst}.
@@ -9393,14 +9414,11 @@ VERTEILUNG: Alle diese Pflicht-Fakten gehören in die STROPHEN und höchstens di
 davon — er enthält nur den Namen und eine kurze, emotionale Hook-Zeile, sonst klingt er wie eine
 Verwaltungsmeldung statt wie ein Ohrwurm. Jeden Fakt nur einmal nennen, nicht in jeder Strophe wiederholen.
 
-HUMOR: Ein bisschen Humor/Augenzwinkern ist ausdrücklich erwünscht — z.B. eine liebevolle Übertreibung, eine
-lustige Anspielung auf den Computerkurs/Schulalltag, eine humorvolle Zeile statt reinem Kitsch. Warmherzig-witzig,
-nie auf Kosten der Person (kein Auslachen, keine peinlichen Anspielungen) — der/die Gefeierte soll beim Hören
-grinsen, nicht zusammenzucken.
+{humor_inst}
 
 {LYRICS_RULE}
 
-Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Chorus], [Outro]
+Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Verse 3], [Bridge], [Chorus], [Outro]
 STRUKTUR-TAGS: exakt diese englischen Tags verwenden, jeder auf einer EIGENEN Zeile (Zeilenumbruch davor und
 danach, nie inline mit Textzeilen vermischt) — sonst singt Suno das Tag-Wort mit. Keine eigenen/deutschen Tags
 erfinden (kein '[Refrain]'). Keine Genre-, Tempo- oder Stimmungsangaben ins Lyrics-Feld schreiben — die gehören
@@ -9432,7 +9450,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
 
 {LYRICS_RULE}
 
-Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Chorus], [Outro]
+Struktur: [Intro], [Verse 1], [Chorus], [Verse 2], [Chorus], [Verse 3], [Bridge], [Chorus], [Outro]
 STRUKTUR-TAGS: exakt diese englischen Tags verwenden, jeder auf einer EIGENEN Zeile (Zeilenumbruch davor und
 danach, nie inline mit Textzeilen vermischt) — sonst singt Suno das Tag-Wort mit. Keine eigenen/deutschen Tags
 erfinden (kein '[Refrain]'). Keine Genre-, Tempo- oder Stimmungsangaben ins Lyrics-Feld schreiben — die gehören
@@ -9445,61 +9463,88 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
   "style": "{STYLE_RULE}",
   "exclude": "{EXCLUDE_RULE}"
 }}"""
-                import subprocess, shutil
+                import subprocess, shutil, time as _time_ka
                 claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
+                proc = subprocess.Popen(
+                    [claude_bin, "-p", "--model", "claude-sonnet-5", "--output-format", "json", prompt],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                    stdin=subprocess.DEVNULL, cwd=os.path.expanduser("~")
+                )
+                # LEHRE (20.08.2026, Chris/Oskar-Test): "Unexpected token '<'"-Fehler im Frontend kam vom
+                # Cloudflare-Tunnel-Edge, das proxied Requests ohne Response-Bytes nach ~100s mit einer eigenen
+                # HTML-Fehlerseite abwürgt ("context canceled" im cloudflared-Log) — die 3. Strophe/mehr Wörter
+                # drückt die claude-CLI-Laufzeit öfter über diese Grenze. Fix: Header sofort senden, während
+                # der Subprozess läuft alle 15s ein Leerzeichen in den Body schreiben (JSON.parse toleriert
+                # führenden Whitespace) um den Tunnel aktiv zu halten, am Ende folgt das echte JSON.
+                self.send_response(200)
+                self._cors_headers()
+                self.end_headers()
+
+                def _write_ka(payload):
+                    try:
+                        self.wfile.write(payload)
+                        self.wfile.flush()
+                        return True
+                    except (BrokenPipeError, ConnectionResetError):
+                        return False
+
+                _ka_start = _time_ka.time()
+                while proc.poll() is None:
+                    if _time_ka.time() - _ka_start > 240:
+                        proc.kill()
+                        _write_ka(json.dumps({"error": "Song-Generierung hat zu lange gedauert (>240s). Bitte nochmal versuchen."}).encode())
+                        return
+                    if not _write_ka(b" "):
+                        proc.kill()
+                        return
+                    _time_ka.sleep(15)
+                stdout, stderr = proc.communicate()
+                if proc.returncode != 0:
+                    _write_ka(json.dumps({"error": (stderr or "claude Fehler (kein stderr)")[:300]}).encode())
+                    return
                 try:
-                    result = subprocess.run(
-                        [claude_bin, "-p", "--model", "claude-sonnet-5", "--output-format", "json", prompt],
-                        capture_output=True, text=True, timeout=240,
-                        stdin=subprocess.DEVNULL,
-                        cwd=os.path.expanduser("~")
-                    )
-                except subprocess.TimeoutExpired:
-                    self._send_json({"error": "Song-Generierung hat zu lange gedauert (>240s). Bitte nochmal versuchen."}, status=500)
-                    return
-                if result.returncode != 0:
-                    self._send_json({"error": result.stderr[:300] or "claude Fehler (kein stderr)"}, status=500)
-                    return
-                raw = json.loads(result.stdout).get("result", "")
-                raw = raw.strip()
-                if raw.startswith("```"):
-                    raw = "\n".join(raw.split("\n")[1:])
-                if raw.endswith("```"):
-                    raw = raw.rsplit("```", 1)[0]
-                raw = raw.strip()
-                # raw_decode ignoriert Text nach dem ersten gültigen JSON-Objekt
-                idx = raw.find('{')
-                if idx < 0:
-                    raise ValueError("Kein JSON-Objekt in Antwort gefunden")
-                song_data, _ = json.JSONDecoder().raw_decode(raw, idx)
-                if sprache == "de" and "style" in song_data:
-                    s = song_data["style"].rstrip(", ")
-                    # LEHRE (19.08.2026, Opus-Audit): STYLE_RULE verlangt jetzt bereits einen expliziten
-                    # Vokal-Sprach-Tag ("vocals in German"/"singing in German"/"rapping in German") — das alte
-                    # "german lyrics"-Fallback erkannte diese Varianten nicht und hängte praktisch immer
-                    # zusätzlich an, was Zeichenlimit/Tag-Budget unnötig sprengte. Nur noch nachrüsten, wenn
-                    # WIRKLICH kein Sprach-Tag vorhanden ist.
-                    _has_lang_tag = any(m in s.lower() for m in ("in german", "german vocals", "german lyrics"))
-                    if not _has_lang_tag:
-                        s += ", vocals in German"
-                    song_data["style"] = s
-                # Englisch: Original-Name im Titel sicherstellen (nur bei Einzelpersonen)
-                if sprache != "de" and is_personal and "title" in song_data:
-                    if name.lower() not in song_data["title"].lower():
-                        song_data["title"] = name + " — " + song_data["title"]
-                # Deutsch Schul-Song: kompakten Titel bauen
-                if sprache == "de" and is_school:
-                    parts = ["Happy Birthday"]
-                    if name: parts.append(name)
-                    if alter: parts.append(alter)
-                    if geburtstag:
-                        gb = geburtstag.strip().rstrip(".")
-                        segments = [s for s in gb.split(".") if s]
-                        if len(segments) == 2:
-                            gb = gb.rstrip(".") + ".26"
-                        parts.append(gb)
-                    song_data["title"] = " ".join(parts)
-                self._send_json(song_data)
+                    raw = json.loads(stdout).get("result", "")
+                    raw = raw.strip()
+                    if raw.startswith("```"):
+                        raw = "\n".join(raw.split("\n")[1:])
+                    if raw.endswith("```"):
+                        raw = raw.rsplit("```", 1)[0]
+                    raw = raw.strip()
+                    # raw_decode ignoriert Text nach dem ersten gültigen JSON-Objekt
+                    idx = raw.find('{')
+                    if idx < 0:
+                        raise ValueError("Kein JSON-Objekt in Antwort gefunden")
+                    song_data, _ = json.JSONDecoder().raw_decode(raw, idx)
+                    if sprache == "de" and "style" in song_data:
+                        s = song_data["style"].rstrip(", ")
+                        # LEHRE (19.08.2026, Opus-Audit): STYLE_RULE verlangt jetzt bereits einen expliziten
+                        # Vokal-Sprach-Tag ("vocals in German"/"singing in German"/"rapping in German") — das alte
+                        # "german lyrics"-Fallback erkannte diese Varianten nicht und hängte praktisch immer
+                        # zusätzlich an, was Zeichenlimit/Tag-Budget unnötig sprengte. Nur noch nachrüsten, wenn
+                        # WIRKLICH kein Sprach-Tag vorhanden ist.
+                        _has_lang_tag = any(m in s.lower() for m in ("in german", "german vocals", "german lyrics"))
+                        if not _has_lang_tag:
+                            s += ", vocals in German"
+                        song_data["style"] = s
+                    # Englisch: Original-Name im Titel sicherstellen (nur bei Einzelpersonen)
+                    if sprache != "de" and is_personal and "title" in song_data:
+                        if name.lower() not in song_data["title"].lower():
+                            song_data["title"] = name + " — " + song_data["title"]
+                    # Deutsch Schul-Song: kompakten Titel bauen
+                    if sprache == "de" and is_school:
+                        parts = ["Happy Birthday"]
+                        if name: parts.append(name)
+                        if alter: parts.append(alter)
+                        if geburtstag:
+                            gb = geburtstag.strip().rstrip(".")
+                            segments = [s for s in gb.split(".") if s]
+                            if len(segments) == 2:
+                                gb = gb.rstrip(".") + ".26"
+                            parts.append(gb)
+                        song_data["title"] = " ".join(parts)
+                    _write_ka(json.dumps(song_data, ensure_ascii=False).encode())
+                except Exception as e:
+                    _write_ka(json.dumps({"error": f"Antwort konnte nicht verarbeitet werden: {e}"}).encode())
 
             elif self.path == "/api/suno/style-suggest":
                 # Stil-Hinweis per KI vorschlagen — Chris will die Stärke des Style-Prompts

@@ -2,278 +2,397 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>MISSION CONTROL</title>
+<title>Mission Control</title>
 <style>
   :root{
-    --ink:#111111;
-    --paper:#F2F0E9;
-    --red:#FF3D00;
-    --yellow:#FFD400;
-    --blue:#0057FF;
-    --green:#00C853;
-    --border:6px;
+    --bg:#05070d;
+    --panel:#0b1020;
+    --panel2:#0d1428;
+    --line:#1c2740;
+    --cyan:#00fff2;
+    --magenta:#ff00d4;
+    --amber:#ffb300;
+    --text:#d8e6ff;
+    --dim:#7688a8;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
-  html,body{height:100%;}
   body{
-    background:var(--paper);
-    color:var(--ink);
-    font-family:'Arial Black','Helvetica Neue',Arial,sans-serif;
-    display:flex;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(0,255,242,0.07), transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(255,0,212,0.07), transparent 45%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Segoe UI',Consolas,monospace;
     min-height:100vh;
+    display:flex;
+    font-size:15px;
   }
+  /* Grid overlay */
+  body::before{
+    content:"";
+    position:fixed;inset:0;
+    background-image:
+      linear-gradient(rgba(0,255,242,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,242,0.035) 1px, transparent 1px);
+    background-size:38px 38px;
+    pointer-events:none;
+    z-index:0;
+  }
+
   /* SIDEBAR */
   .sidebar{
     width:230px;
-    flex-shrink:0;
-    background:var(--ink);
-    color:var(--paper);
-    border-right:var(--border) solid var(--ink);
+    background:linear-gradient(180deg, var(--panel), #070a14);
+    border-right:1px solid var(--line);
+    padding:22px 16px;
     display:flex;
     flex-direction:column;
+    gap:6px;
+    position:relative;
+    z-index:2;
+    box-shadow: 4px 0 30px rgba(0,255,242,0.04);
   }
   .brand{
-    padding:22px 18px;
-    background:var(--red);
-    color:var(--ink);
-    font-size:20px;
-    font-weight:900;
-    letter-spacing:1px;
-    border-bottom:var(--border) solid var(--ink);
-    line-height:1.1;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:28px;
+    padding:0 6px;
+  }
+  .brand .dot{
+    width:14px;height:14px;border-radius:50%;
+    background:var(--cyan);
+    box-shadow:0 0 10px var(--cyan), 0 0 22px var(--cyan);
+    animation:pulse 2.2s infinite ease-in-out;
+  }
+  @keyframes pulse{
+    0%,100%{opacity:1; transform:scale(1);}
+    50%{opacity:0.55; transform:scale(0.85);}
+  }
+  .brand h1{
+    font-size:16px;
+    letter-spacing:2px;
+    color:var(--cyan);
+    text-shadow:0 0 8px rgba(0,255,242,0.6);
   }
   .brand span{
     display:block;
-    font-size:12px;
-    font-weight:700;
-    margin-top:4px;
-    letter-spacing:2px;
+    font-size:10px;
+    color:var(--dim);
+    letter-spacing:3px;
   }
-  nav{display:flex;flex-direction:column;}
-  nav a{
+  nav{display:flex;flex-direction:column;gap:4px;}
+  .navitem{
     display:flex;
     align-items:center;
     gap:12px;
-    padding:16px 18px;
-    color:var(--paper);
+    padding:11px 12px;
+    border-radius:6px;
+    color:var(--dim);
     text-decoration:none;
-    font-size:15px;
-    font-weight:800;
+    font-size:13.5px;
     letter-spacing:0.5px;
-    border-bottom:3px solid #333;
-    transition:none;
+    border-left:2px solid transparent;
+    cursor:pointer;
+    transition:all .15s ease;
   }
-  nav a .ic{
-    width:22px;
-    height:22px;
-    flex-shrink:0;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    font-size:16px;
+  .navitem .ic{
+    width:18px;text-align:center;font-size:15px;
+    filter:drop-shadow(0 0 2px currentColor);
   }
-  nav a:hover{background:var(--red);color:var(--ink);}
-  nav a.active{background:var(--yellow);color:var(--ink);}
-  .sidebar-footer{
+  .navitem:hover{
+    background:rgba(0,255,242,0.06);
+    color:var(--text);
+    border-left:2px solid var(--cyan);
+  }
+  .navitem.active{
+    background:linear-gradient(90deg, rgba(0,255,242,0.14), transparent);
+    color:var(--cyan);
+    border-left:2px solid var(--cyan);
+    text-shadow:0 0 6px rgba(0,255,242,0.6);
+  }
+  .sidebar-foot{
     margin-top:auto;
-    padding:14px 18px;
+    padding:14px 10px;
+    border-top:1px solid var(--line);
     font-size:11px;
-    font-weight:700;
-    color:#999;
-    border-top:3px solid #333;
+    color:var(--dim);
     letter-spacing:1px;
+  }
+  .sidebar-foot .barwrap{
+    height:4px;background:#0e1a30;border-radius:2px;overflow:hidden;margin-top:6px;
+  }
+  .sidebar-foot .bar{
+    height:100%;width:34%;
+    background:linear-gradient(90deg,var(--cyan),var(--magenta));
+    box-shadow:0 0 6px var(--cyan);
   }
 
   /* MAIN */
   .main{
     flex:1;
+    position:relative;
+    z-index:1;
     display:flex;
     flex-direction:column;
-    min-width:0;
+    min-height:100vh;
   }
   .topbar{
     display:flex;
-    align-items:center;
     justify-content:space-between;
-    padding:20px 30px;
-    background:var(--paper);
-    border-bottom:var(--border) solid var(--ink);
+    align-items:center;
+    padding:20px 32px;
+    border-bottom:1px solid var(--line);
+    background:rgba(10,14,26,0.6);
+    backdrop-filter:blur(6px);
   }
-  .topbar h1{
-    font-size:28px;
-    font-weight:900;
+  .topbar h2{
+    font-size:19px;
     letter-spacing:1px;
-    text-transform:uppercase;
+    color:var(--text);
+  }
+  .topbar h2 small{
+    display:block;
+    font-size:11px;
+    color:var(--dim);
+    letter-spacing:2px;
+    font-weight:normal;
+    margin-top:3px;
   }
   .clock{
-    font-size:26px;
-    font-weight:900;
-    background:var(--ink);
-    color:var(--yellow);
-    padding:8px 18px;
-    border:4px solid var(--ink);
+    text-align:right;
+  }
+  .clock .time{
+    font-size:28px;
+    color:var(--cyan);
+    text-shadow:0 0 10px rgba(0,255,242,0.7);
     letter-spacing:2px;
+    font-variant-numeric:tabular-nums;
+  }
+  .clock .date{
+    font-size:11px;
+    color:var(--dim);
+    letter-spacing:1.5px;
   }
 
   .content{
-    padding:30px;
+    padding:28px 32px;
     display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:24px;
-    flex:1;
+    grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));
+    gap:20px;
   }
+
   .card{
-    background:var(--paper);
-    border:var(--border) solid var(--ink);
-    padding:22px;
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
-    min-height:170px;
+    background:linear-gradient(160deg, var(--panel2), #090d1c);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:20px;
     position:relative;
     overflow:hidden;
+    transition:transform .2s ease, box-shadow .2s ease;
   }
   .card::before{
     content:"";
     position:absolute;
-    top:0;left:0;
-    width:100%;
-    height:10px;
+    top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg, var(--cyan), var(--magenta));
+    opacity:0.8;
   }
-  .card.ram::before{background:var(--red);}
-  .card.cpu::before{background:var(--blue);}
-  .card.mail::before{background:var(--yellow);}
-  .card.weather::before{background:var(--green);}
-
+  .card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 10px 30px rgba(0,255,242,0.08);
+  }
+  .card-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:14px;
+  }
   .card-label{
-    font-size:13px;
-    font-weight:800;
+    font-size:11px;
     letter-spacing:2px;
+    color:var(--dim);
     text-transform:uppercase;
-    color:#555;
-    margin-top:8px;
+  }
+  .card-icon{
+    font-size:20px;
+    opacity:0.85;
   }
   .card-value{
-    font-size:52px;
-    font-weight:900;
-    line-height:1;
-    margin-top:14px;
+    font-size:34px;
+    font-weight:600;
+    letter-spacing:1px;
   }
+  .card-value.cyan{color:var(--cyan); text-shadow:0 0 12px rgba(0,255,242,0.5);}
+  .card-value.magenta{color:var(--magenta); text-shadow:0 0 12px rgba(255,0,212,0.5);}
+  .card-value.amber{color:var(--amber); text-shadow:0 0 12px rgba(255,179,0,0.5);}
   .card-sub{
-    font-size:13px;
-    font-weight:700;
-    margin-top:10px;
-    color:#333;
+    font-size:12px;
+    color:var(--dim);
+    margin-top:6px;
   }
-  .bar{
-    height:14px;
-    border:3px solid var(--ink);
+  .meter{
     margin-top:14px;
-    background:#fff;
+    height:6px;
+    border-radius:3px;
+    background:#0e1a30;
+    overflow:hidden;
   }
-  .bar-fill{height:100%;}
-  .ram .bar-fill{background:var(--red);width:34%;}
-  .cpu .bar-fill{background:var(--blue);width:12%;}
-
-  .wide{
-    grid-column:span 2;
+  .meter i{
+    display:block;height:100%;
+    box-shadow:0 0 8px currentColor;
   }
 
-  .mail-list{margin-top:10px;}
-  .mail-item{
+  .wide{grid-column:span 2;}
+
+  .mail-list{list-style:none; margin-top:4px;}
+  .mail-list li{
+    display:flex; justify-content:space-between;
+    padding:9px 0;
+    border-bottom:1px dashed var(--line);
     font-size:13px;
-    font-weight:700;
-    padding:6px 0;
-    border-bottom:2px solid #ddd;
+  }
+  .mail-list li:last-child{border-bottom:none;}
+  .mail-list .who{color:var(--text);}
+  .mail-list .when{color:var(--dim); font-size:11px;}
+  .badge{
+    background:rgba(255,0,212,0.15);
+    color:var(--magenta);
+    border:1px solid rgba(255,0,212,0.4);
+    padding:2px 8px;
+    border-radius:20px;
+    font-size:11px;
+    letter-spacing:1px;
   }
 
   .weather-row{
-    display:flex;
-    align-items:baseline;
-    gap:10px;
+    display:flex; align-items:center; gap:16px; margin-top:4px;
   }
-  .weather-city{
-    font-size:15px;
-    font-weight:800;
-    letter-spacing:1px;
-    text-transform:uppercase;
+  .weather-row .temp{
+    font-size:40px; color:var(--cyan); text-shadow:0 0 12px rgba(0,255,242,0.5);
   }
+  .weather-row .wicon{font-size:38px;}
+  .weather-details{
+    display:flex; gap:18px; margin-top:14px; font-size:12px; color:var(--dim);
+  }
+  .weather-details b{color:var(--text); display:block; font-size:14px;}
 
-  .footer-strip{
-    padding:14px 30px;
-    background:var(--ink);
-    color:var(--paper);
-    font-size:12px;
-    font-weight:700;
-    letter-spacing:1px;
-    display:flex;
-    justify-content:space-between;
+  .status-dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--cyan);
+    box-shadow:0 0 6px var(--cyan);
+    display:inline-block;
+    margin-right:6px;
+    animation:pulse 2s infinite ease-in-out;
   }
-  .footer-strip b{color:var(--yellow);}
 </style>
 </head>
 <body>
 
   <aside class="sidebar">
-    <div class="brand">MISSION<br>CONTROL<span>BOLLA SYSTEM</span></div>
+    <div class="brand">
+      <div class="dot"></div>
+      <div>
+        <h1>MISSION<br>CONTROL</h1>
+        <span>NEXUS-7 · v1.0</span>
+      </div>
+    </div>
     <nav>
-      <a href="#" class="active"><span class="ic">▣</span> Dashboard</a>
-      <a href="#"><span class="ic">🐾</span> Bolla</a>
-      <a href="#"><span class="ic">🏫</span> Schule</a>
-      <a href="#"><span class="ic">📅</span> Kalender</a>
-      <a href="#"><span class="ic">✉</span> E-Mail</a>
-      <a href="#"><span class="ic">☁</span> Wetter</a>
-      <a href="#"><span class="ic">⚙</span> System Info</a>
+      <div class="navitem active"><span class="ic">◈</span> Dashboard</div>
+      <div class="navitem"><span class="ic">🐾</span> Bolla</div>
+      <div class="navitem"><span class="ic">🎓</span> Schule</div>
+      <div class="navitem"><span class="ic">📅</span> Kalender</div>
+      <div class="navitem"><span class="ic">✉</span> E-Mail</div>
+      <div class="navitem"><span class="ic">☁</span> Wetter</div>
+      <div class="navitem"><span class="ic">⚙</span> System Info</div>
     </nav>
-    <div class="sidebar-footer">STATUS: ONLINE<br>UPTIME 14T 03H</div>
+    <div class="sidebar-foot">
+      <span class="status-dot"></span>ALLE SYSTEME ONLINE
+      <div class="barwrap"><div class="bar"></div></div>
+    </div>
   </aside>
 
   <div class="main">
     <div class="topbar">
-      <h1>Dashboard</h1>
-      <div class="clock">20:14</div>
+      <h2>Dashboard<small>ÜBERSICHT · ECHTZEIT-TELEMETRIE</small></h2>
+      <div class="clock">
+        <div class="time">20:14</div>
+        <div class="date">DO · 20.08.2026</div>
+      </div>
     </div>
 
     <div class="content">
 
-      <div class="card ram">
-        <div class="card-label">Arbeitsspeicher</div>
-        <div class="card-value">34%</div>
-        <div class="bar"><div class="bar-fill"></div></div>
+      <div class="card">
+        <div class="card-head">
+          <span class="card-label">Arbeitsspeicher</span>
+          <span class="card-icon">🧠</span>
+        </div>
+        <div class="card-value cyan">34%</div>
         <div class="card-sub">5,4 GB / 16 GB belegt</div>
+        <div class="meter"><i style="width:34%; background:var(--cyan); color:var(--cyan);"></i></div>
       </div>
 
-      <div class="card cpu">
-        <div class="card-label">Prozessor</div>
-        <div class="card-value">12%</div>
-        <div class="bar"><div class="bar-fill"></div></div>
+      <div class="card">
+        <div class="card-head">
+          <span class="card-label">Prozessor</span>
+          <span class="card-icon">⚡</span>
+        </div>
+        <div class="card-value magenta">12%</div>
         <div class="card-sub">4 Kerne · 38°C</div>
+        <div class="meter"><i style="width:12%; background:var(--magenta); color:var(--magenta);"></i></div>
       </div>
 
-      <div class="card mail wide">
-        <div class="card-label">Neue E-Mails</div>
-        <div class="card-value">3</div>
-        <div class="mail-list">
-          <div class="mail-item">Robin — Famulatur Tansania Update</div>
-          <div class="mail-item">itslearning — Kursnachricht 7b</div>
-          <div class="mail-item">DistroKid — Auszahlung verfügbar</div>
+      <div class="card">
+        <div class="card-head">
+          <span class="card-label">Posteingang</span>
+          <span class="card-icon">✉</span>
         </div>
+        <div class="card-value amber">3<span style="font-size:16px; color:var(--dim);"> neu</span></div>
+        <ul class="mail-list">
+          <li><span class="who">Damian Fölsch</span><span class="when">18:02</span></li>
+          <li><span class="who">Buhl Data Service</span><span class="when">17:41</span></li>
+          <li><span class="who">Lessing-Gymnasium</span><span class="when">16:20</span></li>
+        </ul>
       </div>
 
-      <div class="card weather wide">
-        <div class="card-label">Wetter</div>
+      <div class="card">
+        <div class="card-head">
+          <span class="card-label">Wetter · Hamburg</span>
+          <span class="card-icon">🌤</span>
+        </div>
         <div class="weather-row">
-          <div class="card-value">18°C</div>
-          <div class="weather-city">Hamburg</div>
+          <span class="wicon">🌤</span>
+          <span class="temp">18°C</span>
         </div>
-        <div class="card-sub">Bewölkt · Wind 14 km/h · Regen 20%</div>
+        <div class="weather-details">
+          <div><b>62%</b>Luftfeuchte</div>
+          <div><b>14 km/h</b>Wind</div>
+          <div><b>21°C</b>Max heute</div>
+        </div>
       </div>
 
-    </div>
+      <div class="card wide">
+        <div class="card-head">
+          <span class="card-label">Kalender · Nächste Termine</span>
+          <span class="card-icon">📅</span>
+        </div>
+        <ul class="mail-list">
+          <li><span class="who">Sport — Gesundheitszentrum</span><span class="when">Heute 19:30</span></li>
+          <li><span class="who">EDV 7b — Praktikum MS-Konto</span><span class="when">Morgen 09:40</span></li>
+          <li><span class="who">Tanzkurs „Die 3"</span><span class="when">So 13.09. · 15:00</span></li>
+        </ul>
+      </div>
 
-    <div class="footer-strip">
-      <span>MISSION CONTROL v2 · <b>bolla.chrismandel.de</b></span>
-      <span>LETZTES UPDATE: <b>VOR 6 SEK</b></span>
+      <div class="card">
+        <div class="card-head">
+          <span class="card-label">System</span>
+          <span class="card-icon">🛰</span>
+        </div>
+        <div class="card-value cyan">ONLINE</div>
+        <div class="card-sub"><span class="status-dot"></span>Tunnel aktiv · 12 Tage Uptime</div>
+      </div>
+
     </div>
   </div>
 

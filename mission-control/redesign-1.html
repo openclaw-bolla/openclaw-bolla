@@ -2,316 +2,465 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Mission Control — Skizzenblock</title>
+<title>Mission Control — Notizbuch</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  html, body {
-    height: 100%;
-    font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive, sans-serif;
-    background:
-      repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(120,90,50,0.08) 28px),
-      radial-gradient(circle at 15% 20%, rgba(255,255,255,0.4), transparent 60%),
-      #f4ecd8;
-    color: #4a3c2a;
+  :root{
+    --paper:#f4e8d0;
+    --paper-dark:#ecdcb8;
+    --ink:#4a3728;
+    --ink-soft:#6b5744;
+    --accent:#c17f3e;
+    --accent-2:#a8562f;
+    --tape:#e8c39e;
+    --tape-2:#d9a5c9;
+    --tape-3:#a3c9a8;
+    --line:#c9b48f;
+    --good:#5b8a5b;
+    --warn:#c17f3e;
+    --bad:#b3543f;
+    --shadow: 4px 6px 0px rgba(74,55,40,0.18);
   }
 
-  body {
-    display: flex;
-    min-height: 100vh;
+  *{box-sizing:border-box;}
+
+  html,body{
+    margin:0;padding:0;
+    height:100%;
+    font-family:'Segoe Print','Bradley Hand','Comic Sans MS',cursive,sans-serif;
+    color:var(--ink);
+    background-color:var(--paper);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(180,150,100,0.06) 0px, rgba(180,150,100,0.06) 1px, transparent 1px, transparent 28px),
+      radial-gradient(circle at 15% 20%, rgba(255,255,255,0.35), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(120,90,50,0.08), transparent 45%);
   }
 
-  /* ---------- SIDEBAR ---------- */
-  .sidebar {
-    width: 220px;
-    flex-shrink: 0;
-    background:
-      repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(80,55,25,0.10) 28px),
-      #e3cfa4;
-    border-right: 3px dashed #b08d55;
-    position: relative;
-    padding: 28px 0 28px 26px;
+  .app{
+    display:flex;
+    min-height:100vh;
   }
 
-  .sidebar::before {
-    content: "";
-    position: absolute;
-    top: 0; left: 8px; bottom: 0;
-    width: 14px;
-    background-image: radial-gradient(circle, #f4ecd8 4px, transparent 5px);
-    background-size: 14px 34px;
-    background-repeat: repeat-y;
-    background-position: 0 20px;
-    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25));
+  /* ===== SIDEBAR ===== */
+  .sidebar{
+    width:230px;
+    flex-shrink:0;
+    background:var(--paper-dark);
+    border-right:3px dashed var(--line);
+    padding:26px 16px;
+    position:relative;
+  }
+  .sidebar::before{
+    content:"";
+    position:absolute;
+    top:0;right:-14px;
+    width:14px;height:100%;
+    background-image: repeating-radial-gradient(circle at 7px 0px, transparent 0px, transparent 5px, var(--paper) 6px);
+    background-size:14px 24px;
+    opacity:0.5;
+  }
+  .logo{
+    font-size:26px;
+    font-weight:bold;
+    color:var(--accent-2);
+    transform:rotate(-2deg);
+    margin-bottom:4px;
+    text-shadow:1px 1px 0 rgba(0,0,0,0.05);
+  }
+  .logo .paw{ font-size:20px; }
+  .logo-sub{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-bottom:28px;
+    border-bottom:2px solid var(--line);
+    padding-bottom:16px;
+    transform:rotate(-1deg);
+  }
+  nav ul{
+    list-style:none;
+    margin:0;padding:0;
+  }
+  nav li{
+    margin-bottom:8px;
+  }
+  nav a{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    text-decoration:none;
+    color:var(--ink);
+    font-size:16px;
+    padding:9px 12px;
+    border-radius:10px 14px 12px 16px / 12px 10px 16px 12px;
+    transition:transform .12s ease, background .12s ease;
+    border:2px solid transparent;
+  }
+  nav a:hover{
+    transform:rotate(-1deg) translateX(2px);
+    background:rgba(193,127,62,0.12);
+    border:2px dashed var(--line);
+  }
+  nav li.active a{
+    background:var(--accent);
+    color:#fff8ec;
+    border:2px solid var(--accent-2);
+    box-shadow:var(--shadow);
+    transform:rotate(-1deg);
+  }
+  nav .icon{
+    font-size:18px;
+    width:22px;
+    text-align:center;
   }
 
-  .brand {
-    font-size: 26px;
-    font-weight: bold;
-    color: #a83e2c;
-    transform: rotate(-2deg);
-    margin-bottom: 6px;
-    padding-left: 8px;
+  .sidebar-footer{
+    position:absolute;
+    bottom:22px;
+    left:16px;
+    right:16px;
+    font-size:12px;
+    color:var(--ink-soft);
+    text-align:center;
+    opacity:0.75;
+    transform:rotate(-1deg);
   }
 
-  .brand span {
-    display: block;
-    font-size: 13px;
-    color: #7a6a4e;
-    transform: rotate(1deg);
-    margin-top: -2px;
+  /* ===== MAIN ===== */
+  .main{
+    flex:1;
+    padding:0;
+    min-width:0;
   }
 
-  nav {
-    margin-top: 34px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding-left: 8px;
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:22px 34px;
+    border-bottom:3px dashed var(--line);
+    background:linear-gradient(180deg, rgba(255,255,255,0.35), transparent);
+  }
+  .topbar h1{
+    margin:0;
+    font-size:30px;
+    color:var(--accent-2);
+    transform:rotate(-1deg);
+    position:relative;
+  }
+  .topbar h1::after{
+    content:"";
+    position:absolute;
+    left:-4px;bottom:-4px;
+    width:112%;
+    height:10px;
+    background:var(--tape-3);
+    opacity:0.55;
+    z-index:-1;
+    transform:rotate(1deg);
+  }
+  .clock{
+    font-size:24px;
+    font-weight:bold;
+    background:#fff8ec;
+    border:2px solid var(--ink);
+    border-radius:16px 8px 18px 10px / 10px 16px 8px 20px;
+    padding:8px 20px;
+    box-shadow:var(--shadow);
+    transform:rotate(2deg);
+  }
+  .clock .date{
+    display:block;
+    font-size:12px;
+    font-weight:normal;
+    color:var(--ink-soft);
+    text-align:center;
   }
 
-  nav a {
-    text-decoration: none;
-    color: #4a3c2a;
-    font-size: 17px;
-    padding: 9px 14px;
-    border-radius: 14px 8px 16px 6px / 10px 14px 8px 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    transform: rotate(-0.4deg);
-    transition: transform .15s ease;
-    border: 2px solid transparent;
+  .content{
+    padding:30px 34px 50px;
   }
 
-  nav a:hover { transform: rotate(0.6deg) scale(1.02); }
-
-  nav a.active {
-    background: #f4ecd8;
-    border: 2px dashed #a83e2c;
-    color: #a83e2c;
-    font-weight: bold;
-    box-shadow: 2px 3px 0 rgba(80,55,25,0.15);
+  .greeting{
+    font-size:17px;
+    color:var(--ink-soft);
+    margin:0 0 26px 4px;
+    transform:rotate(-0.4deg);
   }
 
-  nav a .ic { font-size: 18px; }
-
-  /* ---------- MAIN ---------- */
-  .main {
-    flex: 1;
-    padding: 22px 34px 40px;
-    position: relative;
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(230px,1fr));
+    gap:24px;
   }
 
-  .topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    border-bottom: 3px dashed #b08d55;
-    padding-bottom: 12px;
-    margin-bottom: 30px;
+  .card{
+    background:#fdf6e8;
+    border:2px solid var(--ink);
+    border-radius:18px 10px 20px 12px / 12px 20px 10px 18px;
+    padding:20px 22px;
+    box-shadow:var(--shadow);
+    position:relative;
+    transition:transform .15s ease;
+  }
+  .card:nth-child(odd){ transform:rotate(-0.8deg); }
+  .card:nth-child(even){ transform:rotate(0.9deg); }
+  .card:hover{ transform:rotate(0deg) translateY(-3px); }
+
+  .tape{
+    position:absolute;
+    top:-14px;
+    width:70px;
+    height:26px;
+    opacity:0.85;
+    box-shadow:0 2px 3px rgba(0,0,0,0.12);
+  }
+  .card:nth-child(1) .tape{ left:24px; background:var(--tape); transform:rotate(-6deg); }
+  .card:nth-child(2) .tape{ left:30px; background:var(--tape-2); transform:rotate(5deg); }
+  .card:nth-child(3) .tape{ left:20px; background:var(--tape-3); transform:rotate(-4deg); }
+  .card:nth-child(4) .tape{ left:26px; background:var(--tape); transform:rotate(6deg); }
+  .card:nth-child(5) .tape{ left:24px; background:var(--tape-2); transform:rotate(-5deg); }
+  .card:nth-child(6) .tape{ left:24px; background:var(--tape-3); transform:rotate(4deg); }
+
+  .card-head{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .card-icon{
+    font-size:24px;
+  }
+  .card-title{
+    font-size:16px;
+    font-weight:bold;
+    color:var(--ink);
   }
 
-  .topbar h1 {
-    font-size: 32px;
-    color: #4a3c2a;
-    transform: rotate(-1deg);
+  .metric{
+    font-size:38px;
+    font-weight:bold;
+    color:var(--accent-2);
+    line-height:1;
+  }
+  .metric-label{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-top:4px;
   }
 
-  .topbar h1 .underline {
-    display: block;
-    width: 190px;
-    height: 8px;
-    margin-top: -6px;
-    background: #f1b04c;
-    opacity: 0.55;
-    transform: rotate(-1deg);
-    border-radius: 40%;
+  .bar-track{
+    width:100%;
+    height:14px;
+    background:var(--paper-dark);
+    border:2px solid var(--ink);
+    border-radius:8px;
+    margin-top:12px;
+    overflow:hidden;
+  }
+  .bar-fill{
+    height:100%;
+    border-radius:6px 2px 6px 2px;
+    background:repeating-linear-gradient(45deg, var(--accent), var(--accent) 6px, var(--accent-2) 6px, var(--accent-2) 12px);
   }
 
-  .clock {
-    font-size: 22px;
-    background: #fff9ec;
-    border: 2px solid #4a3c2a;
-    border-radius: 50% / 45%;
-    padding: 8px 20px;
-    transform: rotate(2deg);
-    box-shadow: 3px 3px 0 rgba(80,55,25,0.2);
+  .mail-list{
+    list-style:none;
+    margin:8px 0 0;
+    padding:0;
+    font-size:13px;
+  }
+  .mail-list li{
+    padding:6px 0;
+    border-bottom:1px dashed var(--line);
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .mail-list li:last-child{ border-bottom:none; }
+  .mail-from{ color:var(--ink); font-weight:bold; }
+  .mail-time{ color:var(--ink-soft); }
+
+  .weather-row{
+    display:flex;
+    align-items:center;
+    gap:16px;
+  }
+  .weather-emoji{ font-size:46px; }
+  .weather-temp{ font-size:34px; font-weight:bold; color:var(--accent-2); }
+  .weather-city{ font-size:13px; color:var(--ink-soft); }
+  .weather-detail{
+    margin-top:10px;
+    font-size:12px;
+    color:var(--ink-soft);
+    display:flex;
+    gap:14px;
   }
 
-  /* ---------- WIDGET GRID ---------- */
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 26px;
+  .badge{
+    display:inline-block;
+    background:var(--good);
+    color:#fff;
+    font-size:11px;
+    padding:2px 9px;
+    border-radius:10px;
+    margin-left:6px;
+    transform:rotate(-2deg);
+  }
+  .badge.warn{ background:var(--warn); }
+
+  .sys-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+    margin-top:8px;
+    color:var(--ink-soft);
+  }
+  .sys-row b{ color:var(--ink); }
+
+  .scribble-underline{
+    text-decoration: underline wavy var(--accent);
+    text-decoration-thickness: 1.5px;
   }
 
-  .card {
-    background: #fffaf0;
-    border: 2.5px solid #4a3c2a;
-    border-radius: 12px 18px 10px 20px / 18px 10px 22px 8px;
-    padding: 20px 20px 18px;
-    position: relative;
-    box-shadow: 4px 5px 0 rgba(80,55,25,0.18);
+  .sticky-note{
+    margin-top:28px;
+    max-width:320px;
+    background:#fff2b8;
+    border:2px solid #cbb35a;
+    border-radius:2px 14px 4px 12px / 10px 4px 14px 2px;
+    padding:16px 18px;
+    box-shadow:5px 6px 0 rgba(74,55,40,0.15);
+    transform:rotate(-2deg);
+    font-size:14px;
+    position:relative;
   }
-
-  .card:nth-child(1) { transform: rotate(-1.4deg); }
-  .card:nth-child(2) { transform: rotate(1deg); }
-  .card:nth-child(3) { transform: rotate(-0.6deg); }
-  .card:nth-child(4) { transform: rotate(1.6deg); }
-
-  .tape {
-    position: absolute;
-    top: -14px;
-    left: 50%;
-    width: 70px;
-    height: 26px;
-    transform: translateX(-50%) rotate(-4deg);
-    opacity: 0.75;
-    border-radius: 2px;
-  }
-
-  .card:nth-child(1) .tape { background: #f1b04c; }
-  .card:nth-child(2) .tape { background: #9fb8a8; }
-  .card:nth-child(3) .tape { background: #d46a4a; transform: translateX(-50%) rotate(3deg); }
-  .card:nth-child(4) .tape { background: #8bb0d1; }
-
-  .card h3 {
-    font-size: 18px;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .card .value {
-    font-size: 34px;
-    font-weight: bold;
-    color: #a83e2c;
-  }
-
-  .card .sub {
-    font-size: 14px;
-    color: #7a6a4e;
-    margin-top: 4px;
-  }
-
-  .bar-track {
-    margin-top: 14px;
-    width: 100%;
-    height: 16px;
-    background: #ecdfc2;
-    border: 2px solid #4a3c2a;
-    border-radius: 10px;
-    overflow: hidden;
-    position: relative;
-  }
-
-  .bar-fill {
-    height: 100%;
-    border-radius: 10px 4px 4px 10px;
-    background-image: repeating-linear-gradient(
-      115deg, currentColor 0 6px, transparent 6px 12px
-    );
-  }
-
-  .bar-fill.ram { width: 34%; color: #f1b04c; background-color: #f1b04c; }
-  .bar-fill.cpu { width: 12%; color: #9fb8a8; background-color: #9fb8a8; }
-
-  .mail-list {
-    list-style: none;
-    margin-top: 8px;
-    font-size: 14.5px;
-  }
-
-  .mail-list li {
-    padding: 6px 0;
-    border-bottom: 1.5px dotted #c9b48c;
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-  }
-
-  .mail-list li:last-child { border-bottom: none; }
-  .dot { color: #a83e2c; font-size: 20px; line-height: 0; }
-
-  .weather-icon { font-size: 44px; }
-
-  .footnote {
-    margin-top: 34px;
-    font-size: 13px;
-    color: #8a7a5c;
-    text-align: center;
-    transform: rotate(-0.5deg);
+  .sticky-note::before{
+    content:"📌";
+    position:absolute;
+    top:-14px;left:-10px;
+    font-size:22px;
+    transform:rotate(-20deg);
   }
 </style>
 </head>
 <body>
+<div class="app">
 
-  <div class="sidebar">
-    <div class="brand">🐾 Bolla<span>Mission Control</span></div>
+  <aside class="sidebar">
+    <div class="logo">🐾 <span class="paw">Bolla</span></div>
+    <div class="logo-sub">Mission Control</div>
+
     <nav>
-      <a href="#" class="active"><span class="ic">🏠</span> Dashboard</a>
-      <a href="#"><span class="ic">🐾</span> Bolla</a>
-      <a href="#"><span class="ic">🎓</span> Schule</a>
-      <a href="#"><span class="ic">📅</span> Kalender</a>
-      <a href="#"><span class="ic">✉️</span> E-Mail</a>
-      <a href="#"><span class="ic">⛅</span> Wetter</a>
-      <a href="#"><span class="ic">🖥️</span> System Info</a>
+      <ul>
+        <li class="active"><a href="#"><span class="icon">🏠</span> Dashboard</a></li>
+        <li><a href="#"><span class="icon">🐾</span> Bolla</a></li>
+        <li><a href="#"><span class="icon">🎓</span> Schule</a></li>
+        <li><a href="#"><span class="icon">📅</span> Kalender</a></li>
+        <li><a href="#"><span class="icon">✉️</span> E-Mail</a></li>
+        <li><a href="#"><span class="icon">☀️</span> Wetter</a></li>
+        <li><a href="#"><span class="icon">🖥️</span> System Info</a></li>
+      </ul>
     </nav>
-  </div>
 
-  <div class="main">
+    <div class="sidebar-footer">— handgeführt seit März 2026 —</div>
+  </aside>
+
+  <main class="main">
     <div class="topbar">
-      <h1>Dashboard<span class="underline"></span></h1>
-      <div class="clock">🕗 20:14</div>
+      <h1>Dashboard</h1>
+      <div class="clock">20:14<span class="date">Do, 20. August</span></div>
     </div>
 
-    <div class="grid">
+    <div class="content">
+      <p class="greeting">Guten Abend, Chris — hier ist dein Überblick für heute. <span class="scribble-underline">Alles im grünen Bereich.</span></p>
 
-      <div class="card">
-        <div class="tape"></div>
-        <h3>🖥️ RAM</h3>
-        <div class="value">34%</div>
-        <div class="sub">5,4 GB von 16 GB belegt</div>
-        <div class="bar-track"><div class="bar-fill ram"></div></div>
-      </div>
+      <div class="grid">
 
-      <div class="card">
-        <div class="tape"></div>
-        <h3>⚙️ CPU</h3>
-        <div class="value">12%</div>
-        <div class="sub">Alles ruhig unterwegs</div>
-        <div class="bar-track"><div class="bar-fill cpu"></div></div>
-      </div>
+        <div class="card">
+          <div class="tape"></div>
+          <div class="card-head">
+            <span class="card-icon">🧠</span>
+            <span class="card-title">Arbeitsspeicher (RAM)</span>
+          </div>
+          <div class="metric">34%</div>
+          <div class="metric-label">5,4 GB von 16 GB belegt</div>
+          <div class="bar-track"><div class="bar-fill" style="width:34%"></div></div>
+        </div>
 
-      <div class="card">
-        <div class="tape"></div>
-        <h3>✉️ Neue Mails</h3>
-        <div class="value">3</div>
-        <ul class="mail-list">
-          <li><span><span class="dot">•</span> Robin: Update Famulatur</span> <span>11:32</span></li>
-          <li><span><span class="dot">•</span> itslearning: Kursnachricht</span> <span>09:05</span></li>
-          <li><span><span class="dot">•</span> Reni: Einkaufsliste 🛒</span> <span>08:47</span></li>
-        </ul>
-      </div>
+        <div class="card">
+          <div class="tape"></div>
+          <div class="card-head">
+            <span class="card-icon">⚙️</span>
+            <span class="card-title">Prozessor (CPU)</span>
+          </div>
+          <div class="metric">12%</div>
+          <div class="metric-label">ruhig unterwegs, 6 Kerne aktiv</div>
+          <div class="bar-track"><div class="bar-fill" style="width:12%"></div></div>
+        </div>
 
-      <div class="card">
-        <div class="tape"></div>
-        <h3>⛅ Wetter Hamburg</h3>
-        <div style="display:flex; align-items:center; gap:14px;">
-          <div class="weather-icon">🌤️</div>
-          <div>
-            <div class="value" style="font-size:30px;">18°C</div>
-            <div class="sub">Leicht bewölkt, Wind 12 km/h</div>
+        <div class="card">
+          <div class="tape"></div>
+          <div class="card-head">
+            <span class="card-icon">✉️</span>
+            <span class="card-title">E-Mail-Postfach</span>
+            <span class="badge">3 neu</span>
+          </div>
+          <ul class="mail-list">
+            <li><span class="mail-from">Robin Mandel</span><span class="mail-time">19:42</span></li>
+            <li><span class="mail-from">Lessing-Gymnasium</span><span class="mail-time">17:05</span></li>
+            <li><span class="mail-from">DistroKid</span><span class="mail-time">14:21</span></li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="tape"></div>
+          <div class="card-head">
+            <span class="card-icon">🌤️</span>
+            <span class="card-title">Wetter — Hamburg</span>
+          </div>
+          <div class="weather-row">
+            <span class="weather-emoji">⛅</span>
+            <div>
+              <div class="weather-temp">18°C</div>
+              <div class="weather-city">leicht bewölkt</div>
+            </div>
+          </div>
+          <div class="weather-detail">
+            <span>💧 62%</span>
+            <span>💨 11 km/h</span>
+            <span>↓ 14°C heute Nacht</span>
           </div>
         </div>
+
+        <div class="card">
+          <div class="tape"></div>
+          <div class="card-head">
+            <span class="card-icon">📅</span>
+            <span class="card-title">Nächster Termin</span>
+          </div>
+          <div class="metric" style="font-size:22px;">Sport, 20:30</div>
+          <div class="metric-label">Gesundheitszentrum — noch 16 Min.</div>
+        </div>
+
+        <div class="card">
+          <div class="tape"></div>
+          <div class="card-head">
+            <span class="card-icon">🖥️</span>
+            <span class="card-title">System Info</span>
+            <span class="badge">online</span>
+          </div>
+          <div class="sys-row"><span>Uptime</span><b>4 Tage 6 Std.</b></div>
+          <div class="sys-row"><span>Speicher frei</span><b>212 GB</b></div>
+          <div class="sys-row"><span>Tunnel</span><b>verbunden</b></div>
+        </div>
+
       </div>
 
+      <div class="sticky-note">
+        Erinnerung: Tagesnotiz nicht vergessen, bevor's "Ciao" heißt! 🐾
+      </div>
     </div>
+  </main>
 
-    <div class="footnote">— handgeschrieben von Bolla, Stand 20:14 —</div>
-  </div>
-
+</div>
 </body>
 </html>
