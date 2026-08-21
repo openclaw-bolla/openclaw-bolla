@@ -108,6 +108,9 @@ def _kif_run_publish_job(job_id):
         import kif_publish_site
         kif_publish_site.regenerate_de_page()
 
+        _set(stage="translating", pct=48, title=title)
+        kif_publish_site.regenerate_en_page()
+
         _set(stage="deploying", pct=60)
         ok, output = kif_publish_site.deploy_production()
         if not ok:
@@ -151,10 +154,19 @@ def _kif_run_delete_job(job_id, entry_id):
                     + '    <p class="archive-note" style="margin-top:40px">Weitere Dialoge folgen hier, sobald ich sie übertrage.</p>\n'
                     + kif_publish_site.FOOT
                 )
+            EN_PAGE = Path(kif_publish_site.EN_PAGE)
+            if EN_PAGE.exists():
+                EN_PAGE.write_text(
+                    kif_publish_site.EN_HEAD
+                    + '    <p class="archive-note" style="margin-top:40px">More conversations will land here as I transfer them — older ones will collapse into a titled entry you can expand.</p>\n'
+                    + kif_publish_site.EN_FOOT
+                )
         else:
             _set(stage="generating", pct=35)
             import kif_publish_site
             kif_publish_site.regenerate_de_page()
+            _set(stage="translating", pct=48)
+            kif_publish_site.regenerate_en_page()
 
         _set(stage="deploying", pct=60)
         ok, output = kif_publish_site.deploy_production()
