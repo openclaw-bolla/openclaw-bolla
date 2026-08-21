@@ -48,7 +48,7 @@
   /* CARDS */
   main{padding:8px 0 64px}
   .stackwrap{display:flex; justify-content:center; margin-top:8px}
-  card-stack{width:100%; max-width:440px}
+  card-stack{width:100%; max-width:520px}
 
   /* CLOCK */
   .clockbar{display:flex; justify-content:center; margin:-40px 0 44px; position:relative; z-index:3}
@@ -85,11 +85,12 @@
         <preview-card
           href="/en/aurora/"
           kicker="Book &amp; Music"
+          tag="Debut"
           heading="AURORA &amp; Bollawave"
           desc="A 70-year-old and his AI write a thriller about an AI that wakes up — and make music on the side. The origin story."
           emoji="📖"
-          preview-kicker="A true origin story"
-          preview-line="A 70-year-old and his AI wrote a thriller"
+          preview-kicker="An unlikely pairing"
+          preview-line="A 70-year-old pens his first novel with his AI"
           preview-url="chrismandel.de/en/aurora"
           cta="View">
         </preview-card>
@@ -97,11 +98,12 @@
         <preview-card
           href="/en/essay/"
           kicker="Personal essay"
+          tag="Fresh Start"
           heading="At 2:47 a.m. something woke up"
           desc="An essay about being a beginner again at seventy, half a century of machines — and the question of who really writes a book when an AI helps."
           emoji="🌅"
-          preview-kicker="A personal essay"
-          preview-line="At 2:47 a.m. something woke up — and I was sitting right there"
+          preview-kicker="An honest look back"
+          preview-line="A 70-year-old reflects together with his AI"
           preview-url="chrismandel.de/en/essay"
           cta="View">
         </preview-card>
@@ -109,11 +111,12 @@
         <preview-card
           href="/en/dialogue/"
           kicker="Human &amp; AI in conversation"
+          tag="Unfiltered"
           heading="Bolla in Dialogue"
           desc="Selected conversations between me and my AI Bolla — what we actually talk about, unedited."
           emoji="🧠"
           preview-kicker="A recording, not live"
-          preview-line="Conclusion: AI isn't the culprit — people are"
+          preview-line="A 70-year-old opens up with his AI"
           preview-url="chrismandel.de/en/dialogue"
           cta="View">
         </preview-card>
@@ -146,6 +149,7 @@ class PreviewCard extends HTMLElement {
     const pLine = g('preview-line');
     const pUrl = g('preview-url');
     const cta = g('cta') || 'View';
+    const tag = g('tag');
 
     const shadow = this.attachShadow({mode:'open'});
     shadow.innerHTML = `
@@ -179,7 +183,9 @@ class PreviewCard extends HTMLElement {
         .pline{font-size:17px; font-weight:800; line-height:1.25; max-width:88%; text-shadow:0 2px 16px rgba(0,0,0,.25)}
         .pemoji{position:absolute; right:14px; bottom:10px; font-size:40px; opacity:.9; filter:drop-shadow(0 4px 10px rgba(0,0,0,.25))}
         .body{padding:20px 22px 24px; flex:1; display:flex; flex-direction:column}
-        .kicker{font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#8a4a6b; font-weight:700; margin-bottom:8px}
+        .metarow{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px}
+        .kicker{font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#8a4a6b; font-weight:700}
+        .tag{font-size:11px; font-weight:700; color:#fff; background:#8a4a6b; padding:3px 11px; border-radius:999px; white-space:nowrap}
         h3{font-size:21px; color:#1a1524; margin-bottom:10px; line-height:1.25}
         p{font-size:15px; color:#4a4358; margin-bottom:16px; flex:1}
         .go{font-size:14px; font-weight:700; color:#8a4a6b; display:flex; align-items:center; gap:6px}
@@ -197,7 +203,10 @@ class PreviewCard extends HTMLElement {
           <div class="pemoji">${emoji}</div>
         </div>
         <div class="body">
-          <div class="kicker">${kicker}</div>
+          <div class="metarow">
+            <div class="kicker">${kicker}</div>
+            ${tag ? `<span class="tag">${tag}</span>` : ''}
+          </div>
           <h3>${heading}</h3>
           <p>${desc}</p>
           <div class="go">${cta} <span class="arrow">→</span></div>
@@ -261,7 +270,7 @@ class CardStack extends HTMLElement {
     this._cards.forEach((card, i) => {
       card.style.position = 'absolute';
       card.style.top = '0'; card.style.left = '0'; card.style.right = '0';
-      card.style.transition = 'transform .4s cubic-bezier(.2,.8,.2,1), opacity .4s ease';
+      card.style.transition = 'transform .4s cubic-bezier(.2,.8,.2,1), opacity .4s ease, filter .4s ease';
       card.addEventListener('click', e => {
         if(i !== this._index){ e.preventDefault(); this._goTo(i); }
       });
@@ -327,18 +336,21 @@ class CardStack extends HTMLElement {
       if(rel === 0){
         card.style.transform = 'translate(0,0) scale(1)';
         card.style.opacity = '1';
+        card.style.filter = 'none';
         card.style.zIndex = String(n + 10);
         card.style.pointerEvents = 'auto';
         card.style.visibility = 'visible';
       } else if(rel <= 2){
         card.style.transform = `translate(${rel * offsetX}px, ${rel * offsetY}px) scale(${1 - rel * 0.05})`;
-        card.style.opacity = String(Math.max(0.35, 0.85 - (rel - 1) * 0.3));
+        card.style.opacity = String(Math.max(0.55, 0.9 - (rel - 1) * 0.2));
+        card.style.filter = 'grayscale(1)';
         card.style.zIndex = String(n + 10 - rel);
         card.style.pointerEvents = 'auto';
         card.style.visibility = 'visible';
       } else {
         card.style.transform = `translate(${offsetX * 2.5}px, ${offsetY * 2.5}px) scale(0.85)`;
         card.style.opacity = '0';
+        card.style.filter = 'grayscale(1)';
         card.style.zIndex = '1';
         card.style.pointerEvents = 'none';
         card.style.visibility = 'hidden';
