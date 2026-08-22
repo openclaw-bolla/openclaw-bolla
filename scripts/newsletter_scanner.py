@@ -7,8 +7,9 @@ from datetime import datetime, timezone, timedelta
 sys.path.insert(0, str(Path(__file__).parent))
 
 WORKSPACE      = os.environ.get("BOLLA_WORKSPACE", os.path.expanduser("~/workspace"))
-WATCHLIST_FILE = Path(WORKSPACE) / "config" / "newsletter_watchlist.json"
-RESULTS_FILE   = Path(WORKSPACE) / "cache"  / "newsletter_results.json"
+WATCHLIST_FILE   = Path(WORKSPACE) / "config" / "newsletter_watchlist.json"
+RESULTS_FILE     = Path(WORKSPACE) / "cache"  / "newsletter_results.json"
+ALDI_OFFERS_FILE = Path(WORKSPACE) / "cache"  / "aldi_offers.json"
 
 STORES = [
     {"name": "Aldi Nord", "color": "#1565C0", "text": "#fff",
@@ -204,16 +205,64 @@ Kein Text außerhalb des JSON-Arrays."""
         print(f"Claude Fehler: {e}")
         return []
 
+def extract_aldi_offers(mail):
+    """Lässt Claude ALLE Produkte (nicht nur Watchlist-Treffer) aus einem Aldi-Nord-Newsletter
+    strukturiert extrahieren, damit sie in der Angebots-Suche durchsuchbar sind
+    (Aldi taucht bei marktguru.de nicht auf — eigene Datenquelle nötig)."""
+    prompt = f"""Du extrahierst ALLE beworbenen Produkte mit Preis aus einem Aldi-Nord-Newsletter für eine durchsuchbare Angebotsliste.
+
+Betreff: {mail['subject']}
+Datum: {mail['date']}
+
+Newsletter-Inhalt:
+{mail['body']}
+
+Antworte NUR mit einem JSON-Array, ein Objekt pro Produkt:
+[{{"name": "Produktname", "brand": "Marke falls erkennbar, sonst leer", "price": 1.99, "old_price": null, "valid_from": "TT.MM.", "valid_to": "TT.MM."}}]
+
+Preise als Zahl mit Punkt (z.B. 2.49), kein Währungszeichen, kein Komma. "old_price" nur setzen wenn ein Streichpreis genannt wird, sonst null. Nur Produkte mit erkennbarem Preis aufnehmen. Kein Text außerhalb des JSON-Arrays."""
+    try:
+        r = subprocess.run(["claude", "-p", prompt], capture_output=True, text=True, timeout=90)
+        text = r.stdout.strip()
+        match = re.search(r'\[.*\]', text, re.DOTALL)
+        if match:
+            return json.loads(match.group())
+        return []
+    except Exception as e:
+        print(f"Claude Fehler (Aldi-Vollextraktion): {e}")
+        return []
+
+def update_aldi_offers_cache(mails):
+    """Sucht die (neueste) Aldi-Nord-Mail unter den gefundenen Newslettern und extrahiert
+    daraus die komplette Angebotsliste in cache/aldi_offers.json."""
+    aldi_mails = [m for m in mails if m["store"]["name"] == "Aldi Nord"]
+    if not aldi_mails:
+        return
+    aldi_mails.sort(key=lambda m: m["date"], reverse=True)
+    newest = aldi_mails[0]
+    print(f"Aldi-Vollextraktion: {newest['subject'][:55]}…")
+    offers = extract_aldi_offers(newest)
+    ALDI_OFFERS_FILE.write_text(json.dumps({
+        "scanned_at": datetime.now().strftime("%d.%m.%Y %H:%M"),
+        "source_subject": newest["subject"],
+        "source_date": newest["date"],
+        "offers": offers,
+    }, ensure_ascii=False, indent=2))
+    print(f"Aldi-Cache aktualisiert: {len(offers)} Artikel.")
+
 def run_scan():
     watchlist = json.loads(WATCHLIST_FILE.read_text()) if WATCHLIST_FILE.exists() else []
+    mails = fetch_outlook_newsletters() + fetch_wtnet_newsletters()
+    print(f"\n{len(mails)} Angebots-Newsletter gefunden:")
+    for m in mails:
+        print(f"  [{m['store']['name']}] {m['subject'][:55]}")
+
+    update_aldi_offers_cache(mails)
+
     if not watchlist:
-        print("Watchlist leer — nichts zu tun.")
+        print("Watchlist leer — kein Abgleich nötig.")
         results = []
     else:
-        mails = fetch_outlook_newsletters() + fetch_wtnet_newsletters()
-        print(f"\n{len(mails)} Angebots-Newsletter gefunden:")
-        for m in mails:
-            print(f"  [{m['store']['name']}] {m['subject'][:55]}")
         print(f"\nAnalysiere auf: {watchlist}\n")
         results = []
         for mail in mails:

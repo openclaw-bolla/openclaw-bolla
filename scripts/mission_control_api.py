@@ -1192,25 +1192,56 @@ NEWSLETTER_RESULTS   = Path(os.path.join(WORKSPACE, "cache/newsletter_results.js
 
 MARKTGURU_KEY = "8Kk+pmbf7TgJ9nVj2cXeA7P5zBGv8iuutVVMRfOfvNE="
 MARKTGURU_ZIP_FILE = Path(os.path.join(WORKSPACE, "config/marktguru_zip.txt"))
+ALDI_OFFERS_FILE = Path(os.path.join(WORKSPACE, "cache/aldi_offers.json"))
 
 def _marktguru_zip():
     return MARKTGURU_ZIP_FILE.read_text().strip() if MARKTGURU_ZIP_FILE.exists() else "22844"
 
+def _aldi_offer_hits(q, limit):
+    # marktguru.de führt Aldi Nord nicht (kein Drittanbieter-Prospektpartner) — eigene
+    # Datenquelle über den wöchentlichen Newsletter-Scan (newsletter_scanner.py).
+    if not ALDI_OFFERS_FILE.exists():
+        return []
+    try:
+        data = json.loads(ALDI_OFFERS_FILE.read_text())
+    except Exception:
+        return []
+    ql = q.strip().lower()
+    hits = []
+    for o in data.get("offers", []):
+        if ql in o.get("name", "").lower() or ql in o.get("brand", "").lower():
+            hits.append({
+                "store":      "Aldi Nord",
+                "brand":      o.get("brand", ""),
+                "name":       o.get("name", ""),
+                "desc":       "",
+                "price":      o.get("price"),
+                "old_price":  o.get("old_price"),
+                "unit":       "",
+                "valid_from": o.get("valid_from", ""),
+                "valid_to":   o.get("valid_to", ""),
+            })
+    return hits[:limit]
+
 def offers_search(q, limit=20):
     import urllib.request as _ur
     zip_code = _marktguru_zip()
+    aldi_hits = _aldi_offer_hits(q, limit)
+    mg_limit = max(1, limit - len(aldi_hits))
     url = (f"https://api.marktguru.de/api/v1/offers/search"
-           f"?as=web&limit={limit}&offset=0&q={urllib.parse.quote(q)}&zipCode={zip_code}")
+           f"?as=web&limit={mg_limit}&offset=0&q={urllib.parse.quote(q)}&zipCode={zip_code}")
     req = _ur.Request(url, headers={
         "x-apikey": MARKTGURU_KEY,
         "Accept": "application/json",
         "User-Agent": "Mozilla/5.0",
     })
+    mg_error = None
+    data = {}
     try:
         with _ur.urlopen(req, timeout=8) as resp:
             data = json.loads(resp.read())
     except Exception as e:
-        return {"error": str(e), "results": []}
+        mg_error = str(e)
     out = []
     for o in data.get("results", []):
         vd = o.get("validityDates", [{}])
@@ -1228,7 +1259,13 @@ def offers_search(q, limit=20):
             "valid_from": valid_from,
             "valid_to":   valid_to,
         })
-    return {"results": out, "total": data.get("filters", {}).get("retailers"), "zip": zip_code}
+    out = aldi_hits + out
+    result = {"results": out[:limit], "zip": zip_code}
+    if data:
+        result["total"] = data.get("filters", {}).get("retailers")
+    if mg_error and not out:
+        result["error"] = mg_error
+    return result
 
 def offers_set_zip(zip_code):
     z = zip_code.strip()
