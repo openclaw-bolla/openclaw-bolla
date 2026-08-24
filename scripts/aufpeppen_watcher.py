@@ -104,7 +104,7 @@ def process_one(src):
     if text:
         cmd += ["--text", text]
     else:
-        cmd += ["--ai"]  # kein Text von Chris vorgegeben -> Fable schaut sich's an und schreibt content-bezogenen Hook
+        cmd += ["--ai"]  # kein Text von Chris vorgegeben -> Opus schaut sich's an und schreibt content-bezogenen Hook
     if music:
         m = latest_song_mp3()
         if m: cmd += ["--music", m]

@@ -3149,6 +3149,97 @@ def _fetch_oktoberfest_charts():
     """Kuratierte Oktoberfest-/Wiesn-Hits — täglich 10 zufällige, Doppelungen zum Vortag vermieden."""
     return _daily_sample(_OKTOBERFEST_HITS, 10)
 
+# Kuratierter Pool international bekannter Nr.-1-Hits 1980-2026 (Chris-Wunsch 24.08.2026: mehr
+# Auswahl/Abwechslung bei den Hit-Vorschlägen als nur die aktuellen Streaming-Charts). Quelle:
+# US Billboard Hot 100 und/oder UK Official Singles Chart #1 (die zwei am breitesten anerkannten
+# "internationalen" Charts) - es gibt vor 2020 keine einzelne echte Welt-Chart, ab Billboard Global
+# 200 (Start 2020) zusätzlich global verifizierbar. Ganz aktuelle 2025/26-Nr.1s fehlen bewusst, wo
+# nicht mit Sicherheit verifizierbar (Wissensstand). "gender" = Geschlecht der/des federführenden
+# Lead-Vocals, für die 5w/5m-Tagesauswahl.
+_NO1_HITS = [
+    # --- Künstlerinnen (w) ---
+    {"title": "Physical",                          "artist": "Olivia Newton-John",  "streams": "US #1 · 1981", "gender": "w"},
+    {"title": "Total Eclipse of the Heart",         "artist": "Bonnie Tyler",         "streams": "US/UK #1 · 1983", "gender": "w"},
+    {"title": "Like a Virgin",                      "artist": "Madonna",              "streams": "US #1 · 1984", "gender": "w"},
+    {"title": "Papa Don't Preach",                  "artist": "Madonna",              "streams": "US #1 · 1986", "gender": "w"},
+    {"title": "Like a Prayer",                      "artist": "Madonna",              "streams": "US #1 · 1989", "gender": "w"},
+    {"title": "Vogue",                               "artist": "Madonna",              "streams": "US #1 · 1990", "gender": "w"},
+    {"title": "I Will Always Love You",             "artist": "Whitney Houston",      "streams": "US/UK #1 · 1992", "gender": "w"},
+    {"title": "Vision of Love",                      "artist": "Mariah Carey",         "streams": "US #1 · 1990", "gender": "w"},
+    {"title": "Fantasy",                             "artist": "Mariah Carey",         "streams": "US #1 · 1995", "gender": "w"},
+    {"title": "Believe",                             "artist": "Cher",                 "streams": "US/UK #1 · 1998", "gender": "w"},
+    {"title": "...Baby One More Time",              "artist": "Britney Spears",       "streams": "US/UK #1 · 1999", "gender": "w"},
+    {"title": "Genie in a Bottle",                   "artist": "Christina Aguilera",   "streams": "US #1 · 1999", "gender": "w"},
+    {"title": "Say My Name",                         "artist": "Destiny's Child",      "streams": "US #1 · 2000", "gender": "w"},
+    {"title": "Irreplaceable",                       "artist": "Beyoncé",              "streams": "US #1 · 2006", "gender": "w"},
+    {"title": "Single Ladies (Put a Ring on It)",    "artist": "Beyoncé",              "streams": "US #1 · 2008", "gender": "w"},
+    {"title": "Umbrella",                            "artist": "Rihanna ft. Jay-Z",    "streams": "US/UK #1 · 2007", "gender": "w"},
+    {"title": "We Found Love",                       "artist": "Rihanna ft. Calvin Harris", "streams": "US/UK #1 · 2011", "gender": "w"},
+    {"title": "Just Dance",                          "artist": "Lady Gaga",            "streams": "US #1 · 2009", "gender": "w"},
+    {"title": "Firework",                            "artist": "Katy Perry",           "streams": "US #1 · 2010", "gender": "w"},
+    {"title": "Roar",                                "artist": "Katy Perry",           "streams": "US #1 · 2013", "gender": "w"},
+    {"title": "Rolling in the Deep",                 "artist": "Adele",                "streams": "US #1 · 2011", "gender": "w"},
+    {"title": "Someone Like You",                    "artist": "Adele",                "streams": "US/UK #1 · 2011", "gender": "w"},
+    {"title": "Hello",                               "artist": "Adele",                "streams": "US/UK #1 · 2015", "gender": "w"},
+    {"title": "Shake It Off",                        "artist": "Taylor Swift",         "streams": "US #1 · 2014", "gender": "w"},
+    {"title": "Blank Space",                         "artist": "Taylor Swift",         "streams": "US #1 · 2014", "gender": "w"},
+    {"title": "Look What You Made Me Do",            "artist": "Taylor Swift",         "streams": "US #1 · 2017", "gender": "w"},
+    {"title": "Anti-Hero",                           "artist": "Taylor Swift",         "streams": "US #1 · 2022", "gender": "w"},
+    {"title": "Bad Guy",                             "artist": "Billie Eilish",        "streams": "US #1 · 2019", "gender": "w"},
+    {"title": "Thank U, Next",                       "artist": "Ariana Grande",        "streams": "US #1 · 2018", "gender": "w"},
+    {"title": "7 Rings",                             "artist": "Ariana Grande",        "streams": "US #1 · 2019", "gender": "w"},
+    {"title": "New Rules",                           "artist": "Dua Lipa",             "streams": "UK #1 · 2017", "gender": "w"},
+    {"title": "Flowers",                             "artist": "Miley Cyrus",          "streams": "US #1 · 2023", "gender": "w"},
+    {"title": "Wrecking Ball",                       "artist": "Miley Cyrus",          "streams": "US #1 · 2013", "gender": "w"},
+    # --- Künstler (m) ---
+    {"title": "Billie Jean",                         "artist": "Michael Jackson",      "streams": "US #1 · 1983", "gender": "m"},
+    {"title": "Beat It",                              "artist": "Michael Jackson",      "streams": "US #1 · 1983", "gender": "m"},
+    {"title": "Black or White",                       "artist": "Michael Jackson",      "streams": "US #1 · 1991", "gender": "m"},
+    {"title": "Careless Whisper",                     "artist": "George Michael",       "streams": "US/UK #1 · 1985", "gender": "m"},
+    {"title": "Faith",                                "artist": "George Michael",       "streams": "US #1 · 1987", "gender": "m"},
+    {"title": "Every Breath You Take",                "artist": "The Police",           "streams": "US/UK #1 · 1983", "gender": "m"},
+    {"title": "I Want to Know What Love Is",          "artist": "Foreigner",            "streams": "US #1 · 1985", "gender": "m"},
+    {"title": "Kiss From a Rose",                     "artist": "Seal",                 "streams": "US #1 · 1995", "gender": "m"},
+    {"title": "End of the Road",                      "artist": "Boyz II Men",          "streams": "US #1 · 1992", "gender": "m"},
+    {"title": "I'll Make Love to You",                "artist": "Boyz II Men",          "streams": "US #1 · 1994", "gender": "m"},
+    {"title": "MMMBop",                               "artist": "Hanson",               "streams": "US #1 · 1997", "gender": "m"},
+    {"title": "I Want It That Way",                   "artist": "Backstreet Boys",      "streams": "UK #1 · 1999", "gender": "m"},
+    {"title": "In da Club",                           "artist": "50 Cent",              "streams": "US #1 · 2003", "gender": "m"},
+    {"title": "Yeah!",                                "artist": "Usher ft. Lil Jon & Ludacris", "streams": "US #1 · 2004", "gender": "m"},
+    {"title": "SexyBack",                             "artist": "Justin Timberlake",    "streams": "US #1 · 2006", "gender": "m"},
+    {"title": "Can't Stop the Feeling!",              "artist": "Justin Timberlake",    "streams": "US #1 · 2016", "gender": "m"},
+    {"title": "Uptown Funk",                          "artist": "Mark Ronson ft. Bruno Mars", "streams": "US/UK #1 · 2015", "gender": "m"},
+    {"title": "Just the Way You Are",                 "artist": "Bruno Mars",           "streams": "US #1 · 2010", "gender": "m"},
+    {"title": "Grenade",                              "artist": "Bruno Mars",           "streams": "US #1 · 2011", "gender": "m"},
+    {"title": "That's What I Like",                   "artist": "Bruno Mars",           "streams": "US #1 · 2017", "gender": "m"},
+    {"title": "Shape of You",                         "artist": "Ed Sheeran",           "streams": "US/UK #1 · 2017", "gender": "m"},
+    {"title": "Perfect",                              "artist": "Ed Sheeran",           "streams": "UK #1 · 2017", "gender": "m"},
+    {"title": "Blinding Lights",                      "artist": "The Weeknd",           "streams": "US #1 · 2020", "gender": "m"},
+    {"title": "Can't Feel My Face",                   "artist": "The Weeknd",           "streams": "US #1 · 2015", "gender": "m"},
+    {"title": "Old Town Road",                        "artist": "Lil Nas X ft. Billy Ray Cyrus", "streams": "US #1 · 2019", "gender": "m"},
+    {"title": "Sunflower",                            "artist": "Post Malone & Swae Lee", "streams": "US #1 · 2019", "gender": "m"},
+    {"title": "Circles",                              "artist": "Post Malone",          "streams": "US #1 · 2019", "gender": "m"},
+    {"title": "Sorry",                                "artist": "Justin Bieber",        "streams": "US #1 · 2015", "gender": "m"},
+    {"title": "Love Yourself",                        "artist": "Justin Bieber",        "streams": "US #1 · 2016", "gender": "m"},
+    {"title": "Peaches",                              "artist": "Justin Bieber ft. Daniel Caesar & Giveon", "streams": "US #1 · 2021", "gender": "m"},
+    {"title": "Stay",                                 "artist": "The Kid LAROI & Justin Bieber", "streams": "US #1 · 2021", "gender": "m"},
+    {"title": "As It Was",                            "artist": "Harry Styles",         "streams": "US/UK #1 · 2022", "gender": "m"},
+    {"title": "Watermelon Sugar",                     "artist": "Harry Styles",         "streams": "US #1 · 2020", "gender": "m"},
+    {"title": "Dynamite",                             "artist": "BTS",                  "streams": "US #1 · 2020", "gender": "m"},
+    {"title": "Butter",                               "artist": "BTS",                  "streams": "US #1 · 2021", "gender": "m"},
+    {"title": "Despacito",                            "artist": "Luis Fonsi ft. Daddy Yankee", "streams": "US #1 · 2017", "gender": "m"},
+    {"title": "Rockstar",                             "artist": "Post Malone ft. 21 Savage", "streams": "US #1 · 2017", "gender": "m"},
+]
+
+def _fetch_no1_hits():
+    """International bekannte Nr.-1-Hits 1980-2026 - täglich 5 Künstlerinnen + 5 Künstler
+    zufällig, getrennt per Geschlecht gezogen (Chris-Wunsch), Doppelungen zum Vortag vermieden."""
+    women = [s for s in _NO1_HITS if s["gender"] == "w"]
+    men = [s for s in _NO1_HITS if s["gender"] == "m"]
+    picks = _daily_sample(women, 5) + _daily_sample(men, 5)
+    # streams-Feld enthält hier Chart+Jahr statt Streamzahlen, gender-Feld nicht ans Frontend nötig
+    return [{"title": s["title"], "artist": s["artist"], "streams": s["streams"]} for s in picks]
+
 # Suno-optimierte Style-Tags für bekannte deutsche Party/Schlager-Hits.
 # Schlüssel: Titel lowercase (ohne Sonderpunktierung), Wert: fertige Suno-Tags.
 _DE_SONG_STYLE_MAP = {
@@ -3291,7 +3382,7 @@ def _fetch_itunes_genre(genre_id, country="us", limit=10):
         return [{"error": str(e)}]
 
 def get_charts():
-    """Streaming Charts: DE + Global (Spotify via kworb) + Party (Schlager) + Oktoberfest + Dance (Apple) + Overall Alltime."""
+    """Streaming Charts: DE + Global (Spotify via kworb) + Party (Schlager) + Oktoberfest + Dance (Apple) + Overall Alltime + No.1-Hits 1980-2026."""
     import time as _time
     now = _time.time()
     if _charts_cache["data"] and now - _charts_cache["ts"] < CHARTS_TTL:
@@ -3302,7 +3393,9 @@ def get_charts():
     oktoberfest = _fetch_oktoberfest_charts()
     dance = _fetch_itunes_genre(17, "de")   # echte aktuelle Dance/Party-Charts für Release-Songs
     overall = _fetch_kworb_alltime()
-    result = {"de": de, "global": gl, "party": party, "oktoberfest": oktoberfest, "dance": dance, "overall": overall}
+    no1 = _fetch_no1_hits()
+    result = {"de": de, "global": gl, "party": party, "oktoberfest": oktoberfest, "dance": dance,
+              "overall": overall, "no1": no1}
     _charts_cache["data"] = result
     _charts_cache["ts"] = now
     return result
@@ -7800,7 +7893,7 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 if text:
                     cmd += ["--text", text]
                 else:
-                    cmd += ["--ai"]  # kein Text eingegeben -> Fable schaut sich's an, schreibt content-bezogenen Hook
+                    cmd += ["--ai"]  # kein Text eingegeben -> Opus schaut sich's an, schreibt content-bezogenen Hook
                 if music == "song":
                     try:
                         arch = "/mnt/d/OneDrive/Dokumente/Bolla/Suno_DistroKid"
@@ -7853,7 +7946,7 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                         self._send_json({"error": "Konnte Dateien nicht dekodieren"}, status=400); return
                     out_name = f"reel_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{_uuidb.uuid4().hex[:6]}.mp4"
                     out_path = os.path.join(CLIPBOARD_IMAGES_DIR, out_name)
-                    music_arg = []
+                    music_arg = ["--music", "none"]  # Checkbox aus -> explizit KEINE Musik (kein Auto-Fallback)
                     if music == "song":
                         try:
                             arch = "/mnt/d/OneDrive/Dokumente/Bolla/Suno_DistroKid"
@@ -7865,6 +7958,20 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                     try:
                         r = _spb.run(cmd, capture_output=True, text=True, timeout=420)
                         ok = r.returncode == 0 and os.path.isfile(out_path)
+                        if ok:
+                            # Zusätzliche Inhaltsprüfung: returncode 0 + Datei vorhanden reicht nicht --
+                            # ffmpeg kann eine technisch valide, aber praktisch leere/0s-Datei schreiben
+                            # (z.B. wenn -ss hinters Musik-Dateiende seekt). Kurzer ffprobe-Check gegen
+                            # genau dieses "korruptes Video"-Symptom (24.08.2026, Multi-Foto-Reel).
+                            try:
+                                pr = _spb.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                                               "-of", "default=noprint_wrapper=1:nokey=1", out_path],
+                                              capture_output=True, text=True, timeout=15)
+                                dur = float(pr.stdout.strip() or 0)
+                                if dur < 0.5:
+                                    ok = False
+                            except Exception:
+                                pass  # ffprobe fehlt/schlägt fehl -> nicht deswegen blockieren
                         if ok:
                             try:
                                 os.makedirs(DESKTOP_AUFGEPEPPT_DIR, exist_ok=True)
@@ -9514,8 +9621,14 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
 }}"""
                 import subprocess, shutil, time as _time_ka
                 claude_bin = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
+                # --safe-mode: reines Songtext-Schreiben braucht keine Bolla-Persona (CLAUDE.md, Hooks,
+                # MCP-Server) - alle Vorgaben stehen schon explizit im obigen Prompt. Spart pro Aufruf
+                # ~27k Tokens Ballast (gemessen 24.08.: 31.5k->4.7k cache_creation_input_tokens) und
+                # damit spuerbar Zeit, ohne die Songtext-Qualitaet zu beruehren. Login/Abo-Auth bleibt
+                # normal (kein API-Key noetig, anders als --bare).
                 proc = subprocess.Popen(
-                    [claude_bin, "-p", "--model", "claude-sonnet-5", "--output-format", "json", prompt],
+                    [claude_bin, "-p", "--model", "claude-sonnet-5", "--output-format", "json",
+                     "--safe-mode", prompt],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                     stdin=subprocess.DEVNULL, cwd=os.path.expanduser("~")
                 )
@@ -9639,7 +9752,8 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 claude_bin_s = _sh_style.which("claude") or os.path.expanduser("~/.local/bin/claude")
                 try:
                     r_s = _sp_style.run(
-                        [claude_bin_s, "-p", "--model", "claude-sonnet-5", "--output-format", "json", style_instr],
+                        [claude_bin_s, "-p", "--model", "claude-sonnet-5", "--output-format", "json",
+                         "--safe-mode", style_instr],
                         capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~"))
                     style_hint_out = json.loads(r_s.stdout).get("result", "").strip() if r_s.returncode == 0 else ""
                 except Exception:

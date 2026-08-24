@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-"""V2: Nur noch EINE Mitteilung pro Kurs (Schueler, keine Eltern-Mitteilung mehr).
-Anhaenge: 02-Praktikum.html, 02-The Basics - Grundbegriffe - II.pdf (frisch ersetzt, alte
-Version wird vorher geloescht), 02-Fenster-Anleitung.html. 01-* Dateien NICHT erneut anhaengen
-(schon seit 17.08. gepostet). Text beschreibt neuen 4-Schritte-Ablauf. Kein Veroeffentlichen."""
+"""V3 (24.08.2026, Chris-Korrektur): Reihenfolge umgestellt - ALLE 8 Dateien werden ZUERST
+heruntergeladen, bevor irgendein Praktikum begonnen wird (reine Datei-/Ordnerstruktur-Uebung).
+Davon werden 2 (Download-Anleitung + Grundbegriffe-I-PDF) gemeinsam am Beamer gemacht, damit die
+Schueler beide Dateiformate (HTML+PDF) einmal gesehen haben - die restlichen 6 selbststaendig.
+Erst DANACH Praktikum 1, bei Zeit noch Praktikum 2. Anhaenge jetzt ALLE 8 Datei (auch die 01-*
+von Kurstag 1 erneut mitgeschickt, damit alles in EINER Mitteilung greifbar ist - Playwright
+haengt nur an, laedt aber nicht doppelt hoch wenn die Ressource schon existiert). Elterninfo-PDF
+bleibt bewusst draussen (Chris druckt die selbst aus), Elterninfo-HTML ist diesmal mit dabei.
+Kein Veroeffentlichen (siehe itslearning_post_kurstag2_live.py fuer die Live-Variante)."""
 import os
 LIBS_DIR = "/home/bolla/workspace/scripts/browser_libs/extracted/usr/lib/x86_64-linux-gnu"
 if os.path.isdir(LIBS_DIR):
@@ -17,42 +22,52 @@ OUT_DIR = "/home/bolla/workspace/scratch/itslearning_kurstag2_vorschau"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 PDF_BASENAME = "02-The Basics - Grundbegriffe - II"
+# Reihenfolge = Download-Reihenfolge im Text: erst die 2 gemeinsamen, dann die 6 selbststaendigen.
 STUDENT_FILES = [
+    {"path": os.path.join(PRAKT_DIR, "01-Download-Anleitung.html"), "basename": "01-Download-Anleitung"},
+    {"path": os.path.join(PRAKT_DIR, "01-The Basics - Grundbegriffe - I.pdf"), "basename": "01-The Basics - Grundbegriffe - I"},
+    {"path": os.path.join(PRAKT_DIR, "01-Editor-Anleitung.html"), "basename": "01-Editor-Anleitung"},
+    {"path": os.path.join(PRAKT_DIR, "01-Praktikum.html"), "basename": "01-Praktikum"},
+    {"path": os.path.join(PRAKT_DIR, "02-Elterninfo-MS-Konto.html"), "basename": "02-Elterninfo-MS-Konto"},
+    {"path": os.path.join(PRAKT_DIR, "02-Fenster-Anleitung.html"), "basename": "02-Fenster-Anleitung"},
     {"path": os.path.join(PRAKT_DIR, "02-Praktikum.html"), "basename": "02-Praktikum"},
     {"path": os.path.join(PRAKT_DIR, "02-The Basics - Grundbegriffe - II.pdf"), "basename": PDF_BASENAME},
-    {"path": os.path.join(PRAKT_DIR, "02-Fenster-Anleitung.html"), "basename": "02-Fenster-Anleitung"},
 ]
 
 COURSES = [
     {"id": 190735, "kuerzel": "7a I",
      "student_text":
-        "🖥️ Hallo liebe 7a! So geht's heute weiter: 1️⃣ Wir laden gemeinsam am Beamer eine Datei aus "
-        "itslearning herunter, ich zeig's euch einmal. 2️⃣ Danach macht ihr Praktikum 1 (liegt schon "
-        "hier aus der letzten Mitteilung). 3️⃣ Wenn noch Zeit ist - oder auch zuhause bzw. in einer der "
-        "nächsten Stunden, kein Zeitdruck: die restlichen Dateien (Folien, Anleitungen) auf euren Stick "
-        "laden und dafür eine eigene Ordnerstruktur anlegen. 4️⃣ Zum Schluss dann 📎 Praktikum 2. Viel "
-        "Spaß! 🎨"},
+        "🖥️ Hallo liebe 7a! Heute geht's erstmal ums Herunterladen: 1️⃣ Wir laden gemeinsam am Beamer "
+        "die Download-Anleitung und die Grundbegriffe-I-PDF herunter, damit ihr beide Dateiformate (HTML "
+        "und PDF) einmal gesehen habt. 2️⃣ Danach ladet ihr selbstständig die restlichen 6 Dateien "
+        "herunter. 3️⃣ Dann geht's mit 📎 Praktikum 1 los - dort lernt ihr auch, was ein Ordner ist und "
+        "wie man aufräumt. Wenn noch Zeit bleibt, räumt ihr direkt auch bei 📎 Praktikum 2 auf - sonst "
+        "machen wir das Schritt für Schritt in den nächsten Stunden weiter. Viel Spaß! 🎨"},
     {"id": 190741, "kuerzel": "7b I",
      "student_text":
-        "🎉 Liebe 7b, unser Fahrplan für heute: 1️⃣ Erst zeige ich euch gemeinsam am Beamer, wie der "
-        "Download aus itslearning geht. 2️⃣ Dann macht ihr Praktikum 1 (schon aus der letzten Mitteilung "
-        "hier vorhanden). 3️⃣ Falls Zeit bleibt - sonst auch gerne zuhause oder in einer der nächsten "
-        "Stunden, kein Stress: die übrigen Dateien auf den Stick laden und eine eigene Ordnerstruktur "
-        "dafür anlegen. 4️⃣ Danach geht's mit 📎 Praktikum 2 weiter. Bin gespannt! 😊"},
+        "🎉 Liebe 7b, heute steht erstmal das Herunterladen im Mittelpunkt: 1️⃣ Erst laden wir gemeinsam "
+        "am Beamer die Download-Anleitung und die Grundbegriffe-I-PDF herunter, damit ihr beide "
+        "Dateiformate (HTML und PDF) einmal gesehen habt. 2️⃣ Dann ladet ihr selbstständig die übrigen 6 "
+        "Dateien herunter. 3️⃣ Danach startet 📎 Praktikum 1 - da lernt ihr auch, was ein Ordner ist und "
+        "wie man ordentlich aufräumt. Bleibt Zeit, räumt ihr gleich bei 📎 Praktikum 2 mit auf - sonst "
+        "machen wir in den nächsten Stunden Schritt für Schritt weiter. Bin gespannt! 😊"},
     {"id": 190861, "kuerzel": "7c I",
      "student_text":
-        "🚀 Hallo 7c! Ablauf für heute: 1️⃣ Wir laden zusammen am Beamer eine Datei aus itslearning "
-        "herunter - einmal vorgemacht. 2️⃣ Danach kommt Praktikum 1 dran (liegt schon aus der letzten "
-        "Mitteilung bereit). 3️⃣ Wenn ihr noch Zeit/Lust habt - auch später zuhause oder in einer der "
-        "nächsten Stunden möglich, kein Muss sofort: die restlichen Dateien auf den Stick laden und eine "
-        "eigene Ordnerstruktur dafür bauen. 4️⃣ Zum Abschluss 📎 Praktikum 2. Auf geht's! 💻"},
+        "🚀 Hallo 7c! Heute geht's erstmal ums Herunterladen: 1️⃣ Wir laden zusammen am Beamer die "
+        "Download-Anleitung und die Grundbegriffe-I-PDF herunter - einmal vorgemacht, damit ihr beide "
+        "Dateiformate (HTML und PDF) gesehen habt. 2️⃣ Danach ladet ihr die restlichen 6 Dateien "
+        "selbstständig herunter. 3️⃣ Dann kommt 📎 Praktikum 1 dran - dort lernt ihr auch, was ein "
+        "Ordner ist und wie man aufräumt. Wenn ihr noch Zeit/Lust habt, räumt ihr gleich bei 📎 "
+        "Praktikum 2 mit auf - sonst machen wir das Schritt für Schritt in den nächsten Stunden weiter. "
+        "Auf geht's! 💻"},
     {"id": 190860, "kuerzel": "7d I",
      "student_text":
-        "😊 Liebe 7d, so läuft's heute: 1️⃣ Zuerst zeige ich euch gemeinsam am Beamer den Download aus "
-        "itslearning. 2️⃣ Dann macht ihr Praktikum 1 (schon aus der letzten Mitteilung vorhanden). 3️⃣ "
-        "Wenn noch Zeit ist - sonst auch zuhause oder in einer der kommenden Stunden, ganz ohne Eile: die "
-        "übrigen Dateien auf den Stick laden und eine eigene Ordnerstruktur anlegen. 4️⃣ Zuletzt 📎 "
-        "Praktikum 2. Freu mich auf euch! 🎉"},
+        "😊 Liebe 7d, heute geht's erstmal ums Herunterladen: 1️⃣ Zuerst laden wir gemeinsam am Beamer die "
+        "Download-Anleitung und die Grundbegriffe-I-PDF herunter, damit ihr beide Dateiformate (HTML und "
+        "PDF) einmal gesehen habt. 2️⃣ Dann ladet ihr die übrigen 6 Dateien selbstständig herunter. 3️⃣ "
+        "Danach startet 📎 Praktikum 1 - dort lernt ihr auch, was ein Ordner ist und wie man aufräumt. "
+        "Wenn noch Zeit ist, räumt ihr direkt auch bei 📎 Praktikum 2 mit auf - sonst machen wir das "
+        "Schritt für Schritt in den nächsten Stunden weiter. Freu mich auf euch! 🎉"},
 ]
 
 with open(CREDS_PATH) as f:

@@ -54,6 +54,13 @@ Welche Arten von KI-Modellen gibt es — über Text hinaus:
 - **Video** (neu dazu) — z.B. Kling, Luma, Hailuo (via PiAPI)
 - Idee: live-Demo oder Beispiel-Outputs zeigen
 
+**🧪 Live-Demo (bestätigt 24.08.2026 — Erdbeere & Schafe sind Original-Beispiele):** 3 Prompts, bei denen kleinere/kostenlose Modelle typischerweise falsch antworten. Chris hatte 2 davon (Erdbeere, Schafe) früher schon bei ais.chat/duck.ai/dem lokalen Server getestet; die Original-Fragen waren nirgends notiert, wurden aber erfolgreich rekonstruiert und von Chris bestätigt. Die dritte (9,11 vs. 9,9) hat Qwen richtig gelöst und wurde durch das Maschinen-Rätsel ersetzt, an dem auch stärkere Modelle öfter scheitern. Vor dem Workshop nochmal live testen (Modelle ändern sich) und Ergebnisse eintragen:
+1. „Wie oft kommt der Buchstabe R im Wort **Erdbeere** vor?" → richtig: **2** (Tokenisierung, kein buchstabengenaues Zählen) — **Qwen (lokaler Server): 🔴 falsch**
+2. „Wenn 5 Maschinen 5 Minuten brauchen, um 5 Geräte herzustellen — wie lange brauchen 100 Maschinen für 100 Geräte?" → richtig: **5 Minuten** (klassischer Skalierungsfehler, Modelle rechnen oft naiv 100 Min.) — **Qwen: 🟢 richtig**
+3. „Ein Bauer hat 17 Schafe. Bei einem Sturm sterben alle bis auf 9. Wie viele hat er danach noch?" → richtig: **9** (Sprachfalle „alle bis auf 9") — **Qwen: 🔴 falsch**
+
+**Testergebnis Stand 24.08.2026:** Qwen (lokaler Server) 2 von 3 falsch — Erdbeere und Schafe (Sprachfallen) tappen rein, Maschinen-Rätsel (reine Logik) löst Qwen sauber. Noch offen: alle 3 an ais.chat und duck.ai testen.
+
 ### 4. Telli — Education Schleswig-Holstein `[IDEE]`
 - Hinweis auf **Telli** (KI-Angebot für Bildung in Schleswig-Holstein)
 - `[RECHERCHE]` Was genau ist Telli, was kann es, wie kommen Lehrer ran?

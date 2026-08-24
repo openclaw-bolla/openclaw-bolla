@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """
 Aufpeppen-Montage — baut aus MEHREREN Fotos/Videos EIN spektakuläres TikTok-Reel
-(Crossfade-Übergänge, Musikbett, Fable-Hook-Text) statt vieler einzelner Klein-Clips.
-Ergänzt aufpeppen.py (Einzeldatei) — für Chris' "mehrere Fotos/Videos auf einmal einkippen".
+(Übergänge inkl. Flash-Cuts, Grain/Licht-Leak, Musikbett, Fable-2-Beat-Caption) statt vieler
+einzelner Klein-Clips. Ergänzt aufpeppen.py (Einzeldatei) — für Chris' "mehrere Fotos/Videos
+auf einmal einkippen". Nutzt dieselben Grading-/Übergangs-/Caption-Bausteine wie aufpeppen.py.
 
 Aufruf:
     python3 aufpeppen_montage.py <datei1> <datei2> ... --out <ziel.mp4>
-                                  [--music <song.mp3>] [--style auto|natural|vivid|spectacular]
+                                  [--music <song.mp3>] [--style auto|natural|vivid|spectacular|cinematic|golden|punch]
                                   [--hook "Text"] [--max 8]
 
 Rückgabe: schreibt Zieldatei, druckt am Ende  RESULT:<pfad>
 """
-import os, sys, subprocess, argparse, tempfile, shutil
+import os, sys, subprocess, argparse, tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import aufpeppen as ap
@@ -19,8 +20,6 @@ import aufpeppen as ap
 W, H = 1080, 1920
 CLIP_DUR = 3.0
 XFADE = 0.35
-# kurze, knackige Cuts statt immer nur "fade" -> fühlt sich nach echtem Edit an, nicht nach Diashow.
-TRANSITIONS = ["zoomin", "circleopen", "wipeleft", "slideup", "smoothleft", "wiperight"]
 
 IMG_EXT = ap.IMG_EXT
 VID_EXT = ap.VID_EXT
@@ -35,120 +34,58 @@ def latest_song_mp3():
         return None
 
 
-def make_segment(src, out, is_img, style):
-    p = ap.pick_style(style)
-    grade = (f"eq=saturation={p['sat']:.2f}:contrast={p['con']:.2f}:brightness={(p['bri']-1)*0.4:.3f}:gamma=1.02,"
-             f"colorbalance=rm=0.06:bm=-0.05")
-    if is_img:
-        frames = int(CLIP_DUR * 30)
-        # vollflächiger Crop+Zoom statt Blur-Rand mit kleinem zentriertem Bild -> füllt den Screen wie TikTok.
-        base = f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},{grade}"
-        fc = (f"[0:v]{base}[base];"
-              f"[base]zoompan=z='min(zoom+0.0014,1.22)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
-              f"d={frames}:s={W}x{H}:fps=30[vid]")
-        cmd = ["ffmpeg", "-y", "-loop", "1", "-i", src, "-t", str(CLIP_DUR), "-filter_complex", fc,
-               "-map", "[vid]", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30", "-an", out]
-    else:
-        vf = f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},{grade}"
-        cmd = ["ffmpeg", "-y", "-i", src, "-t", str(CLIP_DUR), "-vf", vf,
-               "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30", out]
-    return subprocess.run(cmd, capture_output=True, text=True, timeout=120).returncode == 0
-
-
-def chain_xfade(segments, out_video):
-    """Verkettet Segmente gleicher Länge mit Crossfade-Übergängen. Gibt (ok, gesamtdauer) zurück."""
-    n = len(segments)
-    if n == 1:
-        shutil.copy2(segments[0], out_video)
-        return True, CLIP_DUR
-    inputs = []
-    for s in segments:
-        inputs += ["-i", s]
-    filters = []
-    cur = "0:v"
-    running = CLIP_DUR
-    for i in range(1, n):
-        tag = f"v{i}"
-        offset = running - XFADE
-        trans = TRANSITIONS[(i - 1) % len(TRANSITIONS)]
-        filters.append(f"[{cur}][{i}:v]xfade=transition={trans}:duration={XFADE}:offset={offset:.2f}[{tag}]")
-        cur = tag
-        running += CLIP_DUR - XFADE
-    fc = ";".join(filters)
-    cmd = ["ffmpeg", "-y", *inputs, "-filter_complex", fc, "-map", f"[{cur}]",
-           "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30", out_video]
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-    return r.returncode == 0, running
-
-
-def finalize(video_in, out, hook, music, total_dur):
-    """Fable-Hook (erste ~3s) + Musikbett mit Fade drüberlegen."""
-    draw = ""
-    if hook:
-        safe = ap.for_drawtext(hook).replace(":", "\\:").replace("'", "’")
-        clause = ap.drawtext_clause(safe, y=180, fontsize=64)
-        draw = clause + ":enable='between(t\\,0\\,3.2)'"
-    if music and os.path.isfile(music):
-        vf = draw if draw else "null"
-        fc = (f"[0:v]{vf}[vid];"
-              f"[1:a]afade=t=in:st=0:d=0.5,afade=t=out:st={max(0, total_dur - 0.8):.2f}:d=0.8[aud]")
-        cmd = ["ffmpeg", "-y", "-i", video_in, "-ss", "25", "-t", str(total_dur), "-i", music,
-               "-filter_complex", fc, "-map", "[vid]", "-map", "[aud]",
-               "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
-               "-movflags", "+faststart", "-shortest", out]
-    else:
-        if draw:
-            cmd = ["ffmpeg", "-y", "-i", video_in, "-vf", draw,
-                   "-c:v", "libx264", "-pix_fmt", "yuv420p", "-movflags", "+faststart", out]
-        else:
-            cmd = ["ffmpeg", "-y", "-i", video_in, "-c", "copy", "-movflags", "+faststart", out]
-    return subprocess.run(cmd, capture_output=True, text=True, timeout=180).returncode == 0
-
-
 def build_montage(files, out, music=None, style="auto", hook=None, max_clips=8):
     files = [f for f in files if os.path.isfile(f)][:max_clips]
     if not files:
         return False, "Keine gültigen Dateien."
 
-    # Stil + Hook per Fable (schaut sich das erste Bild bzw. einen Video-Frame an), falls nicht vorgegeben
-    tmp_frame = None
+    # Stil + 2-Beat-Caption per Fable (schaut sich das erste Bild bzw. einen Video-Frame an),
+    # falls nicht vorgegeben. Ein manuelles --hook bleibt als Einzel-Text-Beat (Rückwärtskompatibilität).
+    ai_setup, ai_punch = "", ""
     if hook is None or style == "auto":
         frame_src = files[0]
+        tmp_frame = None
         if frame_src.lower().endswith(VID_EXT):
             tmp_frame = frame_src + ".ai_frame.jpg"
             if not ap.extract_frame(frame_src, tmp_frame):
                 tmp_frame = None
             else:
                 frame_src = tmp_frame
-        ai_hook, ai_style = ap.ai_direct([frame_src], "tiktok")
-        if hook is None:
-            hook = ai_hook
+        ai_setup, ai_punch, ai_style = ap.ai_direct([frame_src], "tiktok")
         if style == "auto":
             style = ai_style
         if tmp_frame and os.path.isfile(tmp_frame):
             os.remove(tmp_frame)
+    p = ap.pick_style(style)
 
     with tempfile.TemporaryDirectory() as td:
         segs = []
         for i, f in enumerate(files):
             is_img = f.lower().endswith(IMG_EXT)
             seg = os.path.join(td, f"seg{i:02d}.mp4")
-            if make_segment(f, seg, is_img, style):
+            # Erstes Segment bekommt den Speed-Ramp-Punch-in -> knackiger Einstieg ins ganze Reel.
+            ok = (ap.image_shot_segment(f, seg, W, H, CLIP_DUR, p, (0.5, 0.5), 1.0, 1.18, i == 0)
+                  if is_img else ap.video_clip_segment(f, seg, W, H, CLIP_DUR, p))
+            if ok:
                 segs.append(seg)
         if not segs:
             return False, "Segmenterstellung fehlgeschlagen."
 
         chained = os.path.join(td, "chained.mp4")
-        ok, total_dur = chain_xfade(segs, chained)
+        ok, total_dur = ap.chain_xfade(segs, chained, CLIP_DUR, XFADE, ap.transitions_for(p))
         if not ok:
             return False, "Crossfade-Verkettung fehlgeschlagen."
 
-        if not music:
-            music = latest_song_mp3()
-        ok = finalize(chained, out, hook, music, total_dur)
+        if music is None:
+            music = latest_song_mp3()  # nicht angegeben (Watcher/CLI-Default) -> automatisch neuesten Song nehmen
+        elif music == "none":
+            music = None  # explizit abgewählt (mmp-Checkbox aus) -> NICHT automatisch ersetzen
+        beats = ap.build_beats(hook, None if hook is not None else (ai_setup, ai_punch), total_dur)
+        ok = ap.finalize_with_captions_and_music(chained, out, beats, music, total_dur, y=180, fontsize=64)
         if not ok or not os.path.isfile(out):
             return False, "Finalisierung (Musik/Text) fehlgeschlagen."
-    return True, hook
+    info = hook if hook is not None else " / ".join(x for x in (ai_setup, ai_punch) if x)
+    return True, info
 
 
 def main():

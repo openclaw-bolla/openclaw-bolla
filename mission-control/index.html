@@ -3452,6 +3452,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 onkeydown="if(event.key==='Tab')sunoAutoFillFromSchuelerliste(this.value)"
                 style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
                        color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
+              <div id="suno-name-hint" style="display:none;margin-top:4px;font-size:11px;color:#f59e0b"></div>
             </div>
             <div>
               <label id="suno-kontext-label" style="font-size:13px;color:var(--dim);display:block;margin-bottom:3px">Kontext / Anlass <span style="color:var(--accent);font-style:italic">(überschreiben → Klasse/Alter/Geburtstag verschwinden)</span></label>
@@ -3560,6 +3561,9 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
             </button>
             <span id="suno-status" style="font-size:13px;color:var(--dim)"></span>
           </div>
+          <div id="suno-progress-wrap" style="display:none;margin-top:10px;height:6px;background:var(--card);border:1px solid var(--border);border-radius:4px;overflow:hidden">
+            <div id="suno-progress-bar" style="height:100%;width:0%;border-radius:4px;background:linear-gradient(135deg,#7c3aed,#ff6699);transition:width .6s ease-out"></div>
+          </div>
         </div>
 
         <!-- Charts -->
@@ -3584,6 +3588,9 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               <button id="chart-tab-overall" onclick="sunoChartTab('overall')"
                 style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;
                        background:transparent;color:var(--dim);border-left:1px solid var(--border);transition:all .2s">🏆 Overall</button>
+              <button id="chart-tab-no1" onclick="sunoChartTab('no1')" title="International bekannte Nr.-1-Hits 1980-2026 — täglich 5 Künstlerinnen + 5 Künstler neu ausgelost"
+                style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;
+                       background:transparent;color:var(--dim);border-left:1px solid var(--border);transition:all .2s">👑 No.1</button>
             </div>
             <div id="suno-chart-list" style="padding:8px 0;min-height:60px;max-height:260px;overflow-y:auto">
               <div style="padding:16px;text-align:center;color:var(--dim);font-size:13px">⏳ Charts werden geladen…</div>
@@ -5111,6 +5118,70 @@ const ARCHIV_ITEMS = [
       </ul>
 
       <div style="font-size:12px;color:var(--dim);border-top:1px solid var(--border);padding-top:10px">📦 Ins Archiv geräumt 24.06.2026 — Tool aktiv, nur aus dem Hauptmenü genommen.</div>
+    `
+  },
+  {
+    id: 'lehrer-workshop',
+    icon: '🎓',
+    title: 'KI-Workshop für Lehrerkollegen',
+    tag: '🟡 Nicht gehalten · ggf. Schuljahr 26/27',
+    color: '6,182,212',
+    teaser: '90-Minuten Short-Track über aktuelle KI-Möglichkeiten für die Lehrerkollegen am Lessing-Gymnasium. Ursprünglich für die Projektwoche 22.–26.06.2026 geplant, fand aber nicht statt — Nachholtermin evtl. im Schuljahr 2026/27. Bislang nur 1 von 5 Themenblöcken fertig.',
+    html: `
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px">
+        <span style="background:rgba(250,204,21,0.15);border:1px solid rgba(250,204,21,0.5);color:#facc15;font-size:13px;font-weight:700;padding:4px 12px;border-radius:20px">🟡 Nicht gehalten · ggf. Schuljahr 26/27</span>
+        <span style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--dim);font-size:13px;padding:4px 12px;border-radius:20px">90 Min · Lessing-Gymnasium</span>
+      </div>
+
+      <div style="background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.3);border-radius:9px;padding:12px 14px;margin-bottom:22px;font-size:14px;line-height:1.6;color:var(--text)">⚠️ <b style="color:#facc15">Stand 24.08.2026:</b> Der ursprünglich geplante Termin (24.06.2026, Projektwoche) hat nicht stattgefunden. Chris denkt an einen Nachholtermin im Schuljahr 2026/27, noch nicht terminiert. Letzte inhaltliche Arbeit am Material war der 22.05.2026 — bei Wiederaufnahme lohnt ein Blick, ob die Inhalte (v.a. Copilot-Lizenzierung) noch aktuell sind.</div>
+
+      <h3 style="color:var(--accent);font-size:17px;margin:0 0 8px">📌 Eckdaten</h3>
+      <ul style="font-size:15px;line-height:1.7;color:var(--text);margin:0 0 22px;padding-left:20px">
+        <li><b style="color:var(--bright)">Anlass:</b> Projektwoche am Lessing-Gymnasium Norderstedt, 22.–26.06.2026</li>
+        <li><b style="color:var(--bright)">Vortrag (geplant):</b> Mi 24.06.2026, 13:30 Uhr</li>
+        <li><b style="color:var(--bright)">Dauer:</b> 90 Minuten (knapper Short-Track, Fokus statt Vollständigkeit)</li>
+        <li><b style="color:var(--bright)">Zielgruppe:</b> Lehrerkollegen, gemischtes KI-Vorwissen</li>
+        <li><b style="color:var(--bright)">Deliverable:</b> PowerPoint <code>KI_fuer_Lehrer.pptx</code></li>
+      </ul>
+
+      <h3 style="color:var(--accent);font-size:17px;margin:0 0 8px">🧱 Themenblöcke — Stand 22.05.2026</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:22px">
+        <thead><tr style="text-align:left;color:var(--dim);border-bottom:1px solid var(--border)">
+          <th style="padding:6px 8px">Block</th><th style="padding:6px 8px">Status</th><th style="padding:6px 8px">Notiz</th></tr></thead>
+        <tbody style="color:var(--text)">
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 8px">1. Meilensteine der IT (Zeitstrahl + Adoptions-Tempo)</td><td style="padding:6px 8px">✅ fertig</td><td style="padding:6px 8px">Folie 2, plus 2 Druck-Versionen</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 8px">2. Urheberrecht (Beispiel Suno)</td><td style="padding:6px 8px">🔴 offen</td><td style="padding:6px 8px">Nur Idee, keine Folie</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 8px">3. Modell-Arten (Text/Bild/Video)</td><td style="padding:6px 8px">🔴 offen</td><td style="padding:6px 8px">Nur Idee, keine Folie</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 8px">4. Telli (Education SH)</td><td style="padding:6px 8px">🔴 offen</td><td style="padding:6px 8px">Noch zu recherchieren, was Telli genau kann</td></tr>
+          <tr><td style="padding:6px 8px">5. ⭐ Copilot — Lizenzierung &amp; Einsatz</td><td style="padding:6px 8px">🔴 offen</td><td style="padding:6px 8px">Von Chris als „ganz wichtig" markiert, aber noch nicht recherchiert</td></tr>
+        </tbody>
+      </table>
+
+      <h3 style="color:var(--accent);font-size:17px;margin:0 0 8px">🎬 Weitere Idee</h3>
+      <p style="font-size:14px;line-height:1.6;color:var(--text);margin:0 0 22px">Fertiger Demo-Prompt für eine Live-Coding-Vorführung im Terminal vor den Kollegen (animiertes neuronales Netz als interaktive HTML-Seite) — bereit zum Einsatz, unabhängig vom PPT-Fortschritt.</p>
+
+      <h3 style="color:var(--accent);font-size:17px;margin:0 0 8px">🧪 Live-Demo: 3 Prompts, die kleinere Modelle oft falsch lösen</h3>
+      <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:9px;padding:12px 14px;margin-bottom:14px;font-size:13px;line-height:1.55;color:var(--text)">✅ Von Chris bestätigt (24.08.2026): Erdbeere und Schafe waren tatsächlich 2 der Original-Beispiele, die er früher bei ais.chat/duck.ai/dem lokalen Server getestet hatte — trotz vorheriger fehlender Notiz erfolgreich rekonstruiert. Die dritte (9,11 vs. 9,9) hat Qwen richtig gelöst und wurde durch das Maschinen-Rätsel ersetzt — das hat Qwen aber auch richtig gelöst, bleibt aber als bekannter Reasoning-Trap für andere Modelle drin.</div>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:10px">
+        <thead><tr style="text-align:left;color:var(--dim);border-bottom:1px solid var(--border)">
+          <th style="padding:6px 8px">Prompt</th><th style="padding:6px 8px">Richtige Antwort</th><th style="padding:6px 8px">Qwen (lokaler Server)</th><th style="padding:6px 8px">ais.chat</th><th style="padding:6px 8px">duck.ai</th></tr></thead>
+        <tbody style="color:var(--text)">
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 8px">„Wie oft kommt der Buchstabe R im Wort <b>Erdbeere</b> vor?"</td><td style="padding:6px 8px"><b style="color:var(--bright)">2</b></td><td style="padding:6px 8px">🔴 falsch</td><td style="padding:6px 8px;color:var(--dim)">offen</td><td style="padding:6px 8px;color:var(--dim)">offen</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 8px">„Wenn 5 Maschinen 5 Minuten brauchen, um 5 Geräte herzustellen — wie lange brauchen 100 Maschinen für 100 Geräte?"</td><td style="padding:6px 8px"><b style="color:var(--bright)">5 Minuten</b></td><td style="padding:6px 8px">🟢 richtig</td><td style="padding:6px 8px;color:var(--dim)">offen</td><td style="padding:6px 8px;color:var(--dim)">offen</td></tr>
+          <tr><td style="padding:6px 8px">„Ein Bauer hat 17 Schafe. Bei einem Sturm sterben alle bis auf 9. Wie viele Schafe hat er danach noch?"</td><td style="padding:6px 8px"><b style="color:var(--bright)">9</b></td><td style="padding:6px 8px">🔴 falsch</td><td style="padding:6px 8px;color:var(--dim)">offen</td><td style="padding:6px 8px;color:var(--dim)">offen</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:13px;line-height:1.55;color:var(--dim);margin:0 0 22px">Warum kleine Modelle scheitern: <b>Erdbeere</b> — Text wird in Token-Stücken „gesehen", nicht buchstabengenau gezählt. <b>Maschinen-Rätsel</b> — klassischer Skalierungsfehler: Modelle rechnen oft naiv linear hoch (100 Minuten) statt zu erkennen, dass jede Maschine unabhängig parallel arbeitet. <b>Schafe</b> — Sprachfalle „alle bis auf 9" wird oft simpel als 17−9=8 gerechnet statt als „9 überleben".<br><br>Stand 24.08.2026: <b>Qwen (lokaler Server) 2 von 3 falsch</b> — <b>Erdbeere</b> und <b>Schafe</b> tappen in die Sprachfalle, das <b>Maschinen-Rätsel</b> löst Qwen dagegen sauber (reine Logik/Mathe scheint es besser zu können als Wortspiele). Noch offen: alle 3 an ais.chat und duck.ai testen — dann als Live-Show-Effekt im Workshop nutzen (Kollegen selbst raten lassen, dann Live-Test).</p>
+
+      <h3 style="color:var(--accent);font-size:17px;margin:0 0 8px">⚙️ Technik &amp; Quellen — für die Rekonstruktion</h3>
+      <ul style="font-size:14px;line-height:1.7;color:var(--text);margin:0 0 18px;padding-left:20px">
+        <li><b>Ideen-Sammlung:</b> <code>workspace/projektwoche-ki-workshop/workshop-ideen.md</code> — Themenblöcke, Folien-Backlog, offene Recherche-TODOs.</li>
+        <li><b>PPT-Arbeitsdatei:</b> <code>workspace/projektwoche-ki-workshop/KI_fuer_Lehrer_WORK.pptx</code> (+ mehrere datierte Backups im selben Ordner); finale Version zuletzt auf <code>D:\\OneDrive\\Desktop\\KI_fuer_Lehrer.pptx</code>.</li>
+        <li><b>Build-Skripte:</b> <code>build_meilenstein_folie.py</code> (Zeitstrahl-Folie, idempotent), <code>build_print_folien.py</code> (Druck-Versionen).</li>
+        <li>Werkzeug: <code>python-pptx</code> (auf dem Studio installiert) — Folien programmatisch erzeugbar/anpassbar.</li>
+      </ul>
+
+      <div style="font-size:12px;color:var(--dim);border-top:1px solid var(--border);padding-top:10px">📦 Snapshot-Stand 24.08.2026: nicht gehalten, Nachholtermin evtl. Schuljahr 26/27 · letzte inhaltliche Arbeit 22.05.2026 · Quelle: Bolla-Memory (project_ki_workshop)</div>
     `
   }
 ];
@@ -16312,15 +16383,31 @@ function schuelerFindMatch(input, liste) {
 }
 async function sunoAutoFillFromSchuelerliste(name) {
   name = (name || '').trim();
+  const hintEl = document.getElementById('suno-name-hint');
+  if (hintEl) hintEl.style.display = 'none';
   if (!name) return;
   const liste = await schuelerLoadListe();
   const match = schuelerFindMatch(name, liste);
-  if (!match) return;
+  if (!match) {
+    if (hintEl) {
+      const tokens = name.split(/\s+/);
+      const vorNorm = schuelerNorm(tokens[0]);
+      const anzahl = liste.filter(s => schuelerNorm(s.vorname).split(/\s+/)[0] === vorNorm).length;
+      hintEl.textContent = anzahl > 1
+        ? `⚠️ ${anzahl}× "${tokens[0]}" in den Klassen — 1-2 Anfangsbuchstaben vom Nachnamen ergänzen (z. B. "${tokens[0]} M" oder bei Gleichstand "${tokens[0]} Mü")`
+        : `⚠️ Kein eindeutiger Treffer in der Schülerliste`;
+      hintEl.style.display = 'block';
+    }
+    return;
+  }
   // Eingaben wie "Ben E" (Nachnamen-Initiale zur Entschärfung bei doppeltem Vornamen,
   // siehe schuelerFindMatch) sind nur zum Matchen gedacht — sobald der Treffer eindeutig
   // ist, gehört im Song NUR der echte Vorname rein, sonst landet "Ben E" wörtlich im Text.
+  // Manche Schüler haben einen amtlichen Doppel-Vornamen in der Liste (z.B. "Lilly Helene"),
+  // im Alltag/Song wird aber nur der erste genutzt - sonst landet der volle Doppelname
+  // mehrfach im Liedtext (Backend wiederholt den kompletten "name"-String woertlich).
   const nameEl = document.getElementById('suno-name');
-  if (nameEl && match.vorname) nameEl.value = match.vorname;
+  if (nameEl && match.vorname) nameEl.value = match.vorname.split(/\s+/)[0];
   const klasseEl = document.getElementById('suno-klasse');
   const gebEl = document.getElementById('suno-geburtstag');
   const alterEl = document.getElementById('suno-alter');
@@ -16415,7 +16502,32 @@ async function sunoGenerate(feedback = '', prevLyrics = '') {
   const btn = document.getElementById('suno-btn');
   const status = document.getElementById('suno-status');
   btn.disabled = true; btn.style.opacity = '0.5';
-  status.textContent = '⏳ Generiere Song…';
+  // Rein kosmetische Fortschrittsanzeige - die Generierung selbst dauert wegen des
+  // qualitätsgeprüften Prompts (Reim/Silben/Chorus-Regeln) oft 1-2 Min. Rotierender Text
+  // macht die Wartezeit gefühlt kürzer, ohne am eigentlichen Ablauf/Tempo etwas zu ändern.
+  const _sunoStatusSteps = [
+    '⏳ Schreibe die ersten Strophen…', '⏳ Feilt am Reim…', '⏳ Prüft Rhythmus & Silben…',
+    '⏳ Baut den Refrain…', '⏳ Stimmt die Style-Tags ab…', '⏳ Letzter Feinschliff…'
+  ];
+  let _sunoStatusIdx = 0;
+  status.textContent = _sunoStatusSteps[0];
+  const _sunoStatusTimer = setInterval(() => {
+    _sunoStatusIdx = (_sunoStatusIdx + 1) % _sunoStatusSteps.length;
+    status.textContent = _sunoStatusSteps[_sunoStatusIdx];
+  }, 6000);
+  // Fortschrittsbalken: nähert sich asymptotisch 92% (echte Dauer ist nicht vorhersehbar,
+  // typ. 1-2 Min) und springt erst bei der echten Antwort auf 100% - bleibt so immer ehrlich
+  // "noch nicht fertig" statt bei starrer Zeitschätzung falsch bei 100% stehenzubleiben.
+  const progWrap = document.getElementById('suno-progress-wrap');
+  const progBar = document.getElementById('suno-progress-bar');
+  const _sunoStart = Date.now();
+  progWrap.style.display = 'block';
+  progBar.style.width = '0%';
+  const _sunoProgTimer = setInterval(() => {
+    const elapsedSec = (Date.now() - _sunoStart) / 1000;
+    const pct = 92 * (1 - Math.exp(-elapsedSec / 35));
+    progBar.style.width = pct.toFixed(1) + '%';
+  }, 500);
   try {
     const res = await fetch(API + '/api/suno/generate', {
       method: 'POST',
@@ -16446,12 +16558,21 @@ async function sunoGenerate(feedback = '', prevLyrics = '') {
     document.getElementById('suno-feedback').value = '';
     document.getElementById('suno-retry-btn').style.display = '';
     status.textContent = '✅ Fertig!';
+    progBar.style.width = '100%';
     sunoNotify(data.title || 'Song bereit');
     sunoShowPopup();
   } catch(e) {
     status.textContent = '❌ Fehler: ' + e.message;
+    progBar.style.background = '#ef4444';
   } finally {
+    clearInterval(_sunoStatusTimer);
+    clearInterval(_sunoProgTimer);
     btn.disabled = false; btn.style.opacity = '1';
+    setTimeout(() => {
+      progWrap.style.display = 'none';
+      progBar.style.width = '0%';
+      progBar.style.background = 'linear-gradient(135deg,#7c3aed,#ff6699)';
+    }, 900);
   }
 }
 function sunoRefresh() {
@@ -16592,7 +16713,7 @@ async function sunoLoadCharts() {
 }
 function sunoChartTab(tab) {
   _sunoChartTab = tab;
-  ['de','global','party','oktoberfest','dance','overall'].forEach(t => {
+  ['de','global','party','oktoberfest','dance','overall','no1'].forEach(t => {
     const btn = document.getElementById('chart-tab-' + t);
     btn.style.background = t === tab ? 'var(--accent)' : 'transparent';
     btn.style.color = t === tab ? 'white' : 'var(--dim)';

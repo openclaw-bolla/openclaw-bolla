@@ -2,436 +2,262 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Mission Control</title>
+<title>MISSION CONTROL // TERMINAL</title>
 <style>
-  :root{
-    --cyan:#00f0ff;
-    --magenta:#ff00c8;
-    --bg:#05070d;
-    --panel:#0b0f1a;
-    --panel-2:#0f1524;
-    --border:rgba(0,240,255,0.25);
-    --text:#dfe9ff;
-    --text-dim:#7c8aa8;
-    --green:#39ff9d;
-    --amber:#ffb347;
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    background: #0d0208;
+    color: #00ff41;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 15px;
+    overflow: hidden;
   }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  html,body{height:100%;}
-  body{
-    font-family:'Segoe UI',Consolas,monospace;
-    background:
-      radial-gradient(ellipse at 20% -10%, rgba(0,240,255,0.08), transparent 40%),
-      radial-gradient(ellipse at 90% 10%, rgba(255,0,200,0.07), transparent 45%),
-      var(--bg);
-    color:var(--text);
-    min-height:100vh;
-    display:flex;
-    overflow:hidden;
-    font-size:15px;
+  body {
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0,255,65,0.03) 0px, rgba(0,255,65,0.03) 1px, transparent 1px, transparent 3px);
+    position: relative;
   }
-  body::before{
-    content:"";
-    position:fixed;inset:0;
-    pointer-events:none;
-    background:repeating-linear-gradient(
-      to bottom,
-      rgba(255,255,255,0.015) 0px,
-      rgba(255,255,255,0.015) 1px,
-      transparent 2px,
-      transparent 4px
-    );
-    z-index:999;
+  body::after {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
+    pointer-events: none;
+    z-index: 999;
   }
+  .layout { display: flex; height: 100vh; }
 
   /* SIDEBAR */
-  .sidebar{
-    width:220px;
-    min-width:220px;
-    background:linear-gradient(180deg, #060810, #0a0e18);
-    border-right:1px solid var(--border);
-    display:flex;
-    flex-direction:column;
-    padding:22px 14px;
-    position:relative;
+  .sidebar {
+    width: 220px;
+    background: #050502;
+    border-right: 1px solid #00ff41;
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
   }
-  .sidebar::after{
-    content:"";
-    position:absolute;
-    top:0;right:-1px;bottom:0;
-    width:1px;
-    background:linear-gradient(180deg, transparent, var(--cyan), transparent);
-    opacity:0.6;
+  .logo {
+    padding: 0 20px 20px 20px;
+    border-bottom: 1px dashed #0a3d1c;
+    margin-bottom: 15px;
+    font-size: 14px;
+    letter-spacing: 2px;
   }
-  .brand{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:0 8px 24px 8px;
-    border-bottom:1px solid rgba(0,240,255,0.15);
-    margin-bottom:20px;
+  .logo b { color: #00ff41; text-shadow: 0 0 8px #00ff41; }
+  .logo .sub { color: #0a8a2e; font-size: 11px; display:block; margin-top:4px; }
+  nav { display: flex; flex-direction: column; }
+  nav a {
+    color: #0a8a2e;
+    text-decoration: none;
+    padding: 10px 20px;
+    font-size: 14px;
+    letter-spacing: 1px;
+    border-left: 3px solid transparent;
+    transition: all .1s;
   }
-  .brand-mark{
-    width:38px;height:38px;
-    border-radius:50%;
-    border:2px solid var(--cyan);
-    display:flex;align-items:center;justify-content:center;
-    font-size:18px;
-    color:var(--cyan);
-    box-shadow:0 0 14px rgba(0,240,255,0.6), inset 0 0 10px rgba(0,240,255,0.3);
-    animation:pulseRing 3s ease-in-out infinite;
+  nav a:before { content: "> "; }
+  nav a:hover { background: rgba(0,255,65,0.08); color: #00ff41; }
+  nav a.active {
+    color: #00ff41;
+    background: rgba(0,255,65,0.12);
+    border-left: 3px solid #00ff41;
+    text-shadow: 0 0 6px #00ff41;
   }
-  @keyframes pulseRing{
-    0%,100%{box-shadow:0 0 14px rgba(0,240,255,0.6), inset 0 0 10px rgba(0,240,255,0.3);}
-    50%{box-shadow:0 0 22px rgba(0,240,255,0.9), inset 0 0 14px rgba(0,240,255,0.5);}
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 15px 20px;
+    font-size: 11px;
+    color: #0a8a2e;
+    border-top: 1px dashed #0a3d1c;
   }
-  .brand-text .title{font-weight:700;letter-spacing:2px;font-size:14px;color:#fff;}
-  .brand-text .sub{font-size:11px;color:var(--text-dim);letter-spacing:1px;}
-
-  nav{display:flex;flex-direction:column;gap:4px;flex:1;}
-  .nav-item{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    padding:11px 12px;
-    border-radius:8px;
-    color:var(--text-dim);
-    text-decoration:none;
-    font-size:14px;
-    letter-spacing:0.5px;
-    border:1px solid transparent;
-    cursor:pointer;
-    transition:all .2s ease;
-  }
-  .nav-item .icon{width:20px;text-align:center;font-size:16px;}
-  .nav-item:hover{
-    background:rgba(0,240,255,0.06);
-    color:var(--text);
-    border-color:rgba(0,240,255,0.2);
-  }
-  .nav-item.active{
-    background:linear-gradient(90deg, rgba(0,240,255,0.15), rgba(0,240,255,0.02));
-    color:#fff;
-    border-color:var(--cyan);
-    box-shadow:0 0 12px rgba(0,240,255,0.15) inset, 2px 0 10px rgba(0,240,255,0.1);
-  }
-  .nav-item.active .icon{color:var(--cyan);text-shadow:0 0 8px var(--cyan);}
-
-  .sidebar-footer{
-    padding-top:16px;
-    border-top:1px solid rgba(0,240,255,0.12);
-    font-size:11px;
-    color:var(--text-dim);
-    display:flex;
-    align-items:center;
-    gap:8px;
-  }
-  .status-dot{
-    width:8px;height:8px;border-radius:50%;
-    background:var(--green);
-    box-shadow:0 0 8px var(--green);
-    animation:blink 2s ease-in-out infinite;
-  }
-  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.4;}}
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#00ff41; box-shadow:0 0 6px #00ff41; margin-right:6px; animation: blink 1.5s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 
   /* MAIN */
-  .main{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    height:100vh;
-    overflow:hidden;
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .topbar {
+    height: 56px;
+    border-bottom: 1px solid #00ff41;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    background: #050502;
+    flex-shrink: 0;
   }
-  .topbar{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:18px 32px;
-    border-bottom:1px solid var(--border);
-    background:rgba(255,255,255,0.015);
+  .topbar .title { font-size: 16px; letter-spacing: 3px; text-transform: uppercase; }
+  .topbar .title::before { content: "root@bolla:~$ "; color: #0a8a2e; }
+  .clock { font-size: 18px; letter-spacing: 2px; color: #00ff41; text-shadow: 0 0 8px #00ff41; }
+  .cursor-blink { animation: blink 1s infinite; }
+
+  .content {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
   }
-  .topbar h1{
-    font-size:20px;
-    letter-spacing:3px;
-    font-weight:600;
-    color:#fff;
-    text-shadow:0 0 12px rgba(0,240,255,0.4);
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
   }
-  .topbar h1 span{color:var(--cyan);}
-  .topbar .clockbox{
-    display:flex;
-    align-items:center;
-    gap:18px;
+  .card {
+    border: 1px solid #0a8a2e;
+    background: rgba(0,255,65,0.02);
+    padding: 16px;
+    position: relative;
   }
-  .clock{
-    font-size:26px;
-    font-weight:700;
-    letter-spacing:2px;
-    color:var(--cyan);
-    text-shadow:0 0 16px rgba(0,240,255,0.7);
-    font-variant-numeric:tabular-nums;
+  .card:hover { border-color: #00ff41; box-shadow: 0 0 12px rgba(0,255,65,0.25); }
+  .card-label {
+    font-size: 11px;
+    color: #0a8a2e;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
   }
-  .date{
-    font-size:12px;
-    color:var(--text-dim);
-    letter-spacing:1px;
+  .card-label::before { content: "[ "; }
+  .card-label::after { content: " ]"; }
+  .card-value {
+    font-size: 32px;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(0,255,65,0.6);
   }
-  .avatar{
-    width:38px;height:38px;
-    border-radius:50%;
-    background:linear-gradient(135deg, var(--cyan), var(--magenta));
-    display:flex;align-items:center;justify-content:center;
-    font-weight:700;
-    color:#05070d;
-    box-shadow:0 0 14px rgba(255,0,200,0.4);
+  .card-sub { font-size: 12px; color: #0a8a2e; margin-top: 6px; }
+
+  .bar-track {
+    width: 100%;
+    height: 10px;
+    background: #0a1c0f;
+    border: 1px solid #0a3d1c;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    background: repeating-linear-gradient(90deg, #00ff41 0px, #00ff41 6px, #0a3d1c 6px, #0a3d1c 8px);
+    box-shadow: 0 0 8px #00ff41;
   }
 
-  .content{
-    flex:1;
-    overflow-y:auto;
-    padding:28px 32px 40px 32px;
-  }
-  .grid{
-    display:grid;
-    grid-template-columns:repeat(4, 1fr);
-    gap:20px;
-  }
-  @media (max-width:1100px){ .grid{grid-template-columns:repeat(2,1fr);} }
-
-  .card{
-    background:linear-gradient(160deg, var(--panel), var(--panel-2));
-    border:1px solid var(--border);
-    border-radius:14px;
-    padding:20px;
-    position:relative;
-    overflow:hidden;
-    transition:transform .2s ease, box-shadow .2s ease;
-  }
-  .card::before{
-    content:"";
-    position:absolute;
-    top:-1px;left:-1px;right:-1px;
-    height:2px;
-    background:linear-gradient(90deg, var(--cyan), var(--magenta));
-    opacity:0.8;
-  }
-  .card:hover{
-    transform:translateY(-3px);
-    box-shadow:0 10px 30px rgba(0,240,255,0.12);
-  }
-  .card-head{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:14px;
-  }
-  .card-head .label{
-    font-size:11px;
-    letter-spacing:2px;
-    color:var(--text-dim);
-    text-transform:uppercase;
-  }
-  .card-head .glyph{
-    font-size:18px;
-    opacity:0.8;
-  }
-  .metric{
-    font-size:34px;
-    font-weight:700;
-    color:#fff;
-    letter-spacing:1px;
-  }
-  .metric small{
-    font-size:16px;
-    color:var(--text-dim);
-    font-weight:400;
-  }
-  .metric-sub{
-    font-size:12px;
-    color:var(--text-dim);
-    margin-top:4px;
+  .wide {
+    grid-column: span 2;
   }
 
-  .bar-track{
-    width:100%;
-    height:8px;
-    border-radius:6px;
-    background:rgba(255,255,255,0.06);
-    margin-top:14px;
-    overflow:hidden;
+  .log-box {
+    margin-top: 20px;
+    border: 1px solid #0a8a2e;
+    padding: 14px 18px;
+    font-size: 13px;
+    line-height: 1.8;
+    background: rgba(0,255,65,0.015);
   }
-  .bar-fill{
-    height:100%;
-    border-radius:6px;
-    background:linear-gradient(90deg, var(--cyan), #6bffde);
-    box-shadow:0 0 10px rgba(0,240,255,0.7);
-  }
-  .bar-fill.cpu{background:linear-gradient(90deg, var(--green), #b6ffce);box-shadow:0 0 10px rgba(57,255,157,0.7);}
-  .bar-fill.mail{background:linear-gradient(90deg, var(--magenta), #ff8fe0);box-shadow:0 0 10px rgba(255,0,200,0.7);}
-  .bar-fill.weather{background:linear-gradient(90deg, var(--amber), #ffe0a3);box-shadow:0 0 10px rgba(255,179,71,0.6);}
+  .log-box .card-label { margin-bottom: 8px; }
+  .log-line { color: #0a8a2e; }
+  .log-line span.ok { color: #00ff41; }
+  .log-line .ts { color: #05590f; margin-right: 8px; }
 
-  .card.wide{grid-column:span 2;}
+  .mail-list { margin-top: 8px; font-size: 13px; }
+  .mail-item { padding: 4px 0; border-bottom: 1px dashed #0a3d1c; color: #0a8a2e; }
+  .mail-item:last-child { border-bottom: none; }
+  .mail-item .unread { color: #00ff41; }
+  .mail-item::before { content: "✉ "; }
 
-  .mail-list{list-style:none;margin-top:6px;display:flex;flex-direction:column;gap:10px;}
-  .mail-list li{
-    display:flex;
-    justify-content:space-between;
-    font-size:13px;
-    color:var(--text-dim);
-    border-left:2px solid var(--magenta);
-    padding-left:10px;
-  }
-  .mail-list li b{color:var(--text);font-weight:500;}
-  .tag{
-    font-size:10px;
-    padding:2px 8px;
-    border-radius:10px;
-    border:1px solid var(--cyan);
-    color:var(--cyan);
-    letter-spacing:1px;
-  }
-
-  .weather-row{display:flex;align-items:center;gap:18px;margin-top:4px;}
-  .weather-icon{font-size:44px;}
-  .weather-info .temp{font-size:36px;font-weight:700;color:#fff;}
-  .weather-info .place{font-size:12px;color:var(--text-dim);letter-spacing:1px;}
-  .weather-mini{display:flex;gap:16px;margin-top:14px;font-size:11px;color:var(--text-dim);}
-  .weather-mini span b{color:var(--text);display:block;font-size:13px;}
-
-  .sysinfo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;font-size:12px;}
-  .sysinfo-grid .row{display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.08);padding-bottom:6px;}
-  .sysinfo-grid .row span:last-child{color:var(--green);font-weight:600;}
-
-  .schedule-list{display:flex;flex-direction:column;gap:12px;margin-top:8px;}
-  .schedule-item{display:flex;align-items:center;gap:12px;font-size:13px;}
-  .schedule-time{color:var(--cyan);font-weight:700;min-width:48px;}
-  .schedule-item .dot{width:6px;height:6px;border-radius:50%;background:var(--magenta);box-shadow:0 0 8px var(--magenta);}
-
-  ::-webkit-scrollbar{width:8px;}
-  ::-webkit-scrollbar-thumb{background:rgba(0,240,255,0.25);border-radius:4px;}
-  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #050502; }
+  ::-webkit-scrollbar-thumb { background: #0a8a2e; }
 </style>
 </head>
 <body>
-
+<div class="layout">
   <div class="sidebar">
-    <div class="brand">
-      <div class="brand-mark">◈</div>
-      <div class="brand-text">
-        <div class="title">MISSION<br>CONTROL</div>
-      </div>
+    <div class="logo">
+      <b>MISSION CONTROL</b>
+      <span class="sub">v2.6.0 // BOLLA-CORE</span>
     </div>
     <nav>
-      <div class="nav-item active"><span class="icon">🛰️</span> Dashboard</div>
-      <div class="nav-item"><span class="icon">🐾</span> Bolla</div>
-      <div class="nav-item"><span class="icon">🎓</span> Schule</div>
-      <div class="nav-item"><span class="icon">📅</span> Kalender</div>
-      <div class="nav-item"><span class="icon">✉️</span> E-Mail</div>
-      <div class="nav-item"><span class="icon">🌦️</span> Wetter</div>
-      <div class="nav-item"><span class="icon">🖥️</span> System Info</div>
+      <a href="#" class="active">Dashboard</a>
+      <a href="#">Bolla</a>
+      <a href="#">Schule</a>
+      <a href="#">Kalender</a>
+      <a href="#">E-Mail</a>
+      <a href="#">Wetter</a>
+      <a href="#">System Info</a>
     </nav>
     <div class="sidebar-footer">
-      <span class="status-dot"></span> Alle Systeme online
+      <span class="dot"></span>ONLINE<br>
+      uptime: 14d 06:22:10
     </div>
   </div>
 
   <div class="main">
     <div class="topbar">
-      <h1>MISSION <span>CONTROL</span> // DASHBOARD</h1>
-      <div class="clockbox">
-        <div>
-          <div class="clock" id="clock">20:14</div>
-          <div class="date">Sonntag, 23. August 2026</div>
-        </div>
-        <div class="avatar">CM</div>
-      </div>
+      <div class="title">Dashboard</div>
+      <div class="clock">20:14:07<span class="cursor-blink">_</span></div>
     </div>
 
     <div class="content">
       <div class="grid">
-
         <div class="card">
-          <div class="card-head">
-            <span class="label">Arbeitsspeicher</span>
-            <span class="glyph">🧠</span>
-          </div>
-          <div class="metric">34<small>%</small></div>
-          <div class="metric-sub">5,4 GB / 16 GB belegt</div>
+          <div class="card-label">RAM Usage</div>
+          <div class="card-value">34%</div>
           <div class="bar-track"><div class="bar-fill" style="width:34%"></div></div>
+          <div class="card-sub">5.4 GB / 16 GB</div>
         </div>
 
         <div class="card">
-          <div class="card-head">
-            <span class="label">Prozessor</span>
-            <span class="glyph">⚙️</span>
-          </div>
-          <div class="metric">12<small>%</small></div>
-          <div class="metric-sub">4 Kerne · 41°C</div>
-          <div class="bar-track"><div class="bar-fill cpu" style="width:12%"></div></div>
+          <div class="card-label">CPU Load</div>
+          <div class="card-value">12%</div>
+          <div class="bar-track"><div class="bar-fill" style="width:12%"></div></div>
+          <div class="card-sub">4 Cores // 38°C</div>
         </div>
 
         <div class="card">
-          <div class="card-head">
-            <span class="label">Posteingang</span>
-            <span class="glyph">📨</span>
+          <div class="card-label">Inbox</div>
+          <div class="card-value">3</div>
+          <div class="card-sub">neue Nachrichten</div>
+          <div class="mail-list">
+            <div class="mail-item unread">Schule &mdash; Elternabend 7b</div>
+            <div class="mail-item unread">Aldi Nord &mdash; Angebote der Woche</div>
+            <div class="mail-item unread">Robin &mdash; Grüße aus Tansania</div>
           </div>
-          <div class="metric">3<small> neu</small></div>
-          <ul class="mail-list">
-            <li><b>Stadt Konstanz</b><span class="tag">AMT</span></li>
-            <li><b>itslearning</b><span class="tag">SCHULE</span></li>
-            <li><b>DistroKid</b><span class="tag">MUSIK</span></li>
-          </ul>
         </div>
 
         <div class="card">
-          <div class="card-head">
-            <span class="label">Wetter · Hamburg</span>
-            <span class="glyph">⛅</span>
-          </div>
-          <div class="weather-row">
-            <div class="weather-icon">⛅</div>
-            <div class="weather-info">
-              <div class="temp">18°C</div>
-              <div class="place">Bewölkt, leichter Wind</div>
-            </div>
-          </div>
-          <div class="weather-mini">
-            <span>Min<b>14°</b></span>
-            <span>Max<b>21°</b></span>
-            <span>Regen<b>20%</b></span>
+          <div class="card-label">Wetter // Hamburg</div>
+          <div class="card-value">18°C</div>
+          <div class="card-sub">bewölkt, Wind 12 km/h</div>
+          <div class="card-sub">↓ 14°C &nbsp; ↑ 21°C</div>
+        </div>
+
+        <div class="card wide">
+          <div class="card-label">Kalender heute</div>
+          <div class="mail-list">
+            <div class="mail-item" style="color:#00ff41">09:00 &mdash; EDV Klasse 7a, Raum 214</div>
+            <div class="mail-item" style="color:#00ff41">15:30 &mdash; Sport, Gesundheitszentrum</div>
+            <div class="mail-item" style="color:#00ff41">19:00 &mdash; Tanzkurs Norderstedt</div>
           </div>
         </div>
 
         <div class="card wide">
-          <div class="card-head">
-            <span class="label">Nächste Termine</span>
-            <span class="glyph">📅</span>
-          </div>
-          <div class="schedule-list">
-            <div class="schedule-item"><span class="schedule-time">09:00</span><span class="dot"></span> Unterricht 7a — EDV</div>
-            <div class="schedule-item"><span class="schedule-time">15:00</span><span class="dot"></span> Tanzkurs "Die 3"</div>
-            <div class="schedule-item"><span class="schedule-time">20:30</span><span class="dot"></span> Backup-Routine (automatisch)</div>
+          <div class="card-label">Prozesse // Cron</div>
+          <div class="mail-list">
+            <div class="mail-item" style="color:#00ff41">newsletter_scanner.py &mdash; läuft (Mo 05:00)</div>
+            <div class="mail-item" style="color:#00ff41">aldi_mail_archiver.py &mdash; läuft (alle 2h)</div>
+            <div class="mail-item" style="color:#00ff41">nightly_backup.sh &mdash; erfolgreich (00:15)</div>
           </div>
         </div>
+      </div>
 
-        <div class="card wide">
-          <div class="card-head">
-            <span class="label">System Info</span>
-            <span class="glyph">🖥️</span>
-          </div>
-          <div class="sysinfo-grid">
-            <div class="row"><span>Host</span><span>bolla-studio</span></div>
-            <div class="row"><span>Uptime</span><span>4 Tage 11h</span></div>
-            <div class="row"><span>WSL Kernel</span><span>6.18.33.2</span></div>
-            <div class="row"><span>Tunnel</span><span>verbunden</span></div>
-            <div class="row"><span>Cron-Jobs</span><span>7 aktiv</span></div>
-            <div class="row"><span>Quota (Woche)</span><span>62% frei</span></div>
-          </div>
-        </div>
-
+      <div class="log-box">
+        <div class="card-label">System Log</div>
+        <div class="log-line"><span class="ts">20:13:52</span><span class="ok">[OK]</span> Cloudflare Tunnel verbunden</div>
+        <div class="log-line"><span class="ts">20:12:10</span><span class="ok">[OK]</span> Backup nach OneDrive abgeschlossen</div>
+        <div class="log-line"><span class="ts">20:08:33</span><span class="ok">[OK]</span> 3 neue E-Mails synchronisiert</div>
+        <div class="log-line"><span class="ts">19:55:01</span><span class="ok">[OK]</span> System-Check: alle Dienste grün</div>
       </div>
     </div>
   </div>
-
+</div>
 </body>
 </html>
