@@ -61,7 +61,10 @@ def is_image(p): return p.lower().endswith(IMG_EXT)
 def is_video(p): return p.lower().endswith(VID_EXT)
 
 def pick_style(style):
-    return IMG_PRESETS.get(style if style in IMG_PRESETS else "vivid")
+    # Default 25.08.2026 (Chris' Wunsch): "cinematic" (kühle Schatten/warme Lichter, Teal-Orange-Split)
+    # statt "vivid" (pauschaler Orange-Lichtleck-Stich über allem) -- vivid wirkte wie ein 2013er
+    # Instagram-Filter, cinematic liest sich als aktueller Kino-/Trailer-Look.
+    return IMG_PRESETS.get(style if style in IMG_PRESETS else "cinematic")
 
 # ---------------- Opus-Regisseur (content-aware 2-Beat-Caption + Stil) ----------------
 def extract_frame(video, out_jpg, at="00:00:01"):
@@ -104,11 +107,11 @@ def ai_direct(image_paths, platform):
             d = json.loads(m.group(0))
             setup = (d.get("setup") or "").strip()
             punch = (d.get("punchline") or "").strip()
-            style = d.get("style") if d.get("style") in IMG_PRESETS else "vivid"
+            style = d.get("style") if d.get("style") in IMG_PRESETS else "cinematic"
             return setup, punch, style
     except Exception:
         pass
-    return "", "", "vivid"
+    return "", "", "cinematic"
 
 # ---------------- Gemeinsame Grading/Effekt-Bausteine (Bild + Video) ----------------
 def focus_points(seed_key):
@@ -284,8 +287,11 @@ def for_drawtext(text, max_chars=30, max_lines=3):
 
 def caption_beat_clause(text, start, dur, y, fontsize=58):
     """EIN Caption-Beat: Pop-in (Alpha-Fade + leichter Y-Ease-Bounce) am Anfang, sanftes Ausblenden
-    am Ende des Zeitfensters — statt stumpf-statischem Text die ganze Laufzeit."""
-    safe = for_drawtext(text).replace(":", "\\:").replace("'", "’")
+    am Ende des Zeitfensters — statt stumpf-statischem Text die ganze Laufzeit.
+    Zeilenumbruch skaliert mit fontsize (an fontsize=58 kalibriert), sonst laufen große Schriften
+    (Chris' Wunsch 25.08.: Sprüche größer/auffälliger) rechts aus dem 1080px-Frame."""
+    max_chars = max(10, round(30 * 58 / fontsize))
+    safe = for_drawtext(text, max_chars=max_chars).replace(":", "\\:").replace("'", "’")
     fp = caption_font_path()
     fontfile = f"fontfile='{fp}':" if fp else ""
     end = start + dur
@@ -295,7 +301,8 @@ def caption_beat_clause(text, start, dur, y, fontsize=58):
     y_expr = f"{y}+48*max(0,1-(t-{start:.2f})/{ease})"
     return (f"drawtext={fontfile}text='{safe}':fontcolor=white:fontsize={fontsize}:"
             f"borderw=7:bordercolor=black:shadowx=3:shadowy=3:shadowcolor=black@0.6:"
-            f"x=(w-text_w)/2:y='{y_expr}':box=0:line_spacing=10:"
+            f"box=1:boxcolor=black@0.42:boxborderw=20:"
+            f"x=(w-text_w)/2:y='{y_expr}':line_spacing=10:"
             f"enable='between(t,{start:.2f},{end:.2f})':alpha='{alpha}'")
 
 def build_caption_clauses(beats, y="h-360", fontsize=58):
@@ -347,7 +354,7 @@ def finalize_with_captions_and_music(video_in, out, beats, music, total_dur, y="
 def video_duration(path):
     try:
         r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
-                             "-of", "default=noprint_wrapper=1:nokey=1", path],
+                             "-of", "default=noprint_wrappers=1:nokey=1", path],
                             capture_output=True, text=True, timeout=15)
         return float(r.stdout.strip())
     except Exception:
@@ -508,7 +515,7 @@ def pep_video(src, out, style, text, music, ai_beats=None):
                "-c:a","aac","-b:a","192k","-movflags","+faststart",out]
     return subprocess.run(cmd, capture_output=True, text=True, timeout=300).returncode == 0
 
-def image_to_video(src, out, text, music, dur=6, ai_beats=None, style="vivid"):
+def image_to_video(src, out, text, music, dur=6, ai_beats=None, style="cinematic"):
     """Einzelfoto -> mehrschichtiges Hochformat-Reel: 3 'Kamera-Einstellungen' (verschiedene
     Ausschnitte/Zoomziele desselben Bilds) mit Speed-Ramp-Punch-in am Start, verbunden über knackige
     Schnitte (xfade) statt einem einzigen trägen Dauerzoom."""
@@ -562,7 +569,7 @@ def main():
             a.style = ai_style
         if tmp_frame and os.path.isfile(tmp_frame):
             os.remove(tmp_frame)
-    style = "vivid" if a.style == "auto" else a.style
+    style = "cinematic" if a.style == "auto" else a.style
     stem, _ = os.path.splitext(a.src)
     if is_image(a.src):
         if a.platform == "tiktok":

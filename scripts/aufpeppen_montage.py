@@ -58,13 +58,21 @@ def build_montage(files, out, music=None, style="auto", hook=None, max_clips=8):
             os.remove(tmp_frame)
     p = ap.pick_style(style)
 
+    # LEHRE (25.08.2026, Chris: "nicht nur grellere Farben und ein Wegwischen"): Vorher zoomte JEDES
+    # Foto identisch in die Bildmitte (0.5,0.5 / 1.0->1.18) -- keine Varianz zwischen den Fotos, kein
+    # Spannungsaufbau übers Reel. Jetzt: pro Foto ein eigener (stabil-verschiedener) Fokuspunkt via
+    # ap.focus_points() + eskalierender Zoom übers Reel (analog zum Einzelfoto-3-Shots-Pfad
+    # image_to_video(), der das schon immer so machte).
+    ZOOM_PLAN = [(1.00, 1.14), (1.05, 1.22), (1.12, 1.32)]
     with tempfile.TemporaryDirectory() as td:
         segs = []
         for i, f in enumerate(files):
             is_img = f.lower().endswith(IMG_EXT)
             seg = os.path.join(td, f"seg{i:02d}.mp4")
+            focus = ap.focus_points(f)[0]
+            zf, zt = ZOOM_PLAN[i % len(ZOOM_PLAN)]
             # Erstes Segment bekommt den Speed-Ramp-Punch-in -> knackiger Einstieg ins ganze Reel.
-            ok = (ap.image_shot_segment(f, seg, W, H, CLIP_DUR, p, (0.5, 0.5), 1.0, 1.18, i == 0)
+            ok = (ap.image_shot_segment(f, seg, W, H, CLIP_DUR, p, focus, zf, zt, i == 0)
                   if is_img else ap.video_clip_segment(f, seg, W, H, CLIP_DUR, p))
             if ok:
                 segs.append(seg)
@@ -81,7 +89,8 @@ def build_montage(files, out, music=None, style="auto", hook=None, max_clips=8):
         elif music == "none":
             music = None  # explizit abgewählt (mmp-Checkbox aus) -> NICHT automatisch ersetzen
         beats = ap.build_beats(hook, None if hook is not None else (ai_setup, ai_punch), total_dur)
-        ok = ap.finalize_with_captions_and_music(chained, out, beats, music, total_dur, y=180, fontsize=64)
+        # Fontsize 64->90 (Chris 25.08.: Sprüche sind gut, dürfen deutlich größer/auffälliger sein)
+        ok = ap.finalize_with_captions_and_music(chained, out, beats, music, total_dur, y=180, fontsize=90)
         if not ok or not os.path.isfile(out):
             return False, "Finalisierung (Musik/Text) fehlgeschlagen."
     info = hook if hook is not None else " / ".join(x for x in (ai_setup, ai_punch) if x)

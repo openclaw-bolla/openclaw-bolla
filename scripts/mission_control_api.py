@@ -2986,6 +2986,45 @@ CREDENTIALS_FILE = Path(os.path.expanduser("~/.claude/.credentials.json"))
 SUNO_API_BASE = "https://studio-api-prod.suno.com"
 SUNO_DISTROKID_DIR = Path("/mnt/d/OneDrive/Dokumente/Bolla/Suno_DistroKid")
 
+def get_aufpeppen_songs():
+    """Chris' eigene Songs (bollawave-Release-Archiv) für die Musik-Auswahl im mmp-Aufpeppen-Tab."""
+    try:
+        names = sorted(
+            (f for f in os.listdir(SUNO_DISTROKID_DIR) if f.lower().endswith(".mp3")),
+            key=lambda f: (SUNO_DISTROKID_DIR / f).stat().st_mtime, reverse=True
+        )
+        return {"songs": [{"filename": f, "title": os.path.splitext(f)[0]} for f in names]}
+    except Exception:
+        return {"songs": []}
+
+def _extract_poster_jpg(video_path):
+    """Extrahiert einen Vorschau-Frame (0.3s, nach dem Caption-Pop-in) als JPG neben dem Video --
+    ohne <video poster> zeigen mobile Browser (v.a. iOS Safari) oft einen schwarzen Kasten, bis genug
+    vom Stream gepuffert ist (Chris 25.08.: 'Video in mmp nur in der Vorschau schwarz', Datei selbst war
+    beim Download/auf dem Desktop einwandfrei -- reines Anzeige-Problem im Player, kein Datei-Bug)."""
+    try:
+        base, _ = os.path.splitext(video_path)
+        poster_path = base + "_poster.jpg"
+        r = subprocess.run(["ffmpeg", "-y", "-ss", "0.3", "-i", video_path, "-frames:v", "1", poster_path],
+                            capture_output=True, text=True, timeout=15)
+        return os.path.basename(poster_path) if r.returncode == 0 and os.path.isfile(poster_path) else None
+    except Exception:
+        return None
+
+def _resolve_aufpeppen_music(music):
+    """music='' -> keine Musik, 'song' -> neuester Song (Rückwärtskompatibilität), sonst -> Dateiname
+    aus dem Archiv (Basename only, Path-Traversal-sicher) -- Chris' eigene Song-Auswahl im mmp-Dropdown."""
+    if not music:
+        return None
+    try:
+        if music == "song":
+            mp3s = [os.path.join(SUNO_DISTROKID_DIR, f) for f in os.listdir(SUNO_DISTROKID_DIR) if f.lower().endswith(".mp3")]
+            return max(mp3s, key=os.path.getmtime) if mp3s else None
+        cand = os.path.join(SUNO_DISTROKID_DIR, os.path.basename(music))
+        return cand if os.path.isfile(cand) else None
+    except Exception:
+        return None
+
 _charts_cache = {"data": None, "ts": 0}
 CHARTS_TTL = 1800  # 30 Minuten
 
@@ -7277,6 +7316,7 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 "/api/tokenbudget": get_token_budget,
                 "/api/tokenbudget/snapshot": token_budget_snapshot,
                 "/api/claudequota": get_claude_quota,
+                "/api/aufpeppen-songs": get_aufpeppen_songs,
                 "/api/bildgen/archive": bildgen_archive_list,
                 "/api/bildgen/mai-config": lambda: {"configured": bool(_mai_config().get("api_key")), "default_model": _mai_config().get("default_model","mai-image-2.5")},
                 "/api/bildgen/cf-models": lambda: CF_IMAGE_MODELS,
@@ -7376,13 +7416,52 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 if not os.path.isfile(fpath):
                     self._send_json({"error": "Nicht gefunden"}, status=404); return
                 ext = os.path.splitext(fname)[1].lower()
+                # LEHRE (25.08.2026, Chris' "0:00 + kaputtes Vorschaubild"-Meldung bei einem strukturell
+                # völlig validen Reel): .mp4 fehlte hier komplett -> ctype fiel auf
+                # application/octet-stream zurück. Mobile Browser (v.a. iOS Safari) spielen <video> so
+                # oft gar nicht ab bzw. können keine Dauer ermitteln -- exakt das beobachtete Symptom,
+                # unabhängig vom alten (echten) "korruptes Video"-Bug vom 24.08. Zusätzlich Range-Request-
+                # Unterstützung ergänzt, da mobile Browser dafür <video>-Metadaten/Seeking oft brauchen.
                 MIME_MAP = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-                            ".gif": "image/gif", ".webp": "image/webp", ".bmp": "image/bmp"}
+                            ".gif": "image/gif", ".webp": "image/webp", ".bmp": "image/bmp",
+                            ".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm"}
                 ctype = MIME_MAP.get(ext, "application/octet-stream")
+                fsize = os.path.getsize(fpath)
+                range_header = self.headers.get("Range", "")
+                if range_header.startswith("bytes=") and ctype.startswith("video/"):
+                    spec = range_header[6:].split(",")[0].strip()
+                    start_s, _, end_s = spec.partition("-")
+                    start = int(start_s) if start_s else 0
+                    end = int(end_s) if end_s else fsize - 1
+                    end = min(end, fsize - 1)
+                    if start > end or start >= fsize:
+                        self.send_response(416)
+                        self.send_header("Content-Range", f"bytes */{fsize}")
+                        self.end_headers()
+                        return
+                    length = end - start + 1
+                    self.send_response(206)
+                    self.send_header("Content-Type", ctype)
+                    self.send_header("Accept-Ranges", "bytes")
+                    self.send_header("Content-Range", f"bytes {start}-{end}/{fsize}")
+                    self.send_header("Content-Length", str(length))
+                    self.send_header("Cache-Control", "max-age=86400")
+                    self.end_headers()
+                    with open(fpath, "rb") as f:
+                        f.seek(start)
+                        remaining = length
+                        while remaining > 0:
+                            chunk = f.read(min(262144, remaining))
+                            if not chunk:
+                                break
+                            self.wfile.write(chunk)
+                            remaining -= len(chunk)
+                    return
                 with open(fpath, "rb") as f:
                     body = f.read()
                 self.send_response(200)
                 self.send_header("Content-Type", ctype)
+                self.send_header("Accept-Ranges", "bytes")
                 self.send_header("Cache-Control", "max-age=86400")
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
@@ -7894,12 +7973,9 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                     cmd += ["--text", text]
                 else:
                     cmd += ["--ai"]  # kein Text eingegeben -> Opus schaut sich's an, schreibt content-bezogenen Hook
-                if music == "song":
-                    try:
-                        arch = "/mnt/d/OneDrive/Dokumente/Bolla/Suno_DistroKid"
-                        mp3s = [os.path.join(arch, f) for f in os.listdir(arch) if f.lower().endswith(".mp3")]
-                        if mp3s: cmd += ["--music", max(mp3s, key=os.path.getmtime)]
-                    except Exception: pass
+                music_path = _resolve_aufpeppen_music(music)
+                if music_path:
+                    cmd += ["--music", music_path]
                 try:
                     r = _spa.run(cmd, capture_output=True, text=True, timeout=360)
                     ok = r.returncode == 0 and os.path.isfile(out_path)
@@ -7908,8 +7984,13 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                             os.makedirs(DESKTOP_AUFGEPEPPT_DIR, exist_ok=True)
                             _sha.copy2(out_path, os.path.join(DESKTOP_AUFGEPEPPT_DIR, out_name))
                         except Exception: pass
-                        self._send_json({"ok": True, "url": f"/api/clipboard/image/{out_name}",
-                                         "filename": out_name, "kind": "image" if out_ext == ".jpg" else "video"})
+                        resp = {"ok": True, "url": f"/api/clipboard/image/{out_name}",
+                                "filename": out_name, "kind": "image" if out_ext == ".jpg" else "video"}
+                        if resp["kind"] == "video":
+                            poster = _extract_poster_jpg(out_path)
+                            if poster:
+                                resp["poster"] = f"/api/clipboard/image/{poster}"
+                        self._send_json(resp)
                     else:
                         self._send_json({"error": (r.stderr or r.stdout or "Aufpeppen fehlgeschlagen")[-300:]}, status=500)
                 except Exception as e:
@@ -7946,18 +8027,44 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                         self._send_json({"error": "Konnte Dateien nicht dekodieren"}, status=400); return
                     out_name = f"reel_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{_uuidb.uuid4().hex[:6]}.mp4"
                     out_path = os.path.join(CLIPBOARD_IMAGES_DIR, out_name)
-                    music_arg = ["--music", "none"]  # Checkbox aus -> explizit KEINE Musik (kein Auto-Fallback)
-                    if music == "song":
-                        try:
-                            arch = "/mnt/d/OneDrive/Dokumente/Bolla/Suno_DistroKid"
-                            mp3s = [os.path.join(arch, f) for f in os.listdir(arch) if f.lower().endswith(".mp3")]
-                            if mp3s: music_arg = ["--music", max(mp3s, key=os.path.getmtime)]
-                        except Exception: pass
+                    # Checkbox aus -> explizit KEINE Musik (kein Auto-Fallback in aufpeppen_montage.py).
+                    music_path = _resolve_aufpeppen_music(music)
+                    music_arg = ["--music", music_path] if music_path else ["--music", "none"]
                     cmd = ["python3", os.path.join(WORKSPACE, "scripts/aufpeppen_montage.py"), *srcs,
                            "--style", style, "--out", out_path, *music_arg]
+                    # LEHRE (20.08.2026, Suno-Fix, siehe /api/suno/generate): Cloudflare-Tunnel-Edge killt
+                    # einen Request ohne Response-Bytes nach ~100s mit eigener HTML-Fehlerseite ("<!DOCTYPE...")
+                    # statt der erwarteten JSON-Antwort. Ein Multi-Foto-Reel (mehrere Fotos, ffmpeg-Montage)
+                    # dauert leicht länger als das (Chris' Meldung 24.08., mehrere Fotos -> DOCTYPE-Fehler nach
+                    # "gewisser Zeit"). Gleicher Fix: Header sofort senden, alle 15s ein Leerzeichen in den Body
+                    # schreiben (JSON.parse toleriert führenden Whitespace) um den Tunnel aktiv zu halten.
+                    import time as _time_ka2
+                    proc = _spb.Popen(cmd, stdout=_spb.PIPE, stderr=_spb.PIPE, text=True)
+                    self.send_response(200)
+                    self._cors_headers()
+                    self.end_headers()
+
+                    def _write_ka2(payload):
+                        try:
+                            self.wfile.write(payload)
+                            self.wfile.flush()
+                            return True
+                        except (BrokenPipeError, ConnectionResetError):
+                            return False
+
+                    _ka_start2 = _time_ka2.time()
+                    while proc.poll() is None:
+                        if _time_ka2.time() - _ka_start2 > 420:
+                            proc.kill()
+                            _write_ka2(json.dumps({"error": "Reel-Erstellung hat zu lange gedauert (>420s). Bitte nochmal versuchen."}).encode())
+                            return
+                        if not _write_ka2(b" "):
+                            proc.kill()
+                            return
+                        _time_ka2.sleep(15)
+                    stdout_r, stderr_r = proc.communicate()
                     try:
-                        r = _spb.run(cmd, capture_output=True, text=True, timeout=420)
-                        ok = r.returncode == 0 and os.path.isfile(out_path)
+                        ok = proc.returncode == 0 and os.path.isfile(out_path)
                         if ok:
                             # Zusätzliche Inhaltsprüfung: returncode 0 + Datei vorhanden reicht nicht --
                             # ffmpeg kann eine technisch valide, aber praktisch leere/0s-Datei schreiben
@@ -7965,7 +8072,7 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                             # genau dieses "korruptes Video"-Symptom (24.08.2026, Multi-Foto-Reel).
                             try:
                                 pr = _spb.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
-                                               "-of", "default=noprint_wrapper=1:nokey=1", out_path],
+                                               "-of", "default=noprint_wrappers=1:nokey=1", out_path],
                                               capture_output=True, text=True, timeout=15)
                                 dur = float(pr.stdout.strip() or 0)
                                 if dur < 0.5:
@@ -7977,12 +8084,16 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                                 os.makedirs(DESKTOP_AUFGEPEPPT_DIR, exist_ok=True)
                                 _shb.copy2(out_path, os.path.join(DESKTOP_AUFGEPEPPT_DIR, out_name))
                             except Exception: pass
-                            self._send_json({"ok": True, "url": f"/api/clipboard/image/{out_name}",
-                                             "filename": out_name, "kind": "video"})
+                            resp = {"ok": True, "url": f"/api/clipboard/image/{out_name}",
+                                    "filename": out_name, "kind": "video"}
+                            poster = _extract_poster_jpg(out_path)
+                            if poster:
+                                resp["poster"] = f"/api/clipboard/image/{poster}"
+                            _write_ka2(json.dumps(resp).encode())
                         else:
-                            self._send_json({"error": (r.stderr or r.stdout or "Reel fehlgeschlagen")[-300:]}, status=500)
+                            _write_ka2(json.dumps({"error": (stderr_r or stdout_r or "Reel fehlgeschlagen")[-300:]}).encode())
                     except Exception as e:
-                        self._send_json({"error": str(e)}, status=500)
+                        _write_ka2(json.dumps({"error": str(e)}).encode())
             elif self.path == "/api/ki-buch/generiere":
                 global _ki_buch_job
                 if _ki_buch_job["status"] == "running":

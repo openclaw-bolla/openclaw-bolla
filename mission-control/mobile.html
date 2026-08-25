@@ -352,6 +352,15 @@ body {
   outline: none;
 }
 .pep-sel:focus { border-color: var(--accent); }
+.pep-dropdown-wrap { position: relative; }
+.pep-dropdown-list {
+  position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; max-height: 240px; overflow-y: auto;
+  background: var(--card); border: 1.5px solid var(--sep); border-radius: 11px; z-index: 50;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+.pep-dropdown-item { padding: 12px; font-size: 15px; color: var(--text); cursor: pointer; border-bottom: 0.5px solid var(--sep); }
+.pep-dropdown-item:last-child { border-bottom: none; }
+.pep-dropdown-item:active { background: rgba(0,0,0,0.06); }
 .clip-btn.green { background: rgba(52,199,89,0.15); color: var(--green); }
 .clip-btn.red   { background: rgba(255,59,48,0.12); color: var(--red); }
 </style>
@@ -526,8 +535,14 @@ body {
     </div>
 
     <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text2)">
-      <input type="checkbox" id="pep-music" style="width:20px;height:20px"> 🎶 Aktuellen Song als Tonspur drunterlegen (nur Video/Reel)
+      <input type="checkbox" id="pep-music" style="width:20px;height:20px" onchange="pepToggleSongPicker()"> 🎶 Eigenen Song als Tonspur drunterlegen (nur Video/Reel)
     </label>
+    <div id="pep-song-wrap" class="pep-dropdown-wrap" style="display:none">
+      <button type="button" onclick="pepToggleSongDropdown()" class="pep-sel" style="text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center">
+        <span id="pep-song-label">Songs werden geladen …</span><span>▾</span>
+      </button>
+      <div id="pep-song-list" class="pep-dropdown-list" style="display:none"></div>
+    </div>
 
     <button onclick="pepStart()" id="pep-btn" class="clip-btn green" style="width:100%;font-size:16px;padding:14px">✨ Aufpeppen</button>
     <div id="pep-status" style="text-align:center;font-size:14px;min-height:20px"></div>
@@ -1309,6 +1324,48 @@ function _pepFileB64(f) {
     r.readAsDataURL(f);
   });
 }
+let _pepSongs = [];
+let _pepSongPick = null; // gewählter Dateiname; null = automatisch neuester Song
+async function pepLoadSongs() {
+  if (_pepSongs.length) return;
+  try {
+    const r = await fetch('/api/aufpeppen-songs');
+    const d = await r.json();
+    _pepSongs = d.songs || [];
+    const list = document.getElementById('pep-song-list');
+    const _esc = t => t.replace(/'/g, "\\'");
+    list.innerHTML = _pepSongs.map(s =>
+      `<div class="pep-dropdown-item" onclick="pepSongPick('${_esc(s.filename)}','${_esc(s.title)}')">${s.title}</div>`
+    ).join('');
+    if (_pepSongs.length) {
+      _pepSongPick = _pepSongs[0].filename;
+      document.getElementById('pep-song-label').textContent = _pepSongs[0].title + ' (neuester)';
+    } else {
+      document.getElementById('pep-song-label').textContent = 'Keine eigenen Songs gefunden';
+    }
+  } catch (e) {
+    document.getElementById('pep-song-label').textContent = 'Songs konnten nicht geladen werden';
+  }
+}
+function pepToggleSongPicker() {
+  const on = document.getElementById('pep-music').checked;
+  document.getElementById('pep-song-wrap').style.display = on ? 'block' : 'none';
+  if (on) pepLoadSongs();
+}
+function pepToggleSongDropdown() {
+  const list = document.getElementById('pep-song-list');
+  list.style.display = list.style.display === 'block' ? 'none' : 'block';
+}
+function pepSongPick(filename, title) {
+  _pepSongPick = filename;
+  document.getElementById('pep-song-label').textContent = title;
+  document.getElementById('pep-song-list').style.display = 'none';
+}
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.pep-dropdown-wrap')) return;
+  const list = document.getElementById('pep-song-list');
+  if (list) list.style.display = 'none';
+});
 async function pepStart() {
   if (!_pepFiles.length) { pepStatus('Erst Bild(er)/Video wählen 📷', false); return; }
   const btn = document.getElementById('pep-btn');
@@ -1325,7 +1382,7 @@ async function pepStart() {
         body: JSON.stringify({
           files,
           style: document.getElementById('pep-style').value,
-          music: document.getElementById('pep-music').checked ? 'song' : ''
+          music: document.getElementById('pep-music').checked ? (_pepSongPick || 'song') : ''
         })
       });
     } else {
@@ -1337,7 +1394,7 @@ async function pepStart() {
           platform: document.getElementById('pep-platform').value,
           style: document.getElementById('pep-style').value,
           text: document.getElementById('pep-text').value.trim(),
-          music: document.getElementById('pep-music').checked ? 'song' : ''
+          music: document.getElementById('pep-music').checked ? (_pepSongPick || 'song') : ''
         })
       });
     }
@@ -1347,7 +1404,7 @@ async function pepStart() {
     const res = document.getElementById('pep-result');
     res.style.display = 'flex';
     const media = d.kind === 'video'
-      ? `<video src="${d.url}" controls playsinline style="max-width:100%;border-radius:10px"></video>`
+      ? `<video src="${d.url}" ${d.poster ? `poster="${d.poster}"` : ''} preload="auto" controls playsinline style="max-width:100%;border-radius:10px;background:#000"></video>`
       : `<img src="${d.url}" style="max-width:100%;border-radius:10px">`;
     res.innerHTML = media
       + `<a href="${d.url}" download="${d.filename}" style="display:inline-block;margin-top:4px;padding:12px;background:rgba(34,197,94,0.15);color:#22c55e;border-radius:8px;font-size:15px;font-weight:600;text-decoration:none">⬇ Auf Handy speichern</a>`
@@ -1372,6 +1429,7 @@ function pepReset() {
   document.getElementById('pep-text-opt').style.display = 'flex';
   document.getElementById('pep-text').value = '';
   document.getElementById('pep-music').checked = false;
+  document.getElementById('pep-song-wrap').style.display = 'none';
   document.getElementById('pep-drop').querySelector('div:nth-child(2)').textContent = 'Bild(er) oder Video wählen';
   document.getElementById('pep-result').style.display = 'none';
   document.getElementById('pep-reset-btn').style.display = 'none';
