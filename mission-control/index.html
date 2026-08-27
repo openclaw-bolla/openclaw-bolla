@@ -12584,8 +12584,8 @@ async function bollaSend() {
     chat.scrollTop = chat.scrollHeight;
   }
 
-  try {
-    const body = {message: text || ''};
+  async function attemptBollaStream() {
+    const body = {message: sendText || ''};
     if (bollaSessionId) body.session_id = bollaSessionId;
     if (sendImage) body.image = sendImage;
 
@@ -12627,8 +12627,28 @@ async function bollaSend() {
         if (line) handleBollaLine(line);
       }
     }
+  }
+
+  try {
+    // Wackliges WLAN kann die Verbindung auch MITTEN im Stream kappen (nicht nur beim
+    // Verbindungsaufbau). Solange noch kein Antworttext angekommen ist, ist ein Retry
+    // gefahrlos (nichts Sichtbares zu duplizieren) — automatisch neu verbinden statt
+    // sofort "Verbindungsfehler" zu zeigen. Kam schon Text an, brechen wir ab statt
+    // riskant zu duplizieren.
+    const maxStreamAttempts = 3;
+    for (let streamAttempt = 1; streamAttempt <= maxStreamAttempts; streamAttempt++) {
+      try {
+        await attemptBollaStream();
+        break;
+      } catch(e) {
+        if (gotBollaText || streamAttempt >= maxStreamAttempts) throw e;
+        status.innerHTML = `🟡 Verbindung unterbrochen — neu verbinden (${streamAttempt + 1}/${maxStreamAttempts})...`;
+        await new Promise(r => setTimeout(r, 1500));
+      }
+    }
   } catch(e) {
-    chat.innerHTML += `<div style="margin:12px 0;padding:10px 14px;color:#e57373">Verbindungsfehler: ${escHtml(e.message)}</div>`;
+    const hinweis = gotBollaText ? ' — Antwort evtl. unvollständig, bei Bedarf nochmal fragen.' : '';
+    chat.innerHTML += `<div style="margin:12px 0;padding:10px 14px;color:#e57373">Verbindungsfehler: ${escHtml(e.message)}${hinweis}</div>`;
     errored = true;
   }
 

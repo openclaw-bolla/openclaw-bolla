@@ -2,334 +2,399 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Mission Control — Notizbuch</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MISSION CONTROL</title>
 <style>
+  * { margin:0; padding:0; box-sizing:border-box; }
   :root{
-    --paper:#f4ecd8;
-    --paper-dark:#e8dcc0;
-    --ink:#3b2f2f;
-    --rust:#c1440e;
-    --sage:#3a5a40;
-    --sage-light:#81b29a;
-    --mustard:#e0a458;
-    --tape:#f2d492;
-    --pencil:#6b5b4a;
+    --ink:#000000;
+    --paper:#F4F1E8;
+    --yellow:#FFE500;
+    --blue:#2B2BFF;
+    --pink:#FF2E88;
+    --green:#00E08A;
+    --shadow:8px 8px 0 var(--ink);
   }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;height:100%;}
+  html,body{ height:100%; }
   body{
-    font-family:"Segoe Print","Bradley Hand","Comic Sans MS",cursive,sans-serif;
-    background:
-      radial-gradient(circle at 20% 10%, rgba(193,68,14,0.05), transparent 40%),
-      radial-gradient(circle at 80% 80%, rgba(58,90,64,0.06), transparent 40%),
-      repeating-linear-gradient(0deg, var(--paper), var(--paper) 27px, #e3d6b8 28px),
-      var(--paper);
+    font-family:"Arial Black","Arial",Helvetica,sans-serif;
+    background:var(--paper);
     color:var(--ink);
+    background-image:
+      linear-gradient(var(--ink) 2px, transparent 2px),
+      linear-gradient(90deg, var(--ink) 2px, transparent 2px);
+    background-size:48px 48px;
+    background-position:-1px -1px;
+    background-blend-mode:normal;
     display:flex;
     min-height:100vh;
   }
-
-  /* --- SIDEBAR --- */
-  .sidebar{
-    width:220px;
-    background:var(--paper-dark);
-    border-right:3px dashed var(--pencil);
-    padding:24px 14px;
-    position:relative;
-  }
-  .sidebar::before{
+  body::before{
     content:"";
-    position:absolute;
-    left:0;top:0;bottom:0;width:6px;
-    background:repeating-linear-gradient(180deg, var(--rust) 0 14px, var(--sage) 14px 28px);
-    opacity:.5;
+    position:fixed; inset:0;
+    background:var(--paper);
+    opacity:.86;
+    z-index:0;
+  }
+  .layout{ position:relative; z-index:1; display:flex; width:100%; }
+
+  /* SIDEBAR */
+  .sidebar{
+    width:280px;
+    flex-shrink:0;
+    background:var(--blue);
+    border-right:6px solid var(--ink);
+    padding:28px 22px;
+    display:flex;
+    flex-direction:column;
+    gap:26px;
   }
   .brand{
+    background:var(--yellow);
+    border:5px solid var(--ink);
+    box-shadow:var(--shadow);
+    padding:16px 14px;
+  }
+  .brand h1{
     font-size:26px;
+    line-height:.95;
+    text-transform:uppercase;
+    letter-spacing:-1px;
+  }
+  .brand span{
+    display:block;
+    margin-top:6px;
+    font-size:11px;
+    font-family:"Courier New",monospace;
     font-weight:bold;
-    color:var(--rust);
-    transform:rotate(-2deg);
-    margin:0 0 6px 10px;
-    text-shadow:1px 1px 0 rgba(0,0,0,0.08);
+    letter-spacing:2px;
   }
-  .brand span{color:var(--sage);}
-  .brand-sub{
-    font-size:13px;
-    margin:0 0 26px 12px;
-    color:var(--pencil);
-    transform:rotate(-1deg);
-  }
-  nav ul{list-style:none;padding:0;margin:0;}
-  nav li{
-    margin:6px 8px;
-    padding:10px 14px;
-    font-size:16px;
-    border-radius:10px 14px 10px 16px / 14px 10px 16px 10px;
-    cursor:pointer;
+  nav{ display:flex; flex-direction:column; gap:12px; }
+  nav a{
     display:flex;
     align-items:center;
-    gap:10px;
-    transition:transform .15s ease;
-    border:2px solid transparent;
+    gap:12px;
+    text-decoration:none;
+    color:var(--ink);
+    background:var(--paper);
+    border:4px solid var(--ink);
+    padding:14px 14px;
+    font-size:15px;
+    text-transform:uppercase;
+    letter-spacing:0px;
+    box-shadow:5px 5px 0 var(--ink);
+    transition:transform .05s linear;
   }
-  nav li:hover{transform:rotate(-1deg) scale(1.03);}
-  nav li.active{
-    background:var(--tape);
-    border:2px dashed var(--rust);
-    box-shadow:2px 3px 0 rgba(0,0,0,0.08);
-    font-weight:bold;
+  nav a .ico{
+    width:26px; height:26px;
+    background:var(--ink);
+    color:var(--yellow);
+    display:grid; place-items:center;
+    font-size:14px;
+    font-family:"Courier New",monospace;
   }
-  nav li .ic{font-size:19px;}
+  nav a:hover{ transform:translate(2px,2px); box-shadow:3px 3px 0 var(--ink); }
+  nav a.active{
+    background:var(--pink);
+    color:var(--paper);
+    box-shadow:5px 5px 0 var(--yellow);
+  }
+  nav a.active .ico{ background:var(--paper); color:var(--pink); }
 
-  /* --- MAIN --- */
-  .main{flex:1;padding:26px 34px;position:relative;}
+  .sidebar-foot{
+    margin-top:auto;
+    font-family:"Courier New",monospace;
+    font-size:11px;
+    font-weight:bold;
+    color:var(--paper);
+    background:var(--ink);
+    border:4px solid var(--ink);
+    padding:12px;
+    line-height:1.5;
+  }
+
+  /* MAIN */
+  .main{ flex:1; padding:32px 40px 48px; min-width:0; }
 
   .topbar{
     display:flex;
+    align-items:stretch;
     justify-content:space-between;
-    align-items:center;
-    border-bottom:3px dashed var(--pencil);
-    padding-bottom:14px;
-    margin-bottom:28px;
+    gap:24px;
+    margin-bottom:36px;
   }
-  .topbar h1{
-    font-size:30px;
-    margin:0;
-    color:var(--ink);
-    position:relative;
-    display:inline-block;
-  }
-  .topbar h1::after{
-    content:"";
-    position:absolute;
-    left:-4px; right:-8px; bottom:-4px;
-    height:10px;
-    background:var(--mustard);
-    opacity:.55;
-    transform:rotate(-1deg);
-    z-index:-1;
-    border-radius:4px 8px 4px 8px;
-  }
-  .clock{
-    background:var(--paper-dark);
-    border:2px solid var(--ink);
-    border-radius:50%;
-    width:76px;height:76px;
+  .topbar .title-box{
+    background:var(--yellow);
+    border:6px solid var(--ink);
+    box-shadow:var(--shadow);
+    padding:18px 26px;
     display:flex;
-    align-items:center;
-    justify-content:center;
     flex-direction:column;
-    transform:rotate(3deg);
-    box-shadow:3px 3px 0 rgba(0,0,0,0.12);
+    justify-content:center;
   }
-  .clock .time{font-size:16px;font-weight:bold;}
-  .clock .lbl{font-size:9px;color:var(--pencil);}
+  .topbar .title-box .crumb{
+    font-family:"Courier New",monospace;
+    font-size:12px;
+    letter-spacing:3px;
+    margin-bottom:4px;
+  }
+  .topbar .title-box h2{
+    font-size:40px;
+    text-transform:uppercase;
+    letter-spacing:-2px;
+    line-height:.9;
+  }
+  .clock-box{
+    background:var(--ink);
+    color:var(--green);
+    border:6px solid var(--ink);
+    box-shadow:8px 8px 0 var(--pink);
+    padding:16px 28px;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    justify-content:center;
+    font-family:"Courier New",monospace;
+  }
+  .clock-box .time{
+    font-size:46px;
+    font-weight:bold;
+    letter-spacing:2px;
+    line-height:1;
+  }
+  .clock-box .date{
+    font-size:12px;
+    color:var(--paper);
+    letter-spacing:2px;
+    margin-top:6px;
+  }
 
-  /* --- GRID --- */
+  /* GRID */
   .grid{
     display:grid;
-    grid-template-columns:repeat(4, 1fr);
+    grid-template-columns:repeat(4,1fr);
     gap:26px;
   }
   .card{
-    background:#fffdf6;
-    border:2.5px solid var(--ink);
-    border-radius:12px 18px 14px 20px / 18px 12px 20px 14px;
-    padding:18px 18px 16px;
-    box-shadow:4px 5px 0 rgba(59,47,47,0.15);
-    position:relative;
-  }
-  .card:nth-child(odd){transform:rotate(-0.8deg);}
-  .card:nth-child(even){transform:rotate(0.9deg);}
-  .card:hover{transform:rotate(0deg) translateY(-2px);}
-
-  .tape{
-    position:absolute;
-    top:-12px;left:50%;
-    transform:translateX(-50%) rotate(-3deg);
-    width:70px;height:24px;
-    background:var(--tape);
-    opacity:.85;
-    border-radius:2px;
-    box-shadow:0 1px 2px rgba(0,0,0,0.15);
-  }
-  .card-title{
-    font-size:14px;
-    color:var(--pencil);
-    margin:6px 0 10px;
+    border:6px solid var(--ink);
+    box-shadow:var(--shadow);
+    padding:20px;
+    background:var(--paper);
     display:flex;
-    align-items:center;
-    gap:6px;
+    flex-direction:column;
+    gap:14px;
+    min-height:200px;
   }
-  .card-value{
-    font-size:34px;
+  .card .kicker{
+    font-family:"Courier New",monospace;
+    font-size:12px;
     font-weight:bold;
-    margin:0 0 8px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    border-bottom:4px solid var(--ink);
+    padding-bottom:8px;
   }
-  .card.rust .card-value{color:var(--rust);}
-  .card.sage .card-value{color:var(--sage);}
+  .card .big{
+    font-size:56px;
+    line-height:.85;
+    letter-spacing:-2px;
+  }
+  .card .sub{
+    font-family:"Courier New",monospace;
+    font-size:12px;
+    font-weight:bold;
+    margin-top:auto;
+  }
 
-  .bar-track{
-    width:100%;
-    height:14px;
-    background:var(--paper-dark);
-    border:2px solid var(--ink);
-    border-radius:8px;
+  .card.ram{ background:var(--yellow); }
+  .card.cpu{ background:var(--blue); color:var(--paper); }
+  .card.cpu .kicker,
+  .card.cpu .big{ border-color:var(--paper); }
+  .card.mail{ background:var(--pink); color:var(--paper); }
+  .card.mail .kicker{ border-color:var(--paper); }
+  .card.weather{ background:var(--green); }
+
+  .bar{
+    height:26px;
+    border:4px solid var(--ink);
+    background:var(--paper);
+    position:relative;
     overflow:hidden;
-    margin-top:6px;
   }
-  .bar-fill{height:100%;border-radius:6px;}
-  .bar-fill.rust{background:repeating-linear-gradient(45deg,var(--rust),var(--rust) 6px,#d9663a 6px,#d9663a 12px);}
-  .bar-fill.sage{background:repeating-linear-gradient(45deg,var(--sage),var(--sage) 6px,#4d7457 6px,#4d7457 12px);}
-
-  .small{font-size:12px;color:var(--pencil);margin-top:8px;}
-
-  .doodle{
+  .bar > i{
     position:absolute;
-    right:14px;bottom:10px;
-    font-size:26px;
-    opacity:.75;
+    left:0; top:0; bottom:0;
+    background:var(--ink);
+    display:block;
+  }
+  .bar.ram > i{ width:34%; background:var(--pink); }
+  .bar.cpu > i{ width:12%; background:var(--green); }
+
+  .maillist{
+    list-style:none;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    font-family:"Courier New",monospace;
+    font-size:12px;
+    font-weight:bold;
+  }
+  .maillist li{
+    background:var(--paper);
+    color:var(--ink);
+    border:3px solid var(--ink);
+    padding:6px 8px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
   }
 
-  .mail-list{list-style:none;padding:0;margin:0;font-size:13px;}
-  .mail-list li{
-    padding:5px 0;
-    border-bottom:1px dashed var(--paper-dark);
+  .weather-row{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  .weather-row .deg{ font-size:56px; letter-spacing:-2px; line-height:.85; }
+  .weather-meta{
+    font-family:"Courier New",monospace;
+    font-size:12px;
+    font-weight:bold;
+    line-height:1.6;
+  }
+
+  /* WIDE ROW */
+  .wide{
+    grid-column:span 4;
+    background:var(--ink);
+    color:var(--paper);
+    border:6px solid var(--ink);
+    box-shadow:8px 8px 0 var(--yellow);
+    padding:22px 24px;
     display:flex;
     justify-content:space-between;
+    gap:24px;
+    flex-wrap:wrap;
+    min-height:auto;
   }
-  .mail-list li:last-child{border-bottom:none;}
-  .dot{
-    width:8px;height:8px;
-    border-radius:50%;
-    background:var(--rust);
-    display:inline-block;
-    margin-right:6px;
+  .wide .stat{
+    font-family:"Courier New",monospace;
   }
-
-  .weather-icon{font-size:44px;display:block;margin-bottom:4px;}
-
-  .wide{grid-column:span 2;}
-
-  .footer-note{
-    margin-top:30px;
-    font-size:13px;
-    color:var(--pencil);
-    border-top:2px dashed var(--paper-dark);
-    padding-top:12px;
-    display:flex;
-    justify-content:space-between;
-    transform:rotate(-0.4deg);
+  .wide .stat b{
+    display:block;
+    font-family:"Arial Black",Arial,sans-serif;
+    font-size:28px;
+    color:var(--yellow);
+    letter-spacing:-1px;
+  }
+  .wide .stat span{
+    font-size:11px;
+    letter-spacing:2px;
+    font-weight:bold;
   }
 
-  .pin{
-    position:absolute;
-    top:-10px;right:16px;
-    width:16px;height:16px;
-    background:radial-gradient(circle at 30% 30%, #ff8a65, var(--rust));
-    border-radius:50%;
-    box-shadow:1px 2px 3px rgba(0,0,0,0.3);
+  @media (max-width:1100px){
+    .grid{ grid-template-columns:repeat(2,1fr); }
+    .wide{ grid-column:span 2; }
+  }
+  @media (max-width:720px){
+    body{ flex-direction:column; }
+    .sidebar{ width:100%; border-right:0; border-bottom:6px solid var(--ink); }
+    .grid{ grid-template-columns:1fr; }
+    .wide{ grid-column:span 1; }
+    .topbar{ flex-direction:column; }
+    .main{ padding:22px; }
   }
 </style>
 </head>
 <body>
+<div class="layout">
 
   <aside class="sidebar">
-    <div class="brand">Mission <span>Control</span></div>
-    <div class="brand-sub">~ Bollas Notizbrett ~</div>
+    <div class="brand">
+      <h1>Mission<br>Control</h1>
+      <span>// CHRIS.M ° NODE-01</span>
+    </div>
+
     <nav>
-      <ul>
-        <li class="active"><span class="ic">🏠</span> Dashboard</li>
-        <li><span class="ic">🐾</span> Bolla</li>
-        <li><span class="ic">🎓</span> Schule</li>
-        <li><span class="ic">🗓️</span> Kalender</li>
-        <li><span class="ic">✉️</span> E-Mail</li>
-        <li><span class="ic">☁️</span> Wetter</li>
-        <li><span class="ic">🖥️</span> System Info</li>
-      </ul>
+      <a href="#" class="active"><span class="ico">#</span>Dashboard</a>
+      <a href="#"><span class="ico">B</span>Bolla</a>
+      <a href="#"><span class="ico">S</span>Schule</a>
+      <a href="#"><span class="ico">K</span>Kalender</a>
+      <a href="#"><span class="ico">@</span>E-Mail</a>
+      <a href="#"><span class="ico">%</span>Wetter</a>
+      <a href="#"><span class="ico">!</span>System Info</a>
     </nav>
+
+    <div class="sidebar-foot">
+      TUNNEL: ONLINE<br>
+      SERVER: 127.0.0.1:18790<br>
+      BUILD 2026.08.27
+    </div>
   </aside>
 
   <main class="main">
     <div class="topbar">
-      <h1>Dashboard</h1>
-      <div class="clock">
+      <div class="title-box">
+        <div class="crumb">// HOME / DASHBOARD</div>
+        <h2>Dashboard</h2>
+      </div>
+      <div class="clock-box">
         <div class="time">20:14</div>
-        <div class="lbl">Uhr</div>
+        <div class="date">DO ° 27 AUG 2026</div>
       </div>
     </div>
 
-    <div class="grid">
+    <section class="grid">
 
-      <div class="card rust">
-        <div class="tape"></div>
-        <div class="pin"></div>
-        <div class="card-title">🧠 Arbeitsspeicher</div>
-        <div class="card-value">34%</div>
-        <div class="bar-track"><div class="bar-fill rust" style="width:34%"></div></div>
-        <div class="small">5,4 GB von 16 GB belegt</div>
-      </div>
+      <article class="card ram">
+        <div class="kicker">RAM // Auslastung</div>
+        <div class="big">34%</div>
+        <div class="bar ram"><i></i></div>
+        <div class="sub">5,4 / 16,0 GB BELEGT</div>
+      </article>
 
-      <div class="card sage">
-        <div class="tape"></div>
-        <div class="pin"></div>
-        <div class="card-title">⚙️ Prozessor</div>
-        <div class="card-value">12%</div>
-        <div class="bar-track"><div class="bar-fill sage" style="width:12%"></div></div>
-        <div class="small">entspannt — alles ruhig 😌</div>
-      </div>
+      <article class="card cpu">
+        <div class="kicker">CPU // Last</div>
+        <div class="big">12%</div>
+        <div class="bar cpu"><i></i></div>
+        <div class="sub">8 KERNE ° 41°C ° STABIL</div>
+      </article>
 
-      <div class="card rust">
-        <div class="tape"></div>
-        <div class="pin"></div>
-        <div class="card-title">✉️ Postfach</div>
-        <div class="card-value">3</div>
-        <ul class="mail-list">
-          <li><span><span class="dot"></span>Riverty – Fristerinnerung</span><span>09:12</span></li>
-          <li><span><span class="dot"></span>itslearning: neue Abgabe</span><span>11:40</span></li>
-          <li><span><span class="dot"></span>DistroKid Auszahlung</span><span>14:03</span></li>
+      <article class="card mail">
+        <div class="kicker">Posteingang</div>
+        <div class="big">3</div>
+        <ul class="maillist">
+          <li>IONOS &mdash; Rechnung August</li>
+          <li>Lessing-Gym &mdash; Stundenplan</li>
+          <li>Robin &mdash; Gruss aus Tansania</li>
         </ul>
-        <div class="doodle">📨</div>
-      </div>
+        <div class="sub">NEUE NACHRICHTEN</div>
+      </article>
 
-      <div class="card sage">
-        <div class="tape"></div>
-        <div class="pin"></div>
-        <div class="card-title">☁️ Wetter — Hamburg</div>
-        <span class="weather-icon">🌤️</span>
-        <div class="card-value" style="font-size:30px;">18°C</div>
-        <div class="small">leicht bewölkt · Wind 12 km/h</div>
-      </div>
-
-      <div class="card wide rust">
-        <div class="tape"></div>
-        <div class="pin"></div>
-        <div class="card-title">🎓 Schule — heute</div>
-        <div style="font-size:15px;line-height:1.6;">
-          ✏️ 7b — EDV, 3. Stunde<br>
-          📌 Handout Modul 4 in itslearning einstellen<br>
-          🗓️ Elternabend Vorbereitung — Notizen offen
+      <article class="card weather">
+        <div class="kicker">Wetter // Hamburg</div>
+        <div class="weather-row">
+          <div class="deg">18&deg;</div>
         </div>
-      </div>
-
-      <div class="card wide sage">
-        <div class="tape"></div>
-        <div class="pin"></div>
-        <div class="card-title">🗓️ Nächste Termine</div>
-        <div style="font-size:15px;line-height:1.6;">
-          So 13.09. · 15:00 — Tanzkurs "Die 3"<br>
-          Di · Gesundheitszentrum (Sport)<br>
-          🚗 ID.3 laden — 62% Restreichweite
+        <div class="weather-meta">
+          BEWOELKT ° WIND 14 KM/H<br>
+          REGEN 20% ° LUFTF. 71%<br>
+          MAX 20&deg; / MIN 12&deg;
         </div>
-      </div>
+        <div class="sub">STAND 20:00 UHR</div>
+      </article>
 
-    </div>
+      <article class="wide">
+        <div class="stat"><b>07:42</b><span>UPTIME STUNDEN</span></div>
+        <div class="stat"><b>128 GB</b><span>DISK FREI</span></div>
+        <div class="stat"><b>4</b><span>CRON-JOBS AKTIV</span></div>
+        <div class="stat"><b>2</b><span>OFFENE AUFGABEN</span></div>
+        <div class="stat"><b>OK</b><span>BACKUP ONEDRIVE</span></div>
+      </article>
 
-    <div class="footer-note">
-      <span>📝 zuletzt gekritzelt: gerade eben</span>
-      <span>Mission Control · handgemacht mit 🐾</span>
-    </div>
+    </section>
   </main>
 
+</div>
 </body>
 </html>

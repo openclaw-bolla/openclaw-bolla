@@ -1,0 +1,23 @@
+Hallo zusammen,
+
+zu der Viren-/Trojaner-Warnung, die auf dem PC S9462 (Kürzel "mekren") kurz nach dem Anmelden bzw. beim Öffnen von Edge auftauchte: Es war kein echter Schädling. Ursache und Lösung kurz dokumentiert, falls das auf weiteren Rechnern auftaucht.
+
+Was es war
+Eine Webseite hatte in Edge die Berechtigung, Push-Benachrichtigungen zu senden. Über diese Berechtigung hat sie gefälschte "Windows/Antivirus"-Warnungen als System-Benachrichtigung eingeblendet - auch ohne sichtbar geöffneten Browser, weil Edge dafür einen Hintergrundprozess laufen lässt. Ein Klick auf die Warnung (oder der Versuch, sie zu schließen) öffnete Edge mit einer langen Tracking-URL. Klassische Scareware, kein Befall.
+
+Der Eintrag, der das ausgelöst hat:
+https://da78m1np3sis738td92g.nhwy-adguard.co.in
+(der Name enthält "adguard", um seriös zu wirken - hat damit nichts zu tun).
+
+Vermutlich hat jemand auf so einer Seite einen "Zum Fortfahren auf Zulassen klicken"-Dialog weggeklickt und damit die Benachrichtigung erlaubt.
+
+Die Lösung (dauert 30 Sekunden)
+1. Edge -> edge://settings/content/notifications aufrufen (oder: Einstellungen -> Cookies und Websiteberechtigungen -> Benachrichtigungen).
+2. Unter "Zulassen" den Eintrag da78m1np3sis738td92g.nhwy-adguard.co.in (bzw. jede unbekannte Domain) über die drei Punkte -> Entfernen.
+3. Fertig - die Warnungen sind sofort weg. Kein Neuaufsetzen, kein Scan nötig. Wer ganz sichergehen will, lässt einmal einen Defender-Schnellscan laufen.
+
+Vorbeugung
+Falls das öfter vorkommt, ließe sich per Gruppenrichtlinie/Edge-Policy DefaultNotificationsSetting = 2 (Benachrichtigungen generell blockieren) setzen, dann können Webseiten gar nicht mehr danach fragen. Für die Schüler-PCs vermutlich sinnvoll.
+
+LG
+Chris Mandel
