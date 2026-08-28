@@ -35,7 +35,7 @@ STUDENT_FILES = [
     {"path": os.path.join(PRAKT_DIR, "01-Praktikum.html"), "basename": "01-Praktikum"},
     {"path": os.path.join(PRAKT_DIR, "02-Elterninfo-MS-Konto.html"), "basename": "02-Elterninfo-MS-Konto"},
     {"path": os.path.join(PRAKT_DIR, "02-Fenster-Anleitung.html"), "basename": "02-Fenster-Anleitung"},
-    {"path": os.path.join(PRAKT_DIR, "02-Praktikum.html"), "basename": "02-Praktikum"},
+    # 02-Praktikum ersatzlos gestrichen (Chris, 28.08.2026) - nie unterrichtet, aus itslearning entfernt.
     {"path": os.path.join(PRAKT_DIR, "02-The Basics - Grundbegriffe - II.pdf"), "basename": PDF_BASENAME},
 ]
 
