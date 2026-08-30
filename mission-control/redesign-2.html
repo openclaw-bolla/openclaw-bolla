@@ -3,292 +3,305 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Control — Kladde</title>
+<title>MISSION CONTROL // GREENPHOSPHOR</title>
 <style>
   :root{
-    --paper:#f4 ebd9;
-    --paper:#f5edda;
-    --paper-deep:#efe4cb;
-    --ink:#3a3226;
-    --ink-soft:#6b5f4c;
-    --line:#d8c9a6;
-    --rust:#c65d3b;
-    --pine:#3d6b5e;
-    --gold:#d99a2b;
-    --shadow:rgba(90,70,40,.18);
+    --grn:#00ff66;
+    --grn-dim:#0a8f3c;
+    --grn-faint:#063a1c;
+    --bg:#040804;
+    --panel:#080d08;
+    --amber:#ffb000;
+    --red:#ff4444;
   }
-  *{box-sizing:border-box;margin:0;padding:0}
+  *{margin:0;padding:0;box-sizing:border-box}
   html,body{height:100%}
   body{
-    font-family:"Segoe Print","Bradley Hand","Comic Sans MS","Segoe UI",cursive,sans-serif;
-    background:var(--paper);
-    background-image:
-      linear-gradient(var(--line) 1px,transparent 1px),
-      linear-gradient(90deg,var(--line) 1px,transparent 1px);
-    background-size:26px 26px;
-    color:var(--ink);
-    display:flex;
-    min-height:100vh;
+    background:var(--bg);
+    color:var(--grn);
+    font-family:"Courier New",Courier,"DejaVu Sans Mono",monospace;
+    font-size:15px;
     line-height:1.5;
+    overflow-x:hidden;
+    text-shadow:0 0 4px rgba(0,255,102,.45);
   }
-  /* paper vignette */
+  /* CRT overlays */
+  body::before{
+    content:"";
+    position:fixed;inset:0;z-index:9999;pointer-events:none;
+    background:repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,.28) 3px,
+      rgba(0,0,0,.28) 4px
+    );
+  }
   body::after{
-    content:"";position:fixed;inset:0;pointer-events:none;
-    box-shadow:inset 0 0 160px rgba(120,95,55,.22);
+    content:"";
+    position:fixed;inset:0;z-index:9998;pointer-events:none;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,.55) 100%);
   }
+  @keyframes flicker{
+    0%,100%{opacity:1}
+    92%{opacity:1}
+    93%{opacity:.82}
+    94%{opacity:1}
+    97%{opacity:.9}
+    98%{opacity:1}
+  }
+  .layout{display:flex;min-height:100vh;animation:flicker 6s infinite}
 
-  /* ---------- Sidebar ---------- */
+  /* Sidebar */
   .sidebar{
-    width:236px;flex-shrink:0;
-    background:var(--paper-deep);
-    border-right:2px solid var(--ink);
-    border-image:repeating-linear-gradient(180deg,var(--ink) 0 8px,transparent 8px 15px) 2;
-    padding:28px 18px;
-    display:flex;flex-direction:column;gap:26px;
+    width:250px;flex-shrink:0;
+    border-right:1px solid var(--grn-dim);
+    padding:22px 0;
+    background:linear-gradient(180deg,var(--panel),var(--bg));
   }
-  .brand{display:flex;align-items:center;gap:10px;padding-left:4px}
-  .brand .dot{
-    width:30px;height:30px;border:2px solid var(--rust);border-radius:50% 48% 52% 47%;
-    display:grid;place-items:center;font-size:16px;transform:rotate(-6deg);
-    background:#fff8ec;
+  .brand{
+    padding:0 22px 18px;
+    border-bottom:1px dashed var(--grn-dim);
+    margin-bottom:14px;
   }
-  .brand h1{font-size:20px;letter-spacing:.5px;font-weight:700}
-  .brand span{display:block;font-size:11px;color:var(--ink-soft);letter-spacing:2px;text-transform:uppercase}
+  .brand h1{
+    font-size:18px;letter-spacing:2px;font-weight:700;
+  }
+  .brand .sub{font-size:11px;color:var(--grn-dim);letter-spacing:1px;margin-top:4px}
+  .nav{list-style:none}
+  .nav li{padding:0}
+  .nav a{
+    display:block;
+    padding:10px 22px;
+    color:var(--grn-dim);
+    text-decoration:none;
+    letter-spacing:1px;
+    border-left:3px solid transparent;
+    transition:all .12s linear;
+  }
+  .nav a::before{content:"> ";opacity:.5}
+  .nav a:hover{color:var(--grn);background:var(--grn-faint)}
+  .nav a.active{
+    color:var(--grn);
+    border-left-color:var(--grn);
+    background:var(--grn-faint);
+  }
+  .nav a.active::before{content:"# "}
+  .sidebar .foot{
+    padding:16px 22px 0;margin-top:18px;
+    border-top:1px dashed var(--grn-dim);
+    font-size:11px;color:var(--grn-dim);
+  }
+  .blink{animation:blink 1s step-end infinite}
+  @keyframes blink{50%{opacity:0}}
 
-  nav{display:flex;flex-direction:column;gap:4px}
-  nav a{
-    display:flex;align-items:center;gap:12px;
-    padding:9px 12px;border-radius:10px;
-    text-decoration:none;color:var(--ink);font-size:15px;
-    border:1.5px dashed transparent;
-    transition:.15s;
-  }
-  nav a .ic{width:22px;text-align:center;font-size:16px;opacity:.8}
-  nav a:hover{border-color:var(--line);background:#fff8ec66}
-  nav a.active{
-    background:#fff8ec;
-    border:1.5px solid var(--ink);
-    box-shadow:2px 3px 0 var(--shadow);
-    transform:rotate(-.6deg);
-    font-weight:700;
-  }
-  nav a.active .ic{opacity:1}
-
-  .sidebar .footnote{
-    margin-top:auto;font-size:11px;color:var(--ink-soft);
-    border-top:1px dashed var(--line);padding-top:12px;
-  }
-
-  /* ---------- Main ---------- */
+  /* Main */
   .main{flex:1;display:flex;flex-direction:column;min-width:0}
-
   .topbar{
-    display:flex;align-items:baseline;justify-content:space-between;
-    padding:26px 34px 18px;
-    border-bottom:2px solid var(--ink);
-    border-image:repeating-linear-gradient(90deg,var(--ink) 0 9px,transparent 9px 16px) 2;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 26px;
+    border-bottom:1px solid var(--grn-dim);
+    background:var(--panel);
   }
-  .topbar h2{font-size:27px;font-weight:700}
-  .topbar h2::after{content:"";display:block;width:70%;height:6px;margin-top:2px;
-    background:var(--gold);border-radius:4px;transform:rotate(-.8deg);opacity:.55}
-  .clock{
-    font-size:22px;font-weight:700;color:var(--pine);
-    border:2px solid var(--pine);border-radius:14px 12px 15px 11px;
-    padding:6px 16px;background:#fff8ec;
-    box-shadow:2px 3px 0 var(--shadow);transform:rotate(1deg);
+  .topbar .title{font-size:16px;letter-spacing:2px}
+  .topbar .title span{color:var(--grn-dim)}
+  .topbar .clock{
+    font-size:20px;letter-spacing:3px;
+    border:1px solid var(--grn-dim);
+    padding:4px 14px;
   }
-  .clock small{display:block;font-size:10px;letter-spacing:2px;color:var(--ink-soft);text-transform:uppercase;text-align:center}
+  .topbar .clock small{display:block;font-size:10px;letter-spacing:1px;color:var(--grn-dim);text-align:right}
 
-  .content{padding:30px 34px;display:flex;flex-direction:column;gap:26px}
-  .section-label{font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--ink-soft)}
+  .content{padding:26px;flex:1}
+  .sysline{
+    font-size:12px;color:var(--grn-dim);margin-bottom:20px;
+    border-bottom:1px dashed var(--grn-faint);padding-bottom:10px;
+  }
 
   .grid{
-    display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
-    gap:22px;
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+    gap:18px;
   }
   .card{
-    background:#fff8ec;
-    border:2px solid var(--ink);
-    border-radius:16px 14px 18px 12px;
-    padding:20px;
-    box-shadow:3px 4px 0 var(--shadow);
+    border:1px solid var(--grn-dim);
+    background:var(--panel);
+    padding:16px;
     position:relative;
   }
-  .card:nth-child(2n){transform:rotate(-.7deg)}
-  .card:nth-child(3n){transform:rotate(.6deg)}
-  /* washi tape */
   .card::before{
-    content:"";position:absolute;top:-11px;left:50%;width:64px;height:20px;
-    transform:translateX(-50%) rotate(-3deg);
-    background:rgba(217,154,43,.35);
-    border:1px solid rgba(160,110,30,.25);
+    content:"["attr(data-tag)"]";
+    position:absolute;top:-10px;left:12px;
+    background:var(--bg);
+    padding:0 6px;
+    font-size:11px;color:var(--grn-dim);letter-spacing:1px;
   }
-  .card h3{font-size:15px;font-weight:700;letter-spacing:.5px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
-  .card .sub{font-size:12px;color:var(--ink-soft);margin-bottom:14px}
-  .big{font-size:40px;font-weight:700;line-height:1}
-  .big .unit{font-size:18px;color:var(--ink-soft)}
+  .card h3{font-size:13px;letter-spacing:1px;font-weight:700;margin-bottom:12px}
+  .big{font-size:40px;line-height:1;letter-spacing:1px}
+  .big small{font-size:16px;color:var(--grn-dim)}
+  .card .note{font-size:12px;color:var(--grn-dim);margin-top:10px}
 
-  /* hand-drawn meter */
-  .meter{
-    height:16px;margin-top:14px;
-    border:2px solid var(--ink);border-radius:10px;
-    background:repeating-linear-gradient(45deg,#00000008 0 6px,transparent 6px 12px);
-    overflow:hidden;
+  /* ascii-ish bar */
+  .bar{
+    margin-top:14px;
+    font-size:13px;letter-spacing:1px;
+    color:var(--grn-dim);
+    white-space:nowrap;overflow:hidden;
   }
-  .meter i{display:block;height:100%;border-right:2px solid var(--ink)}
-  .fill-rust{background:var(--rust)}
-  .fill-pine{background:var(--pine)}
-  .meter-cap{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-soft);margin-top:5px}
+  .bar b{color:var(--grn);font-weight:400}
 
-  /* mail list */
-  .mails{list-style:none;display:flex;flex-direction:column;gap:10px;margin-top:6px}
-  .mails li{
-    display:flex;gap:10px;align-items:flex-start;
-    border-bottom:1px dashed var(--line);padding-bottom:9px;
+  .warn{color:var(--amber);text-shadow:0 0 4px rgba(255,176,0,.5)}
+  .crit{color:var(--red);text-shadow:0 0 4px rgba(255,68,68,.5)}
+
+  .maillist{list-style:none;font-size:13px}
+  .maillist li{
+    padding:6px 0;border-bottom:1px dotted var(--grn-faint);
+    display:flex;gap:8px;
   }
-  .mails li:last-child{border-bottom:0;padding-bottom:0}
-  .mails .from{font-weight:700;font-size:13px}
-  .mails .subj{font-size:12px;color:var(--ink-soft)}
-  .mails .pin{color:var(--rust);font-size:14px;line-height:1.2}
-  .badge{
-    display:inline-grid;place-items:center;min-width:24px;height:24px;padding:0 7px;
-    border:2px solid var(--rust);border-radius:50% 47% 52% 48%;
-    color:var(--rust);font-weight:700;font-size:13px;transform:rotate(-4deg);
+  .maillist li:last-child{border-bottom:none}
+  .maillist .from{color:var(--grn);min-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .maillist .subj{color:var(--grn-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  .weather-ascii{
+    font-size:12px;line-height:1.3;color:var(--grn-dim);
+    white-space:pre;margin-top:8px;
   }
 
-  /* weather */
-  .weather{display:flex;align-items:center;gap:16px}
-  .weather .sun{
-    width:58px;height:58px;flex-shrink:0;border:2px solid var(--gold);border-radius:50%;
-    display:grid;place-items:center;font-size:28px;background:#fff3d8;
-    box-shadow:2px 3px 0 var(--shadow);
+  .wide{grid-column:1 / -1}
+  .logbox{
+    border:1px solid var(--grn-dim);background:#000;
+    padding:12px 14px;font-size:12px;line-height:1.7;
+    max-height:150px;overflow:auto;
   }
-  .weather .temp{font-size:34px;font-weight:700}
-  .weather .desc{font-size:12px;color:var(--ink-soft)}
-  .wx-row{display:flex;gap:18px;margin-top:14px;font-size:12px;color:var(--ink-soft)}
-  .wx-row b{display:block;color:var(--ink);font-size:14px}
+  .logbox .t{color:var(--grn-dim)}
+  .logbox .ok{color:var(--grn)}
 
-  .note{
-    font-size:13px;color:var(--ink-soft);text-align:center;
-    padding:8px;border-top:1px dashed var(--line);
-  }
-  @media(max-width:640px){
+  @media(max-width:720px){
     .sidebar{display:none}
   }
 </style>
 </head>
 <body>
+<div class="layout">
 
   <aside class="sidebar">
     <div class="brand">
-      <div class="dot">🐾</div>
-      <div>
-        <h1>Mission Control</h1>
-        <span>Kladde</span>
-      </div>
+      <h1>MISSION_CTRL</h1>
+      <div class="sub">v3.1.7 // node: bolla-wsl2</div>
     </div>
-
-    <nav>
-      <a href="#" class="active"><span class="ic">📓</span>Dashboard</a>
-      <a href="#"><span class="ic">🐾</span>Bolla</a>
-      <a href="#"><span class="ic">🏫</span>Schule</a>
-      <a href="#"><span class="ic">🗓️</span>Kalender</a>
-      <a href="#"><span class="ic">✉️</span>E-Mail</a>
-      <a href="#"><span class="ic">🌤️</span>Wetter</a>
-      <a href="#"><span class="ic">⚙️</span>System Info</a>
-    </nav>
-
-    <div class="footnote">
-      Zuletzt notiert:<br>Sa, 29. Aug 2026 — 20:14 Uhr<br>
-      „Erst suchen, dann fragen."
+    <ul class="nav">
+      <li><a href="#" class="active">Dashboard</a></li>
+      <li><a href="#">Bolla</a></li>
+      <li><a href="#">Schule</a></li>
+      <li><a href="#">Kalender</a></li>
+      <li><a href="#">E-Mail</a></li>
+      <li><a href="#">Wetter</a></li>
+      <li><a href="#">System Info</a></li>
+    </ul>
+    <div class="foot">
+      uptime 4d 07:52<br>
+      load 0.34 0.28 0.19<br>
+      session #2eda33f<br>
+      _ <span class="blink">&#9608;</span>
     </div>
   </aside>
 
   <div class="main">
-    <header class="topbar">
-      <h2>Dashboard</h2>
+    <div class="topbar">
+      <div class="title">DASHBOARD <span>// ~/mission-control</span></div>
       <div class="clock">
-        20:14
-        <small>Samstagabend</small>
+        20:14:07
+        <small>SO 30 AUG 2026</small>
       </div>
-    </header>
+    </div>
 
     <div class="content">
-      <div class="section-label">— Auf einen Blick —</div>
+      <div class="sysline">
+        &gt; status --all &nbsp;|&nbsp; alle Dienste ONLINE &nbsp;|&nbsp; Cloudflare-Tunnel: UP &nbsp;|&nbsp; letzter Sync 20:10:44
+      </div>
 
       <div class="grid">
 
-        <!-- RAM -->
-        <div class="card">
-          <h3>🧠 Arbeitsspeicher</h3>
-          <div class="sub">WSL2 · 6 GB zugewiesen</div>
-          <div class="big">34<span class="unit">%</span></div>
-          <div class="meter"><i class="fill-rust" style="width:34%"></i></div>
-          <div class="meter-cap"><span>2,0 GB belegt</span><span>4,0 GB frei</span></div>
+        <div class="card" data-tag="MEM">
+          <h3>RAM AUSLASTUNG</h3>
+          <div class="big">34<small>%</small></div>
+          <div class="bar"><b>[#################...............................]</b></div>
+          <div class="note">2.04 GiB / 6.00 GiB &nbsp; swap 0.11 GiB</div>
         </div>
 
-        <!-- CPU -->
-        <div class="card">
-          <h3>⚡ Prozessor</h3>
-          <div class="sub">8 Kerne · Last 1 min</div>
-          <div class="big">12<span class="unit">%</span></div>
-          <div class="meter"><i class="fill-pine" style="width:12%"></i></div>
-          <div class="meter-cap"><span>Leerlauf</span><span>Temp 41 °C</span></div>
+        <div class="card" data-tag="CPU">
+          <h3>CPU LAST</h3>
+          <div class="big">12<small>%</small></div>
+          <div class="bar"><b>[######..........................................]</b></div>
+          <div class="note">4 vCPU @ 2.90 GHz &nbsp; temp 46&deg;C</div>
         </div>
 
-        <!-- Mails -->
-        <div class="card">
-          <h3>✉️ Posteingang <span class="badge">3</span></h3>
-          <div class="sub">3 neue seit 17:40</div>
-          <ul class="mails">
-            <li>
-              <span class="pin">✦</span>
-              <div>
-                <div class="from">Lessing-Gymnasium</div>
-                <div class="subj">Vertretungsplan Montag — Raumänderung 7c</div>
-              </div>
-            </li>
-            <li>
-              <span class="pin">✦</span>
-              <div>
-                <div class="from">Robin</div>
-                <div class="subj">Fotos aus Tansania (Woche 4)</div>
-              </div>
-            </li>
-            <li>
-              <span class="pin">✦</span>
-              <div>
-                <div class="from">Booking.com</div>
-                <div class="subj">Deine Reservierung „Die 3" ist bestätigt</div>
-              </div>
-            </li>
+        <div class="card" data-tag="MAIL">
+          <h3>POSTEINGANG &mdash; <span class="warn">3 NEU</span></h3>
+          <ul class="maillist">
+            <li><span class="from">peters@lg-n.de</span><span class="subj">AW: MS Account Widerruf</span></li>
+            <li><span class="from">no-reply@kdp</span><span class="subj">Auszahlungsbericht August</span></li>
+            <li><span class="from">robin.mandel</span><span class="subj">Fotos Ol Doinyo Lengai</span></li>
           </ul>
+          <div class="note">letzter Abruf 20:12 &mdash; 2 Konten gepollt</div>
         </div>
 
-        <!-- Weather -->
-        <div class="card">
-          <h3>🌤️ Wetter</h3>
-          <div class="sub">Hamburg · aktualisiert 20:00</div>
-          <div class="weather">
-            <div class="sun">⛅</div>
-            <div>
-              <div class="temp">18 °C</div>
-              <div class="desc">Leicht bewölkt, trocken</div>
-            </div>
-          </div>
-          <div class="wx-row">
-            <span><b>12 °C</b>Nacht</span>
-            <span><b>14 km/h</b>Wind W</span>
-            <span><b>0 mm</b>Regen</span>
-            <span><b>68 %</b>Luftf.</span>
+        <div class="card" data-tag="WTTR">
+          <h3>WETTER // HAMBURG</h3>
+          <div class="big">18<small>&deg;C</small></div>
+          <div class="weather-ascii">   \   /     leicht bewoelkt
+    .-.      gef. 17&deg;C  wind 14 km/h SW
+ &mdash; (   ) &mdash;   feuchte 71%   1014 hPa
+    `-'      regen 10%
+   /   \</div>
+        </div>
+
+        <div class="card" data-tag="DISK">
+          <h3>SPEICHER /mnt/d</h3>
+          <div class="big">61<small>%</small></div>
+          <div class="bar"><b>[#############################...................]</b></div>
+          <div class="note">452 GiB / 744 GiB &nbsp; OneDrive sync OK</div>
+        </div>
+
+        <div class="card" data-tag="CAL">
+          <h3>NAECHSTER TERMIN</h3>
+          <div style="font-size:15px;margin-bottom:6px">DI 01 SEP &mdash; 07:55</div>
+          <div class="note" style="color:var(--grn);font-size:14px">EDV 7b // Raum E-14 &mdash; Kurstag 3: Tastatur</div>
+          <div class="note">danach: 09:45 EDV 7c &nbsp;&middot;&nbsp; 13:00 Tanzkurs-Anmeldung</div>
+        </div>
+
+        <div class="card" data-tag="BOLLA">
+          <h3>BOLLA AGENT</h3>
+          <div style="font-size:15px" class="ok">&#9673; BEREIT</div>
+          <div class="note">offene tasks: 3 &nbsp;|&nbsp; crons: 11 aktiv<br>
+          &mdash; itslearning-Mitteilung Kurstag 3<br>
+          &mdash; Kurstag 5/6 entschaerfen<br>
+          &mdash; MEMORY.md kompaktieren</div>
+        </div>
+
+        <div class="card" data-tag="NET">
+          <h3>NETZWERK</h3>
+          <div class="big">1.2<small>ms</small></div>
+          <div class="note">gw 192.168.178.1 &nbsp; up 0.4 / down 94 Mbit<br>tunnel bolla.chrismandel.de &mdash; <span class="ok">200 OK</span></div>
+        </div>
+
+        <div class="card wide" data-tag="LOG">
+          <h3>SYSTEM LOG &mdash; tail -f /var/log/bolla.log</h3>
+          <div class="logbox">
+            <div><span class="t">20:10:44</span> <span class="ok">[OK]</span> nightly backup pushed &rarr; github:openclaw-bolla (312 files)</div>
+            <div><span class="t">20:08:12</span> <span class="ok">[OK]</span> onedrive rsync complete &mdash; 0 conflicts</div>
+            <div><span class="t">20:04:59</span> <span class="t">[..]</span> mail poll: 3 new in ernstmandel@outlook.de</div>
+            <div><span class="t">19:55:00</span> <span class="ok">[OK]</span> cron suno-prompt-scout finished (exit 0)</div>
+            <div><span class="t">19:41:33</span> <span class="warn">[WARN]</span> wsl_memory_watchdog: peak 4.1 GiB &mdash; within limits</div>
+            <div><span class="t">19:30:00</span> <span class="ok">[OK]</span> cloudflared heartbeat &mdash; tunnel healthy</div>
+            <div><span class="t">18:12:07</span> <span class="ok">[OK]</span> aimor frame push: 6 new photos</div>
           </div>
         </div>
 
       </div>
-
-      <div class="note">7 Seiten · alles inline geschrieben · keine losen Blätter 🐾</div>
     </div>
   </div>
 
+</div>
 </body>
 </html>
