@@ -8,7 +8,6 @@ import json
 import os
 import sys
 import subprocess
-import tempfile
 import traceback
 import urllib.request
 import urllib.parse
@@ -190,32 +189,6 @@ CLAUDE_BIN = os.path.expanduser("~/.local/bin/claude")
 
 WORKSPACE = os.path.expanduser("~/workspace")
 TOKEN_FILE = os.path.join(WORKSPACE, "config/ms_token.json")
-
-# Serialisiert Token-Refresh/-Schreibvorgänge über alle Request-Threads (ThreadingHTTPServer).
-# Ohne das konnten zwei parallele get_token()-Aufrufe dieselbe Datei überschneidend schreiben →
-# gültiges JSON + Rest des längeren alten Tokens am Ende ("Extra data ..."), Datei unlesbar.
-_TOKEN_LOCK = threading.Lock()
-
-
-def _atomic_write_json(path, obj, mode=0o600):
-    """Schreibt JSON atomar: erst in temp-Datei im selben Verzeichnis, dann os.replace().
-    Ein Leser sieht dadurch immer entweder die alte oder die komplette neue Datei, nie einen
-    halb geschriebenen Mischzustand."""
-    d = os.path.dirname(path) or "."
-    fd, tmp = tempfile.mkstemp(dir=d, prefix=".tmp-", suffix=".json")
-    try:
-        with os.fdopen(fd, "w") as f:
-            json.dump(obj, f, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
-        os.chmod(tmp, mode)
-        os.replace(tmp, path)
-    except BaseException:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
 AZURE_SPEECH_FILE = os.path.join(WORKSPACE, "config/azure_speech.json")
 CLIPBOARD_FILE = os.path.join(WORKSPACE, "config/clipboard.json")
 CLIPBOARD_TRASH_FILE = os.path.join(WORKSPACE, "config/clipboard_trash.json")
@@ -706,41 +679,37 @@ def lms_base_url():
     return f"http://{_lms_host_cache}:1234"
 
 def get_token():
-    """Gibt einen gültigen MS Graph Access Token zurück (refresht bei Bedarf).
+    """Gibt einen gültigen MS Graph Access Token zurück (refresht bei Bedarf)."""
+    try:
+        with open(TOKEN_FILE) as f:
+            token_data = json.load(f)
 
-    Refresh + Schreiben laufen unter _TOKEN_LOCK und der Schreibvorgang ist atomar
-    (temp-Datei + os.replace), damit parallele Request-Threads die Token-Datei nicht
-    überschneidend beschreiben und dabei korrumpieren können."""
-    with _TOKEN_LOCK:
+        # Immer refreshen — Access Tokens laufen schnell ab
+        import urllib.request, urllib.parse
+        data = urllib.parse.urlencode({
+            "client_id": CLIENT_ID,
+            "grant_type": "refresh_token",
+            "refresh_token": token_data["refresh_token"],
+            "scope": "https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Calendars.Read https://graph.microsoft.com/Contacts.Read offline_access"
+        }).encode()
+        req = urllib.request.Request(
+            "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            data=data, method="POST",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            new_token = json.loads(r.read())
+        with open(TOKEN_FILE, "w") as f:
+            json.dump(new_token, f, indent=2)
+        return new_token["access_token"]
+    except Exception as e:
+        print(f"Token error: {e}")
+        # Fallback: alten Token versuchen
         try:
             with open(TOKEN_FILE) as f:
-                token_data = json.load(f)
-
-            # Immer refreshen — Access Tokens laufen schnell ab
-            import urllib.request, urllib.parse
-            data = urllib.parse.urlencode({
-                "client_id": CLIENT_ID,
-                "grant_type": "refresh_token",
-                "refresh_token": token_data["refresh_token"],
-                "scope": "https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Calendars.Read https://graph.microsoft.com/Contacts.Read offline_access"
-            }).encode()
-            req = urllib.request.Request(
-                "https://login.microsoftonline.com/common/oauth2/v2.0/token",
-                data=data, method="POST",
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
-            )
-            with urllib.request.urlopen(req, timeout=10) as r:
-                new_token = json.loads(r.read())
-            _atomic_write_json(TOKEN_FILE, new_token)
-            return new_token["access_token"]
-        except Exception as e:
-            print(f"Token error: {e}")
-            # Fallback: alten Token versuchen
-            try:
-                with open(TOKEN_FILE) as f:
-                    return json.load(f).get("access_token")
-            except:
-                return None
+                return json.load(f).get("access_token")
+        except:
+            return None
 
 def graph_get(path):
     import urllib.request, urllib.parse
@@ -2186,11 +2155,11 @@ def _graph_calendar_token():
     }).encode()
     req = urllib.request.Request("https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
                                  data=data, method="POST")
-    with _TOKEN_LOCK:
-        with urllib.request.urlopen(req, timeout=20) as r:
-            new = json.loads(r.read())
-        tok.update(new)
-        _atomic_write_json(tokf, tok)
+    with urllib.request.urlopen(req, timeout=20) as r:
+        new = json.loads(r.read())
+    tok.update(new)
+    Path(tokf).write_text(json.dumps(tok, indent=2))
+    os.chmod(tokf, 0o600)
     return new["access_token"]
 
 
