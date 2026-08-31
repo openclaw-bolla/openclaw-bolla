@@ -7043,6 +7043,8 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
             MOBILE_STATIC = {
                 "/m":                        ("mobile.html",            "text/html; charset=utf-8", "no-store"),
                 "/mobile.html":              ("mobile.html",            "text/html; charset=utf-8", "no-store"),
+                "/f":                        ("f.html",                 "text/html; charset=utf-8", "no-store"),
+                "/f.html":                   ("f.html",                 "text/html; charset=utf-8", "no-store"),
                 "/manifest.webmanifest":     ("manifest.webmanifest",   "application/manifest+json", "max-age=3600"),
                 "/sw.js":                    ("sw.js",                  "application/javascript", "no-store"),
                 "/mc-icon-192.png":          ("mc-icon-192.png",        "image/png", "max-age=604800"),
@@ -7066,6 +7068,75 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 self.end_headers()
                 self.wfile.write(body)
                 return
+
+            # Renis Fotos: Tagesauswahl (wechselt taeglich um Mitternacht, Berlin)
+            if _path_only == "/f-photos/today.json":
+                import datetime as _dt, zoneinfo as _zi, random as _random
+                mf = os.path.expanduser("~/workspace/mission-control/f-photos/manifest.json")
+                try:
+                    pool = json.load(open(mf))
+                except Exception:
+                    pool = []
+                try:
+                    ver = str(int(os.path.getmtime(mf)))   # Cache-Buster: aendert sich bei jedem Pool-Neubau
+                except OSError:
+                    ver = "0"
+                def _mk(it):
+                    s = it["src"]
+                    return {"src": s + ("&" if "?" in s else "?") + "v=" + ver,
+                            "cap": it.get("cap", "")}
+                today = _dt.datetime.now(_zi.ZoneInfo("Europe/Berlin")).date()
+                rnd = _random.Random(today.toordinal())
+                order = pool[:]
+                rnd.shuffle(order)
+                pick, seen_folder, seen_cap = [], set(), set()
+                for it in order:
+                    fol = it.get("folder", it["src"])
+                    capkey = (it.get("cap", "").split(" · ")[0]).strip().lower()
+                    if fol in seen_folder or capkey in seen_cap:
+                        continue
+                    seen_folder.add(fol); seen_cap.add(capkey)
+                    pick.append(_mk(it))
+                    if len(pick) >= 15:
+                        break
+                for it in order:  # auffuellen falls Dedup zu streng war
+                    if len(pick) >= 15:
+                        break
+                    e = _mk(it)
+                    if e not in pick:
+                        pick.append(e)
+                body = json.dumps({"date": today.isoformat(), "photos": pick},
+                                  ensure_ascii=False).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
+            # Renis Fotos: /f-photos/*.jpg  +  manifest.json
+            if _path_only.startswith("/f-photos/"):
+                fname = os.path.basename(_path_only)
+                if fname == "manifest.json":
+                    fp = os.path.expanduser("~/workspace/mission-control/f-photos/manifest.json")
+                    ctype, cache = "application/json; charset=utf-8", "no-store"
+                elif fname.endswith(".jpg") and "/" not in fname and "\\" not in fname:
+                    fp = os.path.expanduser(f"~/workspace/mission-control/f-photos/{fname}")
+                    ctype, cache = "image/jpeg", "public, max-age=86400"
+                else:
+                    self.send_error(404); return
+                if os.path.isfile(fp):
+                    with open(fp, "rb") as f:
+                        body = f.read()
+                    self.send_response(200)
+                    self.send_header("Content-Type", ctype)
+                    self.send_header("Cache-Control", cache)
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
+                self.send_error(404); return
 
             # Wetter-Fotos: /img/weather/*.jpg
             if _path_only.startswith("/img/weather/") and _path_only.endswith(".jpg"):
@@ -9427,21 +9498,18 @@ Antworte NUR als reines JSON ohne Markdown:
                             "KEINE Bezüge auf 'noch X Tage', 'in X Tagen', 'vor X Tagen' o.ä. und KEINE Entschuldigung "
                             "dafür, dass der Geburtstag schon eine Weile her ist oder erst noch bevorsteht. "
                             "Einfach fröhliche Geburtstags-/Feierstimmung, unabhängig vom genauen Abspieltag.\n"
-                            "WICHTIG — GANZJÄHRIG EINSETZBAR: Der Song soll ein Geburtstagssong bleiben (Anlass, Datum "
-                            "und Alter dürfen im Text vorkommen), aber NICHT so formuliert sein, dass er nur exakt am "
+                            "WICHTIG — GANZJÄHRIG EINSETZBAR: Der Song soll ein Geburtstagssong bleiben (Anlass und "
+                            "Datum dürfen im Text vorkommen), aber NICHT so formuliert sein, dass er nur exakt am "
                             "Kalendertag selbst passt. Vermeide zentrale 'HEUTE ist dein großer Tag'/'heute feiern wir "
                             "dich'-Formulierungen als tragendes Songthema — der Text soll auch Wochen oder Monate nach "
                             "dem eigentlichen Geburtstag noch stimmig klingen, wenn er zwischendurch nochmal gehört wird.\n"
-                            "ALTERSANGABE ZEITLOS HALTEN: Falls das Alter im Text vorkommt, IMMER exakt die oben unter "
-                            "'Alter:' angegebene Zahl verwenden — NICHT selbst nachrechnen, NICHT +1 addieren, egal ob "
-                            "der Geburtstag schon war oder noch bevorsteht (diese Zahl ist bereits die richtige für den "
-                            "Geburtstag, um den es hier geht). Formuliere sie IMMER als Ordnungszahl/Bezeichnung des "
-                            "Geburtstags — z.B. 'dein X. Geburtstag', 'zu deinen X Jahren', 'für deine X Jahre' (X = die "
-                            "angegebene Alter-Zahl, wörtlich übernehmen, nicht durch eine andere Zahl ersetzen). NIEMALS "
-                            "eine Zustandsform wie 'wird bald X' oder 'ist jetzt X Jahre alt' verwenden — die wäre nur "
-                            "zum Erstellungszeitpunkt richtig und stimmt nicht mehr, sobald der eigentliche Geburtstag "
-                            "beim späteren Hören schon verstrichen oder noch nicht da ist. Die Ordnungszahl-Form bleibt "
-                            "dagegen das ganze Jahr über wahr, egal wann der Song gehört wird.")
+                            "KEIN ALTER IM TEXT: Das Alter bzw. die Anzahl der Lebensjahre darf im Liedtext NICHT "
+                            "vorkommen — weder als Zahl noch ausgeschrieben, weder als Ordnungszahl ('dein 14. "
+                            "Geburtstag') noch als Zustandsform ('wird 14', 'ist jetzt 14 Jahre alt') noch als "
+                            "Anspielung ('ein Jahr älter', 'wieder ein Jahr weiter', 'noch eine Kerze mehr'). Der Song "
+                            "feiert die Person und ihren Geburtstag als Tag — komplett ohne Altersangabe. So kann "
+                            "die/der Gefeierte den Song das ganze Jahr und auch in späteren Jahren hören, ohne dass "
+                            "eine Zahl darin je falsch wird.")
 
                 from datetime import date as _dt_date
                 ref_date = None
@@ -9494,6 +9562,19 @@ Antworte NUR als reines JSON ohne Markdown:
                                        "'lo-fi' + 'polished' + 'bass-heavy'). Better to drop a tag than keep two "
                                        "similar ones. Always include exactly ONE concrete BPM value as a tag (e.g. "
                                        "'112bpm') matching the genre, instead of only a vague word like 'upbeat'. ")
+                # Suno leitet sein Auto-Cover aus Titel + Style + Lyrics ab. Bei deutschen Lyrics + reinem
+                # Audio-Tag-Style hat das Cover-Modell KEIN visuelles Motiv -> abstrakte Farbspektakel
+                # (Chris 31.08.2026). Fix: der Style bekommt am Ende ein paar rein bildhafte englische
+                # Szene-Tags als Anker fuer die Cover-KI. Die Laengen-Regel oben gilt nur fuer den
+                # musikalischen Teil davor.
+                _COVER_SCENE_HINT = ("COVER-ART-ANKER: Haenge ganz ans Ende des Style-Strings (nach allen Musik-Tags, "
+                                     "durch Komma getrennt) 3-5 KURZE, rein VISUELLE englische Szene-Tags, die zu Anlass "
+                                     "und Stimmung des Songs passen und Suno's Cover-Generator ein konkretes Bild geben — "
+                                     "z.B. fuer einen Geburtstagssong 'sunlit celebration, balloons, confetti, warm golden light', "
+                                     "fuer einen Themen-Song eine Szene aus dem Thema. NUR Bildliches: Ort, Licht, Jahreszeit, "
+                                     "1-2 Objekte, Farbstimmung. NIEMALS Instrumente/Genre/BPM in diesem Teil. Diese Szene-Tags "
+                                     "duerfen die Laengen-Vorgabe fuer die Musik-Tags oben ueberschreiten — die gilt nur fuer "
+                                     "den musikalischen Teil davor. ")
                 if sprache == "de":
                     STYLE_RULE = ("Suno style tags in English, comma-separated short tags only. "
                                   "STRICT: NO artist names, NO song titles, NO full sentences — ONLY concise music tags. "
@@ -9515,7 +9596,8 @@ Antworte NUR als reines JSON ohne Markdown:
                                   "Example pop: 'german indie pop, driving 4/4 beat, bright synths, female vocals, "
                                   "polished production, vocals in German' "
                                   "(schlager itself — accordion, party pop, festive — is a valid genre choice only if "
-                                  "deliberately requested, never the default fallback)")
+                                  "deliberately requested, never the default fallback) "
+                                  f"{_COVER_SCENE_HINT}")
                 else:
                     STYLE_RULE = ("Suno style tags in English, comma-separated short tags only. "
                                   "STRICT: NO artist names, NO song titles, NO full sentences — ONLY concise music tags. "
@@ -9528,7 +9610,8 @@ Antworte NUR als reines JSON ohne Markdown:
                                   "production (four-on-the-floor, 808 bass, punchy snare, lo-fi, reverb-heavy, gated reverb), "
                                   "vocals (breathy female vocals, powerful female vocals, male falsetto, gritty male vocals). "
                                   "Example pop: 'synth-pop, 80s retro, pulsing bassline, 125bpm, reverb-heavy, euphoric, male vocals' "
-                                  "Example ballad: 'pop ballad, piano, acoustic guitar, heartbreak, powerful female vocals, slow build'")
+                                  "Example ballad: 'pop ballad, piano, acoustic guitar, heartbreak, powerful female vocals, slow build' "
+                                  f"{_COVER_SCENE_HINT}")
                 TITLE_RULE = ("kreativer Songtitel mit passenden Emojis"
                               + (" — verwende im Titel immer die ORIGINAL-Schreibweise des Namens, nicht die phonetische" if is_personal else ""))
 
@@ -9695,7 +9778,6 @@ Antworte NUR als reines JSON ohne Markdown:
 
 {jugendfrei_inst}{who}
 Klasse: {klasse}
-Alter: {alter} (dies ist die Zahl für den Geburtstag, um den es geht — wörtlich übernehmen, nicht selbst neu berechnen)
 {gb_kontext(geburtstag, ref_date)}
 {gb_lyrics_hint(geburtstag, ref_date)}
 {hit_inst}
@@ -9792,11 +9874,31 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     except (BrokenPipeError, ConnectionResetError):
                         return False
 
+                # 240s war zu knapp — ein voller Song (3 Strophen + Refrain + Bridge, Reim, JSON mit
+                # 4 Feldern) braucht mit Sonnet regelmäßig 3-5 min. Der Keep-Alive (b" " alle 15s)
+                # hält den Cloudflare-Tunnel ohnehin offen, also ist ein längeres Backend-Limit
+                # unkritisch. Bei Timeout jetzt zusätzlich stdout/stderr des gekillten Prozesses in
+                # eine Debug-Datei schreiben, um die Ursache (Websuche? viel Thinking?) zu sehen.
+                _KA_LIMIT = 420
                 _ka_start = _time_ka.time()
                 while proc.poll() is None:
-                    if _time_ka.time() - _ka_start > 240:
+                    if _time_ka.time() - _ka_start > _KA_LIMIT:
                         proc.kill()
-                        _write_ka(json.dumps({"error": "Song-Generierung hat zu lange gedauert (>240s). Bitte nochmal versuchen."}).encode())
+                        try:
+                            _pout, _perr = proc.communicate(timeout=5)
+                        except Exception:
+                            _pout, _perr = "", ""
+                        try:
+                            _dbg = os.path.join(WORKSPACE, "logs", "suno_generate_timeout.log")
+                            with open(_dbg, "a") as _df:
+                                _df.write(f"\n===== TIMEOUT {_time_ka.strftime('%Y-%m-%d %H:%M:%S')} "
+                                          f"nach {int(_time_ka.time() - _ka_start)}s =====\n"
+                                          f"--- PROMPT (erste 1500 Z.) ---\n{prompt[:1500]}\n"
+                                          f"--- STDOUT (letzte 2000 Z.) ---\n{(_pout or '')[-2000:]}\n"
+                                          f"--- STDERR (letzte 2000 Z.) ---\n{(_perr or '')[-2000:]}\n")
+                        except Exception:
+                            pass
+                        _write_ka(json.dumps({"error": f"Song-Generierung hat zu lange gedauert (>{_KA_LIMIT}s). Bitte nochmal versuchen."}).encode())
                         return
                     if not _write_ka(b" "):
                         proc.kill()
@@ -9838,7 +9940,8 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     if sprache == "de" and is_school:
                         parts = ["Happy Birthday"]
                         if name: parts.append(name)
-                        if alter: parts.append(alter)
+                        # Alter bewusst NICHT mehr in den Titel — der Song soll auch in späteren
+                        # Jahren als Geburtstagssong stimmen (Chris-Wunsch 31.08.2026).
                         if geburtstag:
                             gb = geburtstag.strip().rstrip(".")
                             segments = [s for s in gb.split(".") if s]

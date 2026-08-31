@@ -40,32 +40,41 @@ def mem_ok():
 # die 4 Ziel-Kurse (Kurs-IDs bleiben das ganze Schuljahr stabil, siehe Tabelle unten) und je einen
 # individuell formulierten Mitteilungstext (NIE denselben Text kopieren, NIE "vorher/schon jetzt
 # herunterladen" schreiben - Download passiert am Kurstag selbst, siehe [[project_itslearning_automation]]).
-DAY_PREFIX = "01"
+DAY_PREFIX = "03"
 
 # Kurs-IDs (Schuljahr 26/27, stabil): 7a I=190735 7a II=190738 7b I=190741 7b II=190743
 #                                     7c I=190861 7c II=190878 7d I=190860 7d II=190877
+# Kurstag 3 "Basics Office: Tastatur" — nur die "I"-Kurse.
+# Termine (Schulkalender): 7d I + 7b I = Mi 02.09.  |  7a I + 7c I = Do 03.09.
+# Paket (discover_files 03-): 03-Basics Office - Tastatur.pdf (Folien), 03-Textdatei-Anleitung.html
+#                             (Vorübung), 03-Praktikum.html, 03-Praktikum.pdf
 COURSES = [
-    {"id": 190735, "kuerzel": "7a I", "text":
-        "👋 Hallo liebe 7a! Am Donnerstag, 20.08., starten wir gemeinsam ins EDV-Schuljahr mit den "
-        "ersten Computer-Grundbegriffen. 📎 Hier findet ihr die Folien, ein Praktikum, die "
-        "Editor-Anleitung und eine kleine Anleitung, wie das Herunterladen von Dateien aus "
-        "itslearning funktioniert - alles laden wir zu Beginn der Stunde gemeinsam herunter. "
-        "Freu mich auf euch! 😊"},
-    {"id": 190741, "kuerzel": "7b I", "text":
-        "🎉 Liebe 7b, unser EDV-Abenteuer startet am Mittwoch, 19.08.! 📎 Hier liegen die Folien zu "
-        "den Grundbegriffen, ein Praktikum, die Editor-Anleitung und eine Anleitung fürs "
-        "Herunterladen aus itslearning bereit - wir holen uns alles zusammen zu Beginn der Stunde. "
-        "Bis bald! 🙂"},
-    {"id": 190861, "kuerzel": "7c I", "text":
-        "💻 Hallo 7c! Am Donnerstag, 20.08., geht's los mit unserem EDV-Unterricht - Thema: "
-        "Computer-Grundbegriffe. 📎 Materialien (Folien, Praktikum, Editor-Anleitung und eine "
-        "Anleitung zum Herunterladen aus itslearning) sind schon hinterlegt, wir schnappen sie uns "
-        "gemeinsam zu Stundenbeginn. Ich freu mich drauf! 🚀"},
     {"id": 190860, "kuerzel": "7d I", "text":
-        "🙌 Liebe 7d, am Mittwoch, 19.08., starten wir mit EDV und den ersten "
-        "Computer-Grundbegriffen. 📎 Hier findet ihr Folien, ein Praktikum, eine kleine "
-        "Editor-Anleitung und eine Anleitung, wie ihr Dateien aus itslearning herunterladet - "
-        "alles laden wir zusammen in der Stunde herunter. Bis dann! 😊"},
+        "⌨️ Hallo liebe 7d! Am Mittwoch, 02.09., dreht sich alles um die Tastatur und die praktischen "
+        "Tastenkürzel (Shortcuts). 1️⃣ Zu Beginn der Stunde laden wir die Materialien gemeinsam "
+        "herunter: die Folien zur Tastatur, die 📎 Vorübung „Textdatei anlegen\" und 📎 Praktikum 3. "
+        "2️⃣ Dann machen wir die kurze Vorübung zusammen in Ruhe. 3️⃣ Danach übt ihr in Praktikum 3 "
+        "selbstständig Kopieren, Ausschneiden, Einfügen, Umbenennen, Rückgängig und Suchen - alles "
+        "per Shortcut. Freu mich auf euch! 😊"},
+    {"id": 190741, "kuerzel": "7b I", "text":
+        "🎯 Liebe 7b, am Mittwoch, 02.09., lernt ihr die wichtigsten Tastenkürzel kennen, mit denen "
+        "am Computer alles schneller geht. 1️⃣ Erst laden wir gemeinsam die Folien zur Tastatur, die "
+        "📎 Vorübung „Textdatei anlegen\" und 📎 Praktikum 3 herunter. 2️⃣ Die Vorübung machen wir "
+        "zusammen. 3️⃣ Im Praktikum 3 seid dann ihr dran: Strg+C, Strg+V, Strg+X, Strg+Z, F2 und "
+        "Strg+F an echten Dateien ausprobieren. Bis Mittwoch! 🙂"},
+    {"id": 190735, "kuerzel": "7a I", "text":
+        "🖥️ Hallo 7a! Am Donnerstag, 03.09., geht es um die Tastatur und die Shortcuts, die man im "
+        "Alltag am meisten braucht. 1️⃣ Zu Stundenbeginn holen wir uns gemeinsam die Folien zur "
+        "Tastatur, die 📎 Vorübung „Textdatei anlegen\" und 📎 Praktikum 3. 2️⃣ Die Vorübung machen "
+        "wir zusammen Schritt für Schritt. 3️⃣ Danach übt ihr selbstständig in Praktikum 3: Dateien "
+        "kopieren, verschieben, umbenennen, löschen und im Text suchen - jeweils mit dem passenden "
+        "Tastenkürzel. Bis Donnerstag! 🚀"},
+    {"id": 190861, "kuerzel": "7c I", "text":
+        "⌨️ Liebe 7c, am Donnerstag, 03.09., sind die Tastenkürzel dran - kleine Handgriffe, die "
+        "viel Zeit sparen. 1️⃣ Wir laden zu Beginn der Stunde zusammen die Folien zur Tastatur, die "
+        "📎 Vorübung „Textdatei anlegen\" und 📎 Praktikum 3 herunter. 2️⃣ Dann machen wir die "
+        "Vorübung gemeinsam. 3️⃣ Im Praktikum 3 übt ihr dann selbst: Strg+C/V/X, Strg+Z zum "
+        "Rückgängigmachen, F2 zum Umbenennen und Strg+A/Strg+F im Text. Auf geht's! 💻"},
 ]
 
 
@@ -232,12 +241,35 @@ def post_message(its, course_id, text, files):
     box.get_by_text("Ressource", exact=False).first.click()
     its.wait_for_timeout(1200)
 
+    # Der Ressource-Dialog matcht Dateien nur ueber den sichtbaren Namen. Zwei Dateien mit GLEICHEM
+    # Basenamen (z.B. 03-Praktikum.html + 03-Praktikum.pdf) sind dort nicht unterscheidbar - ein
+    # zweiter Klick auf dieselbe Checkbox wuerde sie wieder abwaehlen. Deshalb pro Basename nur EINMAL
+    # anhaengen (die PDF-Variante liegt ohnehin zusaetzlich in den Ressourcen). (Fix 31.08.2026)
+    seen_basenames = set()
     for f in files:
+        if f["basename"] in seen_basenames:
+            print(f"  ⏭ '{f['basename']}' schon angehaengt (gleicher Name, andere Endung) - uebersprungen")
+            continue
+        seen_basenames.add(f["basename"])
+
+        # In Kursen mit vielen Ressourcen ist die Dialog-Liste lang/virtualisiert - Zieldatei kann
+        # ausserhalb des gerenderten Bereichs liegen. Bis zu ~20x im Dialog nach unten scrollen. (Fix 31.08.2026)
         row = its.get_by_text(f["basename"], exact=False)
+        scrolls = 0
+        while row.count() == 0 and scrolls < 20:
+            its.mouse.move(700, 430)
+            its.mouse.wheel(0, 500)
+            its.wait_for_timeout(400)
+            row = its.get_by_text(f["basename"], exact=False)
+            scrolls += 1
         if row.count() == 0:
-            print(f"  ❌ Datei '{f['basename']}' im Ressource-Dialog nicht gefunden")
+            print(f"  ❌ Datei '{f['basename']}' im Ressource-Dialog nicht gefunden (auch nach {scrolls}x Scrollen)")
             its.screenshot(path=f"{OUT_DIR}/FAIL_{course_id}_attachpicker.png", full_page=True)
             return False
+        try:
+            row.first.scroll_into_view_if_needed(timeout=2000)
+        except Exception:
+            pass
         # Checkbox links vom Dateinamen anklicken. Playwright haelt sie faelschlich fuer
         # "outside of viewport" (verschachtelter Modal-Scroll-Container) - daher nativer JS-Klick.
         cb = row.first.locator("xpath=preceding::input[@type='checkbox'][1]")

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Renis Fotos">
+<meta name="robots" content="noindex,nofollow">
+<link rel="apple-touch-icon" href="/mc-apple-touch.png">
+<link rel="icon" href="/mc-icon-192.png">
+<title>Renis Fotos</title>
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0; height: 100%;
+  background: #000; color: #fff; overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none; touch-action: none;
+}
+#stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+.slide {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .45s ease; will-change: opacity;
+}
+.slide.on { opacity: 1; }
+.slide img {
+  max-width: 100%; max-height: 100%; object-fit: contain; display: block;
+  -webkit-user-select: none; user-select: none; -webkit-user-drag: none;
+}
+#cap {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  padding: 54px 22px calc(26px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, rgba(0,0,0,.80) 0%, rgba(0,0,0,.45) 45%, rgba(0,0,0,0) 100%);
+  font-size: 17px; line-height: 1.35; font-weight: 500; letter-spacing: .2px;
+  transition: opacity .4s ease; pointer-events: none;
+}
+#count {
+  position: fixed; top: calc(12px + env(safe-area-inset-top)); right: 16px;
+  font-size: 13px; font-weight: 600; letter-spacing: .5px;
+  padding: 5px 11px; border-radius: 999px;
+  background: rgba(0,0,0,.42); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transition: opacity .4s ease;
+}
+#bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; display: flex; gap: 2px; padding: 6px 8px 0; }
+#bar i { flex: 1; height: 3px; border-radius: 2px; background: rgba(255,255,255,.28); }
+#bar i.done { background: rgba(255,255,255,.92); }
+#hint {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 8vw; font-size: 34px; color: rgba(255,255,255,0);
+  transition: color .3s ease; pointer-events: none;
+}
+#hint.show { color: rgba(255,255,255,.30); }
+
+/* ---- Zoom-Ansicht ---- */
+#zoom { position: fixed; inset: 0; background: #000; display: none; overflow: hidden; touch-action: none; }
+#zoom.on { display: block; }
+#zoom img { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; -webkit-user-drag: none; user-select: none; }
+#zclose {
+  position: fixed; top: calc(10px + env(safe-area-inset-top)); left: 12px; z-index: 5;
+  width: 42px; height: 42px; border: 0; border-radius: 999px;
+  background: rgba(0,0,0,.5); color: #fff; font-size: 22px; line-height: 42px;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+#zhint {
+  position: fixed; left: 0; right: 0; bottom: calc(24px + env(safe-area-inset-bottom));
+  text-align: center; font-size: 13px; color: rgba(255,255,255,.55);
+  transition: opacity .5s ease; pointer-events: none;
+}
+
+/* ---- Ende ---- */
+#end { position: fixed; inset: 0; display: none; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px; background: #000; text-align: center; padding: 30px; }
+#end.on { display: flex; }
+#end h1 { font-size: 22px; font-weight: 600; margin: 0; }
+#end p { font-size: 15px; color: #9a9a9e; margin: 0 0 6px; }
+#end .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+#end button {
+  font: inherit; font-size: 16px; font-weight: 600; color: #fff;
+  border: 0; border-radius: 14px; padding: 13px 24px;
+}
+#again { background: #0a84ff; }
+#quit { background: #2c2c2e; }
+#loader { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; color: #666; font-size: 15px; }
+</style>
+</head>
+<body>
+<div id="loader">…</div>
+<div id="stage"></div>
+<div id="bar"></div>
+<div id="count"></div>
+<div id="cap"></div>
+<div id="hint"><span>‹</span><span>›</span></div>
+
+<div id="zoom">
+  <button id="zclose" aria-label="Zoom schließen">✕</button>
+  <div id="zhint">Mit zwei Fingern zoomen &middot; Doppeltipp &middot; ✕ zum Zurück</div>
+</div>
+
+<div id="end">
+  <h1>Das war die Runde 🌿</h1>
+  <p>15 Erinnerungen &ndash; morgen sind es andere.</p>
+  <div class="row">
+    <button id="again">↻ Nochmal</button>
+    <button id="quit">✕ Beenden</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const stage = document.getElementById('stage');
+  const capEl = document.getElementById('cap');
+  const countEl = document.getElementById('count');
+  const barEl = document.getElementById('bar');
+  const hintEl = document.getElementById('hint');
+  const endEl = document.getElementById('end');
+  const loader = document.getElementById('loader');
+  const zoomEl = document.getElementById('zoom');
+  const zcloseEl = document.getElementById('zclose');
+  const zhintEl = document.getElementById('zhint');
+
+  let pics = [], idx = 0, slides = [], busy = false, zoomOpen = false, dataDate = null;
+
+  function loadDay(initial) {
+    return fetch('/f-photos/today.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => {
+        const np = (d && d.photos) || [];
+        if (!np.length) { if (initial) loader.textContent = 'Keine Fotos gefunden.'; return; }
+        const sig = (d.date || '') + '|' + np.map(p => p.src).join(',');
+        if (!initial && sig === dataDate) return;   // nichts Neues -> nicht stören
+        dataDate = sig;
+        pics = np;
+        slides.forEach(s => s && s.remove());
+        slides = []; idx = 0;
+        if (initial) loader.remove();
+        endEl.classList.remove('on');
+        capEl.style.opacity = ''; countEl.style.opacity = '';
+        barEl.innerHTML = pics.map(() => '<i></i>').join('');
+        show(0, true);
+        preload(1);
+        if (initial) flashHint();
+      })
+      .catch(() => { if (initial) loader.textContent = 'Fotos konnten nicht geladen werden.'; });
+  }
+  loadDay(true);
+
+  // Beim Zurückkehren zur App (neuer Tag / frischer Pool) automatisch aktualisieren
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !zoomOpen) loadDay(false);
+  });
+
+  function makeSlide(pic) {
+    const d = document.createElement('div');
+    d.className = 'slide';
+    const im = document.createElement('img');
+    im.src = pic.src; im.alt = pic.cap || '';
+    d.appendChild(im);
+    stage.appendChild(d);
+    return d;
+  }
+  function preload(i) { if (i >= 0 && i < pics.length && !slides[i]) slides[i] = makeSlide(pics[i]); }
+
+  function show(i, instant) {
+    if (i < 0) i = 0;
+    if (i >= pics.length) { finish(); return; }
+    idx = i;
+    if (!slides[i]) slides[i] = makeSlide(pics[i]);
+    slides.forEach((s, k) => { if (s) s.classList.toggle('on', k === i); });
+    const cap = pics[i].cap || '';
+    capEl.style.opacity = '0';
+    setTimeout(() => { capEl.textContent = cap; capEl.style.opacity = cap ? '1' : '0'; }, instant ? 0 : 200);
+    countEl.textContent = (i + 1) + ' / ' + pics.length;
+    [...barEl.children].forEach((b, k) => b.classList.toggle('done', k <= i));
+    preload(i + 1); preload(i - 1);
+    slides.forEach((s, k) => { if (s && Math.abs(k - i) > 2) { s.remove(); slides[k] = null; } });
+  }
+
+  function next() { if (busy || zoomOpen) return; guard(); show(idx + 1); }
+  function prev() { if (busy || zoomOpen) return; guard(); show(idx - 1); }
+  function guard() { busy = true; setTimeout(() => busy = false, 260); }
+
+  function finish() {
+    endEl.classList.add('on');
+    capEl.style.opacity = '0'; countEl.style.opacity = '0';
+  }
+  function flashHint() { hintEl.classList.add('show'); setTimeout(() => hintEl.classList.remove('show'), 1100); }
+
+  document.getElementById('again').addEventListener('click', () => {
+    endEl.classList.remove('on');
+    capEl.style.opacity = ''; countEl.style.opacity = '';
+    show(0, true);
+  });
+  document.getElementById('quit').addEventListener('click', () => {
+    try { window.close(); } catch (e) {}
+    setTimeout(() => {
+      endEl.innerHTML = '<h1>Bis bald 🌿</h1><p>Du kannst den Tab jetzt schließen.</p>';
+    }, 250);
+  });
+
+  /* ============ ZOOM ============ */
+  let zimg = null, zs = 1, ztx = 0, zty = 0, zW = 0, zH = 0;
+  const pts = new Map();
+  let lastDist = 0, lastMid = null, panLast = null, lastTap = 0;
+
+  function openZoom() {
+    if (zoomOpen || !pics[idx]) return;
+    zoomOpen = true;
+    zimg = new Image();
+    zimg.onload = () => {
+      const vw = innerWidth, vh = innerHeight;
+      const fit = Math.min(vw / zimg.naturalWidth, vh / zimg.naturalHeight);
+      zW = zimg.naturalWidth * fit; zH = zimg.naturalHeight * fit;
+      zimg.style.width = zW + 'px'; zimg.style.height = zH + 'px';
+      zs = 1; ztx = (vw - zW) / 2; zty = (vh - zH) / 2;
+      applyZoom();
+    };
+    zimg.src = pics[idx].src;
+    zoomEl.insertBefore(zimg, zcloseEl);
+    zoomEl.classList.add('on');
+    zhintEl.style.opacity = '1';
+    setTimeout(() => { zhintEl.style.opacity = '0'; }, 2600);
+  }
+  function closeZoom() {
+    zoomOpen = false;
+    zoomEl.classList.remove('on');
+    if (zimg) { zimg.remove(); zimg = null; }
+    pts.clear(); lastDist = 0; lastMid = panLast = null;
+  }
+  function applyZoom() {
+    const vw = innerWidth, vh = innerHeight;
+    const cw = zW * zs, ch = zH * zs;
+    if (cw <= vw) ztx = (vw - cw) / 2; else ztx = Math.min(0, Math.max(vw - cw, ztx));
+    if (ch <= vh) zty = (vh - ch) / 2; else zty = Math.min(0, Math.max(vh - ch, zty));
+    zimg.style.transform = `translate(${ztx}px,${zty}px) scale(${zs})`;
+  }
+  function setScaleAt(ns, cx, cy) {
+    ns = Math.max(1, Math.min(5, ns));
+    ztx = cx - (cx - ztx) / zs * ns;
+    zty = cy - (cy - zty) / zs * ns;
+    zs = ns;
+    applyZoom();
+  }
+
+  zcloseEl.addEventListener('click', closeZoom);
+
+  zoomEl.addEventListener('pointerdown', e => {
+    if (e.target === zcloseEl) return;
+    zoomEl.setPointerCapture(e.pointerId);
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 1) {
+      panLast = { x: e.clientX, y: e.clientY };
+      const now = Date.now();
+      if (now - lastTap < 300) {           // Doppeltipp
+        const target = zs > 1.2 ? 1 : 2.5;
+        setScaleAt(target, e.clientX, e.clientY);
+        lastTap = 0;
+      } else { lastTap = now; }
+    } else if (pts.size === 2) {
+      const p = [...pts.values()];
+      lastDist = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+      lastMid = { x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 };
+    }
+  });
+  zoomEl.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const p = [...pts.values()];
+    if (p.length >= 2) {
+      const dist = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+      const mid = { x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 };
+      if (lastDist) setScaleAt(zs * (dist / lastDist), mid.x, mid.y);
+      if (lastMid) { ztx += mid.x - lastMid.x; zty += mid.y - lastMid.y; applyZoom(); }
+      lastDist = dist; lastMid = mid;
+    } else if (p.length === 1 && zs > 1 && panLast) {
+      ztx += e.clientX - panLast.x; zty += e.clientY - panLast.y;
+      panLast = { x: e.clientX, y: e.clientY };
+      applyZoom();
+    }
+  });
+  function endPointer(e) {
+    pts.delete(e.pointerId);
+    if (pts.size < 2) { lastDist = 0; lastMid = null; }
+    if (pts.size === 1) { const p = [...pts.values()][0]; panLast = { x: p.x, y: p.y }; }
+    if (pts.size === 0) {
+      panLast = null;
+      if (zs <= 1.02) closeZoom();
+    }
+  }
+  zoomEl.addEventListener('pointerup', endPointer);
+  zoomEl.addEventListener('pointercancel', endPointer);
+
+  /* ============ Navigation Slideshow ============ */
+  let sx = 0, sy = 0, sT = 0, moved = false;
+  document.addEventListener('touchstart', e => {
+    if (zoomOpen || endEl.classList.contains('on')) return;
+    const t = e.touches[0]; sx = t.clientX; sy = t.clientY; sT = Date.now(); moved = false;
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    const t = e.touches[0];
+    if (Math.abs(t.clientX - sx) > 8 || Math.abs(t.clientY - sy) > 8) moved = true;
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (zoomOpen || endEl.classList.contains('on')) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - sx, dy = t.clientY - sy, dt = Date.now() - sT;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+      dx < 0 ? next() : prev();
+    } else if (!moved && dt < 350) {
+      openZoom();                          // Tipp aufs Foto -> Zoom
+    }
+  }, { passive: true });
+
+  document.addEventListener('keydown', e => {
+    if (zoomOpen) { if (e.key === 'Escape') closeZoom(); return; }
+    if (e.key === 'ArrowRight' || e.key === ' ') next();
+    else if (e.key === 'ArrowLeft') prev();
+  });
+  // Desktop (kein Touch): Klick blättert, Doppelklick zoomt
+  if (!('ontouchstart' in window)) {
+    document.addEventListener('click', e => {
+      if (zoomOpen || endEl.classList.contains('on')) return;
+      if (e.detail === 2) return;
+      (e.clientX > innerWidth * 0.35) ? next() : prev();
+    });
+    document.addEventListener('dblclick', e => { if (!zoomOpen && !endEl.classList.contains('on')) openZoom(); });
+  }
+})();
+</script>
+</body>
+</html>

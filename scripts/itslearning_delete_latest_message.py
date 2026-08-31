@@ -20,7 +20,10 @@ with open(CREDS_PATH) as f:
 
 # Kurs-IDs (Schuljahr 26/27, stabil): 7a I=190735 7a II=190738 7b I=190741 7b II=190743
 #                                     7c I=190861 7c II=190878 7d I=190860 7d II=190877
-COURSES = [("7a_I", 190735), ("7b_I", 190741), ("7c_I", 190861), ("7d_I", 190860)]
+# 31.08.2026: nur die 3 Kurse, in denen die (unvollständige) Kurstag-3-Mitteilung heute ~13:00
+# wirklich veröffentlicht wurde. 7a I NICHT — dort schlug das Posting fehl, die neueste Mitteilung
+# dort ist die legitime Kurstag-2-Mitteilung und darf NICHT gelöscht werden.
+COURSES = [("7d_I", 190860), ("7b_I", 190741), ("7c_I", 190861)]
 
 
 def click_first(page, selectors, timeout=5000):
