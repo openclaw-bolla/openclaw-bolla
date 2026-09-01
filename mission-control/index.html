@@ -3645,19 +3645,20 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 <button onclick="sunoSetEngine('mai',this)" id="eng-mai"
                   style="padding:6px 10px;border:none;border-left:1px solid var(--border);cursor:pointer;font-weight:700;background:#f59e0b;color:white;transition:all .2s">🌟 MAI</button>
               </div>
-              <button id="suno-dl-btn" onclick="sunoDownloadCover()"
+              <button id="suno-dl-btn" onclick="sunoCoverSuggest()"
                 style="background:linear-gradient(135deg,#7c3aed,#ff6699);border:none;border-radius:8px;color:white;
                        font-weight:700;font-size:14px;padding:9px 18px;cursor:pointer;white-space:nowrap;
                        box-shadow:0 2px 12px rgba(124,58,237,0.4);transition:opacity .2s">
-                Herunterladen &amp; Cover
+                🎨 3 Cover-Vorschläge
               </button>
             </div>
             <div id="suno-dl-status" style="font-size:13px;color:var(--dim);margin-top:8px;min-height:18px"></div>
+            <div id="suno-cover-picks" style="display:none;gap:10px;margin-top:10px;flex-wrap:wrap"></div>
 
             <!-- 🚀 Veröffentlichen: verkettet die komplette DistroKid-Vorbereitung -->
             <div style="margin-top:16px;padding:13px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.35);border-radius:10px">
               <div style="font-size:14px;font-weight:700;color:#4ade80;margin-bottom:3px">🚀 Für DistroKid fertig machen</div>
-              <div style="font-size:13px;color:var(--dim);line-height:1.5;margin-bottom:11px">Legt aus dem Song oben einen fertigen Ordner an: <b>MP3 320k</b>, <b>3000²-Cover</b>, Lyrics, Upload-Checkliste — plus <b>Social-Paket mit TikTok/Insta-Video</b> &amp; Captions. Danach nur noch bei DistroKid hochladen.</div>
+              <div style="font-size:13px;color:var(--dim);line-height:1.5;margin-bottom:11px">Legt aus <b>Song + gewähltem Cover</b> einen fertigen Ordner an: <b>MP3 320k</b>, <b>3000²-Cover</b>, Lyrics, Upload-Checkliste — plus <b>Social-Paket mit TikTok/Insta-Video</b> &amp; Captions. Danach nur noch bei DistroKid hochladen.</div>
               <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
                 <div style="display:flex;align-items:center;gap:6px">
                   <label style="font-size:13px;color:var(--dim)">Genre</label>
@@ -3667,10 +3668,6 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                   <button id="suno-pub-de" onclick="sunoPubLang('de')" style="padding:7px 13px;border:none;cursor:pointer;font-weight:700;background:#22c55e;color:white;transition:all .2s">🇩🇪 DE</button>
                   <button id="suno-pub-en" onclick="sunoPubLang('en')" style="padding:7px 13px;border:none;cursor:pointer;font-weight:600;background:transparent;color:var(--dim);transition:all .2s">🇬🇧 EN</button>
                 </div>
-                <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text);cursor:pointer">
-                  <input type="checkbox" id="suno-pub-fetch" checked style="width:16px;height:16px;accent-color:#22c55e;cursor:pointer">
-                  MP3 &amp; Cover frisch aus Suno holen
-                </label>
               </div>
               <textarea id="suno-pub-lyrics" rows="4" placeholder="Liedtext hier einfügen — für Lyrics.txt und den Namens-/Schulbezug-Scan (empfohlen)"
                 style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 11px;font-size:14px;line-height:1.5;outline:none;font-family:inherit;resize:vertical;margin-bottom:10px"></textarea>
@@ -3682,39 +3679,17 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               <details style="margin-top:11px">
                 <summary style="font-size:14px;color:#4ade80;cursor:pointer;font-weight:600">📋 So geht ein Release — Schritt für Schritt</summary>
                 <div style="margin-top:9px;padding:12px 14px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid var(--border);font-size:14px;line-height:1.75;color:var(--text)">
-                  <div><b>1.</b> Song in <b>Suno</b> fertig machen — mit dem Pro-Modell (ab 05.08. wieder da) für gute Qualität. <b>Titel merken.</b></div>
-                  <div><b>2.</b> Oben den <b>Titel eintippen</b> — exakt wie in Suno (danach wird der Song im Suno-Feed gesucht).</div>
-                  <div><b>3.</b> <b>Sprache + Genre</b> wählen, Liedtext einfügen <span style="color:var(--dim)">(optional, nur für den Namens-Scan)</span>.</div>
-                  <div><b>4.</b> Grünen Knopf <b>„🚀 Alles für DistroKid vorbereiten"</b> drücken → 1–2 Min warten → fertiger Ordner liegt auf dem <b>Desktop</b>.</div>
-                  <div><b>5.</b> Bei <b>DistroKid hochladen</b> — die <b>Checkliste</b> im Ordner sagt dir jedes Feld (Künstler = bollawave, KI-Haken setzen!).</div>
-                  <div><b>6.</b> <b>Nach</b> dem Release: Video + Captions aus dem Unterordner <b>„Social Media"</b> posten <span style="color:var(--dim)">(bei TikTok den KI-Haken beim Upload setzen)</span>.</div>
-                  <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);color:var(--dim)">💡 Fehler <i>„Song nicht in Suno-Feed gefunden"</i>? → Suno-Token unten kurz aktualisieren, dann nochmal.</div>
+                  <div><b>1.</b> Song in <b>Suno</b> fertig machen. Dort über das <b>···-Menü → Download</b> die Datei holen — <b>WAV</b> (beste Qualität) oder MP3.</div>
+                  <div><b>2.</b> Die Datei nach <b>Desktop\DistroKid\</b> legen (Dateiname ~ Songtitel, Sonderzeichen egal).</div>
+                  <div><b>3.</b> Oben <b>Titel</b> eintippen, dann <b>„🎨 3 Cover-Vorschläge"</b> → 1–2 Min → die drei Bilder erscheinen → <b>eins anklicken</b>.</div>
+                  <div><b>4.</b> <b>Sprache + Genre</b> wählen, Liedtext einfügen <span style="color:var(--dim)">(optional, für den Namens-Scan)</span>.</div>
+                  <div><b>5.</b> Grünen Knopf <b>„🚀 Für DistroKid fertig machen"</b> → fertiger Ordner auf dem <b>Desktop</b>.</div>
+                  <div><b>6.</b> Bei <b>DistroKid hochladen</b> — die <b>Checkliste</b> im Ordner sagt dir jedes Feld (Künstler = bollawave, KI-Haken setzen!).</div>
+                  <div><b>7.</b> <b>Nach</b> dem Release: Video + Captions aus dem Unterordner <b>„Social Media"</b> posten <span style="color:var(--dim)">(bei TikTok den KI-Haken beim Upload setzen)</span>.</div>
+                  <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);color:var(--dim)">💡 Suno sperrt seit 09/2026 den Auto-Download — deshalb Schritt 1+2 von Hand. Cover = MAI-Image-2.5 (~€0,10 je Bild, 3 Vorschläge ≈ €0,30).</div>
                 </div>
               </details>
             </div>
-
-            <details style="margin-top:10px">
-              <summary style="font-size:12px;color:var(--dim);cursor:pointer">🔑 Suno-Token aktualisieren</summary>
-              <div style="margin-top:10px;padding:10px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid var(--border)">
-                <div style="font-size:12px;color:var(--dim);margin-bottom:8px">
-                  <b style="color:var(--bright)">So geht's:</b> Edge öffnen → suno.com (eingeloggt) → <b>F12 → Console</b> → Code einfügen → Enter → TOKEN: kopieren
-                </div>
-                <button onclick="sunoTokenCopyScript(this)"
-                  style="background:linear-gradient(135deg,rgba(124,58,237,0.3),rgba(255,102,153,0.2));border:1px solid rgba(124,58,237,0.5);
-                         border-radius:6px;color:var(--bright);font-size:13px;padding:8px 16px;cursor:pointer;width:100%;font-weight:600;margin-bottom:10px">
-                  📋 Fetch-Befehl in Zwischenablage kopieren
-                </button>
-                <div style="display:flex;gap:8px;align-items:center">
-                  <input id="suno-token-input" type="password" placeholder="TOKEN: … hier einfügen"
-                    style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:6px;
-                           color:var(--text);padding:7px 10px;font-size:13px;outline:none;font-family:monospace">
-                  <button onclick="sunoTokenSave()"
-                    style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--dim);
-                           font-size:13px;padding:7px 14px;cursor:pointer;white-space:nowrap">Speichern</button>
-                </div>
-                <div id="suno-token-status" style="font-size:12px;color:var(--dim);margin-top:6px"></div>
-              </div>
-            </details>
           </div>
         </div>
 
@@ -16677,7 +16652,8 @@ function sunoReset() {
   document.getElementById('suno-pub-genre').value = 'Pop';
   document.getElementById('suno-pub-lyrics').value = '';
   document.getElementById('suno-pub-status').innerHTML = '';
-  document.getElementById('suno-pub-fetch').checked = true;
+  const _cp = document.getElementById('suno-cover-picks');
+  if (_cp) { _cp.style.display = 'none'; _cp.innerHTML = ''; }
   sunoPubLang('de');
 }
 function sunoCopy(id) {
@@ -16909,33 +16885,8 @@ function sunoUpdateVoiceTips(text) {
   if (label) label.textContent = tipLabel;
 }
 
-// ── Suno Token ─────────────────────────────────────────────────
-const SUNO_FETCH_SCRIPT = `fetch('https://auth.suno.com/v1/client',{credentials:'include'}).then(r=>r.json()).then(d=>{const sess=d.response?.sessions||[];sess.forEach(s=>{const tok=s.last_active_token?.jwt||'';if(tok)console.log('TOKEN:'+tok)});})`;
-
-function sunoTokenCopyScript(btn) {
-  navigator.clipboard.writeText(SUNO_FETCH_SCRIPT).then(() => {
-    const old = btn.textContent;
-    btn.textContent = '✅ Kopiert! Jetzt in Edge F12 → Console einfügen & Enter drücken';
-    btn.style.background = 'rgba(34,197,94,0.2)';
-    btn.style.borderColor = 'rgba(34,197,94,0.5)';
-    setTimeout(() => {
-      btn.textContent = old;
-      btn.style.background = '';
-      btn.style.borderColor = '';
-    }, 4000);
-  });
-}
-
-async function sunoTokenSave() {
-  const token = document.getElementById('suno-token-input').value.trim();
-  const status = document.getElementById('suno-token-status');
-  if (!token) { status.textContent = '⚠️ Kein Token eingegeben'; return; }
-  try {
-    const d = await fetch(API + '/api/suno/token', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({token})}).then(r => r.json());
-    if (d.ok) { status.style.color = 'var(--success)'; status.textContent = '✓ Token gespeichert'; document.getElementById('suno-token-input').value = ''; }
-    else { status.style.color = 'var(--danger)'; status.textContent = '❌ ' + (d.error || 'Fehler'); }
-  } catch(e) { status.style.color = 'var(--danger)'; status.textContent = '❌ ' + e.message; }
-}
+// ── Suno Token: entfernt 01.09.2026 — Suno hat die API/den Download gesperrt,
+//    die DistroKid-Vorbereitung braucht kein Token mehr. (Blocklist-Scan läuft separat.)
 
 // ── Download + Cover ────────────────────────────────────────────
 let _sunoEngine = 'mai';   // Standard: MAI-Image-2.5 (Pollinations-Cover meist zu schwach)
@@ -16953,31 +16904,58 @@ function _sunoEngineLabel() {
   return _sunoEngine === 'gemini' ? '✨ Gemini' : _sunoEngine === 'mai' ? '🌟 MAI-Image' : '🌸 Pollinations';
 }
 
-async function sunoDownloadCover() {
+let _sunoCoverTitle = '';
+async function sunoCoverSuggest() {
   const title = document.getElementById('suno-dl-title').value.trim();
-  if (!title) { document.getElementById('suno-dl-status').textContent = '⚠️ Bitte Song-Titel eingeben'; return; }
-  if (_sunoEngine === 'gemini' && !confirm('✨ Gemini Cover kostet ~€0,04 (Nano Banana).\n\nFortfahren?')) return;
-  if (_sunoEngine === 'mai' && !confirm('🌟 MAI-Image-2.5 Cover kostet ~€0,10.\n\nFortfahren?')) return;
-  const btn = document.getElementById('suno-dl-btn');
   const status = document.getElementById('suno-dl-status');
+  const picks = document.getElementById('suno-cover-picks');
+  if (!title) { status.textContent = '⚠️ Bitte Song-Titel eingeben'; return; }
+  if (!confirm('🎨 3 Cover-Vorschläge mit ' + _sunoEngineLabel() + ' erzeugen — kostet ~€0,30 (3 Bilder).\n\nFortfahren?')) return;
+  const btn = document.getElementById('suno-dl-btn');
   btn.disabled = true; btn.style.opacity = '0.5';
+  picks.style.display = 'none'; picks.innerHTML = '';
   status.style.color = 'var(--dim)';
-  status.textContent = `⏳ Suche Song in Suno-Feed… (${_sunoEngineLabel()})`;
+  status.textContent = '⏳ Erzeuge 3 Cover-Vorschläge… (ca. 1–2 Min)';
   try {
-    const res = await fetch(API + '/api/suno/download-cover', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+    const data = await fetch(API + '/api/suno/covers', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({title, engine: _sunoEngine})
-    });
-    const data = await res.json();
+    }).then(r => r.json());
     if (data.error) throw new Error(data.error);
+    _sunoCoverTitle = title;
+    picks.style.display = 'flex';
+    picks.innerHTML = data.covers.map(c =>
+      `<div onclick="sunoPickCover(${c.n})" title="${c.style}" style="cursor:pointer;border:2px solid var(--border);border-radius:8px;overflow:hidden;width:140px;transition:border-color .15s"
+            onmouseover="this.style.borderColor='#22c55e'" onmouseout="this.style.borderColor='var(--border)'">
+        <img src="${c.preview}" style="width:140px;height:140px;display:block;object-fit:cover">
+        <div style="font-size:11px;color:var(--dim);text-align:center;padding:3px">${c.n}. ${c.style}</div>
+      </div>`).join('');
     status.style.color = '#34c759';
-    status.textContent = `✅ Fertig! MP3: ${data.mp3.split('/').pop()} | Cover: ${data.cover.split('/').pop()}`;
+    status.textContent = '✅ Einen Vorschlag anklicken = als Cover übernehmen.';
+    if ((data.warnings || []).length) status.textContent += '  (' + data.warnings.join(' · ') + ')';
   } catch(e) {
-    status.style.color = '#ff453a';
-    status.textContent = '❌ ' + e.message;
+    status.style.color = '#ff453a'; status.textContent = '❌ ' + e.message;
   } finally {
     btn.disabled = false; btn.style.opacity = '1';
+  }
+}
+async function sunoPickCover(n) {
+  const status = document.getElementById('suno-dl-status');
+  const picks = document.getElementById('suno-cover-picks');
+  try {
+    const d = await fetch(API + '/api/suno/pick-cover', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({title: _sunoCoverTitle, n})
+    }).then(r => r.json());
+    if (d.error) throw new Error(d.error);
+    picks.querySelectorAll('div[onclick]').forEach((el, i) => {
+      el.style.borderColor = (i === n - 1) ? '#22c55e' : 'var(--border)';
+      el.style.opacity = (i === n - 1) ? '1' : '0.45';
+    });
+    status.style.color = '#34c759';
+    status.textContent = `✅ Cover ${n} übernommen. Jetzt „🚀 Für DistroKid fertig machen" drücken.`;
+  } catch(e) {
+    status.style.color = '#ff453a'; status.textContent = '❌ ' + e.message;
   }
 }
 
@@ -17000,18 +16978,15 @@ async function sunoPublish() {
   if (!title) { status.style.color = '#ff9500'; status.textContent = '⚠️ Bitte oben den Song-Titel eingeben (genau wie in Suno).'; return; }
   const genre  = document.getElementById('suno-pub-genre').value.trim() || 'Pop';
   const lyrics = document.getElementById('suno-pub-lyrics').value;
-  const fetch_ = document.getElementById('suno-pub-fetch').checked;
-  if (fetch_ && _sunoEngine === 'gemini' && !confirm('✨ Gemini Cover kostet ~€0,04 (Nano Banana).\n\nFortfahren?')) return;
-  if (fetch_ && _sunoEngine === 'mai' && !confirm('🌟 MAI-Image-2.5 Cover kostet ~€0,10.\n\nFortfahren?')) return;
   const btn = document.getElementById('suno-pub-btn');
   btn.disabled = true; btn.style.opacity = '0.5';
   status.style.color = 'var(--dim)';
-  status.innerHTML = '⏳ Bereite alles vor — aufräumen, ' + (fetch_ ? 'MP3+Cover holen, ' : '') + 'Ordner &amp; TikTok/Insta-Video bauen… <i>(kann 1–2 Min dauern)</i>';
+  status.innerHTML = '⏳ Bereite alles vor — aufräumen, Ordner &amp; TikTok/Insta-Video bauen… <i>(kann 1–2 Min dauern)</i>';
   try {
     const res = await fetch(API + '/api/suno/publish', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({title, genre, sprache: _sunoPubLang, lyrics, fetch: fetch_, engine: _sunoEngine})
+      body: JSON.stringify({title, genre, sprache: _sunoPubLang, lyrics, engine: _sunoEngine})
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || (data.warnings || []).join(' · ') || 'Unbekannter Fehler');

@@ -3098,6 +3098,86 @@ def _suno_token_save(token):
     SUNO_TOKEN_FILE.write_text(json.dumps({"token": token, "ts": datetime.now().isoformat()}))
     return {"ok": True}
 
+# ── Cover-Generierung für bollawave-Releases ──────────────────────────────
+# Drei geschmackvolle Bild-Stile statt einem überdrehten „ULTRA-SPECTACULAR"-Prompt.
+_SUNO_COVER_TREATMENTS = [
+    ("Atmospheric photo",
+     "Cinematic real-world photograph, natural light, shallow depth of field, one clear focal element, "
+     "restrained and elegant, editorial album-cover framing."),
+    ("Abstract colour & light",
+     "Purely abstract: flowing gradient colour fields, soft bokeh, light leaks, no recognisable objects, "
+     "mood carried entirely by palette and light."),
+    ("Minimal graphic poster",
+     "Minimal graphic design, two or three bold flat shapes, limited palette, generous negative space, "
+     "modern screen-print / poster aesthetic."),
+]
+
+def _suno_cover_mood(title):
+    """Ein Satz Bild-Stimmung zum Titel (Farbe/Gefühl, NICHT wörtliche Motive)."""
+    import subprocess as _sp, shutil as _sh
+    cb = _sh.which("claude") or os.path.expanduser("~/.local/bin/claude")
+    instr = (f"In ONE short English sentence, describe the emotional colour and atmosphere of a feel-good, "
+             f"optimistic pop song titled '{title}'. Name a palette and a feeling. Do NOT describe literal "
+             f"objects taken from the title. Reply with only the sentence.")
+    try:
+        r = _sp.run([cb, "-p", "--model", "claude-sonnet-5", "--output-format", "json", instr],
+                    capture_output=True, text=True, timeout=45, cwd=os.path.expanduser("~"))
+        m = json.loads(r.stdout).get("result", "").strip() if r.returncode == 0 else ""
+        return m or f"Warm, hopeful, golden and airy — the feeling of a good day for '{title}'."
+    except Exception:
+        return f"Warm, hopeful, golden and airy — the feeling of a good day for '{title}'."
+
+def _suno_cover_prompt(mood, idx):
+    label, treatment = _SUNO_COVER_TREATMENTS[idx % len(_SUNO_COVER_TREATMENTS)]
+    return (f"{treatment} Mood to convey: {mood} "
+            f"Square 3000x3000 album cover, professional colour grading, high detail. "
+            f"Absolutely NO text, NO letters, NO words, NO typography, NO logos anywhere.")
+
+def _suno_render_cover_bytes(img_prompt, cover_engine, _urlparse_cv=None):
+    """Rendert EIN Cover-Bild (bytes) mit MAI → Fallback Gemini (nie Pollinations, außer explizit)."""
+    import base64 as _b64, urllib.parse as _up
+    _urlparse_cv = _urlparse_cv or _up
+    chain = [cover_engine] + (["gemini"] if cover_engine == "mai" else [])
+    last = ""
+    for eng in chain:
+        try:
+            if eng == "mai":
+                b64, err = bildgen_mai_generate(img_prompt, model="mai-image-2.5", width=1024, height=1024)
+                if not b64:
+                    raise Exception(f"MAI: {err}")
+                return _b64.b64decode(b64), (f"MAI fiel aus → {eng}" if eng != cover_engine else "")
+            if eng == "gemini":
+                gk = _gemini_key()
+                if not gk:
+                    raise Exception("Kein Gemini API Key")
+                url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent"
+                payload = json.dumps({"contents": [{"parts": [{"text": img_prompt}]}],
+                    "generationConfig": {"responseModalities": ["TEXT", "IMAGE"], "imageConfig": {"aspectRatio": "1:1"}}}).encode()
+                req = urllib.request.Request(url, data=payload, headers={"x-goog-api-key": gk, "Content-Type": "application/json"})
+                with urllib.request.urlopen(req, timeout=90) as resp:
+                    gd = json.loads(resp.read())
+                for part in gd.get("candidates", [{}])[0].get("content", {}).get("parts", []):
+                    if "inlineData" in part:
+                        return _b64.b64decode(part["inlineData"]["data"]), (f"MAI fiel aus → {eng}" if eng != cover_engine else "")
+                raise Exception("Gemini lieferte kein Bild")
+            # pollinations (nur wenn explizit gewählt)
+            pu = (f"https://image.pollinations.ai/prompt/{_urlparse_cv.quote(img_prompt)}"
+                  f"?width=3000&height=3000&nologo=true&enhance=true&model=flux-realism")
+            with urllib.request.urlopen(urllib.request.Request(pu, headers={"User-Agent": "Bolla/1.0"}), timeout=120) as resp:
+                return resp.read(), ""
+        except Exception as e:
+            last = str(e)
+    raise Exception(last or "kein Bild")
+
+def _suno_save_cover_jpg(img_bytes, path):
+    import io as _io
+    from PIL import Image as _PImg
+    im = _PImg.open(_io.BytesIO(img_bytes)).convert("RGB")
+    if im.size != (3000, 3000):
+        im = im.resize((3000, 3000), _PImg.LANCZOS)
+    im.save(str(path), "JPEG", quality=95)
+    return path
+
 def _fetch_kworb(kworb_slug, limit=10):
     """Spotify Charts via kworb.net (Spotify-Daten, täglich aktualisiert)."""
     import urllib.request as _ur2, re as _re2
@@ -6822,81 +6902,19 @@ class Handler(BaseHTTPRequestHandler):
                               f"dann nochmal auf den Knopf.")}
         if not want_cover:
             return {"ok": True, "mp3": str(mp3_path), "cover": None}
-        # Bildprompt (Claude) → Cover (Pollinations/Gemini)
+        # Cover schon ausgewählt? → das nehmen (Auswahl passiert über /api/suno/covers + pick).
+        _cover_existing = SUNO_DISTROKID_DIR / f"{safe_title}_cover.jpg"
+        if _cover_existing.exists() and _cover_existing.stat().st_size > 50_000:
+            return {"ok": True, "mp3": str(mp3_path), "cover": str(_cover_existing), "cover_note": ""}
+        # Kein ausgewähltes Cover → EIN Cover erzeugen (Direktweg, ohne 3er-Auswahl).
         try:
-            import shutil as _sh2
-            _claude_bin2 = _sh2.which("claude") or os.path.expanduser("~/.local/bin/claude")
-            _cover_prompt_instr = (
-                f"Create an ULTRA-SPECTACULAR, eye-catching album cover image prompt in English for the song '{title}'. "
-                f"This cover must be SO STUNNING that listeners STOP SCROLLING and MUST click play. "
-                f"Think: award-winning photography, viral visual impact, magazine cover quality. "
-                f"IMPORTANT: The artist is optimistic and life-affirming — always interpret the title POSITIVELY. "
-                f"Choose ONE of these visual power styles that fits the title: "
-                f"(1) EPIC GOLDEN HOUR; (2) NEON NOIR; (3) COSMIC WONDER; (4) HYPERREAL NATURE; (5) CINEMATIC EXPLOSION. "
-                f"Be EXTREMELY specific: exact colors, lighting direction, camera angle, materials, mood, a unique focal element. "
-                f"3000x3000px, square format, ultra high detail, professional color grading. "
-                f"End with: '— absolutely NO text, NO letters, NO words, NO typography anywhere in the image.' "
-                f"Reply with ONLY the image prompt, nothing else.")
-            _cp_result = _sp_ff.run(
-                [_claude_bin2, "-p", "--model", "claude-sonnet-5", "--output-format", "json", _cover_prompt_instr],
-                capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~"))
-            img_prompt = json.loads(_cp_result.stdout).get("result", "").strip() if _cp_result.returncode == 0 else ""
-            if not img_prompt:
-                raise Exception("Kein Prompt")
-        except Exception:
-            img_prompt = (f"Ultra-spectacular album cover for '{title}': epic golden hour light rays bursting through "
-                          f"dramatic storm clouds, god rays, deep burnt orange and electric violet sky, extreme low-angle, "
-                          f"hyper-detailed, cinematic depth, Spotify editorial quality — absolutely NO text, NO letters in the image.")
-        import base64 as _b64_cv
-        def _cover_bytes(_eng):
-            if _eng == "mai":
-                _b64, _err = bildgen_mai_generate(img_prompt, model="mai-image-2.5", width=1024, height=1024)
-                if not _b64:
-                    raise Exception(f"MAI-Image: {_err}")
-                return _b64_cv.b64decode(_b64)
-            if _eng == "gemini":
-                _gk = _gemini_key()
-                if not _gk:
-                    raise Exception("Kein Gemini API Key")
-                _gu = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent"
-                _gp = json.dumps({"contents": [{"parts": [{"text": img_prompt}]}],
-                    "generationConfig": {"responseModalities": ["TEXT", "IMAGE"], "imageConfig": {"aspectRatio": "1:1"}}}).encode()
-                _gr = urllib.request.Request(_gu, data=_gp, headers={"x-goog-api-key": _gk, "Content-Type": "application/json"})
-                with urllib.request.urlopen(_gr, timeout=90) as resp:
-                    _gd = json.loads(resp.read())
-                for part in _gd.get("candidates", [{}])[0].get("content", {}).get("parts", []):
-                    if "inlineData" in part:
-                        return _b64_cv.b64decode(part["inlineData"]["data"])
-                raise Exception("Gemini lieferte kein Bild")
-            # pollinations
-            _pu = (f"https://image.pollinations.ai/prompt/{_urlparse_cv.quote(img_prompt)}"
-                   f"?width=3000&height=3000&nologo=true&enhance=true&model=flux-realism")
-            with urllib.request.urlopen(urllib.request.Request(_pu, headers={"User-Agent": "Bolla/1.0"}), timeout=120) as resp:
-                return resp.read()
-        # MAI ist Standard; fällt es aus, ist Gemini der Rückfall (NICHT Pollinations — zu schwach).
-        _engine_chain = [cover_engine] + (["gemini"] if cover_engine == "mai" else [])
-        img_bytes, cover_note, _last_err = None, "", ""
-        for _i, _eng in enumerate(_engine_chain):
-            try:
-                img_bytes = _cover_bytes(_eng)
-                if img_bytes:
-                    if _i > 0:
-                        cover_note = f"ℹ️ Cover-Engine '{cover_engine}' fiel aus ({_last_err}) → '{_eng}' genutzt"
-                    break
-            except Exception as _ce:
-                _last_err = str(_ce); img_bytes = None
-        if not img_bytes:
-            return {"error": f"Cover-Generierung Fehler: {_last_err or 'kein Bild'}"}
-        try:
-            from PIL import Image as _PILImage
-            img = _PILImage.open(_io_cv.BytesIO(img_bytes)).convert("RGB")
-            if img.size != (3000, 3000):
-                img = img.resize((3000, 3000), _PILImage.LANCZOS)
-            cover_path = SUNO_DISTROKID_DIR / f"{safe_title}_cover.jpg"
-            img.save(str(cover_path), "JPEG", quality=95)
+            _mood = _suno_cover_mood(title)
+            _bytes, _note = _suno_render_cover_bytes(_suno_cover_prompt(_mood, 0), cover_engine, _urlparse_cv)
+            _suno_save_cover_jpg(_bytes, _cover_existing)
         except Exception as e:
-            return {"error": f"Cover-Speichern Fehler: {e}"}
-        return {"ok": True, "mp3": str(mp3_path), "cover": str(cover_path), "cover_note": cover_note}
+            return {"error": f"Cover-Generierung Fehler: {e}"}
+        return {"ok": True, "mp3": str(mp3_path), "cover": str(_cover_existing),
+                "cover_note": (f"ℹ️ {_note}" if _note else "")}
 
     def _handle_share(self, raw):
         """Web Share Target: empfängt ein Handy-Foto (multipart/form-data),
@@ -10043,14 +10061,56 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     self._send_json({"error": "Kein Token"}, status=400); return
                 self._send_json(_suno_token_save(token))
             elif self.path == "/api/suno/download-cover":
-                # MP3 (320k) + 3000²-Cover aus dem Suno-Feed ins Archiv — jetzt über die
-                # wiederverwendbare Helper-Methode (auch von /api/suno/publish genutzt).
+                # Direktweg: MP3 finden + EIN Cover erzeugen (ohne 3er-Auswahl).
                 title = body.get("title", "").strip()
-                cover_engine = body.get("engine", "mai")   # Standard MAI-Image-2.5 (Pollinations meist zu schlecht)
+                cover_engine = body.get("engine", "mai")
                 if not title:
                     self._send_json({"error": "Kein Titel angegeben"}, status=400); return
                 r = self._suno_fetch_assets(title, cover_engine)
                 self._send_json(r, status=200 if r.get("ok") else 500)
+
+            elif self.path == "/api/suno/covers":
+                # 3 Cover-Vorschläge erzeugen (drei Bild-Stile). Gibt 512er-Previews als data-URI zurück.
+                import base64 as _b64c, io as _ioc
+                from PIL import Image as _PIc
+                title = body.get("title", "").strip()
+                engine = body.get("engine", "mai")
+                if not title:
+                    self._send_json({"error": "Kein Titel angegeben"}, status=400); return
+                _safe = "".join(c for c in title if c.isalnum() or c in " _-").strip()
+                SUNO_DISTROKID_DIR.mkdir(parents=True, exist_ok=True)
+                mood = _suno_cover_mood(title)
+                covers, errs = [], []
+                for _i in range(3):
+                    try:
+                        _b, _n = _suno_render_cover_bytes(_suno_cover_prompt(mood, _i), engine)
+                        _p = SUNO_DISTROKID_DIR / f"{_safe}_cover_{_i+1}.jpg"
+                        _suno_save_cover_jpg(_b, _p)
+                        _im = _PIc.open(str(_p)); _im.thumbnail((512, 512))
+                        _buf = _ioc.BytesIO(); _im.convert("RGB").save(_buf, "JPEG", quality=80)
+                        covers.append({"n": _i + 1,
+                                       "style": _SUNO_COVER_TREATMENTS[_i][0],
+                                       "preview": "data:image/jpeg;base64," + _b64c.b64encode(_buf.getvalue()).decode()})
+                    except Exception as e:
+                        errs.append(f"Stil {_i+1}: {e}")
+                if not covers:
+                    self._send_json({"error": "Alle 3 Cover fehlgeschlagen: " + " | ".join(errs)}, status=500); return
+                self._send_json({"ok": True, "mood": mood, "covers": covers, "warnings": errs})
+
+            elif self.path == "/api/suno/pick-cover":
+                # Gewähltes Cover -> <Titel>_cover.jpg; die anderen Kandidaten aufräumen.
+                title = body.get("title", "").strip()
+                n = int(body.get("n", 0) or 0)
+                _safe = "".join(c for c in title if c.isalnum() or c in " _-").strip()
+                _src = SUNO_DISTROKID_DIR / f"{_safe}_cover_{n}.jpg"
+                if not _src.exists():
+                    self._send_json({"error": f"Vorschlag {n} nicht gefunden — erst Cover-Vorschläge erzeugen."}, status=400); return
+                import shutil as _shp
+                _shp.copy2(str(_src), str(SUNO_DISTROKID_DIR / f"{_safe}_cover.jpg"))
+                for _k in (1, 2, 3):
+                    try: (SUNO_DISTROKID_DIR / f"{_safe}_cover_{_k}.jpg").unlink(missing_ok=True)
+                    except Exception: pass
+                self._send_json({"ok": True, "cover": str(SUNO_DISTROKID_DIR / f"{_safe}_cover.jpg")})
 
             elif self.path == "/api/suno/publish":
                 # „Veröffentlichen"-Knopf: verkettet die KOMPLETTE DistroKid-Vorbereitung.
@@ -10061,24 +10121,20 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 sprache = body.get("sprache", "de")
                 genre   = body.get("genre", "Pop").strip() or "Pop"
                 lyrics  = body.get("lyrics", "")
-                engine  = body.get("engine", "mai")        # Standard MAI-Image-2.5 (Pollinations meist zu schlecht)
-                fetch   = body.get("fetch", True)          # MP3+Cover frisch aus Suno holen?
-                fetch_cover = body.get("fetch_cover", True) # dabei auch Cover neu erzeugen?
+                engine  = body.get("engine", "mai")
                 if not title:
                     self._send_json({"error": "Kein Titel angegeben"}, status=400); return
                 warnings = []
-                # 1) MP3 (+ ggf. Cover) aus Suno holen — Fehler nur fatal, wenn nichts im Archiv liegt
-                if fetch:
-                    fr = self._suno_fetch_assets(title, engine, want_cover=fetch_cover)
-                    if not fr.get("ok"):
-                        _safe = "".join(c for c in title if c.isalnum() or c in " _-").strip()
-                        _have_mp3 = (SUNO_DISTROKID_DIR / f"{_safe}.mp3").exists()
-                        if _have_mp3:
-                            warnings.append(f"Suno-Download übersprungen ({fr.get('error')}), nutze Archiv-Datei.")
-                        else:
-                            self._send_json({"error": f"Suno-Download fehlgeschlagen: {fr.get('error')}"}, status=500); return
-                    elif fr.get("cover_note"):
-                        warnings.append(fr["cover_note"])
+                _safe = "".join(c for c in title if c.isalnum() or c in " _-").strip()
+                # 1) MP3 auflösen (aus manuell abgelegter Datei) — Cover wird hier NICHT erzeugt.
+                fr = self._suno_fetch_assets(title, engine, want_cover=False)
+                if not fr.get("ok"):
+                    self._send_json({"error": fr.get("error")}, status=500); return
+                # 2) Cover muss schon ausgewählt sein (über „🎨 3 Cover-Vorschläge").
+                if not (SUNO_DISTROKID_DIR / f"{_safe}_cover.jpg").exists():
+                    self._send_json({"error": "Noch kein Cover ausgewaehlt. Erst den Knopf fuer die 3 Cover-Vorschlaege "
+                                              "druecken und einen Vorschlag anklicken, dann nochmal auf 'Fuer DistroKid "
+                                              "vorbereiten'."}, status=400); return
                 # 2) Lyrics in Temp-Datei (für den Orchestrator + Lyrics-Scan)
                 lyr_file = ""
                 if lyrics.strip():
