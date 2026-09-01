@@ -6789,27 +6789,69 @@ class Handler(BaseHTTPRequestHandler):
             sname = (s.get("title") or s.get("display_name") or "")
             if title.lower() in sname.lower():
                 found = s; break
+        # Suno-Feed liefert auf page=0 nur die letzten ~20 Songs — bei Nicht-Fund weitere Seiten scannen
+        if not found:
+            for _pg in range(1, 12):
+                try:
+                    _fr = urllib.request.Request(
+                        SUNO_API_BASE + f"/api/feed/?page={_pg}",
+                        headers={"Authorization": f"Bearer {token}", "User-Agent": "BollaMC/1.0"})
+                    with urllib.request.urlopen(_fr, timeout=20) as _rp:
+                        _fd = json.loads(_rp.read())
+                except Exception:
+                    break
+                _pl = _fd if isinstance(_fd, list) else _fd.get("clips", _fd.get("data", []))
+                if not _pl:
+                    break
+                for s in _pl:
+                    sname = (s.get("title") or s.get("display_name") or "")
+                    if title.lower() in sname.lower():
+                        found = s; break
+                if found:
+                    break
         if not found:
             return {"error": f"Song '{title}' nicht in Suno-Feed gefunden"}
-        audio_url = found.get("audio_url") or found.get("mp3_url") or ""
-        if not audio_url:
-            return {"error": "Kein audio_url im Song-Objekt"}
         SUNO_DISTROKID_DIR.mkdir(parents=True, exist_ok=True)
         safe_title = "".join(c for c in title if c.isalnum() or c in " _-").strip()
         mp3_path = SUNO_DISTROKID_DIR / f"{safe_title}.mp3"
-        try:
-            mp3_req = urllib.request.Request(audio_url, headers={"User-Agent": "BollaMC/1.0"})
-            with urllib.request.urlopen(mp3_req, timeout=60) as resp:
-                mp3_data = resp.read()
-            tmp_path = SUNO_DISTROKID_DIR / f"{safe_title}_tmp.mp3"
-            tmp_path.write_bytes(mp3_data)
-            _ff = _sp_ff.run(["ffmpeg", "-y", "-i", str(tmp_path), "-b:a", "320k", "-ar", "44100", str(mp3_path)],
-                             capture_output=True, timeout=120)
-            tmp_path.unlink(missing_ok=True)
-            if _ff.returncode != 0 or not mp3_path.exists():
-                raise Exception("ffmpeg Konvertierung fehlgeschlagen")
-        except Exception as e:
-            return {"error": f"MP3-Download Fehler: {e}"}
+        # Liegt die MP3 schon manuell im Archiv? → Direkt-Download überspringen.
+        _mp3_ready = mp3_path.exists() and mp3_path.stat().st_size > 100_000
+        if not _mp3_ready:
+            # ⚠️ Suno hat 09/2026 den programmatischen Download gesperrt: audio_url = /forbidden-
+            # Platzhalter, cdn1.suno.ai/{id}.mp3 = HTTP 403, und die m4a-URL aus media_urls[]
+            # liefert einen VERSCHLÜSSELTEN Blob (encoding "1.0.0"). Wir versuchen es trotzdem,
+            # fangen aber sauber ab und verweisen auf den manuellen Suno-Download.
+            audio_url = ""
+            for _m in (found.get("media_urls") or []):
+                _u = _m.get("url") or ""
+                if _u and "cdn1.suno.ai" not in _u and "forbidden" not in _u:
+                    audio_url = _u; break
+            if not audio_url:
+                _au = found.get("audio_url") or found.get("mp3_url") or ""
+                if _au and "forbidden" not in _au:
+                    audio_url = _au
+            _dl_err = "keine ladbare Audio-URL (Suno-Feed-Format geändert)"
+            if audio_url:
+                try:
+                    mp3_req = urllib.request.Request(audio_url, headers={"User-Agent": "BollaMC/1.0"})
+                    with urllib.request.urlopen(mp3_req, timeout=60) as resp:
+                        mp3_data = resp.read()
+                    tmp_path = SUNO_DISTROKID_DIR / f"{safe_title}_tmp.bin"
+                    tmp_path.write_bytes(mp3_data)
+                    _ff = _sp_ff.run(["ffmpeg", "-y", "-i", str(tmp_path), "-b:a", "320k", "-ar", "44100", str(mp3_path)],
+                                     capture_output=True, timeout=120)
+                    tmp_path.unlink(missing_ok=True)
+                    if _ff.returncode == 0 and mp3_path.exists() and mp3_path.stat().st_size > 100_000:
+                        _mp3_ready = True
+                    else:
+                        _dl_err = "Audio verschlüsselt — Suno-Download-Sperre seit 09/2026"
+                except Exception as e:
+                    _dl_err = str(e)
+            if not _mp3_ready:
+                return {"error": (f"MP3 nicht automatisch ladbar ({_dl_err}). "
+                                  f"Song in Suno über ··· → Download holen und als „{safe_title}.mp3\" "
+                                  f"nach Suno_DistroKid\\ legen, dann nochmal auf 🚀 (Haken „MP3+Cover holen\" "
+                                  f"gesetzt lassen — der Rest läuft dann durch).")}
         if not want_cover:
             return {"ok": True, "mp3": str(mp3_path), "cover": None}
         # Bildprompt (Claude) → Cover (Pollinations/Gemini)
