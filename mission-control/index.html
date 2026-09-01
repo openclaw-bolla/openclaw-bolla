@@ -3637,13 +3637,13 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               <input id="suno-dl-title" type="text" placeholder="Suno-Song-Titel eingeben…"
                 style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;
                        color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
-              <div id="suno-engine-toggle" style="display:flex;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:12px;flex-shrink:0" title="Wenn Pollinations mehrfach Anatomie-Fehler liefert: MAI wählen">
+              <div id="suno-engine-toggle" style="display:flex;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:12px;flex-shrink:0" title="Cover-Engine — Standard MAI-Image-2.5 (bestes Ergebnis, ~€0,10). Poll/Gem nur zum Testen.">
                 <button onclick="sunoSetEngine('pollinations',this)" id="eng-poll"
-                  style="padding:6px 10px;border:none;cursor:pointer;font-weight:700;background:#7c3aed;color:white;transition:all .2s">🌸 Poll</button>
+                  style="padding:6px 10px;border:none;cursor:pointer;font-weight:600;background:transparent;color:var(--dim);transition:all .2s">🌸 Poll</button>
                 <button onclick="sunoSetEngine('gemini',this)" id="eng-gem"
                   style="padding:6px 10px;border:none;border-left:1px solid var(--border);cursor:pointer;font-weight:600;background:transparent;color:var(--dim);transition:all .2s">✨ Gem</button>
                 <button onclick="sunoSetEngine('mai',this)" id="eng-mai"
-                  style="padding:6px 10px;border:none;border-left:1px solid var(--border);cursor:pointer;font-weight:600;background:transparent;color:var(--dim);transition:all .2s">🌟 MAI</button>
+                  style="padding:6px 10px;border:none;border-left:1px solid var(--border);cursor:pointer;font-weight:700;background:#f59e0b;color:white;transition:all .2s">🌟 MAI</button>
               </div>
               <button id="suno-dl-btn" onclick="sunoDownloadCover()"
                 style="background:linear-gradient(135deg,#7c3aed,#ff6699);border:none;border-radius:8px;color:white;
@@ -16938,7 +16938,7 @@ async function sunoTokenSave() {
 }
 
 // ── Download + Cover ────────────────────────────────────────────
-let _sunoEngine = 'pollinations';
+let _sunoEngine = 'mai';   // Standard: MAI-Image-2.5 (Pollinations-Cover meist zu schwach)
 function sunoSetEngine(engine, btn) {
   _sunoEngine = engine;
   document.getElementById('eng-poll').style.background = engine === 'pollinations' ? '#7c3aed' : 'transparent';

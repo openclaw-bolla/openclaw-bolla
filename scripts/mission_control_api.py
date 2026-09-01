@@ -6764,7 +6764,7 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass
 
-    def _suno_fetch_assets(self, title, cover_engine="pollinations", want_cover=True):
+    def _suno_fetch_assets(self, title, cover_engine="mai", want_cover=True):
         """Holt MP3 (320 kbps) aus dem Suno-Feed + erzeugt 3000²-Cover ins Archiv.
         Wiederverwendbar aus /api/suno/download-cover UND /api/suno/publish.
         Rückgabe: {'ok':True,'mp3':...,'cover':...|None} oder {'error':...}."""
@@ -6879,47 +6879,56 @@ class Handler(BaseHTTPRequestHandler):
             img_prompt = (f"Ultra-spectacular album cover for '{title}': epic golden hour light rays bursting through "
                           f"dramatic storm clouds, god rays, deep burnt orange and electric violet sky, extreme low-angle, "
                           f"hyper-detailed, cinematic depth, Spotify editorial quality — absolutely NO text, NO letters in the image.")
+        import base64 as _b64_cv
+        def _cover_bytes(_eng):
+            if _eng == "mai":
+                _b64, _err = bildgen_mai_generate(img_prompt, model="mai-image-2.5", width=1024, height=1024)
+                if not _b64:
+                    raise Exception(f"MAI-Image: {_err}")
+                return _b64_cv.b64decode(_b64)
+            if _eng == "gemini":
+                _gk = _gemini_key()
+                if not _gk:
+                    raise Exception("Kein Gemini API Key")
+                _gu = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent"
+                _gp = json.dumps({"contents": [{"parts": [{"text": img_prompt}]}],
+                    "generationConfig": {"responseModalities": ["TEXT", "IMAGE"], "imageConfig": {"aspectRatio": "1:1"}}}).encode()
+                _gr = urllib.request.Request(_gu, data=_gp, headers={"x-goog-api-key": _gk, "Content-Type": "application/json"})
+                with urllib.request.urlopen(_gr, timeout=90) as resp:
+                    _gd = json.loads(resp.read())
+                for part in _gd.get("candidates", [{}])[0].get("content", {}).get("parts", []):
+                    if "inlineData" in part:
+                        return _b64_cv.b64decode(part["inlineData"]["data"])
+                raise Exception("Gemini lieferte kein Bild")
+            # pollinations
+            _pu = (f"https://image.pollinations.ai/prompt/{_urlparse_cv.quote(img_prompt)}"
+                   f"?width=3000&height=3000&nologo=true&enhance=true&model=flux-realism")
+            with urllib.request.urlopen(urllib.request.Request(_pu, headers={"User-Agent": "Bolla/1.0"}), timeout=120) as resp:
+                return resp.read()
+        # MAI ist Standard; fällt es aus, ist Gemini der Rückfall (NICHT Pollinations — zu schwach).
+        _engine_chain = [cover_engine] + (["gemini"] if cover_engine == "mai" else [])
+        img_bytes, cover_note, _last_err = None, "", ""
+        for _i, _eng in enumerate(_engine_chain):
+            try:
+                img_bytes = _cover_bytes(_eng)
+                if img_bytes:
+                    if _i > 0:
+                        cover_note = f"ℹ️ Cover-Engine '{cover_engine}' fiel aus ({_last_err}) → '{_eng}' genutzt"
+                    break
+            except Exception as _ce:
+                _last_err = str(_ce); img_bytes = None
+        if not img_bytes:
+            return {"error": f"Cover-Generierung Fehler: {_last_err or 'kein Bild'}"}
         try:
             from PIL import Image as _PILImage
-            if cover_engine == "mai":
-                import base64 as _b64_cv
-                img_b64, mime_or_err = bildgen_mai_generate(img_prompt, model="mai-image-2.5", width=1024, height=1024)
-                if not img_b64:
-                    return {"error": f"MAI-Image Fehler: {mime_or_err}"}
-                img_bytes = _b64_cv.b64decode(img_b64)
-            elif cover_engine == "gemini":
-                import base64 as _b64_cv
-                gemini_key = _gemini_key()
-                if not gemini_key:
-                    return {"error": "Kein Gemini API Key"}
-                _gem_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent"
-                _gem_payload = json.dumps({"contents": [{"parts": [{"text": img_prompt}]}],
-                    "generationConfig": {"responseModalities": ["TEXT", "IMAGE"], "imageConfig": {"aspectRatio": "1:1"}}}).encode()
-                _gem_req = urllib.request.Request(_gem_url, data=_gem_payload,
-                    headers={"x-goog-api-key": gemini_key, "Content-Type": "application/json"})
-                with urllib.request.urlopen(_gem_req, timeout=90) as resp:
-                    _gem_data = json.loads(resp.read())
-                img_b64 = None
-                for part in _gem_data.get("candidates", [{}])[0].get("content", {}).get("parts", []):
-                    if "inlineData" in part:
-                        img_b64 = part["inlineData"]["data"]; break
-                if not img_b64:
-                    return {"error": "Gemini lieferte kein Bild"}
-                img_bytes = _b64_cv.b64decode(img_b64)
-            else:
-                _poll_url = (f"https://image.pollinations.ai/prompt/{_urlparse_cv.quote(img_prompt)}"
-                             f"?width=3000&height=3000&nologo=true&enhance=true&model=flux-realism")
-                _poll_req = urllib.request.Request(_poll_url, headers={"User-Agent": "Bolla/1.0"})
-                with urllib.request.urlopen(_poll_req, timeout=120) as resp:
-                    img_bytes = resp.read()
             img = _PILImage.open(_io_cv.BytesIO(img_bytes)).convert("RGB")
             if img.size != (3000, 3000):
                 img = img.resize((3000, 3000), _PILImage.LANCZOS)
             cover_path = SUNO_DISTROKID_DIR / f"{safe_title}_cover.jpg"
             img.save(str(cover_path), "JPEG", quality=95)
         except Exception as e:
-            return {"error": f"Cover-Generierung Fehler: {e}"}
-        return {"ok": True, "mp3": str(mp3_path), "cover": str(cover_path)}
+            return {"error": f"Cover-Speichern Fehler: {e}"}
+        return {"ok": True, "mp3": str(mp3_path), "cover": str(cover_path), "cover_note": cover_note}
 
     def _handle_share(self, raw):
         """Web Share Target: empfängt ein Handy-Foto (multipart/form-data),
@@ -10069,7 +10078,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 # MP3 (320k) + 3000²-Cover aus dem Suno-Feed ins Archiv — jetzt über die
                 # wiederverwendbare Helper-Methode (auch von /api/suno/publish genutzt).
                 title = body.get("title", "").strip()
-                cover_engine = body.get("engine", "pollinations")
+                cover_engine = body.get("engine", "mai")   # Standard MAI-Image-2.5 (Pollinations meist zu schlecht)
                 if not title:
                     self._send_json({"error": "Kein Titel angegeben"}, status=400); return
                 r = self._suno_fetch_assets(title, cover_engine)
@@ -10084,7 +10093,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 sprache = body.get("sprache", "de")
                 genre   = body.get("genre", "Pop").strip() or "Pop"
                 lyrics  = body.get("lyrics", "")
-                engine  = body.get("engine", "pollinations")
+                engine  = body.get("engine", "mai")        # Standard MAI-Image-2.5 (Pollinations meist zu schlecht)
                 fetch   = body.get("fetch", True)          # MP3+Cover frisch aus Suno holen?
                 fetch_cover = body.get("fetch_cover", True) # dabei auch Cover neu erzeugen?
                 if not title:
@@ -10100,6 +10109,8 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                             warnings.append(f"Suno-Download übersprungen ({fr.get('error')}), nutze Archiv-Datei.")
                         else:
                             self._send_json({"error": f"Suno-Download fehlgeschlagen: {fr.get('error')}"}, status=500); return
+                    elif fr.get("cover_note"):
+                        warnings.append(fr["cover_note"])
                 # 2) Lyrics in Temp-Datei (für den Orchestrator + Lyrics-Scan)
                 lyr_file = ""
                 if lyrics.strip():
