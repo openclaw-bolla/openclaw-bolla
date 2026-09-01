@@ -9289,6 +9289,17 @@ Antworte NUR als reines JSON ohne Markdown:
                 jugendfrei_inst = ("WICHTIG: Songtext muss absolut jugendfrei und familienfreundlich sein. "
                                    "Keine zweideutigen Formulierungen, keine Anspielungen, keine suggestiven Ausdrücke. "
                                    "Clean lyrics, appropriate for all ages, family-friendly.\n") if jugendfrei else ""
+                # Schul-Songs kommen von Chris als Lehrer -> keine Kosenamen an Schüler/innen, egal welche Sprache.
+                # (Chris 01.09.2026: EN-Version brachte "sweet <Name>" für eine Schülerin — als Lehrer-Ansprache unpassend.)
+                schul_anrede_inst = (
+                    "ANREDE (Schulkontext, verbindlich): Der Song kommt von Chris als Lehrer bzw. aus dem "
+                    "Klassenzusammenhang. Die/den Gefeierte/n NUR beim Vornamen ansprechen — warmherzig, "
+                    "wertschätzend, humorvoll, aber genau so, wie eine Lehrkraft mit einer Schülerin / einem "
+                    "Schüler spricht. KEINE Kose- oder Zärtlichkeitswörter, weder englisch noch deutsch — "
+                    "NICHT 'sweet', 'dear', 'darling', 'honey', 'baby', 'babe', 'sweetheart', 'cutie', 'love' "
+                    "(als Anrede), und NICHT 'Süße/r', 'Schatz', 'Liebling', 'mein/e Liebe/r', 'Maus', 'Hase'. "
+                    "Auch keine anbahnenden oder romantisch klingenden Formulierungen. Zuneigung wird über "
+                    "Anerkennung, gute Wünsche und ein Augenzwinkern transportiert, nicht über Kosenamen.\n")
                 SCHOOL_KONTEXT = "Geburtstagssong für Schüler · Computerkurs Herrn Mandel · Lessing-Gymnasium"
                 # Release-/Profil-Modus ist NIE ein Schulsong, auch wenn kein Thema angegeben ist
                 is_school = (not kontext or kontext == SCHOOL_KONTEXT) and not profil
@@ -9776,7 +9787,7 @@ Antworte NUR als reines JSON ohne Markdown:
                     who = f"Schüler/in: {name}" if is_personal else (f"Gruppe/Klasse: {name}" if name else "Allgemeiner Klassen-Song")
                     prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Geburtstagssong {lang_inst}.
 
-{jugendfrei_inst}{who}
+{jugendfrei_inst}{schul_anrede_inst}{who}
 Klasse: {klasse}
 {gb_kontext(geburtstag, ref_date)}
 {gb_lyrics_hint(geburtstag, ref_date)}

@@ -3,8 +3,9 @@ from PIL import Image, ImageOps
 
 ROOT = "/mnt/d/OneDrive"
 OUT  = "/home/bolla/workspace/mission-control/f-photos"
-LOG  = "/tmp/claude-1000/-mnt-c-Users-ernst/c9877f09-01b5-4d8a-829a-ce00e734c0ff/scratchpad/build_f.log"
-POOL_SIZE = 46
+LOG  = "/home/bolla/workspace/scripts/build_f.log"
+POOL_SIZE = 120
+VISION_MODEL = "claude-sonnet-5"   # Landmark-Erkennung ist kein Opus-Job; ~5x leichter fürs Kontingent
 MAXPX, Q, MIN_BYTES = 1600, 85, 90_000
 
 def log(*a):
@@ -184,9 +185,11 @@ def reverse_geocode(lat, lon):
 
 # ---------------- Ortsermittlung Quelle 2: Vision-Fallback (Opus) ohne GPS ----------------
 def vision_place(fp):
-    """Opus schaut sich das Foto an (gleiches Subprocess-Pattern wie ai_direct() in aufpeppen.py) und
+    """Sonnet schaut sich das Foto an (gleiches Subprocess-Pattern wie ai_direct() in aufpeppen.py) und
     liefert NUR bei eindeutig erkennbarem Wahrzeichen/markanter Landschaft einen Ortsnamen, sonst None.
-    Rät bewusst NICHT -- 'unknown' ist ausdrücklich der bevorzugte Ausgang bei Unsicherheit."""
+    Rät bewusst NICHT -- 'unknown' ist ausdrücklich der bevorzugte Ausgang bei Unsicherheit.
+    Wenn ein BEKANNTES Wahrzeichen klar erkennbar ist, wird es der Stadt vorangestellt
+    ('Odeonskirche, München')."""
     prompt = (
         "Du bist Bolla, Chris' KI-Assistent. Schau dir mit dem Read-Tool genau dieses eine Foto an:\n"
         f"- {fp}\n\n"
@@ -199,12 +202,17 @@ def vision_place(fp):
         "Rate NIEMALS ins Blaue. Eine falsche oder erfundene Ortsangabe ist schlimmer als gar keine. "
         "Lieber zehnmal 'unknown' zurückgeben als einmal eine unsichere Vermutung als Fakt ausgeben. "
         "Im Zweifel IMMER 'unknown'.\n\n"
-        "Antworte NUR mit dem Ortsnamen auf Deutsch, knapp (Ort, ggf. + Land, z.B. 'Rom, Italien'), "
-        "keine Erklärung, keine Anführungszeichen, kein weiterer Text -- oder NUR mit dem einzelnen "
-        "Wort 'unknown'. Deine Antwort besteht aus genau einer Zeile."
+        "Format der Antwort, wenn (und nur wenn) du sicher bist:\n"
+        "- Ist ein KONKRETES, allgemein bekanntes Wahrzeichen klar erkennbar, nenne es zuerst, "
+        "dann die Stadt: 'Wahrzeichen, Stadt' (z.B. 'Brandenburger Tor, Berlin'). Nur bei wirklich "
+        "namhaften, eindeutig identifizierbaren Bauwerken/Orten -- NICHT bei irgendeiner Kirche/Brücke.\n"
+        "- Sonst nur der Ort: 'Stadt' oder 'Stadt, Land' (z.B. 'Rom, Italien').\n"
+        "- Land nur anhängen, wenn es NICHT Deutschland ist.\n\n"
+        "Antworte NUR mit dieser einen Zeile auf Deutsch, knapp, keine Erklärung, keine "
+        "Anführungszeichen, kein weiterer Text -- oder NUR mit dem einzelnen Wort 'unknown'."
     )
     try:
-        r = subprocess.run(["claude", "-p", prompt, "--model", "claude-opus-5"],
+        r = subprocess.run(["claude", "-p", prompt, "--model", VISION_MODEL],
                             capture_output=True, text=True, timeout=120)
         out = (r.stdout or "").strip()
         lines = [l.strip() for l in out.splitlines() if l.strip()]
@@ -287,9 +295,26 @@ for lf in leafs:
 log(f"{len(picked)} ausgewählt, {time.time()-t0:.0f}s")
 
 # --- Resize + EXIF + Ort (GPS-Geocoding > Vision-Fallback > Ordnername) ---
+_UML = {"ä":"ae","ö":"oe","ü":"ue","ß":"ss","Ä":"ae","Ö":"oe","Ü":"ue",
+        "á":"a","à":"a","â":"a","é":"e","è":"e","ê":"e","í":"i","ó":"o","ô":"o","ú":"u","ñ":"n","ç":"c"}
+def slugify(s):
+    """'Odeonskirche, München' -> 'odeonskirche-muenchen'. Nur der Ort-Teil, ohne Datum."""
+    s = s.split(" · ")[0]
+    s = "".join(_UML.get(c, c) for c in s).lower()
+    s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+    s = re.sub(r"-{2,}", "-", s)
+    return s or "foto"
+
+# alte Bilder wegräumen -- Dateinamen sind jetzt sprechend, sonst bleiben f00.jpg & Co. als Leichen liegen
+for _old in os.listdir(OUT):
+    if _old.lower().endswith((".jpg", ".jpeg", ".png")):
+        try: os.remove(os.path.join(OUT, _old))
+        except OSError: pass
+
 STATS = {"gps_present": 0, "gps_geocoded": 0, "vision_tried": 0, "vision_hit": 0,
          "vision_unknown": 0, "fallback_ordner": 0}
 manifest = []
+_used_names = set()
 for i, rel in enumerate(sorted(picked)):
     fp = os.path.join(ROOT, rel)
     try:
@@ -347,7 +372,12 @@ for i, rel in enumerate(sorted(picked)):
 
         im = ImageOps.exif_transpose(im).convert("RGB")
         im.thumbnail((MAXPX, MAXPX), Image.LANCZOS)
-        name = f"f{i:02d}.jpg"
+        stem = slugify(place)
+        name = f"{stem}.jpg"
+        n = 2
+        while name in _used_names:            # gleicher Ort mehrfach -> -2, -3, ...
+            name = f"{stem}-{n}.jpg"; n += 1
+        _used_names.add(name)
         im.save(os.path.join(OUT, name), "JPEG", quality=Q, optimize=True)
         cap = f"{place} · {dt}" if dt else place
         manifest.append({"src": f"/f-photos/{name}", "cap": cap, "folder": os.path.dirname(rel)})
