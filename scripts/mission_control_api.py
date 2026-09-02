@@ -3099,39 +3099,43 @@ def _suno_token_save(token):
     return {"ok": True}
 
 # ── Cover-Generierung für bollawave-Releases ──────────────────────────────
-# Drei geschmackvolle Bild-Stile statt einem überdrehten „ULTRA-SPECTACULAR"-Prompt.
-_SUNO_COVER_TREATMENTS = [
-    ("Atmospheric photo",
-     "Cinematic real-world photograph, natural light, shallow depth of field, one clear focal element, "
-     "restrained and elegant, editorial album-cover framing."),
-    ("Abstract colour & light",
-     "Purely abstract: flowing gradient colour fields, soft bokeh, light leaks, no recognisable objects, "
-     "mood carried entirely by palette and light."),
-    ("Minimal graphic poster",
-     "Minimal graphic design, two or three bold flat shapes, limited palette, generous negative space, "
-     "modern screen-print / poster aesthetic."),
-]
+_COVER_NO_TEXT = (" Square 3000x3000 album cover, cohesive colour grading, rich detail, "
+                  "eye-catching. Absolutely NO text, NO letters, NO words, NO numbers, NO logos anywhere.")
 
-def _suno_cover_mood(title):
-    """Ein Satz Bild-Stimmung zum Titel (Farbe/Gefühl, NICHT wörtliche Motive)."""
+def _suno_cover_concepts(title, lyrics="", n=3):
+    """n konkrete Bild-IDEEN zum Song (Titel + optional Lyrics) — je ein bildhafter englischer Satz.
+    Bezieht sich WIRKLICH auf den Song, aber KEINE wörtliche Bebilderung des Titels."""
     import subprocess as _sp, shutil as _sh
     cb = _sh.which("claude") or os.path.expanduser("~/.local/bin/claude")
-    instr = (f"In ONE short English sentence, describe the emotional colour and atmosphere of a feel-good, "
-             f"optimistic pop song titled '{title}'. Name a palette and a feeling. Do NOT describe literal "
-             f"objects taken from the title. Reply with only the sentence.")
+    ly = (lyrics or "").strip()
+    ly_part = f"\n\nLyrics excerpt:\n{ly[:1400]}" if ly else ""
+    kinds = ("one photographic and real, one bold and graphic, one dreamlike and atmospheric"
+             if n == 3 else "each in a clearly different visual style")
+    instr = (
+        f"You design album covers for the warm feel-good pop artist 'bollawave'. "
+        f"Song title: \"{title}\".{ly_part}\n\n"
+        f"Give me {n} DIFFERENT cover CONCEPTS. Each concept = ONE vivid English sentence describing a "
+        f"concrete scene, subject or symbol that captures this song's feeling and story. It must be "
+        f"genuinely connected to what the song is about — but NOT a literal illustration of the title "
+        f"words. Be specific about subject, setting, colour and light. Keep it positive and optimistic. "
+        f"Make them {kinds}. "
+        f"Reply as exactly {n} lines, one concept per line, no numbering, no extra text."
+    )
     try:
         r = _sp.run([cb, "-p", "--model", "claude-sonnet-5", "--output-format", "json", instr],
-                    capture_output=True, text=True, timeout=45, cwd=os.path.expanduser("~"))
-        m = json.loads(r.stdout).get("result", "").strip() if r.returncode == 0 else ""
-        return m or f"Warm, hopeful, golden and airy — the feeling of a good day for '{title}'."
+                    capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~"))
+        raw = json.loads(r.stdout).get("result", "").strip() if r.returncode == 0 else ""
+        lines = [l.strip(" -•\t").strip() for l in raw.splitlines() if l.strip()]
+        lines = [l for l in lines if len(l) > 15][:n]
     except Exception:
-        return f"Warm, hopeful, golden and airy — the feeling of a good day for '{title}'."
+        lines = []
+    while len(lines) < n:
+        lines.append(f"A warm, optimistic scene bathed in golden light that captures the uplifting feeling "
+                     f"of the song '{title}', with a single clear focal element and a joyful colour palette.")
+    return lines
 
-def _suno_cover_prompt(mood, idx):
-    label, treatment = _SUNO_COVER_TREATMENTS[idx % len(_SUNO_COVER_TREATMENTS)]
-    return (f"{treatment} Mood to convey: {mood} "
-            f"Square 3000x3000 album cover, professional colour grading, high detail. "
-            f"Absolutely NO text, NO letters, NO words, NO typography, NO logos anywhere.")
+def _suno_cover_prompt(concept, idx=0):
+    return concept.rstrip(". ") + "." + _COVER_NO_TEXT
 
 def _suno_render_cover_bytes(img_prompt, cover_engine, _urlparse_cv=None):
     """Rendert EIN Cover-Bild (bytes) mit MAI → Fallback Gemini (nie Pollinations, außer explizit)."""
@@ -6908,8 +6912,8 @@ class Handler(BaseHTTPRequestHandler):
             return {"ok": True, "mp3": str(mp3_path), "cover": str(_cover_existing), "cover_note": ""}
         # Kein ausgewähltes Cover → EIN Cover erzeugen (Direktweg, ohne 3er-Auswahl).
         try:
-            _mood = _suno_cover_mood(title)
-            _bytes, _note = _suno_render_cover_bytes(_suno_cover_prompt(_mood, 0), cover_engine, _urlparse_cv)
+            _concept = _suno_cover_concepts(title, "", n=1)[0]
+            _bytes, _note = _suno_render_cover_bytes(_suno_cover_prompt(_concept), cover_engine, _urlparse_cv)
             _suno_save_cover_jpg(_bytes, _cover_existing)
         except Exception as e:
             return {"error": f"Cover-Generierung Fehler: {e}"}
@@ -10069,36 +10073,41 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 r = self._suno_fetch_assets(title, cover_engine)
                 self._send_json(r, status=200 if r.get("ok") else 500)
 
-            elif self.path == "/api/suno/covers":
-                # 3 Cover-Vorschläge erzeugen (drei Bild-Stile). Gibt 512er-Previews als data-URI zurück.
+            elif self.path in ("/api/suno/covers", "/api/suno/cover-extra"):
+                # /covers      → 3 Vorschläge, Standard-Engine Pollinations (gratis)
+                # /cover-extra → 1 weiterer Vorschlag (Slot 4), Engine MAI 2.5 (~€0,10)
                 import base64 as _b64c, io as _ioc
                 from PIL import Image as _PIc
-                title = body.get("title", "").strip()
-                engine = body.get("engine", "mai")
+                _extra = self.path.endswith("cover-extra")
+                title  = body.get("title", "").strip()
+                lyrics = body.get("lyrics", "")
+                engine = body.get("engine", "mai" if _extra else "pollinations")
                 if not title:
                     self._send_json({"error": "Kein Titel angegeben"}, status=400); return
                 _safe = "".join(c for c in title if c.isalnum() or c in " _-").strip()
                 SUNO_DISTROKID_DIR.mkdir(parents=True, exist_ok=True)
-                mood = _suno_cover_mood(title)
+                _cnt = 1 if _extra else 3
+                _base = 3 if _extra else 0
+                concepts = _suno_cover_concepts(title, lyrics, n=_cnt)
                 covers, errs = [], []
-                for _i in range(3):
+                for _i in range(_cnt):
+                    _slot = _base + _i + 1
                     try:
-                        _b, _n = _suno_render_cover_bytes(_suno_cover_prompt(mood, _i), engine)
-                        _p = SUNO_DISTROKID_DIR / f"{_safe}_cover_{_i+1}.jpg"
+                        _b, _n = _suno_render_cover_bytes(_suno_cover_prompt(concepts[_i]), engine)
+                        _p = SUNO_DISTROKID_DIR / f"{_safe}_cover_{_slot}.jpg"
                         _suno_save_cover_jpg(_b, _p)
                         _im = _PIc.open(str(_p)); _im.thumbnail((512, 512))
                         _buf = _ioc.BytesIO(); _im.convert("RGB").save(_buf, "JPEG", quality=80)
-                        covers.append({"n": _i + 1,
-                                       "style": _SUNO_COVER_TREATMENTS[_i][0],
+                        covers.append({"n": _slot, "concept": concepts[_i][:120],
                                        "preview": "data:image/jpeg;base64," + _b64c.b64encode(_buf.getvalue()).decode()})
                     except Exception as e:
-                        errs.append(f"Stil {_i+1}: {e}")
+                        errs.append(f"Bild {_slot}: {e}")
                 if not covers:
-                    self._send_json({"error": "Alle 3 Cover fehlgeschlagen: " + " | ".join(errs)}, status=500); return
-                self._send_json({"ok": True, "mood": mood, "covers": covers, "warnings": errs})
+                    self._send_json({"error": "Cover fehlgeschlagen: " + " | ".join(errs)}, status=500); return
+                self._send_json({"ok": True, "engine": engine, "covers": covers, "warnings": errs})
 
             elif self.path == "/api/suno/pick-cover":
-                # Gewähltes Cover -> <Titel>_cover.jpg; die anderen Kandidaten aufräumen.
+                # Gewähltes Cover -> <Titel>_cover.jpg; alle Kandidaten (1..4) aufräumen.
                 title = body.get("title", "").strip()
                 n = int(body.get("n", 0) or 0)
                 _safe = "".join(c for c in title if c.isalnum() or c in " _-").strip()
@@ -10107,7 +10116,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     self._send_json({"error": f"Vorschlag {n} nicht gefunden — erst Cover-Vorschläge erzeugen."}, status=400); return
                 import shutil as _shp
                 _shp.copy2(str(_src), str(SUNO_DISTROKID_DIR / f"{_safe}_cover.jpg"))
-                for _k in (1, 2, 3):
+                for _k in (1, 2, 3, 4):
                     try: (SUNO_DISTROKID_DIR / f"{_safe}_cover_{_k}.jpg").unlink(missing_ok=True)
                     except Exception: pass
                 self._send_json({"ok": True, "cover": str(SUNO_DISTROKID_DIR / f"{_safe}_cover.jpg")})

@@ -3637,14 +3637,6 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               <input id="suno-dl-title" type="text" placeholder="Suno-Song-Titel eingeben…"
                 style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;
                        color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
-              <div id="suno-engine-toggle" style="display:flex;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:12px;flex-shrink:0" title="Cover-Engine — Standard MAI-Image-2.5 (bestes Ergebnis, ~€0,10). Poll/Gem nur zum Testen.">
-                <button onclick="sunoSetEngine('pollinations',this)" id="eng-poll"
-                  style="padding:6px 10px;border:none;cursor:pointer;font-weight:600;background:transparent;color:var(--dim);transition:all .2s">🌸 Poll</button>
-                <button onclick="sunoSetEngine('gemini',this)" id="eng-gem"
-                  style="padding:6px 10px;border:none;border-left:1px solid var(--border);cursor:pointer;font-weight:600;background:transparent;color:var(--dim);transition:all .2s">✨ Gem</button>
-                <button onclick="sunoSetEngine('mai',this)" id="eng-mai"
-                  style="padding:6px 10px;border:none;border-left:1px solid var(--border);cursor:pointer;font-weight:700;background:#f59e0b;color:white;transition:all .2s">🌟 MAI</button>
-              </div>
               <button id="suno-dl-btn" onclick="sunoCoverSuggest()"
                 style="background:linear-gradient(135deg,#7c3aed,#ff6699);border:none;border-radius:8px;color:white;
                        font-weight:700;font-size:14px;padding:9px 18px;cursor:pointer;white-space:nowrap;
@@ -3681,12 +3673,12 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 <div style="margin-top:9px;padding:12px 14px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid var(--border);font-size:14px;line-height:1.75;color:var(--text)">
                   <div><b>1.</b> Song in <b>Suno</b> fertig machen. Dort über das <b>···-Menü → Download</b> die Datei holen — <b>WAV</b> (beste Qualität) oder MP3.</div>
                   <div><b>2.</b> Die Datei nach <b>Desktop\DistroKid\</b> legen (Dateiname ~ Songtitel, Sonderzeichen egal).</div>
-                  <div><b>3.</b> Oben <b>Titel</b> eintippen, dann <b>„🎨 3 Cover-Vorschläge"</b> → 1–2 Min → die drei Bilder erscheinen → <b>eins anklicken</b>.</div>
+                  <div><b>3.</b> Oben <b>Titel</b> (und unten den Liedtext) eintippen, dann <b>„🎨 3 Cover-Vorschläge"</b> → 1–2 Min → drei Bilder (gratis, Pollinations) → <b>eins anklicken</b>. Gefällt keins: <b>„🌟 +1 mit MAI"</b> (~€0,10).</div>
                   <div><b>4.</b> <b>Sprache + Genre</b> wählen, Liedtext einfügen <span style="color:var(--dim)">(optional, für den Namens-Scan)</span>.</div>
                   <div><b>5.</b> Grünen Knopf <b>„🚀 Für DistroKid fertig machen"</b> → fertiger Ordner auf dem <b>Desktop</b>.</div>
                   <div><b>6.</b> Bei <b>DistroKid hochladen</b> — die <b>Checkliste</b> im Ordner sagt dir jedes Feld (Künstler = bollawave, KI-Haken setzen!).</div>
                   <div><b>7.</b> <b>Nach</b> dem Release: Video + Captions aus dem Unterordner <b>„Social Media"</b> posten <span style="color:var(--dim)">(bei TikTok den KI-Haken beim Upload setzen)</span>.</div>
-                  <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);color:var(--dim)">💡 Suno sperrt seit 09/2026 den Auto-Download — deshalb Schritt 1+2 von Hand. Cover = MAI-Image-2.5 (~€0,10 je Bild, 3 Vorschläge ≈ €0,30).</div>
+                  <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);color:var(--dim)">💡 Suno sperrt seit 09/2026 den Auto-Download — deshalb Schritt 1+2 von Hand. Die 3 Cover-Vorschläge sind gratis (Pollinations); nur das optionale „+1 mit MAI" kostet ~€0,10.</div>
                 </div>
               </details>
             </div>
@@ -16888,48 +16880,40 @@ function sunoUpdateVoiceTips(text) {
 // ── Suno Token: entfernt 01.09.2026 — Suno hat die API/den Download gesperrt,
 //    die DistroKid-Vorbereitung braucht kein Token mehr. (Blocklist-Scan läuft separat.)
 
-// ── Download + Cover ────────────────────────────────────────────
-let _sunoEngine = 'mai';   // Standard: MAI-Image-2.5 (Pollinations-Cover meist zu schwach)
-function sunoSetEngine(engine, btn) {
-  _sunoEngine = engine;
-  document.getElementById('eng-poll').style.background = engine === 'pollinations' ? '#7c3aed' : 'transparent';
-  document.getElementById('eng-poll').style.color = engine === 'pollinations' ? 'white' : 'var(--dim)';
-  document.getElementById('eng-gem').style.background = engine === 'gemini' ? '#4285f4' : 'transparent';
-  document.getElementById('eng-gem').style.color = engine === 'gemini' ? 'white' : 'var(--dim)';
-  document.getElementById('eng-mai').style.background = engine === 'mai' ? '#f59e0b' : 'transparent';
-  document.getElementById('eng-mai').style.color = engine === 'mai' ? 'white' : 'var(--dim)';
-}
-
-function _sunoEngineLabel() {
-  return _sunoEngine === 'gemini' ? '✨ Gemini' : _sunoEngine === 'mai' ? '🌟 MAI-Image' : '🌸 Pollinations';
-}
-
+// ── Cover-Vorschläge ────────────────────────────────────────────
+// 3 gratis mit Pollinations; wenn keins gefällt → 1 extra mit MAI 2.5 (~€0,10).
 let _sunoCoverTitle = '';
+function _sunoCoverCard(c) {
+  return `<div onclick="sunoPickCover(${c.n})" data-n="${c.n}" title="${(c.concept||'').replace(/"/g,'&quot;')}"
+       style="cursor:pointer;border:2px solid var(--border);border-radius:8px;overflow:hidden;width:150px;transition:border-color .15s"
+       onmouseover="this.style.borderColor='#22c55e'" onmouseout="if(this.style.opacity!=='1'||!this.dataset.picked)this.style.borderColor='var(--border)'">
+    <img src="${c.preview}" style="width:150px;height:150px;display:block;object-fit:cover">
+    <div style="font-size:11px;color:var(--dim);text-align:center;padding:3px">${c.n <= 3 ? 'Vorschlag ' + c.n : '🌟 MAI'}</div>
+  </div>`;
+}
 async function sunoCoverSuggest() {
   const title = document.getElementById('suno-dl-title').value.trim();
+  const lyrics = (document.getElementById('suno-pub-lyrics') || {}).value || '';
   const status = document.getElementById('suno-dl-status');
   const picks = document.getElementById('suno-cover-picks');
   if (!title) { status.textContent = '⚠️ Bitte Song-Titel eingeben'; return; }
-  if (!confirm('🎨 3 Cover-Vorschläge mit ' + _sunoEngineLabel() + ' erzeugen — kostet ~€0,30 (3 Bilder).\n\nFortfahren?')) return;
   const btn = document.getElementById('suno-dl-btn');
   btn.disabled = true; btn.style.opacity = '0.5';
   picks.style.display = 'none'; picks.innerHTML = '';
   status.style.color = 'var(--dim)';
-  status.textContent = '⏳ Erzeuge 3 Cover-Vorschläge… (ca. 1–2 Min)';
+  status.textContent = '⏳ Erzeuge 3 Cover-Vorschläge (Pollinations, gratis)… ca. 1–2 Min';
   try {
     const data = await fetch(API + '/api/suno/covers', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({title, engine: _sunoEngine})
+      body: JSON.stringify({title, lyrics})
     }).then(r => r.json());
     if (data.error) throw new Error(data.error);
     _sunoCoverTitle = title;
     picks.style.display = 'flex';
-    picks.innerHTML = data.covers.map(c =>
-      `<div onclick="sunoPickCover(${c.n})" title="${c.style}" style="cursor:pointer;border:2px solid var(--border);border-radius:8px;overflow:hidden;width:140px;transition:border-color .15s"
-            onmouseover="this.style.borderColor='#22c55e'" onmouseout="this.style.borderColor='var(--border)'">
-        <img src="${c.preview}" style="width:140px;height:140px;display:block;object-fit:cover">
-        <div style="font-size:11px;color:var(--dim);text-align:center;padding:3px">${c.n}. ${c.style}</div>
-      </div>`).join('');
+    picks.innerHTML = data.covers.map(_sunoCoverCard).join('') +
+      `<button id="suno-cover-extra-btn" onclick="sunoCoverExtra()"
+         style="align-self:center;background:#f59e0b;border:none;border-radius:8px;color:white;font-weight:700;
+                font-size:13px;padding:9px 14px;cursor:pointer;white-space:nowrap">🌟 Keins passt? +1 mit MAI (~€0,10)</button>`;
     status.style.color = '#34c759';
     status.textContent = '✅ Einen Vorschlag anklicken = als Cover übernehmen.';
     if ((data.warnings || []).length) status.textContent += '  (' + data.warnings.join(' · ') + ')';
@@ -16937,6 +16921,31 @@ async function sunoCoverSuggest() {
     status.style.color = '#ff453a'; status.textContent = '❌ ' + e.message;
   } finally {
     btn.disabled = false; btn.style.opacity = '1';
+  }
+}
+async function sunoCoverExtra() {
+  const title = _sunoCoverTitle || document.getElementById('suno-dl-title').value.trim();
+  const lyrics = (document.getElementById('suno-pub-lyrics') || {}).value || '';
+  const status = document.getElementById('suno-dl-status');
+  const picks = document.getElementById('suno-cover-picks');
+  const eb = document.getElementById('suno-cover-extra-btn');
+  if (!confirm('🌟 Ein weiteres Cover mit MAI-Image-2.5 — kostet ~€0,10.\n\nFortfahren?')) return;
+  if (eb) { eb.disabled = true; eb.style.opacity = '0.5'; eb.textContent = '⏳ MAI erzeugt…'; }
+  status.style.color = 'var(--dim)'; status.textContent = '⏳ MAI-Cover wird erzeugt… (~1 Min)';
+  try {
+    const data = await fetch(API + '/api/suno/cover-extra', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({title, lyrics})
+    }).then(r => r.json());
+    if (data.error) throw new Error(data.error);
+    const c = data.covers[0];
+    if (eb) eb.insertAdjacentHTML('beforebegin', _sunoCoverCard(c));
+    status.style.color = '#34c759';
+    status.textContent = '✅ MAI-Vorschlag ist da (rechts). Einen anklicken = übernehmen.';
+  } catch(e) {
+    status.style.color = '#ff453a'; status.textContent = '❌ ' + e.message;
+  } finally {
+    if (eb) { eb.disabled = false; eb.style.opacity = '1'; eb.textContent = '🌟 Nochmal +1 mit MAI (~€0,10)'; }
   }
 }
 async function sunoPickCover(n) {
@@ -16948,12 +16957,14 @@ async function sunoPickCover(n) {
       body: JSON.stringify({title: _sunoCoverTitle, n})
     }).then(r => r.json());
     if (d.error) throw new Error(d.error);
-    picks.querySelectorAll('div[onclick]').forEach((el, i) => {
-      el.style.borderColor = (i === n - 1) ? '#22c55e' : 'var(--border)';
-      el.style.opacity = (i === n - 1) ? '1' : '0.45';
+    picks.querySelectorAll('div[data-n]').forEach(el => {
+      const on = (+el.dataset.n === n);
+      el.style.borderColor = on ? '#22c55e' : 'var(--border)';
+      el.style.opacity = on ? '1' : '0.4';
+      if (on) el.dataset.picked = '1'; else delete el.dataset.picked;
     });
     status.style.color = '#34c759';
-    status.textContent = `✅ Cover ${n} übernommen. Jetzt „🚀 Für DistroKid fertig machen" drücken.`;
+    status.textContent = `✅ Cover übernommen. Jetzt „🚀 Für DistroKid fertig machen" drücken.`;
   } catch(e) {
     status.style.color = '#ff453a'; status.textContent = '❌ ' + e.message;
   }
@@ -16986,7 +16997,7 @@ async function sunoPublish() {
     const res = await fetch(API + '/api/suno/publish', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({title, genre, sprache: _sunoPubLang, lyrics, engine: _sunoEngine})
+      body: JSON.stringify({title, genre, sprache: _sunoPubLang, lyrics})
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || (data.warnings || []).join(' · ') || 'Unbekannter Fehler');
