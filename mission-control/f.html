@@ -55,6 +55,19 @@ html, body {
 }
 #hint.show { color: rgba(255,255,255,.30); }
 
+/* ---- Rand-Tipp/Klick zum Blättern ---- */
+#edge .ez {
+  position: fixed; top: 50%; transform: translateY(-50%);
+  width: 48px; height: 96px; border: 0; padding: 0; margin: 0;
+  background: rgba(0,0,0,.26); color: rgba(255,255,255,.55);
+  font-size: 30px; line-height: 96px; text-align: center;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  transition: opacity .35s ease; z-index: 4;
+}
+#ezL { left: 0; border-radius: 0 14px 14px 0; }
+#ezR { right: 0; border-radius: 14px 0 0 14px; }
+#edge.hide .ez { opacity: 0; pointer-events: none; }
+
 /* ---- Zoom-Ansicht ---- */
 #zoom { position: fixed; inset: 0; background: #000; display: none; overflow: hidden; touch-action: none; }
 #zoom.on { display: block; }
@@ -94,6 +107,10 @@ html, body {
 <div id="count"></div>
 <div id="cap"></div>
 <div id="hint"><span>‹</span><span>›</span></div>
+<div id="edge">
+  <button class="ez" id="ezL" aria-label="Vorheriges Bild">‹</button>
+  <button class="ez" id="ezR" aria-label="Nächstes Bild">›</button>
+</div>
 
 <div id="zoom">
   <button id="zclose" aria-label="Zoom schließen">✕</button>
@@ -121,6 +138,7 @@ html, body {
   const zoomEl = document.getElementById('zoom');
   const zcloseEl = document.getElementById('zclose');
   const zhintEl = document.getElementById('zhint');
+  const edgeEl = document.getElementById('edge');
 
   let pics = [], idx = 0, slides = [], busy = false, zoomOpen = false, dataDate = null;
 
@@ -138,6 +156,7 @@ html, body {
         slides = []; idx = 0;
         if (initial) loader.remove();
         endEl.classList.remove('on');
+        edgeEl.classList.remove('hide');
         capEl.style.opacity = ''; countEl.style.opacity = '';
         barEl.innerHTML = pics.map(() => '<i></i>').join('');
         show(0, true);
@@ -185,15 +204,21 @@ html, body {
 
   function finish() {
     endEl.classList.add('on');
+    edgeEl.classList.add('hide');
     capEl.style.opacity = '0'; countEl.style.opacity = '0';
   }
   function flashHint() { hintEl.classList.add('show'); setTimeout(() => hintEl.classList.remove('show'), 1100); }
 
   document.getElementById('again').addEventListener('click', () => {
     endEl.classList.remove('on');
+    edgeEl.classList.remove('hide');
     capEl.style.opacity = ''; countEl.style.opacity = '';
     show(0, true);
   });
+
+  // Rand-Buttons: rechts = weiter, links = zurück (zusätzlich zum Wischen)
+  document.getElementById('ezR').addEventListener('click', e => { e.stopPropagation(); next(); });
+  document.getElementById('ezL').addEventListener('click', e => { e.stopPropagation(); prev(); });
   document.getElementById('quit').addEventListener('click', () => {
     try { window.close(); } catch (e) {}
     setTimeout(() => {
@@ -221,12 +246,14 @@ html, body {
     zimg.src = pics[idx].src;
     zoomEl.insertBefore(zimg, zcloseEl);
     zoomEl.classList.add('on');
+    edgeEl.classList.add('hide');
     zhintEl.style.opacity = '1';
     setTimeout(() => { zhintEl.style.opacity = '0'; }, 2600);
   }
   function closeZoom() {
     zoomOpen = false;
     zoomEl.classList.remove('on');
+    if (!endEl.classList.contains('on')) edgeEl.classList.remove('hide');
     if (zimg) { zimg.remove(); zimg = null; }
     pts.clear(); lastDist = 0; lastMid = panLast = null;
   }
@@ -310,7 +337,10 @@ html, body {
     if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4) {
       dx < 0 ? next() : prev();
     } else if (!moved && dt < 350) {
-      openZoom();                          // Tipp aufs Foto -> Zoom
+      const x = t.clientX;
+      if (x > innerWidth * 0.80) next();        // rechter Rand -> weiter
+      else if (x < innerWidth * 0.20) prev();   // linker Rand -> zurück
+      else openZoom();                          // Mitte antippen -> Zoom
     }
   }, { passive: true });
 

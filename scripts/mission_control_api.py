@@ -7116,7 +7116,9 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
             # Renis Fotos: Tagesauswahl (wechselt taeglich um Mitternacht, Berlin)
             if _path_only == "/f-photos/today.json":
                 import datetime as _dt, zoneinfo as _zi, random as _random
-                mf = os.path.expanduser("~/workspace/mission-control/f-photos/manifest.json")
+                _fbase = os.path.expanduser("~/workspace/mission-control/f-photos")
+                mf = os.path.join(_fbase, "manifest.json")
+                sf = os.path.join(_fbase, "served.json")   # rollierendes Gedaechtnis: was war schon dran
                 try:
                     pool = json.load(open(mf))
                 except Exception:
@@ -7130,25 +7132,58 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                     return {"src": s + ("&" if "?" in s else "?") + "v=" + ver,
                             "cap": it.get("cap", "")}
                 today = _dt.datetime.now(_zi.ZoneInfo("Europe/Berlin")).date()
-                rnd = _random.Random(today.toordinal())
-                order = pool[:]
-                rnd.shuffle(order)
-                pick, seen_folder, seen_cap = [], set(), set()
-                for it in order:
-                    fol = it.get("folder", it["src"])
-                    capkey = (it.get("cap", "").split(" · ")[0]).strip().lower()
-                    if fol in seen_folder or capkey in seen_cap:
-                        continue
-                    seen_folder.add(fol); seen_cap.add(capkey)
-                    pick.append(_mk(it))
-                    if len(pick) >= 15:
-                        break
-                for it in order:  # auffuellen falls Dedup zu streng war
-                    if len(pick) >= 15:
-                        break
-                    e = _mk(it)
-                    if e not in pick:
-                        pick.append(e)
+                _DAILY = 15
+                _by_key = {it["src"]: it for it in pool}
+                try:
+                    _state = json.load(open(sf))
+                    if not isinstance(_state, dict):
+                        _state = {}
+                except Exception:
+                    _state = {}
+
+                if _state.get("date") == today.isoformat() and _state.get("picks"):
+                    # Auswahl fuer heute steht schon -> stabil exakt dieselbe zurueckgeben
+                    pick = [_mk(_by_key[k]) for k in _state["picks"] if k in _by_key]
+                else:
+                    _served = [k for k in _state.get("served", []) if k in _by_key]
+                    _prev_picks = [k for k in _state.get("picks", []) if k in _by_key]
+                    _cand = [it for it in pool if it["src"] not in set(_served)]
+                    _reset = False
+                    if len(_cand) < _DAILY:
+                        # ganzer Pool war einmal komplett durch -> neue Runde;
+                        # nur die Fotos von gestern noch sperren (keine Naht-Doppelung)
+                        _served = list(_prev_picks)
+                        _cand = [it for it in pool if it["src"] not in set(_served)]
+                        _reset = True
+                    _rnd = _random.Random(today.toordinal())
+                    _rnd.shuffle(_cand)
+                    # pro Tag: hoechstens 1 Foto je Ordner, hoechstens 2 je Ort-Erstwort
+                    # (z.B. nicht 5x "Robin" an einem Tag, aber 2 gehen, damit auch bei
+                    #  vielen gleichnamigen Ordnern die 15 vollwerden -> ~8 frische Tage)
+                    pick, folder_ct, cap_ct, _pk = [], {}, {}, []
+                    for it in _cand:
+                        fol = it.get("folder", it["src"])
+                        capkey = (it.get("cap", "").split(" · ")[0]).strip().lower()
+                        if folder_ct.get(fol, 0) >= 1 or cap_ct.get(capkey, 0) >= 2:
+                            continue
+                        folder_ct[fol] = folder_ct.get(fol, 0) + 1
+                        cap_ct[capkey] = cap_ct.get(capkey, 0) + 1
+                        pick.append(_mk(it)); _pk.append(it["src"])
+                        if len(pick) >= _DAILY:
+                            break
+                    for it in _cand:  # auffuellen falls Dedup zu streng war
+                        if len(pick) >= _DAILY:
+                            break
+                        if it["src"] not in _pk:
+                            pick.append(_mk(it)); _pk.append(it["src"])
+                    _served = _served + [k for k in _pk if k not in set(_served)]
+                    try:
+                        with open(sf, "w") as _fh:
+                            json.dump({"date": today.isoformat(), "served": _served,
+                                       "picks": _pk, "reset": _reset},
+                                      _fh, ensure_ascii=False)
+                    except OSError:
+                        pass
                 body = json.dumps({"date": today.isoformat(), "photos": pick},
                                   ensure_ascii=False).encode()
                 self.send_response(200)
