@@ -138,10 +138,22 @@ def graph_get(token: str, url: str) -> dict:
         return {}
 
 
-def graph_delete(token: str, url: str) -> bool:
-    req = urllib.request.Request(url, method="DELETE", headers={"Authorization": f"Bearer {token}"})
+def graph_delete(token: str, msg_id: str) -> bool:
+    """Löscht eine Nachricht ENDGÜLTIG: permanentDelete → Purges-Ordner, überspringt
+    „Gelöschte Elemente" (sonst tauchte Spam auf anderen Geräten dort noch auf).
+    Fällt bei Bedarf auf normales DELETE (→ Gelöschte Elemente) zurück."""
+    perm = f"https://graph.microsoft.com/v1.0/me/messages/{msg_id}/permanentDelete"
+    req = urllib.request.Request(perm, data=b"", method="POST",
+                                headers={"Authorization": f"Bearer {token}", "Content-Length": "0"})
     try:
-        with urllib.request.urlopen(req) as r:
+        with urllib.request.urlopen(req):
+            return True
+    except urllib.error.HTTPError as e:
+        log.warning(f"permanentDelete → {e.code}: {e.read().decode()[:150]} — versuche normales DELETE")
+    soft = f"https://graph.microsoft.com/v1.0/me/messages/{msg_id}"
+    req = urllib.request.Request(soft, method="DELETE", headers={"Authorization": f"Bearer {token}"})
+    try:
+        with urllib.request.urlopen(req):
             return True
     except urllib.error.HTTPError as e:
         log.error(f"DELETE → {e.code}: {e.read().decode()[:200]}")
@@ -178,7 +190,7 @@ def clean_outlook():
                 sender  = ((mail.get("from") or {}).get("emailAddress") or {}).get("address", "")
                 reason  = "Spam-Stempel" if is_spam(subject) else rule_match(subject, sender, rules)
                 if reason:
-                    if graph_delete(token, f"https://graph.microsoft.com/v1.0/me/messages/{mail['id']}"):
+                    if graph_delete(token, mail["id"]):
                         log.info(f"  🗑️  [{fname}] ({reason}) {subject[:60]}")
                         total += 1
             url = data.get("@odata.nextLink")
