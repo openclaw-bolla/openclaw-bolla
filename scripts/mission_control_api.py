@@ -7197,6 +7197,30 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                     self.wfile.write(body)
                     return
 
+            # Voll aufgelöstes Cover für die Zoom-Ansicht in „Bolla Songs":
+            #   /api/suno/cover-file?title=<Titel>&n=<1..4>   (n weglassen / n=final → das gewählte)
+            if _path_only == "/api/suno/cover-file":
+                import urllib.parse as _upcf
+                _q = _upcf.parse_qs(self.path.split("?", 1)[1] if "?" in self.path else "")
+                _t = (_q.get("title", [""])[0]).strip()
+                _n = (_q.get("n", [""])[0]).strip()
+                _safe = "".join(c for c in _t if c.isalnum() or c in " _-").strip()
+                try:
+                    _fn = f"{_safe}_cover.jpg" if _n in ("", "final") else f"{_safe}_cover_{int(_n)}.jpg"
+                except ValueError:
+                    self.send_error(400); return
+                _fp = SUNO_DISTROKID_DIR / _fn
+                if _safe and _fp.is_file():
+                    _b = _fp.read_bytes()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "image/jpeg")
+                    self.send_header("Cache-Control", "no-store")
+                    self.send_header("Content-Length", str(len(_b)))
+                    self.end_headers()
+                    self.wfile.write(_b)
+                    return
+                self.send_error(404); return
+
             # Generische Audio-Route: alle *.wav/.mp3/.ogg aus mission-control/ ausliefern
             # (für gclip-Player, Audio-Vergleiche, Sprachnotizen-Sharing)
             if _path_only.endswith((".wav", ".mp3", ".ogg", ".m4a", ".webm")):
@@ -10132,18 +10156,17 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 self._send_json({"ok": True, "engine": engine, "covers": covers, "warnings": errs})
 
             elif self.path == "/api/suno/pick-cover":
-                # Gewähltes Cover -> <Titel>_cover.jpg; alle Kandidaten (1..4) aufräumen.
+                # Gewähltes Cover -> <Titel>_cover.jpg. Die Kandidaten 1..4 bleiben LIEGEN,
+                # damit man beliebig oft umwählen kann; sie werden erst beim Veröffentlichen
+                # (oder beim nächsten „3 Vorschläge") entfernt.
                 title = body.get("title", "").strip()
                 n = int(body.get("n", 0) or 0)
                 _safe = "".join(c for c in title if c.isalnum() or c in " _-").strip()
                 _src = SUNO_DISTROKID_DIR / f"{_safe}_cover_{n}.jpg"
                 if not _src.exists():
-                    self._send_json({"error": f"Vorschlag {n} nicht gefunden — erst Cover-Vorschläge erzeugen."}, status=400); return
+                    self._send_json({"error": f"Vorschlag {n} nicht gefunden — bitte die 3 Cover-Vorschlaege neu erzeugen."}, status=400); return
                 import shutil as _shp
                 _shp.copy2(str(_src), str(SUNO_DISTROKID_DIR / f"{_safe}_cover.jpg"))
-                for _k in (1, 2, 3, 4):
-                    try: (SUNO_DISTROKID_DIR / f"{_safe}_cover_{_k}.jpg").unlink(missing_ok=True)
-                    except Exception: pass
                 self._send_json({"ok": True, "cover": str(SUNO_DISTROKID_DIR / f"{_safe}_cover.jpg")})
 
             elif self.path == "/api/suno/publish":
@@ -10169,6 +10192,11 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     self._send_json({"error": "Noch kein Cover ausgewaehlt. Erst den Knopf fuer die 3 Cover-Vorschlaege "
                                               "druecken und einen Vorschlag anklicken, dann nochmal auf 'Fuer DistroKid "
                                               "vorbereiten'."}, status=400); return
+                # Kandidaten-Cover jetzt entfernen — sonst greift find_asset() im Orchestrator
+                # evtl. „<Titel>_cover_2.jpg" statt des gewaehlten „<Titel>_cover.jpg".
+                for _k in (1, 2, 3, 4):
+                    try: (SUNO_DISTROKID_DIR / f"{_safe}_cover_{_k}.jpg").unlink(missing_ok=True)
+                    except Exception: pass
                 # 2) Lyrics in Temp-Datei (für den Orchestrator + Lyrics-Scan)
                 lyr_file = ""
                 if lyrics.strip():
