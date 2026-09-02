@@ -3641,7 +3641,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 style="background:linear-gradient(135deg,#7c3aed,#ff6699);border:none;border-radius:8px;color:white;
                        font-weight:700;font-size:14px;padding:9px 18px;cursor:pointer;white-space:nowrap;
                        box-shadow:0 2px 12px rgba(124,58,237,0.4);transition:opacity .2s">
-                🎨 3 Cover-Vorschläge
+                🎨 3 Cover-Vorschläge <span style="font-weight:600;opacity:.85">(~7 ct)</span>
               </button>
             </div>
             <div id="suno-dl-status" style="font-size:13px;color:var(--dim);margin-top:8px;min-height:18px"></div>
@@ -3673,12 +3673,12 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 <div style="margin-top:9px;padding:12px 14px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid var(--border);font-size:14px;line-height:1.75;color:var(--text)">
                   <div><b>1.</b> Song in <b>Suno</b> fertig machen. Dort über das <b>···-Menü → Download</b> die Datei holen — <b>WAV</b> (beste Qualität) oder MP3.</div>
                   <div><b>2.</b> Die Datei nach <b>Desktop\DistroKid\</b> legen (Dateiname ~ Songtitel, Sonderzeichen egal).</div>
-                  <div><b>3.</b> Oben <b>Titel</b> (und unten den Liedtext) eintippen, dann <b>„🎨 3 Cover-Vorschläge"</b> → 1–2 Min → drei Bilder (gratis, Pollinations) → <b>eins anklicken</b>. Gefällt keins: <b>„🌟 +1 mit MAI"</b> (~€0,10).</div>
+                  <div><b>3.</b> Oben <b>Titel</b> (und unten den Liedtext) eintippen, dann <b>„🎨 3 Cover-Vorschläge"</b> → ~20–40 Sek → drei Bilder (1× Pollinations + 2× Gemini, zusammen ~7 ct aus dem Gratisguthaben) → <b>eins anklicken</b>. Gefällt keins: <b>„🌟 +1 mit MAI"</b> (~€0,10).</div>
                   <div><b>4.</b> <b>Sprache + Genre</b> wählen, Liedtext einfügen <span style="color:var(--dim)">(optional, für den Namens-Scan)</span>.</div>
                   <div><b>5.</b> Grünen Knopf <b>„🚀 Für DistroKid fertig machen"</b> → fertiger Ordner auf dem <b>Desktop</b>.</div>
                   <div><b>6.</b> Bei <b>DistroKid hochladen</b> — die <b>Checkliste</b> im Ordner sagt dir jedes Feld (Künstler = bollawave, KI-Haken setzen!).</div>
                   <div><b>7.</b> <b>Nach</b> dem Release: Video + Captions aus dem Unterordner <b>„Social Media"</b> posten <span style="color:var(--dim)">(bei TikTok den KI-Haken beim Upload setzen)</span>.</div>
-                  <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);color:var(--dim)">💡 Suno sperrt seit 09/2026 den Auto-Download — deshalb Schritt 1+2 von Hand. Die 3 Cover-Vorschläge sind gratis (Pollinations); nur das optionale „+1 mit MAI" kostet ~€0,10.</div>
+                  <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);color:var(--dim)">💡 Suno sperrt seit 09/2026 den Auto-Download — deshalb Schritt 1+2 von Hand. Die 3 Cover-Vorschläge kosten ~7 ct (1× Pollinations gratis + 2× Gemini), das optionale „+1 mit MAI" ~€0,10 — beides aus dem Gemini-Gratisguthaben.</div>
                 </div>
               </details>
             </div>
@@ -16881,8 +16881,23 @@ function sunoUpdateVoiceTips(text) {
 //    die DistroKid-Vorbereitung braucht kein Token mehr. (Blocklist-Scan läuft separat.)
 
 // ── Cover-Vorschläge ────────────────────────────────────────────
-// 3 gratis mit Pollinations; wenn keins gefällt → 1 extra mit MAI 2.5 (~€0,10).
+// 1× Pollinations (gratis) + 2× Gemini 2.5 (~7 ct/Klick, Gratisguthaben); Extra-Slot mit MAI 2.5 (~€0,10).
 let _sunoCoverTitle = '';
+// Antwort robust als JSON lesen — bei HTML (Cloudflare-Timeout/Login) klare Meldung statt „Unexpected token '<'".
+async function _sunoJSON(url, opts) {
+  const r = await fetch(url, opts);
+  const t = await r.text();
+  try { return JSON.parse(t); }
+  catch(e) {
+    if (/<!DOCTYPE|<html|^\s*</i.test(t)) {
+      throw new Error(
+        (r.status === 524 || /timed out|timeout/i.test(t))
+          ? 'Zeitüberschreitung am Server — die Cover-Erzeugung hat zu lange gedauert. Nochmal versuchen, oder MP zuhause direkt über 127.0.0.1:18790 öffnen.'
+          : 'Server hat eine HTML-Seite geschickt statt Daten (vermutlich Login/Proxy abgelaufen). Seite neu laden und neu anmelden.');
+    }
+    throw new Error('Unerwartete Antwort vom Server (HTTP ' + r.status + ').');
+  }
+}
 function _sunoCoverCard(c) {
   return `<div onclick="sunoPickCover(${c.n})" data-n="${c.n}" title="${(c.concept||'').replace(/"/g,'&quot;')}"
        style="cursor:pointer;border:2px solid var(--border);border-radius:8px;overflow:hidden;width:150px;transition:border-color .15s"
@@ -16901,12 +16916,12 @@ async function sunoCoverSuggest() {
   btn.disabled = true; btn.style.opacity = '0.5';
   picks.style.display = 'none'; picks.innerHTML = '';
   status.style.color = 'var(--dim)';
-  status.textContent = '⏳ Erzeuge 3 Cover-Vorschläge (Pollinations, gratis)… ca. 1–2 Min';
+  status.textContent = '⏳ Erzeuge 3 Cover-Vorschläge (1× Pollinations + 2× Gemini, ~7 ct)… ca. 20–40 Sek';
   try {
-    const data = await fetch(API + '/api/suno/covers', {
+    const data = await _sunoJSON(API + '/api/suno/covers', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({title, lyrics})
-    }).then(r => r.json());
+    });
     if (data.error) throw new Error(data.error);
     _sunoCoverTitle = title;
     picks.style.display = 'flex';
@@ -16933,10 +16948,10 @@ async function sunoCoverExtra() {
   if (eb) { eb.disabled = true; eb.style.opacity = '0.5'; eb.textContent = '⏳ MAI erzeugt…'; }
   status.style.color = 'var(--dim)'; status.textContent = '⏳ MAI-Cover wird erzeugt… (~1 Min)';
   try {
-    const data = await fetch(API + '/api/suno/cover-extra', {
+    const data = await _sunoJSON(API + '/api/suno/cover-extra', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({title, lyrics})
-    }).then(r => r.json());
+    });
     if (data.error) throw new Error(data.error);
     const c = data.covers[0];
     if (eb) eb.insertAdjacentHTML('beforebegin', _sunoCoverCard(c));
@@ -16952,10 +16967,10 @@ async function sunoPickCover(n) {
   const status = document.getElementById('suno-dl-status');
   const picks = document.getElementById('suno-cover-picks');
   try {
-    const d = await fetch(API + '/api/suno/pick-cover', {
+    const d = await _sunoJSON(API + '/api/suno/pick-cover', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({title: _sunoCoverTitle, n})
-    }).then(r => r.json());
+    });
     if (d.error) throw new Error(d.error);
     picks.querySelectorAll('div[data-n]').forEach(el => {
       const on = (+el.dataset.n === n);

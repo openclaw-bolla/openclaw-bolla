@@ -3164,10 +3164,13 @@ def _suno_render_cover_bytes(img_prompt, cover_engine, _urlparse_cv=None):
                     if "inlineData" in part:
                         return _b64.b64decode(part["inlineData"]["data"]), (f"MAI fiel aus → {eng}" if eng != cover_engine else "")
                 raise Exception("Gemini lieferte kein Bild")
-            # pollinations (nur wenn explizit gewählt)
+            # pollinations (nur wenn explizit gewählt) — kompakt anfordern (1024²), die
+            # Hochskalierung auf 3000² macht _suno_save_cover_jpg. 3000² + enhance ist zu
+            # langsam und läuft hinter dem Cloudflare-Tunnel regelmäßig in den 100-s-Timeout.
+            # Pollinations rate-limitet hart (429/500) → bis zu 3 Versuche mit Backoff.
             pu = (f"https://image.pollinations.ai/prompt/{_urlparse_cv.quote(img_prompt)}"
-                  f"?width=3000&height=3000&nologo=true&enhance=true&model=flux-realism")
-            with urllib.request.urlopen(urllib.request.Request(pu, headers={"User-Agent": "Bolla/1.0"}), timeout=120) as resp:
+                  f"?width=1024&height=1024&nologo=true&model=flux")
+            with urllib.request.urlopen(urllib.request.Request(pu, headers={"User-Agent": "Bolla/1.0"}), timeout=45) as resp:
                 return resp.read(), ""
         except Exception as e:
             last = str(e)
@@ -10089,19 +10092,41 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 _cnt = 1 if _extra else 3
                 _base = 3 if _extra else 0
                 concepts = _suno_cover_concepts(title, lyrics, n=_cnt)
-                covers, errs = [], []
-                for _i in range(_cnt):
+                # Pollinations schafft aktuell keine 3 Bilder am Stück (hartes IP-Rate-Limit).
+                # Für die 3 Vorschläge: 1× Pollinations (gratis) + 2× Gemini 2.5 Flash Image
+                # (schnell, zuverlässig, vom Gemini-Gratisguthaben gedeckt). „+1 mit MAI" bleibt Premium.
+                if _extra:
+                    _engs = [engine]
+                elif engine == "pollinations":
+                    _engs = ["pollinations", "gemini", "gemini"]
+                else:
+                    _engs = [engine] * _cnt
+                def _one_cover(_i):
                     _slot = _base + _i + 1
+                    _e = _engs[_i]
                     try:
-                        _b, _n = _suno_render_cover_bytes(_suno_cover_prompt(concepts[_i]), engine)
-                        _p = SUNO_DISTROKID_DIR / f"{_safe}_cover_{_slot}.jpg"
-                        _suno_save_cover_jpg(_b, _p)
-                        _im = _PIc.open(str(_p)); _im.thumbnail((512, 512))
-                        _buf = _ioc.BytesIO(); _im.convert("RGB").save(_buf, "JPEG", quality=80)
-                        covers.append({"n": _slot, "concept": concepts[_i][:120],
-                                       "preview": "data:image/jpeg;base64," + _b64c.b64encode(_buf.getvalue()).decode()})
-                    except Exception as e:
-                        errs.append(f"Bild {_slot}: {e}")
+                        _b, _n = _suno_render_cover_bytes(_suno_cover_prompt(concepts[_i]), _e)
+                    except Exception:
+                        _alt = "gemini" if _e != "gemini" else "pollinations"
+                        _b, _n = _suno_render_cover_bytes(_suno_cover_prompt(concepts[_i]), _alt)
+                    _p = SUNO_DISTROKID_DIR / f"{_safe}_cover_{_slot}.jpg"
+                    _suno_save_cover_jpg(_b, _p)
+                    _im = _PIc.open(str(_p)); _im.thumbnail((512, 512))
+                    _buf = _ioc.BytesIO(); _im.convert("RGB").save(_buf, "JPEG", quality=80)
+                    return {"n": _slot, "concept": concepts[_i][:120],
+                            "preview": "data:image/jpeg;base64," + _b64c.b64encode(_buf.getvalue()).decode()}
+                # Parallel + ein Versuch pro Bild: liefert in ~15-25 s. Wenn Pollinations
+                # gerade rate-limitet, kommen halt 1-2 Cover + Hinweis — Rest per „+1 mit MAI".
+                covers, errs = [], []
+                from concurrent.futures import ThreadPoolExecutor as _TPE
+                with _TPE(max_workers=max(1, _cnt)) as _ex:
+                    _futs = {_ex.submit(_one_cover, _i): _base + _i + 1 for _i in range(_cnt)}
+                    for _f, _slot in _futs.items():
+                        try:
+                            covers.append(_f.result())
+                        except Exception as e:
+                            errs.append(f"Bild {_slot}: {e}")
+                covers.sort(key=lambda c: c["n"])
                 if not covers:
                     self._send_json({"error": "Cover fehlgeschlagen: " + " | ".join(errs)}, status=500); return
                 self._send_json({"ok": True, "engine": engine, "covers": covers, "warnings": errs})
