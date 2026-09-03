@@ -3149,6 +3149,7 @@ def _suno_render_cover_bytes(img_prompt, cover_engine, _urlparse_cv=None):
                 b64, err = bildgen_mai_generate(img_prompt, model="mai-image-2.5", width=1024, height=1024)
                 if not b64:
                     raise Exception(f"MAI: {err}")
+                kosten_ledger_add("mai_image", MAI_IMG_PREIS, "Suno/DistroKid-Cover")
                 return _b64.b64decode(b64), (f"MAI fiel aus → {eng}" if eng != cover_engine else "")
             if eng == "gemini":
                 gk = _gemini_key()
@@ -3162,6 +3163,7 @@ def _suno_render_cover_bytes(img_prompt, cover_engine, _urlparse_cv=None):
                     gd = json.loads(resp.read())
                 for part in gd.get("candidates", [{}])[0].get("content", {}).get("parts", []):
                     if "inlineData" in part:
+                        kosten_ledger_add("gemini_image", GEMINI_IMG_PREIS, "Suno/DistroKid-Cover")
                         return _b64.b64decode(part["inlineData"]["data"]), (f"MAI fiel aus → {eng}" if eng != cover_engine else "")
                 raise Exception("Gemini lieferte kein Bild")
             # pollinations (nur wenn explizit gewählt) — kompakt anfordern (1024²), die
