@@ -6573,9 +6573,12 @@ async function loadSchuljahr2627() {
     const termine = d.termine || [];
     let monthRows = '';
     let lastMonth = '';
+    let nextTerminMarked = false;
+    const today = new Date(); today.setHours(0,0,0,0);
     const monthNames = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
     termine.forEach(t => {
       const dt = new Date(t.datum + 'T00:00:00');
+      const isPast = dt < today;
       const monthKey = dt.getFullYear() + '-' + dt.getMonth();
       if (monthKey !== lastMonth) {
         lastMonth = monthKey;
@@ -6589,8 +6592,16 @@ async function loadSchuljahr2627() {
       const zeitAnzeige = t.uhrzeit ? `${t.zeit}<br><span style="font-size:11px;color:var(--dim)">${t.uhrzeit}</span>` : t.zeit;
       const auftragVal = escHtml(t.auftrag || '').replace(/"/g, '&quot;');
       const datumAttr = t.datum, zeitAttr = t.zeit.replace(/"/g, '&quot;');
-      monthRows += `<tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:7px 10px;font-size:14px;color:var(--text);white-space:nowrap">${tagFmt}</td>
+      const rowId = (!isPast && !nextTerminMarked) ? ' id="sj2627-next-termin"' : '';
+      if (!isPast) nextTerminMarked = true;
+      const rowStyle = isPast
+        ? 'border-bottom:1px solid var(--border);opacity:0.4'
+        : 'border-bottom:1px solid var(--border)';
+      const erledigtBadge = isPast
+        ? '<span style="color:#4ade80;margin-right:5px;font-weight:700" title="erledigt">✓</span>'
+        : '';
+      monthRows += `<tr${rowId} style="${rowStyle}">
+        <td style="padding:7px 10px;font-size:14px;color:var(--text);white-space:nowrap">${erledigtBadge}${tagFmt}</td>
         <td style="padding:7px 10px;font-size:14px;color:var(--text)">${t.wochentag}</td>
         <td style="padding:7px 10px;font-size:14px;color:var(--text);white-space:nowrap">${zeitAnzeige}</td>
         <td style="padding:7px 10px;text-align:center">${klasseAnzeige}</td>
@@ -6609,6 +6620,7 @@ async function loadSchuljahr2627() {
         </td>
       </tr>`;
     });
+    const erledigtCount = termine.filter(t => new Date(t.datum + 'T00:00:00') < today).length;
 
     const ferien = (d.ferien_ausschluss || []).map(f => {
       const range = f.von && f.bis ? `${f.von} – ${f.bis}` : (f.bis ? `bis ${f.bis}` : (f.ab ? `ab ${f.ab}` : ''));
@@ -6633,10 +6645,13 @@ async function loadSchuljahr2627() {
         <div style="font-size:13px;color:var(--dim);line-height:1.6">${d.slots_hinweis || ''}</div>
       </div>
       <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:16px">
-        <div style="font-size:16px;font-weight:700;color:var(--bright);margin-bottom:6px">📅 Termine ${d.schuljahr || ''} (${termine.length})</div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+          <div style="font-size:16px;font-weight:700;color:var(--bright)">📅 Termine ${d.schuljahr || ''} (${termine.length})</div>
+          <div style="font-size:13px;color:var(--dim)">✓ ${erledigtCount} erledigt · ${termine.length - erledigtCount} stehen noch an</div>
+        </div>
         <div style="font-size:12px;color:var(--dim);margin-bottom:12px">Quelle Ferienkalender: ${d.ferienkalender_quelle || ''} · ${d.hinweis_ausfall || ''}</div>
         <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">${ferien}</div>
-        <div style="max-height:600px;overflow-y:auto;border:1px solid var(--border);border-radius:10px">
+        <div id="sj2627-termine-scroll" style="max-height:600px;overflow-y:auto;border:1px solid var(--border);border-radius:10px">
           <table style="width:100%;border-collapse:collapse">
             <thead style="position:sticky;top:0;background:var(--card2);z-index:1">
               <tr>
@@ -6658,6 +6673,15 @@ async function loadSchuljahr2627() {
         <div style="font-size:12px;color:var(--dim);margin-bottom:10px">Quelle: ${d.quelle_vorjahr || ''} — Reihenfolge noch zu bestätigen, Basis für die Thema-Spalte oben</div>
         ${module}
       </div>`;
+
+    // Direkt zum nächsten anstehenden Termin scrollen, vergangene liegen darüber "erledigt".
+    const scrollBox = document.getElementById('sj2627-termine-scroll');
+    const nextRow = document.getElementById('sj2627-next-termin');
+    if (scrollBox && nextRow) {
+      const boxRect = scrollBox.getBoundingClientRect();
+      const rowRect = nextRow.getBoundingClientRect();
+      scrollBox.scrollTop += (rowRect.top - boxRect.top) - 40;
+    }
   } catch (e) {
     box.innerHTML = '<div style="color:var(--dim);font-size:14px">Konnte Planung nicht laden.</div>';
   }
@@ -9644,6 +9668,17 @@ function renderWmPanel() {
     if (l.key === 'flights') {
       extra = `<div id="wm-flights-extra" class="wm-extra" style="display:none">
         <div id="wm-flight-selected" style="display:none"></div>
+        <div style="font-size:13px;color:var(--dim);margin:-2px 0 1px 2px">🧳 Robins Rückflug (Zeiten bestätigt aus Chris' Kalender, Flugnummer nicht):</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:1px;align-items:center">
+          <span style="color:var(--dim);font-size:12px;min-width:108px">Mo 07.09. 23:05 JRO-Start:</span>
+          <button type="button" onclick="wmQuickFlight('Istanbul')" style="background:rgba(56,189,248,0.18);border:1px solid rgba(56,189,248,0.5);border-radius:7px;color:#7dd3fc;font-size:12.5px;font-weight:700;padding:5px 9px;cursor:pointer">🔍 Istanbul</button>
+          ${['THY562','THY563','THY568'].map(cs => `<button type="button" onclick="wmQuickFlight('${cs}')" title="unbestätigter Kandidat" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:7px;color:var(--dim);font-size:12px;padding:5px 8px;cursor:pointer">${cs}</button>`).join('')}
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
+          <span style="color:var(--dim);font-size:12px;min-width:108px">Di 08.09. 11:20 IST-Start:</span>
+          <button type="button" onclick="wmQuickFlight('Stuttgart')" style="background:rgba(56,189,248,0.18);border:1px solid rgba(56,189,248,0.5);border-radius:7px;color:#7dd3fc;font-size:12.5px;font-weight:700;padding:5px 9px;cursor:pointer">🔍 Stuttgart</button>
+          ${['THY1701','THY1703','THY1705','THY1709'].map(cs => `<button type="button" onclick="wmQuickFlight('${cs}')" title="unbestätigter Kandidat" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:7px;color:var(--dim);font-size:12px;padding:5px 8px;cursor:pointer">${cs}</button>`).join('')}
+        </div>
         <input id="wm-flight-search" placeholder="🔍 Callsign or destination city…" oninput="wmFilterFlights(this.value)" class="wm-input">
         <div id="wm-flight-results" class="wm-results"></div>
       </div>`;
@@ -9958,6 +9993,13 @@ function wmRenderFlightResults(matches, q, searching) {
 }
 
 // ── Flight selection: isolate one flight, draw its route as an arc with named airport labels + a live plane marker ──
+function wmQuickFlight(callsign) {
+  const input = document.getElementById('wm-flight-search');
+  if (!input) return;
+  input.value = callsign;
+  wmFilterFlights(callsign);
+}
+
 async function wmSelectFlight(callsign) {
   const f = (wmData.flights || []).find(x => x.callsign === callsign);
   if (!f) return;
@@ -10216,6 +10258,8 @@ function initBrain() {
     family:'#ef5350', infra:'#42a5f5', device:'#26c6da',
     service:'#ab47bc', topic:'#66bb6a', project:'#fbbf24'
   };
+  const GROUP_NAMES = {core:'Kern',memory:'Gedächtnis',soul:'Seele',family:'Familie',
+    infra:'Infrastruktur',device:'Gerät',service:'Service',topic:'Thema',project:'Projekt'};
 
   const nodes = [
     {id:'BOLLA',   group:'core',    label:'🐾 Bolla',             size:30},
@@ -10226,12 +10270,13 @@ function initBrain() {
     {id:'RENATE',  group:'family',  label:'💑 Renate',            size:12},
     {id:'ROBIN',   group:'family',  label:'👨‍⚕️ Robin',            size:14},
     {id:'STEPHANIE',group:'family', label:'👩 Steffi',            size:12},
+    {id:'ANNE',    group:'family',  label:'👩 Anne',              size:12},
     {id:'ENKEL',   group:'family',  label:'👧👦 Enkel ×4',        size:11},
     {id:'MC',      group:'infra',   label:'🖥️ Mission Possible', size:18},
     {id:'TELEGRAM',group:'infra',   label:'💬 Telegram',         size:15},
     {id:'TUNNEL',  group:'infra',   label:'☁️ CF Tunnel',        size:12},
     {id:'AZURE',   group:'infra',   label:'🔊 Azure Speech',     size:11},
-    {id:'SURFACE', group:'device',  label:'💻 Surface Laptop',   size:12},
+    {id:'SURFACE', group:'device',  label:'💻 Studio',           size:12},
     {id:'DUO',     group:'device',  label:'📱 Surface Duo 2',    size:13},
     {id:'PRO',     group:'device',  label:'💻 Surface Pro',      size:11},
     {id:'ID3',     group:'device',  label:'⚡ VW ID.3',          size:12},
@@ -10252,6 +10297,14 @@ function initBrain() {
     {id:'AIMOR',   group:'project', label:'🖼️ Aimor Rahmen',     size:11},
     {id:'SOMMERREISE',group:'project',label:'🌲 Sommerreise 26', size:12},
     {id:'IMMO',    group:'project', label:'🏠 Immo-Suche 27',   size:11},
+    {id:'BOLLAWAVE',group:'project',label:'🌊 bollawave',       size:13},
+    {id:'SUNO',    group:'service', label:'🎧 Suno',             size:11},
+    {id:'DISTROKID',group:'service',label:'📀 DistroKid',       size:11},
+    {id:'ITSLEARNING',group:'service',label:'📚 itslearning',   size:12},
+    {id:'TANZKURS',group:'project', label:'💃 Tanzkurs',         size:10},
+    {id:'TRADEREPUBLIC',group:'service',label:'📈 Trade Republic', size:11},
+    {id:'TANSANIA',group:'topic',   label:'🇹🇿 Robin Tansania',   size:10},
+    {id:'BOOK',    group:'device',  label:'💻 Book „ernst"',     size:11},
   ];
 
   const links = [
@@ -10259,7 +10312,7 @@ function initBrain() {
     {s:'BOLLA',t:'MC'},{s:'BOLLA',t:'TELEGRAM'},
     {s:'CHRIS',t:'FAMILIE'},{s:'CHRIS',t:'DUO'},{s:'CHRIS',t:'SURFACE'},
     {s:'CHRIS',t:'SCHULE'},{s:'CHRIS',t:'ID3'},
-    {s:'FAMILIE',t:'RENATE'},{s:'FAMILIE',t:'ROBIN'},{s:'FAMILIE',t:'STEPHANIE'},
+    {s:'FAMILIE',t:'RENATE'},{s:'FAMILIE',t:'ROBIN'},{s:'FAMILIE',t:'STEPHANIE'},{s:'FAMILIE',t:'ANNE'},
     {s:'STEPHANIE',t:'ENKEL'},{s:'ROBIN',t:'TELEGRAM'},{s:'FAMILIE',t:'PRO'},
     {s:'MC',t:'TUNNEL'},{s:'MC',t:'OUTLOOK'},{s:'MC',t:'WETTER'},{s:'MC',t:'KALENDER'},
     {s:'MC',t:'AZURE'},{s:'MC',t:'LMS'},{s:'MC',t:'GEBURTSTAGE'},
@@ -10274,6 +10327,12 @@ function initBrain() {
     {s:'CHRIS',t:'SOMMERREISE'},{s:'ID3',t:'SOMMERREISE'},
     {s:'CHRIS',t:'IMMO'},{s:'AIMOR',t:'ONEDRIVE'},
     {s:'BOLLA',t:'AIMOR'},{s:'BOLLA',t:'IMMO'},
+    {s:'CHRIS',t:'BOLLAWAVE'},{s:'BOLLAWAVE',t:'SUNO'},{s:'BOLLAWAVE',t:'DISTROKID'},
+    {s:'BOLLA',t:'BOLLAWAVE'},
+    {s:'SCHULE',t:'ITSLEARNING'},{s:'MC',t:'ITSLEARNING'},
+    {s:'CHRIS',t:'TANZKURS'},{s:'FAMILIE',t:'TANZKURS'},
+    {s:'CHRIS',t:'TRADEREPUBLIC'},{s:'ROBIN',t:'TANSANIA'},
+    {s:'CHRIS',t:'BOOK'},{s:'BOOK',t:'BOLLA'},
   ];
 
   // Physics init
@@ -10444,12 +10503,37 @@ function initBrain() {
       ctx.globalAlpha=1; ctx.shadowBlur=0;
     });
 
+    // Legend (Farbcode oben rechts)
+    {
+      const groups = Object.keys(GROUP_NAMES);
+      const lfs = 11.5, rowH = 19, padX = 12, padY = 10;
+      ctx.font = `600 ${lfs}px Segoe UI,sans-serif`;
+      let maxW = 0;
+      groups.forEach(g => { maxW = Math.max(maxW, ctx.measureText(GROUP_NAMES[g]).width); });
+      const boxW = maxW + 34, boxH = groups.length*rowH + padY*2 - 4;
+      const bx = W - boxW - 16, by = 16;
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(4,9,26,0.72)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
+      roundRect(ctx, bx, by, boxW, boxH, 8); ctx.fill(); ctx.stroke();
+      groups.forEach((g, i) => {
+        const gy = by + padY + i*rowH + rowH/2;
+        const c = COLORS[g];
+        ctx.shadowColor = c; ctx.shadowBlur = 6;
+        ctx.fillStyle = c;
+        ctx.beginPath(); ctx.arc(bx+padX+5, gy, 5, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(230,235,245,0.85)';
+        ctx.textAlign = 'left';
+        ctx.fillText(GROUP_NAMES[g], bx+padX+16, gy+4);
+      });
+    }
+
     // Hover tooltip (group-Beschriftung)
     if (hoveredNode) {
       const n = hoveredNode;
       const c = COLORS[n.group]||'#4fc3f7';
-      const groupNames = {core:'Kern',memory:'Gedächtnis',soul:'Seele',family:'Familie',
-        infra:'Infrastruktur',device:'Gerät',service:'Service',topic:'Thema',project:'Projekt'};
+      const groupNames = GROUP_NAMES;
       const tip = `${n.label}  ·  ${groupNames[n.group]||n.group}`;
       ctx.font='bold 12px Segoe UI,sans-serif';
       const tw2=ctx.measureText(tip).width+24;
