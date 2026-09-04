@@ -2,378 +2,415 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Control // GHOST//SHELL</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mission Control — Skizzenheft</title>
 <style>
   :root{
-    --green:#00ff66;
-    --green-dim:#0b8f3e;
-    --green-faint:#063f1d;
-    --bg:#050805;
-    --panel:#0a0f0a;
-    --amber:#ffb000;
-    --red:#ff3b3b;
+    --paper:#f6ecd4;
+    --paper-dark:#efe0be;
+    --ink:#3b3327;
+    --red:#c0492e;
+    --blue:#35618f;
+    --pencil:#7d735c;
+    --sticky:#f5e07a;
+    --hand:"Segoe Print","Bradley Hand","Comic Sans MS","Chalkboard SE",cursive;
+    --plain:"Segoe UI","Trebuchet MS",Verdana,sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{
-    background:var(--bg);
-    color:var(--green);
-    font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,"Courier New",monospace;
-    font-size:15px;
+    font-family:var(--hand);
+    color:var(--ink);
+    font-size:16px;
     line-height:1.5;
-    letter-spacing:.02em;
-    text-shadow:0 0 4px rgba(0,255,102,.35);
-    overflow:hidden;
-  }
-  /* CRT scanline + flicker overlay */
-  body::before{
-    content:"";
-    position:fixed;inset:0;z-index:9999;pointer-events:none;
-    background:repeating-linear-gradient(
-      to bottom,
-      rgba(0,0,0,0) 0px,
-      rgba(0,0,0,0) 2px,
-      rgba(0,0,0,.18) 3px,
-      rgba(0,0,0,.18) 4px
-    );
-    mix-blend-mode:multiply;
-  }
-  body::after{
-    content:"";
-    position:fixed;inset:0;z-index:9998;pointer-events:none;
-    background:radial-gradient(ellipse at center, rgba(0,255,102,.04) 0%, rgba(0,0,0,.55) 100%);
+    background-color:var(--paper);
+    background-image:
+      radial-gradient(rgba(120,100,60,.05) 1px, transparent 1px),
+      repeating-linear-gradient(var(--paper) 0px, var(--paper) 30px, #d8c79e 31px, var(--paper) 32px);
+    background-size:6px 6px, 100% 32px;
   }
 
-  .layout{display:flex;height:100vh}
+  .book{
+    display:flex;
+    min-height:100vh;
+  }
 
   /* ---------- Sidebar ---------- */
   .sidebar{
-    width:250px;flex:0 0 250px;
-    border-right:1px solid var(--green-dim);
-    background:var(--panel);
-    padding:18px 14px;
-    display:flex;flex-direction:column;
-  }
-  .brand{
-    border:1px solid var(--green-dim);
-    padding:10px 12px;
-    margin-bottom:20px;
-  }
-  .brand h1{font-size:16px;letter-spacing:.12em}
-  .brand .sub{font-size:12px;color:var(--green-dim);text-shadow:none}
-  .nav-label{
-    font-size:12px;color:var(--green-dim);
-    margin:6px 4px 10px;text-shadow:none;
-  }
-  nav a{
-    display:flex;align-items:center;gap:10px;
-    padding:9px 12px;
-    color:var(--green);
-    text-decoration:none;
-    border:1px solid transparent;
-    font-size:15px;
-  }
-  nav a .bracket{color:var(--green-dim)}
-  nav a:hover{
-    border-color:var(--green-dim);
-    background:rgba(0,255,102,.06);
-  }
-  nav a.active{
-    background:var(--green);
-    color:#031107;
-    text-shadow:none;
-    border-color:var(--green);
-  }
-  nav a.active .bracket{color:#031107}
-  .sidebar .spacer{flex:1}
-  .uplink{
-    font-size:12px;color:var(--green-dim);
-    border-top:1px solid var(--green-faint);
-    padding-top:12px;text-shadow:none;
-  }
-  .uplink .dot{color:var(--green);animation:blink 1.2s steps(1) infinite}
-
-  /* ---------- Main ---------- */
-  .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-
-  .topbar{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:16px 24px;
-    border-bottom:1px solid var(--green-dim);
-    background:var(--panel);
-  }
-  .topbar .title{font-size:17px;letter-spacing:.1em}
-  .topbar .title .caret{color:var(--green-dim)}
-  .topbar .clock{
-    font-size:17px;
-    border:1px solid var(--green-dim);
-    padding:6px 14px;
-  }
-  .topbar .clock .cursor{animation:blink 1s steps(1) infinite}
-
-  .statusline{
-    display:flex;gap:26px;flex-wrap:wrap;
-    padding:8px 24px;
-    font-size:12px;color:var(--green-dim);
-    border-bottom:1px solid var(--green-faint);
-    text-shadow:none;
-  }
-  .statusline b{color:var(--green);text-shadow:0 0 4px rgba(0,255,102,.35)}
-
-  .content{
-    flex:1;overflow-y:auto;
-    padding:24px;
-  }
-  .section-head{
-    font-size:13px;color:var(--green-dim);
-    margin:4px 0 16px;text-shadow:none;
-  }
-
-  .grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
-    gap:20px;
-  }
-
-  .card{
-    border:1px solid var(--green-dim);
-    background:var(--panel);
-    padding:0;
+    width:236px;
+    flex-shrink:0;
+    padding:28px 20px 24px;
+    background:var(--paper-dark);
+    background-image:repeating-linear-gradient(var(--paper-dark) 0px, var(--paper-dark) 30px, #dccb a2 31px);
+    border-right:3px solid var(--ink);
+    border-image:none;
     position:relative;
   }
-  .card::before{
-    content:attr(data-tag);
-    position:absolute;top:-9px;left:12px;
-    background:var(--panel);
-    padding:0 8px;
-    font-size:11px;color:var(--green-dim);
-    text-shadow:none;
+  .sidebar::after{
+    content:"";
+    position:absolute;top:0;right:-3px;bottom:0;width:3px;
+    background:var(--red);
+    opacity:.55;
   }
-  .card .card-body{padding:18px 16px 16px}
-  .card h3{
-    font-size:14px;font-weight:normal;
-    color:var(--green);
-    margin-bottom:12px;
-    letter-spacing:.06em;
+  .brand{
+    font-size:30px;
+    line-height:1.05;
+    letter-spacing:.5px;
+    text-shadow:1px 1px 0 rgba(0,0,0,.08);
+    margin-bottom:6px;
   }
-  .card .big{
-    font-size:34px;line-height:1;
-    letter-spacing:.04em;
+  .brand .paw{font-size:22px}
+  .brand-sub{
+    font-family:var(--plain);
+    font-size:12px;
+    color:var(--pencil);
+    letter-spacing:2px;
+    text-transform:uppercase;
+    margin-bottom:26px;
   }
-  .card .big small{font-size:15px;color:var(--green-dim)}
-  .card .meta{font-size:12px;color:var(--green-dim);margin-top:10px;text-shadow:none}
+  nav{display:flex;flex-direction:column;gap:10px}
+  .nav{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 12px;
+    font-size:18px;
+    color:var(--ink);
+    text-decoration:none;
+    border-radius:120px 8px 120px 10px/10px 120px 8px 120px;
+    transition:transform .12s ease;
+  }
+  .nav .bullet{
+    width:12px;height:12px;flex-shrink:0;
+    border:2px solid var(--pencil);
+    border-radius:60% 40% 55% 45%/50% 55% 45% 50%;
+  }
+  .nav:hover{transform:translateX(3px) rotate(-.5deg)}
+  .nav.active{
+    border:2px solid var(--blue);
+    transform:rotate(-1deg);
+    background:rgba(53,97,143,.08);
+  }
+  .nav.active .bullet{
+    background:var(--red);
+    border-color:var(--red);
+  }
+  .sidebar-foot{
+    position:absolute;left:20px;right:20px;bottom:18px;
+    font-family:var(--plain);
+    font-size:11px;
+    color:var(--pencil);
+    border-top:1px dashed var(--pencil);
+    padding-top:8px;
+  }
 
-  /* ASCII bar meter */
-  .meter{
-    margin-top:14px;
-    font-size:15px;
-    letter-spacing:.06em;
-    white-space:nowrap;
-    overflow:hidden;
+  /* ---------- Content ---------- */
+  .content{
+    flex:1;
+    padding:30px 44px 60px;
+    max-width:1200px;
   }
-  .meter .fill{color:var(--green)}
-  .meter .empty{color:var(--green-faint)}
-  .meter .pct{color:var(--green-dim);margin-left:8px;text-shadow:none}
+  .topbar{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:24px;
+    padding-bottom:14px;
+    border-bottom:3px solid var(--ink);
+    border-radius:2px;
+    margin-bottom:38px;
+    position:relative;
+  }
+  .topbar::after{
+    content:"";
+    position:absolute;left:0;right:34%;bottom:-7px;height:2px;
+    background:var(--ink);opacity:.35;
+  }
+  .topbar h1{
+    font-size:44px;
+    font-weight:400;
+    letter-spacing:1px;
+    text-shadow:2px 2px 0 rgba(0,0,0,.07);
+  }
+  .topbar h1 .under{
+    display:block;height:6px;width:170px;margin-top:2px;
+    background:var(--red);
+    border-radius:60% 40% 70% 30%/100% 100% 100% 100%;
+    opacity:.8;
+  }
+  .clock{
+    text-align:right;
+    border:2px solid var(--ink);
+    border-radius:14px 200px 18px 190px/190px 16px 200px 16px;
+    padding:6px 18px 8px;
+    transform:rotate(1.4deg);
+    background:var(--paper);
+  }
+  .clock .time{
+    display:block;
+    font-size:34px;
+    letter-spacing:2px;
+  }
+  .clock .date{
+    font-family:var(--plain);
+    font-size:12px;
+    color:var(--pencil);
+    letter-spacing:1px;
+  }
 
-  .meter.warn .fill{color:var(--amber);text-shadow:0 0 5px rgba(255,176,0,.4)}
-  .meter.warn .pct{color:var(--amber)}
+  /* ---------- Card grid ---------- */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(268px,1fr));
+    gap:40px 38px;
+  }
+  .card{
+    position:relative;
+    background:var(--paper);
+    border:2px solid var(--ink);
+    border-radius:255px 15px 225px 15px/15px 225px 15px 255px;
+    padding:24px 24px 22px;
+    box-shadow:4px 6px 0 rgba(59,51,39,.12);
+  }
+  .card::after{ /* second sketched outline */
+    content:"";
+    position:absolute;inset:5px;
+    border:1.5px solid rgba(59,51,39,.35);
+    border-radius:15px 235px 15px 255px/235px 15px 255px 15px;
+    pointer-events:none;
+  }
+  .card::before{ /* tape strip */
+    content:"";
+    position:absolute;top:-14px;left:50%;
+    width:96px;height:26px;
+    transform:translateX(-50%) rotate(-3deg);
+    background:rgba(214,193,130,.5);
+    border:1px solid rgba(160,140,80,.35);
+    box-shadow:0 1px 3px rgba(0,0,0,.12);
+  }
+  .card.tilt-l{transform:rotate(-1.3deg)}
+  .card.tilt-r{transform:rotate(1.1deg)}
+  .card h2{
+    font-size:21px;
+    font-weight:400;
+    margin-bottom:14px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .card h2 .tag{
+    font-family:var(--plain);
+    font-size:11px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:var(--pencil);
+    border:1px dashed var(--pencil);
+    padding:1px 6px;
+    border-radius:8px;
+  }
+  .big{
+    font-size:52px;
+    line-height:1;
+    letter-spacing:1px;
+  }
+  .big small{font-size:22px}
+  .muted{
+    font-family:var(--plain);
+    font-size:13px;
+    color:var(--pencil);
+    margin-top:6px;
+  }
+
+  /* hand drawn gauge */
+  .gauge{
+    margin:16px 0 4px;
+    height:26px;
+    border:2px solid var(--ink);
+    border-radius:120px 14px 120px 16px/16px 120px 14px 120px;
+    padding:3px;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 34px, rgba(59,51,39,.25) 34px 35px);
+  }
+  .gauge .fill{
+    height:100%;
+    border-radius:100px 8px 100px 8px/8px 100px 8px 100px;
+    background:repeating-linear-gradient(45deg,var(--red) 0 6px,#b23f27 6px 12px);
+  }
+  .gauge.blue .fill{
+    background:repeating-linear-gradient(45deg,var(--blue) 0 6px,#2c527a 6px 12px);
+  }
 
   /* mail list */
-  .maillist{list-style:none;font-size:13px}
-  .maillist li{
-    padding:7px 0;
-    border-bottom:1px dashed var(--green-faint);
-    display:flex;gap:8px;
+  .mails{list-style:none;display:flex;flex-direction:column;gap:12px;margin-top:4px}
+  .mails li{
+    display:flex;gap:10px;align-items:flex-start;
+    padding-bottom:10px;
+    border-bottom:1px dashed var(--pencil);
   }
-  .maillist li:last-child{border-bottom:none}
-  .maillist .from{color:var(--green);flex:0 0 120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .maillist .subj{color:var(--green-dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:none}
-  .maillist .new{color:var(--amber);text-shadow:0 0 5px rgba(255,176,0,.4)}
-
-  /* weather ascii */
-  .wx{display:flex;gap:16px;align-items:center}
-  .wx pre{color:var(--green);font-size:13px;line-height:1.15;text-shadow:0 0 4px rgba(0,255,102,.3)}
-  .wx .temp{font-size:34px}
-  .wx .place{font-size:13px;color:var(--green-dim);text-shadow:none}
-
-  .logbox{
-    margin-top:24px;
-    border:1px solid var(--green-faint);
-    background:var(--panel);
-    padding:14px 16px;
-    font-size:12.5px;
-    color:var(--green-dim);
-    text-shadow:none;
+  .mails li:last-child{border-bottom:none;padding-bottom:0}
+  .mails .dot{
+    width:11px;height:11px;margin-top:5px;flex-shrink:0;
+    background:var(--red);
+    border-radius:60% 40% 55% 45%/50% 60% 40% 50%;
   }
-  .logbox .l{display:block;padding:2px 0}
-  .logbox .ok{color:var(--green)}
-  .logbox .warnc{color:var(--amber)}
-  .logbox .ts{color:var(--green-faint)}
-  .logbox .prompt-line{color:var(--green);text-shadow:0 0 4px rgba(0,255,102,.35)}
-  .logbox .prompt-line .cursor{animation:blink 1s steps(1) infinite}
+  .mails .who{font-size:17px}
+  .mails .subj{font-family:var(--plain);font-size:13px;color:var(--pencil)}
+  .mails .when{margin-left:auto;font-family:var(--plain);font-size:12px;color:var(--pencil);white-space:nowrap}
 
-  @keyframes blink{50%{opacity:0}}
+  /* weather */
+  .weather-row{display:flex;align-items:center;gap:18px}
+  .sun{width:82px;height:82px;flex-shrink:0}
+  .wx-list{list-style:none;font-family:var(--plain);font-size:13px;color:var(--pencil);margin-top:12px;display:flex;flex-wrap:wrap;gap:6px 18px}
+  .wx-list li::before{content:"• ";color:var(--red)}
 
-  /* scrollbar */
-  .content::-webkit-scrollbar{width:10px}
-  .content::-webkit-scrollbar-track{background:#040604}
-  .content::-webkit-scrollbar-thumb{background:var(--green-faint);border:1px solid var(--green-dim)}
+  /* sticky note card */
+  .card.note{
+    background:var(--sticky);
+    border-color:#b9a52f;
+    border-radius:4px 4px 18px 4px;
+    transform:rotate(-2deg);
+    box-shadow:5px 7px 0 rgba(59,51,39,.15);
+  }
+  .card.note::after{border-color:rgba(120,100,20,.4);border-radius:4px}
+  .card.note::before{background:rgba(255,255,255,.4);border-color:rgba(150,130,60,.4)}
+  .todo{list-style:none;display:flex;flex-direction:column;gap:12px;font-size:17px}
+  .todo li{display:flex;gap:10px;align-items:flex-start}
+  .todo .box{
+    width:16px;height:16px;margin-top:3px;flex-shrink:0;
+    border:2px solid var(--ink);
+    border-radius:3px 7px 3px 8px/8px 3px 7px 3px;
+  }
+  .todo li.done{color:var(--pencil);text-decoration:line-through wavy rgba(59,51,39,.4)}
+  .todo li.done .box{background:var(--ink);position:relative}
+  .todo li.done .box::after{content:"✓";position:absolute;top:-7px;left:1px;color:var(--sticky);font-size:15px}
+
+  /* system mini */
+  .sys-list{list-style:none;display:flex;flex-direction:column;gap:11px;font-family:var(--plain);font-size:14px}
+  .sys-list li{display:flex;justify-content:space-between;border-bottom:1px dashed var(--pencil);padding-bottom:8px}
+  .sys-list li:last-child{border-bottom:none}
+  .sys-list .ok{color:#4a7c3f;font-family:var(--hand);font-size:16px}
+  .sys-list .ok::before{content:"● "}
+
+  @media(max-width:720px){
+    .sidebar{display:none}
+    .content{padding:24px 20px 50px}
+    .topbar h1{font-size:34px}
+  }
 </style>
 </head>
 <body>
-<div class="layout">
+<div class="book">
 
-  <!-- ================= SIDEBAR ================= -->
   <aside class="sidebar">
-    <div class="brand">
-      <h1>GHOST//SHELL</h1>
-      <div class="sub">mission_control v3.4.1</div>
-    </div>
-
-    <div class="nav-label">// NAVIGATION</div>
+    <div class="brand">Mission<br>Control <span class="paw">🐾</span></div>
+    <div class="brand-sub">Chris' Skizzenheft</div>
     <nav>
-      <a href="#" class="active"><span class="bracket">[</span>&gt;<span class="bracket">]</span> Dashboard</a>
-      <a href="#"><span class="bracket">[</span>&nbsp;<span class="bracket">]</span> Bolla</a>
-      <a href="#"><span class="bracket">[</span>&nbsp;<span class="bracket">]</span> Schule</a>
-      <a href="#"><span class="bracket">[</span>&nbsp;<span class="bracket">]</span> Kalender</a>
-      <a href="#"><span class="bracket">[</span>&nbsp;<span class="bracket">]</span> E-Mail</a>
-      <a href="#"><span class="bracket">[</span>&nbsp;<span class="bracket">]</span> Wetter</a>
-      <a href="#"><span class="bracket">[</span>&nbsp;<span class="bracket">]</span> System Info</a>
+      <a class="nav active" href="#"><span class="bullet"></span>Dashboard</a>
+      <a class="nav" href="#"><span class="bullet"></span>Bolla</a>
+      <a class="nav" href="#"><span class="bullet"></span>Schule</a>
+      <a class="nav" href="#"><span class="bullet"></span>Kalender</a>
+      <a class="nav" href="#"><span class="bullet"></span>E-Mail</a>
+      <a class="nav" href="#"><span class="bullet"></span>Wetter</a>
+      <a class="nav" href="#"><span class="bullet"></span>System Info</a>
     </nav>
-
-    <div class="spacer"></div>
-
-    <div class="uplink">
-      <span class="dot">●</span> uplink: SECURE<br>
-      tunnel: bolla-mc / OK<br>
-      user: chris@norderstedt
-    </div>
+    <div class="sidebar-foot">zuletzt gekritzelt: Fr, 4. Sep 2026 · 20:14</div>
   </aside>
 
-  <!-- ================= MAIN ================= -->
-  <div class="main">
-
-    <div class="topbar">
-      <div class="title"><span class="caret">~/</span>dashboard</div>
-      <div class="clock">20:14<span class="cursor">_</span></div>
-    </div>
-
-    <div class="statusline">
-      <span>load: <b>0.42 0.51 0.48</b></span>
-      <span>uptime: <b>6d 04:11</b></span>
-      <span>procs: <b>187</b></span>
-      <span>net: <b>↓1.2M ↑0.3M</b></span>
-      <span>disk /: <b>61%</b></span>
-      <span>date: <b>2026-09-03</b></span>
-    </div>
-
-    <div class="content">
-      <div class="section-head">// SYSTEM WIDGETS — auto-refresh 5s</div>
-
-      <div class="grid">
-
-        <!-- RAM -->
-        <div class="card" data-tag="mem.stat">
-          <div class="card-body">
-            <h3>RAM AUSLASTUNG</h3>
-            <div class="big">34<small>%</small></div>
-            <div class="meter">
-              <span class="fill">[||||||||||||||</span><span class="empty">......................................]</span>
-              <span class="pct">2.1G / 6.0G</span>
-            </div>
-            <div class="meta">status: NOMINAL &nbsp;·&nbsp; swap: 0.0G</div>
-          </div>
-        </div>
-
-        <!-- CPU -->
-        <div class="card" data-tag="cpu.stat">
-          <div class="card-body">
-            <h3>CPU LAST</h3>
-            <div class="big">12<small>%</small></div>
-            <div class="meter">
-              <span class="fill">[|||||</span><span class="empty">...............................................]</span>
-              <span class="pct">4 cores @ 2.8GHz</span>
-            </div>
-            <div class="meta">temp: 48°C &nbsp;·&nbsp; top: python3 (mission_control_api)</div>
-          </div>
-        </div>
-
-        <!-- MAIL -->
-        <div class="card" data-tag="mail.inbox">
-          <div class="card-body">
-            <h3>POSTEINGANG &mdash; <span class="new">3 NEU</span></h3>
-            <ul class="maillist">
-              <li><span class="from new">&gt; KDP Amazon</span><span class="subj">Ihr Bericht für August ist verfügbar</span></li>
-              <li><span class="from new">&gt; Lessing-Gym</span><span class="subj">Stundenplan 26/27 — Korrektur EDV 7c</span></li>
-              <li><span class="from new">&gt; Riverty</span><span class="subj">Zahlungserinnerung AZ S.26.5173626</span></li>
-              <li><span class="from">&nbsp;&nbsp;Sigi W.</span><span class="subj">Re: Wochenende Segeln?</span></li>
-              <li><span class="from">&nbsp;&nbsp;DistroKid</span><span class="subj">Your release is now live</span></li>
-            </ul>
-            <div class="meta">letzter sync: 20:12:47 &nbsp;·&nbsp; ernstmandel@outlook.de</div>
-          </div>
-        </div>
-
-        <!-- WEATHER -->
-        <div class="card" data-tag="wx.now">
-          <div class="card-body">
-            <h3>WETTER</h3>
-            <div class="wx">
-<pre>   \   /
-    .-.
- -- (   ) --
-    `-'
-   /   \</pre>
-              <div>
-                <div class="temp">18°C</div>
-                <div class="place">Hamburg &mdash; heiter</div>
-              </div>
-            </div>
-            <div class="meter">
-              <span class="fill">wind 14 km/h W</span><span class="pct">&nbsp;·&nbsp; feels 17°C &nbsp;·&nbsp; hum 63%</span>
-            </div>
-            <div class="meta">min 11° / max 20° &nbsp;·&nbsp; Regen 10% &nbsp;·&nbsp; sunset 19:58</div>
-          </div>
-        </div>
-
-        <!-- DISK -->
-        <div class="card" data-tag="disk.stat">
-          <div class="card-body">
-            <h3>SPEICHER /home</h3>
-            <div class="big">61<small>%</small></div>
-            <div class="meter warn">
-              <span class="fill">[|||||||||||||||||||||||||</span><span class="empty">...............]</span>
-              <span class="pct">142G / 234G</span>
-            </div>
-            <div class="meta">letztes backup: 2026-09-03 00:05 &nbsp;·&nbsp; OneDrive OK</div>
-          </div>
-        </div>
-
-        <!-- NEXT EVENT -->
-        <div class="card" data-tag="cal.next">
-          <div class="card-body">
-            <h3>NÄCHSTER TERMIN</h3>
-            <div class="big" style="font-size:22px">Tanzkurs &bdquo;Die 3&ldquo;</div>
-            <div class="meta">So 13.09.2026 &mdash; 15:00 Uhr &nbsp;·&nbsp; Norderstedt</div>
-            <div class="meter">
-              <span class="fill">in 10 Tagen</span><span class="pct">&nbsp;·&nbsp; 2 weitere diese Woche</span>
-            </div>
-          </div>
-        </div>
-
-      </div><!-- /grid -->
-
-      <div class="logbox">
-        <span class="l"><span class="ts">[20:14:02]</span> <span class="ok">OK</span>&nbsp;&nbsp; mission_control_api.py — heartbeat pid 445584</span>
-        <span class="l"><span class="ts">[20:13:55]</span> <span class="ok">OK</span>&nbsp;&nbsp; cloudflared tunnel bolla-mc — 4 conns healthy</span>
-        <span class="l"><span class="ts">[20:13:40]</span> <span class="ok">OK</span>&nbsp;&nbsp; /f-photos/today.json — 15 Fotos ausgeliefert</span>
-        <span class="l"><span class="ts">[20:12:47]</span> <span class="warnc">WARN</span> mail sync — 3 ungelesene Nachrichten markiert</span>
-        <span class="l"><span class="ts">[20:11:10]</span> <span class="ok">OK</span>&nbsp;&nbsp; wsl_memory_watchdog — 34% (6.0G limit) grün</span>
-        <span class="l prompt-line">chris@ghostshell:~$ <span class="cursor">_</span></span>
+  <main class="content">
+    <header class="topbar">
+      <h1>Dashboard<span class="under"></span></h1>
+      <div class="clock">
+        <span class="time">20:14</span>
+        <span class="date">Freitag · 4. September</span>
       </div>
+    </header>
 
-    </div><!-- /content -->
-  </div><!-- /main -->
+    <section class="grid">
+
+      <article class="card tilt-l">
+        <h2>Arbeitsspeicher <span class="tag">RAM</span></h2>
+        <div class="big">34<small> %</small></div>
+        <div class="gauge"><div class="fill" style="width:34%"></div></div>
+        <div class="muted">5,4 GB von 16 GB belegt · 12 Prozesse aktiv</div>
+      </article>
+
+      <article class="card tilt-r">
+        <h2>Prozessor <span class="tag">CPU</span></h2>
+        <div class="big">12<small> %</small></div>
+        <div class="gauge blue"><div class="fill" style="width:12%"></div></div>
+        <div class="muted">Ø letzte 5 Min · 43 °C · 4 Kerne · Last 0,38</div>
+      </article>
+
+      <article class="card mail" style="grid-column:span 2">
+        <h2>Posteingang <span class="tag">3 neue Mails</span></h2>
+        <ul class="mails">
+          <li>
+            <span class="dot"></span>
+            <span>
+              <span class="who">Renate Mandel</span><br>
+              <span class="subj">Einkaufsliste fürs Wochenende – nicht vergessen!</span>
+            </span>
+            <span class="when">19:47</span>
+          </li>
+          <li>
+            <span class="dot"></span>
+            <span>
+              <span class="who">Lessing-Gymnasium</span><br>
+              <span class="subj">Vertretungsplan Donnerstag – 3. Std. EDV 7c</span>
+            </span>
+            <span class="when">18:12</span>
+          </li>
+          <li>
+            <span class="dot"></span>
+            <span>
+              <span class="who">DistroKid</span><br>
+              <span class="subj">Dein Release „different buttons same heartbeat" ist live 🎵</span>
+            </span>
+            <span class="when">16:30</span>
+          </li>
+        </ul>
+      </article>
+
+      <article class="card weather">
+        <h2>Wetter <span class="tag">Hamburg</span></h2>
+        <div class="weather-row">
+          <svg class="sun" viewBox="0 0 100 100" fill="none" stroke="#c0492e" stroke-width="3" stroke-linecap="round">
+            <circle cx="42" cy="46" r="17" fill="#f5e07a" stroke="#c0492e"/>
+            <path d="M42 16v-9 M42 85v-9 M12 46H3 M72 46h9 M20 24l-6-6 M64 24l6-6 M20 68l-6 6"/>
+            <path d="M58 66c0-9 7-15 15-15 8 0 14 6 14 14 4 0 8 3 8 8s-4 8-9 8H55c-6 0-11-4-11-10s5-11 11-11c1-2 2-3 3-4z" fill="#efe0be" stroke="#3b3327" stroke-width="2.5"/>
+          </svg>
+          <div>
+            <div class="big">18<small> °C</small></div>
+            <div class="muted">Leicht bewölkt · gefühlt 17 °</div>
+          </div>
+        </div>
+        <ul class="wx-list">
+          <li>Wind 14 km/h NW</li>
+          <li>Regen 10 %</li>
+          <li>Luftfeuchte 68 %</li>
+          <li>Sonnenuntergang 20:03</li>
+        </ul>
+      </article>
+
+      <article class="card note">
+        <h2>Notizzettel</h2>
+        <ul class="todo">
+          <li class="done"><span class="box"></span>Heide-Ausflug: Sonntag 6.9. (bester Tag!)</li>
+          <li><span class="box"></span>Tanzkurs anmelden – So 13.9. 15:00</li>
+          <li><span class="box"></span>ADAC-Kündigung nachfassen</li>
+          <li><span class="box"></span>Vertretungsplan 7c checken</li>
+        </ul>
+      </article>
+
+      <article class="card sys">
+        <h2>System Info <span class="tag">WSL2</span></h2>
+        <ul class="sys-list">
+          <li><span>Laufzeit</span><span>3 Tage, 07 Std</span></li>
+          <li><span>Festplatte</span><span>214 / 512 GB</span></li>
+          <li><span>MC-Server</span><span class="ok">läuft</span></li>
+          <li><span>Cloudflare-Tunnel</span><span class="ok">verbunden</span></li>
+          <li><span>Letztes Backup</span><span>heute, 02:00</span></li>
+        </ul>
+      </article>
+
+    </section>
+  </main>
 </div>
 </body>
 </html>
