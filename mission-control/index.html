@@ -952,6 +952,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
       <div class="nav-block" id="navblock-kreativ">
         <div class="nav-section" onclick="toggleNavSection('kreativ')" id="nav-sec-kreativ"><span class="nav-section-grip">⠿</span>KI & Kreativ <span class="nav-section-chevron">▶</span></div>
         <div class="nav-section-items" id="nav-section-items-kreativ" style="max-height:0">
+          <div class="nav-item" data-page="aurora2"><span class="icon">📖</span><span>AURORA II</span></div>
           <div class="nav-item" data-page="ki-news"><span class="icon">🧠</span><span>KI-News & Events</span></div>
           <div class="nav-item" data-page="bildgen"><span class="icon">🍌</span><span>BildGen</span></div>
           <div class="nav-item" data-page="suno"><span class="icon">🎵</span><span>Bolla Songs</span></div>
@@ -975,7 +976,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
           <div class="nav-item" data-page="system"><span class="icon">📊</span><span>Überblick</span></div>
           <div class="nav-item" data-page="claudecode"><span class="icon">🤖</span><span>Claude Code</span></div>
           <div class="nav-item" data-page="surface"><span class="icon">💻</span><span>Surfaces</span></div>
-          <div class="nav-item" data-page="redesigns"><span class="icon">🎨</span><span>Redesigns</span></div>
+          <div class="nav-item" data-page="redesigns"><span class="icon">💡</span><span>Projektideen</span></div>
           <div class="nav-item" data-page="brain"><span class="icon">🧠</span><span>Bolla's Brain</span></div>
         </div>
       </div>
@@ -2816,19 +2817,9 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
         <div id="brain-container" style="width:100%;height:calc(100vh - 92px)"></div>
       </div>
 
-      <!-- REDESIGNS -->
+      <!-- PROJEKTIDEEN -->
       <div class="page" id="page-redesigns">
         <div style="max-width:900px;margin:0 auto">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-            <p style="color:var(--dim);font-size:14px">Täglich 2 neue KI-Redesign-Konzepte. Klick öffnet Vollvorschau.</p>
-            <div id="redesigns-date" style="font-size:13px;color:var(--dim)"></div>
-          </div>
-          <div id="redesigns-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
-            <div style="color:var(--dim);font-size:14px;padding:40px;text-align:center;grid-column:1/-1">
-              <div class="bolla-dots"><span>.</span><span>.</span><span>.</span></div>
-            </div>
-          </div>
-          <p id="redesigns-note" style="color:var(--dim);font-size:13px;margin-top:20px;text-align:center"></p>
 
           <!-- ── Chris & Bolla Projektideen ── -->
           <div style="margin-top:36px">
@@ -3040,6 +3031,99 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 <div id="ki-buch-impressum" style="font-size:14px;color:var(--text);line-height:1.85;white-space:pre-wrap">—</div>
               </div>
 
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AURORA II -->
+      <div class="page" id="page-aurora2">
+        <div style="max-width:1200px;margin:0 auto;padding:4px 0">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+            <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#ec4899,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📖</div>
+            <div style="flex:1">
+              <div id="aurora2-titel" style="font-size:20px;font-weight:700;color:var(--bright)">AURORA II</div>
+              <div id="aurora2-status-line" style="font-size:13px;color:var(--dim)">Lade…</div>
+            </div>
+            <button onclick="loadAurora2()" style="padding:7px 16px;background:rgba(236,72,153,0.15);border:1px solid rgba(236,72,153,0.4);border-radius:8px;color:#ec4899;font-size:13px;cursor:pointer">↻ Laden</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start">
+            <!-- Linke Spalte: Kriterien + Figuren + Kapitel -->
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px">
+                <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Buchkriterien</div>
+                <div id="aurora2-kriterien" style="font-size:13px;color:var(--text);line-height:1.8">Lade…</div>
+              </div>
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px">
+                <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Figuren</div>
+                <div id="aurora2-protagonisten" style="font-size:13px;color:var(--text)">Noch keine definiert</div>
+              </div>
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px">
+                <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Kapitel</div>
+                <div id="aurora2-kapitel-liste" style="font-size:13px;color:var(--dim)">Noch keine Kapitel</div>
+              </div>
+            </div>
+
+            <!-- Rechte Spalte: Inhalt + Steuerung + Kommentar -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <!-- Nächster Schritt -->
+              <div style="background:linear-gradient(rgba(236,72,153,0.12),rgba(236,72,153,0.12)),var(--card);border:1px solid rgba(236,72,153,0.4);border-radius:12px;padding:14px 18px;display:flex;align-items:flex-start;gap:12px">
+                <span style="font-size:22px">🎯</span>
+                <div>
+                  <div style="font-size:12px;font-weight:700;color:#ec4899;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Nächster Schritt</div>
+                  <div id="aurora2-naechster-schritt" style="font-size:14px;color:var(--text)">…</div>
+                </div>
+              </div>
+
+              <!-- Lese-/Bearbeitungsansicht des gewählten Kapitels (voller Text direkt, ohne Vorschau-Gate) -->
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 22px">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+                  <div id="aurora2-inhalt-titel" style="font-size:15px;font-weight:700;color:var(--bright)">Kapitel auswählen</div>
+                  <span id="aurora2-inhalt-meta" style="font-size:12px;color:var(--dim)"></span>
+                </div>
+                <div id="aurora2-inhalt" style="display:none;font-size:15px;color:var(--text);line-height:1.85;white-space:pre-wrap;max-height:600px;overflow-y:auto"></div>
+                <div id="aurora2-inhalt-platzhalter" style="font-size:14px;color:var(--dim)">← Klicke links auf ein Kapitel — oder schreib unten eine Anweisung für das erste.</div>
+              </div>
+
+              <!-- Produzenten-Steuerung -->
+              <div style="background:var(--card);border:1px solid rgba(124,58,237,0.45);border-radius:14px;padding:18px 22px">
+                <div style="font-size:13px;font-weight:700;color:#a78bfa;margin-bottom:4px">🎬 Steuerung & Wünsche</div>
+                <div style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.5">Du gibst mir Steuerung & Wünsche im Chat — hier siehst du, was ich daraus mache. 🐾</div>
+
+                <!-- Statustafel (read-only, von Bolla gepflegt) -->
+                <div id="aurora2-eintraege" style="margin-bottom:18px"></div>
+
+                <!-- Rote Linien -->
+                <div>
+                  <div style="font-size:12px;font-weight:700;color:var(--bright);margin-bottom:3px">🚫 Rote Linien</div>
+                  <div style="font-size:12px;color:var(--dim);margin-bottom:7px">Was NICHT passieren darf bzw. feste Vorgaben. Kostet kaum Überraschung, gibt dir Kontrolle.</div>
+                  <div id="aurora2-linien" style="margin-bottom:8px"></div>
+                  <div style="display:flex;gap:7px">
+                    <input id="aurora2-linie-input" type="text" style="flex:1;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit;outline:none" placeholder="z.B. 'Kein Slapstick', 'keine Figur stirbt durch Zufall'">
+                    <button onclick="aurora2LinieAdd()" style="background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.4);border-radius:8px;padding:9px 15px;font-size:14px;cursor:pointer;font-weight:600">+ Linie</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Kommentar für nächste Session -->
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 22px">
+                <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">💬 Anweisung <span id="aurora2-kommentar-ziel" style="color:#ec4899"></span></div>
+                <textarea id="aurora2-kommentar-input" rows="4"
+                  style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:14px;font-family:inherit;resize:vertical;line-height:1.6;outline:none"
+                  placeholder="z.B. 'Schreibe Kapitel 1' oder (bei gewähltem Kapitel) 'überarbeite dieses Kapitel mit mehr Humor'…"></textarea>
+                <div style="display:flex;gap:10px;margin-top:10px;align-items:center;flex-wrap:wrap">
+                  <button onclick="aurora2KommentarSenden()" style="background:rgba(236,72,153,0.15);color:#ec4899;border:1px solid rgba(236,72,153,0.4);border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;font-weight:600">💾 Speichern</button>
+                  <button id="aurora2-generiere-btn" onclick="aurora2Generiere()" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff;border:none;border-radius:8px;padding:9px 22px;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 2px 12px rgba(124,58,237,0.4)">🐾 Bolla schreibt jetzt…</button>
+                  <span id="aurora2-kommentar-status" style="font-size:13px;color:var(--dim)"></span>
+                </div>
+              </div>
+
+              <!-- Kommentar-Verlauf -->
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 22px">
+                <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Kommentar-Verlauf</div>
+                <div id="aurora2-kommentare" style="font-size:13px;color:var(--dim)">Keine bisherigen Kommentare</div>
+              </div>
             </div>
           </div>
         </div>
@@ -4726,14 +4810,6 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
 </div>
 
 <!-- DESIGN PREVIEW OVERLAY -->
-<div id="design-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.92);flex-direction:column">
-  <div style="height:48px;min-height:48px;background:rgba(12,20,32,0.95);border-bottom:1px solid #253a50;display:flex;align-items:center;justify-content:space-between;padding:0 20px">
-    <span id="design-overlay-title" style="color:#4fc3f7;font-weight:600;font-size:14px"></span>
-    <button onclick="designClose()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:4px 16px;border-radius:6px;cursor:pointer;font-size:14px">✕ Schließen</button>
-  </div>
-  <iframe id="design-iframe" style="flex:1;border:none;width:100%;height:calc(100% - 48px)" src=""></iframe>
-</div>
-
 <!-- LIGHTBOX -->
 <div id="lightbox" onclick="lbClose()">
   <button id="lb-close" onclick="lbClose()">✕</button>
@@ -4756,7 +4832,8 @@ let _clipEditing = false;
 const PAGE_THEMES = {
   'suno':       'musik',     // 🎵 Bolla Songs
   'gluecksrad': 'buehne',    // 🎡 Musik-Quiz
-  'ki-buch':    'buch',      // 📖 AURORA
+  'ki-buch':    'buch',      // 📖 AURORA (Buch I, archiviert)
+  'aurora2':    'buch',      // 📖 AURORA II
   'urlaub':     'reise',     // ✈️ Reiseplaner
   'reise-sommerreise2026': 'reise', // 🏁 Sommerreise 2026 (archiviert)
   'wetter':     'wetter',    // 🌤️ Wetter
@@ -4815,6 +4892,7 @@ function showPage(page) {
   if (page === 'ki-workshop') loadKiWorkshop();
   if (page === 'ki-news')    loadKiNews();
   if (page === 'ki-buch')    { loadKiBuch(); loadLektoratStatus(); }
+  if (page === 'aurora2')    loadAurora2();
   if (page === 'urlaub')     initUrlaub();
   if (page === 'reise-sommerreise2026') initSommerreise();
   if (page === 'fotoanalyse') loadFotoAnalyse();
@@ -5118,7 +5196,7 @@ function openSectionForPage(page) {
     dashboard: 'start', bolla: 'start', wetter: 'start',
     schule: 'arbeit', korrektur: 'arbeit', differenzierung: 'arbeit', entschaerfer: 'arbeit', gluecksrad: 'arbeit', schuljahr2627: 'arbeit', kalender: 'arbeit', email: 'arbeit', clipboard: 'arbeit', board: 'arbeit', projekte: 'arbeit', 'ki-workshop': 'arbeit', urlaub: 'arbeit',
     robin: 'familie', geburtstage: 'familie',
-    'ki-news': 'kreativ', 'ki-buch': 'kreativ', bildgen: 'kreativ', suno: 'kreativ', fotoanalyse: 'kreativ', kiforum: 'kreativ',
+    'ki-news': 'kreativ', 'ki-buch': 'kreativ', aurora2: 'kreativ', bildgen: 'kreativ', suno: 'kreativ', fotoanalyse: 'kreativ', kiforum: 'kreativ',
     localserver: 'system', system: 'system', claudecode: 'system', surface: 'system', redesigns: 'system', brain: 'system',
     archiv: 'archiv'
   };
@@ -9129,7 +9207,6 @@ const CRON_META = {
   'spam_watcher':         {name:'Spam Watcher',      desc:'Outlook + wtnet'},
   'sync_obsidian_vault':  {name:'Obsidian Sync',     desc:'Notizen-Vault'},
   'mail_to_calendar':     {name:'Mail → Kalender',   desc:'Termine + Anfahrt'},
-  'generate_redesigns':   {name:'MC Redesigns',      desc:'2 Mockups via Claude'},
   'check_claude_desktop': {name:'Claude Desktop',    desc:'prüft Win-App-Release'},
   'newsletter_scanner':   {name:'Newsletter Scan',   desc:'unbekannte Absender'},
   'ea_organizer':         {name:'Aufnahmen-Org.',    desc:'Dedup + Gemini-Sort'},
@@ -11880,6 +11957,249 @@ async function kiBuchKommentarSenden() {
   }
 }
 
+// ===== AURORA II =====
+let _aurora2Data = null;
+let _aurora2AktivIdx = null;
+
+async function loadAurora2() {
+  try {
+    const data = await fetch(API + '/api/aurora2').then(r => r.json());
+    _aurora2Data = data;
+    const k = data.kriterien || {};
+    document.getElementById('aurora2-titel').textContent = data.titel || 'AURORA II';
+    document.getElementById('aurora2-status-line').textContent =
+      `Status: ${data.status} · ${data.statistik?.kapitel_gesamt||0} Kapitel · ${(data.statistik?.woerter_gesamt||0).toLocaleString()} Wörter`;
+    document.getElementById('aurora2-naechster-schritt').textContent = data.naechsterSchritt || '—';
+
+    const kr = document.getElementById('aurora2-kriterien');
+    if (kr) kr.innerHTML = [
+      ['Genre', k.genre], ['Sprache', k.sprache], ['Fortsetzung von', k.fortsetzung_von],
+      ['Kernthema', k.kernthema], ['Höhepunkt-Struktur', k.hoehepunkt_struktur],
+      ['Stil', k.vorbild_stil], ['Humor', k.humor], ['Figuren-Kontinuität', k.figuren_kontinuitaet],
+      ['Cliffhanger', k.cliffhanger], ['Spannung', k.spannung], ['Tempo/Arbeitsweise', k.tempo_arbeitsweise]
+    ].filter(([,v]) => v).map(([l,v]) => `<div style="margin-bottom:6px"><span style="color:var(--dim)">${l}:</span> ${v}</div>`).join('');
+
+    aurora2RenderFiguren(data);
+    aurora2RenderKapitelListe();
+
+    const anzahl = (data.kapitel||[]).length;
+    if (anzahl > 0) {
+      if (_aurora2AktivIdx === null || _aurora2AktivIdx >= anzahl) _aurora2AktivIdx = anzahl - 1;
+      aurora2ZeigeKapitel(_aurora2AktivIdx);
+    } else {
+      _aurora2AktivIdx = null;
+      const inhalt = document.getElementById('aurora2-inhalt');
+      const it = document.getElementById('aurora2-inhalt-titel');
+      const im = document.getElementById('aurora2-inhalt-meta');
+      const platz = document.getElementById('aurora2-inhalt-platzhalter');
+      if (it) it.textContent = 'Noch kein Kapitel';
+      if (im) im.textContent = '';
+      if (inhalt) inhalt.style.display = 'none';
+      if (platz) platz.style.display = 'block';
+    }
+
+    const komEl = document.getElementById('aurora2-kommentare');
+    if (komEl) {
+      const koms = (data.kommentare||[]).slice(-6).reverse();
+      komEl.innerHTML = koms.length
+        ? koms.map(k => `<div style="padding:7px 0;border-bottom:1px solid var(--border)"><div style="font-size:11px;color:var(--dim)">${k.datum||''} ${k.erledigt?'· ✓ erledigt':'· ⏳ offen'}</div><div style="font-size:13px;color:var(--text)">${k.text}</div></div>`).join('')
+        : '<span style="color:var(--dim)">Keine bisherigen Kommentare</span>';
+    }
+
+    aurora2RenderSteuerung(data.steuerung || {});
+  } catch(e) {
+    console.error('AURORA II laden:', e);
+  }
+}
+
+function aurora2Esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+function aurora2RenderSteuerung(st) {
+  const STATUS = {
+    in_arbeit:       {icon:'🔵', label:'dran',               farbe:'#3b82f6', bg:'rgba(59,130,246,0.08)',  bd:'rgba(59,130,246,0.3)'},
+    umgesetzt:       {icon:'✅', label:'umgesetzt',          farbe:'#22c55e', bg:'rgba(34,197,94,0.08)',   bd:'rgba(34,197,94,0.3)'},
+    geheim:          {icon:'🤫', label:'umgesetzt · geheim', farbe:'#a78bfa', bg:'rgba(167,139,250,0.10)', bd:'rgba(167,139,250,0.32)'},
+    vorgemerkt:      {icon:'📋', label:'vorgemerkt',         farbe:'#9ca3af', bg:'rgba(156,163,175,0.07)', bd:'rgba(156,163,175,0.28)'},
+    nicht_empfohlen: {icon:'⚠️', label:'rate ich ab',        farbe:'#f59e0b', bg:'rgba(245,158,11,0.08)',  bd:'rgba(245,158,11,0.3)'}
+  };
+  const el = document.getElementById('aurora2-eintraege');
+  if (el) {
+    const items = st.eintraege || [];
+    el.innerHTML = items.length
+      ? items.map(e => {
+          const s = STATUS[e.status] || STATUS.vorgemerkt;
+          const notiz = (e.notiz||'').trim();
+          return `<div style="background:${s.bg};border:1px solid ${s.bd};border-radius:9px;padding:10px 12px;margin-bottom:7px">
+            <div style="font-size:11px;font-weight:700;color:${s.farbe};text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px">${s.icon} ${s.label}</div>
+            <div style="font-size:13px;color:var(--text);line-height:1.5">${aurora2Esc(e.text||'')}</div>
+            ${notiz ? `<div style="font-size:12px;color:var(--dim);line-height:1.45;margin-top:5px;border-top:1px dashed var(--border);padding-top:5px">🐾 ${aurora2Esc(notiz)}</div>` : ''}
+          </div>`;
+        }).join('')
+      : '<div style="font-size:13px;color:var(--dim);font-style:italic">Noch nichts — gib mir im Chat eine Steuerung oder einen Wunsch.</div>';
+  }
+  const ll = document.getElementById('aurora2-linien');
+  if (ll) {
+    const items = st.rote_linien || [];
+    ll.innerHTML = items.length
+      ? items.map((l,i) => `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);border-radius:8px;margin-bottom:5px"><span style="flex:1;font-size:13px;color:var(--text);line-height:1.5">🚫 ${aurora2Esc(l)}</span><span onclick="aurora2SteuerAktion('linie_del',${i})" style="cursor:pointer;color:var(--dim);font-size:15px;line-height:1;flex-shrink:0" title="Linie entfernen">✕</span></div>`).join('')
+      : '<div style="font-size:13px;color:var(--dim);font-style:italic">Keine roten Linien gesetzt.</div>';
+  }
+}
+
+async function aurora2SteuerAktion(aktion, payload) {
+  const body = {aktion};
+  if (aktion === 'linie_del') body.index = payload;
+  else body.text = payload;
+  try {
+    await fetch(API + '/api/aurora2/steuerung', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+    loadAurora2();
+  } catch(e) { console.error('Steuerung:', e); }
+}
+
+async function aurora2LinieAdd() {
+  const inp = document.getElementById('aurora2-linie-input');
+  const t = (inp?.value||'').trim();
+  if (!t) return;
+  if (inp) inp.value = '';
+  await aurora2SteuerAktion('linie_add', t);
+}
+
+function aurora2RenderFiguren(data) {
+  const pr = document.getElementById('aurora2-protagonisten');
+  if (!pr) return;
+  const esc = s => { const d=document.createElement('div'); d.textContent=s==null?'':s; return d.innerHTML; };
+  const feld = (icon,label,val) => val ? `<div style="margin-top:6px"><span style="font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:0.4px">${icon} ${label}</span><div style="font-size:13px;color:var(--text);line-height:1.5">${esc(val)}</div></div>` : '';
+  let idx = 0;
+  const card = (f, farbe, tag) => {
+    const i = idx++;
+    const alter = (f.alter!==null && f.alter!==undefined && f.alter!=='') ? ', '+f.alter : '';
+    const details = [
+      feld('👤','Aussehen',f.aussehen), feld('✨','Detail',f.detail),
+      feld('🎭','Macke',f.macke), feld('💔','Wunde',f.wunde),
+      feld('🗣️','Stimme',f.stimme), feld('❤️','Beziehung',f.liebesbeziehung),
+      feld('⭐','Besonderheit',f.besonderheit)
+    ].join('');
+    return `<div style="border-left:3px solid ${farbe};padding:8px 0 8px 9px;margin-bottom:7px">
+      <div onclick="aurora2FigurToggle(${i})" style="cursor:pointer;display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--dim);flex-shrink:0" id="a2fig-arr-${i}">▸</span>
+        <strong style="color:${farbe}">${esc(f.name)}</strong>${tag||''}
+      </div>
+      <div style="font-size:11px;color:#a78bfa;margin-left:17px">${esc(f.rolle||'')}${alter}</div>
+      <div style="font-size:13px;color:var(--dim);margin-left:17px;margin-top:3px">${esc(f.beschreibung||'')}</div>
+      <div id="a2fig-det-${i}" style="display:none;margin-left:17px">${details}</div>
+    </div>`;
+  };
+  let html = '';
+  (data.protagonisten||[]).forEach(p => html += card(p, '#a78bfa', ''));
+  if (data.antagonist && data.antagonist.name) {
+    html += card(data.antagonist, '#ef4444', ' <span style="font-size:10px;color:#ef4444">⚔️ Antagonist(in)</span>');
+  }
+  const nf = data.nebenfiguren||[];
+  if (nf.length) {
+    html += `<div style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin:12px 0 5px">Nebenfiguren</div>`;
+    nf.forEach(n => html += card(n, '#22c55e', ''));
+  }
+  pr.innerHTML = html || '<span style="color:var(--dim)">Noch keine definiert</span>';
+}
+function aurora2FigurToggle(i) {
+  const det = document.getElementById('a2fig-det-'+i);
+  const arr = document.getElementById('a2fig-arr-'+i);
+  if (!det) return;
+  const open = det.style.display === 'none';
+  det.style.display = open ? 'block' : 'none';
+  if (arr) arr.textContent = open ? '▾' : '▸';
+}
+
+function aurora2RenderKapitelListe() {
+  const kl = document.getElementById('aurora2-kapitel-liste');
+  if (!kl || !_aurora2Data) return;
+  const kapitel = _aurora2Data.kapitel || [];
+  kl.innerHTML = kapitel.length
+    ? kapitel.map((kap,i) => {
+        const aktiv = i === _aurora2AktivIdx;
+        return `<div onclick="aurora2ZeigeKapitel(${i})" style="padding:7px 9px;cursor:pointer;font-size:13px;border-radius:7px;margin-bottom:3px;${aktiv?'background:rgba(236,72,153,0.18);color:#ec4899;font-weight:600;border:1px solid rgba(236,72,153,0.4)':'color:var(--text);border:1px solid transparent'}" onmouseover="if(${i}!==_aurora2AktivIdx)this.style.background='rgba(255,255,255,0.04)'" onmouseout="if(${i}!==_aurora2AktivIdx)this.style.background=''">📄 ${kap.titel||'Kapitel '+(i+1)}</div>`;
+      }).join('')
+    : '<span style="color:var(--dim)">Noch keine Kapitel</span>';
+}
+
+function aurora2ZeigeKapitel(idx) {
+  if (!_aurora2Data || !_aurora2Data.kapitel) return;
+  const kap = _aurora2Data.kapitel[idx];
+  if (!kap) return;
+  _aurora2AktivIdx = idx;
+  const inhalt = document.getElementById('aurora2-inhalt');
+  const it = document.getElementById('aurora2-inhalt-titel');
+  const im = document.getElementById('aurora2-inhalt-meta');
+  const platz = document.getElementById('aurora2-inhalt-platzhalter');
+  if (it) it.textContent = kap.titel || 'Kapitel ' + (idx+1);
+  if (im) im.textContent = `${(kap.text||'').split(/\s+/).filter(Boolean).length} Wörter${kap.datum?' · '+kap.datum:''}`;
+  if (platz) platz.style.display = 'none';
+  if (inhalt) { inhalt.textContent = kap.text || '(Kein Text)'; inhalt.style.display = 'block'; }
+  const ziel = document.getElementById('aurora2-kommentar-ziel');
+  if (ziel) ziel.textContent = `→ bezieht sich auf "${kap.titel||'Kapitel '+(idx+1)}"`;
+  aurora2RenderKapitelListe();
+}
+
+let _aurora2PollTimer = null;
+async function aurora2Generiere() {
+  const btn = document.getElementById('aurora2-generiere-btn');
+  const status = document.getElementById('aurora2-kommentar-status');
+  const input = document.getElementById('aurora2-kommentar-input');
+  const text = (input?.value || '').trim();
+  if (text) {
+    try {
+      await fetch(API + '/api/aurora2/kommentar', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({text}) });
+      if (input) input.value = '';
+    } catch(e) { /* weiter trotzdem */ }
+  }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Bolla schreibt…'; btn.style.opacity = '0.7'; }
+  if (status) status.textContent = '🖊 Gestartet — warte auf Bolla…';
+  try {
+    const res = await fetch(API + '/api/aurora2/generiere', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+    const data = await res.json();
+    if (data.status === 'running') { if (status) status.textContent = '⏳ Läuft schon — warte…'; }
+    if (_aurora2PollTimer) clearInterval(_aurora2PollTimer);
+    _aurora2PollTimer = setInterval(async () => {
+      try {
+        const poll = await fetch(API + '/api/aurora2/generiere-status').then(r => r.json());
+        if (poll.status === 'done') {
+          clearInterval(_aurora2PollTimer); _aurora2PollTimer = null;
+          if (status) status.textContent = '✓ ' + (poll.antwort || 'Fertig!');
+          if (poll.inhalt) { const el = document.getElementById('aurora2-inhalt'); if (el) { el.textContent = poll.inhalt; el.style.display='block'; } }
+          if (btn) { btn.disabled = false; btn.textContent = '🐾 Bolla schreibt jetzt…'; btn.style.opacity = '1'; }
+          setTimeout(() => { if (status) status.textContent = ''; loadAurora2(); }, 3000);
+        } else if (poll.status === 'error') {
+          clearInterval(_aurora2PollTimer); _aurora2PollTimer = null;
+          if (status) status.textContent = '✗ Fehler: ' + poll.error;
+          if (btn) { btn.disabled = false; btn.textContent = '🐾 Bolla schreibt jetzt…'; btn.style.opacity = '1'; }
+        }
+      } catch(pe) { /* Netzwerkfehler beim Pollen — ignorieren */ }
+    }, 3000);
+  } catch(e) {
+    if (status) status.textContent = '✗ Start-Fehler: ' + e.message;
+    if (btn) { btn.disabled = false; btn.textContent = '🐾 Bolla schreibt jetzt…'; btn.style.opacity = '1'; }
+  }
+}
+
+async function aurora2KommentarSenden() {
+  const input = document.getElementById('aurora2-kommentar-input');
+  const status = document.getElementById('aurora2-kommentar-status');
+  const text = (input?.value||'').trim();
+  if (!text) return;
+  try {
+    await fetch(API + '/api/aurora2/kommentar', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text})
+    });
+    if (status) status.textContent = '✓ Gespeichert!';
+    if (input) input.value = '';
+    setTimeout(() => { if (status) status.textContent = ''; loadAurora2(); }, 1500);
+  } catch(e) {
+    if (status) status.textContent = '✗ Fehler beim Speichern';
+  }
+}
+
 async function loadKiWorkshop() {
   try {
     const meta = await fetch(API + '/api/projekte/list').then(r => r.json());
@@ -14008,49 +14328,6 @@ loadLmsChat();
 // LM Studio Status wird NICHT automatisch gepollt (LM Studio läuft normalerweise nicht).
 // Wird einmal initial geprüft und sonst nur on-demand per Button (lmsCheckStatus).
 lmsCheckStatus();
-
-// ===== REDESIGN PREVIEW =====
-function designPreview(url, title) {
-  const overlay = document.getElementById('design-overlay');
-  document.getElementById('design-overlay-title').textContent = title;
-  document.getElementById('design-iframe').src = url;
-  overlay.style.display = 'flex';
-}
-function designClose() {
-  document.getElementById('design-overlay').style.display = 'none';
-  document.getElementById('design-iframe').src = '';
-}
-document.addEventListener('keydown', e => { if (e.key === 'Escape') designClose(); });
-
-function redesignCard(d, slot) {
-  const ca = d.color_a || '#4fc3f7', cb = d.color_b || '#9c27b0';
-  const caRgb = hexToRgb(ca), cbRgb = hexToRgb(cb);
-  return `<div onclick="designPreview('${d.file}','${escHtml(d.name)}')"
-    style="cursor:pointer;border:2px solid ${ca};border-radius:14px;overflow:hidden;background:rgba(26,45,66,0.7);transition:transform 0.2s,box-shadow 0.2s"
-    onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 32px rgba(${caRgb},0.28)'"
-    onmouseout="this.style.transform='';this.style.boxShadow=''">
-    <div style="height:180px;background:linear-gradient(135deg,${ca}22 0%,${cb}22 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:20px">
-      <div style="width:85%;height:10px;background:${ca}55;border-radius:6px"></div>
-      <div style="display:flex;gap:10px;width:85%">
-        <div style="flex:1;height:54px;background:${ca}18;border-radius:8px;border:1px solid ${ca}44"></div>
-        <div style="flex:1;height:54px;background:${cb}18;border-radius:8px;border:1px solid ${cb}44"></div>
-        <div style="flex:1;height:54px;background:${ca}12;border-radius:8px;border:1px solid ${ca}33"></div>
-      </div>
-      <div style="width:85%;height:36px;background:${cb}18;border-radius:8px;border:1px solid ${cb}33"></div>
-    </div>
-    <div style="padding:14px 18px">
-      <div style="font-size:15px;font-weight:700;color:${ca};margin-bottom:5px">${escHtml(d.name)}</div>
-      <div style="font-size:13px;color:var(--accent);opacity:0.7;margin-bottom:6px">${escHtml(d.tagline || '')}</div>
-      <div style="font-size:13px;color:var(--dim);line-height:1.5">${escHtml(d.description || '')}</div>
-      <div style="margin-top:10px;font-size:13px;color:${ca};opacity:0.8">▶ Vorschau öffnen</div>
-    </div>
-  </div>`;
-}
-
-function hexToRgb(hex) {
-  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
-  return `${r},${g},${b}`;
-}
 
 // ===== IMMOBILIEN / MAKLER =====
 const MAKLER_STATUS_LABELS = {
@@ -16343,25 +16620,7 @@ function loadBollaProjects() {
   }).join('');
 }
 
-async function loadRedesigns() {
-  try {
-    const r = await fetch(API + '/api/redesigns-meta');
-    const data = await r.json();
-    const grid = document.getElementById('redesigns-grid');
-    const note = document.getElementById('redesigns-note');
-    const dateEl = document.getElementById('redesigns-date');
-
-    if (!data.design1 || !data.design2) {
-      grid.innerHTML = '<div style="color:var(--dim);font-size:14px;padding:40px;text-align:center;grid-column:1/-1">Noch keine Designs generiert — Cron läuft täglich um 07:00.</div>';
-      return;
-    }
-    grid.innerHTML = redesignCard(data.design1, 1) + redesignCard(data.design2, 2);
-    if (data.date) dateEl.textContent = 'Stand: ' + data.date;
-    note.textContent = 'KI-generierte Mockups · täglich neu um 07:00 · kein echtes Backend';
-  } catch(e) {
-    document.getElementById('redesigns-grid').innerHTML =
-      `<div style="color:var(--dim);font-size:14px;padding:40px;text-align:center;grid-column:1/-1">Fehler beim Laden: ${escHtml(e.message)}</div>`;
-  }
+function loadRedesigns() {
   loadBollaProjects();
 }
 

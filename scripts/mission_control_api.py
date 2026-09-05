@@ -236,6 +236,7 @@ _gluecksrad_state = {"stil": None, "nummer": None}
 
 # KI-Buch Async-Job (Hintergrund-Thread für Claude-Aufruf)
 _ki_buch_job = {"status": "idle", "antwort": "", "inhalt": "", "inhalt_titel": "", "error": ""}
+_aurora2_job = {"status": "idle", "antwort": "", "inhalt": "", "inhalt_titel": "", "error": ""}
 
 def get_clipboard():
     try:
@@ -4297,14 +4298,6 @@ def get_robin_info():
     }
 
 
-def get_redesigns_meta():
-    meta_path = os.path.expanduser("~/workspace/mission-control/redesign-meta.json")
-    if not os.path.exists(meta_path):
-        return {"date": None, "design1": None, "design2": None}
-    with open(meta_path, encoding="utf-8") as f:
-        return json.load(f)
-
-
 def get_sysinfo():
     import subprocess, shutil, socket
 
@@ -7529,7 +7522,6 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 "/api/bildgen/cf-models": lambda: CF_IMAGE_MODELS,
                 "/api/kosten": get_kosten,
                 "/api/status": lambda: {"ok": True, "ts": datetime.now().isoformat()},
-                "/api/redesigns-meta": get_redesigns_meta,
                 "/api/clipboard": get_clipboard,
                 "/api/clipboard/trash": get_clipboard_trash,
                 "/api/clipboard/images": get_clipboard_images,
@@ -7804,6 +7796,19 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
 
             elif self.path == "/api/ki-buch/generiere-status":
                 self._send_json(_ki_buch_job)
+
+            elif self.path == "/api/aurora2/generiere-status":
+                self._send_json(_aurora2_job)
+
+            elif self.path == "/api/aurora2":
+                f = os.path.join(WORKSPACE, "data/aurora2.json")
+                if os.path.isfile(f):
+                    with open(f) as fh:
+                        _a2_pub = json.load(fh)
+                    _a2_pub.pop("geheim", None)
+                    self._send_json(_a2_pub)
+                else:
+                    self._send_json({"titel": "AURORA II", "status": "Planung", "kriterien": {}, "kapitel": [], "kommentare": [], "naechsterSchritt": ""})
 
             elif self.path == "/api/ki-buch/lektorat-status":
                 cache_dir = os.path.join(WORKSPACE, "data/aurora_lektorat")
@@ -8486,6 +8491,175 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 elif aktion == "richtung_set":
                     st["richtungsimpuls"] = body.get("text", "").strip()
                 with open(bf, "w") as fh:
+                    json.dump(buch, fh, ensure_ascii=False, indent=2)
+                self._send_json({"ok": True, "steuerung": st})
+
+            elif self.path == "/api/aurora2/generiere":
+                global _aurora2_job
+                if _aurora2_job["status"] == "running":
+                    self._send_json({"status": "running"}); return
+                import threading as _thr4, shutil as _sh4, subprocess as _sp4, re as _re5, datetime as _dt4
+                bf2 = os.path.join(WORKSPACE, "data/aurora2.json")
+                with open(bf2) as fh:
+                    buch = json.load(fh)
+                kommentare = buch.get("kommentare", [])
+                offene = [k for k in kommentare if not k.get("erledigt")]
+                anweisung = offene[-1]["text"] if offene else "Schreibe das nächste Kapitel."
+                prots = json.dumps(buch.get("protagonisten", []), ensure_ascii=False, indent=2)
+                if buch.get("antagonist"):
+                    prots += "\n\nANTAGONIST:\n" + json.dumps(buch["antagonist"], ensure_ascii=False, indent=2)
+                if buch.get("nebenfiguren"):
+                    prots += "\n\nNEBENFIGUREN (konsistent halten, plastisch einsetzen):\n" + json.dumps(buch["nebenfiguren"], ensure_ascii=False, indent=2)
+                krit = json.dumps(buch.get("kriterien", {}), ensure_ascii=False, indent=2)
+                _st = buch.get("steuerung", {})
+                _rl = _st.get("rote_linien", [])
+                _eintraege = _st.get("eintraege", [])
+                steuer_txt = ""
+                if _rl:
+                    steuer_txt += "\nROTE LINIEN (unbedingt einhalten — Dinge die NICHT passieren dürfen / Vorgaben):\n" + "\n".join(f"- {x}" for x in _rl) + "\n"
+                _aktive = [e for e in _eintraege if e.get("status") != "nicht_empfohlen"]
+                if _aktive:
+                    steuer_txt += "\nSTEUERUNG & WÜNSCHE (vom Autor; wo nicht anders vermerkt, liegt das Timing bei dir — nicht alles auf einmal, dramaturgisch einsetzen):\n"
+                    _mark = {"in_arbeit": "[JETZT einbauen]", "umgesetzt": "[bereits umgesetzt — konsistent halten]", "geheim": "[umsetzen, dezent/unauffällig]", "vorgemerkt": "[für später vormerken]"}
+                    for e in _aktive:
+                        steuer_txt += f"- {_mark.get(e.get('status'),'')} {e.get('text','')}\n"
+                _gw = (buch.get("geheim", {}).get("wendung") or "").strip()
+                geheim_txt = ""
+                if _gw:
+                    geheim_txt = f"""
+GEHEIME MASTER-WENDUNG (NUR FÜR DICH — Chris darf sie NIEMALS erfahren, auch nicht andeutungsweise):
+{_gw}
+Arbeite konsequent auf diese Wendung hin. Säe unauffällige Hinweise/Saatkörner, die sie später glaubwürdig und rückwirkend stimmig machen — aber so subtil, dass ein Erstleser sie nicht als Hinweis erkennt.
+"""
+                kap_voll = "\n\n".join([f"=== {k['titel']} ===\n{k['text']}" for k in buch.get("kapitel", [])])
+                bestaetigt = any(w in anweisung.lower() for w in ["ja, ändere alle", "ja ändere alle", "bestätigt", "ja, alle anpassen", "ja alle anpassen", "ja bitte alle"])
+                prompt = f"""Du bist Bolla, KI-Assistent von Chris Mandel, und schreibst gemeinsam die Fortsetzung des deutschen KI-Thrillers AURORA.
+
+BUCH: {buch.get("titel","AURORA II")} — {buch.get("untertitel","")}
+
+BUCHKRITERIEN (UNBEDINGT BEACHTEN):
+{krit}
+
+FIGUREN (aus Buch I übernommen bzw. neu):
+{prots}
+
+FIGURENFÜHRUNG (Ken-Follett-Prinzip): Nutze die Profile aktiv — zeige aussehen, detail, macke, wunde und stimme in Handlung und Dialog, statt sie nur zu kennen. Jede Figur soll ein klares, authentisches, interessantes Bild ergeben und konsistent zu ihrem Profil sprechen und handeln.
+{steuer_txt}{geheim_txt}
+BISHERIGE KAPITEL VON BUCH II (vollständig):
+{kap_voll if kap_voll else "Noch keine Kapitel — fange frisch an, als direkte Fortsetzung von Buch I."}
+
+ANWEISUNG VON CHRIS:
+{anweisung}
+
+WICHTIGE REGEL ZU RÜCKWIRKUNGEN:
+Wenn die Anweisung eine Änderung verlangt, die ZWINGEND auch in FRÜHEREN Kapiteln von Buch II berücksichtigt werden müsste, dann führe die Änderung NICHT sofort komplett aus. Stattdessen:
+- Beschreibe im ANTWORT-Feld klar, WELCHE früheren Kapitel betroffen wären und WARUM.
+- Stelle die Rückfrage: "Soll ich diese Änderung in allen betroffenen Kapiteln umsetzen? Antworte mit 'Ja, ändere alle'."
+- Lass INHALT und TITEL_ABSCHNITT in diesem Fall LEER.
+{"AUSNAHME: Chris hat mit 'Ja, ändere alle' bestätigt — setze die Änderung jetzt durchgängig in ALLEN betroffenen Kapiteln um und gib das/die überarbeitete(n) Kapitel zurück (bei mehreren: das wichtigste zuerst, erwähne im ANTWORT-Feld welche weiteren du noch anpasst)." if bestaetigt else ""}
+
+Wenn die Anweisung KEINE Rückwirkung auf frühere Kapitel hat (z.B. neues Kapitel schreiben, aktuelles Kapitel isoliert überarbeiten), führe sie normal aus.
+
+Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, kein Markdown). Lass Felder leer wenn nicht zutreffend:
+
+###ANTWORT###
+(Kurze Rückmeldung ODER Rückfrage bei Rückwirkungen, 1-3 Sätze)
+###TITEL_ABSCHNITT###
+(Titel des neuen/überarbeiteten Abschnitts, z.B. "Kapitel 1: ..." — exakt wie bestehendes Kapitel wenn überarbeitet)
+###INHALT###
+(Der vollständige generierte Text — frei schreiben, Anführungszeichen, Absätze erlaubt. LEER bei Rückfrage.)
+###BUCHTITEL_NEU###
+(Nur wenn Buchtitel geändert werden soll, sonst leer)
+###NAECHSTER_SCHRITT###
+(Was als nächstes sinnvoll wäre)
+###ENDE###"""
+                _aurora2_job = {"status": "running", "antwort": "", "inhalt": "", "inhalt_titel": "", "error": ""}
+                def _run2():
+                    global _aurora2_job
+                    try:
+                        cl = _sh4.which("claude") or os.path.expanduser("~/.local/bin/claude")
+                        r = _sp4.run([cl, "-p", "--output-format", "json", "--model", "claude-sonnet-5", prompt],
+                                     capture_output=True, text=True, timeout=900, stdin=_sp4.DEVNULL,
+                                     cwd=os.path.expanduser("~"))
+                        if r.returncode != 0:
+                            _aurora2_job = {"status": "error", "error": r.stderr[:200] or "Claude-Fehler", "antwort":"","inhalt":"","inhalt_titel":""}
+                            return
+                        raw = json.loads(r.stdout).get("result", "")
+                        def _extract(tag_start, tag_end):
+                            mm = _re5.search(_re5.escape(tag_start) + r'(.*?)' + _re5.escape(tag_end), raw, _re5.DOTALL)
+                            return mm.group(1).strip() if mm else ""
+                        gen = {
+                            "antwort_text": _extract("###ANTWORT###", "###TITEL_ABSCHNITT###"),
+                            "neuer_inhalt_titel": _extract("###TITEL_ABSCHNITT###", "###INHALT###"),
+                            "neuer_inhalt": _extract("###INHALT###", "###BUCHTITEL_NEU###"),
+                            "titel_update": _extract("###BUCHTITEL_NEU###", "###NAECHSTER_SCHRITT###"),
+                            "naechster_schritt": _extract("###NAECHSTER_SCHRITT###", "###ENDE###"),
+                        }
+                        if not gen["antwort_text"] and not gen["neuer_inhalt"]:
+                            gen["antwort_text"] = raw[:300]
+                        with open(bf2) as fh2: buch2 = json.load(fh2)
+                        now = _dt4.datetime.now().strftime("%Y-%m-%d %H:%M")
+                        if gen.get("titel_update"): buch2["titel"] = gen["titel_update"]
+                        if gen.get("neuer_inhalt") and gen.get("neuer_inhalt_titel"):
+                            neuer_titel = gen["neuer_inhalt_titel"]
+                            ueberschreibe_keywords = ["nochmal","noch einmal","überarbeit","ersetze","rewrite","verbessere kapitel"]
+                            ist_ueberarbeitung = any(kw in anweisung.lower() for kw in ueberschreibe_keywords)
+                            existing_idx = next((i for i,k in enumerate(buch2.get("kapitel",[])) if k["titel"]==neuer_titel), None)
+                            kap_eintrag = {"titel":neuer_titel,"text":gen["neuer_inhalt"],"datum":now}
+                            if existing_idx is not None:
+                                buch2["kapitel"][existing_idx] = kap_eintrag
+                            elif ist_ueberarbeitung:
+                                import re as _re6
+                                m4 = _re6.search(r'kapitel\s*(\d+)', anweisung.lower())
+                                if m4:
+                                    knum = int(m4.group(1))
+                                    cidx = next((i for i,k in enumerate(buch2.get("kapitel",[])) if f"kapitel {knum}" in k["titel"].lower()), None)
+                                    if cidx is not None: buch2["kapitel"][cidx] = kap_eintrag
+                                    else: buch2.setdefault("kapitel",[]).append(kap_eintrag)
+                                else:
+                                    buch2.setdefault("kapitel",[]).append(kap_eintrag)
+                            else:
+                                buch2.setdefault("kapitel",[]).append(kap_eintrag)
+                            buch2.setdefault("statistik",{})["kapitel_gesamt"] = len(buch2["kapitel"])
+                            buch2["statistik"]["woerter_gesamt"] = sum(len(k["text"].split()) for k in buch2["kapitel"])
+                            buch2["statistik"]["letzte_session"] = now
+                        buch2["letzteAktion"] = now
+                        if gen.get("naechster_schritt"): buch2["naechsterSchritt"] = gen["naechster_schritt"]
+                        for k in [x for x in buch2.get("kommentare",[]) if not x.get("erledigt")]:
+                            k["erledigt"]=True; k["erledigt_am"]=now; k["antwort"]=gen.get("antwort_text","")
+                        with open(bf2,"w") as fh2: json.dump(buch2, fh2, ensure_ascii=False, indent=2)
+                        _aurora2_job = {"status":"done","antwort":gen.get("antwort_text",""),"inhalt":gen.get("neuer_inhalt",""),"inhalt_titel":gen.get("neuer_inhalt_titel",""),"error":""}
+                    except Exception as ex:
+                        _aurora2_job = {"status":"error","error":str(ex),"antwort":"","inhalt":"","inhalt_titel":""}
+                _thr4.Thread(target=_run2, daemon=True).start()
+                self._send_json({"status": "started"})
+
+            elif self.path == "/api/aurora2/kommentar":
+                bf2 = os.path.join(WORKSPACE, "data/aurora2.json")
+                with open(bf2) as fh:
+                    buch = json.load(fh)
+                import datetime as _dt5
+                buch.setdefault("kommentare", []).append({
+                    "text": body.get("text", ""),
+                    "datum": _dt5.datetime.now().strftime("%Y-%m-%d %H:%M")
+                })
+                with open(bf2, "w") as fh:
+                    json.dump(buch, fh, ensure_ascii=False, indent=2)
+                self._send_json({"ok": True})
+
+            elif self.path == "/api/aurora2/steuerung":
+                bf2 = os.path.join(WORKSPACE, "data/aurora2.json")
+                with open(bf2) as fh:
+                    buch = json.load(fh)
+                st = buch.setdefault("steuerung", {})
+                st.setdefault("rote_linien", []); st.setdefault("eintraege", [])
+                aktion = body.get("aktion", "")
+                if aktion == "linie_add" and body.get("text", "").strip():
+                    st["rote_linien"].append(body["text"].strip())
+                elif aktion == "linie_del":
+                    i = body.get("index", -1)
+                    if 0 <= i < len(st["rote_linien"]): st["rote_linien"].pop(i)
+                with open(bf2, "w") as fh:
                     json.dump(buch, fh, ensure_ascii=False, indent=2)
                 self._send_json({"ok": True, "steuerung": st})
 
