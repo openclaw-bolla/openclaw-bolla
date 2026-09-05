@@ -2,415 +2,397 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mission Control — Skizzenheft</title>
+<title>Mission Control — Kladde</title>
 <style>
   :root{
-    --paper:#f6ecd4;
-    --paper-dark:#efe0be;
-    --ink:#3b3327;
-    --red:#c0492e;
-    --blue:#35618f;
-    --pencil:#7d735c;
-    --sticky:#f5e07a;
-    --hand:"Segoe Print","Bradley Hand","Comic Sans MS","Chalkboard SE",cursive;
-    --plain:"Segoe UI","Trebuchet MS",Verdana,sans-serif;
+    --paper: #EDE0C8;
+    --paper-dark: #E2D3AE;
+    --kraft: #C9A876;
+    --kraft-dark: #B08F5E;
+    --ink: #3E2F23;
+    --ink-soft: #6B5A45;
+    --accent: #B5451B;
+    --accent-soft: #D97B4F;
+    --tape: #F2E6B8;
+    --ok: #5C7A4A;
   }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%}
-  body{
-    font-family:var(--hand);
-    color:var(--ink);
-    font-size:16px;
-    line-height:1.5;
-    background-color:var(--paper);
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive, sans-serif;
+    color: var(--ink);
+    background-color: var(--paper);
+  }
+
+  /* Papier-Textur per SVG-Filter, keine externen Bilder */
+  svg.grain-def { position: absolute; width: 0; height: 0; }
+
+  body::before{
+    content:"";
+    position: fixed; inset: 0;
+    background-color: var(--paper);
     background-image:
-      radial-gradient(rgba(120,100,60,.05) 1px, transparent 1px),
-      repeating-linear-gradient(var(--paper) 0px, var(--paper) 30px, #d8c79e 31px, var(--paper) 32px);
-    background-size:6px 6px, 100% 32px;
+      radial-gradient(circle at 20% 30%, rgba(180,140,90,0.10), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(180,140,90,0.12), transparent 45%);
+    filter: url(#paperGrain);
+    opacity: 0.9;
+    pointer-events: none;
+    z-index: 0;
   }
 
-  .book{
-    display:flex;
-    min-height:100vh;
+  .app {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 230px 1fr;
+    grid-template-rows: 90px 1fr;
+    grid-template-areas:
+      "sidebar topbar"
+      "sidebar main";
+    height: 100vh;
   }
 
-  /* ---------- Sidebar ---------- */
-  .sidebar{
-    width:236px;
-    flex-shrink:0;
-    padding:28px 20px 24px;
-    background:var(--paper-dark);
-    background-image:repeating-linear-gradient(var(--paper-dark) 0px, var(--paper-dark) 30px, #dccb a2 31px);
-    border-right:3px solid var(--ink);
-    border-image:none;
-    position:relative;
+  /* ---------- SIDEBAR ---------- */
+  .sidebar {
+    grid-area: sidebar;
+    background: linear-gradient(180deg, var(--kraft) 0%, var(--kraft-dark) 100%);
+    border-right: 3px dashed var(--ink-soft);
+    padding: 24px 14px;
+    position: relative;
+    overflow: hidden;
   }
   .sidebar::after{
     content:"";
-    position:absolute;top:0;right:-3px;bottom:0;width:3px;
-    background:var(--red);
-    opacity:.55;
-  }
-  .brand{
-    font-size:30px;
-    line-height:1.05;
-    letter-spacing:.5px;
-    text-shadow:1px 1px 0 rgba(0,0,0,.08);
-    margin-bottom:6px;
-  }
-  .brand .paw{font-size:22px}
-  .brand-sub{
-    font-family:var(--plain);
-    font-size:12px;
-    color:var(--pencil);
-    letter-spacing:2px;
-    text-transform:uppercase;
-    margin-bottom:26px;
-  }
-  nav{display:flex;flex-direction:column;gap:10px}
-  .nav{
-    display:flex;align-items:center;gap:10px;
-    padding:9px 12px;
-    font-size:18px;
-    color:var(--ink);
-    text-decoration:none;
-    border-radius:120px 8px 120px 10px/10px 120px 8px 120px;
-    transition:transform .12s ease;
-  }
-  .nav .bullet{
-    width:12px;height:12px;flex-shrink:0;
-    border:2px solid var(--pencil);
-    border-radius:60% 40% 55% 45%/50% 55% 45% 50%;
-  }
-  .nav:hover{transform:translateX(3px) rotate(-.5deg)}
-  .nav.active{
-    border:2px solid var(--blue);
-    transform:rotate(-1deg);
-    background:rgba(53,97,143,.08);
-  }
-  .nav.active .bullet{
-    background:var(--red);
-    border-color:var(--red);
-  }
-  .sidebar-foot{
-    position:absolute;left:20px;right:20px;bottom:18px;
-    font-family:var(--plain);
-    font-size:11px;
-    color:var(--pencil);
-    border-top:1px dashed var(--pencil);
-    padding-top:8px;
-  }
-
-  /* ---------- Content ---------- */
-  .content{
-    flex:1;
-    padding:30px 44px 60px;
-    max-width:1200px;
-  }
-  .topbar{
-    display:flex;
-    align-items:flex-end;
-    justify-content:space-between;
-    gap:24px;
-    padding-bottom:14px;
-    border-bottom:3px solid var(--ink);
-    border-radius:2px;
-    margin-bottom:38px;
-    position:relative;
-  }
-  .topbar::after{
-    content:"";
-    position:absolute;left:0;right:34%;bottom:-7px;height:2px;
-    background:var(--ink);opacity:.35;
-  }
-  .topbar h1{
-    font-size:44px;
-    font-weight:400;
-    letter-spacing:1px;
-    text-shadow:2px 2px 0 rgba(0,0,0,.07);
-  }
-  .topbar h1 .under{
-    display:block;height:6px;width:170px;margin-top:2px;
-    background:var(--red);
-    border-radius:60% 40% 70% 30%/100% 100% 100% 100%;
-    opacity:.8;
-  }
-  .clock{
-    text-align:right;
-    border:2px solid var(--ink);
-    border-radius:14px 200px 18px 190px/190px 16px 200px 16px;
-    padding:6px 18px 8px;
-    transform:rotate(1.4deg);
-    background:var(--paper);
-  }
-  .clock .time{
-    display:block;
-    font-size:34px;
-    letter-spacing:2px;
-  }
-  .clock .date{
-    font-family:var(--plain);
-    font-size:12px;
-    color:var(--pencil);
-    letter-spacing:1px;
-  }
-
-  /* ---------- Card grid ---------- */
-  .grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(268px,1fr));
-    gap:40px 38px;
-  }
-  .card{
-    position:relative;
-    background:var(--paper);
-    border:2px solid var(--ink);
-    border-radius:255px 15px 225px 15px/15px 225px 15px 255px;
-    padding:24px 24px 22px;
-    box-shadow:4px 6px 0 rgba(59,51,39,.12);
-  }
-  .card::after{ /* second sketched outline */
-    content:"";
-    position:absolute;inset:5px;
-    border:1.5px solid rgba(59,51,39,.35);
-    border-radius:15px 235px 15px 255px/235px 15px 255px 15px;
+    position:absolute; inset:0;
+    filter: url(#paperGrain);
+    opacity:0.15;
     pointer-events:none;
   }
-  .card::before{ /* tape strip */
+
+  .brand {
+    font-size: 26px;
+    font-weight: bold;
+    color: var(--ink);
+    text-align: center;
+    margin-bottom: 6px;
+    transform: rotate(-2deg);
+  }
+  .brand small {
+    display:block;
+    font-size: 13px;
+    font-weight: normal;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  .washi {
+    position: absolute;
+    top: 62px; left: 50%;
+    width: 140px; height: 26px;
+    background: repeating-linear-gradient(45deg, var(--tape), var(--tape) 6px, #eadd9c 6px, #eadd9c 12px);
+    opacity: 0.85;
+    transform: translateX(-50%) rotate(-3deg);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.1);
+  }
+
+  nav.navlist {
+    margin-top: 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .navlist a {
+    text-decoration: none;
+    color: var(--ink);
+    font-size: 17px;
+    padding: 10px 14px;
+    border-radius: 12px 4px 12px 4px / 4px 12px 4px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.15s ease;
+    border: 2px solid transparent;
+  }
+  .navlist a:hover {
+    transform: rotate(-1deg) scale(1.03);
+    border-color: var(--ink-soft);
+    background: rgba(255,255,255,0.15);
+  }
+  .navlist a.active {
+    background: var(--tape);
+    border: 2px solid var(--ink);
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+    font-weight: bold;
+    transform: rotate(-1deg);
+  }
+  .navlist .icon { font-size: 19px; }
+
+  /* ---------- TOPBAR ---------- */
+  .topbar {
+    grid-area: topbar;
+    background: var(--paper-dark);
+    border-bottom: 3px dashed var(--ink-soft);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+    position: relative;
+  }
+
+  .page-title {
+    font-size: 30px;
+    color: var(--ink);
+    position: relative;
+    transform: rotate(-1deg);
+  }
+  .page-title::after{
     content:"";
-    position:absolute;top:-14px;left:50%;
-    width:96px;height:26px;
-    transform:translateX(-50%) rotate(-3deg);
-    background:rgba(214,193,130,.5);
-    border:1px solid rgba(160,140,80,.35);
-    box-shadow:0 1px 3px rgba(0,0,0,.12);
-  }
-  .card.tilt-l{transform:rotate(-1.3deg)}
-  .card.tilt-r{transform:rotate(1.1deg)}
-  .card h2{
-    font-size:21px;
-    font-weight:400;
-    margin-bottom:14px;
-    display:flex;align-items:center;gap:8px;
-  }
-  .card h2 .tag{
-    font-family:var(--plain);
-    font-size:11px;
-    letter-spacing:1px;
-    text-transform:uppercase;
-    color:var(--pencil);
-    border:1px dashed var(--pencil);
-    padding:1px 6px;
-    border-radius:8px;
-  }
-  .big{
-    font-size:52px;
-    line-height:1;
-    letter-spacing:1px;
-  }
-  .big small{font-size:22px}
-  .muted{
-    font-family:var(--plain);
-    font-size:13px;
-    color:var(--pencil);
-    margin-top:6px;
+    display:block;
+    width: 92%;
+    height: 8px;
+    background: var(--accent-soft);
+    opacity: 0.5;
+    margin-top: -10px;
+    border-radius: 3px;
+    transform: rotate(0.5deg);
   }
 
-  /* hand drawn gauge */
-  .gauge{
-    margin:16px 0 4px;
-    height:26px;
-    border:2px solid var(--ink);
-    border-radius:120px 14px 120px 16px/16px 120px 14px 120px;
-    padding:3px;
-    background:
-      repeating-linear-gradient(90deg, transparent 0 34px, rgba(59,51,39,.25) 34px 35px);
+  .clock-stamp {
+    border: 3px solid var(--accent);
+    color: var(--accent);
+    border-radius: 50%;
+    width: 78px; height: 78px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transform: rotate(6deg);
+    font-weight: bold;
+    box-shadow: 0 0 0 3px var(--paper-dark), 0 0 0 5px rgba(181,69,27,0.35);
   }
-  .gauge .fill{
-    height:100%;
-    border-radius:100px 8px 100px 8px/8px 100px 8px 100px;
-    background:repeating-linear-gradient(45deg,var(--red) 0 6px,#b23f27 6px 12px);
-  }
-  .gauge.blue .fill{
-    background:repeating-linear-gradient(45deg,var(--blue) 0 6px,#2c527a 6px 12px);
+  .clock-stamp .time { font-size: 19px; line-height:1; }
+  .clock-stamp .lbl { font-size: 9px; letter-spacing: 1px; margin-top: 2px; }
+
+  /* ---------- MAIN ---------- */
+  .main {
+    grid-area: main;
+    padding: 30px;
+    overflow-y: auto;
   }
 
-  /* mail list */
-  .mails{list-style:none;display:flex;flex-direction:column;gap:12px;margin-top:4px}
-  .mails li{
-    display:flex;gap:10px;align-items:flex-start;
-    padding-bottom:10px;
-    border-bottom:1px dashed var(--pencil);
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 28px;
   }
-  .mails li:last-child{border-bottom:none;padding-bottom:0}
-  .mails .dot{
-    width:11px;height:11px;margin-top:5px;flex-shrink:0;
-    background:var(--red);
-    border-radius:60% 40% 55% 45%/50% 60% 40% 50%;
-  }
-  .mails .who{font-size:17px}
-  .mails .subj{font-family:var(--plain);font-size:13px;color:var(--pencil)}
-  .mails .when{margin-left:auto;font-family:var(--plain);font-size:12px;color:var(--pencil);white-space:nowrap}
 
-  /* weather */
-  .weather-row{display:flex;align-items:center;gap:18px}
-  .sun{width:82px;height:82px;flex-shrink:0}
-  .wx-list{list-style:none;font-family:var(--plain);font-size:13px;color:var(--pencil);margin-top:12px;display:flex;flex-wrap:wrap;gap:6px 18px}
-  .wx-list li::before{content:"• ";color:var(--red)}
-
-  /* sticky note card */
-  .card.note{
-    background:var(--sticky);
-    border-color:#b9a52f;
-    border-radius:4px 4px 18px 4px;
-    transform:rotate(-2deg);
-    box-shadow:5px 7px 0 rgba(59,51,39,.15);
+  .card {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    padding: 20px 22px 24px;
+    position: relative;
+    box-shadow: 4px 5px 0 rgba(62,47,35,0.18);
+    min-height: 150px;
   }
-  .card.note::after{border-color:rgba(120,100,20,.4);border-radius:4px}
-  .card.note::before{background:rgba(255,255,255,.4);border-color:rgba(150,130,60,.4)}
-  .todo{list-style:none;display:flex;flex-direction:column;gap:12px;font-size:17px}
-  .todo li{display:flex;gap:10px;align-items:flex-start}
-  .todo .box{
-    width:16px;height:16px;margin-top:3px;flex-shrink:0;
-    border:2px solid var(--ink);
-    border-radius:3px 7px 3px 8px/8px 3px 7px 3px;
-  }
-  .todo li.done{color:var(--pencil);text-decoration:line-through wavy rgba(59,51,39,.4)}
-  .todo li.done .box{background:var(--ink);position:relative}
-  .todo li.done .box::after{content:"✓";position:absolute;top:-7px;left:1px;color:var(--sticky);font-size:15px}
+  .card:nth-child(1){ transform: rotate(-1.5deg); }
+  .card:nth-child(2){ transform: rotate(1deg); }
+  .card:nth-child(3){ transform: rotate(-0.8deg); }
+  .card:nth-child(4){ transform: rotate(1.4deg); }
 
-  /* system mini */
-  .sys-list{list-style:none;display:flex;flex-direction:column;gap:11px;font-family:var(--plain);font-size:14px}
-  .sys-list li{display:flex;justify-content:space-between;border-bottom:1px dashed var(--pencil);padding-bottom:8px}
-  .sys-list li:last-child{border-bottom:none}
-  .sys-list .ok{color:#4a7c3f;font-family:var(--hand);font-size:16px}
-  .sys-list .ok::before{content:"● "}
-
-  @media(max-width:720px){
-    .sidebar{display:none}
-    .content{padding:24px 20px 50px}
-    .topbar h1{font-size:34px}
+  .pin {
+    position: absolute;
+    top: -10px; left: 50%;
+    transform: translateX(-50%);
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #e08a5a, var(--accent) 70%);
+    box-shadow: 0 3px 3px rgba(0,0,0,0.35);
+    border: 1px solid rgba(0,0,0,0.2);
   }
+
+  .card h3 {
+    margin: 4px 0 14px;
+    font-size: 19px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bar-track {
+    width: 100%;
+    height: 22px;
+    border: 2px dashed var(--ink-soft);
+    border-radius: 30px 8px 30px 8px;
+    background: rgba(255,255,255,0.4);
+    overflow: hidden;
+    position: relative;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 30px 8px 30px 8px;
+    display:flex; align-items:center; justify-content:flex-end;
+    padding-right: 8px;
+    color: var(--paper);
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .bar-fill.ram { background: linear-gradient(90deg, var(--ok), #7c9a68); width: 34%; }
+  .bar-fill.cpu { background: linear-gradient(90deg, var(--accent), var(--accent-soft)); width: 12%; }
+
+  .stat-sub {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .big-number {
+    font-size: 44px;
+    font-weight: bold;
+    color: var(--accent);
+    line-height: 1;
+    transform: rotate(-2deg);
+    display: inline-block;
+  }
+
+  .mail-row {
+    display:flex; align-items:center; gap:12px; margin-top: 6px;
+  }
+  .mail-badge {
+    background: var(--accent);
+    color: var(--paper);
+    font-weight: bold;
+    border-radius: 50%;
+    width: 34px; height: 34px;
+    display:flex; align-items:center; justify-content:center;
+    border: 2px solid var(--ink);
+    transform: rotate(-8deg);
+  }
+  .mail-list {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    padding-left: 18px;
+  }
+  .mail-list li { margin-bottom: 3px; }
+
+  .weather-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .weather-icon { font-size: 46px; transform: rotate(-4deg); display:inline-block; }
+  .weather-temp { font-size: 40px; font-weight: bold; color: var(--accent); }
+  .weather-city { font-size: 14px; color: var(--ink-soft); margin-top: 2px; }
+
+  .doodle-underline {
+    border: none;
+    border-top: 2px dashed var(--ink-soft);
+    margin: 14px 0 10px;
+  }
+
+  ::-webkit-scrollbar { width: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--kraft-dark); border-radius: 10px; }
+  ::-webkit-scrollbar-track { background: var(--paper-dark); }
 </style>
 </head>
 <body>
-<div class="book">
+
+<svg class="grain-def">
+  <filter id="paperGrain">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="noise"/>
+    <feColorMatrix in="noise" type="matrix"
+      values="0 0 0 0 0.24
+              0 0 0 0 0.18
+              0 0 0 0 0.14
+              0 0 0 0.05 0"/>
+    <feComposite operator="over" in2="SourceGraphic"/>
+  </filter>
+</svg>
+
+<div class="app">
 
   <aside class="sidebar">
-    <div class="brand">Mission<br>Control <span class="paw">🐾</span></div>
-    <div class="brand-sub">Chris' Skizzenheft</div>
-    <nav>
-      <a class="nav active" href="#"><span class="bullet"></span>Dashboard</a>
-      <a class="nav" href="#"><span class="bullet"></span>Bolla</a>
-      <a class="nav" href="#"><span class="bullet"></span>Schule</a>
-      <a class="nav" href="#"><span class="bullet"></span>Kalender</a>
-      <a class="nav" href="#"><span class="bullet"></span>E-Mail</a>
-      <a class="nav" href="#"><span class="bullet"></span>Wetter</a>
-      <a class="nav" href="#"><span class="bullet"></span>System Info</a>
+    <div class="brand">Mission Control<small>~ die Kladde ~</small></div>
+    <div class="washi"></div>
+    <nav class="navlist">
+      <a href="#" class="active"><span class="icon">🏠</span> Dashboard</a>
+      <a href="#"><span class="icon">🐾</span> Bolla</a>
+      <a href="#"><span class="icon">🏫</span> Schule</a>
+      <a href="#"><span class="icon">📅</span> Kalender</a>
+      <a href="#"><span class="icon">✉️</span> E-Mail</a>
+      <a href="#"><span class="icon">☀️</span> Wetter</a>
+      <a href="#"><span class="icon">🖥️</span> System Info</a>
     </nav>
-    <div class="sidebar-foot">zuletzt gekritzelt: Fr, 4. Sep 2026 · 20:14</div>
   </aside>
 
-  <main class="content">
-    <header class="topbar">
-      <h1>Dashboard<span class="under"></span></h1>
-      <div class="clock">
-        <span class="time">20:14</span>
-        <span class="date">Freitag · 4. September</span>
+  <header class="topbar">
+    <div class="page-title">Dashboard</div>
+    <div class="clock-stamp">
+      <div class="time">20:14</div>
+      <div class="lbl">UHR</div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="grid">
+
+      <div class="card">
+        <div class="pin"></div>
+        <h3>🖥️ RAM</h3>
+        <div class="bar-track">
+          <div class="bar-fill ram">34%</div>
+        </div>
+        <div class="stat-sub">5,4 GB von 16 GB belegt — alles ruhig.</div>
       </div>
-    </header>
 
-    <section class="grid">
+      <div class="card">
+        <div class="pin"></div>
+        <h3>⚙️ CPU</h3>
+        <div class="bar-track">
+          <div class="bar-fill cpu">12%</div>
+        </div>
+        <div class="stat-sub">Leerlauf, keine Ausreißer.</div>
+      </div>
 
-      <article class="card tilt-l">
-        <h2>Arbeitsspeicher <span class="tag">RAM</span></h2>
-        <div class="big">34<small> %</small></div>
-        <div class="gauge"><div class="fill" style="width:34%"></div></div>
-        <div class="muted">5,4 GB von 16 GB belegt · 12 Prozesse aktiv</div>
-      </article>
-
-      <article class="card tilt-r">
-        <h2>Prozessor <span class="tag">CPU</span></h2>
-        <div class="big">12<small> %</small></div>
-        <div class="gauge blue"><div class="fill" style="width:12%"></div></div>
-        <div class="muted">Ø letzte 5 Min · 43 °C · 4 Kerne · Last 0,38</div>
-      </article>
-
-      <article class="card mail" style="grid-column:span 2">
-        <h2>Posteingang <span class="tag">3 neue Mails</span></h2>
-        <ul class="mails">
-          <li>
-            <span class="dot"></span>
-            <span>
-              <span class="who">Renate Mandel</span><br>
-              <span class="subj">Einkaufsliste fürs Wochenende – nicht vergessen!</span>
-            </span>
-            <span class="when">19:47</span>
-          </li>
-          <li>
-            <span class="dot"></span>
-            <span>
-              <span class="who">Lessing-Gymnasium</span><br>
-              <span class="subj">Vertretungsplan Donnerstag – 3. Std. EDV 7c</span>
-            </span>
-            <span class="when">18:12</span>
-          </li>
-          <li>
-            <span class="dot"></span>
-            <span>
-              <span class="who">DistroKid</span><br>
-              <span class="subj">Dein Release „different buttons same heartbeat" ist live 🎵</span>
-            </span>
-            <span class="when">16:30</span>
-          </li>
+      <div class="card">
+        <div class="pin"></div>
+        <h3>✉️ Posteingang</h3>
+        <div class="mail-row">
+          <div class="mail-badge">3</div>
+          <span class="big-number">3</span>
+          <span class="stat-sub">neue Mails</span>
+        </div>
+        <hr class="doodle-underline">
+        <ul class="mail-list">
+          <li>Riverty — Zahlungserinnerung</li>
+          <li>itslearning — Kursupdate 7c</li>
+          <li>Robin — Rückflug bestätigt</li>
         </ul>
-      </article>
+      </div>
 
-      <article class="card weather">
-        <h2>Wetter <span class="tag">Hamburg</span></h2>
+      <div class="card">
+        <div class="pin"></div>
+        <h3>☀️ Wetter</h3>
         <div class="weather-row">
-          <svg class="sun" viewBox="0 0 100 100" fill="none" stroke="#c0492e" stroke-width="3" stroke-linecap="round">
-            <circle cx="42" cy="46" r="17" fill="#f5e07a" stroke="#c0492e"/>
-            <path d="M42 16v-9 M42 85v-9 M12 46H3 M72 46h9 M20 24l-6-6 M64 24l6-6 M20 68l-6 6"/>
-            <path d="M58 66c0-9 7-15 15-15 8 0 14 6 14 14 4 0 8 3 8 8s-4 8-9 8H55c-6 0-11-4-11-10s5-11 11-11c1-2 2-3 3-4z" fill="#efe0be" stroke="#3b3327" stroke-width="2.5"/>
-          </svg>
+          <span class="weather-icon">⛅</span>
           <div>
-            <div class="big">18<small> °C</small></div>
-            <div class="muted">Leicht bewölkt · gefühlt 17 °</div>
+            <div class="weather-temp">18°C</div>
+            <div class="weather-city">Hamburg — leicht bewölkt</div>
           </div>
         </div>
-        <ul class="wx-list">
-          <li>Wind 14 km/h NW</li>
-          <li>Regen 10 %</li>
-          <li>Luftfeuchte 68 %</li>
-          <li>Sonnenuntergang 20:03</li>
-        </ul>
-      </article>
+        <div class="stat-sub">Wind 12 km/h · Luftfeuchte 64%</div>
+      </div>
 
-      <article class="card note">
-        <h2>Notizzettel</h2>
-        <ul class="todo">
-          <li class="done"><span class="box"></span>Heide-Ausflug: Sonntag 6.9. (bester Tag!)</li>
-          <li><span class="box"></span>Tanzkurs anmelden – So 13.9. 15:00</li>
-          <li><span class="box"></span>ADAC-Kündigung nachfassen</li>
-          <li><span class="box"></span>Vertretungsplan 7c checken</li>
-        </ul>
-      </article>
-
-      <article class="card sys">
-        <h2>System Info <span class="tag">WSL2</span></h2>
-        <ul class="sys-list">
-          <li><span>Laufzeit</span><span>3 Tage, 07 Std</span></li>
-          <li><span>Festplatte</span><span>214 / 512 GB</span></li>
-          <li><span>MC-Server</span><span class="ok">läuft</span></li>
-          <li><span>Cloudflare-Tunnel</span><span class="ok">verbunden</span></li>
-          <li><span>Letztes Backup</span><span>heute, 02:00</span></li>
-        </ul>
-      </article>
-
-    </section>
+    </div>
   </main>
+
 </div>
 </body>
 </html>
