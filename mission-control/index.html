@@ -3049,7 +3049,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
           </div>
 
           <div style="display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start">
-            <!-- Linke Spalte: Kriterien + Figuren + Kapitel -->
+            <!-- Linke Spalte: Kriterien (kurz) + Figuren + Kapitel -->
             <div style="display:flex;flex-direction:column;gap:14px">
               <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px">
                 <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Buchkriterien</div>
@@ -3128,6 +3128,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Kommentar-Verlauf</div>
                 <div id="aurora2-kommentare" style="font-size:13px;color:var(--dim)">Keine bisherigen Kommentare</div>
               </div>
+
             </div>
           </div>
         </div>
@@ -11975,13 +11976,27 @@ async function loadAurora2() {
       `Status: ${data.status} · ${data.statistik?.kapitel_gesamt||0} Kapitel · ${(data.statistik?.woerter_gesamt||0).toLocaleString()} Wörter`;
     document.getElementById('aurora2-naechster-schritt').textContent = data.naechsterSchritt || '—';
 
+    // Kurzfassung fürs schnelle Auge, jeder Punkt aufklappbar für den Volltext aus aurora2.json
     const kr = document.getElementById('aurora2-kriterien');
     if (kr) kr.innerHTML = [
-      ['Genre', k.genre], ['Sprache', k.sprache], ['Fortsetzung von', k.fortsetzung_von],
-      ['Kernthema', k.kernthema], ['Höhepunkt-Struktur', k.hoehepunkt_struktur],
-      ['Stil', k.vorbild_stil], ['Humor', k.humor], ['Figuren-Kontinuität', k.figuren_kontinuitaet],
-      ['Cliffhanger', k.cliffhanger], ['Spannung', k.spannung], ['Tempo/Arbeitsweise', k.tempo_arbeitsweise], ['Modell', k.modell]
-    ].filter(([,v]) => v).map(([l,v]) => `<div style="margin-bottom:6px"><span style="color:var(--dim)">${l}:</span> ${v}</div>`).join('');
+      ['Genre', k.genre],
+      ['Sprache', k.sprache],
+      ['Fortsetzung', k.fortsetzung_von, 'direkt an Buch I anschließend'],
+      ['Kernthema', k.kernthema, 'AURORAs Entwicklungsstufen bis zur Volljährigkeit (18)'],
+      ['Struktur', k.hoehepunkt_struktur, 'Höhepunkt ~Kap. 20 + überraschende Auflösung'],
+      ['Stil', k.vorbild_stil, 'wie Buch I — Ken-Follett-Vorbild'],
+      ['Humor', k.humor, 'deutlich mehr als Buch I, nie Slapstick'],
+      ['Spannung', k.spannung, 'mehr als Buch I — Serien-Höhepunkt bleibt Buch III']
+    ].filter(([,full]) => full).map(([label, full, short]) => {
+      if (!short) return `<div style="margin-bottom:6px"><span style="color:var(--dim)">${label}:</span> ${aurora2Esc(full)}</div>`;
+      return `<details style="margin-bottom:4px">
+        <summary style="cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:5px">
+          <span style="color:var(--dim)">${label}:</span> ${aurora2Esc(short)}
+          <span style="color:var(--dim);font-size:10px;margin-left:4px">▾</span>
+        </summary>
+        <div style="margin:6px 0 4px 0;padding:9px 11px;background:rgba(255,255,255,0.04);border-radius:8px;font-size:12px;color:var(--dim);line-height:1.55">${aurora2Esc(full)}</div>
+      </details>`;
+    }).join('');
 
     aurora2RenderFiguren(data);
     aurora2RenderKapitelListe();
