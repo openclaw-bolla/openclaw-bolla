@@ -12092,16 +12092,22 @@ function aurora2RenderFiguren(data) {
   const card = (f, farbe, tag) => {
     const i = idx++;
     const alter = (f.alter!==null && f.alter!==undefined && f.alter!=='') ? ', '+f.alter : '';
+    const istHeldin = f.funktion && /HAUPTFIGUR|HELD/i.test(f.funktion);
+    const eff = istHeldin ? '#f5c518' : farbe;
+    const funkTag = (!tag && f.funktion)
+      ? ` <span style="font-size:10px;font-weight:700;color:${eff}">${istHeldin ? '★ Hauptfigur' : esc(f.funktion.split(/[—–,(]/)[0].trim())}</span>`
+      : '';
     const details = [
+      feld('🎬','Funktion',f.funktion),
       feld('👤','Aussehen',f.aussehen), feld('✨','Detail',f.detail),
       feld('🎭','Macke',f.macke), feld('💔','Wunde',f.wunde),
       feld('🗣️','Stimme',f.stimme), feld('❤️','Beziehung',f.liebesbeziehung),
       feld('⭐','Besonderheit',f.besonderheit)
     ].join('');
-    return `<div style="border-left:3px solid ${farbe};padding:8px 0 8px 9px;margin-bottom:7px">
+    return `<div style="border-left:3px solid ${eff};padding:8px 0 8px 9px;margin-bottom:7px">
       <div onclick="aurora2FigurToggle(${i})" style="cursor:pointer;display:flex;align-items:center;gap:6px">
         <span style="font-size:11px;color:var(--dim);flex-shrink:0" id="a2fig-arr-${i}">▸</span>
-        <strong style="color:${farbe}">${esc(f.name)}</strong>${tag||''}
+        <strong style="color:${eff}">${esc(f.name)}</strong>${tag||funkTag}
       </div>
       <div style="font-size:11px;color:#a78bfa;margin-left:17px">${esc(f.rolle||'')}${alter}</div>
       <div style="font-size:13px;color:var(--dim);margin-left:17px;margin-top:3px">${esc(f.beschreibung||'')}</div>
