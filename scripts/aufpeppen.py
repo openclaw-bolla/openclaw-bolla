@@ -81,19 +81,30 @@ def ai_direct(image_paths, platform):
     prompt = (
         "Du bist Bolla, Chris' KI-Assistent. Schau dir mit dem Read-Tool folgende(s) Bild(er) an:\n"
         f"{imgs}\n\n"
-        "Chris' Marken-Ton (bollawave/Feel-Good-Profil): sonnig, optimistisch, verspielt, mit einem "
-        "Augenzwinkern — NIE Kitsch-Klischee, NIE generisch.\n"
+        "Chris' Marken-Ton (bollawave/Feel-Good-Profil): sonnig, optimistisch, mit einem Augenzwinkern — "
+        "aber sein Humor ist der TROCKENE, KLUGE Spruch, NIE der Kalauer und NIE ein aufgesetzter "
+        "Überraschungs-Gag mit random Vokabular, das nichts mit der Szene zu tun hat (Chris-Feedback "
+        "07.09.2026: eine KI-Caption zu einem Heide-Video landete bei 'Schafe, Tarifvertrag: Gras????' — "
+        "genau das NICHT: ein bemühter Nicht-Sequitur-Gag mit einem Begriff, der in der Szene nichts "
+        "verloren hat). Sein eigenes Beispiel für die richtige Tonlage: 'Wer mäht das hier eigentlich "
+        "alles? — In der Heide mäht niemand.' Das ist trocken, stimmt tatsächlich (Heideflächen werden "
+        "nicht gemäht, sie wachsen/verbuschen einfach), und wirkt als leises Schmunzeln, nicht als "
+        "Lach-Gag.\n"
         f"Schreib dazu ZWEI kurze deutsche Text-Beats für ein "
         f"{'TikTok' if platform == 'tiktok' else 'Instagram'}-Reel, die sich KONKRET auf das beziehen, "
         "was auf dem Bild zu sehen ist:\n"
-        "1. 'setup': kurzer Anspieler/Aufhänger (max. ca. 28 Zeichen)\n"
-        "2. 'punchline': eine wirklich WITZIGE Pointe dazu, die zum Bildinhalt passt (max. ca. 32 Zeichen) "
-        "— kein generisches Feel-Good-Blabla, sondern ein echter kleiner Lacher\n"
+        "1. 'setup': kurzer Anspieler, oft am besten als ehrliche Frage, die man sich beim Anblick "
+        "wirklich stellen könnte (max. ca. 28 Zeichen)\n"
+        "2. 'punchline': eine trockene, KLUGE Beobachtung dazu, die tatsächlich stimmt/plausibel ist — "
+        "kein erfundener Fakt, kein absurder Gedankensprung, kein Fachbegriff nur weil er witzig klingen "
+        "könnte (max. ca. 32 Zeichen). Ziel ist ein Schmunzeln durch Wiedererkennung, nicht ein Lacher "
+        "durch Überraschung.\n"
         "KEINE Hashtags, keine Anführungszeichen, höchstens 1 treffendes Emoji pro Zeile.\n"
-        "Denk dir dafür zuerst 3 wirklich unterschiedliche Pointen-Ideen aus (Wortspiel, Understatement, "
-        "überraschende Wendung o.ä. — kurz stichwortartig notieren), vergleich sie dann und such dir die "
-        "schärfste aus. Eine schwache generische Idee zählt nicht als Option — lieber 3 Minuten länger "
-        "nachdenken als eine brave Standard-Zeile abliefern.\n"
+        "Denk dir dafür zuerst 3 unterschiedliche Ideen aus (jede davon: eine ECHTE, nachvollziehbare "
+        "Beobachtung zum Bildinhalt, kein erfundenes Detail — kurz stichwortartig notieren), vergleich "
+        "sie dann und such dir die trockenste/klügste aus, nicht die lauteste. Wenn dir nur ein "
+        "gezwungener Nicht-Sequitur einfällt, lieber eine schlichte, aber wahre Beobachtung nehmen als "
+        "einen random Begriff hineinzuzwingen.\n"
         f"Empfiehl außerdem den Bildstil je nach Stimmung: {preset_hint}.\n"
         "Schreib deine kurzen Stichwort-Ideen zuerst, dann als LETZTE Zeile NUR das finale JSON-Objekt "
         '(kein Codeblock): {"setup": "...", "punchline": "...", "style": '
@@ -112,6 +123,40 @@ def ai_direct(image_paths, platform):
     except Exception:
         pass
     return "", "", "cinematic"
+
+def ai_polish_text(user_text, platform):
+    """Chris hat selbst einen Textvorschlag geschrieben -- Opus poliert ihn im Bolla-Marken-Ton (sonnig,
+    optimistisch, verspielt, Augenzwinkern), OHNE die inhaltliche Vorgabe zu verlassen. Liefert
+    (setup, punchline) -- punchline kann leer bleiben, wenn der Text besser als ein Satz wirkt."""
+    prompt = (
+        "Du bist Bolla, Chris' KI-Assistent. Chris hat für ein Social-Media-Reel folgenden eigenen "
+        f"Textvorschlag geschrieben:\n\"{user_text}\"\n\n"
+        "Poliere GENAU DIESEN Text sprachlich auf im Bolla-Marken-Ton -- Chris' Humor ist der TROCKENE, "
+        "KLUGE Spruch mit leisem Augenzwinkern, NIE der Kalauer und NIE ein aufgesetzter Gag mit random "
+        "Vokabular ohne Bezug zur Szene. Rechtschreibung/Grammatik korrigieren, prägnanter formulieren, "
+        "wenn es passt trockener/pointierter zuspitzen -- eher ein leises Schmunzeln als ein lauter "
+        "Lacher. WICHTIG: die inhaltliche Aussage/Idee von Chris bleibt exakt erhalten, nichts Neues "
+        "erfinden, keine anderen Themen oder Wortspiele unterschieben.\n"
+        "Passt der Text natürlich in zwei Teile (kurzer Anspieler + Pointe/Abschluss), teile ihn in "
+        "'setup' (max. ca. 28 Zeichen) und 'punchline' (max. ca. 32 Zeichen) auf. Wenn er als EIN Satz "
+        "besser wirkt, lass 'punchline' leer und pack alles in 'setup'.\n"
+        "KEINE Hashtags, keine Anführungszeichen, höchstens 1 treffendes Emoji.\n"
+        "Antworte NUR mit dem finalen JSON-Objekt (kein Codeblock): "
+        '{"setup": "...", "punchline": "..."}'
+    )
+    try:
+        r = subprocess.run(["claude", "-p", prompt, "--model", "claude-opus-5"],
+                            capture_output=True, text=True, timeout=90)
+        m = re.search(r"\{.*\}", r.stdout.strip(), re.S)
+        if m:
+            d = json.loads(m.group(0))
+            setup = (d.get("setup") or "").strip()
+            punch = (d.get("punchline") or "").strip()
+            if setup or punch:
+                return setup, punch
+    except Exception:
+        pass
+    return None
 
 # ---------------- Gemeinsame Grading/Effekt-Bausteine (Bild + Video) ----------------
 def focus_points(seed_key):
@@ -305,7 +350,10 @@ def caption_beat_clause(text, start, dur, y, fontsize=58):
             f"x=(w-text_w)/2:y='{y_expr}':line_spacing=10:"
             f"enable='between(t,{start:.2f},{end:.2f})':alpha='{alpha}'")
 
-def build_caption_clauses(beats, y="h-360", fontsize=58):
+def build_caption_clauses(beats, y="h-520", fontsize=58):
+    # Chris-Feedback 07.09.2026 (Live-Check in TikTok): Text lag mit h-360 zu tief, kollidierte mit
+    # TikToks eigener Username-/Caption-/Sound-Zeile unten im UI. h-520 (statt h-360) räumt mehr
+    # Sicherheitsabstand zum unteren UI-Rand frei -- bei 1920px Höhe ~27% statt ~19% vom unteren Rand.
     return ",".join(caption_beat_clause(t, s, d, y, fontsize) for (t, s, d) in beats)
 
 def build_beats(text, ai_beats, total_dur):
@@ -325,7 +373,7 @@ def build_beats(text, ai_beats, total_dur):
         return [(text, 0.2, max(0.6, min(total_dur - 0.3, total_dur * 0.8)))]
     return []
 
-def finalize_with_captions_and_music(video_in, out, beats, music, total_dur, y="h-360", fontsize=58):
+def finalize_with_captions_and_music(video_in, out, beats, music, total_dur, y="h-520", fontsize=58):
     """Legt Caption-Beats + optionales Musikbett (mit Fades) über ein bereits fertig geschnittenes Video."""
     draw = build_caption_clauses(beats, y=y, fontsize=fontsize) if beats else ""
     if music and os.path.isfile(music):
@@ -489,30 +537,55 @@ def wrap(text, font, d, maxw):
     return lines[:4]
 
 # ---------------- VIDEO ----------------
-def pep_video(src, out, style, text, music, ai_beats=None):
+def pep_video(src, out, style, text, music, ai_beats=None, target_dur=None):
     p = pick_style(style)
-    total_dur = video_duration(src) or 6.0
+    orig_dur = video_duration(src) or 6.0
+    stretch = None
+    if target_dur and target_dur > 0 and abs(target_dur - orig_dur) > 0.05:
+        stretch = target_dur / orig_dur
+    total_dur = target_dur if stretch else orig_dur
     fc_parts = []
+    base_tag = "0:v"
+    if stretch:
+        # Chris-Wunsch (07.09.2026): Video auf eine Zieldauer verlangsamen/dehnen, damit exakt so viel
+        # vom hinterlegten Song mitläuft, wie er in Sekunden vorgibt ("bis zu einer bestimmten Stelle").
+        # setpts=N*PTS mit N=Ziel/Original dehnt die Zeitachse; "fps=30" danach füllt die neuen Lücken
+        # durch Halten des letzten Frames (keine echte Bewegungsinterpolation -- minterpolate wäre
+        # deutlich langsamer/fehleranfälliger -- bei starker Dehnung wirkt es daher eher wie Zeitlupe
+        # per gehaltenem Standbild als butterweiche Zeitlupe; für den Musik-Sync-Zweck ausreichend).
+        fc_parts.append(f"[0:v]setpts={stretch:.6f}*PTS,fps=30[stretched]")
+        base_tag = "stretched"
     # Echtes Videomaterial hat schon eigene Kamerabewegung -> kein synthetisches Wackeln obendrauf
     # (das machte reale Handyclips nur noch zittriger, siehe Chris-Feedback 24.08.2026 Regenbogen-Video).
-    cur = build_visual_chain(fc_parts, 1080, 1920, p, "0:v", total_dur, use_shake=False)
+    cur = build_visual_chain(fc_parts, 1080, 1920, p, base_tag, total_dur, use_shake=False)
     beats = build_beats(text, ai_beats, total_dur)
     if beats:
         nxt = f"{cur}_t"
         fc_parts.append(f"[{cur}]{build_caption_clauses(beats)}[{nxt}]")
         cur = nxt
     if music and os.path.isfile(music):
+        # WICHTIG: Musik-Input per "-t" VOR "-i music" auf die Videolänge begrenzen (nicht erst hinterher
+        # per -shortest kappen). Grund: showwaves erzeugt sonst Frames für die komplette Songlänge, und
+        # der overlay-Filter stoppt per Default NICHT beim kürzeren Input (shortest=0 ist overlay-Default)
+        # -- dadurch wurde [vidf] real songlang, -shortest griff dann zu spät (beide Streams schon gleich
+        # lang). Chris-Feedback 07.09.2026: "Video wird genauso lang wie der Song".
+        fade_out_start = max(0.0, total_dur - 0.8)
+        fc_parts.append(f"[1:a]afade=t=in:st=0:d=0.5,afade=t=out:st={fade_out_start:.2f}:d=0.8[aud]")
         fc_parts.append("[1:a]showwaves=s=1080x200:mode=cline:rate=30:colors=0xFFFFFF|0xFFD447[w]")
         fc_parts.append(f"[{cur}][w]overlay=0:H-260:format=auto[vidf]")
         fc = ";".join(fc_parts)
-        cmd = ["ffmpeg","-y","-i",src,"-i",music,"-filter_complex",fc,
-               "-map","[vidf]","-map","1:a","-c:v","libx264","-pix_fmt","yuv420p",
+        cmd = ["ffmpeg","-y","-i",src,"-t",str(total_dur),"-i",music,"-filter_complex",fc,
+               "-map","[vidf]","-map","[aud]","-c:v","libx264","-pix_fmt","yuv420p",
                "-c:a","aac","-b:a","192k","-shortest","-movflags","+faststart",out]
     else:
         fc = ";".join(fc_parts)
-        cmd = ["ffmpeg","-y","-i",src,"-filter_complex",fc,"-map",f"[{cur}]",
-               "-map","0:a?","-c:v","libx264","-pix_fmt","yuv420p",
-               "-c:a","aac","-b:a","192k","-movflags","+faststart",out]
+        cmd = ["ffmpeg","-y","-i",src,"-filter_complex",fc,"-map",f"[{cur}]"]
+        if not stretch:
+            # Bei Zeitdehnung OHNE Musik gibt's keinen sinnvoll mitgedehnten Originalton (Pitch/Sync
+            # wären falsch) -- Originalspur dann stummschalten statt versetzt/falsch mitlaufen zu lassen.
+            cmd += ["-map", "0:a?"]
+        cmd += ["-c:v", "libx264", "-pix_fmt", "yuv420p",
+                "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out]
     return subprocess.run(cmd, capture_output=True, text=True, timeout=300).returncode == 0
 
 def image_to_video(src, out, text, music, dur=6, ai_beats=None, style="cinematic"):
@@ -551,11 +624,18 @@ def main():
     ap.add_argument("--music", default="")
     ap.add_argument("--out", default="")
     ap.add_argument("--ai", action="store_true", help="Opus schreibt content-bezogene 2-Beat-Caption + wählt Stil")
+    ap.add_argument("--zieldauer", type=float, default=0.0, help="Video per Zeitdehnung auf N Sekunden verlangsamen (nur echtes Video, für Musik-Sync)")
     a = ap.parse_args()
     if not os.path.isfile(a.src):
         print("FEHLER: Datei nicht gefunden:", a.src); sys.exit(2)
     ai_beats = None
-    if a.ai and not a.text:
+    if a.text:
+        # Chris hat selbst einen Text vorgegeben -- inhaltlich unverändert, aber sprachlich poliert
+        # (Chris-Feedback 07.09.2026: eigener Textvorschlag wurde bisher 1:1 unverändert übernommen).
+        polished = ai_polish_text(a.text, a.platform)
+        if polished:
+            ai_beats = polished
+    elif a.ai:
         frame_src = a.src
         tmp_frame = None
         if is_video(a.src):
@@ -577,11 +657,11 @@ def main():
             ok = image_to_video(a.src, out, a.text, a.music, ai_beats=ai_beats, style=style)
         else:
             out = a.out or (stem + "_aufgepeppt.jpg")
-            combo_text = a.text or (" ".join(x for x in ai_beats if x) if ai_beats else "")
+            combo_text = (" ".join(x for x in ai_beats if x) if ai_beats else "") or a.text
             ok = bool(pep_image(a.src, out, a.platform, style, combo_text))
     elif is_video(a.src):
         out = a.out or (stem + "_aufgepeppt.mp4")
-        ok = pep_video(a.src, out, style, a.text, a.music, ai_beats=ai_beats)
+        ok = pep_video(a.src, out, style, a.text, a.music, ai_beats=ai_beats, target_dur=(a.zieldauer or None))
     else:
         print("FEHLER: Unbekannter Dateityp:", a.src); sys.exit(3)
     if ok and os.path.isfile(out):

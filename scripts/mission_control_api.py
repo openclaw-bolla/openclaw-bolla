@@ -3043,6 +3043,49 @@ def _extract_poster_jpg(video_path):
     except Exception:
         return None
 
+def aufpeppen_generate_captions(img_path):
+    """Chris-Wunsch (07.09.2026): beim Speichern eines aufgepeppten Ergebnisses zusätzlich fertige
+    Post-Captions für TikTok und Instagram liefern (nicht die Video-Textüberlagerung, sondern der
+    Beschreibungstext beim Hochladen). Opus schaut sich das Ergebnisbild an, schreibt in Chris' echtem
+    Ton (trocken-klug, Augenzwinkern -- siehe aufpeppen.py ai_direct()/ai_polish_text(), gleiche
+    Kalibrierung 07.09.2026 nach dem 'Tarifvertrag'-Fehlgriff)."""
+    import re as _re_cap
+    prompt = (
+        "Du bist Bolla, Chris' KI-Assistent. Schau dir mit dem Read-Tool dieses Bild an "
+        f"(Frame aus einem frisch aufgepeppten Foto/Video für Social Media):\n- {img_path}\n\n"
+        "Chris' Marken-Ton: sonnig, optimistisch, mit einem Augenzwinkern -- sein Humor ist der "
+        "TROCKENE, KLUGE Spruch, NIE der Kalauer und NIE ein aufgesetzter Gag mit random Vokabular ohne "
+        "Bezug zur Szene. Sein Beispiel für die richtige Tonlage: 'Wer mäht das hier eigentlich alles? "
+        "— In der Heide mäht niemand.' Trocken, tatsächlich wahr, ein leises Schmunzeln statt Lacher.\n\n"
+        "Schreib dazu ZWEI fertige Post-Captions (zum direkten Einfügen beim Hochladen, kein "
+        "Platzhalter-Text):\n"
+        "1. 'tiktok': kurz und punchy (1-2 Zeilen), danach eine Leerzeile, dann 3-5 wirklich passende "
+        "Hashtags (deutsch/englisch gemischt wo sinnvoll, KEINE Massenware wie #fyp #viral #foryou).\n"
+        "2. 'instagram': etwas ausführlicher (1-3 kurze Sätze, gleicher trockener Ton), danach eine "
+        "Leerzeile, dann 5-8 thematisch treffende Hashtags.\n"
+        "Beide Captions inhaltlich unterschiedlich formulieren (nicht nur die Hashtag-Zahl variieren), "
+        "aber dieselbe Beobachtung/denselben Aufhänger nutzen. Chris liebt Emojis -- IMMER großzügig "
+        "mindestens 3-4 treffende Emojis pro Caption einbauen (als Würze im Text UND vor/zwischen den "
+        "Hashtags), gerne auch mehr wenn's passt, nie komplett emoji-los und nie nur ein einzelnes "
+        "Alibi-Emoji. Keine Anführungszeichen um den Text, keine Call-to-Action-Floskeln ('Folge für "
+        "mehr!', 'Was denkt ihr?').\n"
+        "Antworte NUR mit dem finalen JSON-Objekt (kein Codeblock): "
+        '{"tiktok": "...", "instagram": "..."}'
+    )
+    try:
+        r = subprocess.run(["claude", "-p", prompt, "--model", "claude-opus-5"],
+                            capture_output=True, text=True, timeout=90)
+        m = _re_cap.search(r"\{.*\}", r.stdout.strip(), _re_cap.S)
+        if m:
+            d = json.loads(m.group(0))
+            tiktok = (d.get("tiktok") or "").strip()
+            insta = (d.get("instagram") or "").strip()
+            if tiktok or insta:
+                return {"tiktok": tiktok, "instagram": insta}
+    except Exception:
+        pass
+    return None
+
 def _resolve_aufpeppen_music(music):
     """music='' -> keine Musik, 'song' -> neuester Song (Rückwärtskompatibilität), sonst -> Dateiname
     aus dem Archiv (Basename only, Path-Traversal-sicher) -- Chris' eigene Song-Auswahl im mmp-Dropdown."""
@@ -4272,7 +4315,7 @@ def get_robin_info():
             "start": "01.08.2026",
             "end": "08.09.2026",
             "days_until": 0,
-            "flight": "Istanbul (RGXQU8)",
+            "flight": "Rückflug 08.09.: TK0560 (14B) JRO→IST · TK1703 (17A) IST→STR",
             "active": True,
             "days_in": days_in
         }
@@ -8156,13 +8199,14 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 _gluecksrad_state["nummer"] = body.get("nummer")
                 self._send_json({"ok": True})
             elif self.path == "/api/aufpeppen":
-                import base64 as _b64a, subprocess as _spa, shutil as _sha, uuid as _uuida, re as _rea
+                import base64 as _b64a, subprocess as _spa, shutil as _sha, uuid as _uuida, re as _rea, time as _time_ka1
                 fb64 = body.get("file_b64", "")
                 fname_in = (body.get("filename", "") or "upload").strip()
                 platform = body.get("platform", "insta")
                 style    = body.get("style", "auto")
                 text     = (body.get("text", "") or "").strip()
                 music    = body.get("music", "")  # "" oder "song"
+                target_dur = body.get("target_dur")  # nur bei echtem Video: Zeitdehnung fürs Musik-Sync
                 if not fb64:
                     self._send_json({"error": "Keine Datei"}, status=400); return
                 ext = os.path.splitext(fname_in)[1].lower() or ".jpg"
@@ -8188,9 +8232,53 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 music_path = _resolve_aufpeppen_music(music)
                 if music_path:
                     cmd += ["--music", music_path]
+                if not is_img and target_dur:
+                    try:
+                        td = float(target_dur)
+                        if 1.0 <= td <= 180.0:  # Deckel gegen Tippfehler/Ausreißer (max. 3 Min.)
+                            cmd += ["--zieldauer", str(td)]
+                    except (TypeError, ValueError):
+                        pass
+                # LEHRE (25.08.2026, siehe /api/aufpeppen-multi): Cloudflare-Tunnel-Edge killt einen Request
+                # ohne Response-Bytes nach ~100s mit eigener HTML-Fehlerseite ("<!DOCTYPE...") statt JSON.
+                # Einzelvideo (CapCut-Effekte, ggf. --ai/Fable) kann das leicht überschreiten -> gleicher
+                # Keep-Alive-Fix wie bei -multi, hier für den Single-File-Pfad nachgezogen (07.09.2026).
+                proc = _spa.Popen(cmd, stdout=_spa.PIPE, stderr=_spa.PIPE, text=True)
+                self.send_response(200)
+                self._cors_headers()
+                self.end_headers()
+
+                def _write_ka1(payload):
+                    try:
+                        self.wfile.write(payload)
+                        self.wfile.flush()
+                        return True
+                    except (BrokenPipeError, ConnectionResetError):
+                        return False
+
+                _ka_start1 = _time_ka1.time()
+                killed = False
+                while proc.poll() is None:
+                    if _time_ka1.time() - _ka_start1 > 360:
+                        proc.kill()
+                        killed = True
+                        break
+                    if not _write_ka1(b" "):
+                        proc.kill()
+                        try: os.remove(tmp_in)
+                        except Exception: pass
+                        return
+                    _time_ka1.sleep(15)
+
+                if killed:
+                    _write_ka1(json.dumps({"error": "Aufpeppen hat zu lange gedauert (>360s). Bitte nochmal versuchen."}).encode())
+                    try: os.remove(tmp_in)
+                    except Exception: pass
+                    return
+
+                stdout_r, stderr_r = proc.communicate()
                 try:
-                    r = _spa.run(cmd, capture_output=True, text=True, timeout=360)
-                    ok = r.returncode == 0 and os.path.isfile(out_path)
+                    ok = proc.returncode == 0 and os.path.isfile(out_path)
                     if ok:
                         try:
                             os.makedirs(DESKTOP_AUFGEPEPPT_DIR, exist_ok=True)
@@ -8202,11 +8290,11 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                             poster = _extract_poster_jpg(out_path)
                             if poster:
                                 resp["poster"] = f"/api/clipboard/image/{poster}"
-                        self._send_json(resp)
+                        _write_ka1(json.dumps(resp).encode())
                     else:
-                        self._send_json({"error": (r.stderr or r.stdout or "Aufpeppen fehlgeschlagen")[-300:]}, status=500)
+                        _write_ka1(json.dumps({"error": (stderr_r or stdout_r or "Aufpeppen fehlgeschlagen")[-300:]}).encode())
                 except Exception as e:
-                    self._send_json({"error": str(e)}, status=500)
+                    _write_ka1(json.dumps({"error": str(e)}).encode())
                 finally:
                     try: os.remove(tmp_in)
                     except Exception: pass
@@ -8306,6 +8394,61 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                             _write_ka2(json.dumps({"error": (stderr_r or stdout_r or "Reel fehlgeschlagen")[-300:]}).encode())
                     except Exception as e:
                         _write_ka2(json.dumps({"error": str(e)}).encode())
+            elif self.path == "/api/aufpeppen/reveal":
+                # Datei liegt durch /api/aufpeppen bzw. -multi schon in DESKTOP_AUFGEPEPPT_DIR -- dieser
+                # Endpoint öffnet nur den Windows-Explorer dort (Bestätigung + Komfort, wenn Chris am PC
+                # sitzt), gleiches Muster wie /api/bildgen/save-to-disk.
+                import subprocess as _spr
+                fname = os.path.basename(body.get("filename", ""))
+                fpath = os.path.join(DESKTOP_AUFGEPEPPT_DIR, fname)
+                if not fname or not os.path.isfile(fpath):
+                    self._send_json({"error": "Datei nicht gefunden"}, status=404); return
+                win_path = fpath.replace("/mnt/d/", "D:\\").replace("/", "\\")
+                try:
+                    _spr.Popen(["/mnt/c/Windows/System32/cmd.exe", "/c", f'explorer.exe /select,"{win_path}"'])
+                    self._send_json({"ok": True, "path": win_path})
+                except Exception as e:
+                    self._send_json({"error": str(e)}, status=500)
+            elif self.path == "/api/aufpeppen/captions":
+                # Chris-Wunsch (07.09.2026): TikTok-/Insta-Post-Captions zum fertigen Ergebnis, ausgelöst
+                # beim Klick auf einen der beiden Speichern-Buttons (nicht bei jedem Aufpeppen-Versuch --
+                # spart Opus-Aufrufe für Ergebnisse, die Chris eh verwirft).
+                fname = os.path.basename(body.get("filename", ""))
+                kind = body.get("kind", "video")
+                poster_name = os.path.basename(body.get("poster", "") or "")
+                fpath = os.path.join(CLIPBOARD_IMAGES_DIR, fname)
+                if not fname or not os.path.isfile(fpath):
+                    self._send_json({"error": "Datei nicht gefunden"}, status=404); return
+                if kind == "video":
+                    img_path = os.path.join(CLIPBOARD_IMAGES_DIR, poster_name) if poster_name else None
+                    if not img_path or not os.path.isfile(img_path):
+                        new_poster = _extract_poster_jpg(fpath)
+                        img_path = os.path.join(CLIPBOARD_IMAGES_DIR, new_poster) if new_poster else None
+                else:
+                    img_path = fpath
+                if not img_path or not os.path.isfile(img_path):
+                    self._send_json({"error": "Kein Vorschaubild verfügbar"}, status=500); return
+                caps = aufpeppen_generate_captions(img_path)
+                if not caps:
+                    self._send_json({"error": "Captions konnten nicht erzeugt werden"}, status=500); return
+                # Chris-Wunsch (07.09.2026): TikTok/Insta postet er über die DESKTOP-Apps, nicht am Duo --
+                # die Captions im mmp-UI nützen ihm dort wenig. Deshalb zusätzlich als .txt (NUR der fertige
+                # einfügbare Text inkl. Hashtags, keine Anleitungs-Zeilen) neben die Datei in
+                # DESKTOP_AUFGEPEPPT_DIR legen -- gleiches Muster wie die DistroKid-Social-Captions,
+                # siehe [[feedback_desktop_apps_social]].
+                stem = os.path.splitext(fname)[0]
+                try:
+                    os.makedirs(DESKTOP_AUFGEPEPPT_DIR, exist_ok=True)
+                    if caps.get("tiktok"):
+                        with open(os.path.join(DESKTOP_AUFGEPEPPT_DIR, f"{stem}_TikTok-Caption.txt"), "w", encoding="utf-8") as f:
+                            f.write(caps["tiktok"] + "\n")
+                    if caps.get("instagram"):
+                        with open(os.path.join(DESKTOP_AUFGEPEPPT_DIR, f"{stem}_Insta-Caption.txt"), "w", encoding="utf-8") as f:
+                            f.write(caps["instagram"] + "\n")
+                    caps["saved_to_desktop"] = True
+                except Exception:
+                    caps["saved_to_desktop"] = False
+                self._send_json(caps)
             elif self.path == "/api/ki-buch/generiere":
                 global _ki_buch_job
                 if _ki_buch_job["status"] == "running":

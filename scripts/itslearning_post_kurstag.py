@@ -40,41 +40,40 @@ def mem_ok():
 # die 4 Ziel-Kurse (Kurs-IDs bleiben das ganze Schuljahr stabil, siehe Tabelle unten) und je einen
 # individuell formulierten Mitteilungstext (NIE denselben Text kopieren, NIE "vorher/schon jetzt
 # herunterladen" schreiben - Download passiert am Kurstag selbst, siehe [[project_itslearning_automation]]).
-DAY_PREFIX = "03"
+DAY_PREFIX = "04"
 
 # Kurs-IDs (Schuljahr 26/27, stabil): 7a I=190735 7a II=190738 7b I=190741 7b II=190743
 #                                     7c I=190861 7c II=190878 7d I=190860 7d II=190877
-# Kurstag 3 "Basics Office: Tastatur" — nur die "I"-Kurse.
-# Termine (Schulkalender): 7d I + 7b I = Mi 02.09.  |  7a I + 7c I = Do 03.09.
-# Paket (discover_files 03-): 03-Basics Office - Tastatur.pdf (Folien), 03-Textdatei-Anleitung.html
-#                             (Vorübung), 03-Praktikum.html, 03-Praktikum.pdf
+# Kurstag 4 "The Basics: Codierung" (Bits, Bytes, Speichereinheiten) — nur die "I"-Kurse.
+# Termine (Schulkalender): 7d I + 7b I = Mi 09.09.  |  7a I + 7c I = Do 10.09.
+# Paket (discover_files 04-): 04-The Basics - Codierung.pdf (Folien), 04-Praktikum.html, 04-Praktikum.pdf
 COURSES = [
     {"id": 190860, "kuerzel": "7d I", "text":
-        "⌨️ Hallo liebe 7d! Am Mittwoch, 02.09., dreht sich alles um die Tastatur und die praktischen "
-        "Tastenkürzel (Shortcuts). 1️⃣ Zu Beginn der Stunde laden wir die Materialien gemeinsam "
-        "herunter: die Folien zur Tastatur, die 📎 Vorübung „Textdatei anlegen\" und 📎 Praktikum 3. "
-        "2️⃣ Dann machen wir die kurze Vorübung zusammen in Ruhe. 3️⃣ Danach übt ihr in Praktikum 3 "
-        "selbstständig Kopieren, Ausschneiden, Einfügen, Umbenennen, Rückgängig und Suchen - alles "
-        "per Shortcut. Freu mich auf euch! 😊"},
+        "🔢 Hallo liebe 7d! Am Mittwoch, 09.09., geht es um Bits, Bytes und Co. - also darum, wie der "
+        "Computer Zahlen, Texte, Fotos und Videos überhaupt speichert. 1️⃣ Zu Beginn laden wir "
+        "gemeinsam die Folien „The Basics: Codierung\" und 📎 Praktikum 4 herunter. 2️⃣ Ich erkläre "
+        "euch die Grundlagen - warum euer Handyspeicher so schnell voll ist und wie Buchstaben und "
+        "Farben in Nullen und Einsen verwandelt werden. 3️⃣ Danach übt ihr im kurzen Praktikum 4 "
+        "selbstständig, zwischen Bit, Byte, KB, MB und GB umzurechnen. Bis Mittwoch! 😊"},
     {"id": 190741, "kuerzel": "7b I", "text":
-        "🎯 Liebe 7b, am Mittwoch, 02.09., lernt ihr die wichtigsten Tastenkürzel kennen, mit denen "
-        "am Computer alles schneller geht. 1️⃣ Erst laden wir gemeinsam die Folien zur Tastatur, die "
-        "📎 Vorübung „Textdatei anlegen\" und 📎 Praktikum 3 herunter. 2️⃣ Die Vorübung machen wir "
-        "zusammen. 3️⃣ Im Praktikum 3 seid dann ihr dran: Strg+C, Strg+V, Strg+X, Strg+Z, F2 und "
-        "Strg+F an echten Dateien ausprobieren. Bis Mittwoch! 🙂"},
+        "💾 Liebe 7b, am Mittwoch, 09.09., dreht sich alles um Bits und Bytes - die Bausteine, aus "
+        "denen im Computer wirklich alles besteht. 1️⃣ Erst laden wir gemeinsam die Folien „The "
+        "Basics: Codierung\" und 📎 Praktikum 4 herunter. 2️⃣ Ich zeige euch, wie ein Buchstabe zu "
+        "einer Reihe von Nullen und Einsen wird und warum ein Foto mehrere MB groß ist. 3️⃣ Im kurzen "
+        "Praktikum 4 rechnet ihr dann selbst mit den Speichereinheiten. Freu mich auf euch! 🙂"},
     {"id": 190735, "kuerzel": "7a I", "text":
-        "🖥️ Hallo 7a! Am Donnerstag, 03.09., geht es um die Tastatur und die Shortcuts, die man im "
-        "Alltag am meisten braucht. 1️⃣ Zu Stundenbeginn holen wir uns gemeinsam die Folien zur "
-        "Tastatur, die 📎 Vorübung „Textdatei anlegen\" und 📎 Praktikum 3. 2️⃣ Die Vorübung machen "
-        "wir zusammen Schritt für Schritt. 3️⃣ Danach übt ihr selbstständig in Praktikum 3: Dateien "
-        "kopieren, verschieben, umbenennen, löschen und im Text suchen - jeweils mit dem passenden "
-        "Tastenkürzel. Bis Donnerstag! 🚀"},
+        "🖥️ Hallo 7a! Am Donnerstag, 10.09., geht's um Bits, Bytes und Codierung - die Frage, wie "
+        "ein Computer aus Nullen und Einsen Texte, Fotos und Videos macht. 1️⃣ Zu Stundenbeginn holen "
+        "wir uns gemeinsam die Folien „The Basics: Codierung\" und 📎 Praktikum 4. 2️⃣ Ich erkläre "
+        "euch die Grundlagen dazu, warum bei 128 GB der Speicher schneller knapp wird als man denkt. "
+        "3️⃣ Danach übt ihr selbstständig im kurzen Praktikum 4: Bit, Byte, KB, MB, GB umrechnen und "
+        "schätzen. Bis Donnerstag! 🚀"},
     {"id": 190861, "kuerzel": "7c I", "text":
-        "⌨️ Liebe 7c, am Donnerstag, 03.09., sind die Tastenkürzel dran - kleine Handgriffe, die "
-        "viel Zeit sparen. 1️⃣ Wir laden zu Beginn der Stunde zusammen die Folien zur Tastatur, die "
-        "📎 Vorübung „Textdatei anlegen\" und 📎 Praktikum 3 herunter. 2️⃣ Dann machen wir die "
-        "Vorübung gemeinsam. 3️⃣ Im Praktikum 3 übt ihr dann selbst: Strg+C/V/X, Strg+Z zum "
-        "Rückgängigmachen, F2 zum Umbenennen und Strg+A/Strg+F im Text. Auf geht's! 💻"},
+        "🔢 Liebe 7c, am Donnerstag, 10.09., lernt ihr, wie ein Computer überhaupt speichert - Bits, "
+        "Bytes und was dahintersteckt. 1️⃣ Wir laden zu Beginn zusammen die Folien „The Basics: "
+        "Codierung\" und 📎 Praktikum 4 herunter. 2️⃣ Ich erkläre euch die Grundlagen, u.a. warum "
+        "eine Netflix-Folge offline mehrere GB braucht. 3️⃣ Im kurzen Praktikum 4 übt ihr dann selbst "
+        "das Umrechnen zwischen den Speichereinheiten. Auf geht's! 💻"},
 ]
 
 

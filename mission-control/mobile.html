@@ -542,6 +542,10 @@ body {
         <span id="pep-song-label">Songs werden geladen …</span><span>▾</span>
       </button>
       <div id="pep-song-list" class="pep-dropdown-list" style="display:none"></div>
+      <div id="pep-targetdur-wrap" style="display:none;margin-top:10px">
+        <label style="font-size:13px;color:var(--text2)">🎯 Zieldauer (Sek.) — Video wird passend verlangsamt, damit genau so viel vom Song mitläuft</label>
+        <input type="number" id="pep-targetdur" class="clip-textarea" style="min-height:0;padding:10px;margin-top:4px" placeholder="leer = Originallänge behalten" min="1" max="180" step="1">
+      </div>
     </div>
 
     <button onclick="pepStart()" id="pep-btn" class="clip-btn green" style="width:100%;font-size:16px;padding:14px">✨ Aufpeppen</button>
@@ -1292,6 +1296,7 @@ function clipCameraFileSelected(e) { _clipImgUpload(e.target.files[0], true); e.
 
 // ===== AUFPEPPEN =====
 let _pepFiles = [];
+let _pepIsVid = false;
 function pepFileSelected(e) {
   const files = Array.from(e.target.files || []);
   if (!files.length) return;
@@ -1300,6 +1305,9 @@ function pepFileSelected(e) {
   document.getElementById('pep-single-opts').style.display = multi ? 'none' : 'flex';
   document.getElementById('pep-text-opt').style.display = multi ? 'none' : 'flex';
   const isVid = !multi && files[0].type.startsWith('video');
+  _pepIsVid = isVid;
+  document.getElementById('pep-targetdur-wrap').style.display =
+    (isVid && document.getElementById('pep-music').checked) ? 'block' : 'none';
   if (!multi) document.getElementById('pep-platform').value = isVid ? 'tiktok' : 'insta';
   const prev = document.getElementById('pep-preview');
   prev.style.display = 'block';
@@ -1350,6 +1358,7 @@ async function pepLoadSongs() {
 function pepToggleSongPicker() {
   const on = document.getElementById('pep-music').checked;
   document.getElementById('pep-song-wrap').style.display = on ? 'block' : 'none';
+  document.getElementById('pep-targetdur-wrap').style.display = (on && _pepIsVid) ? 'block' : 'none';
   if (on) pepLoadSongs();
 }
 function pepToggleSongDropdown() {
@@ -1394,26 +1403,94 @@ async function pepStart() {
           platform: document.getElementById('pep-platform').value,
           style: document.getElementById('pep-style').value,
           text: document.getElementById('pep-text').value.trim(),
-          music: document.getElementById('pep-music').checked ? (_pepSongPick || 'song') : ''
+          music: document.getElementById('pep-music').checked ? (_pepSongPick || 'song') : '',
+          target_dur: (_pepIsVid && document.getElementById('pep-targetdur').value)
+            ? Number(document.getElementById('pep-targetdur').value) : null
         })
       });
     }
     const d = await r.json();
     if (!r.ok || d.error) { pepStatus('⚠️ ' + (d.error || 'Fehlgeschlagen'), false); return; }
     pepStatus('✅ Fertig!', true);
+    _pepLastFilename = d.filename;
+    _pepLastKind = d.kind;
+    _pepLastPosterName = d.poster ? d.poster.split('/').pop() : '';
+    _pepCaptionsState = 'idle';
     const res = document.getElementById('pep-result');
     res.style.display = 'flex';
     const media = d.kind === 'video'
       ? `<video src="${d.url}" ${d.poster ? `poster="${d.poster}"` : ''} preload="auto" controls playsinline style="max-width:100%;border-radius:10px;background:#000"></video>`
       : `<img src="${d.url}" style="max-width:100%;border-radius:10px">`;
     res.innerHTML = media
-      + `<a href="${d.url}" download="${d.filename}" style="display:inline-block;margin-top:4px;padding:12px;background:rgba(34,197,94,0.15);color:#22c55e;border-radius:8px;font-size:15px;font-weight:600;text-decoration:none">⬇ Auf Handy speichern</a>`
-      + `<div style="font-size:12px;color:var(--text3)">Liegt auch auf dem Desktop unter Aufgepeppt\\. Danach in Insta/TikTok posten. Bei TikTok KI-Haken beim Upload setzen.</div>`;
+      + `<a href="${d.url}" download="${d.filename}" onclick="pepEnsureCaptions()" style="display:inline-block;margin-top:4px;padding:12px;background:rgba(34,197,94,0.15);color:#22c55e;border-radius:8px;font-size:15px;font-weight:600;text-decoration:none">⬇ Auf Handy speichern</a>`
+      + `<button onclick="pepReveal('${d.filename}');pepEnsureCaptions()" style="display:inline-block;margin-top:4px;padding:12px;background:rgba(0,122,255,0.15);color:var(--accent);border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer">📁 Im Ordner „Aufgepeppt" speichern</button>`
+      + `<div id="pep-reveal-status" style="font-size:12px;color:var(--text3)"></div>`
+      + `<div id="pep-captions" style="display:none;margin-top:4px"></div>`;
     document.getElementById('pep-reset-btn').style.display = 'block';
   } catch (e) {
     pepStatus('⚠️ Fehler: ' + e.message, false);
   } finally {
     btn.disabled = false; btn.style.opacity = '1';
+  }
+}
+let _pepLastFilename = '';
+let _pepLastKind = '';
+let _pepLastPosterName = '';
+let _pepCaptionsState = 'idle'; // idle|loading|done
+async function pepEnsureCaptions() {
+  if (_pepCaptionsState !== 'idle' || !_pepLastFilename) return;
+  _pepCaptionsState = 'loading';
+  const box = document.getElementById('pep-captions');
+  if (!box) return;
+  box.style.display = 'block';
+  box.innerHTML = '<div style="font-size:13px;color:var(--text3);margin-top:6px">✨ Captions für TikTok & Insta werden geschrieben …</div>';
+  try {
+    const r = await fetch('/api/aufpeppen/captions', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ filename: _pepLastFilename, kind: _pepLastKind, poster: _pepLastPosterName })
+    });
+    const d = await r.json();
+    if (!r.ok || d.error) {
+      box.innerHTML = `<div style="font-size:13px;color:var(--red);margin-top:6px">⚠️ ${d.error || 'Captions fehlgeschlagen'}</div>`;
+      _pepCaptionsState = 'idle';
+      return;
+    }
+    box.innerHTML = pepCaptionBlock('🎵 TikTok', d.tiktok, 'tt') + pepCaptionBlock('📸 Instagram', d.instagram, 'ig')
+      + (d.saved_to_desktop
+          ? '<div style="font-size:12px;color:var(--text3);margin-top:4px">📄 Auch als .txt neben der Datei in „Aufgepeppt" gespeichert</div>'
+          : '');
+    _pepCaptionsState = 'done';
+  } catch (e) {
+    box.innerHTML = `<div style="font-size:13px;color:var(--red);margin-top:6px">⚠️ Fehler: ${e.message}</div>`;
+    _pepCaptionsState = 'idle';
+  }
+}
+function pepCaptionBlock(label, text, id) {
+  const safe = (text || '').replace(/</g, '&lt;');
+  return `<div style="text-align:left;background:var(--bg2);border:1px solid var(--sep);border-radius:8px;padding:10px;margin-top:8px">
+    <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">${label}</div>
+    <div id="pep-cap-${id}" style="font-size:14px;white-space:pre-wrap;line-height:1.4">${safe}</div>
+    <button onclick="pepCopyCaption('${id}')" class="clip-btn" style="font-size:12px;padding:4px 8px;margin-top:6px">📋 Kopieren</button>
+  </div>`;
+}
+async function pepCopyCaption(id) {
+  const el = document.getElementById('pep-cap-' + id);
+  if (!el) return;
+  try { await navigator.clipboard.writeText(el.textContent); pepStatus('✓ Caption kopiert', true); }
+  catch (e) { pepStatus('⚠️ Kopieren fehlgeschlagen', false); }
+}
+async function pepReveal(filename) {
+  const st = document.getElementById('pep-reveal-status');
+  if (st) st.textContent = 'Öffne Ordner am PC …';
+  try {
+    const r = await fetch('/api/aufpeppen/reveal', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ filename })
+    });
+    const d = await r.json();
+    if (st) st.textContent = (r.ok && d.ok) ? `✅ Liegt in ${d.path}` : ('⚠️ ' + (d.error || 'Fehlgeschlagen'));
+  } catch (e) {
+    if (st) st.textContent = '⚠️ Fehler: ' + e.message;
   }
 }
 function pepStatus(msg, ok) {
@@ -1422,6 +1499,8 @@ function pepStatus(msg, ok) {
 }
 function pepReset() {
   _pepFiles = [];
+  _pepIsVid = false;
+  _pepLastFilename = ''; _pepLastKind = ''; _pepLastPosterName = ''; _pepCaptionsState = 'idle';
   document.getElementById('pep-file').value = '';
   document.getElementById('pep-preview').style.display = 'none';
   document.getElementById('pep-preview').innerHTML = '';
@@ -1430,6 +1509,8 @@ function pepReset() {
   document.getElementById('pep-text').value = '';
   document.getElementById('pep-music').checked = false;
   document.getElementById('pep-song-wrap').style.display = 'none';
+  document.getElementById('pep-targetdur-wrap').style.display = 'none';
+  document.getElementById('pep-targetdur').value = '';
   document.getElementById('pep-drop').querySelector('div:nth-child(2)').textContent = 'Bild(er) oder Video wählen';
   document.getElementById('pep-result').style.display = 'none';
   document.getElementById('pep-reset-btn').style.display = 'none';
