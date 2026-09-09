@@ -3143,25 +3143,32 @@ def _suno_token_save(token):
     return {"ok": True}
 
 # ── Cover-Generierung für bollawave-Releases ──────────────────────────────
-_COVER_NO_TEXT = (" Square 3000x3000 album cover, cohesive colour grading, rich detail, "
-                  "eye-catching. Absolutely NO text, NO letters, NO words, NO numbers, NO logos anywhere.")
+_COVER_NO_TEXT = (" Professional music album cover artwork, square 3000x3000, polished painterly "
+                  "digital illustration, dramatic cinematic lighting, rich saturated colour grading, "
+                  "high detail, eye-catching composition, gallery-quality finish — not a stock photo, "
+                  "not a flat clip-art icon. Absolutely NO text, NO letters, NO words, NO numbers, NO logos anywhere.")
 
 def _suno_cover_concepts(title, lyrics="", n=3):
     """n konkrete Bild-IDEEN zum Song (Titel + optional Lyrics) — je ein bildhafter englischer Satz.
-    Bezieht sich WIRKLICH auf den Song, aber KEINE wörtliche Bebilderung des Titels."""
+    Bezieht sich WIRKLICH auf den Song (konkrete Objekte/Bilder AUS DEM TEXT), aber KEINE wörtliche
+    Bebilderung der TITEL-WORTE als Text/Icon (z.B. keine Hand, die buchstaeblich "master" mimt)."""
     import subprocess as _sp, shutil as _sh
     cb = _sh.which("claude") or os.path.expanduser("~/.local/bin/claude")
     ly = (lyrics or "").strip()
-    ly_part = f"\n\nLyrics excerpt:\n{ly[:1400]}" if ly else ""
+    ly_part = f"\n\nFull lyrics:\n{ly[:4000]}" if ly else ""
     kinds = ("one photographic and real, one bold and graphic, one dreamlike and atmospheric"
              if n == 3 else "each in a clearly different visual style")
     instr = (
         f"You design album covers for the warm feel-good pop artist 'bollawave'. "
         f"Song title: \"{title}\".{ly_part}\n\n"
+        f"Read the lyrics carefully and pick out the CONCRETE objects, settings and images the lyrics "
+        f"actually mention (e.g. a specific machine, a screen, a road, a season, a place, an action) — "
+        f"not just the abstract theme of the title. "
         f"Give me {n} DIFFERENT cover CONCEPTS. Each concept = ONE vivid English sentence describing a "
-        f"concrete scene, subject or symbol that captures this song's feeling and story. It must be "
-        f"genuinely connected to what the song is about — but NOT a literal illustration of the title "
-        f"words. Be specific about subject, setting, colour and light. Keep it positive and optimistic. "
+        f"concrete scene built from THOSE SPECIFIC lyrical objects/images, composed so the song's feeling "
+        f"comes through. Do NOT illustrate the title words themselves as text or as a literal pun/icon — "
+        f"but DO use the real objects and imagery from the lyrics, combined into one coherent scene. "
+        f"Be specific about subject, setting, colour and light. Keep it positive and optimistic. "
         f"Make them {kinds}. "
         f"Reply as exactly {n} lines, one concept per line, no numbering, no extra text."
     )
@@ -6911,9 +6918,15 @@ class Handler(BaseHTTPRequestHandler):
         # cdn1.suno.ai/{id}.mp3 = 403, media_urls-m4a = verschlüsselt). Chris lädt den Song
         # daher von Hand aus Suno (··· → Download) und legt ihn ins Archiv oder auf den
         # Desktop-Staging-Ordner. Wir akzeptieren MP3/WAV/FLAC/M4A und machen daraus 320k-MP3.
+        # Arbeitsordner = Desktop\DistroKid (Chris legt WAV/MP3/JPG hier ab, will alles an
+        # EINEM Ort sehen). Archiv bleibt zusätzlich die Dauer-Ablage fürs Downstream-Tooling
+        # (find_asset() in distrokid_social_paket.py etc.) — wird am Ende gespiegelt.
+        DESKTOP_DK_DIR = Path("/mnt/d/OneDrive/Desktop/DistroKid")
+        DESKTOP_DK_DIR.mkdir(parents=True, exist_ok=True)
+        desktop_mp3_path = DESKTOP_DK_DIR / f"{safe_title}.mp3"
         _mp3_ready = mp3_path.exists() and mp3_path.stat().st_size > 100_000
         if not _mp3_ready:
-            _cand_dirs = [SUNO_DISTROKID_DIR, Path("/mnt/d/OneDrive/Desktop/DistroKid")]
+            _cand_dirs = [DESKTOP_DK_DIR, SUNO_DISTROKID_DIR]
             _nt = _norm(title)
             _src = None
             for _d in _cand_dirs:
@@ -6933,18 +6946,28 @@ class Handler(BaseHTTPRequestHandler):
                     if _src.suffix.lower() == ".mp3" and _src.resolve() == mp3_path.resolve():
                         _mp3_ready = True
                     else:
+                        # 320k-MP3 landet ZUERST im Desktop-Arbeitsordner (neben der WAV) —
+                        # danach Spiegel-Kopie ins Archiv fuers Downstream-Tooling.
                         _ff = _sp_ff.run(["ffmpeg", "-y", "-i", str(_src),
-                                          "-codec:a", "libmp3lame", "-b:a", "320k", "-ar", "44100", str(mp3_path)],
+                                          "-codec:a", "libmp3lame", "-b:a", "320k", "-ar", "44100", str(desktop_mp3_path)],
                                          capture_output=True, timeout=180)
-                        if _ff.returncode == 0 and mp3_path.exists() and mp3_path.stat().st_size > 100_000:
+                        if _ff.returncode == 0 and desktop_mp3_path.exists() and desktop_mp3_path.stat().st_size > 100_000:
+                            import shutil as _sh_mp3
+                            _sh_mp3.copy2(str(desktop_mp3_path), str(mp3_path))
                             _mp3_ready = True
                 except Exception:
                     pass
+        elif not (desktop_mp3_path.exists() and desktop_mp3_path.stat().st_size > 100_000):
+            # MP3 lag schon im Archiv (alter Workflow) — Spiegel-Kopie in den Desktop-Arbeitsordner nachreichen.
+            try:
+                import shutil as _sh_mp3b
+                _sh_mp3b.copy2(str(mp3_path), str(desktop_mp3_path))
+            except Exception:
+                pass
         if not _mp3_ready:
             return {"error": (f"Keine Audiodatei fuer '{title}' gefunden. Song in Suno ueber das '...'-Menue "
-                              f"herunterladen (WAV oder MP3) und nach D:\\OneDrive\\Desktop\\DistroKid\\ ODER "
-                              f"D:\\OneDrive\\Dokumente\\Bolla\\Suno_DistroKid\\ legen (Dateiname ~ Songtitel), "
-                              f"dann nochmal auf den Knopf.")}
+                              f"herunterladen (WAV oder MP3) und nach D:\\OneDrive\\Desktop\\DistroKid\\ legen "
+                              f"(Dateiname ~ Songtitel), dann nochmal auf den Knopf.")}
         if not want_cover:
             return {"ok": True, "mp3": str(mp3_path), "cover": None}
         # Cover schon ausgewählt? → das nehmen (Auswahl passiert über /api/suno/covers + pick).
@@ -10463,6 +10486,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 title  = body.get("title", "").strip()
                 lyrics = body.get("lyrics", "")
                 engine = body.get("engine", "mai" if _extra else "pollinations")
+                print(f"[cover-debug] {self.path} title={title!r} lyrics_len={len(lyrics)} lyrics_preview={lyrics[:60]!r}", flush=True)
                 if not title:
                     self._send_json({"error": "Kein Titel angegeben"}, status=400); return
                 _safe = "".join(c for c in title if c.isalnum() or c in " _-").strip()
@@ -10521,6 +10545,13 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     self._send_json({"error": f"Vorschlag {n} nicht gefunden — bitte die 3 Cover-Vorschlaege neu erzeugen."}, status=400); return
                 import shutil as _shp
                 _shp.copy2(str(_src), str(SUNO_DISTROKID_DIR / f"{_safe}_cover.jpg"))
+                # Spiegel-Kopie in den Desktop-Arbeitsordner (Chris will WAV+MP3+JPG an einem Ort sehen).
+                try:
+                    _dk_dir = Path("/mnt/d/OneDrive/Desktop/DistroKid")
+                    _dk_dir.mkdir(parents=True, exist_ok=True)
+                    _shp.copy2(str(_src), str(_dk_dir / f"{_safe}_cover.jpg"))
+                except Exception:
+                    pass
                 self._send_json({"ok": True, "cover": str(SUNO_DISTROKID_DIR / f"{_safe}_cover.jpg")})
 
             elif self.path == "/api/suno/publish":

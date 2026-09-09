@@ -3598,6 +3598,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 🎨 3 Cover-Vorschläge <span style="font-weight:600;opacity:.85">(~7 ct)</span>
               </button>
             </div>
+            <div style="font-size:12px;color:var(--dim);margin-top:5px">💡 Liedtext weiter unten zuerst eintragen — er fließt in die Cover-Ideen ein, ohne Lyrics trifft der Vorschlag oft daneben.</div>
             <div id="suno-dl-status" style="font-size:13px;color:var(--dim);margin-top:8px;min-height:18px"></div>
             <div id="suno-cover-picks" style="display:none;gap:10px;margin-top:10px;flex-wrap:wrap"></div>
 
@@ -3615,7 +3616,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                   <button id="suno-pub-en" onclick="sunoPubLang('en')" style="padding:7px 13px;border:none;cursor:pointer;font-weight:600;background:transparent;color:var(--dim);transition:all .2s">🇬🇧 EN</button>
                 </div>
               </div>
-              <textarea id="suno-pub-lyrics" rows="4" placeholder="Liedtext hier einfügen — für Lyrics.txt und den Namens-/Schulbezug-Scan (empfohlen)"
+              <textarea id="suno-pub-lyrics" rows="4" placeholder="Liedtext hier einfügen — für Lyrics.txt, Namens-/Schulbezug-Scan UND die Cover-Vorschläge oben (bitte VOR dem Cover-Button ausfüllen!)"
                 style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 11px;font-size:14px;line-height:1.5;outline:none;font-family:inherit;resize:vertical;margin-bottom:10px"></textarea>
               <button id="suno-pub-btn" onclick="sunoPublish()"
                 style="width:100%;background:linear-gradient(135deg,#16a34a,#22c55e);border:none;border-radius:8px;color:white;font-weight:700;font-size:15px;padding:11px 18px;cursor:pointer;box-shadow:0 2px 12px rgba(34,197,94,0.35);transition:opacity .2s">
@@ -17246,6 +17247,7 @@ async function sunoCoverSuggest() {
   const status = document.getElementById('suno-dl-status');
   const picks = document.getElementById('suno-cover-picks');
   if (!title) { status.textContent = '⚠️ Bitte Song-Titel eingeben'; return; }
+  if (!lyrics.trim() && !confirm('⚠️ Kein Liedtext eingetragen (Feld weiter unten).\n\nOhne Lyrics werden die Cover NUR aus dem Titel erzeugt und treffen den Song oft nicht.\n\nTrotzdem jetzt für ~7 ct erzeugen?')) return;
   const btn = document.getElementById('suno-dl-btn');
   btn.disabled = true; btn.style.opacity = '0.5';
   picks.style.display = 'none'; picks.innerHTML = '';
@@ -17278,7 +17280,8 @@ async function sunoCoverExtra() {
   const status = document.getElementById('suno-dl-status');
   const picks = document.getElementById('suno-cover-picks');
   const eb = document.getElementById('suno-cover-extra-btn');
-  if (!confirm('🌟 Ein weiteres Cover mit MAI-Image-2.5 — kostet ~€0,10.\n\nFortfahren?')) return;
+  const _warn = lyrics.trim() ? '' : '\n\n⚠️ Kein Liedtext eingetragen — wird nur aus dem Titel erzeugt.';
+  if (!confirm('🌟 Ein weiteres Cover mit MAI-Image-2.5 — kostet ~€0,10.' + _warn + '\n\nFortfahren?')) return;
   if (eb) { eb.disabled = true; eb.style.opacity = '0.5'; eb.textContent = '⏳ MAI erzeugt…'; }
   status.style.color = 'var(--dim)'; status.textContent = '⏳ MAI-Cover wird erzeugt… (~1 Min)';
   try {
