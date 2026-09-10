@@ -3148,6 +3148,19 @@ _COVER_NO_TEXT = (" Professional music album cover artwork, square 3000x3000, po
                   "high detail, eye-catching composition, gallery-quality finish — not a stock photo, "
                   "not a flat clip-art icon. Absolutely NO text, NO letters, NO words, NO numbers, NO logos anywhere.")
 
+# Kurzregeln fürs Prompt-Bauen aus Chris' deutschem Wunsch (cover-wish). Bewusst knapp,
+# damit der Wunsch nicht überschrieben wird — nur die Anatomie-/Thumbnail-Fallen abfangen.
+_COVER_PROMPT_RULES = (
+    "HARD RULES: exactly ONE focal object, instantly readable at thumbnail size (200x200 px). "
+    "No prominent human hands, fingers or faces (AI renderers break anatomy) — a person only as a "
+    "small, distant, back-turned silhouette with hands out of frame. No free-floating abstract "
+    "symbol as the main subject (no flames, matches, candles, light bulbs, glowing orbs, keys, "
+    "chains, clock faces, brains, DNA helices, drifting sparks). Never render the title words as "
+    "text or as a literal visual pun. Warm, optimistic, cinematic light (golden hour / sunrise, "
+    "deep saturated colour) unless the wish clearly asks otherwise. State the camera angle "
+    "explicitly. No collages, split screens, borders or picture-in-picture."
+)
+
 def _suno_cover_concepts(title, lyrics="", n=3):
     """n konkrete Bild-IDEEN zum Song (Titel + optional Lyrics) — je ein bildhafter englischer Satz.
     Bezieht sich WIRKLICH auf den Song (konkrete Objekte/Bilder AUS DEM TEXT), aber KEINE wörtliche
@@ -3203,6 +3216,48 @@ def _suno_cover_concepts(title, lyrics="", n=3):
 
 def _suno_cover_prompt(concept, idx=0):
     return concept.rstrip(". ") + "." + _COVER_NO_TEXT
+
+def _suno_cover_prompt_from_wish(title, lyrics, wish, prev_prompt=""):
+    """Aus Chris' DEUTSCHEM Wunsch (+ Titel/Lyrics, optional bisherigem EN-Prompt) EINEN
+    fertigen englischen FLUX-Bild-Prompt bauen. Chris fasst nie englischen Text an — er tippt
+    auf Deutsch, was aufs Cover soll bzw. was geändert werden soll. Rückgabe: 1 EN-Satz."""
+    import subprocess as _sp, shutil as _sh
+    cb = _sh.which("claude") or os.path.expanduser("~/.local/bin/claude")
+    ly = (lyrics or "").strip()
+    ly_part = f"\n\nSong lyrics (context/mood only):\n{ly[:3000]}" if ly else ""
+    wish = (wish or "").strip()
+    prev = (prev_prompt or "").strip()
+    if prev:
+        instr = (
+            f"You are refining an album-cover image prompt for the warm feel-good artist 'bollawave'. "
+            f"Song title: \"{title}\".{ly_part}\n\n"
+            f"CURRENT English image prompt:\n{prev}\n\n"
+            f"The artist is a German speaker and wants THIS CHANGE, written in German:\n\"{wish}\"\n\n"
+            f"Rewrite the English image prompt so it applies the requested change. Keep everything that "
+            f"already worked, adjust only what the wish asks for. Output ONE English sentence of 25-55 "
+            f"words describing a single scene: subject, setting, colour palette, light, camera angle.\n"
+            + _COVER_PROMPT_RULES +
+            f"\n\nOutput ONLY the single revised English sentence — no German, no quotation marks, no commentary."
+        )
+    else:
+        instr = (
+            f"You design one album cover for the warm feel-good artist 'bollawave'. "
+            f"Song title: \"{title}\".{ly_part}\n\n"
+            f"The artist is a German speaker and describes in German what the cover should show:\n\"{wish}\"\n\n"
+            f"Turn this wish into ONE vivid English image prompt of 25-55 words describing a single scene: "
+            f"subject, setting, colour palette, light, camera angle. Stay faithful to the wish; use the "
+            f"lyrics only for mood and extra concrete physical detail.\n"
+            + _COVER_PROMPT_RULES +
+            f"\n\nOutput ONLY the single English sentence — no German, no quotation marks, no numbering, no commentary."
+        )
+    try:
+        r = _sp.run([cb, "-p", "--model", "claude-sonnet-5", "--output-format", "json", instr],
+                    capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~"))
+        raw = json.loads(r.stdout).get("result", "").strip() if r.returncode == 0 else ""
+        line = " ".join(l.strip(" -•\t\"'") for l in raw.splitlines() if l.strip()).strip()
+    except Exception:
+        line = ""
+    return line
 
 def _suno_render_cover_bytes(img_prompt, cover_engine, _urlparse_cv=None):
     """Rendert EIN Cover-Bild (bytes). Engines: 'cloudflare-flux' (gratis, Standard fürs Iterieren),
@@ -10556,6 +10611,60 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 self._send_json({"ok": True, "engine": engine, "note": _note,
                                  "cost": (MAI_IMG_PREIS if engine == "mai" else 0.0),
                                  "preview": _prev})
+
+            elif self.path == "/api/suno/cover-wish":
+                # Chris beschreibt auf DEUTSCH, was aufs Cover soll (Feld "wish") oder was am
+                # bisherigen Bild anders sein soll (Feld "wish" + "prev_prompt"). Der Server baut
+                # daraus den englischen FLUX-Prompt UND rendert in einem Schritt und setzt direkt
+                # <Titel>_cover.jpg. engine: 'cloudflare-flux' (gratis, Standard) | 'mai' (~10 ct).
+                import base64 as _b64w, io as _iow
+                from PIL import Image as _PIw
+                title  = body.get("title", "").strip()
+                wish   = (body.get("wish", "") or "").strip()
+                lyrics = body.get("lyrics", "")
+                prev   = (body.get("prev_prompt", "") or "").strip()
+                engine = body.get("engine", "cloudflare-flux")
+                if engine not in ("cloudflare-flux", "mai"):
+                    engine = "cloudflare-flux"
+                if not title:
+                    self._send_json({"error": "Kein Titel angegeben"}, status=400); return
+                if not wish:
+                    self._send_json({"error": "Bitte auf Deutsch beschreiben, was aufs Cover soll."}, status=400); return
+                try:
+                    _eng_prompt = _suno_cover_prompt_from_wish(title, lyrics, wish, prev)
+                except Exception as e:
+                    self._send_json({"error": f"Prompt-Bau fehlgeschlagen: {e}"}, status=500); return
+                if not _eng_prompt:
+                    self._send_json({"error": "Konnte keinen Bild-Prompt bauen — Wunsch bitte anders formulieren."}, status=500); return
+                if not body.get("render", True):
+                    # Nur die deutsche Änderung in den EN-Prompt einbauen, KEIN Bild rendern.
+                    self._send_json({"ok": True, "prompt": _eng_prompt}); return
+                _safe = "".join(c for c in title if c.isalnum() or c in " _-").strip()
+                SUNO_DISTROKID_DIR.mkdir(parents=True, exist_ok=True)
+                _img_prompt = _eng_prompt.rstrip(". ") + "." + _COVER_NO_TEXT
+                try:
+                    _b, _note = _suno_render_cover_bytes(_img_prompt, engine)
+                except Exception as e:
+                    self._send_json({"error": f"Bild fehlgeschlagen: {e}"}, status=500); return
+                _dest = SUNO_DISTROKID_DIR / f"{_safe}_cover.jpg"
+                _suno_save_cover_jpg(_b, _dest)
+                try:
+                    _dk = Path("/mnt/d/OneDrive/Desktop/DistroKid"); _dk.mkdir(parents=True, exist_ok=True)
+                    import shutil as _shw
+                    _shw.copy2(str(_dest), str(_dk / f"{_safe}_cover.jpg"))
+                    for _k in range(1, 5):
+                        (_dk / f"{_safe}_cover_{_k}.jpg").unlink(missing_ok=True)
+                except Exception:
+                    pass
+                try:
+                    _im = _PIw.open(str(_dest)); _im.thumbnail((512, 512))
+                    _bf = _iow.BytesIO(); _im.convert("RGB").save(_bf, "JPEG", quality=82)
+                    _prev_img = "data:image/jpeg;base64," + _b64w.b64encode(_bf.getvalue()).decode()
+                except Exception:
+                    _prev_img = ""
+                self._send_json({"ok": True, "engine": engine, "note": _note,
+                                 "cost": (MAI_IMG_PREIS if engine == "mai" else 0.0),
+                                 "prompt": _eng_prompt, "preview": _prev_img})
 
             elif self.path in ("/api/suno/covers", "/api/suno/cover-extra"):
                 # /covers      → 3 Vorschläge, Standard-Engine Pollinations (gratis)
