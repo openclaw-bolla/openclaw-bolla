@@ -39,17 +39,30 @@ def slugify(name):
 def safe(name):
     return re.sub(r'[<>:"/\\|?*!]+', "", name).strip()
 
+def _alnum(s):
+    """Nur Buchstaben+Ziffern, klein — killt Apostroph/Bindestrich/Leerzeichen/Sonderzeichen.
+    Damit matcht „Doesn't" == „doesnt" == „doesn t" (slugify allein macht daraus doesn-t vs doesnt)."""
+    return re.sub(r"[^a-z0-9]+", "", (s or "").lower())
+
 def find_asset(song):
-    """Cover + MP3 im Archiv finden (toleranter Match)."""
+    """Cover + MP3 im Archiv finden (toleranter Match — apostroph-/sonderzeichenfest)."""
     base_slug = slugify(song)
+    base_an = _alnum(song)
     cover = mp3 = None
     for f in os.listdir(ARCHIVE):
         stem, ext = os.path.splitext(f)
-        if slugify(stem) == base_slug or slugify(stem).startswith(base_slug):
-            if ext.lower() in (".jpg", ".jpeg", ".png"):
+        s_an = _alnum(stem)
+        hit = (slugify(stem) == base_slug or slugify(stem).startswith(base_slug)
+               or (base_an and (s_an == base_an or s_an.startswith(base_an) or base_an.startswith(s_an))))
+        if not hit:
+            continue
+        if ext.lower() in (".jpg", ".jpeg", ".png"):
+            # bevorzugt die echte „…_cover.jpg" / „… (Cover).jpg", nicht Promo-Cards o.ä.
+            low = stem.lower()
+            if cover is None or low.endswith("_cover") or "(cover)" in low:
                 cover = os.path.join(ARCHIVE, f)
-            elif ext.lower() == ".mp3":
-                mp3 = os.path.join(ARCHIVE, f)
+        elif ext.lower() == ".mp3":
+            mp3 = os.path.join(ARCHIVE, f)
     return cover, mp3
 
 def make_video(cover, mp3, out, start=30, dur=15):
