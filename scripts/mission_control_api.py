@@ -3156,21 +3156,37 @@ def _suno_cover_concepts(title, lyrics="", n=3):
     cb = _sh.which("claude") or os.path.expanduser("~/.local/bin/claude")
     ly = (lyrics or "").strip()
     ly_part = f"\n\nFull lyrics:\n{ly[:4000]}" if ly else ""
-    kinds = ("one photographic and real, one bold and graphic, one dreamlike and atmospheric"
-             if n == 3 else "each in a clearly different visual style")
     instr = (
         f"You design album covers for the warm feel-good pop artist 'bollawave'. "
         f"Song title: \"{title}\".{ly_part}\n\n"
-        f"Read the lyrics carefully and pick out the CONCRETE objects, settings and images the lyrics "
-        f"actually mention (e.g. a specific machine, a screen, a road, a season, a place, an action) — "
-        f"not just the abstract theme of the title. "
-        f"Give me {n} DIFFERENT cover CONCEPTS. Each concept = ONE vivid English sentence describing a "
-        f"concrete scene built from THOSE SPECIFIC lyrical objects/images, composed so the song's feeling "
-        f"comes through. Do NOT illustrate the title words themselves as text or as a literal pun/icon — "
-        f"but DO use the real objects and imagery from the lyrics, combined into one coherent scene. "
-        f"Be specific about subject, setting, colour and light. Keep it positive and optimistic. "
-        f"Make them {kinds}. "
-        f"Reply as exactly {n} lines, one concept per line, no numbering, no extra text."
+        f"Read the lyrics carefully and pick out the CONCRETE, physical objects, places and lighting "
+        f"situations the words actually name (a machine, a road, a window, a time of day, a colour, a "
+        f"weather). Ignore the abstract nouns.\n\n"
+        f"Give me {n} DIFFERENT cover CONCEPTS. Each concept = ONE vivid English sentence of 25-45 words "
+        f"describing a single scene: subject, setting, colour palette, light, camera angle.\n\n"
+        f"HARD RULES for every concept:\n"
+        f"1. ONE focal object only. A viewer must recognise the whole image instantly at thumbnail size "
+        f"(200x200 px). If the sentence needs two \"and then also\" objects to make sense, it is wrong.\n"
+        f"2. Maximum TWO metaphors per concept, and both must be physical things in the same scene - "
+        f"never a pile of symbols.\n"
+        f"3. NO prominent human hands, fingers or faces. AI renderers break anatomy. People are allowed "
+        f"only as a small, distant, back-turned silhouette with hands out of frame or out of focus.\n"
+        f"4. NO free-floating abstract symbols as the main subject: no flames, matches, candles, light "
+        f"bulbs, glowing orbs, keys, chains, spirals, clock faces, brains, DNA helices, drifting sparks. "
+        f"If it hovers in empty space and \"stands for\" something, do not use it.\n"
+        f"5. Do NOT illustrate the title words themselves as text, as a literal pun, or as an icon. The "
+        f"image carries the MOOD of the song, not its wording.\n"
+        f"6. Warm, optimistic, cinematic light unless the lyrics clearly demand otherwise. Golden hour, "
+        f"sunrise, deep saturated colour.\n"
+        f"7. Every concept gets a DIFFERENT visual style, one each from this list: photographic realism / "
+        f"bold graphic retro-futurism / dreamlike atmospheric painting / intimate still life with "
+        f"chiaroscuro / wide landscape vista.\n"
+        f"8. State the camera angle explicitly (low three-quarter, dead-centre one-point perspective, "
+        f"top-down, wide panorama, close eye-level ...).\n"
+        f"9. No people-heavy crowds, no collages, no split screens, no picture-in-picture, no frames "
+        f"or borders.\n\n"
+        f"Output ONLY the {n} sentences, one per line, no numbering, no commentary, no style labels, "
+        f"no quotation marks."
     )
     try:
         r = _sp.run([cb, "-p", "--model", "claude-sonnet-5", "--output-format", "json", instr],
@@ -3189,19 +3205,28 @@ def _suno_cover_prompt(concept, idx=0):
     return concept.rstrip(". ") + "." + _COVER_NO_TEXT
 
 def _suno_render_cover_bytes(img_prompt, cover_engine, _urlparse_cv=None):
-    """Rendert EIN Cover-Bild (bytes) mit MAI → Fallback Gemini (nie Pollinations, außer explizit)."""
+    """Rendert EIN Cover-Bild (bytes). Engines: 'cloudflare-flux' (gratis, Standard fürs Iterieren),
+    'mai' (~10 ct, finale HD), 'gemini' (kostenpflichtig, nur noch als MAI-Fallback), 'pollinations'
+    (gratis-Fallback). Rückgabe: (bytes, hinweis-string)."""
     import base64 as _b64, urllib.parse as _up
     _urlparse_cv = _urlparse_cv or _up
-    chain = [cover_engine] + (["gemini"] if cover_engine == "mai" else [])
+    _fallbacks = {"mai": ["gemini"], "cloudflare-flux": ["pollinations"], "cf": ["pollinations"]}
+    chain = [cover_engine] + _fallbacks.get(cover_engine, [])
     last = ""
     for eng in chain:
+        _note = "" if eng == cover_engine else f"{cover_engine} fiel aus → {eng}"
         try:
+            if eng in ("cloudflare-flux", "cf"):
+                b64, _mime = cf_workers_ai_generate(img_prompt, 1024, 1024, "flux-1-schnell")
+                if not b64:
+                    raise Exception(f"Cloudflare: {_mime}")
+                return _b64.b64decode(b64), _note
             if eng == "mai":
                 b64, err = bildgen_mai_generate(img_prompt, model="mai-image-2.5", width=1024, height=1024)
                 if not b64:
                     raise Exception(f"MAI: {err}")
                 kosten_ledger_add("mai_image", MAI_IMG_PREIS, "Suno/DistroKid-Cover")
-                return _b64.b64decode(b64), (f"MAI fiel aus → {eng}" if eng != cover_engine else "")
+                return _b64.b64decode(b64), _note
             if eng == "gemini":
                 gk = _gemini_key()
                 if not gk:
@@ -3215,7 +3240,7 @@ def _suno_render_cover_bytes(img_prompt, cover_engine, _urlparse_cv=None):
                 for part in gd.get("candidates", [{}])[0].get("content", {}).get("parts", []):
                     if "inlineData" in part:
                         kosten_ledger_add("gemini_image", GEMINI_IMG_PREIS, "Suno/DistroKid-Cover")
-                        return _b64.b64decode(part["inlineData"]["data"]), (f"MAI fiel aus → {eng}" if eng != cover_engine else "")
+                        return _b64.b64decode(part["inlineData"]["data"]), _note
                 raise Exception("Gemini lieferte kein Bild")
             # pollinations (nur wenn explizit gewählt) — kompakt anfordern (1024²), die
             # Hochskalierung auf 3000² macht _suno_save_cover_jpg. 3000² + enhance ist zu
@@ -3224,7 +3249,7 @@ def _suno_render_cover_bytes(img_prompt, cover_engine, _urlparse_cv=None):
             pu = (f"https://image.pollinations.ai/prompt/{_urlparse_cv.quote(img_prompt)}"
                   f"?width=1024&height=1024&nologo=true&model=flux")
             with urllib.request.urlopen(urllib.request.Request(pu, headers={"User-Agent": "Bolla/1.0"}), timeout=45) as resp:
-                return resp.read(), ""
+                return resp.read(), _note
         except Exception as e:
             last = str(e)
     raise Exception(last or "kein Bild")
@@ -10477,6 +10502,61 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 r = self._suno_fetch_assets(title, cover_engine)
                 self._send_json(r, status=200 if r.get("ok") else 500)
 
+            elif self.path == "/api/suno/cover-prompt":
+                # EINEN Bild-Prompt aus Titel(+Lyrics) vorschlagen — kostenlos (claude), KEIN Bild.
+                # Der Prompt geht ins Frontend-Textfeld und wird dort von Chris frei bearbeitet.
+                title  = body.get("title", "").strip()
+                lyrics = body.get("lyrics", "")
+                if not title:
+                    self._send_json({"error": "Kein Titel angegeben"}, status=400); return
+                try:
+                    _cs = _suno_cover_concepts(title, lyrics, n=1)
+                    _prompt = (_cs[0] if _cs else "").strip()
+                except Exception as e:
+                    self._send_json({"error": f"Prompt-Vorschlag fehlgeschlagen: {e}"}, status=500); return
+                self._send_json({"ok": True, "prompt": _prompt})
+
+            elif self.path == "/api/suno/cover-render":
+                # EIN Cover-Bild aus dem (ggf. editierten) Prompt rendern und direkt als
+                # <Titel>_cover.jpg setzen. engine: 'cloudflare-flux' (gratis, Standard) | 'mai' (~10 ct).
+                import base64 as _b64r, io as _ior
+                from PIL import Image as _PIr
+                title  = body.get("title", "").strip()
+                _prompt = (body.get("prompt", "") or "").strip()
+                engine = body.get("engine", "cloudflare-flux")
+                if engine not in ("cloudflare-flux", "mai"):
+                    engine = "cloudflare-flux"
+                if not title:
+                    self._send_json({"error": "Kein Titel angegeben"}, status=400); return
+                if not _prompt:
+                    self._send_json({"error": "Kein Prompt angegeben — erst einen Vorschlag holen oder selbst eintippen."}, status=400); return
+                _safe = "".join(c for c in title if c.isalnum() or c in " _-").strip()
+                SUNO_DISTROKID_DIR.mkdir(parents=True, exist_ok=True)
+                _img_prompt = _prompt.rstrip(". ") + "." + _COVER_NO_TEXT
+                try:
+                    _b, _note = _suno_render_cover_bytes(_img_prompt, engine)
+                except Exception as e:
+                    self._send_json({"error": f"Bild fehlgeschlagen: {e}"}, status=500); return
+                _dest = SUNO_DISTROKID_DIR / f"{_safe}_cover.jpg"
+                _suno_save_cover_jpg(_b, _dest)
+                try:
+                    _dk = Path("/mnt/d/OneDrive/Desktop/DistroKid"); _dk.mkdir(parents=True, exist_ok=True)
+                    import shutil as _shr
+                    _shr.copy2(str(_dest), str(_dk / f"{_safe}_cover.jpg"))
+                    for _k in range(1, 5):
+                        (_dk / f"{_safe}_cover_{_k}.jpg").unlink(missing_ok=True)
+                except Exception:
+                    pass
+                try:
+                    _im = _PIr.open(str(_dest)); _im.thumbnail((512, 512))
+                    _bf = _ior.BytesIO(); _im.convert("RGB").save(_bf, "JPEG", quality=82)
+                    _prev = "data:image/jpeg;base64," + _b64r.b64encode(_bf.getvalue()).decode()
+                except Exception:
+                    _prev = ""
+                self._send_json({"ok": True, "engine": engine, "note": _note,
+                                 "cost": (MAI_IMG_PREIS if engine == "mai" else 0.0),
+                                 "preview": _prev})
+
             elif self.path in ("/api/suno/covers", "/api/suno/cover-extra"):
                 # /covers      → 3 Vorschläge, Standard-Engine Pollinations (gratis)
                 # /cover-extra → 1 weiterer Vorschlag (Slot 4), Engine MAI 2.5 (~€0,10)
@@ -10513,6 +10593,13 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                         _b, _n = _suno_render_cover_bytes(_suno_cover_prompt(concepts[_i]), _alt)
                     _p = SUNO_DISTROKID_DIR / f"{_safe}_cover_{_slot}.jpg"
                     _suno_save_cover_jpg(_b, _p)
+                    try:
+                        _dk_dir = Path("/mnt/d/OneDrive/Desktop/DistroKid")
+                        _dk_dir.mkdir(parents=True, exist_ok=True)
+                        import shutil as _shpc
+                        _shpc.copy2(str(_p), str(_dk_dir / f"{_safe}_cover_{_slot}.jpg"))
+                    except Exception:
+                        pass
                     _im = _PIc.open(str(_p)); _im.thumbnail((512, 512))
                     _buf = _ioc.BytesIO(); _im.convert("RGB").save(_buf, "JPEG", quality=80)
                     return {"n": _slot, "concept": concepts[_i][:120],
@@ -10550,6 +10637,12 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     _dk_dir = Path("/mnt/d/OneDrive/Desktop/DistroKid")
                     _dk_dir.mkdir(parents=True, exist_ok=True)
                     _shp.copy2(str(_src), str(_dk_dir / f"{_safe}_cover.jpg"))
+                    # Die nummerierten Kandidaten waren nur zur Auswahl auch am Desktop sichtbar
+                    # (s.o. bei /covers) - nach der Wahl raeumen wir die dort weg, damit nur noch
+                    # das eine finale Cover neben MP3/WAV liegt. In Suno_DistroKid bleiben sie,
+                    # falls Chris doch nochmal umwaehlen will.
+                    for _k in range(1, 5):
+                        (_dk_dir / f"{_safe}_cover_{_k}.jpg").unlink(missing_ok=True)
                 except Exception:
                     pass
                 self._send_json({"ok": True, "cover": str(SUNO_DISTROKID_DIR / f"{_safe}_cover.jpg")})
