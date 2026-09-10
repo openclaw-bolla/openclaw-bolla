@@ -3587,20 +3587,41 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 ✨ Neuer Song
               </button>
             </div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <input id="suno-dl-title" type="text" placeholder="Suno-Song-Titel eingeben…"
-                style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;
-                       color:var(--text);padding:8px 10px;font-size:14px;outline:none;font-family:inherit">
-              <button id="suno-cover-prompt-btn" onclick="sunoCoverPrompt()"
-                style="background:linear-gradient(135deg,#7c3aed,#ff6699);border:none;border-radius:8px;color:white;
-                       font-weight:700;font-size:14px;padding:9px 18px;cursor:pointer;white-space:nowrap;
-                       box-shadow:0 2px 12px rgba(124,58,237,0.4);transition:opacity .2s">
-                📝 Prompt-Vorschlag holen
-              </button>
+            <!-- ═══ SCHRITT 1 · Titel ═══ -->
+            <div style="display:flex;align-items:center;gap:8px;margin:4px 0 7px">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;flex:none">1</span>
+              <span style="font-size:14px;font-weight:700;color:var(--bright)">Song-Titel</span>
             </div>
-            <div style="font-size:12px;color:var(--dim);margin-top:5px">💡 Liedtext weiter unten zuerst eintragen — er fließt in den Prompt-Vorschlag ein. Den Prompt kannst du danach frei bearbeiten und beliebig oft (gratis) neu rendern.</div>
-            <textarea id="suno-cover-prompt" rows="5" placeholder="Bild-Prompt (englisch) — „Prompt-Vorschlag holen" klicken oder selbst eintippen, dann „🎨 Bild erzeugen"."
-              style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 11px;font-size:14px;line-height:1.5;outline:none;font-family:inherit;resize:vertical;margin-top:8px"></textarea>
+            <input id="suno-dl-title" type="text" placeholder="Titel des Songs (genau wie in Suno)"
+              style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;
+                     color:var(--text);padding:9px 11px;font-size:14px;outline:none;font-family:inherit">
+
+            <!-- ═══ SCHRITT 2 · Liedtext ═══ -->
+            <div style="display:flex;align-items:center;gap:8px;margin:16px 0 7px">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;flex:none">2</span>
+              <span style="font-size:14px;font-weight:700;color:var(--bright)">Liedtext</span>
+            </div>
+            <textarea id="suno-pub-lyrics" rows="4" placeholder="Kompletten Liedtext hier einfügen. Wird für den Cover-Prompt (Schritt 3), den Namens-/Schulbezug-Scan und die Lyrics.txt genutzt."
+              style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 11px;font-size:14px;line-height:1.5;outline:none;font-family:inherit;resize:vertical"></textarea>
+
+            <!-- ═══ SCHRITT 3 · Cover-Bild ═══ -->
+            <div style="display:flex;align-items:center;gap:8px;margin:16px 0 7px">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;flex:none">3</span>
+              <span style="font-size:14px;font-weight:700;color:var(--bright)">Cover-Bild</span>
+            </div>
+            <div style="font-size:13px;color:var(--dim);line-height:1.5;margin-bottom:8px">
+              <b>a)</b> „📝 Prompt-Vorschlag holen" macht aus Titel + Liedtext einen englischen Bild-Prompt.
+              <b>b)</b> Prompt im Feld frei bearbeiten. <b>c)</b> „🎨 Bild erzeugen" rendert ihn — passt nicht?
+              Prompt ändern und nochmal, beliebig oft & gratis. <b>d)</b> Sitzt er: „🌟 Finale in HD mit MAI" (~10 ct).
+            </div>
+            <button id="suno-cover-prompt-btn" onclick="sunoCoverPrompt()"
+              style="background:linear-gradient(135deg,#7c3aed,#ff6699);border:none;border-radius:8px;color:white;
+                     font-weight:700;font-size:14px;padding:9px 18px;cursor:pointer;white-space:nowrap;
+                     box-shadow:0 2px 12px rgba(124,58,237,0.4);transition:opacity .2s;margin-bottom:8px">
+              📝 Prompt-Vorschlag holen
+            </button>
+            <textarea id="suno-cover-prompt" rows="5" placeholder="Bild-Prompt (englisch) — kommt vom Knopf „📝 Prompt-Vorschlag holen" oder selbst eintippen. NICHT den Liedtext hier reinkopieren!"
+              style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 11px;font-size:14px;line-height:1.5;outline:none;font-family:inherit;resize:vertical"></textarea>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
               <button id="suno-cover-render-btn" onclick="sunoCoverRender('cloudflare-flux')"
                 style="background:linear-gradient(135deg,#16a34a,#22c55e);border:none;border-radius:8px;color:white;
@@ -3617,10 +3638,13 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
             <div id="suno-cover-img" style="display:none;margin-top:10px"></div>
             <div id="suno-cover-picks" style="display:none;gap:10px;margin-top:10px;flex-wrap:wrap"></div>
 
-            <!-- 🚀 Veröffentlichen: verkettet die komplette DistroKid-Vorbereitung -->
+            <!-- ═══ SCHRITT 4 · DistroKid ═══ -->
             <div style="margin-top:16px;padding:13px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.35);border-radius:10px">
-              <div style="font-size:14px;font-weight:700;color:#4ade80;margin-bottom:3px">🚀 Für DistroKid fertig machen</div>
-              <div style="font-size:13px;color:var(--dim);line-height:1.5;margin-bottom:11px">Legt aus <b>Song + gewähltem Cover</b> einen fertigen Ordner an: <b>MP3 320k</b>, <b>3000²-Cover</b>, Lyrics, Upload-Checkliste — plus <b>Social-Paket mit TikTok/Insta-Video</b> &amp; Captions. Danach nur noch bei DistroKid hochladen.</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#22c55e;color:#fff;font-size:13px;font-weight:700;flex:none">4</span>
+                <span style="font-size:14px;font-weight:700;color:#4ade80">Für DistroKid fertig machen</span>
+              </div>
+              <div style="font-size:13px;color:var(--dim);line-height:1.5;margin-bottom:11px">Nimmt <b>Titel + Liedtext (Schritt 1+2)</b> und das <b>Cover (Schritt 3)</b> und legt einen fertigen Ordner an: <b>MP3 320k</b>, <b>3000²-Cover</b>, Lyrics, Upload-Checkliste — plus <b>Social-Paket mit TikTok/Insta-Video</b> &amp; Captions. Die Audiodatei muss vorher in <b>Desktop\DistroKid\</b> liegen.</div>
               <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
                 <div style="display:flex;align-items:center;gap:6px">
                   <label style="font-size:13px;color:var(--dim)">Genre</label>
@@ -3631,8 +3655,6 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                   <button id="suno-pub-en" onclick="sunoPubLang('en')" style="padding:7px 13px;border:none;cursor:pointer;font-weight:600;background:transparent;color:var(--dim);transition:all .2s">🇬🇧 EN</button>
                 </div>
               </div>
-              <textarea id="suno-pub-lyrics" rows="4" placeholder="Liedtext hier einfügen — für Lyrics.txt, Namens-/Schulbezug-Scan UND die Cover-Vorschläge oben (bitte VOR dem Cover-Button ausfüllen!)"
-                style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 11px;font-size:14px;line-height:1.5;outline:none;font-family:inherit;resize:vertical;margin-bottom:10px"></textarea>
               <button id="suno-pub-btn" onclick="sunoPublish()"
                 style="width:100%;background:linear-gradient(135deg,#16a34a,#22c55e);border:none;border-radius:8px;color:white;font-weight:700;font-size:15px;padding:11px 18px;cursor:pointer;box-shadow:0 2px 12px rgba(34,197,94,0.35);transition:opacity .2s">
                 🚀 Alles für DistroKid vorbereiten
@@ -3643,9 +3665,9 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 <div style="margin-top:9px;padding:12px 14px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid var(--border);font-size:14px;line-height:1.75;color:var(--text)">
                   <div><b>1.</b> Song in <b>Suno</b> fertig machen. Dort über das <b>···-Menü → Download</b> die Datei holen — <b>WAV</b> (beste Qualität) oder MP3.</div>
                   <div><b>2.</b> Die Datei nach <b>Desktop\DistroKid\</b> legen (Dateiname ~ Songtitel, Sonderzeichen egal).</div>
-                  <div><b>3.</b> Oben <b>Titel</b> (und unten den Liedtext) eintippen, dann <b>„📝 Prompt-Vorschlag holen"</b> → ein Bild-Prompt landet im Textfeld (kostenlos). Prompt frei bearbeiten, dann <b>„🎨 Bild erzeugen"</b> (gratis, Cloudflare FLUX) → passt nicht? Prompt anpassen und nochmal — beliebig oft, ohne Kosten. Sitzt der Prompt: <b>„🌟 Finale in HD mit MAI"</b> (~10 ct). Das zuletzt erzeugte Bild ist automatisch das Cover.</div>
-                  <div><b>4.</b> <b>Sprache + Genre</b> wählen, Liedtext einfügen <span style="color:var(--dim)">(optional, für den Namens-Scan)</span>.</div>
-                  <div><b>5.</b> Grünen Knopf <b>„🚀 Für DistroKid fertig machen"</b> → fertiger Ordner auf dem <b>Desktop</b>.</div>
+                  <div><b>3.</b> In der Karte: <b>Schritt 1</b> Titel, <b>Schritt 2</b> Liedtext eintragen.</div>
+                  <div><b>4.</b> <b>Schritt 3 (Cover):</b> <b>„📝 Prompt-Vorschlag holen"</b> → Bild-Prompt landet im Feld (kostenlos). Prompt frei bearbeiten, dann <b>„🎨 Bild erzeugen"</b> (gratis, Cloudflare FLUX) → passt nicht? Prompt anpassen und nochmal, beliebig oft ohne Kosten. Sitzt er: <b>„🌟 Finale in HD mit MAI"</b> (~10 ct). Das zuletzt erzeugte Bild ist automatisch das Cover.</div>
+                  <div><b>5.</b> <b>Schritt 4:</b> Sprache + Genre wählen, dann <b>„🚀 Alles für DistroKid vorbereiten"</b> → fertiger Ordner auf dem <b>Desktop</b>.</div>
                   <div><b>6.</b> Bei <b>DistroKid hochladen</b> — die <b>Checkliste</b> im Ordner sagt dir jedes Feld (Künstler = bollawave, KI-Haken setzen!).</div>
                   <div><b>7.</b> <b>Nach</b> dem Release: Video + Captions aus dem Unterordner <b>„Social Media"</b> posten <span style="color:var(--dim)">(bei TikTok den KI-Haken beim Upload setzen)</span>.</div>
                   <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);color:var(--dim)">💡 Suno sperrt seit 09/2026 den Auto-Download — deshalb Schritt 1+2 von Hand. Prompt-Vorschlag + „Bild erzeugen" (Cloudflare FLUX) sind <b>gratis</b> und beliebig oft wiederholbar; nur „🌟 Finale in HD mit MAI" kostet ~10 ct.</div>
