@@ -494,7 +494,7 @@ def bildgen_generate(prompt, model="gemini-2.5-flash-image", aspect_ratio="1:1",
     return None, "Kein Bild in der API-Antwort erhalten."
 
 
-BILDGEN_ARCHIVE_DIR = os.path.join(WORKSPACE, "data/bildgen_archive")
+BILDGEN_ARCHIVE_DIR = "/mnt/d/OneDrive/Dokumente/Bolla/KI Bilder"
 _MAI_CFG_PATH = os.path.join(WORKSPACE, "config/mai_image.json")
 
 def _mai_config():
