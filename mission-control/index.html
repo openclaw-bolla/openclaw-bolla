@@ -3084,6 +3084,11 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 </div>
                 <div id="aurora2-inhalt" style="display:none;font-size:15px;color:var(--text);line-height:1.85;white-space:pre-wrap;max-height:600px;overflow-y:auto"></div>
                 <div id="aurora2-inhalt-platzhalter" style="font-size:14px;color:var(--dim)">← Klicke links auf ein Kapitel — oder schreib unten eine Anweisung für das erste.</div>
+                <div id="aurora2-satz-zeile" style="display:none;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);flex-wrap:wrap">
+                  <button onclick="aurora2SatzMelden()" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);color:#ef4444;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer">🚩 Markierten Satz melden</button>
+                  <span style="font-size:12px;color:var(--dim)">Text im Kapitel oben markieren, dann klicken — ich schau's mir an und korrigiere es zeitnah.</span>
+                  <span id="aurora2-satz-status" style="font-size:12px"></span>
+                </div>
               </div>
 
               <!-- Produzenten-Steuerung (Vorbesprechung) — eingeklappt, nicht dauernd im Weg -->
@@ -12208,9 +12213,36 @@ function aurora2ZeigeKapitel(idx) {
   if (im) im.textContent = `${(kap.text||'').split(/\s+/).filter(Boolean).length} Wörter${kap.datum?' · '+kap.datum:''}`;
   if (platz) platz.style.display = 'none';
   if (inhalt) { inhalt.textContent = kap.text || '(Kein Text)'; inhalt.style.display = 'block'; }
+  const satzZeile = document.getElementById('aurora2-satz-zeile');
+  if (satzZeile) satzZeile.style.display = 'flex';
+  const satzStatus = document.getElementById('aurora2-satz-status');
+  if (satzStatus) satzStatus.textContent = '';
   const ziel = document.getElementById('aurora2-kommentar-ziel');
   if (ziel) ziel.textContent = `→ bezieht sich auf "${kap.titel||'Kapitel '+(idx+1)}"`;
   aurora2RenderKapitelListe();
+}
+
+async function aurora2SatzMelden() {
+  const status = document.getElementById('aurora2-satz-status');
+  const sel = window.getSelection ? window.getSelection().toString().trim() : '';
+  if (!sel) {
+    if (status) { status.textContent = '⚠️ Erst Text im Kapitel oben markieren.'; status.style.color = '#f59e0b'; }
+    return;
+  }
+  if (!_aurora2Data || _aurora2AktivIdx == null || !_aurora2Data.kapitel[_aurora2AktivIdx]) return;
+  const kapTitel = _aurora2Data.kapitel[_aurora2AktivIdx].titel;
+  if (status) { status.textContent = '⏳ Melde…'; status.style.color = 'var(--dim)'; }
+  try {
+    const res = await fetch(API + '/api/aurora2/satz-markieren', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ kapitel_titel: kapTitel, satz: sel })
+    });
+    const data = await res.json();
+    if (data.ok) { if (status) { status.textContent = '✅ Gemeldet — wird geprüft und zeitnah korrigiert.'; status.style.color = '#22c55e'; } }
+    else { if (status) { status.textContent = '⚠️ ' + (data.error || 'Fehler'); status.style.color = '#ef4444'; } }
+  } catch (e) {
+    if (status) { status.textContent = '⚠️ Netzwerkfehler'; status.style.color = '#ef4444'; }
+  }
 }
 
 let _aurora2PollTimer = null;

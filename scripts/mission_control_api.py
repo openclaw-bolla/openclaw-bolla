@@ -8643,8 +8643,8 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     global _ki_buch_job
                     try:
                         cl = _sh3.which("claude") or os.path.expanduser("~/.local/bin/claude")
-                        r = _sp3.run([cl, "-p", "--output-format", "json", "--model", "claude-sonnet-5", prompt],
-                                     capture_output=True, text=True, timeout=900, stdin=_sp3.DEVNULL,
+                        r = _sp3.run([cl, "-p", "--output-format", "json", "--model", "claude-sonnet-5"],
+                                     input=prompt, capture_output=True, text=True, timeout=900,
                                      cwd=os.path.expanduser("~"))
                         if r.returncode != 0:
                             _ki_buch_job = {"status": "error", "error": r.stderr[:200] or "Claude-Fehler", "antwort":"","inhalt":"","inhalt_titel":""}
@@ -8824,8 +8824,8 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     global _aurora2_job
                     try:
                         cl = _sh4.which("claude") or os.path.expanduser("~/.local/bin/claude")
-                        r = _sp4.run([cl, "-p", "--output-format", "json", "--model", "claude-sonnet-5", prompt],
-                                     capture_output=True, text=True, timeout=900, stdin=_sp4.DEVNULL,
+                        r = _sp4.run([cl, "-p", "--output-format", "json", "--model", "claude-sonnet-5"],
+                                     input=prompt, capture_output=True, text=True, timeout=900,
                                      cwd=os.path.expanduser("~"))
                         if r.returncode != 0:
                             _aurora2_job = {"status": "error", "error": r.stderr[:200] or "Claude-Fehler", "antwort":"","inhalt":"","inhalt_titel":""}
@@ -8888,6 +8888,29 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 buch.setdefault("kommentare", []).append({
                     "text": body.get("text", ""),
                     "datum": _dt5.datetime.now().strftime("%Y-%m-%d %H:%M")
+                })
+                with open(bf2, "w") as fh:
+                    json.dump(buch, fh, ensure_ascii=False, indent=2)
+                self._send_json({"ok": True})
+
+            elif self.path == "/api/aurora2/satz-markieren":
+                bf2 = os.path.join(WORKSPACE, "data/aurora2.json")
+                with open(bf2) as fh:
+                    buch = json.load(fh)
+                import datetime as _dt6, uuid as _uuid1
+                satz = (body.get("satz") or "").strip()
+                kap_titel = (body.get("kapitel_titel") or "").strip()
+                if not satz or not kap_titel:
+                    self._send_json({"ok": False, "error": "Satz oder Kapitel fehlt"}); return
+                kap = next((k for k in buch.get("kapitel", []) if k.get("titel") == kap_titel), None)
+                if not kap or satz not in kap.get("text", ""):
+                    self._send_json({"ok": False, "error": "Text nicht im Kapitel gefunden — bitte exakt markieren"}); return
+                buch.setdefault("satz_markierungen", []).append({
+                    "id": _uuid1.uuid4().hex[:8],
+                    "kapitel_titel": kap_titel,
+                    "satz": satz,
+                    "status": "offen",
+                    "datum": _dt6.datetime.now().strftime("%Y-%m-%d %H:%M"),
                 })
                 with open(bf2, "w") as fh:
                     json.dump(buch, fh, ensure_ascii=False, indent=2)
