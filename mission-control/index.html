@@ -12420,12 +12420,15 @@ async function aurora2SatzEntscheidung(entscheidung) {
       return;
     }
     if (entscheidung === 'annehmen' && data.neuer_text != null && _aurora2Data && _aurora2AktivIdx != null) {
+      const kapTitel = _aurora2SatzAktuell.kapTitel;
       if (_aurora2AktivIdx === 'vorwort') _aurora2Data.vorwort = data.neuer_text;
       else _aurora2Data.kapitel[_aurora2AktivIdx].text = data.neuer_text;
-      const inhalt = document.getElementById('aurora2-inhalt');
-      if (inhalt) inhalt.textContent = data.neuer_text;
+      _aurora2Data.lesemarken = _aurora2Data.lesemarken || {};
+      _aurora2Data.lesemarken[kapTitel] = { satz: _aurora2SatzAktuell.vorschlag, datum: new Date().toISOString().slice(0,16).replace('T',' ') };
+      aurora2RenderInhaltMitLesemarke(data.neuer_text, kapTitel);
       const im = document.getElementById('aurora2-inhalt-meta');
       if (im) im.textContent = `${data.neuer_text.split(/\s+/).filter(Boolean).length} Wörter`;
+      aurora2RenderKapitelListe();
       if (status) { status.textContent = '✅ Übernommen und eingebaut.'; status.style.color = '#22c55e'; }
     } else {
       if (status) { status.textContent = '👍 Verworfen, Original bleibt.'; status.style.color = 'var(--dim)'; }

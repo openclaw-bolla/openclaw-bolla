@@ -9009,6 +9009,9 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                         buch.setdefault("statistik", {})["woerter_gesamt"] = sum(len(k["text"].split()) for k in buch["kapitel"])
                     m["status"] = "uebernommen"
                     m["erledigt_am"] = _dt7.datetime.now().strftime("%Y-%m-%d %H:%M")
+                    buch.setdefault("lesemarken", {})[m["kapitel_titel"]] = {
+                        "satz": m["vorschlag"], "datum": m["erledigt_am"],
+                    }
                     with open(bf2, "w") as fh:
                         json.dump(buch, fh, ensure_ascii=False, indent=2)
                     self._send_json({"ok": True, "neuer_text": neuer_text})
