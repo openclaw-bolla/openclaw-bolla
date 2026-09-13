@@ -8920,6 +8920,11 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 idx = text.find(satz)
                 vor = text[max(0, idx - 400):idx]
                 nach = text[idx + len(satz):idx + len(satz) + 400]
+                buch.setdefault("lesemarken", {})[kap_titel] = {
+                    "satz": satz, "datum": _dt6.datetime.now().strftime("%Y-%m-%d %H:%M"),
+                }
+                with open(bf2, "w") as fh:
+                    json.dump(buch, fh, ensure_ascii=False, indent=2)
                 mark_id = _uuid1.uuid4().hex[:8]
                 ort_beschreibung = "im Vorwort" if kap_titel == "__VORWORT__" else f'im Kapitel "{kap_titel}"'
                 prompt = f"""Du bist Bolla, Lektor und Co-Autor für den deutschen KI-Thriller "AURORA II". Chris (der Autor)

@@ -12217,14 +12217,34 @@ function aurora2FigurToggle(i) {
   if (arr) arr.textContent = open ? '▾' : '▸';
 }
 
+function aurora2RenderInhaltMitLesemarke(text, lesemarkeKey) {
+  const inhalt = document.getElementById('aurora2-inhalt');
+  if (!inhalt) return;
+  const marke = (_aurora2Data && _aurora2Data.lesemarken) ? _aurora2Data.lesemarken[lesemarkeKey] : null;
+  const satz = marke && marke.satz;
+  if (!satz || !text.includes(satz)) {
+    inhalt.textContent = text || '(Kein Text)';
+    return;
+  }
+  const idx = text.indexOf(satz);
+  const vor = text.slice(0, idx), mitte = text.slice(idx, idx + satz.length), nach = text.slice(idx + satz.length);
+  inhalt.innerHTML = aurora2Esc(vor)
+    + '<span id="aurora2-lesemarke" style="background:rgba(236,72,153,0.20);border-bottom:2px solid #ec4899;border-radius:3px;padding:1px 2px" title="Deine letzte Position hier — ' + aurora2Esc(marke.datum||'') + '">'
+    + aurora2Esc(mitte) + '</span>' + aurora2Esc(nach);
+  const markEl = document.getElementById('aurora2-lesemarke');
+  if (markEl) setTimeout(() => markEl.scrollIntoView({block: 'center'}), 30);
+}
+
 function aurora2RenderKapitelListe() {
   const kl = document.getElementById('aurora2-kapitel-liste');
   if (!kl || !_aurora2Data) return;
   const kapitel = _aurora2Data.kapitel || [];
+  const lesemarken = _aurora2Data.lesemarken || {};
   kl.innerHTML = kapitel.length
     ? kapitel.map((kap,i) => {
         const aktiv = i === _aurora2AktivIdx;
-        return `<div onclick="aurora2ZeigeKapitel(${i})" style="padding:7px 9px;cursor:pointer;font-size:13px;border-radius:7px;margin-bottom:3px;${aktiv?'background:rgba(236,72,153,0.18);color:#ec4899;font-weight:600;border:1px solid rgba(236,72,153,0.4)':'color:var(--text);border:1px solid transparent'}" onmouseover="if(${i}!==_aurora2AktivIdx)this.style.background='rgba(255,255,255,0.04)'" onmouseout="if(${i}!==_aurora2AktivIdx)this.style.background=''">📄 ${kap.titel||'Kapitel '+(i+1)}</div>`;
+        const marke = lesemarken[kap.titel] ? ` <span title="Letzte Position: ${aurora2Esc(lesemarken[kap.titel].datum||'')}">📍</span>` : '';
+        return `<div onclick="aurora2ZeigeKapitel(${i})" style="padding:7px 9px;cursor:pointer;font-size:13px;border-radius:7px;margin-bottom:3px;${aktiv?'background:rgba(236,72,153,0.18);color:#ec4899;font-weight:600;border:1px solid rgba(236,72,153,0.4)':'color:var(--text);border:1px solid transparent'}" onmouseover="if(${i}!==_aurora2AktivIdx)this.style.background='rgba(255,255,255,0.04)'" onmouseout="if(${i}!==_aurora2AktivIdx)this.style.background=''">📄 ${kap.titel||'Kapitel '+(i+1)}${marke}</div>`;
       }).join('')
     : '<span style="color:var(--dim)">Noch keine Kapitel</span>';
   const vwItem = document.getElementById('aurora2-vorwort-item');
@@ -12246,9 +12266,11 @@ function aurora2ZeigeVorwort() {
   const im = document.getElementById('aurora2-inhalt-meta');
   const platz = document.getElementById('aurora2-inhalt-platzhalter');
   if (it) it.textContent = 'Vorwort';
-  if (im) im.textContent = `${text.split(/\s+/).filter(Boolean).length} Wörter`;
+  const marke1 = _aurora2Data.lesemarken && _aurora2Data.lesemarken['__VORWORT__'];
+  if (im) im.textContent = `${text.split(/\s+/).filter(Boolean).length} Wörter${marke1 ? ' · 📍 zuletzt hier: '+marke1.datum : ''}`;
   if (platz) platz.style.display = 'none';
-  if (inhalt) { inhalt.textContent = text || '(Kein Text)'; inhalt.style.display = 'block'; }
+  if (inhalt) inhalt.style.display = 'block';
+  aurora2RenderInhaltMitLesemarke(text, '__VORWORT__');
   const satzZeile = document.getElementById('aurora2-satz-zeile');
   if (satzZeile) satzZeile.style.display = 'flex';
   const satzStatus = document.getElementById('aurora2-satz-status');
@@ -12272,9 +12294,11 @@ function aurora2ZeigeKapitel(idx) {
   const im = document.getElementById('aurora2-inhalt-meta');
   const platz = document.getElementById('aurora2-inhalt-platzhalter');
   if (it) it.textContent = kap.titel || 'Kapitel ' + (idx+1);
-  if (im) im.textContent = `${(kap.text||'').split(/\s+/).filter(Boolean).length} Wörter${kap.datum?' · '+kap.datum:''}`;
+  const marke2 = _aurora2Data.lesemarken && _aurora2Data.lesemarken[kap.titel];
+  if (im) im.textContent = `${(kap.text||'').split(/\s+/).filter(Boolean).length} Wörter${kap.datum?' · '+kap.datum:''}${marke2 ? ' · 📍 zuletzt hier: '+marke2.datum : ''}`;
   if (platz) platz.style.display = 'none';
-  if (inhalt) { inhalt.textContent = kap.text || '(Kein Text)'; inhalt.style.display = 'block'; }
+  if (inhalt) inhalt.style.display = 'block';
+  aurora2RenderInhaltMitLesemarke(kap.text || '', kap.titel);
   const satzZeile = document.getElementById('aurora2-satz-zeile');
   if (satzZeile) satzZeile.style.display = 'flex';
   const satzStatus = document.getElementById('aurora2-satz-status');
@@ -12338,6 +12362,10 @@ async function aurora2SatzAbsenden() {
     if (!data.id && data.status !== 'started') {
       if (status) { status.textContent = '⚠️ ' + (data.error || 'Fehler'); status.style.color = '#ef4444'; }
       return;
+    }
+    if (_aurora2Data) {
+      _aurora2Data.lesemarken = _aurora2Data.lesemarken || {};
+      _aurora2Data.lesemarken[_aurora2SatzAktuell.kapTitel] = { satz: _aurora2SatzAktuell.satz, datum: new Date().toISOString().slice(0,16).replace('T',' ') };
     }
     if (_aurora2SatzPollTimer) clearInterval(_aurora2SatzPollTimer);
     _aurora2SatzPollTimer = setInterval(async () => {
