@@ -8828,7 +8828,7 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     global _aurora2_job
                     try:
                         cl = _sh4.which("claude") or os.path.expanduser("~/.local/bin/claude")
-                        r = _sp4.run([cl, "-p", "--output-format", "json", "--model", "claude-sonnet-5"],
+                        r = _sp4.run([cl, "-p", "--output-format", "json", "--model", "claude-opus-5"],
                                      input=prompt, capture_output=True, text=True, timeout=900,
                                      cwd=os.path.expanduser("~"))
                         if r.returncode != 0:
@@ -8910,16 +8910,20 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                 frage = (body.get("frage") or "").strip()
                 if not satz or not kap_titel:
                     self._send_json({"ok": False, "error": "Satz oder Kapitel fehlt"}); return
-                kap = next((k for k in buch.get("kapitel", []) if k.get("titel") == kap_titel), None)
+                if kap_titel == "__VORWORT__":
+                    kap = {"titel": "__VORWORT__", "text": buch.get("vorwort", "")}
+                else:
+                    kap = next((k for k in buch.get("kapitel", []) if k.get("titel") == kap_titel), None)
                 if not kap or kap.get("text", "").count(satz) != 1:
-                    self._send_json({"ok": False, "error": "Text nicht eindeutig im Kapitel gefunden — bitte exakt markieren"}); return
+                    self._send_json({"ok": False, "error": "Text nicht eindeutig gefunden — bitte exakt markieren"}); return
                 text = kap["text"]
                 idx = text.find(satz)
                 vor = text[max(0, idx - 400):idx]
                 nach = text[idx + len(satz):idx + len(satz) + 400]
                 mark_id = _uuid1.uuid4().hex[:8]
+                ort_beschreibung = "im Vorwort" if kap_titel == "__VORWORT__" else f'im Kapitel "{kap_titel}"'
                 prompt = f"""Du bist Bolla, Lektor und Co-Autor für den deutschen KI-Thriller "AURORA II". Chris (der Autor)
-hat einen Satz im Kapitel "{kap_titel}" markiert und dazu eine Bemerkung/Frage/Korrekturwunsch.
+hat einen Satz {ort_beschreibung} markiert und dazu eine Bemerkung/Frage/Korrekturwunsch.
 
 BEMERKUNG VON CHRIS:
 {frage if frage else "(keine — einfach mal draufschauen, ob der Satz sauber ist)"}
@@ -8947,8 +8951,8 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                     global _aurora2_satz_job
                     try:
                         cl = _sh5.which("claude") or os.path.expanduser("~/.local/bin/claude")
-                        r = _sp5.run([cl, "-p", "--output-format", "json", "--model", "claude-sonnet-5"],
-                                     input=prompt, capture_output=True, text=True, timeout=180,
+                        r = _sp5.run([cl, "-p", "--output-format", "json", "--model", "claude-opus-5"],
+                                     input=prompt, capture_output=True, text=True, timeout=240,
                                      cwd=os.path.expanduser("~"))
                         if r.returncode != 0:
                             _aurora2_satz_job = {"status": "error", "id": mark_id, "kapitel_titel": kap_titel, "satz": satz, "vorschlag": "", "antwort": "", "geaendert": False, "error": r.stderr[:200] or "Claude-Fehler"}
@@ -8984,17 +8988,25 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                 m = next((x for x in buch.get("satz_markierungen", []) if x.get("id") == mark_id), None)
                 if not m:
                     self._send_json({"ok": False, "error": "Markierung nicht gefunden"}); return
-                kap = next((k for k in buch.get("kapitel", []) if k.get("titel") == m["kapitel_titel"]), None)
+                ist_vorwort = m["kapitel_titel"] == "__VORWORT__"
+                kap = None if ist_vorwort else next((k for k in buch.get("kapitel", []) if k.get("titel") == m["kapitel_titel"]), None)
                 if entscheidung == "annehmen":
-                    if not kap or kap.get("text", "").count(m["satz"]) != 1:
-                        self._send_json({"ok": False, "error": "Satz nicht mehr eindeutig im Kapitel — bitte Kapitel neu laden."}); return
-                    kap["text"] = kap["text"].replace(m["satz"], m["vorschlag"], 1)
-                    buch.setdefault("statistik", {})["woerter_gesamt"] = sum(len(k["text"].split()) for k in buch["kapitel"])
+                    ziel_text = buch.get("vorwort", "") if ist_vorwort else (kap.get("text", "") if kap else "")
+                    if not ist_vorwort and not kap:
+                        self._send_json({"ok": False, "error": "Kapitel nicht gefunden."}); return
+                    if ziel_text.count(m["satz"]) != 1:
+                        self._send_json({"ok": False, "error": "Satz nicht mehr eindeutig gefunden — bitte neu laden."}); return
+                    neuer_text = ziel_text.replace(m["satz"], m["vorschlag"], 1)
+                    if ist_vorwort:
+                        buch["vorwort"] = neuer_text
+                    else:
+                        kap["text"] = neuer_text
+                        buch.setdefault("statistik", {})["woerter_gesamt"] = sum(len(k["text"].split()) for k in buch["kapitel"])
                     m["status"] = "uebernommen"
                     m["erledigt_am"] = _dt7.datetime.now().strftime("%Y-%m-%d %H:%M")
                     with open(bf2, "w") as fh:
                         json.dump(buch, fh, ensure_ascii=False, indent=2)
-                    self._send_json({"ok": True, "neuer_text": kap["text"]})
+                    self._send_json({"ok": True, "neuer_text": neuer_text})
                 elif entscheidung == "ablehnen":
                     m["status"] = "abgelehnt"
                     m["erledigt_am"] = _dt7.datetime.now().strftime("%Y-%m-%d %H:%M")

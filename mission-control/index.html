@@ -3061,6 +3061,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               </div>
               <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px">
                 <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Kapitel</div>
+                <div id="aurora2-vorwort-item" style="display:none;padding:7px 9px;cursor:pointer;font-size:13px;border-radius:7px;margin-bottom:7px;padding-bottom:10px;border-bottom:1px solid var(--border)" onclick="aurora2ZeigeVorwort()">📖 Vorwort</div>
                 <div id="aurora2-kapitel-liste" style="font-size:13px;color:var(--dim)">Noch keine Kapitel</div>
               </div>
             </div>
@@ -12081,6 +12082,8 @@ async function loadAurora2() {
 
     aurora2RenderFiguren(data);
     aurora2RenderKapitelListe();
+    const vwItem = document.getElementById('aurora2-vorwort-item');
+    if (vwItem) vwItem.style.display = data.vorwort ? 'block' : 'none';
 
     const anzahl = (data.kapitel||[]).length;
     if (anzahl > 0) {
@@ -12224,6 +12227,39 @@ function aurora2RenderKapitelListe() {
         return `<div onclick="aurora2ZeigeKapitel(${i})" style="padding:7px 9px;cursor:pointer;font-size:13px;border-radius:7px;margin-bottom:3px;${aktiv?'background:rgba(236,72,153,0.18);color:#ec4899;font-weight:600;border:1px solid rgba(236,72,153,0.4)':'color:var(--text);border:1px solid transparent'}" onmouseover="if(${i}!==_aurora2AktivIdx)this.style.background='rgba(255,255,255,0.04)'" onmouseout="if(${i}!==_aurora2AktivIdx)this.style.background=''">📄 ${kap.titel||'Kapitel '+(i+1)}</div>`;
       }).join('')
     : '<span style="color:var(--dim)">Noch keine Kapitel</span>';
+  const vwItem = document.getElementById('aurora2-vorwort-item');
+  if (vwItem) {
+    const aktivVw = _aurora2AktivIdx === 'vorwort';
+    vwItem.style.background = aktivVw ? 'rgba(236,72,153,0.18)' : '';
+    vwItem.style.color = aktivVw ? '#ec4899' : 'var(--text)';
+    vwItem.style.fontWeight = aktivVw ? '600' : 'normal';
+    vwItem.style.border = aktivVw ? '1px solid rgba(236,72,153,0.4)' : '1px solid transparent';
+  }
+}
+
+function aurora2ZeigeVorwort() {
+  if (!_aurora2Data) return;
+  const text = _aurora2Data.vorwort || '';
+  _aurora2AktivIdx = 'vorwort';
+  const inhalt = document.getElementById('aurora2-inhalt');
+  const it = document.getElementById('aurora2-inhalt-titel');
+  const im = document.getElementById('aurora2-inhalt-meta');
+  const platz = document.getElementById('aurora2-inhalt-platzhalter');
+  if (it) it.textContent = 'Vorwort';
+  if (im) im.textContent = `${text.split(/\s+/).filter(Boolean).length} Wörter`;
+  if (platz) platz.style.display = 'none';
+  if (inhalt) { inhalt.textContent = text || '(Kein Text)'; inhalt.style.display = 'block'; }
+  const satzZeile = document.getElementById('aurora2-satz-zeile');
+  if (satzZeile) satzZeile.style.display = 'flex';
+  const satzStatus = document.getElementById('aurora2-satz-status');
+  if (satzStatus) satzStatus.textContent = '';
+  const satzPanel = document.getElementById('aurora2-satz-panel');
+  if (satzPanel) satzPanel.style.display = 'none';
+  const satzErgebnis = document.getElementById('aurora2-satz-ergebnis');
+  if (satzErgebnis) satzErgebnis.style.display = 'none';
+  const ziel = document.getElementById('aurora2-kommentar-ziel');
+  if (ziel) ziel.textContent = `→ bezieht sich auf "Vorwort"`;
+  aurora2RenderKapitelListe();
 }
 
 function aurora2ZeigeKapitel(idx) {
@@ -12262,8 +12298,14 @@ function aurora2SatzOeffnen() {
     if (status) { status.textContent = '⚠️ Erst Text im Kapitel oben markieren.'; status.style.color = '#f59e0b'; }
     return;
   }
-  if (!_aurora2Data || _aurora2AktivIdx == null || !_aurora2Data.kapitel[_aurora2AktivIdx]) return;
-  const kapTitel = _aurora2Data.kapitel[_aurora2AktivIdx].titel;
+  if (!_aurora2Data || _aurora2AktivIdx == null) return;
+  let kapTitel;
+  if (_aurora2AktivIdx === 'vorwort') {
+    kapTitel = '__VORWORT__';
+  } else {
+    if (!_aurora2Data.kapitel[_aurora2AktivIdx]) return;
+    kapTitel = _aurora2Data.kapitel[_aurora2AktivIdx].titel;
+  }
   _aurora2SatzAktuell = { kapTitel, satz: sel };
   if (status) status.textContent = '';
   document.getElementById('aurora2-satz-ergebnis').style.display = 'none';
@@ -12350,12 +12392,13 @@ async function aurora2SatzEntscheidung(entscheidung) {
       return;
     }
     if (entscheidung === 'annehmen' && data.neuer_text != null && _aurora2Data && _aurora2AktivIdx != null) {
-      _aurora2Data.kapitel[_aurora2AktivIdx].text = data.neuer_text;
+      if (_aurora2AktivIdx === 'vorwort') _aurora2Data.vorwort = data.neuer_text;
+      else _aurora2Data.kapitel[_aurora2AktivIdx].text = data.neuer_text;
       const inhalt = document.getElementById('aurora2-inhalt');
       if (inhalt) inhalt.textContent = data.neuer_text;
       const im = document.getElementById('aurora2-inhalt-meta');
       if (im) im.textContent = `${data.neuer_text.split(/\s+/).filter(Boolean).length} Wörter`;
-      if (status) { status.textContent = '✅ Übernommen und im Kapitel eingebaut.'; status.style.color = '#22c55e'; }
+      if (status) { status.textContent = '✅ Übernommen und eingebaut.'; status.style.color = '#22c55e'; }
     } else {
       if (status) { status.textContent = '👍 Verworfen, Original bleibt.'; status.style.color = 'var(--dim)'; }
     }
