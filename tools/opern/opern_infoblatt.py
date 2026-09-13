@@ -24,50 +24,55 @@ from docx.oxml import OxmlElement
 
 # ============================== OPER-DATENBLOCK ==============================
 OPER = {
-    "datei":    "Barbier_von_Sevilla_Infoseite",
-    "titel":    "Der Barbier von Sevilla",
-    "untertitel": "Opera buffa in zwei Aufzügen  ·  Gioachino Rossini (1816)",
-    "akzent":   "A8361E",   # warmer Sevilla-Terrakotta (Hex ohne #). Pro Oper eigene Farbe.
+    "datei":    "Don_Giovanni_Infoseite",
+    "titel":    "Don Giovanni",
+    "untertitel": "Dramma giocoso in zwei Akten  ·  Wolfgang Amadeus Mozart (1787)",
+    "akzent":   "7A0C2E",   # dunkles Weinrot — Verführung, Blut, Höllenfahrt (Hex ohne #). Pro Oper eigene Farbe.
     "info": [
-        ("Komponist:", "Gioachino Rossini (1792–1868)"),
-        ("Originaltitel:", "Il barbiere di Siviglia"),
-        ("Libretto:", "Cesare Sterbini (nach Beaumarchais)"),
-        ("Uraufführung:", "20. Februar 1816, Rom"),
-        ("Spieldauer:", "ca. 2,5 Stunden"),
-        ("Gattung:", "Komische Oper / Opera buffa"),
+        ("Komponist:", "Wolfgang Amadeus Mozart (1756–1791)"),
+        ("Originaltitel:", "Il dissoluto punito, ossia il Don Giovanni"),
+        ("Libretto:", "Lorenzo Da Ponte"),
+        ("Uraufführung:", "29. Oktober 1787, Ständetheater Prag"),
+        ("Spieldauer:", "ca. 3 Stunden (mit Pause)"),
+        ("Gattung:", "Dramma giocoso — Mischung aus Komödie und Tragödie"),
     ],
     "personen": [
-        ("Graf Almaviva (Tenor):", "Verliebt in Rosina — wirbt als armer Student „Lindoro“ um sie"),
-        ("Figaro (Bariton):", "Barbier und Faktotum der Stadt — der gewitzte Strippenzieher"),
-        ("Rosina (Mezzosopran):", "Bartolos Mündel — klug, eigensinnig, verliebt"),
-        ("Doktor Bartolo (Bass):", "Rosinas Vormund — will sie selbst heiraten (Antagonist)"),
-        ("Don Basilio (Bass):", "Musiklehrer und Intrigant — Meister der Verleumdung"),
-        ("Berta (Sopran):", "Bartolos resolute Haushälterin"),
+        ("Don Giovanni (Bariton):", "Skrupelloser Verführer und Titelheld — kennt keine Reue"),
+        ("Leporello (Bass):", "Sein Diener — führt widerwillig Buch über seine Eroberungen"),
+        ("Il Commendatore (Bass):", "Donna Annas Vater — von Don Giovanni im Duell getötet"),
+        ("Donna Anna (Sopran):", "Tochter des Komturs — schwört Rache für seinen Tod"),
+        ("Don Ottavio (Tenor):", "Donna Annas Verlobter — steht treu an ihrer Seite"),
+        ("Donna Elvira (Sopran):", "Von Don Giovanni verlassene Frau — verfolgt ihn aus verletztem Stolz"),
+        ("Zerlina (Sopran):", "Junge Bäuerin — wird am eigenen Hochzeitstag umworben"),
+        ("Masetto (Bass):", "Zerlinas Bräutigam"),
     ],
     "akte": [
-        ("1. Aufzug", [
-            "Vor Rosinas Fenster bringt Graf Almaviva ein Ständchen. Er will als mittelloser Student „Lindoro“ geliebt werden — nicht um seines Titels willen.",
-            "Der Barbier Figaro, Tausendsassa der Stadt, bietet dem Grafen voller Selbstbewusstsein seine Dienste an (Auftrittsarie „Largo al factotum“).",
-            "Rosina lebt streng bewacht im Haus des alten Doktor Bartolo, der sie selbst heiraten will. Heimlich verliebt sie sich in „Lindoro“ („Una voce poco fa“).",
-            "Verkleidet als betrunkener Soldat verschafft sich Almaviva Zutritt — es endet in turbulentem Chaos mit der herbeigerufenen Wache.",
+        ("1. Akt", [
+            "Leporello hält Wache, während Don Giovanni versucht, Donna Anna zu verführen. Sie wehrt sich, ihr Vater, der Komtur, eilt herbei und fordert ihn zum Duell — und stirbt.",
+            "Donna Anna und ihr Verlobter Don Ottavio schwören Rache am unbekannten Mörder.",
+            "Don Giovanni trifft die von ihm verlassene Donna Elvira wieder. Leporello klärt sie mit der berühmten „Registerarie“ über die schier endlose Liste der Eroberungen seines Herrn auf.",
+            "Auf dem Land feiert die Bäuerin Zerlina ihre Hochzeit mit Masetto. Don Giovanni umgarnt sie („Là ci darem la mano“), wird aber von der eifersüchtigen Donna Elvira gestört.",
+            "Bei einem Fest auf seinem Schloss versucht Don Giovanni erneut, sich an Zerlina heranzumachen. Als Donna Anna, Ottavio und Elvira maskiert erscheinen, um ihn zu stellen, entkommt er im Tumult.",
         ]),
-        ("2. Aufzug", [
-            "Almaviva kehrt als Musiklehrer „Don Alonso“ verkleidet zurück, angeblich Vertretung des erkrankten Basilio, um Rosina Unterricht zu geben.",
-            "Während Figaro den Doktor zur Ablenkung rasiert, schmieden die Liebenden den Fluchtplan. Der echte Basilio platzt herein — und wird bestochen.",
-            "Bartolo schöpft Verdacht und jagt alle hinaus. Basilio sät derweil das Gift der Verleumdung („La calunnia è un venticello“).",
-            "In der Gewitternacht dringen Almaviva und Figaro ein. Bartolos bestellter Notar traut stattdessen die Liebenden. Bartolo fügt sich — alles endet heiter.",
+        ("2. Akt", [
+            "Don Giovanni tauscht mit Leporello die Kleider, um Donna Elviras Zofe zu verführen — Leporello muss in seiner Rolle die verzweifelte Elvira ablenken.",
+            "Als „Leporello“ verkleidet, singt Don Giovanni sein Ständchen „Deh, vieni alla finestra“ — wird aber von Masetto und aufgebrachten Bauern gestellt und verprügelt Masetto in der Verwirrung.",
+            "Der echte Leporello wird enttarnt und kann fliehen.",
+            "Auf dem Friedhof begegnet Don Giovanni der steinernen Statue des ermordeten Komturs und lädt sie frech zum Essen ein — die Statue nickt zustimmend.",
+            "Beim Abendmahl erscheint die Statue tatsächlich und fordert Don Giovanni zur Reue auf. Er weigert sich trotz aller Warnungen — und wird von den Flammen der Hölle verschlungen.",
+            "Im Epilog berichten die Überlebenden, wie es mit ihnen weitergeht: Moral der Geschichte — so endet, wer Böses tut.",
         ]),
     ],
     "musik": [
-        ("Ouvertüre:", "Sprühender Klassiker — eines der bekanntesten Opernvorspiele überhaupt"),
-        ("„Largo al factotum“:", "Figaros rasante Auftrittsarie („Figaro hier, Figaro da“)"),
-        ("„Una voce poco fa“:", "Rosinas glanzvolle Belcanto-Arie (1. Akt)"),
-        ("„La calunnia“:", "Basilios berühmte Verleumdungsarie (2. Akt)"),
-        ("„All’idea di quel metallo“:", "Funkelndes Duett Almaviva–Figaro"),
+        ("Ouvertüre:", "Dramatisch-düster — nimmt die Höllenfahrt-Szene des Finales musikalisch vorweg"),
+        ("„Madamina, il catalogo è questo“:", "Leporellos berühmte Register-/Katalogarie (1. Akt)"),
+        ("„Là ci darem la mano“:", "Verführerisches Duett Don Giovanni–Zerlina"),
+        ("„Deh, vieni alla finestra“:", "Don Giovannis Ständchen mit Mandolinenbegleitung (2. Akt)"),
+        ("Finale 2. Akt:", "Die Commendatore-Szene — Don Giovannis Höllenfahrt"),
     ],
     "bedeutung": [
-        "Der Barbier von Sevilla gilt als eine der vollkommensten komischen Opern überhaupt. Rossini schrieb das Werk mit nur 23 Jahren in knapp drei Wochen — sprudelnd vor Witz, Tempo und Belcanto-Virtuosität.",
-        "Die Uraufführung 1816 in Rom geriet zum Fiasko, doch schon Tage später begann ein beispielloser Welterfolg. Die Handlung ist die Vorgeschichte zu Mozarts „Figaros Hochzeit“.",
+        "Don Giovanni gilt neben „Figaros Hochzeit“ und „Così fan tutte“ als eine der drei großen Da-Ponte-Opern Mozarts und als Gipfelwerk der Gattung „dramma giocoso“ — der Verschmelzung von Komödie und Tragödie.",
+        "E.T.A. Hoffmann nannte sie später die „Oper aller Opern“. Die unersättliche, bis zuletzt unbeugsame Titelfigur wurde weit über die Musikwelt hinaus zum kulturellen Mythos des Verführers Don Juan.",
     ],
 }
 # ===========================================================================
