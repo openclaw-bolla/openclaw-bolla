@@ -237,6 +237,7 @@ _gluecksrad_state = {"stil": None, "nummer": None}
 # KI-Buch Async-Job (Hintergrund-Thread für Claude-Aufruf)
 _ki_buch_job = {"status": "idle", "antwort": "", "inhalt": "", "inhalt_titel": "", "error": ""}
 _aurora2_job = {"status": "idle", "antwort": "", "inhalt": "", "inhalt_titel": "", "error": ""}
+_aurora2_satz_job = {"status": "idle", "id": "", "kapitel_titel": "", "satz": "", "vorschlag": "", "antwort": "", "geaendert": False, "error": ""}
 
 def get_clipboard():
     try:
@@ -7946,6 +7947,9 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
             elif self.path == "/api/aurora2/generiere-status":
                 self._send_json(_aurora2_job)
 
+            elif self.path == "/api/aurora2/satz-frage-status":
+                self._send_json(_aurora2_satz_job)
+
             elif self.path == "/api/aurora2":
                 f = os.path.join(WORKSPACE, "data/aurora2.json")
                 if os.path.isfile(f):
@@ -8893,28 +8897,112 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     json.dump(buch, fh, ensure_ascii=False, indent=2)
                 self._send_json({"ok": True})
 
-            elif self.path == "/api/aurora2/satz-markieren":
+            elif self.path == "/api/aurora2/satz-frage":
+                global _aurora2_satz_job
+                if _aurora2_satz_job["status"] == "running":
+                    self._send_json({"status": "running"}); return
+                import threading as _thr5, shutil as _sh5, subprocess as _sp5, re as _re7, datetime as _dt6, uuid as _uuid1
                 bf2 = os.path.join(WORKSPACE, "data/aurora2.json")
                 with open(bf2) as fh:
                     buch = json.load(fh)
-                import datetime as _dt6, uuid as _uuid1
                 satz = (body.get("satz") or "").strip()
                 kap_titel = (body.get("kapitel_titel") or "").strip()
+                frage = (body.get("frage") or "").strip()
                 if not satz or not kap_titel:
                     self._send_json({"ok": False, "error": "Satz oder Kapitel fehlt"}); return
                 kap = next((k for k in buch.get("kapitel", []) if k.get("titel") == kap_titel), None)
-                if not kap or satz not in kap.get("text", ""):
-                    self._send_json({"ok": False, "error": "Text nicht im Kapitel gefunden — bitte exakt markieren"}); return
-                buch.setdefault("satz_markierungen", []).append({
-                    "id": _uuid1.uuid4().hex[:8],
-                    "kapitel_titel": kap_titel,
-                    "satz": satz,
-                    "status": "offen",
-                    "datum": _dt6.datetime.now().strftime("%Y-%m-%d %H:%M"),
-                })
-                with open(bf2, "w") as fh:
-                    json.dump(buch, fh, ensure_ascii=False, indent=2)
-                self._send_json({"ok": True})
+                if not kap or kap.get("text", "").count(satz) != 1:
+                    self._send_json({"ok": False, "error": "Text nicht eindeutig im Kapitel gefunden — bitte exakt markieren"}); return
+                text = kap["text"]
+                idx = text.find(satz)
+                vor = text[max(0, idx - 400):idx]
+                nach = text[idx + len(satz):idx + len(satz) + 400]
+                mark_id = _uuid1.uuid4().hex[:8]
+                prompt = f"""Du bist Bolla, Lektor und Co-Autor für den deutschen KI-Thriller "AURORA II". Chris (der Autor)
+hat einen Satz im Kapitel "{kap_titel}" markiert und dazu eine Bemerkung/Frage/Korrekturwunsch.
+
+BEMERKUNG VON CHRIS:
+{frage if frage else "(keine — einfach mal draufschauen, ob der Satz sauber ist)"}
+
+KONTEXT DAVOR:
+…{vor}
+
+MARKIERTER SATZ:
+{satz}
+
+KONTEXT DANACH:
+{nach}…
+
+Geh direkt auf Chris' Bemerkung ein. Ist es eine Frage oder ein Verständnisproblem: beantworte sie kurz und
+klar. Ist es ein Korrekturwunsch oder hältst du den Satz für unsauber/fehlerhaft: biete einen konkret
+verbesserten Satz an — Inhalt, Fakten, Ton (trocken/lakonisch) und Erzählperspektive exakt beibehalten, nur
+so viel ändern wie nötig. Ist der Satz schon gut und Chris' Punkt lässt sich ohne Textänderung klären, lass
+den Vorschlag identisch zum Original.
+
+Antworte AUSSCHLIESSLICH in diesem Format:
+ANTWORT: <deine Antwort an Chris, 1-4 Sätze, direkt, locker, wie ein Kumpel der auch Ahnung hat>
+VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn keine Textänderung nötig ist>"""
+                _aurora2_satz_job = {"status": "running", "id": mark_id, "kapitel_titel": kap_titel, "satz": satz, "vorschlag": "", "antwort": "", "geaendert": False, "error": ""}
+                def _run5():
+                    global _aurora2_satz_job
+                    try:
+                        cl = _sh5.which("claude") or os.path.expanduser("~/.local/bin/claude")
+                        r = _sp5.run([cl, "-p", "--output-format", "json", "--model", "claude-sonnet-5"],
+                                     input=prompt, capture_output=True, text=True, timeout=180,
+                                     cwd=os.path.expanduser("~"))
+                        if r.returncode != 0:
+                            _aurora2_satz_job = {"status": "error", "id": mark_id, "kapitel_titel": kap_titel, "satz": satz, "vorschlag": "", "antwort": "", "geaendert": False, "error": r.stderr[:200] or "Claude-Fehler"}
+                            return
+                        raw = json.loads(r.stdout).get("result", "")
+                        def _extract5(tag):
+                            mm = _re7.search(_re7.escape(f"{tag}:") + r"\s*(.*?)(?=\n[A-Z_]+:|\Z)", raw, _re7.DOTALL)
+                            return mm.group(1).strip() if mm else ""
+                        antwort = _extract5("ANTWORT")
+                        vorschlag = _extract5("VORSCHLAG")
+                        geaendert = bool(vorschlag) and vorschlag.strip() != satz.strip()
+                        with open(bf2) as fh2: buch2 = json.load(fh2)
+                        buch2.setdefault("satz_markierungen", []).append({
+                            "id": mark_id, "kapitel_titel": kap_titel, "satz": satz, "frage": frage,
+                            "antwort": antwort, "vorschlag": vorschlag,
+                            "status": "wartet_entscheidung" if geaendert else "beantwortet",
+                            "datum": _dt6.datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        })
+                        with open(bf2, "w") as fh2: json.dump(buch2, fh2, ensure_ascii=False, indent=2)
+                        _aurora2_satz_job = {"status": "done", "id": mark_id, "kapitel_titel": kap_titel, "satz": satz, "vorschlag": vorschlag, "antwort": antwort, "geaendert": geaendert, "error": ""}
+                    except Exception as ex:
+                        _aurora2_satz_job = {"status": "error", "id": mark_id, "kapitel_titel": kap_titel, "satz": satz, "vorschlag": "", "antwort": "", "geaendert": False, "error": str(ex)}
+                _thr5.Thread(target=_run5, daemon=True).start()
+                self._send_json({"status": "started", "id": mark_id})
+
+            elif self.path == "/api/aurora2/satz-entscheidung":
+                bf2 = os.path.join(WORKSPACE, "data/aurora2.json")
+                with open(bf2) as fh:
+                    buch = json.load(fh)
+                import datetime as _dt7
+                mark_id = (body.get("id") or "").strip()
+                entscheidung = (body.get("entscheidung") or "").strip()
+                m = next((x for x in buch.get("satz_markierungen", []) if x.get("id") == mark_id), None)
+                if not m:
+                    self._send_json({"ok": False, "error": "Markierung nicht gefunden"}); return
+                kap = next((k for k in buch.get("kapitel", []) if k.get("titel") == m["kapitel_titel"]), None)
+                if entscheidung == "annehmen":
+                    if not kap or kap.get("text", "").count(m["satz"]) != 1:
+                        self._send_json({"ok": False, "error": "Satz nicht mehr eindeutig im Kapitel — bitte Kapitel neu laden."}); return
+                    kap["text"] = kap["text"].replace(m["satz"], m["vorschlag"], 1)
+                    buch.setdefault("statistik", {})["woerter_gesamt"] = sum(len(k["text"].split()) for k in buch["kapitel"])
+                    m["status"] = "uebernommen"
+                    m["erledigt_am"] = _dt7.datetime.now().strftime("%Y-%m-%d %H:%M")
+                    with open(bf2, "w") as fh:
+                        json.dump(buch, fh, ensure_ascii=False, indent=2)
+                    self._send_json({"ok": True, "neuer_text": kap["text"]})
+                elif entscheidung == "ablehnen":
+                    m["status"] = "abgelehnt"
+                    m["erledigt_am"] = _dt7.datetime.now().strftime("%Y-%m-%d %H:%M")
+                    with open(bf2, "w") as fh:
+                        json.dump(buch, fh, ensure_ascii=False, indent=2)
+                    self._send_json({"ok": True})
+                else:
+                    self._send_json({"ok": False, "error": "Unbekannte Entscheidung"})
 
             elif self.path == "/api/aurora2/steuerung":
                 bf2 = os.path.join(WORKSPACE, "data/aurora2.json")
