@@ -15,7 +15,21 @@ log "=== Backup gestartet (heute: $TODAY) ==="
 cd "$WORKSPACE" || { log "ERROR: cd workspace fehlgeschlagen"; exit 1; }
 
 if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
-    git add -A 2>>"$LOG"
+    git add -A -- . ':!backups/*.tar' ':!backups/**/*.tar' 2>>"$LOG"
+
+    # Sicherheitsnetz: keine Dateien >20MB committen (verhindert Wiederholung des
+    # Tansania-Tar-Vorfalls vom 08./09.09.2026, der monatelang git push blockiert hat)
+    BIG_FILES=""
+    while IFS= read -r f; do
+        [ -f "$f" ] || continue
+        size=$(stat -c%s "$f" 2>/dev/null) || continue
+        if [ "$size" -gt 20971520 ]; then
+            BIG_FILES="$BIG_FILES $f (${size}B)"
+            git restore --staged -- "$f" 2>>"$LOG"
+        fi
+    done <<< "$(git diff --cached --name-only)"
+    [ -n "$BIG_FILES" ] && log "WARNING: Große Datei(en) vom Commit ausgeschlossen (>20MB):$BIG_FILES"
+
     git commit -m "Automatische Nachtsicherung $TODAY" 2>>"$LOG" \
         && log "git commit OK" || log "git commit: nichts Neues oder Fehler (OK)"
 fi
