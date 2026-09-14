@@ -5261,7 +5261,7 @@ def get_claude_quota():
     import time as _t
     import urllib.request as _ur
     import urllib.error as _ue
-    if _claude_quota_cache["data"] and _t.time() - _claude_quota_cache["ts"] < 300:
+    if _claude_quota_cache["data"] and _t.time() - _claude_quota_cache["ts"] < 60:
         return _claude_quota_cache["data"]
 
     def _fetch(token):
