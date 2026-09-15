@@ -11073,7 +11073,11 @@ function refreshOnReturn() {
   const page = nav ? nav.dataset.page : 'dashboard';
   const dayChanged = new Date().toDateString() !== _lastActiveDay;
   _lastActiveDay = new Date().toDateString();
-  try { if (page && typeof showPage === 'function') showPage(page); } catch(e) {}
+  // AURORA II: bei offener/laufender Satz-Frage NICHT neu laden — würde Panel/Ergebnis wegreißen
+  const aurora2Busy = page === 'aurora2' && typeof _aurora2SatzAktuell !== 'undefined' && _aurora2SatzAktuell;
+  if (!aurora2Busy) {
+    try { if (page && typeof showPage === 'function') showPage(page); } catch(e) {}
+  }
   if (dayChanged) {  // neuer Tag → Tagesinhalte explizit frisch ziehen
     try { loadPhoto(); loadRecipe(); loadBirthdays(); renderGreeting(); } catch(e) {}
   }
@@ -12273,12 +12277,15 @@ function aurora2ZeigeVorwort() {
   aurora2RenderInhaltMitLesemarke(text, '__VORWORT__');
   const satzZeile = document.getElementById('aurora2-satz-zeile');
   if (satzZeile) satzZeile.style.display = 'flex';
-  const satzStatus = document.getElementById('aurora2-satz-status');
-  if (satzStatus) satzStatus.textContent = '';
-  const satzPanel = document.getElementById('aurora2-satz-panel');
-  if (satzPanel) satzPanel.style.display = 'none';
-  const satzErgebnis = document.getElementById('aurora2-satz-ergebnis');
-  if (satzErgebnis) satzErgebnis.style.display = 'none';
+  // Offene/laufende Satz-Frage zu genau diesem Abschnitt nicht wegreißen (Seitenwechsel + zurück)
+  if (!(_aurora2SatzAktuell && _aurora2SatzAktuell.kapTitel === '__VORWORT__')) {
+    const satzStatus = document.getElementById('aurora2-satz-status');
+    if (satzStatus) satzStatus.textContent = '';
+    const satzPanel = document.getElementById('aurora2-satz-panel');
+    if (satzPanel) satzPanel.style.display = 'none';
+    const satzErgebnis = document.getElementById('aurora2-satz-ergebnis');
+    if (satzErgebnis) satzErgebnis.style.display = 'none';
+  }
   const ziel = document.getElementById('aurora2-kommentar-ziel');
   if (ziel) ziel.textContent = `→ bezieht sich auf "Vorwort"`;
   aurora2RenderKapitelListe();
@@ -12301,12 +12308,15 @@ function aurora2ZeigeKapitel(idx) {
   aurora2RenderInhaltMitLesemarke(kap.text || '', kap.titel);
   const satzZeile = document.getElementById('aurora2-satz-zeile');
   if (satzZeile) satzZeile.style.display = 'flex';
-  const satzStatus = document.getElementById('aurora2-satz-status');
-  if (satzStatus) satzStatus.textContent = '';
-  const satzPanel = document.getElementById('aurora2-satz-panel');
-  if (satzPanel) satzPanel.style.display = 'none';
-  const satzErgebnis = document.getElementById('aurora2-satz-ergebnis');
-  if (satzErgebnis) satzErgebnis.style.display = 'none';
+  // Offene/laufende Satz-Frage zu genau diesem Kapitel nicht wegreißen (Seitenwechsel + zurück)
+  if (!(_aurora2SatzAktuell && _aurora2SatzAktuell.kapTitel === kap.titel)) {
+    const satzStatus = document.getElementById('aurora2-satz-status');
+    if (satzStatus) satzStatus.textContent = '';
+    const satzPanel = document.getElementById('aurora2-satz-panel');
+    if (satzPanel) satzPanel.style.display = 'none';
+    const satzErgebnis = document.getElementById('aurora2-satz-ergebnis');
+    if (satzErgebnis) satzErgebnis.style.display = 'none';
+  }
   const ziel = document.getElementById('aurora2-kommentar-ziel');
   if (ziel) ziel.textContent = `→ bezieht sich auf "${kap.titel||'Kapitel '+(idx+1)}"`;
   aurora2RenderKapitelListe();
