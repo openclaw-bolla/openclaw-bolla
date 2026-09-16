@@ -3732,6 +3732,8 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               style="position:absolute;top:14px;right:16px;background:var(--card2);border:1px solid var(--border);
                      border-radius:8px;color:var(--dim);padding:4px 12px;cursor:pointer;font-size:16px;line-height:1"
               onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--dim)'">✕</button>
+            <!-- Suno v6 Regler-Hinweis -->
+            <div id="suno-slider-hint-popup" style="font-size:12px;color:var(--dim);margin-bottom:10px"></div>
             <!-- Titel -->
             <div style="margin-bottom:20px">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -3807,6 +3809,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
         <div id="suno-result-grid" style="display:none;grid-template-columns:1fr 1fr;gap:20px">
           <!-- LINKS: Titel + Style + Feedback -->
           <div style="display:flex;flex-direction:column;gap:12px">
+            <div id="suno-slider-hint-inline" style="font-size:12px;color:var(--dim)"></div>
             <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                 <span style="font-size:13px;font-weight:700;color:var(--bright)">🏷️ Titel</span>
@@ -4322,8 +4325,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
           </div>
 
           <!-- ═══ DISCUSSION FEED ═══ -->
-          <div style="background:#070e1a;border-top:2px solid #152238;padding:6px 16px;display:flex;gap:6px;align-items:center;flex-shrink:0">
-            <button class="kif-topbtn" onclick="kifLoad()" style="background:rgba(96,165,250,0.1);border-color:rgba(96,165,250,0.3);color:#60a5fa">🔄 Neu laden</button>
+          <div style="background:#070e1a;border-top:2px solid #152238;padding:6px 16px;display:flex;gap:6px;align-items:center;flex-shrink:0;position:relative;z-index:20">
             <button class="kif-topbtn" onclick="kifClearAll()" style="background:rgba(229,115,115,0.1);border-color:rgba(229,115,115,0.4);color:#e57373">🗑 Alles löschen</button>
             <button class="kif-topbtn" onclick="kifWordExport()" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa">📄 Word</button>
             <button class="kif-topbtn" onclick="kifJsonExport()">📤 JSON</button>
@@ -17031,8 +17033,20 @@ const SUNO_DEFAULT_KONTEXT = 'Geburtstagssong für Schüler · Computerkurs Herr
 let sunoLang = 'de';
 let sunoLastLyrics = '';
 let sunoMode = 'schule';  // 'schule' | 'frei' | 'profil'
+function sunoRenderSliderHint() {
+  const base = '⚙️ Suno-Regler (More Options): Variety <b>Off</b> · Style Influence <b>~80%</b> · Weirdness <b>~25%</b> · ';
+  const tail = ' · Personalize <b>aus</b>';
+  const maxModeSchule = 'Max Mode <b>aus</b>';
+  const maxModeSonst = '<b style="color:#f87171">Max Mode → prüfen, ggf. AN</b> (bei wichtigem Song/Release, kostet extra Credits)';
+  const html = base + (sunoMode === 'schule' ? maxModeSchule : maxModeSonst) + tail;
+  const popup = document.getElementById('suno-slider-hint-popup');
+  const inline = document.getElementById('suno-slider-hint-inline');
+  if (popup) popup.innerHTML = html;
+  if (inline) inline.innerHTML = html;
+}
 function sunoSetMode(mode) {
   sunoMode = mode;
+  sunoRenderSliderHint();
   const map = {schule:'suno-mode-schule', frei:'suno-mode-frei', profil:'suno-mode-profil'};
   for (const [m, id] of Object.entries(map)) {
     const b = document.getElementById(id);
