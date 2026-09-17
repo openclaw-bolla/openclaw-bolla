@@ -3104,22 +3104,25 @@ def _resolve_aufpeppen_music(music):
 _charts_cache = {"data": None, "ts": 0}
 CHARTS_TTL = 1800  # 30 Minuten
 
-def _daily_sample(pool, n=10):
-    """Täglich n Songs aus pool, Doppelungen mit Vortag vermeiden."""
+def _daily_sample(pool, n=10, lookback=3):
+    """Täglich n Songs aus pool, Doppelungen mit den letzten `lookback` Tagen vermeiden
+    (nicht nur dem Vortag) — bei kleinen Pools sonst spürbare Wiederholung nach 2-3 Tagen."""
     import random as _rnd, time as _t
     today = int(_t.time()) // 86400
-    # Gestrige Auswahl berechnen
-    rnd_y = _rnd.Random(today - 1)
-    pool_y = pool[:]
-    rnd_y.shuffle(pool_y)
-    yesterday_titles = {s['title'] for s in pool_y[:n]}
+    # Auswahl der letzten `lookback` Tage berechnen und ausschließen
+    exclude = set()
+    for d in range(1, lookback + 1):
+        rnd_d = _rnd.Random(today - d)
+        pool_d = pool[:]
+        rnd_d.shuffle(pool_d)
+        exclude.update(s['title'] for s in pool_d[:n])
     # Heutige Shufflefolge
     rnd_t = _rnd.Random(today)
     pool_t = pool[:]
     rnd_t.shuffle(pool_t)
-    # Zuerst Songs nehmen, die gestern nicht drin waren
-    result = [s for s in pool_t if s['title'] not in yesterday_titles]
-    fallback = [s for s in pool_t if s['title'] in yesterday_titles]
+    # Zuerst Songs nehmen, die in den letzten `lookback` Tagen nicht drin waren
+    result = [s for s in pool_t if s['title'] not in exclude]
+    fallback = [s for s in pool_t if s['title'] in exclude]
     result = (result + fallback)[:n]
     return result
 
@@ -3396,6 +3399,20 @@ _PARTY_HITS = [
     {"title": "An deiner Seite (Da Da Da)",        "artist": "Unheilig",              "streams": "Mitsing-Hit"},
     {"title": "Geboren um zu leben",               "artist": "Unheilig",              "streams": "Mitsing-Hit"},
     {"title": "You Let Me Walk Alone",             "artist": "Michael Schulte",       "streams": "Mitsing-Hit"},
+    {"title": "Feuerwerk",                         "artist": "Wincent Weiss",         "streams": "Mitsing-Hit"},
+    {"title": "Musik sein",                        "artist": "Wincent Weiss",         "streams": "Mitsing-Hit"},
+    {"title": "Barfuß am Klavier",                 "artist": "Wincent Weiss",         "streams": "Mitsing-Hit"},
+    {"title": "Denkmal",                           "artist": "Wir sind Helden",       "streams": "Kult-Klassiker"},
+    {"title": "Nur in meinem Kopf",                "artist": "Andreas Bourani",       "streams": "Mitsing-Hit"},
+    {"title": "Sowieso",                           "artist": "Peter Fox",             "streams": "Mitsing-Hit"},
+    {"title": "Wir sind groß",                     "artist": "Mark Forster",          "streams": "Mitsing-Hit"},
+    {"title": "Chöre",                             "artist": "Mark Forster",          "streams": "Mitsing-Hit"},
+    {"title": "Flash mich",                        "artist": "Mark Forster",          "streams": "Mitsing-Hit"},
+    {"title": "Cello",                             "artist": "Udo Lindenberg & Clueso", "streams": "Kult-Klassiker"},
+    {"title": "Sonderzug nach Pankow",              "artist": "Udo Lindenberg",        "streams": "Kult-Klassiker"},
+    {"title": "Bunte Republik Deutschland",        "artist": "Udo Lindenberg",        "streams": "Kult-Klassiker"},
+    {"title": "Hoch (Itaka Milaka)",               "artist": "Tim Bendzko",           "streams": "Mitsing-Hit"},
+    {"title": "Nur noch kurz die Welt retten",     "artist": "Tim Bendzko",           "streams": "Mitsing-Hit"},
 ]
 
 def _fetch_party_charts():
@@ -3434,6 +3451,24 @@ _OKTOBERFEST_HITS = [
     {"title": "Atemlos durch die Nacht",           "artist": "Helene Fischer",       "streams": "Wiesn-Hit"},
     {"title": "Wahnsinn",                          "artist": "Wolfgang Petry",       "streams": "Bierzelt-Klassiker"},
     {"title": "Ein Stern der deinen Namen trägt",  "artist": "DJ Ötzi & Nik P.",     "streams": "Wiesn-Hit"},
+    {"title": "Anton aus Tirol",                   "artist": "DJ Ötzi",              "streams": "Wiesn-Hit"},
+    {"title": "Hey Baby (Uhh, Ahh)",               "artist": "DJ Ötzi",              "streams": "Wiesn-Hit"},
+    {"title": "Anita",                             "artist": "DJ Ötzi",              "streams": "Wiesn-Hit"},
+    {"title": "Steirermen san very very gut",      "artist": "DJ Ötzi & Nik P.",     "streams": "Wiesn-Hit"},
+    {"title": "Amoi seg ma uns wieder",            "artist": "Andreas Gabalier",     "streams": "Bierzelt-Klassiker"},
+    {"title": "I Sing a Liad für di",              "artist": "Andreas Gabalier",     "streams": "Bierzelt-Klassiker"},
+    {"title": "Auf uns",                           "artist": "Andreas Bourani",      "streams": "Wiesn-Hit"},
+    {"title": "Schwimmen",                         "artist": "Mickie Krause",        "streams": "Bierzelt-Klassiker"},
+    {"title": "10 nackte Friseusen",               "artist": "Mickie Krause",        "streams": "Bierzelt-Klassiker"},
+    {"title": "Finger im Po, Mexico",              "artist": "Mickie Krause",        "streams": "Bierzelt-Klassiker"},
+    {"title": "Aloha Heja He",                     "artist": "Achim Reichel",        "streams": "Wiesn-Klassiker"},
+    {"title": "Aber bitte mit Sahne",              "artist": "Udo Jürgens",          "streams": "Wiesn-Klassiker"},
+    {"title": "Ich war noch niemals in New York",  "artist": "Udo Jürgens",          "streams": "Wiesn-Klassiker"},
+    {"title": "Rock mi",                           "artist": "Wildecker Herzbuben",  "streams": "Bierzelt-Klassiker"},
+    {"title": "Fiesta Mexicana",                   "artist": "Trio Rodriguez",       "streams": "Wiesn-Klassiker"},
+    {"title": "Verdammt lang her",                 "artist": "Wolfgang Petry",       "streams": "Bierzelt-Klassiker"},
+    {"title": "Ein Freund, ein guter Freund",      "artist": "Comedian Harmonists",  "streams": "Wiesn-Klassiker"},
+    {"title": "Über sieben Brücken musst du gehn", "artist": "Karat",                "streams": "Zeltgesang"},
 ]
 
 def _fetch_oktoberfest_charts():
