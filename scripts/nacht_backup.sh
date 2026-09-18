@@ -15,7 +15,7 @@ log "=== Backup gestartet (heute: $TODAY) ==="
 cd "$WORKSPACE" || { log "ERROR: cd workspace fehlgeschlagen"; exit 1; }
 
 if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
-    git add -A -- . ':!backups/*.tar' ':!backups/**/*.tar' 2>>"$LOG"
+    git add -A -- . ':!backups/*.tar' ':!backups/**/*.tar' ':!scratch/**' 2>>"$LOG"
 
     # Sicherheitsnetz: keine Dateien >20MB committen (verhindert Wiederholung des
     # Tansania-Tar-Vorfalls vom 08./09.09.2026, der monatelang git push blockiert hat)
@@ -29,6 +29,20 @@ if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --o
         fi
     done <<< "$(git diff --cached --name-only)"
     [ -n "$BIG_FILES" ] && log "WARNING: Große Datei(en) vom Commit ausgeschlossen (>20MB):$BIG_FILES"
+
+    # Zweites Sicherheitsnetz: Gesamtgröße der Staged-Änderungen deckelt viele-kleine-
+    # Dateien-Bloat (Vorfall 18.09.2026: ~500MB entpackte pptx aus scratch/ committet,
+    # weil jede Einzeldatei <20MB war — scratch/ ist jetzt zusätzlich per .gitignore raus,
+    # dies bleibt als generischer Schutz für den nächsten unvorhergesehenen Fall).
+    STAGED_BYTES=0
+    while IFS= read -r f; do
+        [ -f "$f" ] || continue
+        sz=$(stat -c%s "$f" 2>/dev/null) || continue
+        STAGED_BYTES=$((STAGED_BYTES + sz))
+    done <<< "$(git diff --cached --name-only)"
+    if [ "$STAGED_BYTES" -gt 104857600 ]; then
+        log "WARNING: Staged-Änderungen insgesamt >100MB (${STAGED_BYTES}B) — Commit wird trotzdem gemacht, aber bitte manuell prüfen!"
+    fi
 
     git commit -m "Automatische Nachtsicherung $TODAY" 2>>"$LOG" \
         && log "git commit OK" || log "git commit: nichts Neues oder Fehler (OK)"
