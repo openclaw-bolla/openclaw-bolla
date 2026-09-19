@@ -7334,14 +7334,14 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                         _reset = True
                     _rnd = _random.Random(today.toordinal())
                     _rnd.shuffle(_cand)
-                    # pro Tag: hoechstens 1 Foto je Ordner, hoechstens 2 je Ort-Erstwort
-                    # (z.B. nicht 5x "Robin" an einem Tag, aber 2 gehen, damit auch bei
-                    #  vielen gleichnamigen Ordnern die 15 vollwerden -> ~8 frische Tage)
+                    # pro Tag: hoechstens 1 Foto je Ordner und je Ort-Erstwort
+                    # (nicht 2x "Hamburg"/"Robin" an einem Tag -> wirkt wie Doppelung;
+                    #  der Auffuell-Durchlauf unten sorgt dafuer, dass es trotzdem 15 werden)
                     pick, folder_ct, cap_ct, _pk = [], {}, {}, []
                     for it in _cand:
                         fol = it.get("folder", it["src"])
                         capkey = (it.get("cap", "").split(" · ")[0]).strip().lower()
-                        if folder_ct.get(fol, 0) >= 1 or cap_ct.get(capkey, 0) >= 2:
+                        if folder_ct.get(fol, 0) >= 1 or cap_ct.get(capkey, 0) >= 1:
                             continue
                         folder_ct[fol] = folder_ct.get(fol, 0) + 1
                         cap_ct[capkey] = cap_ct.get(capkey, 0) + 1
@@ -7359,6 +7359,13 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                             json.dump({"date": today.isoformat(), "served": _served,
                                        "picks": _pk, "reset": _reset},
                                       _fh, ensure_ascii=False)
+                    except OSError:
+                        pass
+                    try:   # History: welche Fotos an welchem Tag (zum Nachvollziehen von "Doppelungen")
+                        _hf = os.path.join(_fbase, "history.jsonl")
+                        with open(_hf, "a") as _fh:
+                            _fh.write(json.dumps({"date": today.isoformat(), "reset": _reset,
+                                                  "picks": _pk}, ensure_ascii=False) + "\n")
                     except OSError:
                         pass
                 body = json.dumps({"date": today.isoformat(), "photos": pick},
