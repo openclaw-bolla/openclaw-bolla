@@ -12054,47 +12054,10 @@ async function kiBuchKommentarSenden() {
 let _aurora2Data = null;
 let _aurora2AktivIdx = null;
 
-// ── Lesestand merken: welcher Text ist offen + wie weit gescrollt (überlebt Fensterwechsel/Reload) ──
-function aurora2LsGet(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch(e) { return d; } }
-function aurora2LsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
-function aurora2AktivKey() {   // stabiler Schlüssel des offenen Texts (Kapiteltitel bzw. Vorwort-Sentinel)
-  if (_aurora2AktivIdx === 'vorwort') return '__VORWORT__';
-  const kap = _aurora2Data && _aurora2Data.kapitel && _aurora2Data.kapitel[_aurora2AktivIdx];
-  return kap ? kap.titel : null;
-}
-function aurora2StandFuerKey(d, key) {   // Text + Lesemarken-Satz: ändert sich das nicht, wird nichts neu gezeichnet
-  if (!d || !key) return null;
-  const txt = key === '__VORWORT__' ? (d.vorwort || '') : ((d.kapitel || []).find(k => k.titel === key) || {}).text;
-  if (txt === undefined || txt === null) return null;
-  const m = d.lesemarken && d.lesemarken[key];
-  return txt + '\u0001' + ((m && m.satz) || '');
-}
-function aurora2JuengsteLesemarke(d) {   // Kapitel/Vorwort mit der zuletzt abgefragten Stelle = woran Chris gerade arbeitet
-  let best = null, bestD = '';
-  const lm = d.lesemarken || {};
-  Object.keys(lm).forEach(k => {
-    const da = k === '__VORWORT__' ? !!d.vorwort : (d.kapitel || []).some(c => c.titel === k);
-    const dt = lm[k].datum || '';
-    if (da && dt > bestD) { bestD = dt; best = k; }
-  });
-  return best;
-}
-function aurora2ScrollMerkenSofort() {
-  const key = aurora2AktivKey(), el = document.getElementById('aurora2-inhalt');
-  if (!key || !el || el.style.display === 'none') return;
-  const m = aurora2LsGet('aurora2-scroll', {}); m[key] = el.scrollTop; aurora2LsSet('aurora2-scroll', m);
-}
-let _aurora2ScrollTimer = null;
-function aurora2ScrollMerken() { clearTimeout(_aurora2ScrollTimer); _aurora2ScrollTimer = setTimeout(aurora2ScrollMerkenSofort, 300); }
-
 async function loadAurora2() {
   try {
     const data = await fetch(API + '/api/aurora2').then(r => r.json());
-    const altKey = aurora2AktivKey();                       // was war vor diesem Laden offen?
-    const altStand = aurora2StandFuerKey(_aurora2Data, altKey);
     _aurora2Data = data;
-    const inhaltEl = document.getElementById('aurora2-inhalt');
-    if (inhaltEl && !inhaltEl._scrollHook) { inhaltEl.addEventListener('scroll', aurora2ScrollMerken); inhaltEl._scrollHook = true; }
     const k = data.kriterien || {};
     document.getElementById('aurora2-titel').textContent = data.titel || 'AURORA II';
     document.getElementById('aurora2-status-line').textContent =
@@ -12129,24 +12092,9 @@ async function loadAurora2() {
     if (vwItem) vwItem.style.display = data.vorwort ? 'block' : 'none';
 
     const anzahl = (data.kapitel||[]).length;
-    // Welcher Text kommt ins Vorschaufenster? 1) der schon offene (Refresh), 2) der zuletzt gelesene (localStorage),
-    // 3) der mit der jüngsten Lesemarke, 4) erst dann das letzte Kapitel.
-    const gueltig = k => k && (k === '__VORWORT__' ? !!data.vorwort : (data.kapitel||[]).some(c => c.titel === k));
-    let zielKey = gueltig(altKey) ? altKey : aurora2LsGet('aurora2-aktiv', null);
-    if (!gueltig(zielKey)) zielKey = aurora2JuengsteLesemarke(data);
-    if (!gueltig(zielKey) && anzahl > 0) zielKey = data.kapitel[anzahl - 1].titel;
-    if (gueltig(zielKey)) {
-      const bleibt = zielKey === altKey;
-      const idx = zielKey === '__VORWORT__' ? 'vorwort' : data.kapitel.findIndex(c => c.titel === zielKey);
-      if (bleibt && aurora2StandFuerKey(data, zielKey) === altStand) {
-        // Text unverändert → NICHT neu zeichnen: Scrollposition und markierte Textstelle bleiben stehen
-        _aurora2AktivIdx = idx;
-        aurora2RenderKapitelListe();
-      } else if (idx === 'vorwort') {
-        aurora2ZeigeVorwort({ halten: bleibt });
-      } else {
-        aurora2ZeigeKapitel(idx, { halten: bleibt });
-      }
+    if (anzahl > 0) {
+      if (_aurora2AktivIdx === null || _aurora2AktivIdx >= anzahl) _aurora2AktivIdx = anzahl - 1;
+      aurora2ZeigeKapitel(_aurora2AktivIdx);
     } else {
       _aurora2AktivIdx = null;
       const inhalt = document.getElementById('aurora2-inhalt');
@@ -12275,30 +12223,22 @@ function aurora2FigurToggle(i) {
   if (arr) arr.textContent = open ? '▾' : '▸';
 }
 
-function aurora2RenderInhaltMitLesemarke(text, lesemarkeKey, opts) {
-  opts = opts || {};
+function aurora2RenderInhaltMitLesemarke(text, lesemarkeKey) {
   const inhalt = document.getElementById('aurora2-inhalt');
   if (!inhalt) return;
-  const alt = inhalt.scrollTop;
   const marke = (_aurora2Data && _aurora2Data.lesemarken) ? _aurora2Data.lesemarken[lesemarkeKey] : null;
   const satz = marke && marke.satz;
-  let markEl = null;
   if (!satz || !text.includes(satz)) {
     inhalt.textContent = text || '(Kein Text)';
-  } else {
-    const idx = text.indexOf(satz);
-    const vor = text.slice(0, idx), mitte = text.slice(idx, idx + satz.length), nach = text.slice(idx + satz.length);
-    inhalt.innerHTML = aurora2Esc(vor)
-      + '<span id="aurora2-lesemarke" style="background:rgba(236,72,153,0.20);border-bottom:2px solid #ec4899;border-radius:3px;padding:1px 2px" title="Deine letzte Position hier — ' + aurora2Esc(marke.datum||'') + '">'
-      + aurora2Esc(mitte) + '</span>' + aurora2Esc(nach);
-    markEl = document.getElementById('aurora2-lesemarke');
+    return;
   }
-  // Wohin scrollen? Refresh desselben Texts → exakt dort bleiben. Sonst zuletzt gelesene Position,
-  // erst wenn es keine gibt, zur zuletzt abgefragten Stelle (Lesemarke).
-  const gemerkt = aurora2LsGet('aurora2-scroll', {})[lesemarkeKey];
-  if (opts.halten) inhalt.scrollTop = alt;
-  else if (typeof gemerkt === 'number') setTimeout(() => { inhalt.scrollTop = gemerkt; }, 30);
-  else if (markEl) setTimeout(() => markEl.scrollIntoView({block: 'center'}), 30);
+  const idx = text.indexOf(satz);
+  const vor = text.slice(0, idx), mitte = text.slice(idx, idx + satz.length), nach = text.slice(idx + satz.length);
+  inhalt.innerHTML = aurora2Esc(vor)
+    + '<span id="aurora2-lesemarke" style="background:rgba(236,72,153,0.20);border-bottom:2px solid #ec4899;border-radius:3px;padding:1px 2px" title="Deine letzte Position hier — ' + aurora2Esc(marke.datum||'') + '">'
+    + aurora2Esc(mitte) + '</span>' + aurora2Esc(nach);
+  const markEl = document.getElementById('aurora2-lesemarke');
+  if (markEl) setTimeout(() => markEl.scrollIntoView({block: 'center'}), 30);
 }
 
 function aurora2RenderKapitelListe() {
@@ -12323,13 +12263,10 @@ function aurora2RenderKapitelListe() {
   }
 }
 
-function aurora2ZeigeVorwort(opts) {
-  opts = opts || {};
+function aurora2ZeigeVorwort() {
   if (!_aurora2Data) return;
   const text = _aurora2Data.vorwort || '';
-  if (!opts.halten) aurora2ScrollMerkenSofort();
   _aurora2AktivIdx = 'vorwort';
-  aurora2LsSet('aurora2-aktiv', '__VORWORT__');
   const inhalt = document.getElementById('aurora2-inhalt');
   const it = document.getElementById('aurora2-inhalt-titel');
   const im = document.getElementById('aurora2-inhalt-meta');
@@ -12339,11 +12276,11 @@ function aurora2ZeigeVorwort(opts) {
   if (im) im.textContent = `${text.split(/\s+/).filter(Boolean).length} Wörter${marke1 ? ' · 📍 zuletzt hier: '+marke1.datum : ''}`;
   if (platz) platz.style.display = 'none';
   if (inhalt) inhalt.style.display = 'block';
-  aurora2RenderInhaltMitLesemarke(text, '__VORWORT__', opts);
+  aurora2RenderInhaltMitLesemarke(text, '__VORWORT__');
   const satzZeile = document.getElementById('aurora2-satz-zeile');
   if (satzZeile) satzZeile.style.display = 'flex';
   // Offene/laufende Satz-Frage zu genau diesem Abschnitt nicht wegreißen (Seitenwechsel + zurück)
-  if (!opts.halten && !(_aurora2SatzAktuell && _aurora2SatzAktuell.kapTitel === '__VORWORT__')) {
+  if (!(_aurora2SatzAktuell && _aurora2SatzAktuell.kapTitel === '__VORWORT__')) {
     const satzStatus = document.getElementById('aurora2-satz-status');
     if (satzStatus) satzStatus.textContent = '';
     const satzPanel = document.getElementById('aurora2-satz-panel');
@@ -12356,14 +12293,11 @@ function aurora2ZeigeVorwort(opts) {
   aurora2RenderKapitelListe();
 }
 
-function aurora2ZeigeKapitel(idx, opts) {
-  opts = opts || {};
+function aurora2ZeigeKapitel(idx) {
   if (!_aurora2Data || !_aurora2Data.kapitel) return;
   const kap = _aurora2Data.kapitel[idx];
   if (!kap) return;
-  if (!opts.halten) aurora2ScrollMerkenSofort();   // Position des bisherigen Texts sichern, bevor gewechselt wird
   _aurora2AktivIdx = idx;
-  aurora2LsSet('aurora2-aktiv', kap.titel);
   const inhalt = document.getElementById('aurora2-inhalt');
   const it = document.getElementById('aurora2-inhalt-titel');
   const im = document.getElementById('aurora2-inhalt-meta');
@@ -12373,11 +12307,11 @@ function aurora2ZeigeKapitel(idx, opts) {
   if (im) im.textContent = `${(kap.text||'').split(/\s+/).filter(Boolean).length} Wörter${kap.datum?' · '+kap.datum:''}${marke2 ? ' · 📍 zuletzt hier: '+marke2.datum : ''}`;
   if (platz) platz.style.display = 'none';
   if (inhalt) inhalt.style.display = 'block';
-  aurora2RenderInhaltMitLesemarke(kap.text || '', kap.titel, opts);
+  aurora2RenderInhaltMitLesemarke(kap.text || '', kap.titel);
   const satzZeile = document.getElementById('aurora2-satz-zeile');
   if (satzZeile) satzZeile.style.display = 'flex';
   // Offene/laufende Satz-Frage zu genau diesem Kapitel nicht wegreißen (Seitenwechsel + zurück)
-  if (!opts.halten && !(_aurora2SatzAktuell && _aurora2SatzAktuell.kapTitel === kap.titel)) {
+  if (!(_aurora2SatzAktuell && _aurora2SatzAktuell.kapTitel === kap.titel)) {
     const satzStatus = document.getElementById('aurora2-satz-status');
     if (satzStatus) satzStatus.textContent = '';
     const satzPanel = document.getElementById('aurora2-satz-panel');
