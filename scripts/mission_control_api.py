@@ -7484,7 +7484,7 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 return
 
             if self.path.startswith("/api/kiforum/img/"):
-                fname = self.path.split("/api/kiforum/img/")[1]
+                fname = self.path.split("/api/kiforum/img/")[1].split("?")[0]
                 if "/" in fname or ".." in fname:
                     self._send_json({"error":"invalid"},status=400); return
                 p = Path(os.path.join(WORKSPACE, "data", fname))
@@ -7495,7 +7495,7 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 self.end_headers(); self.wfile.write(data); return
 
             if self.path.startswith("/api/kiforum/public-img/"):
-                fname = self.path.split("/api/kiforum/public-img/")[1]
+                fname = self.path.split("/api/kiforum/public-img/")[1].split("?")[0]
                 if "/" in fname or ".." in fname:
                     self._send_json({"error":"invalid"},status=400); return
                 p = Path(os.path.join(WORKSPACE, "data/ki_dialog_public_assets", fname))
