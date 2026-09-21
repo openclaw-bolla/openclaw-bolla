@@ -7322,43 +7322,23 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                     # Auswahl fuer heute steht schon -> stabil exakt dieselbe zurueckgeben
                     pick = [_mk(_by_key[k]) for k in _state["picks"] if k in _by_key]
                 else:
-                    _served = [k for k in _state.get("served", []) if k in _by_key]
+                    # 21.09.2026: Zyklus-Vorplanung (f_photos_plan.py) statt taeglichem Wuerfeln:
+                    # ganzer Pool wird auf einmal in Tageslisten verteilt (Themengruppen gestreut),
+                    # `queue` wird pro Tagesabruf verbraucht.
+                    import f_photos_plan as _fp
                     _prev_picks = [k for k in _state.get("picks", []) if k in _by_key]
-                    _cand = [it for it in pool if it["src"] not in set(_served)]
+                    _queue = [[k for k in _d if k in _by_key] for _d in _state.get("queue", [])]
+                    _queue = [_d for _d in _queue if _d]
                     _reset = False
-                    if len(_cand) < _DAILY:
-                        # ganzer Pool war einmal komplett durch -> neue Runde;
-                        # nur die Fotos von gestern noch sperren (keine Naht-Doppelung)
-                        _served = list(_prev_picks)
-                        _cand = [it for it in pool if it["src"] not in set(_served)]
+                    if not _queue and pool:
+                        _queue = _fp.plan_cycle(pool, prev_picks=_prev_picks, seed=today.toordinal())
                         _reset = True
-                    _rnd = _random.Random(today.toordinal())
-                    _rnd.shuffle(_cand)
-                    # pro Tag: hoechstens 1 Foto je Ordner und je Ort-Erstwort
-                    # (nicht 2x "Hamburg"/"Robin" an einem Tag -> wirkt wie Doppelung;
-                    #  der Auffuell-Durchlauf unten sorgt dafuer, dass es trotzdem 15 werden)
-                    pick, folder_ct, cap_ct, _pk = [], {}, {}, []
-                    for it in _cand:
-                        fol = it.get("folder", it["src"])
-                        capkey = (it.get("cap", "").split(" · ")[0]).strip().lower()
-                        if folder_ct.get(fol, 0) >= 1 or cap_ct.get(capkey, 0) >= 1:
-                            continue
-                        folder_ct[fol] = folder_ct.get(fol, 0) + 1
-                        cap_ct[capkey] = cap_ct.get(capkey, 0) + 1
-                        pick.append(_mk(it)); _pk.append(it["src"])
-                        if len(pick) >= _DAILY:
-                            break
-                    for it in _cand:  # auffuellen falls Dedup zu streng war
-                        if len(pick) >= _DAILY:
-                            break
-                        if it["src"] not in _pk:
-                            pick.append(_mk(it)); _pk.append(it["src"])
-                    _served = _served + [k for k in _pk if k not in set(_served)]
+                    _pk = _queue.pop(0) if _queue else []
+                    pick = [_mk(_by_key[k]) for k in _pk]
                     try:
                         with open(sf, "w") as _fh:
-                            json.dump({"date": today.isoformat(), "served": _served,
-                                       "picks": _pk, "reset": _reset},
-                                      _fh, ensure_ascii=False)
+                            json.dump({"date": today.isoformat(), "picks": _pk, "queue": _queue,
+                                       "reset": _reset}, _fh, ensure_ascii=False)
                     except OSError:
                         pass
                     try:   # History: welche Fotos an welchem Tag (zum Nachvollziehen von "Doppelungen")
@@ -9998,6 +9978,18 @@ Antworte NUR als reines JSON ohne Markdown:
                     "(als Anrede), und NICHT 'Süße/r', 'Schatz', 'Liebling', 'mein/e Liebe/r', 'Maus', 'Hase'. "
                     "Auch keine anbahnenden oder romantisch klingenden Formulierungen. Zuneigung wird über "
                     "Anerkennung, gute Wünsche und ein Augenzwinkern transportiert, nicht über Kosenamen.\n")
+                # Schul-Songs: keine Klischee-Wörter, die bei ADS/ADHS/Depression stigmatisieren oder Druck machen.
+                # Gilt bewusst für ALLE Schüler/innen (keine Diagnosen im Prompt), nur im Schulzweig.
+                # (Chris 21.09.2026)
+                schul_klischee_inst = (
+                    "KEINE KLISCHEE-WÖRTER (Schulkontext, verbindlich): Beschreibe die/den Gefeierte/n NICHT mit "
+                    "Zuschreibungen wie 'zappelig', 'Energiebündel', 'Wirbelwind', 'chaotisch', 'verträumt', "
+                    "'unruhig', 'immer in Bewegung', 'nicht still sitzen', 'Zappelphilipp', 'hyperactive', "
+                    "'bundle of energy', 'restless', 'daydreamer', 'chaotic'. Ebenso KEINE Dauer-Fröhlichkeits-Formeln "
+                    "wie 'immer strahlen', 'immer lächeln', 'immer gute Laune', 'Sonnenschein', 'Trübsal vertreiben', "
+                    "'always smiling', 'sunshine', 'never a frown'. Auch keine Anspielungen auf Konzentration, "
+                    "Aufmerksamkeit, Fokus oder Stimmung. Stattdessen: Zugehörigkeit ('schön, dass du bei uns bist'), "
+                    "Wertschätzung und neutrale, freundliche Anerkennung, die für jede Person passt.\n")
                 SCHOOL_KONTEXT = "Geburtstagssong für Schüler · Computerkurs Herrn Mandel · Lessing-Gymnasium"
                 # Release-/Profil-Modus ist NIE ein Schulsong, auch wenn kein Thema angegeben ist
                 is_school = (not kontext or kontext == SCHOOL_KONTEXT) and not profil
@@ -10485,7 +10477,7 @@ Antworte NUR als reines JSON ohne Markdown:
                     who = f"Schüler/in: {name}" if is_personal else (f"Gruppe/Klasse: {name}" if name else "Allgemeiner Klassen-Song")
                     prompt = f"""Du bist ein professioneller Songwriter für Suno AI. Erstelle einen Geburtstagssong {lang_inst}.
 
-{jugendfrei_inst}{schul_anrede_inst}{who}
+{jugendfrei_inst}{schul_anrede_inst}{schul_klischee_inst}{who}
 Klasse: {klasse}
 {gb_kontext(geburtstag, ref_date)}
 {gb_lyrics_hint(geburtstag, ref_date)}

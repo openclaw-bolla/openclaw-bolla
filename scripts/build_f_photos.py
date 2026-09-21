@@ -2,10 +2,20 @@ import os, re, json, random, sys, time, subprocess, urllib.request, urllib.error
 from PIL import Image, ImageOps
 
 ROOT = "/mnt/d/OneDrive"
-OUT  = "/home/bolla/workspace/mission-control/f-photos"
+OUT  = "/home/bolla/workspace/mission-control/f-photos_staging"   # 21.09.2026: erst Staging, Tausch nach Pruefung
+os.makedirs(OUT, exist_ok=True)
 LOG  = "/home/bolla/workspace/scripts/build_f.log"
 POOL_SIZE = 120
-VISION_MODEL = "claude-sonnet-5"   # Landmark-Erkennung ist kein Opus-Job; ~5x leichter fürs Kontingent
+VISION_MODEL = "claude-haiku-4-5-20251001"   # 21.09.2026: Haiku reicht fuer Wahrzeichen-Erkennung (Sonnet fraß das 5h-Limit)
+VISION_BATCH = 8                              # Fotos pro claude -p-Aufruf (der Claude-Code-Vorspann kostet pro Aufruf ~40K Tokens)
+VISION_CACHE_PATH = "/home/bolla/workspace/scripts/f_vision_cache.json"   # {abs. Pfad: Ortsname | null}
+import json as _json
+try:
+    VISION_CACHE = _json.load(open(VISION_CACHE_PATH))
+except Exception:
+    VISION_CACHE = {}
+def _save_vision_cache():
+    _json.dump(VISION_CACHE, open(VISION_CACHE_PATH, "w"), ensure_ascii=False, indent=0)
 MAXPX, Q, MIN_BYTES = 1600, 85, 90_000
 
 def log(*a):
@@ -23,12 +33,13 @@ INCLUDE_ROOTS = [
  "Hong Kong 1999","Ischgl 2022","Italien 2014","Kaprun 1999","Kitzbühel 2014","Kreta 2012",
  "Kreuzfahrt 2025","Kroatien 2018","Malediven 2000","Mallorca 2015","Mandel-Clan","Mandels",
  "Natur","New York 2000","Norden","Norwegen 2005","Norwegen 2007","Ostsee REHA 2022",
- "Paris - Kenia 2017","Paris 2002","Prag 2015","Rhodos 2020","Schladming 2009","Schladming 2010",
+ "Paris - Kenia 2017","Paris 2002","Prag 2015","Rhodos 2020","Schladming 2009","Schladming 2008","Schladming 2010",
  "Schladming 2024","Sizilien 2013","Sölden 2023","Städte","Süddeutschland 2026","Sylt 2012",
  "Teneriffa 2011","Thailand 2022","Türkei 2009","USA 2001","USA 2016","USA 2019",
  "Usedom-Heringsdorf 2022","Venedig 2002","Vogelpark Walsrode","Warth 2018","Warth 2019",
  "West Deutschland Städte 2024","Wien 2003","Zell am See 2014-2015","Zillertal 2013",
  "Zillertal 2024","Ägypten 99",
+ "Renis Camera Roll 09-06-16",
  "Bilder/Eigene Aufnahmen_Backup/Renate",
  "Bilder/Eigene Aufnahmen_Backup/Robin",
  "Bilder/Eigene Aufnahmen_Backup/Stephanie und Familie",
@@ -76,6 +87,8 @@ def nice_place(reldir):
         if re.fullmatch(r"\d{1,2}\s*-\s*\d{1,2}(\s*jahre?)?", x, re.I) or \
            re.fullmatch(r"(erste|bis)\s+.*(monate?|jahre?)", x, re.I):
             x = "Robin"
+        if x.lower().startswith("renis camera roll"):
+            x = "Renate"
         c = clean(x)
         if not c: continue
         if c.lower() in WEAK_NAMES: continue
@@ -184,46 +197,53 @@ def reverse_geocode(lat, lon):
     return result
 
 # ---------------- Ortsermittlung Quelle 2: Vision-Fallback (Opus) ohne GPS ----------------
-def vision_place(fp):
-    """Sonnet schaut sich das Foto an (gleiches Subprocess-Pattern wie ai_direct() in aufpeppen.py) und
-    liefert NUR bei eindeutig erkennbarem Wahrzeichen/markanter Landschaft einen Ortsnamen, sonst None.
-    Rät bewusst NICHT -- 'unknown' ist ausdrücklich der bevorzugte Ausgang bei Unsicherheit.
-    Wenn ein BEKANNTES Wahrzeichen klar erkennbar ist, wird es der Stadt vorangestellt
-    ('Odeonskirche, München')."""
+def _vision_batch_call(paths):
+    """EIN claude -p fuer mehrere Fotos. Antwort: pro Foto eine Zeile 'N: Ort' oder 'N: unknown'."""
+    listing = "\n".join(f"{i+1}. {p}" for i, p in enumerate(paths))
     prompt = (
-        "Du bist Bolla, Chris' KI-Assistent. Schau dir mit dem Read-Tool genau dieses eine Foto an:\n"
-        f"- {fp}\n\n"
-        "Frage: Ist auf dem Bild ein EINDEUTIG erkennbares Wahrzeichen, eine unverwechselbare "
-        "Landschaft oder markante Architektur zu sehen (Beispiele: Eiffelturm, Kolosseum, ein "
-        "bekannter Berggipfel/Skyline, ein berühmtes Bauwerk)?\n\n"
-        "HARTE REGEL, unbedingt einhalten: Sei extrem zurückhaltend. Bei generischen Innenraum-, "
-        "Essens-, Personen- oder Alltagsfotos, bei unklarer/uneindeutiger Umgebung, oder wenn du dir "
-        "auch nur ETWAS unsicher bist, antworte NUR mit dem Wort 'unknown' -- NICHTS sonst. "
-        "Rate NIEMALS ins Blaue. Eine falsche oder erfundene Ortsangabe ist schlimmer als gar keine. "
-        "Lieber zehnmal 'unknown' zurückgeben als einmal eine unsichere Vermutung als Fakt ausgeben. "
-        "Im Zweifel IMMER 'unknown'.\n\n"
-        "Format der Antwort, wenn (und nur wenn) du sicher bist:\n"
-        "- Ist ein KONKRETES, allgemein bekanntes Wahrzeichen klar erkennbar, nenne es zuerst, "
-        "dann die Stadt: 'Wahrzeichen, Stadt' (z.B. 'Brandenburger Tor, Berlin'). Nur bei wirklich "
-        "namhaften, eindeutig identifizierbaren Bauwerken/Orten -- NICHT bei irgendeiner Kirche/Brücke.\n"
-        "- Sonst nur der Ort: 'Stadt' oder 'Stadt, Land' (z.B. 'Rom, Italien').\n"
-        "- Land nur anhängen, wenn es NICHT Deutschland ist.\n\n"
-        "Antworte NUR mit dieser einen Zeile auf Deutsch, knapp, keine Erklärung, keine "
-        "Anführungszeichen, kein weiterer Text -- oder NUR mit dem einzelnen Wort 'unknown'."
+        "Du bist Bolla, Chris' KI-Assistent. Schau dir mit dem Read-Tool JEDES dieser Fotos an:\n"
+        f"{listing}\n\n"
+        "Frage je Foto: Ist ein EINDEUTIG erkennbares Wahrzeichen, eine unverwechselbare Landschaft oder markante "
+        "Architektur zu sehen (Eiffelturm, Kolosseum, bekannter Berggipfel/Skyline, beruehmtes Bauwerk)?\n\n"
+        "HARTE REGEL: Sei extrem zurueckhaltend. Bei generischen Innenraum-, Essens-, Personen- oder Alltagsfotos, unklarer "
+        "Umgebung oder auch nur etwas Unsicherheit antworte 'unknown'. Rate NIEMALS ins Blaue - eine falsche Ortsangabe ist "
+        "schlimmer als keine. Im Zweifel IMMER 'unknown'.\n\n"
+        "Format je Foto, wenn (und nur wenn) du sicher bist: 'Wahrzeichen, Stadt' (nur bei wirklich namhaften Bauwerken, z.B. "
+        "'Brandenburger Tor, Berlin') oder nur 'Stadt' bzw. 'Stadt, Land'. Land nur anhaengen wenn NICHT Deutschland.\n\n"
+        "Antworte AUSSCHLIESSLICH mit genau einer Zeile pro Foto im Format '<Nummer>: <Ort oder unknown>', auf Deutsch, "
+        "keine Erklaerung, kein weiterer Text."
     )
-    try:
-        r = subprocess.run(["claude", "-p", prompt, "--model", VISION_MODEL],
-                            capture_output=True, text=True, timeout=120)
-        out = (r.stdout or "").strip()
-        lines = [l.strip() for l in out.splitlines() if l.strip()]
-        ans = lines[-1] if lines else ""
-        ans = ans.strip(" \"'.")
-        if not ans or ans.lower() == "unknown" or len(ans) > 60:
-            return None
-        return ans
-    except Exception as e:
-        log("  vision FAIL", fp, repr(e))
-        return None
+    r = subprocess.run(["claude", "-p", prompt, "--model", VISION_MODEL], capture_output=True, text=True, timeout=300)
+    res = {}
+    for line in (r.stdout or "").splitlines():
+        m = re.match(r"^\s*(\d+)\s*[:.)]\s*(.+?)\s*$", line)
+        if m:
+            i = int(m.group(1)) - 1
+            ans = m.group(2).strip(" \"'.")
+            if 0 <= i < len(paths):
+                res[paths[i]] = None if (not ans or ans.lower().startswith("unknown") or len(ans) > 60) else ans
+    return res
+
+def vision_prefetch(paths):
+    """Alle noch nicht gecachten Fotos gebuendelt (VISION_BATCH je Aufruf) klaeren und dauerhaft cachen."""
+    todo = [p for p in paths if p not in VISION_CACHE]
+    log(f"Vision: {len(paths)} Fotos, {len(paths)-len(todo)} aus Cache, {len(todo)} neu in {-(-len(todo)//VISION_BATCH)} Aufrufen ({VISION_MODEL})")
+    for i in range(0, len(todo), VISION_BATCH):
+        chunk = todo[i:i+VISION_BATCH]
+        try:
+            res = _vision_batch_call(chunk)
+        except Exception as e:
+            log("  vision batch FAIL", repr(e)); continue
+        for p in chunk:
+            if p in res:               # nur beantwortete Fotos cachen; fehlende beim naechsten Lauf erneut
+                VISION_CACHE[p] = res[p]
+        _save_vision_cache()
+
+def vision_place(fp):
+    """Ortsname aus dem Cache (vorher per vision_prefetch gefuellt); None = unknown/nicht geklaert."""
+    if fp not in VISION_CACHE:
+        vision_prefetch([fp])
+    return VISION_CACHE.get(fp)
 
 
 # --- gather (kein per-file stat!) ---
@@ -260,7 +280,12 @@ log(f"{len(leafs)}/{len(buckets)} Ordner mit Caption, {sum(len(buckets[l]) for l
 # --- Auswahl: max 1 pro Ordner, max 2 pro Zweig, Streuung ---
 def branch(lf):
     ps = lf.split("/")
+    if ps[0] == "Mandels" and len(ps) > 1 and ps[1] == "Robin":
+        return "Mandels/Robin"          # 21.09.2026: alle ~25 Altersordner = EIN Zweig (Robin-Bias-Fix)
     return "/".join(ps[:3]) if ps[0] in ("Mandels","Bilder") else ps[0]
+
+BRANCH_CAP = {"Mandels/Robin": 14, "Renis Camera Roll 09-06-16": 3}   # Standard 2
+ROBIN_ALT_TARGET = 14      # 21.09.2026 Chris: Robin 14-18 von 120 (2-3 pro Tag) -> 14 Altersordner + 2 aktuelle
 
 def pick_from(lf):
     cands = buckets[lf][:]
@@ -277,17 +302,32 @@ def pick_from(lf):
 picked = []
 bcount = {}
 # 1) Renate-Ordner zuerst (bis zu 3)
-ren = [lf for lf in leafs if lf.lower().endswith("eigene aufnahmen_backup/renate")]
+ren = [lf for lf in leafs if lf.lower().endswith("eigene aufnahmen_backup/renate") or lf.startswith("Renis Camera Roll")]
 for lf in ren:
     for _ in range(3):
         r = pick_from(lf)
         if r and r not in picked:
             picked.append(r); bcount[branch(lf)] = bcount.get(branch(lf),0)+1
+# 1b) Robin gezielt: je 1 Foto aus 14 verschiedenen Altersordnern (Streuung ueber alle Lebensphasen) + 2 aktuelle
+rob_old = [lf for lf in leafs if lf.startswith("Mandels/Robin")]
+random.shuffle(rob_old)
+for lf in rob_old:
+    if bcount.get("Mandels/Robin", 0) >= ROBIN_ALT_TARGET: break
+    r = pick_from(lf)
+    if r and r not in picked:
+        picked.append(r); bcount["Mandels/Robin"] = bcount.get("Mandels/Robin", 0) + 1
+rob_new = [lf for lf in leafs if lf.startswith("Bilder/Eigene Aufnahmen_Backup/Robin")]
+random.shuffle(rob_new)
+for lf in rob_new:
+    if bcount.get("Bilder/Eigene Aufnahmen_Backup/Robin", 0) >= 2: break
+    r = pick_from(lf)
+    if r and r not in picked:
+        picked.append(r); bcount["Bilder/Eigene Aufnahmen_Backup/Robin"] = bcount.get("Bilder/Eigene Aufnahmen_Backup/Robin", 0) + 1
 random.shuffle(leafs)
 for lf in leafs:
     if len(picked) >= POOL_SIZE: break
     b = branch(lf)
-    if bcount.get(b,0) >= 2: continue
+    if bcount.get(b,0) >= BRANCH_CAP.get(b, 2): continue
     r = pick_from(lf)
     if not r or r in picked: continue
     picked.append(r); bcount[b] = bcount.get(b,0)+1
@@ -310,6 +350,22 @@ for _old in os.listdir(OUT):
     if _old.lower().endswith((".jpg", ".jpeg", ".png")):
         try: os.remove(os.path.join(OUT, _old))
         except OSError: pass
+
+# Vision gebuendelt VORAB fuer alle Fotos ohne GPS (GPS-Fotos brauchen keine Vision)
+_need_vision = []
+for _rel in sorted(picked):
+    _fp = os.path.join(ROOT, _rel)
+    try:
+        _ex = Image.open(_fp)._getexif() or {}
+    except Exception:
+        _ex = {}
+    try:
+        _has_gps = gps_from_exif(_ex) is not None
+    except Exception:
+        _has_gps = False
+    if not _has_gps:
+        _need_vision.append(_fp)
+vision_prefetch(_need_vision)
 
 STATS = {"gps_present": 0, "gps_geocoded": 0, "vision_tried": 0, "vision_hit": 0,
          "vision_unknown": 0, "fallback_ordner": 0}
