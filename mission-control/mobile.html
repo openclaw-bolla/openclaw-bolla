@@ -1561,12 +1561,33 @@ async function clipboardDeleteImage(filename) {
 }
 function clipboardImageFullscreen(url) {
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
-  overlay.innerHTML = `<img src="${url}" style="max-width:95vw;max-height:90vh;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,0.6)">`;
-  overlay.onclick = () => document.body.removeChild(overlay);
-  document.addEventListener('keydown', function escKey(e) {
-    if(e.key==='Escape'){ document.body.removeChild(overlay); document.removeEventListener('keydown',escKey); }
-  });
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;overflow:auto';
+  overlay.innerHTML = `
+    <img src="${url}" style="max-width:95vw;max-height:90vh;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,0.6);cursor:zoom-in;transition:max-width .15s,max-height .15s">
+    <button aria-label="Schließen" style="position:fixed;top:14px;right:14px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(0,0,0,0.65);color:#fff;font-size:22px;line-height:44px;text-align:center;cursor:pointer;z-index:10000">✕</button>`;
+  const img = overlay.querySelector('img');
+  const closeBtn = overlay.querySelector('button');
+  let zoomed = false;
+  img.onclick = (e) => {
+    e.stopPropagation();
+    zoomed = !zoomed;
+    if (zoomed) {
+      img.style.maxWidth = 'none';
+      img.style.maxHeight = 'none';
+      img.style.width = '220vw';
+      img.style.cursor = 'zoom-out';
+    } else {
+      img.style.maxWidth = '95vw';
+      img.style.maxHeight = '90vh';
+      img.style.width = '';
+      img.style.cursor = 'zoom-in';
+    }
+  };
+  const close = () => { document.body.removeChild(overlay); document.removeEventListener('keydown', escKey); };
+  closeBtn.onclick = close;
+  overlay.onclick = close;   // Klick auf den dunklen Rand schließt weiterhin
+  function escKey(e) { if (e.key === 'Escape') close(); }
+  document.addEventListener('keydown', escKey);
   document.body.appendChild(overlay);
 }
 

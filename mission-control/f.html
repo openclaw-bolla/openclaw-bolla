@@ -114,7 +114,7 @@ html, body {
 
 <div id="zoom">
   <button id="zclose" aria-label="Zoom schließen">✕</button>
-  <div id="zhint">Mit zwei Fingern zoomen &middot; Doppeltipp &middot; ✕ zum Zurück</div>
+  <div id="zhint">Mit zwei Fingern zoomen &middot; Doppeltipp zoomt rein &middot; Tippen oder ✕ zurück</div>
 </div>
 
 <div id="end">
@@ -230,6 +230,7 @@ html, body {
   let zimg = null, zs = 1, ztx = 0, zty = 0, zW = 0, zH = 0;
   const pts = new Map();
   let lastDist = 0, lastMid = null, panLast = null, lastTap = 0;
+  let zTapMoved = false, zTapSX = 0, zTapSY = 0, zPendingClose = null, zWasDoubleTap = false, zWasPinch = false;
 
   function openZoom() {
     if (zoomOpen || !pics[idx]) return;
@@ -251,6 +252,7 @@ html, body {
     setTimeout(() => { zhintEl.style.opacity = '0'; }, 2600);
   }
   function closeZoom() {
+    if (zPendingClose) { clearTimeout(zPendingClose); zPendingClose = null; }
     zoomOpen = false;
     zoomEl.classList.remove('on');
     if (!endEl.classList.contains('on')) edgeEl.classList.remove('hide');
@@ -280,13 +282,17 @@ html, body {
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 1) {
       panLast = { x: e.clientX, y: e.clientY };
+      zTapMoved = false; zTapSX = e.clientX; zTapSY = e.clientY; zWasPinch = false;
+      if (zPendingClose) { clearTimeout(zPendingClose); zPendingClose = null; }   // 2. Tap kommt -> kein Auto-Zurück
       const now = Date.now();
       if (now - lastTap < 300) {           // Doppeltipp
         const target = zs > 1.2 ? 1 : 2.5;
         setScaleAt(target, e.clientX, e.clientY);
-        lastTap = 0;
-      } else { lastTap = now; }
+        lastTap = 0; zWasDoubleTap = true;
+      } else { lastTap = now; zWasDoubleTap = false; }
     } else if (pts.size === 2) {
+      zWasPinch = true;
+      if (zPendingClose) { clearTimeout(zPendingClose); zPendingClose = null; }
       const p = [...pts.values()];
       lastDist = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
       lastMid = { x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 };
@@ -296,6 +302,7 @@ html, body {
     if (!pts.has(e.pointerId)) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const p = [...pts.values()];
+    if (p.length === 1 && (Math.abs(e.clientX - zTapSX) > 10 || Math.abs(e.clientY - zTapSY) > 10)) zTapMoved = true;
     if (p.length >= 2) {
       const dist = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
       const mid = { x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 };
@@ -314,7 +321,13 @@ html, body {
     if (pts.size === 1) { const p = [...pts.values()][0]; panLast = { x: p.x, y: p.y }; }
     if (pts.size === 0) {
       panLast = null;
-      if (zs <= 1.02) closeZoom();
+      if (zs <= 1.02) { closeZoom(); zWasPinch = false; return; }
+      // Reiner Tipp (kein Pinch, kaum Bewegung, kein Doppeltipp) -> nach kurzer Wartezeit zurück,
+      // damit ein zweiter Tipp innerhalb 300ms weiter als Doppeltipp erkannt werden kann.
+      if (!zWasPinch && !zTapMoved && !zWasDoubleTap) {
+        zPendingClose = setTimeout(() => { zPendingClose = null; closeZoom(); }, 300);
+      }
+      zWasDoubleTap = false; zWasPinch = false;
     }
   }
   zoomEl.addEventListener('pointerup', endPointer);
