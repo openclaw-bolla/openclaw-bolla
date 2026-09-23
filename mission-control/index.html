@@ -2255,10 +2255,10 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               <div class="card-head"><span class="card-title">Health</span><span class="card-icon">📱</span></div>
               <div id="duo-health-body"><div class="loading">Lade...</div></div>
             </div>
-            <!-- Z Flip Health (Renis Handy) -->
-            <div class="card" id="zflip-health-card">
-              <div class="card-head"><span class="card-title">Z Flip 3 (Renis)</span><span class="card-icon">📱</span></div>
-              <div id="zflip-health-body"><div class="loading">Lade...</div></div>
+            <!-- P8 Health -->
+            <div class="card" id="p8-health-card">
+              <div class="card-head"><span class="card-title">Pixel 8</span><span class="card-icon">📱</span></div>
+              <div id="p8-health-body"><div class="loading">Lade...</div></div>
             </div>
             <!-- Duo Funktionen -->
             <div class="card" data-device-hint="duo">
@@ -2305,6 +2305,57 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 </div>
                 <div class="adb-result" data-for="push"></div>
               </div>
+            </div>
+            <!-- P8 Funktionen -->
+            <div class="card" data-device-hint="p8">
+              <div class="card-head"><span class="card-title">Pixel 8 — Funktionen</span><span class="card-icon">🛠️</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <!-- Koppeln (einmalig, Android 11+) -->
+                <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600">Koppeln — einmalig (Android 11+)</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.5">
+                  Einstellungen → System → Entwickleroptionen → <strong style="color:rgba(255,255,255,0.5)">Kabelloses Debugging</strong> → <em>Gerät mit Kopplungscode koppeln</em> → IP:Port + 6-stelligen Code hier eingeben.
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                  <input class="adb-input" data-role="pair-ip" placeholder="192.168.178.xx:45321" style="flex:3;min-width:160px">
+                  <input class="adb-input" data-role="pair-code" placeholder="123456" maxlength="6" style="flex:1;min-width:70px;max-width:90px;letter-spacing:3px">
+                  <button class="adb-btn" data-act="pair">🔑 Koppeln</button>
+                </div>
+                <div class="adb-result" data-for="pair"></div>
+                <!-- Verbinden -->
+                <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:4px">ADB Verbindung</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.35)">Port von Hauptbildschirm „Kabelloses Debugging" (nicht Koppeln-Port).</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                  <input class="adb-input" data-role="connect-ip" placeholder="192.168.178.36" style="flex:2;min-width:120px">
+                  <input class="adb-input" data-role="connect-port" placeholder="Port" style="flex:1;min-width:60px;max-width:80px">
+                  <button class="adb-btn" data-act="connect">🔗 Verbinden</button>
+                  <button class="adb-btn" data-act="disconnect">✂ Trennen</button>
+                </div>
+                <button class="adb-btn" data-act="devices" style="width:fit-content">📡 Verbundene Geräte</button>
+                <div class="adb-result" data-for="devices"></div>
+                <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:4px">Screenshot</div>
+                <button class="adb-btn" data-act="screenshot" style="width:fit-content">📸 Screenshot machen</button>
+                <div class="adb-result" data-for="screenshot"></div>
+                <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:4px">Foto</div>
+                <button class="adb-btn" data-act="latest-photo" style="width:fit-content">📷 Neuestes Foto → Zwischenablage</button>
+                <div class="adb-result" data-for="latest-photo"></div>
+                <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:4px">Dateien</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <input class="adb-input" data-role="pull-path" placeholder="/storage/emulated/0/..." style="flex:1;min-width:160px">
+                  <button class="adb-btn" data-act="pull">⬇ Pullen</button>
+                </div>
+                <div class="adb-result" data-for="pull"></div>
+                <input type="file" class="adb-input" data-role="push-file" style="width:100%;margin-top:2px">
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <input class="adb-input" data-role="push-dir" placeholder="/storage/emulated/0/Download/" value="/storage/emulated/0/Download/" style="flex:1;min-width:140px">
+                  <button class="adb-btn" data-act="push">⬆ Pushen</button>
+                </div>
+                <div class="adb-result" data-for="push"></div>
+              </div>
+            </div>
+            <!-- Z Flip Health (Renis Handy) -->
+            <div class="card" id="zflip-health-card">
+              <div class="card-head"><span class="card-title">Z Flip 3 (Renis)</span><span class="card-icon">📱</span></div>
+              <div id="zflip-health-body"><div class="loading">Lade...</div></div>
             </div>
             <!-- Z Flip Funktionen (Renis Handy) -->
             <div class="card" data-device-hint="sm-f711b">
@@ -13794,17 +13845,21 @@ function adbRender() {
     btn.addEventListener('click', () => adbAction(btn.dataset.act, btn));
   });
   // Pre-fill last IP + Port, getrennt pro Gerät (data-device-hint)
-  const ADB_DEFAULT_IP = {duo: '192.168.178.20', 'sm-f711b': '192.168.178.57'};
+  const ADB_DEFAULT_IP = {duo: '192.168.178.20', 'sm-f711b': '192.168.178.57', p8: '192.168.178.36'};
   page.querySelectorAll('.card[data-device-hint]').forEach(card => {
     const hint = card.dataset.deviceHint;
     const ipInput = card.querySelector('[data-role="connect-ip"]');
     const portInput = card.querySelector('[data-role="connect-port"]');
     if (ipInput) ipInput.value = localStorage.getItem('adb-last-ip-' + hint) || ADB_DEFAULT_IP[hint] || '';
     if (portInput) portInput.value = localStorage.getItem('adb-last-port-' + hint) || '';
+    // Kopplungs-IP vorausfüllen (nur Port+Code müssen manuell rein, ändert sich bei jedem Koppeln)
+    const pairIpInput = card.querySelector('[data-role="pair-ip"]');
+    if (pairIpInput && ADB_DEFAULT_IP[hint]) pairIpInput.value = ADB_DEFAULT_IP[hint] + ':';
   });
   page.dataset.adbReady = '1';
   // Load health data
   loadDuoHealth();
+  loadP8Health();
   loadZFlipHealth();
   loadBookHealth();
   loadProHealth();
@@ -13812,7 +13867,7 @@ function adbRender() {
   loadSurfaceEnergie();
   setInterval(loadSurfaceEnergie, 5 * 60 * 1000);
   setInterval(() => { loadBookHealth(); loadProHealth(); }, 2 * 60 * 1000);
-  setInterval(() => { loadDuoHealth(); loadZFlipHealth(); loadStudioHealth(); }, 2 * 60 * 1000);
+  setInterval(() => { loadDuoHealth(); loadP8Health(); loadZFlipHealth(); loadStudioHealth(); }, 2 * 60 * 1000);
 }
 
 function surfaceBar(pct, color) {
@@ -13876,6 +13931,7 @@ async function loadAdbHealth(elId, modelMatch) {
   }
 }
 async function loadDuoHealth() { return loadAdbHealth('duo-health-body', 'duo'); }
+async function loadP8Health() { return loadAdbHealth('p8-health-body', 'pixel 8'); }
 async function loadZFlipHealth() { return loadAdbHealth('zflip-health-body', 'sm-f711b'); }
 
 async function loadBookHealth() {
@@ -14360,6 +14416,7 @@ async function adbAction(act, btn) {
         if (d.ok) {
           setTimeout(() => adbAction('devices', card.querySelector('[data-act="devices"]')), 300);
           setTimeout(loadDuoHealth, 1000);
+          setTimeout(loadP8Health, 1000);
           setTimeout(loadZFlipHealth, 1000);
         }
       }
