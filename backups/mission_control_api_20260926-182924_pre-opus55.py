@@ -8850,7 +8850,7 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     global _aurora2_job
                     try:
                         cl = _sh4.which("claude") or os.path.expanduser("~/.local/bin/claude")
-                        r = _sp4.run([cl, "-p", "--output-format", "json", "--model", "claude-opus-5-5"],
+                        r = _sp4.run([cl, "-p", "--output-format", "json", "--model", "claude-opus-5"],
                                      input=prompt, capture_output=True, text=True, timeout=900,
                                      cwd=os.path.expanduser("~"))
                         if r.returncode != 0:
@@ -8978,7 +8978,7 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                     global _aurora2_satz_job
                     try:
                         cl = _sh5.which("claude") or os.path.expanduser("~/.local/bin/claude")
-                        r = _sp5.run([cl, "-p", "--output-format", "json", "--model", "claude-opus-5-5"],
+                        r = _sp5.run([cl, "-p", "--output-format", "json", "--model", "claude-opus-5"],
                                      input=prompt, capture_output=True, text=True, timeout=240,
                                      cwd=os.path.expanduser("~"))
                         if r.returncode != 0:
