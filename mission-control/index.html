@@ -12343,9 +12343,28 @@ function aurora2RenderInhaltMitLesemarke(text, lesemarkeKey, opts) {
     hits.push({ start: idx, end: idx + satz.length, type: 'lesemarke', datum: marke.datum || '' });
   }
   for (const e of einschuebe) {
-    if (!e.text || text.indexOf(e.text) === -1) continue;
-    const idx = text.indexOf(e.text);
-    hits.push({ start: idx, end: idx + e.text.length, type: 'einschub', id: e.id, stufe: e.stufe, status: e.status, korrektur_wunsch: e.korrektur_wunsch, begruendung: e.begruendung });
+    if (!e.text) continue;
+    let start = text.indexOf(e.text);
+    let end = start === -1 ? -1 : start + e.text.length;
+    if (start === -1) {
+      // Fuzzy-Fallback: Wortlaut nicht mehr 1:1 vorhanden (z.B. Teilsatz per Korrektur
+      // geändert) — über Anfang/Ende der Stelle statt exaktem Volltext wiederfinden.
+      const woerter = e.text.split(/\s+/).filter(Boolean);
+      if (woerter.length >= 6) {
+        const kopf = woerter.slice(0, 6).join(' ');
+        const schluss = woerter.slice(-6).join(' ');
+        const idxKopf = text.indexOf(kopf);
+        if (idxKopf !== -1) {
+          const idxSchluss = text.indexOf(schluss, idxKopf + kopf.length);
+          if (idxSchluss !== -1) {
+            const kandidatEnd = idxSchluss + schluss.length;
+            if (kandidatEnd - idxKopf < e.text.length * 2.5) { start = idxKopf; end = kandidatEnd; }
+          }
+        }
+      }
+    }
+    if (start === -1) continue;
+    hits.push({ start, end, type: 'einschub', id: e.id, stufe: e.stufe, status: e.status, korrektur_wunsch: e.korrektur_wunsch, begruendung: e.begruendung });
   }
   hits.sort((a, b) => a.start - b.start);
 
