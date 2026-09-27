@@ -12333,15 +12333,49 @@ function aurora2RenderInhaltMitLesemarke(text, lesemarkeKey, opts) {
   const alt = inhalt.scrollTop;
   const marke = (_aurora2Data && _aurora2Data.lesemarken) ? _aurora2Data.lesemarken[lesemarkeKey] : null;
   const satz = marke && marke.satz;
+  const einschuebe = ((_aurora2Data && _aurora2Data.einschub_vorschlaege) || [])
+    .filter(e => e.kapitel_titel === lesemarkeKey && (e.status === 'wartet' || e.status === 'korrektur_angefragt'));
+
+  // Alle hervorzuhebenden Stellen sammeln (Lesemarke + offene Einschub-Vorschläge), nach Position sortieren.
+  const hits = [];
+  if (satz && text.includes(satz)) {
+    const idx = text.indexOf(satz);
+    hits.push({ start: idx, end: idx + satz.length, type: 'lesemarke', datum: marke.datum || '' });
+  }
+  for (const e of einschuebe) {
+    if (!e.text || text.indexOf(e.text) === -1) continue;
+    const idx = text.indexOf(e.text);
+    hits.push({ start: idx, end: idx + e.text.length, type: 'einschub', id: e.id, stufe: e.stufe, status: e.status, korrektur_wunsch: e.korrektur_wunsch, begruendung: e.begruendung });
+  }
+  hits.sort((a, b) => a.start - b.start);
+
   let markEl = null;
-  if (!satz || !text.includes(satz)) {
+  if (!hits.length) {
     inhalt.textContent = text || '(Kein Text)';
   } else {
-    const idx = text.indexOf(satz);
-    const vor = text.slice(0, idx), mitte = text.slice(idx, idx + satz.length), nach = text.slice(idx + satz.length);
-    inhalt.innerHTML = aurora2Esc(vor)
-      + '<span id="aurora2-lesemarke" style="background:rgba(236,72,153,0.20);border-bottom:2px solid #ec4899;border-radius:3px;padding:1px 2px" title="Deine letzte Position hier — ' + aurora2Esc(marke.datum||'') + '">'
-      + aurora2Esc(mitte) + '</span>' + aurora2Esc(nach);
+    let html = '', prevEnd = 0;
+    for (const h of hits) {
+      if (h.start < prevEnd) continue; // Überlappung — defensiv überspringen
+      html += aurora2Esc(text.slice(prevEnd, h.start));
+      const stueck = aurora2Esc(text.slice(h.start, h.end));
+      if (h.type === 'lesemarke') {
+        html += '<span id="aurora2-lesemarke" style="background:rgba(236,72,153,0.20);border-bottom:2px solid #ec4899;border-radius:3px;padding:1px 2px" title="Deine letzte Position hier — ' + aurora2Esc(h.datum) + '">' + stueck + '</span>';
+      } else {
+        const titel = h.status === 'korrektur_angefragt'
+          ? 'Korrektur angefragt: ' + aurora2Esc(h.korrektur_wunsch || '')
+          : 'Vorschlag Bolla (Fähigkeiten-Stufe ' + h.stufe + ') — ' + aurora2Esc(h.begruendung || '');
+        html += '<span style="background:rgba(59,130,246,0.18);border-bottom:2px solid #3b82f6;border-radius:3px;padding:1px 2px" title="' + titel + '">'
+          + stueck
+          + '<span style="white-space:nowrap;font-size:12px;margin-left:4px">'
+          + '<button onclick="aurora2EinschubEntscheidung(\'' + h.id + '\',\'annehmen\')" title="Übernehmen" style="border:none;background:none;cursor:pointer;padding:0 2px">✅</button>'
+          + '<button onclick="aurora2EinschubKorrektur(\'' + h.id + '\')" title="Korrektur anfragen" style="border:none;background:none;cursor:pointer;padding:0 2px">✏️</button>'
+          + '<button onclick="aurora2EinschubEntscheidung(\'' + h.id + '\',\'ablehnen\')" title="Verwerfen" style="border:none;background:none;cursor:pointer;padding:0 2px">❌</button>'
+          + '</span></span>';
+      }
+      prevEnd = h.end;
+    }
+    html += aurora2Esc(text.slice(prevEnd));
+    inhalt.innerHTML = html;
     markEl = document.getElementById('aurora2-lesemarke');
   }
   // Wohin scrollen? Refresh desselben Texts → exakt dort bleiben. Sonst zuletzt gelesene Position,
@@ -12566,6 +12600,47 @@ async function aurora2SatzEntscheidung(entscheidung) {
   } catch (e) {
     if (status) { status.textContent = '⚠️ Netzwerkfehler'; status.style.color = '#ef4444'; }
   }
+}
+
+async function aurora2EinschubEntscheidung(id, aktion) {
+  try {
+    const res = await fetch(API + '/api/aurora2/einschub-entscheidung', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ id, aktion })
+    });
+    const data = await res.json();
+    if (!data.ok) { alert('⚠️ ' + (data.error || 'Fehler')); return; }
+    const e = (_aurora2Data.einschub_vorschlaege || []).find(x => x.id === id);
+    if (e) e.status = aktion === 'annehmen' ? 'uebernommen' : 'abgelehnt';
+    if (aktion === 'ablehnen' && data.neuer_text != null && e) {
+      const kap = _aurora2Data.kapitel.find(k => k.titel === e.kapitel_titel);
+      if (kap) kap.text = data.neuer_text;
+    }
+    if (_aurora2AktivIdx != null && _aurora2AktivIdx !== 'vorwort') {
+      const kap = _aurora2Data.kapitel[_aurora2AktivIdx];
+      if (kap) aurora2RenderInhaltMitLesemarke(kap.text || '', kap.titel, {halten:true});
+    }
+  } catch (e) { alert('⚠️ Netzwerkfehler'); }
+}
+
+async function aurora2EinschubKorrektur(id) {
+  const wunsch = prompt('Was soll an diesem Einschub geändert werden?', '');
+  if (wunsch === null) return; // abgebrochen
+  try {
+    const res = await fetch(API + '/api/aurora2/einschub-entscheidung', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ id, aktion: 'korrektur', wunsch })
+    });
+    const data = await res.json();
+    if (!data.ok) { alert('⚠️ ' + (data.error || 'Fehler')); return; }
+    const e = (_aurora2Data.einschub_vorschlaege || []).find(x => x.id === id);
+    if (e) { e.status = 'korrektur_angefragt'; e.korrektur_wunsch = wunsch; }
+    if (_aurora2AktivIdx != null && _aurora2AktivIdx !== 'vorwort') {
+      const kap = _aurora2Data.kapitel[_aurora2AktivIdx];
+      if (kap) aurora2RenderInhaltMitLesemarke(kap.text || '', kap.titel, {halten:true});
+    }
+    alert('Notiert — Bolla schaut sich die Korrektur beim nächsten Durchgang an (noch kein Live-Rewrite hier eingebaut).');
+  } catch (e) { alert('⚠️ Netzwerkfehler'); }
 }
 
 let _aurora2PollTimer = null;
