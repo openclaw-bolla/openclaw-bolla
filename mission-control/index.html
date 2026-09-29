@@ -12370,7 +12370,7 @@ function aurora2RenderInhaltMitLesemarke(text, lesemarkeKey, opts) {
       }
     }
     if (start === -1) continue;
-    hits.push({ start, end, type: 'einschub', id: e.id, stufe: e.stufe, status: e.status, korrektur_wunsch: e.korrektur_wunsch, begruendung: e.begruendung });
+    hits.push({ start, end, type: 'einschub', id: e.id, stufe: e.stufe, label: e.label, status: e.status, korrektur_wunsch: e.korrektur_wunsch, begruendung: e.begruendung });
   }
   hits.sort((a, b) => a.start - b.start);
 
@@ -12388,7 +12388,7 @@ function aurora2RenderInhaltMitLesemarke(text, lesemarkeKey, opts) {
       } else {
         const titel = h.status === 'korrektur_angefragt'
           ? 'Korrektur angefragt: ' + aurora2Esc(h.korrektur_wunsch || '')
-          : 'Vorschlag Bolla (Fähigkeiten-Stufe ' + h.stufe + ') — ' + aurora2Esc(h.begruendung || '');
+          : 'Vorschlag Bolla (' + aurora2Esc(h.label || ('Fähigkeiten-Stufe ' + h.stufe)) + ') — ' + aurora2Esc(h.begruendung || '');
         html += '<span style="background:rgba(59,130,246,0.18);border-bottom:2px solid #3b82f6;border-radius:3px;padding:1px 2px" title="' + titel + '">'
           + stueck
           + '<span style="white-space:nowrap;font-size:12px;margin-left:4px">'
