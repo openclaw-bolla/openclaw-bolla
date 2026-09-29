@@ -3707,8 +3707,68 @@ def _fetch_itunes_genre(genre_id, country="us", limit=10):
     except Exception as e:
         return [{"error": str(e)}]
 
+# Kuratierte Liste "Die 50 bekanntesten One-Hit-Wonder" (Chris' Word-Liste vom 25.09.2026,
+# Top_50_One-Hit-Wonder_Deutschland.docx) — anders als die anderen Pools NICHT täglich
+# gesampelt, sondern alle 50 komplett angezeigt (Chris-Wunsch 29.09.2026).
+_TOP50_OHW = [
+    {"title": "Telstar", "artist": "The Tornados", "streams": "1962 · One-Hit-Wonder"},
+    {"title": "San Francisco", "artist": "Scott McKenzie", "streams": "1967 · One-Hit-Wonder"},
+    {"title": "In the Year 2525", "artist": "Zager and Evans", "streams": "1969 · One-Hit-Wonder"},
+    {"title": "Spirit in the Sky", "artist": "Norman Greenbaum", "streams": "1970 · One-Hit-Wonder"},
+    {"title": "Hooked on a Feeling", "artist": "Blue Swede", "streams": "1974 · One-Hit-Wonder"},
+    {"title": "Disco Duck", "artist": "Rick Dees", "streams": "1976 · One-Hit-Wonder"},
+    {"title": "Ça plane pour moi", "artist": "Plastic Bertrand", "streams": "1977 · One-Hit-Wonder"},
+    {"title": "Magic Fly", "artist": "Space", "streams": "1977 · One-Hit-Wonder"},
+    {"title": "Black Betty", "artist": "Ram Jam", "streams": "1977 · One-Hit-Wonder"},
+    {"title": "Porque te vas", "artist": "Jeanette", "streams": "1977 · One-Hit-Wonder"},
+    {"title": "Ring My Bell", "artist": "Anita Ward", "streams": "1979 · One-Hit-Wonder"},
+    {"title": "Video Killed the Radio Star", "artist": "The Buggles", "streams": "1979 · One-Hit-Wonder"},
+    {"title": "Funkytown", "artist": "Lipps, Inc.", "streams": "1979 · One-Hit-Wonder"},
+    {"title": "Das Lied von Manuel", "artist": "Pony", "streams": "1979 · One-Hit-Wonder"},
+    {"title": "My Sharona", "artist": "The Knack", "streams": "1979 · One-Hit-Wonder"},
+    {"title": "Eisbär", "artist": "Grauzone", "streams": "1981 · One-Hit-Wonder"},
+    {"title": "Der Knutschfleck", "artist": "Ixi", "streams": "1983 · One-Hit-Wonder"},
+    {"title": "Die Sennerin vom Königsee", "artist": "Kiz", "streams": "1983 · One-Hit-Wonder"},
+    {"title": "One Night in Bangkok", "artist": "Murray Head", "streams": "1984 · One-Hit-Wonder"},
+    {"title": "Comanchero", "artist": "Raggio di Luna", "streams": "1985 · One-Hit-Wonder"},
+    {"title": "St. Elmo's Fire", "artist": "John Parr", "streams": "1985 · One-Hit-Wonder"},
+    {"title": "Resi, i hol di mit mei'm Traktor ab", "artist": "Wolfgang Fierek", "streams": "1986 · One-Hit-Wonder"},
+    {"title": "My Favourite Waste of Time", "artist": "Owen Paul", "streams": "1986 · One-Hit-Wonder"},
+    {"title": "J'aime la vie", "artist": "Sandra Kim", "streams": "1986 · One-Hit-Wonder"},
+    {"title": "Ich liebe dich", "artist": "Clowns & Helden", "streams": "1987 · One-Hit-Wonder"},
+    {"title": "Voyage, voyage", "artist": "Desireless", "streams": "1987 · One-Hit-Wonder"},
+    {"title": "Lean on Me", "artist": "Club Nouveau", "streams": "1987 · One-Hit-Wonder"},
+    {"title": "Pump Up the Volume", "artist": "M/A/R/R/S", "streams": "1987 · One-Hit-Wonder"},
+    {"title": "Go for Gold", "artist": "The Winners", "streams": "1988 · One-Hit-Wonder"},
+    {"title": "Pump ab das Bier", "artist": "Werner Wichtig", "streams": "1990 · One-Hit-Wonder"},
+    {"title": "Beinhart", "artist": "Torfrock", "streams": "1990 · One-Hit-Wonder"},
+    {"title": "Baby Got Back", "artist": "Sir Mix-a-Lot", "streams": "1992 · One-Hit-Wonder"},
+    {"title": "Doop", "artist": "Doop", "streams": "1994 · One-Hit-Wonder"},
+    {"title": "Alice, Who the X Is Alice?", "artist": "Gompie", "streams": "1995 · One-Hit-Wonder"},
+    {"title": "Macarena", "artist": "Los del Río", "streams": "1996 · One-Hit-Wonder"},
+    {"title": "Freed from Desire", "artist": "Gala", "streams": "1997 · One-Hit-Wonder"},
+    {"title": "Tic, Tic Tac", "artist": "Chili & Carrapicho", "streams": "1997 · One-Hit-Wonder"},
+    {"title": "Big Big World", "artist": "Emilia", "streams": "1998 · One-Hit-Wonder"},
+    {"title": "Mambo No. 5", "artist": "Lou Bega", "streams": "1999 · One-Hit-Wonder"},
+    {"title": "Flat Beat", "artist": "Mr Oizo", "streams": "1999 · One-Hit-Wonder"},
+    {"title": "The Ketchup Song", "artist": "Las Ketchup", "streams": "2002 · One-Hit-Wonder"},
+    {"title": "Dragostea din tei", "artist": "Haiducii", "streams": "2004 · One-Hit-Wonder"},
+    {"title": "Kleiner Hai", "artist": "Alemuel", "streams": "2008 · One-Hit-Wonder"},
+    {"title": "Stereo Love", "artist": "Edward Maya & Vika Jigulina", "streams": "2010 · One-Hit-Wonder"},
+    {"title": "Somebody That I Used to Know", "artist": "Gotye feat. Kimbra", "streams": "2011 · One-Hit-Wonder"},
+    {"title": "Gangnam Style", "artist": "Psy", "streams": "2012 · One-Hit-Wonder"},
+    {"title": "Harlem Shake", "artist": "Baauer", "streams": "2013 · One-Hit-Wonder"},
+    {"title": "The Fox", "artist": "Ylvis", "streams": "2013 · One-Hit-Wonder"},
+    {"title": "I'm an Albatraoz", "artist": "AronChupa", "streams": "2014 · One-Hit-Wonder"},
+    {"title": "Wellerman", "artist": "Nathan Evans", "streams": "2021 · One-Hit-Wonder"},
+]
+
+def _fetch_top50_ohw():
+    """Alle 50 One-Hit-Wonder komplett zurückgeben (kein Daily-Sample — Chris will die volle Liste anspielbar)."""
+    return _TOP50_OHW
+
 def get_charts():
-    """Streaming Charts: DE + Global (Spotify via kworb) + Party (Schlager) + Oktoberfest + Dance (Apple) + Overall Alltime + No.1-Hits 1980-2026."""
+    """Streaming Charts: DE + Global (Spotify via kworb) + Party (Schlager) + Oktoberfest + Top-50-One-Hit-Wonder + Overall Alltime + No.1-Hits 1980-2026."""
     import time as _time
     now = _time.time()
     if _charts_cache["data"] and now - _charts_cache["ts"] < CHARTS_TTL:
@@ -3717,7 +3777,7 @@ def get_charts():
     gl = _fetch_kworb("global_daily")
     party = _fetch_party_charts()
     oktoberfest = _fetch_oktoberfest_charts()
-    dance = _fetch_itunes_genre(17, "de")   # echte aktuelle Dance/Party-Charts für Release-Songs
+    dance = _fetch_top50_ohw()   # Top 50 One-Hit-Wonder (ersetzt die frühere Apple-Dance-Chart-Kachel)
     overall = _fetch_kworb_alltime()
     no1 = _fetch_no1_hits()
     result = {"de": de, "global": gl, "party": party, "oktoberfest": oktoberfest, "dance": dance,

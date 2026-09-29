@@ -3134,6 +3134,10 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                   <div id="aurora2-inhalt-titel" style="font-size:15px;font-weight:700;color:var(--bright)">Kapitel auswählen</div>
                   <span id="aurora2-inhalt-meta" style="font-size:12px;color:var(--dim)"></span>
                 </div>
+                <details id="aurora2-recap" style="display:none;margin-bottom:14px;background:rgba(99,102,241,0.07);border:1px solid rgba(99,102,241,0.25);border-radius:8px;padding:2px 12px">
+                  <summary style="cursor:pointer;padding:8px 0;font-size:13px;font-weight:600;color:#a5b4fc;list-style:revert">📖 Bisher in diesem Kapitel …</summary>
+                  <div id="aurora2-recap-text" style="font-size:14px;color:var(--text);line-height:1.6;padding:2px 0 12px"></div>
+                </details>
                 <div id="aurora2-inhalt" style="display:none;font-size:15px;color:var(--text);line-height:1.85;white-space:pre-wrap;max-height:600px;overflow-y:auto"></div>
                 <div id="aurora2-inhalt-platzhalter" style="font-size:14px;color:var(--dim)">← Klicke links auf ein Kapitel — oder schreib unten eine Anweisung für das erste.</div>
                 <div id="aurora2-satz-zeile" style="display:none;flex-direction:column;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
@@ -3635,9 +3639,9 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               <button id="chart-tab-oktoberfest" onclick="sunoChartTab('oktoberfest')" title="Oktoberfest-/Wiesn-Hits — Bierzelt-Klassiker und Zeltgesänge"
                 style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;
                        background:transparent;color:var(--dim);border-left:1px solid var(--border);transition:all .2s">🍺 Oktoberfest</button>
-              <button id="chart-tab-dance" onclick="sunoChartTab('dance')" title="Aktuelle Dance/Party-Charts (Apple, täglich) — fürs Veröffentlichen"
+              <button id="chart-tab-dance" onclick="sunoChartTab('dance')" title="Die 50 bekanntesten One-Hit-Wonder in Deutschland — alle anspielbar"
                 style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;
-                       background:transparent;color:var(--dim);border-left:1px solid var(--border);transition:all .2s">💃 Dance</button>
+                       background:transparent;color:var(--dim);border-left:1px solid var(--border);transition:all .2s">🎯 Top 50 OHW</button>
               <button id="chart-tab-overall" onclick="sunoChartTab('overall')"
                 style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;
                        background:transparent;color:var(--dim);border-left:1px solid var(--border);transition:all .2s">🏆 Overall</button>
@@ -12208,6 +12212,8 @@ async function loadAurora2() {
       if (im) im.textContent = '';
       if (inhalt) inhalt.style.display = 'none';
       if (platz) platz.style.display = 'block';
+      const recapLeer = document.getElementById('aurora2-recap');
+      if (recapLeer) recapLeer.style.display = 'none';
     }
 
     const komEl = document.getElementById('aurora2-kommentare');
@@ -12441,6 +12447,8 @@ function aurora2ZeigeVorwort(opts) {
   if (it) it.textContent = 'Vorwort';
   const marke1 = _aurora2Data.lesemarken && _aurora2Data.lesemarken['__VORWORT__'];
   if (im) im.textContent = `${text.split(/\s+/).filter(Boolean).length} Wörter${marke1 ? ' · 📍 zuletzt hier: '+marke1.datum : ''}`;
+  const recapV = document.getElementById('aurora2-recap');
+  if (recapV) { recapV.style.display = 'none'; recapV.open = false; }
   if (platz) platz.style.display = 'none';
   if (inhalt) inhalt.style.display = 'block';
   aurora2RenderInhaltMitLesemarke(text, '__VORWORT__', opts);
@@ -12475,6 +12483,17 @@ function aurora2ZeigeKapitel(idx, opts) {
   if (it) it.textContent = kap.titel || 'Kapitel ' + (idx+1);
   const marke2 = _aurora2Data.lesemarken && _aurora2Data.lesemarken[kap.titel];
   if (im) im.textContent = `${(kap.text||'').split(/\s+/).filter(Boolean).length} Wörter${kap.datum?' · '+kap.datum:''}${marke2 ? ' · 📍 zuletzt hier: '+marke2.datum : ''}`;
+  const recap = document.getElementById('aurora2-recap');
+  const recapText = document.getElementById('aurora2-recap-text');
+  if (recap && recapText) {
+    if (!opts.halten) recap.open = false;   // beim Kapitelwechsel immer zugeklappt starten — Chris klappt selbst auf
+    if (kap.zusammenfassung) {
+      recapText.textContent = kap.zusammenfassung;
+      recap.style.display = 'block';
+    } else {
+      recap.style.display = 'none';
+    }
+  }
   if (platz) platz.style.display = 'none';
   if (inhalt) inhalt.style.display = 'block';
   aurora2RenderInhaltMitLesemarke(kap.text || '', kap.titel, opts);
