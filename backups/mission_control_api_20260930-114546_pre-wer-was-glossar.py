@@ -239,68 +239,6 @@ _ki_buch_job = {"status": "idle", "antwort": "", "inhalt": "", "inhalt_titel": "
 _aurora2_job = {"status": "idle", "antwort": "", "inhalt": "", "inhalt_titel": "", "error": ""}
 _aurora2_satz_job = {"status": "idle", "id": "", "kapitel_titel": "", "satz": "", "vorschlag": "", "antwort": "", "geaendert": False, "error": ""}
 
-def _aurora2_glossar_ergaenzen(buch2, kap_eintrag, now):
-    """Extrahiert per Opus neue Glossar-Einträge (Personen/Objekte/Orte/Begriffe) aus einem frisch
-    geschriebenen AURORA-II-Kapitel und hängt sie an buch2['glossar'] an — Nachschlagehilfe für Chris,
-    wenn er nach einer Lesepause einen Namen/Gegenstand vergessen hat. Läuft synchron innerhalb des
-    generiere-Hintergrund-Threads, direkt nachdem ein wirklich NEUES Kapitel angehängt wurde (keine
-    Kapitel-Überarbeitung). Fehler hier dürfen die Kapitel-Generierung nie kippen -> alles in try/except."""
-    try:
-        import shutil as _shg, subprocess as _spg, uuid as _uuidg
-        glossar = buch2.setdefault("glossar", [])
-        bekannte_namen = {e.get("name", "").strip().lower() for e in glossar if e.get("name")}
-        bekannt_txt = ", ".join(e["name"] for e in glossar) if glossar else "(noch keine)"
-        prompt = f"""Du bist Bolla, Lektor für den deutschen KI-Thriller "AURORA II". Hier ist ein frisch
-geschriebenes Kapitel. Chris liest das Buch über Wochen verteilt und braucht ein Nachschlage-Glossar für
-Namen, Objekte, Orte oder Begriffe, an die er sich nach einer Lesepause vielleicht nicht mehr erinnert.
-
-BEREITS BEKANNTE GLOSSAR-EINTRÄGE (NICHT wiederholen): {bekannt_txt}
-
-NEUES KAPITEL "{kap_eintrag['titel']}":
-{kap_eintrag['text']}
-
-Extrahiere NUR Personennamen, Objekte, Orte oder Begriffe, die in DIESEM Kapitel zum ERSTEN MAL wichtig
-eingeführt werden und für einen wiedereinsteigenden Leser später nachschlagenswert sind — keine trivialen/
-generischen Dinge, keine bereits bekannten Einträge. Maximal 6 Einträge, lieber weniger als zu viele: nur
-wirklich merkenswerte Sachen (Figuren mit Namen, wichtige Gegenstände, Orte, zentrale Fachbegriffe der
-Handlung). Für jeden neuen Eintrag: Name, Kategorie (Person/Objekt/Ort/Sonstiges), 1-2 Sätze Erklärung im
-Kontext dieses Kapitels — nur Fakten aus dem Text, nichts erfinden.
-
-Antworte AUSSCHLIESSLICH mit einer Liste, ein Eintrag pro Zeile, exakt in diesem Format:
-NAME|KATEGORIE|BESCHREIBUNG
-
-Wenn nichts Neues und Nennenswertes vorkommt, antworte NUR mit: KEINE"""
-        cl = _shg.which("claude") or os.path.expanduser("~/.local/bin/claude")
-        r = _spg.run([cl, "-p", "--output-format", "json", "--model", "opus"],
-                     input=prompt, capture_output=True, text=True, timeout=180,
-                     cwd=os.path.expanduser("~"))
-        if r.returncode != 0:
-            return
-        raw = json.loads(r.stdout).get("result", "").strip()
-        if not raw or raw.strip().upper().startswith("KEINE"):
-            return
-        for line in raw.splitlines():
-            line = line.strip().lstrip("-").strip()
-            if not line or "|" not in line:
-                continue
-            teile = [t.strip() for t in line.split("|", 2)]
-            if len(teile) != 3 or not teile[0]:
-                continue
-            name, kategorie, beschreibung = teile
-            if name.lower() in bekannte_namen:
-                continue
-            glossar.append({
-                "id": _uuidg.uuid4().hex[:8],
-                "name": name,
-                "kategorie": kategorie or "Sonstiges",
-                "beschreibung": beschreibung,
-                "kapitel_titel": kap_eintrag["titel"],
-                "datum": now,
-            })
-            bekannte_namen.add(name.lower())
-    except Exception:
-        pass
-
 def get_clipboard():
     try:
         with open(CLIPBOARD_FILE, encoding="utf-8") as f:
@@ -1163,16 +1101,16 @@ def get_emails_wtnet():
         with open(wtnet_cfg) as f:
             cfg = json.load(f)
 
-        mail = imaplib.IMAP4_SSL(cfg["imap_host"], cfg["imap_port"], timeout=10)
+        mail = imaplib.IMAP4_SSL(cfg["imap_host"], cfg["imap_port"])
         mail.login(cfg["email"], cfg["password"])
         mail.select("INBOX")
 
-        _, uid_data = mail.uid("search", None, "UNSEEN")
-        ids = uid_data[0].split()
+        _, msg_ids = mail.search(None, "UNSEEN")
+        ids = msg_ids[0].split()
         msgs = []
 
-        for uid in reversed(ids[-10:]):  # max 10, neueste zuerst
-            _, data = mail.uid("fetch", uid, "(RFC822)")
+        for mid in reversed(ids[-10:]):  # max 10, neueste zuerst
+            _, data = mail.fetch(mid, "(RFC822)")
             raw = data[0][1]
             msg = email_lib.message_from_bytes(raw)
 
@@ -1214,7 +1152,6 @@ def get_emails_wtnet():
 
             msgs.append({
                 "account": "wtnet",
-                "id": uid.decode(),
                 "from": from_name or "Unbekannt",
                 "from_email": cfg["email"],
                 "subject": subj,
@@ -1238,7 +1175,7 @@ def get_emails_recent_wtnet():
         wtnet_cfg = os.path.join(WORKSPACE, "config/wtnet_account.json")
         with open(wtnet_cfg) as f:
             cfg = json.load(f)
-        mail = imaplib.IMAP4_SSL(cfg["imap_host"], cfg["imap_port"], timeout=10)
+        mail = imaplib.IMAP4_SSL(cfg["imap_host"], cfg["imap_port"])
         mail.login(cfg["email"], cfg["password"])
         mail.select("INBOX", readonly=True)
         _, uid_data = mail.uid("search", None, "ALL")
@@ -2422,7 +2359,7 @@ def mail_command(data):
                     import imaplib
                     if wtnet_cfg is None:
                         wtnet_cfg = json.loads(Path(os.path.join(WORKSPACE,"config/wtnet_account.json")).read_text())
-                    with imaplib.IMAP4_SSL(wtnet_cfg["imap_host"], wtnet_cfg["imap_port"], timeout=10) as imap:
+                    with imaplib.IMAP4_SSL(wtnet_cfg["imap_host"], wtnet_cfg["imap_port"]) as imap:
                         imap.login(wtnet_cfg["email"], wtnet_cfg["password"])
                         imap.select("INBOX")
                         imap.uid("store", mid.encode(), "+FLAGS", "\\Deleted")
@@ -3137,7 +3074,7 @@ def aufpeppen_generate_captions(img_path):
         '{"tiktok": "...", "instagram": "..."}'
     )
     try:
-        r = subprocess.run(["claude", "-p", prompt, "--model", "opus"],
+        r = subprocess.run(["claude", "-p", prompt, "--model", "claude-opus-5"],
                             capture_output=True, text=True, timeout=90)
         m = _re_cap.search(r"\{.*\}", r.stdout.strip(), _re_cap.S)
         if m:
@@ -3269,7 +3206,7 @@ def _suno_cover_concepts(title, lyrics="", n=3):
         f"no quotation marks."
     )
     try:
-        r = _sp.run([cb, "-p", "--model", "sonnet", "--output-format", "json", instr],
+        r = _sp.run([cb, "-p", "--model", "claude-sonnet-5", "--output-format", "json", instr],
                     capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~"))
         raw = json.loads(r.stdout).get("result", "").strip() if r.returncode == 0 else ""
         lines = [l.strip(" -•\t").strip() for l in raw.splitlines() if l.strip()]
@@ -3318,7 +3255,7 @@ def _suno_cover_prompt_from_wish(title, lyrics, wish, prev_prompt=""):
             f"\n\nOutput ONLY the single English sentence — no German, no quotation marks, no numbering, no commentary."
         )
     try:
-        r = _sp.run([cb, "-p", "--model", "sonnet", "--output-format", "json", instr],
+        r = _sp.run([cb, "-p", "--model", "claude-sonnet-5", "--output-format", "json", instr],
                     capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~"))
         raw = json.loads(r.stdout).get("result", "").strip() if r.returncode == 0 else ""
         line = " ".join(l.strip(" -•\t\"'") for l in raw.splitlines() if l.strip()).strip()
@@ -8792,7 +8729,7 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     global _ki_buch_job
                     try:
                         cl = _sh3.which("claude") or os.path.expanduser("~/.local/bin/claude")
-                        r = _sp3.run([cl, "-p", "--output-format", "json", "--model", "sonnet"],
+                        r = _sp3.run([cl, "-p", "--output-format", "json", "--model", "claude-sonnet-5"],
                                      input=prompt, capture_output=True, text=True, timeout=900,
                                      cwd=os.path.expanduser("~"))
                         if r.returncode != 0:
@@ -8973,7 +8910,7 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     global _aurora2_job
                     try:
                         cl = _sh4.which("claude") or os.path.expanduser("~/.local/bin/claude")
-                        r = _sp4.run([cl, "-p", "--output-format", "json", "--model", "opus"],
+                        r = _sp4.run([cl, "-p", "--output-format", "json", "--model", "claude-opus-5-5"],
                                      input=prompt, capture_output=True, text=True, timeout=900,
                                      cwd=os.path.expanduser("~"))
                         if r.returncode != 0:
@@ -9001,7 +8938,6 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                             ist_ueberarbeitung = any(kw in anweisung.lower() for kw in ueberschreibe_keywords)
                             existing_idx = next((i for i,k in enumerate(buch2.get("kapitel",[])) if k["titel"]==neuer_titel), None)
                             kap_eintrag = {"titel":neuer_titel,"text":gen["neuer_inhalt"],"datum":now}
-                            neu_angehaengt = False
                             if existing_idx is not None:
                                 buch2["kapitel"][existing_idx] = kap_eintrag
                             elif ist_ueberarbeitung:
@@ -9011,16 +8947,14 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                                     knum = int(m4.group(1))
                                     cidx = next((i for i,k in enumerate(buch2.get("kapitel",[])) if f"kapitel {knum}" in k["titel"].lower()), None)
                                     if cidx is not None: buch2["kapitel"][cidx] = kap_eintrag
-                                    else: buch2.setdefault("kapitel",[]).append(kap_eintrag); neu_angehaengt = True
+                                    else: buch2.setdefault("kapitel",[]).append(kap_eintrag)
                                 else:
-                                    buch2.setdefault("kapitel",[]).append(kap_eintrag); neu_angehaengt = True
+                                    buch2.setdefault("kapitel",[]).append(kap_eintrag)
                             else:
-                                buch2.setdefault("kapitel",[]).append(kap_eintrag); neu_angehaengt = True
+                                buch2.setdefault("kapitel",[]).append(kap_eintrag)
                             buch2.setdefault("statistik",{})["kapitel_gesamt"] = len(buch2["kapitel"])
                             buch2["statistik"]["woerter_gesamt"] = sum(len(k["text"].split()) for k in buch2["kapitel"])
                             buch2["statistik"]["letzte_session"] = now
-                            if neu_angehaengt:
-                                _aurora2_glossar_ergaenzen(buch2, kap_eintrag, now)
                         buch2["letzteAktion"] = now
                         if gen.get("naechster_schritt"): buch2["naechsterSchritt"] = gen["naechster_schritt"]
                         for k in [x for x in buch2.get("kommentare",[]) if not x.get("erledigt")]:
@@ -9066,8 +9000,6 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     self._send_json({"ok": False, "error": "Text nicht eindeutig gefunden — bitte exakt markieren"}); return
                 text = kap["text"]
                 idx = text.find(satz)
-                frage_low = frage.strip().lower().rstrip("?")
-                ist_wer_was = frage_low in ("wer", "was", "wer ist das", "was ist das", "wer war das", "wer ist das nochmal", "was ist das nochmal")
                 vor = text[max(0, idx - 400):idx]
                 nach = text[idx + len(satz):idx + len(satz) + 400]
                 buch.setdefault("lesemarken", {})[kap_titel] = {
@@ -9077,31 +9009,7 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     json.dump(buch, fh, ensure_ascii=False, indent=2)
                 mark_id = _uuid1.uuid4().hex[:8]
                 ort_beschreibung = "im Vorwort" if kap_titel == "__VORWORT__" else f'im Kapitel "{kap_titel}"'
-                if ist_wer_was:
-                    kap_liste = buch.get("kapitel", [])
-                    cidx = next((i for i, k in enumerate(kap_liste) if k.get("titel") == kap_titel), None)
-                    bisherige = kap_liste[:cidx + 1] if cidx is not None else kap_liste
-                    bisher_text = "\n\n".join(f"=== {k['titel']} ===\n{k['text']}" for k in bisherige)
-                    prompt = f"""Du bist Bolla, Lektor und Co-Autor für den deutschen KI-Thriller "AURORA II". Chris (der Autor)
-liest das Buch über mehrere Sessions verteilt und ist gerade wieder eingestiegen. Er hat {ort_beschreibung} eine
-Stelle markiert, weil er sich an einen Namen, ein Objekt oder einen früheren Handlungsfaden nicht mehr erinnert.
-
-MARKIERT:
-{satz}
-
-BISHERIGER BUCHTEXT (alle Kapitel bis einschließlich dem aktuellen — zum Nachschlagen):
-{bisher_text}
-
-Durchsuche den bisherigen Buchtext nach der ersten bzw. wichtigsten Erwähnung von "{satz}" und erkläre Chris
-knapp und klar, wer oder was das ist — nenne dabei auch, in welchem Kapitel es eingeführt wurde bzw. zuletzt
-wichtig war. Antworte NUR mit Fakten, die tatsächlich im Text stehen, erfinde nichts dazu. Findest du es im
-bisherigen Text nicht, sag das ehrlich statt zu raten.
-
-Antworte AUSSCHLIESSLICH in diesem Format:
-ANTWORT: <deine Erklärung, 2-5 Sätze, direkt, locker, wie ein Kumpel der auch Ahnung hat>
-VORSCHLAG: {satz}"""
-                else:
-                    prompt = f"""Du bist Bolla, Lektor und Co-Autor für den deutschen KI-Thriller "AURORA II". Chris (der Autor)
+                prompt = f"""Du bist Bolla, Lektor und Co-Autor für den deutschen KI-Thriller "AURORA II". Chris (der Autor)
 hat einen Satz {ort_beschreibung} markiert und dazu eine Bemerkung/Frage/Korrekturwunsch.
 
 BEMERKUNG VON CHRIS:
@@ -9130,7 +9038,7 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                     global _aurora2_satz_job
                     try:
                         cl = _sh5.which("claude") or os.path.expanduser("~/.local/bin/claude")
-                        r = _sp5.run([cl, "-p", "--output-format", "json", "--model", "opus"],
+                        r = _sp5.run([cl, "-p", "--output-format", "json", "--model", "claude-opus-5-5"],
                                      input=prompt, capture_output=True, text=True, timeout=240,
                                      cwd=os.path.expanduser("~"))
                         if r.returncode != 0:
@@ -10743,7 +10651,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 # damit spuerbar Zeit, ohne die Songtext-Qualitaet zu beruehren. Login/Abo-Auth bleibt
                 # normal (kein API-Key noetig, anders als --bare).
                 proc = subprocess.Popen(
-                    [claude_bin, "-p", "--model", "sonnet", "--output-format", "json",
+                    [claude_bin, "-p", "--model", "claude-sonnet-5", "--output-format", "json",
                      "--safe-mode", prompt],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                     stdin=subprocess.DEVNULL, cwd=os.path.expanduser("~")
@@ -10889,7 +10797,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 claude_bin_s = _sh_style.which("claude") or os.path.expanduser("~/.local/bin/claude")
                 try:
                     r_s = _sp_style.run(
-                        [claude_bin_s, "-p", "--model", "sonnet", "--output-format", "json",
+                        [claude_bin_s, "-p", "--model", "claude-sonnet-5", "--output-format", "json",
                          "--safe-mode", style_instr],
                         capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~"))
                     style_hint_out = json.loads(r_s.stdout).get("result", "").strip() if r_s.returncode == 0 else ""
@@ -11661,7 +11569,7 @@ Return ONLY this exact JSON (no markdown, no extra text):
 
     try:
         res = _sp.run(
-            [claude_bin, "-p", "--model", "sonnet", "--output-format", "json", prompt],
+            [claude_bin, "-p", "--model", "claude-sonnet-5", "--output-format", "json", prompt],
             capture_output=True, text=True, timeout=120, stdin=_sp.DEVNULL,
             cwd=os.path.expanduser("~")
         )
@@ -11948,7 +11856,7 @@ Gib NUR dieses JSON zurück (Highlight-Text als Key, exakt wie oben, Value = Lis
 {{"infos": {{"<highlight1>": ["<punkt1>", "<punkt2>"], "<highlight2>": ["<punkt1>", "<punkt2>", "<punkt3>"]}}}}"""
     try:
         res = subprocess.run(
-            [claude_bin, "-p", "--model", "sonnet", "--output-format", "json", prompt],
+            [claude_bin, "-p", "--model", "claude-sonnet-5", "--output-format", "json", prompt],
             capture_output=True, text=True, timeout=90, stdin=subprocess.DEVNULL,
             cwd=os.path.expanduser("~")
         )

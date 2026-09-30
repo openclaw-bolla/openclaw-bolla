@@ -19,13 +19,12 @@ CREDS_PATH = "/home/bolla/workspace/config/itslearning_credentials.json"
 OUT_DIR = "/tmp/its_debug"
 os.makedirs(OUT_DIR, exist_ok=True)
 
-# ⚠️ Vor jedem Lauf anpassen (Test 28.09.2026: Chris' eigener Schueler-Testaccount, s.
-# [[project_itslearning_automation]] - "Mandel, Chris" = Schueler-Rolle von cmandel2):
-EMPFAENGER = "Mandel, Chris"
-MESSAGE = "🎉 Alles Gute zum Geburtstag, Tammo! Hier sind deine beiden Songs zum Behalten 🎶🎂"
+# ⚠️ Vor jedem Lauf anpassen. Naechster regulaerer Versand: Chiara (7b), heute 30.09.2026 ab 14 Uhr.
+EMPFAENGER = "Rittmüller, Chiara"
+MESSAGE = "🎉 Alles Gute zum Geburtstag, Chiara! Hier sind deine beiden Songs zum Behalten 🎶🎂"
 SONGS = [
-    "/mnt/d/OneDrive/Dokumente/Office/7. Klassen/7a/Schüler/Happy Birthday Tammo 28.09.26.mp4",
-    "/mnt/d/OneDrive/Dokumente/Office/7. Klassen/7a/Schüler/Tammo's Birthday Beat 🎉💻🎶.mp4",
+    "/mnt/d/OneDrive/Dokumente/Office/7. Klassen/7b/Schüler/Happy Birthday Chiara 02.10.26 (1).mp4",
+    "/mnt/d/OneDrive/Dokumente/Office/7. Klassen/7b/Schüler/Chiara's Birthday Code 🎂💻✨.mp4",
 ]
 
 with open(CREDS_PATH) as f:

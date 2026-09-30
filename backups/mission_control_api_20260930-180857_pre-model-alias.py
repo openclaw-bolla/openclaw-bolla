@@ -271,7 +271,7 @@ NAME|KATEGORIE|BESCHREIBUNG
 
 Wenn nichts Neues und Nennenswertes vorkommt, antworte NUR mit: KEINE"""
         cl = _shg.which("claude") or os.path.expanduser("~/.local/bin/claude")
-        r = _spg.run([cl, "-p", "--output-format", "json", "--model", "opus"],
+        r = _spg.run([cl, "-p", "--output-format", "json", "--model", "claude-opus-5-5"],
                      input=prompt, capture_output=True, text=True, timeout=180,
                      cwd=os.path.expanduser("~"))
         if r.returncode != 0:
@@ -1163,16 +1163,16 @@ def get_emails_wtnet():
         with open(wtnet_cfg) as f:
             cfg = json.load(f)
 
-        mail = imaplib.IMAP4_SSL(cfg["imap_host"], cfg["imap_port"], timeout=10)
+        mail = imaplib.IMAP4_SSL(cfg["imap_host"], cfg["imap_port"])
         mail.login(cfg["email"], cfg["password"])
         mail.select("INBOX")
 
-        _, uid_data = mail.uid("search", None, "UNSEEN")
-        ids = uid_data[0].split()
+        _, msg_ids = mail.search(None, "UNSEEN")
+        ids = msg_ids[0].split()
         msgs = []
 
-        for uid in reversed(ids[-10:]):  # max 10, neueste zuerst
-            _, data = mail.uid("fetch", uid, "(RFC822)")
+        for mid in reversed(ids[-10:]):  # max 10, neueste zuerst
+            _, data = mail.fetch(mid, "(RFC822)")
             raw = data[0][1]
             msg = email_lib.message_from_bytes(raw)
 
@@ -1214,7 +1214,6 @@ def get_emails_wtnet():
 
             msgs.append({
                 "account": "wtnet",
-                "id": uid.decode(),
                 "from": from_name or "Unbekannt",
                 "from_email": cfg["email"],
                 "subject": subj,
@@ -1238,7 +1237,7 @@ def get_emails_recent_wtnet():
         wtnet_cfg = os.path.join(WORKSPACE, "config/wtnet_account.json")
         with open(wtnet_cfg) as f:
             cfg = json.load(f)
-        mail = imaplib.IMAP4_SSL(cfg["imap_host"], cfg["imap_port"], timeout=10)
+        mail = imaplib.IMAP4_SSL(cfg["imap_host"], cfg["imap_port"])
         mail.login(cfg["email"], cfg["password"])
         mail.select("INBOX", readonly=True)
         _, uid_data = mail.uid("search", None, "ALL")
@@ -2422,7 +2421,7 @@ def mail_command(data):
                     import imaplib
                     if wtnet_cfg is None:
                         wtnet_cfg = json.loads(Path(os.path.join(WORKSPACE,"config/wtnet_account.json")).read_text())
-                    with imaplib.IMAP4_SSL(wtnet_cfg["imap_host"], wtnet_cfg["imap_port"], timeout=10) as imap:
+                    with imaplib.IMAP4_SSL(wtnet_cfg["imap_host"], wtnet_cfg["imap_port"]) as imap:
                         imap.login(wtnet_cfg["email"], wtnet_cfg["password"])
                         imap.select("INBOX")
                         imap.uid("store", mid.encode(), "+FLAGS", "\\Deleted")
@@ -3137,7 +3136,7 @@ def aufpeppen_generate_captions(img_path):
         '{"tiktok": "...", "instagram": "..."}'
     )
     try:
-        r = subprocess.run(["claude", "-p", prompt, "--model", "opus"],
+        r = subprocess.run(["claude", "-p", prompt, "--model", "claude-opus-5-5"],
                             capture_output=True, text=True, timeout=90)
         m = _re_cap.search(r"\{.*\}", r.stdout.strip(), _re_cap.S)
         if m:
@@ -3269,7 +3268,7 @@ def _suno_cover_concepts(title, lyrics="", n=3):
         f"no quotation marks."
     )
     try:
-        r = _sp.run([cb, "-p", "--model", "sonnet", "--output-format", "json", instr],
+        r = _sp.run([cb, "-p", "--model", "claude-sonnet-5-5", "--output-format", "json", instr],
                     capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~"))
         raw = json.loads(r.stdout).get("result", "").strip() if r.returncode == 0 else ""
         lines = [l.strip(" -•\t").strip() for l in raw.splitlines() if l.strip()]
@@ -3318,7 +3317,7 @@ def _suno_cover_prompt_from_wish(title, lyrics, wish, prev_prompt=""):
             f"\n\nOutput ONLY the single English sentence — no German, no quotation marks, no numbering, no commentary."
         )
     try:
-        r = _sp.run([cb, "-p", "--model", "sonnet", "--output-format", "json", instr],
+        r = _sp.run([cb, "-p", "--model", "claude-sonnet-5-5", "--output-format", "json", instr],
                     capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~"))
         raw = json.loads(r.stdout).get("result", "").strip() if r.returncode == 0 else ""
         line = " ".join(l.strip(" -•\t\"'") for l in raw.splitlines() if l.strip()).strip()
@@ -8792,7 +8791,7 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     global _ki_buch_job
                     try:
                         cl = _sh3.which("claude") or os.path.expanduser("~/.local/bin/claude")
-                        r = _sp3.run([cl, "-p", "--output-format", "json", "--model", "sonnet"],
+                        r = _sp3.run([cl, "-p", "--output-format", "json", "--model", "claude-sonnet-5"],
                                      input=prompt, capture_output=True, text=True, timeout=900,
                                      cwd=os.path.expanduser("~"))
                         if r.returncode != 0:
@@ -8973,7 +8972,7 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     global _aurora2_job
                     try:
                         cl = _sh4.which("claude") or os.path.expanduser("~/.local/bin/claude")
-                        r = _sp4.run([cl, "-p", "--output-format", "json", "--model", "opus"],
+                        r = _sp4.run([cl, "-p", "--output-format", "json", "--model", "claude-opus-5-5"],
                                      input=prompt, capture_output=True, text=True, timeout=900,
                                      cwd=os.path.expanduser("~"))
                         if r.returncode != 0:
@@ -9130,7 +9129,7 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                     global _aurora2_satz_job
                     try:
                         cl = _sh5.which("claude") or os.path.expanduser("~/.local/bin/claude")
-                        r = _sp5.run([cl, "-p", "--output-format", "json", "--model", "opus"],
+                        r = _sp5.run([cl, "-p", "--output-format", "json", "--model", "claude-opus-5-5"],
                                      input=prompt, capture_output=True, text=True, timeout=240,
                                      cwd=os.path.expanduser("~"))
                         if r.returncode != 0:
@@ -10743,7 +10742,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 # damit spuerbar Zeit, ohne die Songtext-Qualitaet zu beruehren. Login/Abo-Auth bleibt
                 # normal (kein API-Key noetig, anders als --bare).
                 proc = subprocess.Popen(
-                    [claude_bin, "-p", "--model", "sonnet", "--output-format", "json",
+                    [claude_bin, "-p", "--model", "claude-sonnet-5", "--output-format", "json",
                      "--safe-mode", prompt],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                     stdin=subprocess.DEVNULL, cwd=os.path.expanduser("~")
@@ -10889,7 +10888,7 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                 claude_bin_s = _sh_style.which("claude") or os.path.expanduser("~/.local/bin/claude")
                 try:
                     r_s = _sp_style.run(
-                        [claude_bin_s, "-p", "--model", "sonnet", "--output-format", "json",
+                        [claude_bin_s, "-p", "--model", "claude-sonnet-5", "--output-format", "json",
                          "--safe-mode", style_instr],
                         capture_output=True, text=True, timeout=60, cwd=os.path.expanduser("~"))
                     style_hint_out = json.loads(r_s.stdout).get("result", "").strip() if r_s.returncode == 0 else ""
@@ -11661,7 +11660,7 @@ Return ONLY this exact JSON (no markdown, no extra text):
 
     try:
         res = _sp.run(
-            [claude_bin, "-p", "--model", "sonnet", "--output-format", "json", prompt],
+            [claude_bin, "-p", "--model", "claude-sonnet-5", "--output-format", "json", prompt],
             capture_output=True, text=True, timeout=120, stdin=_sp.DEVNULL,
             cwd=os.path.expanduser("~")
         )
@@ -11948,7 +11947,7 @@ Gib NUR dieses JSON zurück (Highlight-Text als Key, exakt wie oben, Value = Lis
 {{"infos": {{"<highlight1>": ["<punkt1>", "<punkt2>"], "<highlight2>": ["<punkt1>", "<punkt2>", "<punkt3>"]}}}}"""
     try:
         res = subprocess.run(
-            [claude_bin, "-p", "--model", "sonnet", "--output-format", "json", prompt],
+            [claude_bin, "-p", "--model", "claude-sonnet-5", "--output-format", "json", prompt],
             capture_output=True, text=True, timeout=90, stdin=subprocess.DEVNULL,
             cwd=os.path.expanduser("~")
         )

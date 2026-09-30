@@ -3115,11 +3115,6 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 <div id="aurora2-vorwort-item" style="display:none;padding:7px 9px;cursor:pointer;font-size:13px;border-radius:7px;margin-bottom:7px;padding-bottom:10px;border-bottom:1px solid var(--border)" onclick="aurora2ZeigeVorwort()">📖 Vorwort</div>
                 <div id="aurora2-kapitel-liste" style="font-size:13px;color:var(--dim)">Noch keine Kapitel</div>
               </div>
-              <div id="aurora2-glossar-card" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px">
-                <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">📚 Glossar</div>
-                <input id="aurora2-glossar-filter" type="text" oninput="aurora2RenderGlossar()" placeholder="Suchen…" style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:6px 9px;font-size:13px;font-family:inherit;outline:none;margin-bottom:10px">
-                <div id="aurora2-glossar-liste" style="font-size:13px;color:var(--dim);max-height:340px;overflow-y:auto"></div>
-              </div>
             </div>
 
             <!-- Rechte Spalte: Inhalt + Steuerung + Kommentar -->
@@ -7118,10 +7113,7 @@ async function kalSuchen() {
 // ===== EMAIL =====
 async function loadEmailData() {
   try {
-    const ctrl = new AbortController();
-    const to = setTimeout(()=>ctrl.abort(), 15000);
-    const r = await fetch(API + '/api/email', {signal: ctrl.signal});
-    clearTimeout(to);
+    const r = await fetch(API + '/api/email');
     const d = await r.json();
     document.getElementById('mail-count').textContent = d.count;
     if (d.count > 0) { document.getElementById('mail-badge').style.display='inline'; document.getElementById('mail-badge').textContent=d.count; }
@@ -7130,13 +7122,7 @@ async function loadEmailData() {
     if (!h) h = `<div style="font-size:13px;color:var(--dim);padding:4px 0">Keine neuen Mails</div>`;
     document.getElementById('recent-mails').innerHTML = h;
     window._emails = d;
-    if (document.getElementById('page-email')?.classList.contains('active')) loadEmailFull();
-  } catch(e) {
-    const ec = document.getElementById('email-content');
-    if (ec && !window._emails && document.getElementById('page-email')?.classList.contains('active')) {
-      ec.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--dim)">⚠ Mails konnten nicht geladen werden.<br><button onclick="loadEmailData()" style="margin-top:10px;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;cursor:pointer">Erneut versuchen</button></div>`;
-    }
-  }
+  } catch(e) {}
 }
 
 let _mailTab = 'inbox';
@@ -7200,11 +7186,7 @@ function setMailTab(tab) {
 
 function loadEmailFull() {
   const d = window._emails;
-  if (!d) {
-    document.getElementById('email-content').innerHTML = '<div class="loading">Lade...</div>';
-    loadEmailData();  // Cache fehlt noch (z.B. Direktaufruf der Seite) — selbst nachladen statt ewig zu warten
-    return;
-  }
+  if (!d) { document.getElementById('email-content').innerHTML = '<div class="loading">Lade...</div>'; return; }
 
   const accounts = d.accounts || [];
   const chips = accounts.map(a => {
@@ -7511,18 +7493,6 @@ function runQuickCmd(cmd) {
   sendMailCommand();
 }
 
-function _purgeMailsFromCache(removed) {
-  // Entfernt gerade gelöschte Mails aus window._emails, sonst tauchen sie
-  // beim nächsten Rendern von loadEmailFull() (Seitenwechsel, Tab-Refokus)
-  // wieder auf, weil der Cache sonst nie aktualisiert wird.
-  if (!window._emails || !removed || !removed.length) return;
-  const matches = (m) => removed.some(r =>
-    (r.id && m.id === r.id) || (!r.id && m.subject === r.subject && m.date === r.date));
-  ['messages','recent','sent'].forEach(k => {
-    if (Array.isArray(window._emails[k])) window._emails[k] = window._emails[k].filter(m => !matches(m));
-  });
-}
-
 async function sendMailCommand() {
   if (!_selectedMails.length) return;
   const inp  = document.getElementById('mail-cmd-input');
@@ -7543,7 +7513,6 @@ async function sendMailCommand() {
         r.style.transition='opacity .25s'; r.style.opacity='0';
         setTimeout(()=>r.remove(), 250);
       });
-      _purgeMailsFromCache(_selectedMails);
       _selectedMails=[]; _updateCmdBar(); inp.value='';
       _showResultPanel('Gelöscht ✓', d.text, '#66bb6a');
     } else if (d.type==='draft') {
@@ -12211,7 +12180,6 @@ async function loadAurora2() {
 
     aurora2RenderFiguren(data);
     aurora2RenderKapitelListe();
-    aurora2RenderGlossar();
     const vwItem = document.getElementById('aurora2-vorwort-item');
     if (vwItem) vwItem.style.display = data.vorwort ? 'block' : 'none';
 
@@ -12463,50 +12431,6 @@ function aurora2RenderKapitelListe() {
     vwItem.style.fontWeight = aktivVw ? '600' : 'normal';
     vwItem.style.border = aktivVw ? '1px solid rgba(236,72,153,0.4)' : '1px solid transparent';
   }
-}
-
-let _aurora2GlossarGefiltert = [];
-function aurora2RenderGlossar() {
-  const card = document.getElementById('aurora2-glossar-card');
-  const liste = document.getElementById('aurora2-glossar-liste');
-  if (!card || !liste || !_aurora2Data) return;
-  const kapIdx = {};
-  (_aurora2Data.kapitel || []).forEach((k, i) => { kapIdx[k.titel] = i; });
-  const alle = (_aurora2Data.glossar || []).slice().sort((a, b) => {
-    const ia = kapIdx[a.kapitel_titel] ?? 9999, ib = kapIdx[b.kapitel_titel] ?? 9999;
-    if (ia !== ib) return ia - ib;
-    return (a.name||'').localeCompare(b.name||'', 'de');
-  });
-  if (!alle.length) { card.style.display = 'none'; return; }
-  card.style.display = 'block';
-  const filterEl = document.getElementById('aurora2-glossar-filter');
-  const filter = (filterEl && filterEl.value || '').trim().toLowerCase();
-  _aurora2GlossarGefiltert = filter
-    ? alle.filter(e => (e.name||'').toLowerCase().includes(filter) || (e.beschreibung||'').toLowerCase().includes(filter))
-    : alle;
-  const kategorieIcon = { Person: '👤', Objekt: '📦', Ort: '📍', Sonstiges: '🔖' };
-  let letztesKapitel = null;
-  liste.innerHTML = _aurora2GlossarGefiltert.length
-    ? _aurora2GlossarGefiltert.map((e,i) => {
-        const icon = kategorieIcon[e.kategorie] || '🔖';
-        let header = '';
-        if (e.kapitel_titel !== letztesKapitel) {
-          letztesKapitel = e.kapitel_titel;
-          header = `<div style="color:var(--dim);font-size:11px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;margin:${i===0?'0':'12px'} 0 4px 2px;opacity:0.7">${aurora2Esc(e.kapitel_titel||'Ohne Kapitel')}</div>`;
-        }
-        return `${header}<div onclick="aurora2GlossarSpringen(${i})" style="padding:7px 8px;cursor:pointer;border-radius:7px;margin-bottom:3px" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background=''">
-          <div style="color:var(--text);font-weight:600">${icon} ${aurora2Esc(e.name||'')}</div>
-          <div style="color:var(--dim);font-size:12px;line-height:1.4;margin-top:2px">${aurora2Esc(e.beschreibung||'')}</div>
-        </div>`;
-      }).join('')
-    : '<span style="color:var(--dim)">Keine Treffer</span>';
-}
-
-function aurora2GlossarSpringen(i) {
-  const e = _aurora2GlossarGefiltert[i];
-  if (!e || !_aurora2Data) return;
-  const idx = (_aurora2Data.kapitel||[]).findIndex(k => k.titel === e.kapitel_titel);
-  if (idx >= 0) aurora2ZeigeKapitel(idx);
 }
 
 function aurora2ZeigeVorwort(opts) {
