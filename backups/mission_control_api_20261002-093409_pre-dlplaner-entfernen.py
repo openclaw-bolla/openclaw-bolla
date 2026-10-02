@@ -2793,6 +2793,73 @@ def stichworte_toggle(sid):
     _stichworte_save_raw(data)
     return {"ok": True}
 
+# ===== Suno Download-Planer (seit Suno-Limit 03.09.2026: Pro 20 / Premier 60 pro Monat) =====
+SUNO_DL_FILE = Path(os.path.join(WORKSPACE, "data/suno_downloads.json"))
+_SUNO_DL_LOCK = threading.Lock()
+_SUNO_DL_DEFAULT = {
+    "perioden": [
+        {"name": "Premier", "start": "2026-10-01", "ende": "2026-10-31", "limit": 60, "vorab": 0},
+        {"name": "Pro", "start": "2026-11-01", "ende": "2026-11-30", "limit": 20, "vorab": 0},
+    ],
+    "log": [],
+}
+
+def _suno_dl_load():
+    try:
+        if SUNO_DL_FILE.exists():
+            d = json.loads(SUNO_DL_FILE.read_text(encoding="utf-8"))
+            d.setdefault("perioden", _SUNO_DL_DEFAULT["perioden"])
+            d.setdefault("log", [])
+            return d
+    except Exception:
+        pass
+    return json.loads(json.dumps(_SUNO_DL_DEFAULT))
+
+def _suno_dl_save(d):
+    SUNO_DL_FILE.parent.mkdir(parents=True, exist_ok=True)
+    tmp = SUNO_DL_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(tmp, SUNO_DL_FILE)
+
+def suno_dl_toggle(key, sprache):
+    """Schaltet einen Download (Schüler-Key + 'de'/'en') um. key '_sonst' = sonstiger Download (immer +1)."""
+    if sprache not in ("de", "en", "x"):
+        return {"ok": False, "error": "sprache"}
+    with _SUNO_DL_LOCK:
+        d = _suno_dl_load()
+        log = d["log"]
+        if key == "_sonst":
+            log.append({"datum": datetime.now().strftime("%Y-%m-%d"), "key": "_sonst", "sprache": "x"})
+        else:
+            hit = [e for e in log if e.get("key") == key and e.get("sprache") == sprache]
+            if hit:
+                for e in hit:
+                    log.remove(e)
+            else:
+                log.append({"datum": datetime.now().strftime("%Y-%m-%d"), "key": key, "sprache": sprache})
+        _suno_dl_save(d)
+    return {"ok": True}
+
+def suno_dl_undo_sonst():
+    with _SUNO_DL_LOCK:
+        d = _suno_dl_load()
+        for e in reversed(d["log"]):
+            if e.get("key") == "_sonst":
+                d["log"].remove(e)
+                break
+        _suno_dl_save(d)
+    return {"ok": True}
+
+def suno_dl_set_vorab(idx, vorab):
+    with _SUNO_DL_LOCK:
+        d = _suno_dl_load()
+        try:
+            d["perioden"][int(idx)]["vorab"] = max(0, int(vorab))
+        except Exception:
+            return {"ok": False}
+        _suno_dl_save(d)
+    return {"ok": True}
+
 def stichworte_delete(sid):
     data = _stichworte_load()
     data["items"] = [it for it in data["items"] if it["id"] != sid]
@@ -8250,6 +8317,9 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 self.wfile.write(data)
                 return
 
+            elif self.path == "/api/suno/downloads":
+                self._send_json(_suno_dl_load())
+
             elif self.path == "/api/schueler/stammdaten":
                 SCHUELER_FILE = Path(os.path.join(WORKSPACE, "data/schueler_stammdaten.json"))
                 data = json.loads(SCHUELER_FILE.read_text()) if SCHUELER_FILE.exists() else []
@@ -9282,6 +9352,12 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                 self._send_json(stichworte_toggle(body.get("id","")))
             elif self.path == "/api/stichworte/delete":
                 self._send_json(stichworte_delete(body.get("id","")))
+            elif self.path == "/api/suno/downloads/toggle":
+                self._send_json(suno_dl_toggle(body.get("key",""), body.get("sprache","")))
+            elif self.path == "/api/suno/downloads/undo-sonst":
+                self._send_json(suno_dl_undo_sonst())
+            elif self.path == "/api/suno/downloads/vorab":
+                self._send_json(suno_dl_set_vorab(body.get("idx",0), body.get("vorab",0)))
             elif self.path == "/api/board/action-toggle":
                 self._send_json(board_action_toggle(body.get("projId",""), body.get("actId","")))
             elif self.path == "/api/board/action-delete":

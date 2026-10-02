@@ -3155,7 +3155,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                   <div id="aurora2-satz-panel" style="display:none;background:var(--bg);border:1px solid rgba(239,68,68,0.35);border-radius:10px;padding:12px">
                     <div style="font-size:12px;color:var(--dim);margin-bottom:6px">Markierter Satz:</div>
                     <div id="aurora2-satz-original" style="font-size:13px;color:var(--text);font-style:italic;margin-bottom:10px;padding:8px 10px;background:var(--card);border-radius:8px;line-height:1.5"></div>
-                    <textarea id="aurora2-satz-frage-input" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();aurora2SatzAbsenden();}" style="width:100%;box-sizing:border-box;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit;resize:vertical;outline:none" placeholder="Frage, Verständnisproblem oder Korrekturwunsch — oder leer lassen für 'einfach mal draufschauen' (Enter = Absenden, Shift+Enter = Zeilenumbruch)"></textarea>
+                    <textarea id="aurora2-satz-frage-input" rows="2" style="width:100%;box-sizing:border-box;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit;resize:vertical;outline:none" placeholder="Frage, Verständnisproblem oder Korrekturwunsch — oder leer lassen für 'einfach mal draufschauen'"></textarea>
                     <div style="display:flex;gap:8px;margin-top:8px">
                       <button onclick="aurora2SatzAbsenden()" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.4);border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer;font-weight:600">Absenden</button>
                       <button onclick="aurora2SatzAbbrechen()" style="background:transparent;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer">Abbrechen</button>
@@ -3457,6 +3457,14 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               title="Dein Veröffentlichungs-Profil (Genre, Bio, Mood-Tags)">
               🚀 Profil
             </button>
+            <button onclick="sunoDlToggleBox()"
+              style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--dim);
+                     padding:7px 14px;cursor:pointer;font-size:13px;white-space:nowrap;transition:all .2s"
+              onmouseover="this.style.borderColor='var(--accent)'"
+              onmouseout="this.style.borderColor='var(--border)'"
+              title="Suno-Downloads planen (Pro 20 / Premier 60 pro Monat)">
+              🎧 Downloads
+            </button>
             <button onclick="sunoReset()"
               style="background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--dim);
                      padding:7px 14px;cursor:pointer;font-size:13px;white-space:nowrap;transition:all .2s"
@@ -3490,6 +3498,16 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
 
               <div style="margin-top:11px;padding-top:9px;border-top:1px solid var(--border);font-size:12px;color:var(--dim)">💡 Spotify vergibt Genre selbst — die Wörter wirken über Bio, Pitch & Titel, nicht als direkter Tag.</div>
             </div>
+          </div>
+        </div>
+
+        <!-- Download-Planer (versteckt, per Header-Button "🎧 Downloads") -->
+        <div id="suno-dl-box" style="display:none;max-width:65%;margin:0 auto 16px auto">
+          <div style="background:var(--card2);border:1px solid rgba(124,58,237,0.45);border-radius:12px;overflow:hidden">
+            <div style="display:flex;align-items:center;gap:8px;padding:12px 15px;color:var(--bright);font-size:15px;font-weight:700;border-bottom:1px solid rgba(124,58,237,0.2)">
+              🎧 Download-Planer <span style="font-size:13px;font-weight:400;color:var(--dim)">— Suno-Limit: Pro 20 · Premier 60 pro Monat</span>
+            </div>
+            <div id="suno-dl-body" style="padding:14px 16px 16px 16px;font-size:14px;line-height:1.6;color:var(--text)">Lade …</div>
           </div>
         </div>
 
@@ -17355,6 +17373,100 @@ function sunoRenderSliderHint() {
   const inline = document.getElementById('suno-slider-hint-inline');
   if (popup) popup.innerHTML = html;
   if (inline) inline.innerHTML = html;
+}
+// ===== Suno Download-Planer =====
+let _dlData = null, _dlKids = [];
+const _DL_MONATE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+function sunoDlToggleBox() {
+  const b = document.getElementById('suno-dl-box');
+  const open = b.style.display === 'none';
+  b.style.display = open ? 'block' : 'none';
+  if (open) sunoDlRender();
+}
+async function sunoDlRender() {
+  const body = document.getElementById('suno-dl-body');
+  try {
+    const [liste, dl] = await Promise.all([schuelerLoadListe(), fetch(API + '/api/suno/downloads').then(r => r.json())]);
+    _dlData = dl;
+    _dlKids = [];
+    liste.forEach(k => {
+      const m = /^(\d{1,2})\.(\d{1,2})/.exec(k.geburtstag || '');
+      if (!m) return;
+      _dlKids.push({key: k.nachname + '|' + k.vorname, name: k.vorname.split(' ')[0] + ' ' + k.nachname, klasse: k.klasse, tag: +m[1], monat: +m[2]});
+    });
+    const heute = new Date(), iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const heuteIso = iso(heute);
+    const done = {};
+    dl.log.forEach(e => { done[e.key + '|' + e.sprache] = e.datum; });
+    // --- aktuelle Periode ---
+    const pi = dl.perioden.findIndex(p => heuteIso >= p.start && heuteIso <= p.ende);
+    let html = '';
+    if (pi >= 0) {
+      const p = dl.perioden[pi];
+      const benutzt = (p.vorab || 0) + dl.log.filter(e => e.datum >= p.start && e.datum <= p.ende).length;
+      const frei = p.limit - benutzt;
+      const tage = Math.round((new Date(p.ende + 'T23:59:59') - heute) / 86400000);
+      const pct = Math.min(100, Math.round(benutzt / p.limit * 100));
+      const farbe = frei <= 0 ? '#f87171' : (frei <= 5 ? '#fbbf24' : '#34d399');
+      html += `<div style="margin-bottom:6px;font-size:15px"><b style="color:var(--bright)">${p.name}-Periode</b> · ${p.start.split('-').reverse().slice(0,2).join('.')}. – ${p.ende.split('-').reverse().slice(0,2).join('.')}. · noch <b>${tage}</b> Tage</div>`;
+      html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;height:18px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${farbe}"></div></div>`;
+      html += `<div style="margin:6px 0 4px;font-size:15px"><b style="color:${farbe}">${benutzt} / ${p.limit}</b> benutzt · <b>${Math.max(frei,0)}</b> frei`
+           + ` <span onclick="sunoDlVorab(${pi},${p.vorab||0})" style="cursor:pointer;color:var(--dim);font-size:13px" title="Zähler korrigieren (z.B. schon heruntergeladene Songs ohne Eintrag)">✏️ korrigieren</span></div>`;
+      if (p.name === 'Premier') {
+        html += `<div style="margin:6px 0 8px;padding:8px 12px;border-radius:8px;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.4);font-size:14px">⏰ <b>Vor dem ${p.ende.split('-').reverse().slice(0,2).join('.')}. wieder auf Pro stellen</b> (sonst verlängert sich Premier). Bis dahin <b>Songs auf Vorrat laden</b> — Nicht-Genutztes verfällt.</div>`;
+      }
+    } else {
+      html += '<div style="color:var(--dim)">Aktuell keine Periode hinterlegt.</div>';
+    }
+    html += `<div style="margin:6px 0 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">`
+         + `<button onclick="sunoDlSonst()" style="background:var(--card);border:1px solid var(--accent);border-radius:8px;color:var(--text);font-size:14px;padding:6px 12px;cursor:pointer">➕ Sonstiger Download (kein Schüler)</button>`
+         + `<button onclick="sunoDlUndoSonst()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--dim);font-size:14px;padding:6px 12px;cursor:pointer">↩︎ letzten Sonstigen zurück</button>`
+         + `<span style="font-size:13px;color:var(--dim)">${dl.log.filter(e => e.key === '_sonst').length} sonstige insgesamt</span></div>`;
+    // --- Monate: aktueller Monat bis Juli 2027 ---
+    html += '<div style="font-size:13px;color:var(--dim);margin-bottom:8px">Pro Kind ein Song DE + ein Song EN (= 2 Downloads). Klick auf <b>DE</b>/<b>EN</b> = „heruntergeladen" (zählt zur aktuellen Periode). Songs sind zeitlos → in ruhigen Monaten den Folgemonat vorladen.</div>';
+    const startM = heute.getMonth() + 1, startY = heute.getFullYear();
+    let idxM = 0;
+    for (let y = startY, m = startM; y < 2027 || (y === 2027 && m <= 7); idxM++) {
+      const kids = _dlKids.map((k, i) => ({k, i})).filter(x => x.k.monat === m).sort((a, b) => a.k.tag - b.k.tag);
+      const gesamt = kids.length * 2;
+      const erl = kids.reduce((n, x) => n + (done[x.k.key + '|de'] ? 1 : 0) + (done[x.k.key + '|en'] ? 1 : 0), 0);
+      const fertig = gesamt > 0 && erl === gesamt;
+      html += `<details ${idxM < 3 && !fertig ? 'open' : ''} style="margin-bottom:8px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px">`
+           + `<summary style="cursor:pointer;font-size:15px;font-weight:700;color:var(--bright)">${fertig ? '✅ ' : ''}${_DL_MONATE[m-1]} ${y} <span style="font-weight:400;color:var(--dim);font-size:14px">· ${kids.length} Kinder · ${erl} / ${gesamt} Downloads</span></summary>`
+           + `<div style="margin-top:8px;display:flex;flex-direction:column;gap:5px">`;
+      kids.forEach(x => {
+        const chip = (sp, lab) => {
+          const d = done[x.k.key + '|' + sp];
+          return `<button onclick="sunoDlToggle(${x.i},'${sp}')" title="${d ? 'geladen am ' + d : 'noch nicht geladen'}" style="min-width:58px;border-radius:7px;font-size:14px;font-weight:700;padding:4px 10px;cursor:pointer;border:1px solid ${d ? '#34d399' : 'var(--border)'};background:${d ? 'rgba(52,211,153,.18)' : 'var(--card2)'};color:${d ? '#34d399' : 'var(--dim)'}">${d ? '✓ ' : ''}${lab}</button>`;
+        };
+        html += `<div style="display:flex;align-items:center;gap:10px"><span style="width:44px;color:var(--dim);font-size:14px">${x.k.tag}.${String(m).padStart(2,'0')}.</span><span style="flex:1;font-size:14px">${x.k.name} <span style="color:var(--dim)">(${x.k.klasse})</span></span>${chip('de','DE')}${chip('en','EN')}</div>`;
+      });
+      if (!kids.length) html += '<div style="color:var(--dim);font-size:14px">Keine Geburtstage.</div>';
+      html += '</div></details>';
+      m++; if (m > 12) { m = 1; y++; }
+    }
+    body.innerHTML = html;
+  } catch (e) {
+    body.textContent = 'Fehler beim Laden: ' + e;
+  }
+}
+async function sunoDlToggle(i, sp) {
+  await fetch(API + '/api/suno/downloads/toggle', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({key: _dlKids[i].key, sprache: sp})});
+  sunoDlRender();
+}
+async function sunoDlSonst() {
+  await fetch(API + '/api/suno/downloads/toggle', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({key: '_sonst', sprache: 'x'})});
+  sunoDlRender();
+}
+async function sunoDlUndoSonst() {
+  await fetch(API + '/api/suno/downloads/undo-sonst', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
+  sunoDlRender();
+}
+async function sunoDlVorab(idx, alt) {
+  const v = prompt('Wie viele Downloads in dieser Periode wurden schon VOR der Planer-Nutzung benutzt (ohne Eintrag hier)?', alt);
+  if (v === null) return;
+  await fetch(API + '/api/suno/downloads/vorab', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({idx: idx, vorab: parseInt(v, 10) || 0})});
+  sunoDlRender();
 }
 function sunoSetMode(mode) {
   sunoMode = mode;
