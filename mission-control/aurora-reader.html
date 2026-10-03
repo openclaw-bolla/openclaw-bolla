@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="/aurora.webmanifest" crossorigin="use-credentials">
+<meta name="theme-color" content="#f6f1e7">
+<title>AURORA II · Lesen & Korrigieren</title>
+<style>
+  :root { --bg:#f6f1e7; --ink:#2b2622; --muted:#7a6f63; --accent:#7c3aed; --line:#d8cfc0; --card:#fffdf8; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family: Georgia, "Iowan Old Style", serif; overflow:hidden; -webkit-text-size-adjust:100%; }
+  button { font-family: inherit; }
+
+  /* ---- Kopfzeile ---- */
+  #head { height:56px; display:flex; align-items:center; gap:10px; padding:0 14px; border-bottom:1px solid var(--line); background:var(--card); font-family: system-ui, sans-serif; }
+  .half { display:contents; }
+  #head .titel { flex:1; font-size:17px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .btn { border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:10px; padding:8px 12px; font-size:16px; cursor:pointer; min-height:44px; min-width:44px; }
+  .btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.ok { background:#2e7d4f; color:#fff; border-color:#2e7d4f; }
+  .btn.warn { background:#fff; color:#b3261e; border-color:#b3261e; }
+  .btn:disabled { opacity:.5; }
+
+  /* ---- Buchfläche ---- */
+  #book { position:fixed; top:56px; bottom:44px; left:0; right:0; overflow:hidden; }
+  #text { position:absolute; top:0; left:0; height:100%; padding:0 28px; box-sizing:border-box; column-gap:0; column-fill:auto; transition: transform .28s ease; font-size:19px; line-height:1.6; }
+  #text p { margin:0 0 .9em 0; text-indent:1.2em; hyphens:auto; -webkit-hyphens:auto; }
+  #text p:first-child { text-indent:0; }
+  #text { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
+  #text span.s { -webkit-tap-highlight-color:transparent; border-radius:3px; }
+  #text span.s.sel { background:#ffe28a; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
+  #selBar { position:fixed; bottom:52px; z-index:30; display:none; gap:8px; font-family:system-ui,sans-serif; }
+  #selBar .btn { flex:1; min-height:52px; box-shadow:0 6px 18px rgba(0,0,0,.22); padding:6px 8px; font-size:15px; }
+  #toast { position:fixed; top:64px; left:50%; transform:translateX(-50%); z-index:60; background:#2b2622; color:#fff; padding:12px 18px; border-radius:12px; font-family:system-ui,sans-serif; font-size:16px; display:none; max-width:90vw; }
+  #tapL, #tapR { position:absolute; top:0; bottom:0; width:22%; z-index:2; }
+  #tapL { left:0; } #tapR { right:0; }
+
+  /* ---- Fußzeile ---- */
+  #foot { position:fixed; bottom:0; left:0; right:0; height:44px; display:flex; align-items:center; justify-content:center; gap:14px; font-family: system-ui, sans-serif; font-size:14px; color:var(--muted); background:var(--card); border-top:1px solid var(--line); }
+
+  /* ---- Kapitelliste ---- */
+  #chapters { position:fixed; inset:0; background:var(--bg); z-index:20; display:none; overflow:auto; padding:70px 18px 30px; font-family: system-ui, sans-serif; }
+  #chapters.on { display:block; }
+  #chapters h2 { font-size:18px; margin:0 0 12px; }
+  #chapters button.kap { display:flex; width:100%; justify-content:space-between; align-items:center; gap:10px; text-align:left; padding:14px 14px; margin-bottom:8px; background:var(--card); border:1px solid var(--line); border-radius:12px; font-size:17px; color:var(--ink); min-height:52px; }
+  #chapters .badge { background:#f3e8ff; color:var(--accent); border-radius:999px; padding:3px 9px; font-size:13px; white-space:nowrap; }
+
+  /* ---- Markierungs-Button & Dialog ---- */
+  #markBtn { position:fixed; z-index:30; display:none; font-family: system-ui, sans-serif; box-shadow:0 6px 18px rgba(0,0,0,.18); }
+  #sheetWrap { position:fixed; inset:0; background:rgba(20,15,10,.45); z-index:40; display:none; }
+  #sheetWrap.on { display:flex; align-items:flex-start; justify-content:center; padding:8px; }
+  #sheet { background:var(--card); width:100%; max-width:900px; max-height:calc(100% - 4px); overflow:auto; border-radius:16px; padding:18px 18px 26px; font-family: system-ui, sans-serif; font-size:17px; }
+  #sheet h3 { margin:0 0 8px; font-size:18px; }
+  #sheet .satz { font-family: Georgia, serif; font-size:18px; line-height:1.5; background:#fbf7ee; border-left:4px solid var(--accent); padding:10px 12px; border-radius:6px; margin-bottom:12px; }
+  #sheet textarea { width:100%; min-height:80px; font-size:17px; padding:10px; border:1px solid var(--line); border-radius:10px; font-family: system-ui, sans-serif; resize:vertical; }
+  #sheet .row { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  #sheet .label { font-size:14px; color:var(--muted); margin-top:14px; }
+  #sheet .antwort { background:#eef6ff; border-radius:10px; padding:10px 12px; margin-top:6px; line-height:1.5; }
+  #sheet .vorschlag { background:#effaf1; border-radius:10px; padding:10px 12px; margin-top:6px; font-family: Georgia, serif; font-size:18px; line-height:1.5; }
+  #sheet .fehler { color:#b3261e; margin-top:8px; font-weight:600; }
+  #sheet .status { color:var(--muted); margin:8px 0 0; } #sheet .status:empty, #sheet .fehler:empty { display:none; }
+  #sheet textarea { margin-top:12px; }
+
+  /* ---- Offene Vorschläge ---- */
+  #pending { font-family: system-ui, sans-serif; font-size:15px; background:#f3e8ff; color:var(--accent); padding:10px 14px; border-radius:10px; margin:12px 0; cursor:pointer; }
+
+  /* ---- Schrift ---- */
+  .fs-btn { font-size:15px; min-width:44px; }
+
+  /* Surface Duo „Apps automatisch erweitern": zwei Bildschirme = linke + rechte Buchseite.
+     JS setzt body.dual und --s0x/--s0w/--s1x/--s1w aus den Viewport-Segmenten (Falz bleibt frei). */
+  body.dual #head, body.dual #foot { padding:0; gap:0; }
+  body.dual .half { display:flex; align-items:center; gap:10px; padding:0 14px; flex:none; }
+  body.dual .hl, body.dual .fl { width:var(--s0w); }
+  body.dual .hr, body.dual .fr { width:var(--s1w); margin-left:calc(var(--s1x) - var(--s0w)); justify-content:flex-end; }
+  body.dual .fl { justify-content:space-between; }
+  body.dual #chapters { left:var(--s0x); right:auto; width:var(--s0w); }
+  body.dual #sheetWrap { left:var(--s1x); right:auto; width:var(--s1w); }
+  body.dual #sheet { max-width:none; }
+  body.dual #head, body.dual #foot { background:linear-gradient(to right, var(--card) var(--s0w), var(--bg) var(--s0w), var(--bg) var(--s1x), var(--card) var(--s1x)); }
+</style>
+</head>
+<body>
+
+<div id="head">
+  <div class="half hl">
+    <button class="btn" id="btnChapters" aria-label="Kapitelliste">☰ Kapitel</button>
+    <div class="titel" id="titel">AURORA II</div>
+  </div>
+  <div class="half hr">
+    <button class="btn fs-btn" id="btnFull" aria-label="Vollbild">⛶</button>
+    <button class="btn fs-btn" id="fsDown" aria-label="Schrift kleiner">A−</button>
+    <button class="btn fs-btn" id="fsUp" aria-label="Schrift größer">A+</button>
+  </div>
+</div>
+
+<div id="book">
+  <div id="tapL"></div>
+  <div id="tapR"></div>
+  <div id="text"></div>
+</div>
+
+<div id="foot">
+  <div class="half fl">
+    <button class="btn" id="btnPrev" aria-label="Zurück">◀</button>
+    <span id="pageInfo">–</span>
+  </div>
+  <div class="half fr">
+    <button class="btn" id="btnNext" aria-label="Weiter">▶</button>
+  </div>
+</div>
+
+<div id="chapters">
+  <h2>Kapitel wählen</h2>
+  <div id="pendingBox"></div>
+  <div id="chapterList"></div>
+</div>
+
+<div id="selBar">
+  <button class="btn" id="selPrev">◀ Davor</button>
+  <button class="btn" id="selNext">Danach ▶</button>
+  <button class="btn primary" id="selFlag">🚩 Korrigieren</button>
+  <button class="btn" id="selClose" aria-label="Abbrechen">✕</button>
+</div>
+<div id="toast"></div>
+
+<div id="sheetWrap">
+  <div id="sheet">
+    <h3>Satz korrigieren</h3>
+    <div class="satz" id="sheetSatz"></div>
+    <div class="status" id="sheetStatus"></div>
+    <div class="fehler" id="sheetFehler"></div>
+    <div id="sheetInput">
+      <div class="row">
+        <button class="btn primary" id="btnSenden">Senden an Bolla</button>
+        <button class="btn" id="btnSchliessen1">Abbrechen</button>
+      </div>
+      <textarea id="sheetFrage" rows="3" placeholder="Was stimmt nicht? Oder: wer/was ist das? (leer lassen = nur prüfen)"></textarea>
+    </div>
+    <div id="sheetResult" style="display:none">
+      <div class="row" id="resButtons"></div>
+      <div class="label">Bolla antwortet</div>
+      <div class="antwort" id="resAntwort"></div>
+      <div id="resVorschlagBox" style="display:none">
+        <div class="label">Vorschlag</div>
+        <div class="vorschlag" id="resVorschlag"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const API = '';
+  const $ = id => document.getElementById(id);
+  let buch = null;          // kompletter aurora2.json (ohne geheim)
+  let kapIdx = 0;           // aktuelles Kapitel
+  let spread = 0;           // aktuelle Doppelseite
+  let steps = 1;            // Anzahl Doppelseiten
+  let fontPx = Number(localStorage.getItem('a2_font')) || 19;
+  let curSel = null;        // { satz, kapitel_titel }
+  let curMarkId = null;
+
+  const isWide = () => window.innerWidth >= 900;
+  const SENT_RE = /[^.!?…]*[.!?…]+[”"“»«’')*\]]*\s*|[^.!?…]+$/g;
+
+  /* ---------- Laden ---------- */
+  async function loadBuch() {
+    const r = await fetch(API + '/api/aurora2', { cache: 'no-store' });
+    buch = await r.json();
+    renderChapterList();
+    if (buch.kapitel && buch.kapitel.length) showChapter(Math.min(kapIdx, buch.kapitel.length - 1), false);
+    else $('text').textContent = 'Noch keine Kapitel vorhanden.';
+  }
+
+  /* ---------- Kapitelliste ---------- */
+  function openedPending() {
+    return (buch.satz_markierungen || []).filter(m => m.status === 'wartet_entscheidung');
+  }
+  function renderChapterList() {
+    const list = $('chapterList'); list.textContent = '';
+    (buch.kapitel || []).forEach((k, i) => {
+      const b = document.createElement('button');
+      b.className = 'kap';
+      const t = document.createElement('span'); t.textContent = k.titel;
+      b.appendChild(t);
+      const n = (buch.satz_markierungen || []).filter(m => m.kapitel_titel === k.titel && m.status === 'wartet_entscheidung').length;
+      if (n) { const bd = document.createElement('span'); bd.className = 'badge'; bd.textContent = n + ' offen'; b.appendChild(bd); }
+      b.onclick = () => { showChapter(i, true); closeChapters(); };
+      list.appendChild(b);
+    });
+    const pb = $('pendingBox'); pb.textContent = '';
+    const p = openedPending();
+    if (p.length) {
+      const d = document.createElement('div'); d.id = 'pending';
+      d.textContent = `🔔 ${p.length} Vorschlag/Vorschläge warten auf deine Entscheidung — tippen zum Ansehen`;
+      d.onclick = () => { const m = p[0]; const k = (buch.kapitel || []).findIndex(x => x.titel === m.kapitel_titel); if (k >= 0) { showChapter(k, true); closeChapters(); } openResult(m); };
+      pb.appendChild(d);
+    }
+  }
+  function openChapters() { renderChapterList(); $('chapters').classList.add('on'); }
+  function closeChapters() { $('chapters').classList.remove('on'); }
+
+  /* ---------- Seitenlayout (CSS-Spalten = Buchseiten) ---------- */
+  // Zwei Bildschirme (Surface Duo gespannt)? Liefert [{x,w},{x,w}] oder null.
+  function getSegments() {
+    const fromRects = rs => (rs && rs.length === 2) ? rs.map(r => ({ x: r.x !== undefined ? r.x : r.left, w: r.width })) : null;
+    try { if (window.visualViewport && visualViewport.segments) { const r = fromRects(visualViewport.segments); if (r) return r; } } catch (e) {}
+    try { if (window.getWindowSegments) { const r = fromRects(window.getWindowSegments()); if (r) return r; } } catch (e) {}
+    try {
+      if (matchMedia('(horizontal-viewport-segments: 2)').matches) {
+        const pr = document.createElement('div');
+        pr.style.cssText = 'position:fixed;top:0;height:1px;visibility:hidden;pointer-events:none';
+        document.body.appendChild(pr);
+        const get = (l, w) => { pr.style.left = l; pr.style.width = w; const b = pr.getBoundingClientRect(); return { x: b.left, w: b.width }; };
+        const r = [get('env(viewport-segment-left 0 0)', 'env(viewport-segment-width 0 0)'),
+                   get('env(viewport-segment-left 1 0)', 'env(viewport-segment-width 1 0)')];
+        pr.remove();
+        if (r[0].w > 0 && r[1].w > 0) return r;
+      }
+    } catch (e) {}
+    // Edge 153 meldet auf dem Duo keine Segmente → über die bekannte Bildschirmgröße erkennen
+    // (gespannt: Duo 2 = 2754 px mit 2×1344 px + 66 px Falz, Duo 1 = 2784 px mit 2×1350 px + 84 px Falz)
+    try {
+      const dpr = window.devicePixelRatio || 1;
+      const phys = Math.round(screen.width * dpr);
+      const half = ({ 2754: 1344, 2784: 1350 })[phys];
+      if (half && Math.abs(window.innerWidth - screen.width) < 4) {
+        const w = half / dpr;
+        return [{ x: 0, w }, { x: screen.width - w, w }];
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  let perSpread = 1;        // Spalten pro „Umblättern": 2 = Doppelseite, 1 = Einzelseite
+  let stride = 0;           // Abstand Spaltenanfang → nächster Spaltenanfang
+  function layout() {
+    const pad = 28;
+    const segs = getSegments();
+    const dual = !!segs;
+    document.body.classList.toggle('dual', dual);
+    let colW, gap, left, vis;
+    if (dual) {
+      const hinge = segs[1].x - (segs[0].x + segs[0].w);
+      colW = Math.min(segs[0].w, segs[1].w) - 2 * pad;
+      gap = hinge + 2 * pad;            // Spaltenlücke = Falz + beide Ränder → Seite 2 beginnt exakt im rechten Display
+      left = segs[0].x + pad;
+      perSpread = 2;
+      const root = document.documentElement.style;
+      root.setProperty('--s0x', segs[0].x + 'px'); root.setProperty('--s0w', segs[0].w + 'px');
+      root.setProperty('--s1x', segs[1].x + 'px'); root.setProperty('--s1w', segs[1].w + 'px');
+      vis = segs[0].w;
+    } else {
+      const wide = isWide();
+      const content = window.innerWidth - 2 * pad;
+      perSpread = wide ? 2 : 1;
+      gap = wide ? 2 * pad : 0;
+      colW = wide ? (content - gap) / 2 : content;
+      left = pad;
+      vis = window.innerWidth;
+    }
+    stride = colW + gap;
+    const t = $('text');
+    t.style.width = (perSpread * colW + (perSpread - 1) * gap) + 'px';
+    t.style.left = left + 'px';
+    t.style.columnWidth = colW + 'px';
+    t.style.columnGap = gap + 'px';
+    t.style.fontSize = fontPx + 'px';
+    t.style.padding = '0';
+    t.style.height = (window.innerHeight - 56 - 44 - 40) + 'px';
+    t.style.top = '20px';
+    const tapW = Math.round(vis * 0.2) + 'px';
+    $('tapL').style.width = tapW; $('tapR').style.width = tapW;
+    if (dual) { $('tapR').style.right = 'auto'; $('tapR').style.left = (segs[1].x + segs[1].w - Math.round(vis * 0.2)) + 'px'; }
+    else { $('tapR').style.left = 'auto'; $('tapR').style.right = '0'; }
+    const cols = Math.max(1, Math.round((t.scrollWidth + gap) / stride));
+    steps = Math.max(1, Math.ceil(cols / perSpread));
+    goSpread(Math.min(spread, steps - 1), false);
+  }
+
+  function goSpread(n, animate = true) {
+    spread = Math.max(0, Math.min(n, steps - 1));
+    clearSel();
+    const t = $('text');
+    t.style.transition = animate ? 'transform .28s ease' : 'none';
+    t.style.transform = `translateX(${-spread * perSpread * stride}px)`;
+    $('pageInfo').textContent = `${kapTitel()} · ${spread + 1} / ${steps}`;
+    $('btnPrev').disabled = spread === 0;
+    $('btnNext').disabled = spread >= steps - 1;
+  }
+  function kapTitel() { return buch && buch.kapitel && buch.kapitel[kapIdx] ? buch.kapitel[kapIdx].titel.split(':')[0].slice(0, 28) : ''; }
+
+  function showChapter(i, resetSpread) {
+    kapIdx = i;
+    const k = buch.kapitel[i];
+    $('titel').textContent = k.titel;
+    const t = $('text'); t.textContent = '';
+    clearSel();
+    (k.text || '').split(/\n\s*\n/).forEach(par => {
+      const tx = par.trim();
+      if (!tx) return;
+      const p = document.createElement('p');
+      (tx.match(SENT_RE) || [tx]).forEach(piece => {
+        const sp = document.createElement('span'); sp.className = 's'; sp.textContent = piece; p.appendChild(sp);
+      });
+      t.appendChild(p);
+    });
+    if (resetSpread) spread = 0;
+    requestAnimationFrame(layout);
+    localStorage.setItem('a2_kap', String(i));
+  }
+
+  /* ---------- Blättern ---------- */
+  $('btnNext').onclick = () => goSpread(spread + 1);
+  $('btnPrev').onclick = () => goSpread(spread - 1);
+  $('tapR').onclick = () => { if (!hasSelection()) goSpread(spread + 1); };
+  $('tapL').onclick = () => { if (!hasSelection()) goSpread(spread - 1); };
+  let tsx = 0, tsy = 0;
+  $('book').addEventListener('touchstart', e => { tsx = e.touches[0].clientX; tsy = e.touches[0].clientY; }, { passive: true });
+  $('book').addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - tsx, dy = e.changedTouches[0].clientY - tsy;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && !hasSelection()) goSpread(dx < 0 ? spread + 1 : spread - 1);
+  }, { passive: true });
+
+  /* ---------- Schrift ---------- */
+  $('fsUp').onclick = () => { fontPx = Math.min(26, fontPx + 1); localStorage.setItem('a2_font', String(fontPx)); layout(); };
+  $('fsDown').onclick = () => { fontPx = Math.max(15, fontPx - 1); localStorage.setItem('a2_font', String(fontPx)); layout(); };
+
+  /* ---------- Vollbild (blendet Edge-Leisten aus) ---------- */
+  $('btnFull').onclick = () => {
+    const el = document.documentElement;
+    if (document.fullscreenElement) document.exitFullscreen();
+    else (el.requestFullscreen || el.webkitRequestFullscreen).call(el, { navigationUI: 'hide' }).catch(() => {});
+  };
+  document.addEventListener('fullscreenchange', () => requestAnimationFrame(layout));
+
+  /* ---------- Kapitelliste öffnen/schließen ---------- */
+  $('btnChapters').onclick = openChapters;
+
+  /* ---------- Satz antippen → markieren (kein Zieh-Markieren mehr) ---------- */
+  let selP = null, selA = -1, selB = -1;   // Absatz-Element, erster/letzter markierter Satz
+  function hasSelection() { return false; }
+  function sentSpans(p) { return p ? Array.from(p.querySelectorAll('span.s')) : []; }
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toast._t); toast._t = setTimeout(() => { t.style.display = 'none'; }, 3500); }
+  function clearSel() {
+    document.querySelectorAll('#text span.s.sel').forEach(x => x.classList.remove('sel'));
+    selP = null; selA = selB = -1;
+    const b = $('selBar'); if (b) b.style.display = 'none';
+  }
+  function paintSel() { sentSpans(selP).forEach((x, i) => x.classList.toggle('sel', i >= selA && i <= selB)); }
+  function selText() { return sentSpans(selP).slice(selA, selB + 1).map(x => x.textContent).join('').trim(); }
+  function occurrences(txt) { const full = buch.kapitel[kapIdx].text || ''; let c = 0, i = -1; while ((i = full.indexOf(txt, i + 1)) !== -1) c++; return c; }
+  function showBar() {
+    const sp = sentSpans(selP);
+    const r = sp[selA].getClientRects()[0] || sp[selA].getBoundingClientRect();
+    let x = 0, w = window.innerWidth;
+    const sg = getSegments();
+    if (sg) { const seg = (r.left + r.width / 2 >= sg[1].x) ? sg[1] : sg[0]; x = seg.x; w = seg.w; }
+    const bar = $('selBar');
+    bar.style.display = 'flex'; bar.style.left = (x + 8) + 'px'; bar.style.width = (w - 16) + 'px';
+    // Leiste dorthin, wo sie den markierten Satz nicht verdeckt
+    if (r.top > window.innerHeight * 0.5) { bar.style.top = '62px'; bar.style.bottom = 'auto'; }
+    else { bar.style.top = 'auto'; bar.style.bottom = '52px'; }
+  }
+  $('text').addEventListener('click', e => {
+    const sp = e.target.closest ? e.target.closest('span.s') : null;
+    if (!sp) { clearSel(); return; }
+    const p = sp.parentElement, i = sentSpans(p).indexOf(sp);
+    if (selP === p && selA === i && selB === i) { clearSel(); return; }
+    clearSel(); selP = p; selA = selB = i; paintSel(); showBar();
+  });
+  $('selPrev').onclick = () => { if (selA > 0) { selA--; paintSel(); } };
+  $('selNext').onclick = () => { if (selB < sentSpans(selP).length - 1) { selB++; paintSel(); } };
+  $('selClose').onclick = clearSel;
+  $('selFlag').onclick = () => {
+    if (!selP) return;
+    const n = sentSpans(selP).length;
+    let txt = selText();
+    while (occurrences(txt) !== 1 && (selA > 0 || selB < n - 1)) { if (selB < n - 1) selB++; else selA--; txt = selText(); }
+    if (occurrences(txt) !== 1) { paintSel(); toast('Stelle nicht eindeutig im Kapitel – bitte weitere Sätze dazunehmen'); return; }
+    clearSel();
+    openSheet(txt);
+  };
+
+  /* ---------- Dialog ---------- */
+  function openSheet(satz) {
+    curMarkId = null;
+    $('sheetSatz').textContent = satz;
+    $('sheetInput').style.display = 'block';
+    $('sheetResult').style.display = 'none';
+    $('sheetFrage').value = '';
+    $('sheetStatus').textContent = '';
+    $('sheetFehler').textContent = '';
+    $('sheetWrap').classList.add('on');
+    $('sheetFrage').focus();
+    curSel = { satz, kapitel_titel: buch.kapitel[kapIdx].titel };
+  }
+  function closeSheet() { $('sheetWrap').classList.remove('on'); }
+  $('btnSchliessen1').onclick = closeSheet;
+  $('sheetWrap').addEventListener('click', e => { if (e.target === $('sheetWrap')) closeSheet(); });
+
+  $('btnSenden').onclick = async () => {
+    if (!curSel) return;
+    $('btnSenden').disabled = true;
+    $('sheetFehler').textContent = '';
+    $('sheetStatus').textContent = 'Bolla liest nach… (kann etwas dauern)';
+    try {
+      const r = await fetch(API + '/api/aurora2/satz-frage', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ satz: curSel.satz, kapitel_titel: curSel.kapitel_titel, frage: $('sheetFrage').value.trim() })
+      });
+      const j = await r.json();
+      if (!j.ok && j.status !== 'started') { throw new Error(j.error || 'Unbekannter Fehler'); }
+      curMarkId = j.id;
+      await pollResult();
+    } catch (err) {
+      $('sheetFehler').textContent = 'Fehler: ' + err.message;
+      $('sheetStatus').textContent = '';
+      toast('Senden fehlgeschlagen: ' + err.message);
+      $('sheet').scrollTop = 0;
+    } finally {
+      $('btnSenden').disabled = false;
+    }
+  };
+
+  async function pollResult() {
+    for (let i = 0; i < 150; i++) {
+      await new Promise(res => setTimeout(res, 2000));
+      const st = await (await fetch(API + '/api/aurora2/satz-frage-status', { cache: 'no-store' })).json();
+      if (st.status === 'running') continue;
+      if (st.status === 'error') { $('sheetFehler').textContent = 'Fehler: ' + (st.error || 'unbekannt'); $('sheetStatus').textContent = ''; return; }
+      if (st.status === 'done') {
+        $('sheetStatus').textContent = '';
+        await loadBuchQuiet();
+        const m = (buch.satz_markierungen || []).find(x => x.id === st.id) || { id: st.id, satz: st.satz, antwort: st.antwort, vorschlag: st.vorschlag, status: st.geaendert ? 'wartet_entscheidung' : 'beantwortet', kapitel_titel: st.kapitel_titel };
+        openResult(m);
+        return;
+      }
+    }
+    $('sheetFehler').textContent = 'Zeitüberschreitung — später im Kapitel-Menü nachsehen.';
+    $('sheetStatus').textContent = '';
+  }
+
+  async function loadBuchQuiet() {
+    buch = await (await fetch(API + '/api/aurora2', { cache: 'no-store' })).json();
+  }
+
+  function openResult(m) {
+    curMarkId = m.id;
+    $('sheetSatz').textContent = m.satz || '';
+    $('sheetInput').style.display = 'none';
+    $('sheetResult').style.display = 'block';
+    $('sheetWrap').classList.add('on');
+    $('resAntwort').textContent = m.antwort || '(keine Antwort)';
+    const hatVorschlag = m.status === 'wartet_entscheidung' && m.vorschlag && m.vorschlag.trim() !== (m.satz || '').trim();
+    $('resVorschlagBox').style.display = hatVorschlag ? 'block' : 'none';
+    $('resVorschlag').textContent = hatVorschlag ? m.vorschlag : '';
+    const b = $('resButtons'); b.textContent = '';
+    if (m.status === 'wartet_entscheidung' && hatVorschlag) {
+      b.appendChild(btn('✓ Übernehmen', 'btn ok', () => entscheiden('annehmen')));
+      b.appendChild(btn('✗ Verwerfen', 'btn warn', () => entscheiden('ablehnen')));
+    } else if (m.status === 'uebernommen' || m.status === 'abgelehnt') {
+      $('resAntwort').textContent += `\n\n(bereits ${m.status === 'uebernommen' ? 'übernommen' : 'verworfen'})`;
+    }
+    b.appendChild(btn('Schließen', 'btn', closeSheet));
+  }
+  function btn(label, cls, fn) { const x = document.createElement('button'); x.className = cls; x.textContent = label; x.onclick = fn; return x; }
+
+  async function entscheiden(aktion) {
+    if (!curMarkId) return;
+    try {
+      const r = await fetch(API + '/api/aurora2/satz-entscheidung', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: curMarkId, entscheidung: aktion })
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || 'Fehler');
+      await loadBuchQuiet();
+      showChapter(kapIdx, false);   // Text mit übernommener Änderung neu aufbauen
+      closeSheet();
+    } catch (err) {
+      $('sheetFehler').textContent = 'Fehler: ' + err.message;
+    }
+  }
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  // Nur bei geänderter BREITE neu layouten — die Bildschirmtastatur ändert nur die Höhe und darf nichts zurücksetzen
+  let lastW = window.innerWidth;
+  window.addEventListener('resize', () => { if (window.innerWidth !== lastW) { lastW = window.innerWidth; requestAnimationFrame(layout); } });
+  loadBuch().then(() => {
+    const k = Number(localStorage.getItem('a2_kap'));
+    if (!isNaN(k) && buch.kapitel && buch.kapitel[k]) showChapter(k, true);
+  }).catch(err => { $('text').textContent = 'Konnte Buch nicht laden: ' + err.message; });
+})();
+</script>
+</body>
+</html>

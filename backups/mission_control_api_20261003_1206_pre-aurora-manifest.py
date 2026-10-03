@@ -7392,7 +7392,6 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 "/aurora":                   ("aurora-reader.html",     "text/html; charset=utf-8", "no-store"),
                 "/aurora.html":              ("aurora-reader.html",     "text/html; charset=utf-8", "no-store"),
                 "/manifest.webmanifest":     ("manifest.webmanifest",   "application/manifest+json", "max-age=3600"),
-                "/aurora.webmanifest":       ("aurora.webmanifest",     "application/manifest+json", "no-store"),
                 "/sw.js":                    ("sw.js",                  "application/javascript", "no-store"),
                 "/mc-icon-192.png":          ("mc-icon-192.png",        "image/png", "max-age=604800"),
                 "/mc-icon-512.png":          ("mc-icon-512.png",        "image/png", "max-age=604800"),
