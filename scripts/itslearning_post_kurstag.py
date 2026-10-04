@@ -40,41 +40,41 @@ def mem_ok():
 # die 4 Ziel-Kurse (Kurs-IDs bleiben das ganze Schuljahr stabil, siehe Tabelle unten) und je einen
 # individuell formulierten Mitteilungstext (NIE denselben Text kopieren, NIE "vorher/schon jetzt
 # herunterladen" schreiben - Download passiert am Kurstag selbst, siehe [[project_itslearning_automation]]).
-DAY_PREFIX = "03"
+DAY_PREFIX = "04"
 
 # Kurs-IDs (Schuljahr 26/27, stabil): 7a I=190735 7a II=190738 7b I=190741 7b II=190743
 #                                     7c I=190861 7c II=190878 7d I=190860 7d II=190877
-# Kurstag 3 "Basics Office: Tastatur" (Shortcuts) — nur die "II"-Kurse.
-# Termine (Schulkalender): 7d II + 7b II = Mi 30.09.2026  |  7a II + 7c II = Do 01.10.2026
-# Paket (discover_files 03-): 03-Basics Office - Tastatur.pdf (Folien), 03-Praktikum.html, 03-Praktikum.pdf
-# Texte aus scratch/kurstag3_gruppeII_mitteilungen.md (Chris' Entwuerfe, 26.09.2026 vorbereitet)
+# Kurstag 4 "The Basics: Codierung" — nur die "II"-Kurse.
+# Termine (Schulkalender): 7d II + 7b II = Mi 07.10.2026  |  7a II + 7c II = Do 08.10.2026
+# Paket (discover_files 04-): 04-The Basics - Codierung.pdf (14 Seiten, = PPTX, geprueft 04.10.), 04-Praktikum.html
+# KEIN 04-Praktikum.pdf (Chris-Regel: Praktikum nie als PDF).
+# Texte aus scratch/kurstag4_gruppeII_mitteilungen.md (26.09. vorbereitet, 04.10. gegen Wochentage geprueft)
+# ⏰ Versand laut Chris ERST Mo 05.10.2026 nachmittags (nicht frueher!).
 COURSES = [
     {"id": 190877, "kuerzel": "7d II", "text":
-        "⌨️ Hallo liebe 7d! Am Mittwoch, 30.09., schauen wir uns die Office-Programme mal von der "
-        "Tastatur aus an. 1️⃣ Zu Beginn laden wir gemeinsam die Folien „Basics Office: Tastatur\" und "
-        "📎 Praktikum 3 herunter. 2️⃣ Ich zeige euch, welche Büro-Programme es überhaupt gibt (nicht "
-        "nur Microsoft!) und dann die Shortcuts, mit denen ihr in Zukunft doppelt so schnell arbeitet "
-        "- kopieren, einfügen, rückgängig machen, sogar einen Screenshot machen, alles ohne Maus. "
-        "3️⃣ Im Praktikum 3 übt ihr das direkt an eigenen Dateien auf eurem Stick aus. Bis Mittwoch! 😊"},
+        "🔢 Hallo liebe 7d! Am Mittwoch, 07.10., wird's ein bisschen mathematisch: Wir schauen uns an, "
+        "wie ein Computer eigentlich rechnet und speichert - alles nur mit Nullen und Einsen. "
+        "1️⃣ Zu Beginn laden wir gemeinsam die Folien „The Basics: Codierung\" und 📎 Praktikum 4 herunter. "
+        "2️⃣ Ich erkläre euch Bit, Byte, KB, MB, GB - und warum euer Handyspeicher gefühlt immer zu klein ist. "
+        "3️⃣ Im Praktikum 4 rechnet ihr dann selbst zwischen den Einheiten um. Bis Mittwoch! 😊"},
     {"id": 190743, "kuerzel": "7b II", "text":
-        "💻 Liebe 7b, am Mittwoch, 30.09., wird's praktisch: Wir gucken uns die wichtigsten "
-        "Tastenkombinationen für Office-Programme an. 1️⃣ Erst laden wir zusammen die Folien „Basics "
-        "Office: Tastatur\" und 📎 Praktikum 3 herunter. 2️⃣ Ihr lernt Shortcuts wie Strg+C, Strg+V "
-        "oder Strg+Z kennen - und ein paar coole Extras wie das Snipping Tool für Screenshots. "
-        "3️⃣ Danach probiert ihr im Praktikum 3 alles selbst mit euren eigenen Dateien aus. Freu mich "
-        "auf euch! 🙂"},
+        "💾 Liebe 7b, am Mittwoch, 07.10., geht's um die Bausteine, aus denen im Computer wirklich alles "
+        "besteht: Bits und Bytes. 1️⃣ Erst laden wir zusammen die Folien „The Basics: Codierung\" und "
+        "📎 Praktikum 4 herunter. 2️⃣ Ich zeige euch, wie aus Nullen und Einsen Buchstaben, Fotos und ganze "
+        "Filme werden. 3️⃣ Danach übt ihr im Praktikum 4 selbst mit den Speichereinheiten zu rechnen. "
+        "Freu mich auf euch! 🙂"},
     {"id": 190738, "kuerzel": "7a II", "text":
-        "⚡ Hallo 7a! Am Donnerstag, 01.10., dreht sich alles um Office-Programme und wie man ohne "
-        "Maus richtig schnell wird. 1️⃣ Zu Beginn holen wir uns gemeinsam die Folien „Basics Office: "
-        "Tastatur\" und 📎 Praktikum 3. 2️⃣ Ich erkläre euch kurz, welche Büro-Pakete es gibt, und "
-        "dann geht's um Shortcuts - kopieren, ausschneiden, einfügen, rückgängig machen und mehr. "
-        "3️⃣ Im Praktikum 3 übt ihr das gleich selbst an Dateien auf eurem Stick. Bis Donnerstag! 🚀"},
+        "🖥️ Hallo 7a! Am Donnerstag, 08.10., geht's um Bits, Bytes und Codierung - also die Frage, wie ein "
+        "Computer aus Nullen und Einsen Texte, Bilder und Videos macht. 1️⃣ Zu Stundenbeginn holen wir uns "
+        "gemeinsam die Folien „The Basics: Codierung\" und 📎 Praktikum 4. 2️⃣ Ich erkläre euch, warum bei "
+        "128 GB der Speicher schneller knapp wird, als man denkt. 3️⃣ Im Praktikum 4 übt ihr selbstständig: "
+        "Bit, Byte, KB, MB, GB umrechnen und schätzen. Bis Donnerstag! 🚀"},
     {"id": 190878, "kuerzel": "7c II", "text":
-        "🖱️➡️⌨️ Liebe 7c, am Donnerstag, 01.10., tauschen wir mal die Maus gegen die Tastatur. "
-        "1️⃣ Wir laden zu Beginn zusammen die Folien „Basics Office: Tastatur\" und 📎 Praktikum 3 "
-        "herunter. 2️⃣ Ich zeige euch die wichtigsten Shortcuts für Office-Programme - vom einfachen "
-        "Kopieren bis zum Screenshot per Tastendruck. 3️⃣ Im kurzen Praktikum 3 übt ihr das dann "
-        "direkt selbst mit euren eigenen Dateien. Auf geht's! 💻"},
+        "🔢 Liebe 7c, am Donnerstag, 08.10., lernt ihr, wie ein Computer überhaupt speichert. "
+        "1️⃣ Wir laden zu Beginn zusammen die Folien „The Basics: Codierung\" und 📎 Praktikum 4 herunter. "
+        "2️⃣ Ich erkläre euch die Grundlagen dazu - unter anderem, warum eine Netflix-Folge offline mehrere "
+        "GB braucht. 3️⃣ Im Praktikum 4 übt ihr dann selbst das Umrechnen zwischen den Speichereinheiten. "
+        "Auf geht's! 💻"},
 ]
 
 

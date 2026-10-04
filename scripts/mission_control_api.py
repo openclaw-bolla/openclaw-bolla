@@ -9080,6 +9080,9 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     json.dump(buch, fh, ensure_ascii=False, indent=2)
                 mark_id = _uuid1.uuid4().hex[:8]
                 ort_beschreibung = "im Vorwort" if kap_titel == "__VORWORT__" else f'im Kapitel "{kap_titel}"'
+                kanon_liste = [str(x).strip() for x in buch.get("kanon", []) if str(x).strip()]
+                kanon_block = ("\nKANON (von Chris festgelegte Entscheidungen, gelten buchweit; schlage NIE etwas vor, das dazu im Widerspruch steht, "
+                               "und melde einen Widerspruch dazu nicht als Fehler):\n" + "\n".join(f"- {x}" for x in kanon_liste) + "\n") if kanon_liste else ""
                 if ist_wer_was:
                     kap_liste = buch.get("kapitel", [])
                     cidx = next((i for i, k in enumerate(kap_liste) if k.get("titel") == kap_titel), None)
@@ -9092,6 +9095,7 @@ Stelle markiert, weil er sich an einen Namen, ein Objekt oder einen früheren Ha
 MARKIERT:
 {satz}
 
+{kanon_block}
 BISHERIGER BUCHTEXT (alle Kapitel bis einschließlich dem aktuellen — zum Nachschlagen):
 {bisher_text}
 
@@ -9109,7 +9113,7 @@ hat einen Satz {ort_beschreibung} markiert und dazu eine Bemerkung/Frage/Korrekt
 
 BEMERKUNG VON CHRIS:
 {frage if frage else "(keine — einfach mal draufschauen, ob der Satz sauber ist)"}
-
+{kanon_block}
 KONTEXT DAVOR:
 …{vor}
 

@@ -30,6 +30,7 @@
   #text { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
   #text span.s { -webkit-tap-highlight-color:transparent; border-radius:3px; }
   #text span.s.sel { background:#ffe28a; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
+  #text span.s.pend { background:#f3e8ff; border-bottom:2px dotted var(--accent); cursor:pointer; }
   #selBar { position:fixed; bottom:52px; z-index:30; display:none; gap:8px; font-family:system-ui,sans-serif; }
   #selBar .btn { flex:1; min-height:52px; box-shadow:0 6px 18px rgba(0,0,0,.22); padding:6px 8px; font-size:15px; }
   #toast { position:fixed; top:64px; left:50%; transform:translateX(-50%); z-index:60; background:#2b2622; color:#fff; padding:12px 18px; border-radius:12px; font-family:system-ui,sans-serif; font-size:16px; display:none; max-width:90vw; }
@@ -170,8 +171,12 @@
     const r = await fetch(API + '/api/aurora2', { cache: 'no-store' });
     buch = await r.json();
     renderChapterList();
-    if (buch.kapitel && buch.kapitel.length) showChapter(Math.min(kapIdx, buch.kapitel.length - 1), false);
-    else $('text').textContent = 'Noch keine Kapitel vorhanden.';
+    if (!buch.kapitel || !buch.kapitel.length) { $('text').textContent = 'Noch keine Kapitel vorhanden.'; return; }
+    // Gespeicherte Lesestelle (Kapitel + Doppelseite) VOR dem Anzeigen einlesen
+    const saved = JSON.parse(localStorage.getItem('a2_pos') || 'null');
+    const ok = saved && buch.kapitel[saved.kap];
+    spread = ok ? (saved.spread || 0) : 0;
+    showChapter(ok ? saved.kap : 0, false);
   }
 
   /* ---------- Kapitelliste ---------- */
@@ -282,6 +287,7 @@
 
   function goSpread(n, animate = true) {
     spread = Math.max(0, Math.min(n, steps - 1));
+    localStorage.setItem('a2_pos', JSON.stringify({ kap: kapIdx, spread }));   // aktuelle Seite merken
     clearSel();
     const t = $('text');
     t.style.transition = animate ? 'transform .28s ease' : 'none';
@@ -307,9 +313,13 @@
       });
       t.appendChild(p);
     });
+    // Offene Korrekturvorschläge dieses Kapitels im Text markieren (lila gepunktet, antippbar)
+    (buch.satz_markierungen || []).filter(m => m.kapitel_titel === k.titel && m.status === 'wartet_entscheidung').forEach(m => {
+      const sp = Array.from(t.querySelectorAll('span.s')).find(s => s.textContent.includes(m.satz));
+      if (sp) { sp.classList.add('pend'); sp.dataset.mid = m.id; }
+    });
     if (resetSpread) spread = 0;
     requestAnimationFrame(layout);
-    localStorage.setItem('a2_kap', String(i));
   }
 
   /* ---------- Blättern ---------- */
@@ -367,6 +377,10 @@
   $('text').addEventListener('click', e => {
     const sp = e.target.closest ? e.target.closest('span.s') : null;
     if (!sp) { clearSel(); return; }
+    if (sp.dataset.mid) {   // offener Vorschlag -> direkt Antwort + Übernehmen/Verwerfen zeigen
+      const m = (buch.satz_markierungen || []).find(x => x.id === sp.dataset.mid);
+      if (m) { clearSel(); openResult(m); return; }
+    }
     const p = sp.parentElement, i = sentSpans(p).indexOf(sp);
     if (selP === p && selA === i && selB === i) { clearSel(); return; }
     clearSel(); selP = p; selA = selB = i; paintSel(); showBar();
@@ -489,10 +503,7 @@
   // Nur bei geänderter BREITE neu layouten — die Bildschirmtastatur ändert nur die Höhe und darf nichts zurücksetzen
   let lastW = window.innerWidth;
   window.addEventListener('resize', () => { if (window.innerWidth !== lastW) { lastW = window.innerWidth; requestAnimationFrame(layout); } });
-  loadBuch().then(() => {
-    const k = Number(localStorage.getItem('a2_kap'));
-    if (!isNaN(k) && buch.kapitel && buch.kapitel[k]) showChapter(k, true);
-  }).catch(err => { $('text').textContent = 'Konnte Buch nicht laden: ' + err.message; });
+  loadBuch().catch(err => { $('text').textContent = 'Konnte Buch nicht laden: ' + err.message; });
 })();
 </script>
 </body>
