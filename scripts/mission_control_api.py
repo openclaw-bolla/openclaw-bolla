@@ -3482,61 +3482,59 @@ def _fetch_party_charts():
     """Kuratierte dt. Partyhits — täglich 10 zufällige, Doppelungen zum Vortag vermieden."""
     return _daily_sample(_PARTY_HITS, 10)
 
-# Kuratierter Pool echter Oktoberfest-/Wiesn-Hits (Bierzelt-Klassiker + moderne Zeltgesänge).
-_OKTOBERFEST_HITS = [
-    {"title": "Ein Prosit der Gemütlichkeit",     "artist": "Wiesn-Kapelle",        "streams": "Wiesn-Hymne"},
-    {"title": "Fliegerlied (So ein schöner Tag)", "artist": "Tim Toupet",           "streams": "Wiesn-Hit"},
-    {"title": "In München steht ein Hofbräuhaus", "artist": "Wiesn-Klassiker",      "streams": "Wiesn-Hymne"},
-    {"title": "Layla",                             "artist": "DJ Robin & Schürze",  "streams": "Wiesn-Hit"},
-    {"title": "Skandal im Sperrbezirk",           "artist": "Spider Murphy Gang",   "streams": "Bierzelt-Klassiker"},
-    {"title": "Bergvagabunden",                    "artist": "Marc Pircher",         "streams": "Bierzelt-Klassiker"},
-    {"title": "Country Roads",                     "artist": "John Denver",          "streams": "Zeltgesang"},
-    {"title": "Sweet Caroline",                    "artist": "Neil Diamond",         "streams": "Zeltgesang"},
-    {"title": "Angels",                            "artist": "Robbie Williams",      "streams": "Zeltgesang"},
-    {"title": "Cordula Grün",                      "artist": "Josh.",                "streams": "Wiesn-Hit"},
-    {"title": "Das rote Pferd",                    "artist": "Markus Becker",        "streams": "Bierzelt-Klassiker"},
-    {"title": "Hulapalu",                          "artist": "Andreas Gabalier",     "streams": "Bierzelt-Klassiker"},
-    {"title": "Marmor, Stein und Eisen bricht",    "artist": "Drafi Deutscher",      "streams": "Wiesn-Klassiker"},
-    {"title": "Ein Bett im Kornfeld",              "artist": "Jürgen Drews",         "streams": "Schlager-Klassiker"},
-    {"title": "Herzilein",                         "artist": "Truck Stop",           "streams": "Bierzelt-Klassiker"},
-    {"title": "Rosamunde",                         "artist": "Wiesn-Klassiker",      "streams": "Wiesn-Hymne"},
-    {"title": "Fürstenfeld",                       "artist": "STS",                  "streams": "Zeltgesang"},
-    {"title": "Griechischer Wein",                 "artist": "Udo Jürgens",          "streams": "Bierzelt-Klassiker"},
-    {"title": "Die immer lacht",                   "artist": "Helene Fischer",       "streams": "Wiesn-Hit"},
-    {"title": "Küssen verboten",                   "artist": "Ikke Hüftgold",        "streams": "Wiesn-Hit"},
-    {"title": "Sierra Madre",                      "artist": "Klubbb3",              "streams": "Bierzelt-Klassiker"},
-    {"title": "Böhmischer Traum",                  "artist": "Klostertaler",         "streams": "Bierzelt-Klassiker"},
-    {"title": "Zwei kleine Italiener",             "artist": "Conny Froboess",       "streams": "Wiesn-Klassiker"},
-    {"title": "Living Next Door to Alice",         "artist": "Smokie",               "streams": "Zeltgesang"},
-    {"title": "Sweet Home Alabama",                "artist": "Lynyrd Skynyrd",       "streams": "Zeltgesang"},
-    {"title": "Hey Jude",                          "artist": "The Beatles",          "streams": "Zeltgesang"},
-    {"title": "Verdammt, ich lieb dich",           "artist": "Matthias Reim",        "streams": "Bierzelt-Klassiker"},
-    {"title": "Atemlos durch die Nacht",           "artist": "Helene Fischer",       "streams": "Wiesn-Hit"},
-    {"title": "Wahnsinn",                          "artist": "Wolfgang Petry",       "streams": "Bierzelt-Klassiker"},
-    {"title": "Ein Stern der deinen Namen trägt",  "artist": "DJ Ötzi & Nik P.",     "streams": "Wiesn-Hit"},
-    {"title": "Anton aus Tirol",                   "artist": "DJ Ötzi",              "streams": "Wiesn-Hit"},
-    {"title": "Hey Baby (Uhh, Ahh)",               "artist": "DJ Ötzi",              "streams": "Wiesn-Hit"},
-    {"title": "Anita",                             "artist": "DJ Ötzi",              "streams": "Wiesn-Hit"},
-    {"title": "Steirermen san very very gut",      "artist": "DJ Ötzi & Nik P.",     "streams": "Wiesn-Hit"},
-    {"title": "Amoi seg ma uns wieder",            "artist": "Andreas Gabalier",     "streams": "Bierzelt-Klassiker"},
-    {"title": "I Sing a Liad für di",              "artist": "Andreas Gabalier",     "streams": "Bierzelt-Klassiker"},
-    {"title": "Auf uns",                           "artist": "Andreas Bourani",      "streams": "Wiesn-Hit"},
-    {"title": "Schwimmen",                         "artist": "Mickie Krause",        "streams": "Bierzelt-Klassiker"},
-    {"title": "10 nackte Friseusen",               "artist": "Mickie Krause",        "streams": "Bierzelt-Klassiker"},
-    {"title": "Finger im Po, Mexico",              "artist": "Mickie Krause",        "streams": "Bierzelt-Klassiker"},
-    {"title": "Aloha Heja He",                     "artist": "Achim Reichel",        "streams": "Wiesn-Klassiker"},
-    {"title": "Aber bitte mit Sahne",              "artist": "Udo Jürgens",          "streams": "Wiesn-Klassiker"},
-    {"title": "Ich war noch niemals in New York",  "artist": "Udo Jürgens",          "streams": "Wiesn-Klassiker"},
-    {"title": "Rock mi",                           "artist": "Wildecker Herzbuben",  "streams": "Bierzelt-Klassiker"},
-    {"title": "Fiesta Mexicana",                   "artist": "Trio Rodriguez",       "streams": "Wiesn-Klassiker"},
-    {"title": "Verdammt lang her",                 "artist": "Wolfgang Petry",       "streams": "Bierzelt-Klassiker"},
-    {"title": "Ein Freund, ein guter Freund",      "artist": "Comedian Harmonists",  "streams": "Wiesn-Klassiker"},
-    {"title": "Über sieben Brücken musst du gehn", "artist": "Karat",                "streams": "Zeltgesang"},
+# Kuratierter Pool der größten fröhlichen Volksmusik-Hits (Chris-Wunsch 05.10.2026, ersetzt die Oktoberfest-Liste):
+# Volkslieder-Klassiker + Stars der volkstümlichen Musik/Neuen Volksmusik. 40 Titel = 4 Wochen, jede Woche 10 neue.
+_VOLKSMUSIK_HITS = [
+    {"title": "Das Wandern ist des Müllers Lust", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Im Frühtau zu Berge", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Ein Jäger aus Kurpfalz", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Hoch auf dem gelben Wagen", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Alle Vögel sind schon da", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Mein Vater war ein Wandersmann", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Auf der Heide blüht ein kleines Blümelein", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Kufsteinlied", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Im Wald und auf der Heide", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Der Mai ist gekommen", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Tiroler Holzhackerbuam", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Jetzt fahrn wir übern See", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Ein Heller und ein Batzen", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Auf einem Baum ein Kuckuck saß", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Mein Hut, der hat drei Ecken", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Wohlauf in Gottes schöne Welt", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Die Fischerin vom Bodensee", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Ein Vogel wollte Hochzeit machen", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Kein schöner Land", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Zillertaler Hochzeitsmarsch", "artist": "Volksweise", "streams": "Volkslied-Klassiker"},
+    {"title": "Hulapalu", "artist": "Andreas Gabalier", "streams": "Volksmusik-Hit"},
+    {"title": "I sing a Liad für di", "artist": "Andreas Gabalier", "streams": "Volksmusik-Hit"},
+    {"title": "Amoi seg' ma uns wieder", "artist": "Andreas Gabalier", "streams": "Volksmusik-Hit"},
+    {"title": "Sweet Little Rehlein", "artist": "Andreas Gabalier", "streams": "Volksmusik-Hit"},
+    {"title": "Rock mi", "artist": "Voxxclub", "streams": "Volksmusik-Hit"},
+    {"title": "Ziwui Ziwui", "artist": "Voxxclub", "streams": "Volksmusik-Hit"},
+    {"title": "Donnawedda", "artist": "Voxxclub", "streams": "Volksmusik-Hit"},
+    {"title": "Koa Hiatamadl", "artist": "Hubert von Goisern", "streams": "Volksmusik-Hit"},
+    {"title": "Weit, weit weg", "artist": "Hubert von Goisern", "streams": "Volksmusik-Hit"},
+    {"title": "Brenna tuats guat", "artist": "Hubert von Goisern", "streams": "Volksmusik-Hit"},
+    {"title": "Herzilein", "artist": "Wildecker Herzbuben", "streams": "Volksmusik-Hit"},
+    {"title": "Blau blüht der Enzian", "artist": "Heino", "streams": "Volksmusik-Hit"},
+    {"title": "Schwarzbraun ist die Haselnuss", "artist": "Heino", "streams": "Volksmusik-Hit"},
+    {"title": "Böhmischer Traum", "artist": "Ernst Mosch", "streams": "Volksmusik-Hit"},
+    {"title": "Rauschende Birken", "artist": "Ernst Mosch", "streams": "Volksmusik-Hit"},
+    {"title": "Auf der Vogelwiese", "artist": "Ernst Mosch", "streams": "Volksmusik-Hit"},
+    {"title": "Rosamunde", "artist": "Ernst Mosch", "streams": "Volksmusik-Hit"},
+    {"title": "Trompetenecho", "artist": "Slavko Avsenik", "streams": "Volksmusik-Hit"},
+    {"title": "Golica", "artist": "Slavko Avsenik", "streams": "Volksmusik-Hit"},
+    {"title": "Radetzky-Marsch", "artist": "Wiener Philharmoniker", "streams": "Volksmusik-Hit"},
 ]
 
-def _fetch_oktoberfest_charts():
-    """Kuratierte Oktoberfest-/Wiesn-Hits — täglich 10 zufällige, Doppelungen zum Vortag vermieden."""
-    return _daily_sample(_OKTOBERFEST_HITS, 10)
+def _fetch_volksmusik_charts():
+    """Fröhliche Volksmusik-Hits — wöchentlich wechselnd 10 Titel (feste Mischung, 4-Wochen-Zyklus ohne Wiederholung)."""
+    import random as _rnd, time as _t
+    pool = _VOLKSMUSIK_HITS[:]
+    _rnd.Random(20261005).shuffle(pool)
+    week = int(_t.time() + 3 * 86400) // (7 * 86400)   # Wochenwechsel am Montag
+    k = week % (len(pool) // 10)
+    return pool[k * 10:(k + 1) * 10]
 
 # Kuratierter Pool international bekannter Nr.-1-Hits 1980-2026 (Chris-Wunsch 24.08.2026: mehr
 # Auswahl/Abwechslung bei den Hit-Vorschlägen als nur die aktuellen Streaming-Charts). Quelle:
@@ -3831,7 +3829,7 @@ def _fetch_top50_ohw():
     return _TOP50_OHW
 
 def get_charts():
-    """Streaming Charts: DE + Global (Spotify via kworb) + Party (Schlager) + Oktoberfest + Top-50-One-Hit-Wonder + Overall Alltime + No.1-Hits 1980-2026."""
+    """Streaming Charts: DE + Global (Spotify via kworb) + Party (Schlager) + Volksmusik (wöchentlich) + Top-50-One-Hit-Wonder + Overall Alltime + No.1-Hits 1980-2026."""
     import time as _time
     now = _time.time()
     if _charts_cache["data"] and now - _charts_cache["ts"] < CHARTS_TTL:
@@ -3839,11 +3837,11 @@ def get_charts():
     de = _fetch_kworb("de_daily")
     gl = _fetch_kworb("global_daily")
     party = _fetch_party_charts()
-    oktoberfest = _fetch_oktoberfest_charts()
+    volksmusik = _fetch_volksmusik_charts()
     dance = _fetch_top50_ohw()   # Top 50 One-Hit-Wonder (ersetzt die frühere Apple-Dance-Chart-Kachel)
     overall = _fetch_kworb_alltime()
     no1 = _fetch_no1_hits()
-    result = {"de": de, "global": gl, "party": party, "oktoberfest": oktoberfest, "dance": dance,
+    result = {"de": de, "global": gl, "party": party, "volksmusik": volksmusik, "dance": dance,
               "overall": overall, "no1": no1}
     _charts_cache["data"] = result
     _charts_cache["ts"] = now

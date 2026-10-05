@@ -287,8 +287,16 @@ def branch(lf):
 BRANCH_CAP = {"Mandels/Robin": 14, "Renis Camera Roll 09-06-16": 3}   # Standard 2
 ROBIN_ALT_TARGET = 14      # 21.09.2026 Chris: Robin 14-18 von 120 (2-3 pro Tag) -> 14 Altersordner + 2 aktuelle
 
+# 05.10.2026: dauerhaftes "schon gezeigt"-Gedaechtnis ueber alle Wochen-Pools (f_used.json, rel. Pfade ab ROOT)
+USED_PATH = "/home/bolla/workspace/scripts/f_used.json"
+try:
+    USED = set(json.load(open(USED_PATH)))
+except Exception:
+    USED = set()
+log(f"Schon gezeigt (gesperrt): {len(USED)} Fotos")
+
 def pick_from(lf):
-    cands = buckets[lf][:]
+    cands = [c for c in buckets[lf] if c not in USED]
     random.shuffle(cands)
     for rel in cands:
         fp = os.path.join(ROOT, rel)
@@ -436,7 +444,7 @@ for i, rel in enumerate(sorted(picked)):
         _used_names.add(name)
         im.save(os.path.join(OUT, name), "JPEG", quality=Q, optimize=True)
         cap = f"{place} · {dt}" if dt else place
-        manifest.append({"src": f"/f-photos/{name}", "cap": cap, "folder": os.path.dirname(rel)})
+        manifest.append({"src": f"/f-photos/{name}", "cap": cap, "folder": os.path.dirname(rel), "orig": rel})
         log(f"  {name}  {manifest[-1]['cap']}  [{place_src}]   <- {rel}")
     except Exception as e:
         log("  FAIL", rel, repr(e))
