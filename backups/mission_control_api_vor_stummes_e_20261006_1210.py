@@ -10253,10 +10253,6 @@ Antworte NUR als reines JSON ohne Markdown:
                                  "(3) Use 'eh' for short German e, 'ah' for long German a, 'oo' for German u, 'y' for German j. "
                                  "CRITICAL: Never merge a consonant with 'y+vowel' into one syllable — always split: "
                                  "'-lia' → '-lee-ah', '-ria' → '-ree-ah', '-nia' → '-nee-ah', '-mia' → '-mee-ah'. "
-                                 "SILENT FINAL E: French-style names ending in -elle/-ille/-ette/-ine (e.g. 'Joëlle', 'Michelle', 'Gisèle', 'Annette') "
-                                 "have NO sounded final vowel — never write a trailing '-leh'/'-teh'/'-neh'; end on the consonant "
-                                 "(e.g. 'Joëlle' → 'Yoh-ELL' (stress on ELL), 'Michelle' → 'Mih-SHELL', 'Annette' → 'Ah-NETT'). "
-                                 "Only German names with a truly sounded final e (Jette, Grete, Hanne) get '-teh'/'-neh'. "
                                  "(4) Replace EVERY occurrence of the name in the lyrics with this phonetic spelling. "
                                  "(5) Do NOT use parenthetical hints or footnotes — only the phonetic spelling in the text.")
                 else:
