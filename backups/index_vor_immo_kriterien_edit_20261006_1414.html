@@ -15182,13 +15182,11 @@ function renderImmoCriteria() {
         ${items.map((item,i) => {
           const p = prios[item] || 'nice';
           const pm = prioMeta[p];
-          const editing = _criteriaEdit && _criteriaEdit.grp === grp && _criteriaEdit.idx === i;
-          const btn = 'background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;opacity:.55;flex-shrink:0';
-          return `<div draggable="${editing ? 'false' : 'true'}" data-group="${grp}" data-idx="${i}"
+          return `<div draggable="true" data-group="${grp}" data-idx="${i}"
             class="criteria-item"
             ondragstart="criteriaDragStart(event,'${grp}',${i})"
             ondragend="criteriaDragEnd(event)"
-            style="display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:7px;background:${pm.bg};border:1px solid ${pm.border};cursor:${editing ? 'default' : 'grab'};transition:background .1s"
+            style="display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:7px;background:${pm.bg};border:1px solid ${pm.border};cursor:grab;transition:background .1s"
             onmouseenter="this.style.background='rgba(255,255,255,0.08)'" onmouseleave="this.style.background='${pm.bg}'">
             <span style="color:var(--dim);font-size:13px;flex-shrink:0;cursor:grab">⠿</span>
             <span onclick="criteriaCyclePrio(this)" data-item="${escHtml(item)}"
@@ -15196,80 +15194,15 @@ function renderImmoCriteria() {
               style="width:8px;height:8px;border-radius:50%;background:${pm.color};flex-shrink:0;cursor:pointer;transition:transform .15s"
               onmousedown="event.stopPropagation()"
               onmouseenter="this.style.transform='scale(1.4)'" onmouseleave="this.style.transform='scale(1)'"></span>
-            ${editing
-              ? `<input id="criteria-edit-input" value="${escHtml(item)}" onkeydown="criteriaEditKey(event,'${grp}',${i})"
-                   style="flex:1;font-size:14px;padding:3px 6px;border-radius:5px;border:1px solid rgba(99,102,241,.6);background:#0b1220;color:#fff;min-width:0">
-                 <button onclick="criteriaEditSave('${grp}',${i})" title="Speichern" style="${btn};opacity:1">✔️</button>
-                 <button onclick="criteriaEditCancel()" title="Abbrechen" style="${btn}">✖️</button>`
-              : `<span style="font-size:13px;color:#e2e8f0;line-height:1.4;flex:1">${escHtml(item)}</span>
-                 <button onclick="criteriaEditStart('${grp}',${i})" title="Bearbeiten" style="${btn}" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.55">✏️</button>
-                 <button onclick="criteriaDelete('${grp}',${i})" title="Löschen" style="${btn}" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.55">🗑️</button>`}
+            <span style="font-size:13px;color:#e2e8f0;line-height:1.4;flex:1">${escHtml(item)}</span>
           </div>`;
         }).join('')}
-      </div>
-      <div style="display:flex;gap:6px;margin-top:5px">
-        <input id="criteria-add-${grp}" placeholder="➕ Neues Kriterium…" onkeydown="if(event.key==='Enter')criteriaAdd('${grp}')"
-          style="flex:1;min-width:0;font-size:13px;padding:4px 8px;border-radius:6px;border:1px dashed rgba(255,255,255,0.18);background:transparent;color:#fff">
-        <button onclick="criteriaAdd('${grp}')" style="font-size:12px;padding:3px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;cursor:pointer">Hinzufügen</button>
       </div>
     </div>`;
   }).join('')
     + `<div style="font-size:12px;color:var(--dim);margin-top:4px;display:flex;gap:10px">
         <span>🔴 Sehr wichtig</span><span>🟠 Wichtig</span><span>⚫ Nice to have</span>
        </div>`;
-  const ei = document.getElementById('criteria-edit-input');
-  if (ei) { ei.focus(); ei.select(); }
-}
-
-let _criteriaEdit = null;
-async function _criteriaSave() {
-  // verwaiste Prioritäten entfernen
-  const all = new Set(_criteriaGroups.flatMap(g => _immoCriteria[g] || []));
-  const pr = _immoCriteria.priorities || {};
-  for (const k of Object.keys(pr)) if (!all.has(k)) delete pr[k];
-  try {
-    await fetch(API + '/api/immo-criteria', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(_immoCriteria)});
-  } catch(e) { alert('Speichern fehlgeschlagen: ' + e); }
-}
-function criteriaEditStart(grp, idx) { _criteriaEdit = {grp, idx}; renderImmoCriteria(); }
-function criteriaEditCancel() { _criteriaEdit = null; renderImmoCriteria(); }
-function criteriaEditKey(e, grp, idx) {
-  if (e.key === 'Enter') criteriaEditSave(grp, idx);
-  else if (e.key === 'Escape') criteriaEditCancel();
-}
-async function criteriaEditSave(grp, idx) {
-  const inp = document.getElementById('criteria-edit-input');
-  const val = inp ? inp.value.trim() : '';
-  const list = _immoCriteria[grp] || [];
-  const old = list[idx];
-  _criteriaEdit = null;
-  if (!val || val === old) { renderImmoCriteria(); return; }
-  if (_criteriaGroups.some(g => (_immoCriteria[g]||[]).includes(val))) { alert('Dieses Kriterium gibt es schon.'); renderImmoCriteria(); return; }
-  list[idx] = val;
-  if (!_immoCriteria.priorities) _immoCriteria.priorities = {};
-  if (_immoCriteria.priorities[old]) _immoCriteria.priorities[val] = _immoCriteria.priorities[old];
-  renderImmoCriteria();
-  await _criteriaSave();
-}
-async function criteriaDelete(grp, idx) {
-  const item = (_immoCriteria[grp] || [])[idx];
-  if (item === undefined || !confirm('Kriterium löschen?\n\n' + item)) return;
-  _immoCriteria[grp].splice(idx, 1);
-  renderImmoCriteria();
-  await _criteriaSave();
-}
-async function criteriaAdd(grp) {
-  const inp = document.getElementById('criteria-add-' + grp);
-  const val = inp ? inp.value.trim() : '';
-  if (!val) return;
-  if (_criteriaGroups.some(g => (_immoCriteria[g]||[]).includes(val))) { alert('Dieses Kriterium gibt es schon.'); return; }
-  if (!_immoCriteria[grp]) _immoCriteria[grp] = [];
-  _immoCriteria[grp].push(val);
-  if (!_immoCriteria.priorities) _immoCriteria.priorities = {};
-  _immoCriteria.priorities[val] = 'important';
-  renderImmoCriteria();
-  await _criteriaSave();
-  const again = document.getElementById('criteria-add-' + grp); if (again) again.focus();
 }
 async function criteriaCyclePrio(el) {
   const item = el.dataset.item;
