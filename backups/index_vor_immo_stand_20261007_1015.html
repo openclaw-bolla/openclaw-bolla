@@ -2515,7 +2515,6 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
             <div>
               <div style="font-size:20px;font-weight:700;color:var(--text);margin:0 0 4px">🏡 Immobilienkauf Bayern</div>
               <div style="font-size:13px;color:var(--dim)">Makler-Tracker · Kriterien · Markt-News · Suche frühestens Herbst 2027</div>
-              <div id="immo-stand" style="font-size:13px;color:var(--dim);margin-top:4px">🕒 Stand: lädt…</div>
             </div>
           </div>
 
@@ -15040,10 +15039,6 @@ function _maklerRow(m, status, notiz, datum, inboxEmails) {
 
 function _maklerRenderList(data) {
   _maklerData = data;
-  const standEl = document.getElementById('immo-stand');
-  if (standEl) standEl.textContent = '🕒 Stand: Makler-Liste ' + (data.stand_makler || '–')
-    + ' · Kriterien ' + (data.stand_kriterien || '–')
-    + (data.geprueft ? ' · letzter Makler-Check ' + data.geprueft : '');
   const statuses = data.statuses || {};
   const inbox = data.inbox || [];
   const list = document.getElementById('makler-list');

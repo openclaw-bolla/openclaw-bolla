@@ -1466,13 +1466,6 @@ def get_makler():
     except Exception as e:
         emails = []
     data["inbox"] = emails
-    try:
-        _fmt = lambda f: datetime.fromtimestamp(f.stat().st_mtime).strftime("%d.%m.%Y %H:%M")
-        data["stand_makler"] = _fmt(MAKLER_FILE)
-        if IMMO_CRITERIA_FILE.exists():
-            data["stand_kriterien"] = _fmt(IMMO_CRITERIA_FILE)
-    except Exception:
-        pass
     return data
 
 def makler_set_status(makler_id, status, notiz=""):
