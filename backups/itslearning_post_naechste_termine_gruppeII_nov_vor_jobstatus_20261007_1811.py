@@ -41,8 +41,6 @@ def tg(text):
 
 
 if __name__ == "__main__":
-    from job_status import report as _r
-    _r("itslearning-naechste-termine-II", "Nächste Termine (Gruppe II)", "laeuft", "postet in 4 Kursen")
     from playwright.sync_api import sync_playwright
     from itslearning_post_kurstag import login
     from itslearning_post_erste_termine import post_text
@@ -66,13 +64,10 @@ if __name__ == "__main__":
         print(f"{name}: {res}")
 
     ok_all = len(post_results) == len(COURSES) and all(r == "OK" for _, r in post_results)
+    msg = ("✅ itslearning: 'Eure nächsten Termine' (Gruppe II) in allen 4 Kursen gepostet 🐾" if ok_all else
+           "⚠️ itslearning-Post 'nächste Termine' Gruppe II NICHT sauber durch:\n" +
+           "\n".join(f"{n}: {r}" for n, r in post_results) + "\nBitte nachsehen.")
     try:
-        from job_status import report
-        if ok_all:
-            report("itslearning-naechste-termine-II", "Nächste Termine (Gruppe II)", "ok",
-                   "in allen 4 Kursen gepostet")
-        else:
-            report("itslearning-naechste-termine-II", "Nächste Termine (Gruppe II)", "fehler",
-                   "; ".join(f"{n}: {r}" for n, r in post_results) + " – bitte nachsehen")
+        tg(msg)
     except Exception as e:
-        print("Job-Status fehlgeschlagen:", e)
+        print("Telegram fehlgeschlagen:", e)

@@ -10,7 +10,6 @@ import urllib.request
 
 sys.path.insert(0, "/home/bolla/workspace/scripts")
 import itslearning_send_private_song as sp
-from job_status import report
 from playwright.sync_api import sync_playwright
 
 B = "/mnt/d/OneDrive/Dokumente/Office/7. Klassen/"
@@ -46,7 +45,6 @@ tag = sys.argv[1]
 jobs = JOBS[tag]
 if datetime.datetime.now().hour < 14:
     sys.exit("vor 14 Uhr - Dauerregel")
-report(f"itslearning-songs-0710-{tag}", "Geburtstagssongs", "laeuft", "sendet per itslearning")
 res = []
 try:
     for emp, msg, songs in jobs:
@@ -69,10 +67,7 @@ try:
             browser.close()
     done = [e for e, o in res if o]
     fail = [e for e, _, _ in jobs if e not in done]
-    jid, jtitle = f"itslearning-songs-0710-{tag}", "Geburtstagssongs " + ", ".join(e.split(", ")[-1] for e, _, _ in jobs)
-    if not fail:
-        report(jid, jtitle, "ok", "gesendet: " + ", ".join(done))
-    else:
-        report(jid, jtitle, "fehler", f"gesendet {done or '–'}, NICHT gesendet/unklar {fail}. Screenshots /tmp/its_debug")
+    tg(("✅ Geburtstagssongs gesendet: " + ", ".join(done) + " 🐾") if not fail else
+       f"⚠️ Geburtstagssongs: gesendet {done or '–'}, NICHT gesendet/unklar {fail}. Screenshots /tmp/its_debug")
 except BaseException as e:
-    report(f"itslearning-songs-0710-{tag}", "Geburtstagssongs", "fehler", f"Abbruch {e!r}"[:300])
+    tg(f"⚠️ Geburtstagssong-Batch {tag}: Abbruch {e!r}"[:500])
