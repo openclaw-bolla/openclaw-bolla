@@ -3118,7 +3118,6 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               </div>
               <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px">
                 <div style="font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Kapitel</div>
-                <div id="aurora2-vorspann-item" style="display:none;padding:7px 9px;cursor:pointer;font-size:13px;border-radius:7px;margin-bottom:3px;border:1px solid transparent" onclick="aurora2ZeigeVorspann()">✨ Vorspann</div>
                 <div id="aurora2-vorwort-item" style="display:none;padding:7px 9px;cursor:pointer;font-size:13px;border-radius:7px;margin-bottom:7px;padding-bottom:10px;border-bottom:1px solid var(--border)" onclick="aurora2ZeigeVorwort()">📖 Vorwort</div>
                 <div id="aurora2-kapitel-liste" style="font-size:13px;color:var(--dim)">Noch keine Kapitel</div>
               </div>
@@ -12153,13 +12152,12 @@ function aurora2LsGet(k, d) { try { const v = localStorage.getItem(k); return v 
 function aurora2LsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
 function aurora2AktivKey() {   // stabiler Schlüssel des offenen Texts (Kapiteltitel bzw. Vorwort-Sentinel)
   if (_aurora2AktivIdx === 'vorwort') return '__VORWORT__';
-  if (_aurora2AktivIdx === 'vorspann') return '__VORSPANN__';
   const kap = _aurora2Data && _aurora2Data.kapitel && _aurora2Data.kapitel[_aurora2AktivIdx];
   return kap ? kap.titel : null;
 }
 function aurora2StandFuerKey(d, key) {   // Text + Lesemarken-Satz: ändert sich das nicht, wird nichts neu gezeichnet
   if (!d || !key) return null;
-  const txt = key === '__VORSPANN__' ? (d.vorspann || '') : key === '__VORWORT__' ? (d.vorwort || '') : ((d.kapitel || []).find(k => k.titel === key) || {}).text;
+  const txt = key === '__VORWORT__' ? (d.vorwort || '') : ((d.kapitel || []).find(k => k.titel === key) || {}).text;
   if (txt === undefined || txt === null) return null;
   const m = d.lesemarken && d.lesemarken[key];
   return txt + '\u0001' + ((m && m.satz) || '');
@@ -12223,25 +12221,21 @@ async function loadAurora2() {
     aurora2RenderGlossar();
     const vwItem = document.getElementById('aurora2-vorwort-item');
     if (vwItem) vwItem.style.display = data.vorwort ? 'block' : 'none';
-    const vsItem = document.getElementById('aurora2-vorspann-item');
-    if (vsItem) vsItem.style.display = data.vorspann ? 'block' : 'none';
 
     const anzahl = (data.kapitel||[]).length;
     // Welcher Text kommt ins Vorschaufenster? 1) der schon offene (Refresh), 2) der zuletzt gelesene (localStorage),
     // 3) der mit der jüngsten Lesemarke, 4) erst dann das letzte Kapitel.
-    const gueltig = k => k && (k === '__VORSPANN__' ? !!data.vorspann : k === '__VORWORT__' ? !!data.vorwort : (data.kapitel||[]).some(c => c.titel === k));
+    const gueltig = k => k && (k === '__VORWORT__' ? !!data.vorwort : (data.kapitel||[]).some(c => c.titel === k));
     let zielKey = gueltig(altKey) ? altKey : aurora2LsGet('aurora2-aktiv', null);
     if (!gueltig(zielKey)) zielKey = aurora2JuengsteLesemarke(data);
     if (!gueltig(zielKey) && anzahl > 0) zielKey = data.kapitel[anzahl - 1].titel;
     if (gueltig(zielKey)) {
       const bleibt = zielKey === altKey;
-      const idx = zielKey === '__VORSPANN__' ? 'vorspann' : zielKey === '__VORWORT__' ? 'vorwort' : data.kapitel.findIndex(c => c.titel === zielKey);
+      const idx = zielKey === '__VORWORT__' ? 'vorwort' : data.kapitel.findIndex(c => c.titel === zielKey);
       if (bleibt && aurora2StandFuerKey(data, zielKey) === altStand) {
         // Text unverändert → NICHT neu zeichnen: Scrollposition und markierte Textstelle bleiben stehen
         _aurora2AktivIdx = idx;
         aurora2RenderKapitelListe();
-      } else if (idx === 'vorspann') {
-        aurora2ZeigeVorspann({ halten: bleibt });
       } else if (idx === 'vorwort') {
         aurora2ZeigeVorwort({ halten: bleibt });
       } else {
@@ -12468,14 +12462,6 @@ function aurora2RenderKapitelListe() {
         return `<div onclick="aurora2ZeigeKapitel(${i})" style="padding:7px 9px;cursor:pointer;font-size:13px;border-radius:7px;margin-bottom:3px;${aktiv?'background:rgba(236,72,153,0.18);color:#ec4899;font-weight:600;border:1px solid rgba(236,72,153,0.4)':'color:var(--text);border:1px solid transparent'}" onmouseover="if(${i}!==_aurora2AktivIdx)this.style.background='rgba(255,255,255,0.04)'" onmouseout="if(${i}!==_aurora2AktivIdx)this.style.background=''">📄 ${kap.titel||'Kapitel '+(i+1)}${marke}</div>`;
       }).join('')
     : '<span style="color:var(--dim)">Noch keine Kapitel</span>';
-  const vsItem2 = document.getElementById('aurora2-vorspann-item');
-  if (vsItem2) {
-    const aktivVs = _aurora2AktivIdx === 'vorspann';
-    vsItem2.style.background = aktivVs ? 'rgba(236,72,153,0.18)' : '';
-    vsItem2.style.color = aktivVs ? '#ec4899' : 'var(--text)';
-    vsItem2.style.fontWeight = aktivVs ? '600' : 'normal';
-    vsItem2.style.border = aktivVs ? '1px solid rgba(236,72,153,0.4)' : '1px solid transparent';
-  }
   const vwItem = document.getElementById('aurora2-vorwort-item');
   if (vwItem) {
     const aktivVw = _aurora2AktivIdx === 'vorwort';
@@ -12528,32 +12514,6 @@ function aurora2GlossarSpringen(i) {
   if (!e || !_aurora2Data) return;
   const idx = (_aurora2Data.kapitel||[]).findIndex(k => k.titel === e.kapitel_titel);
   if (idx >= 0) aurora2ZeigeKapitel(idx);
-}
-
-function aurora2ZeigeVorspann(opts) {   // reiner Lesetext (kein Satz-Feedback): Definitionsseite vor dem Vorwort
-  opts = opts || {};
-  if (!_aurora2Data) return;
-  const text = _aurora2Data.vorspann || '';
-  if (!opts.halten) aurora2ScrollMerkenSofort();
-  _aurora2AktivIdx = 'vorspann';
-  aurora2LsSet('aurora2-aktiv', '__VORSPANN__');
-  const inhalt = document.getElementById('aurora2-inhalt');
-  const it = document.getElementById('aurora2-inhalt-titel');
-  const im = document.getElementById('aurora2-inhalt-meta');
-  const platz = document.getElementById('aurora2-inhalt-platzhalter');
-  if (it) it.textContent = 'Vorspann';
-  if (im) im.textContent = 'Definitionsseite vor Kapitel 1 · nur zum Lesen';
-  const recapV = document.getElementById('aurora2-recap');
-  if (recapV) { recapV.style.display = 'none'; recapV.open = false; }
-  if (platz) platz.style.display = 'none';
-  if (inhalt) { inhalt.textContent = text; inhalt.style.display = 'block'; }
-  const satzZeile = document.getElementById('aurora2-satz-zeile');
-  if (satzZeile) satzZeile.style.display = 'none';
-  const satzPanel = document.getElementById('aurora2-satz-panel');
-  if (satzPanel) satzPanel.style.display = 'none';
-  const ziel = document.getElementById('aurora2-kommentar-ziel');
-  if (ziel) ziel.textContent = `→ bezieht sich auf "Vorspann"`;
-  aurora2RenderKapitelListe();
 }
 
 function aurora2ZeigeVorwort(opts) {
@@ -17408,7 +17368,7 @@ function schuelerFindMatch(input, liste) {
       const vorNorm = schuelerNorm(s.vorname);
       const nachNorm = schuelerNorm(s.nachname);
       const vorFirst = vorNorm.split(/\s+/)[0];
-      return vorNorm === inputNorm || vorFirst === inputNorm || vorNorm.split(/[\s-]+/).includes(inputNorm) || nachNorm === inputNorm
+      return vorNorm === inputNorm || vorFirst === inputNorm || nachNorm === inputNorm
         || `${vorNorm} ${nachNorm}` === inputNorm || `${nachNorm} ${vorNorm}` === inputNorm;
     });
   }
@@ -17440,15 +17400,7 @@ async function sunoAutoFillFromSchuelerliste(name) {
   // im Alltag/Song wird aber nur der erste genutzt - sonst landet der volle Doppelname
   // mehrfach im Liedtext (Backend wiederholt den kompletten "name"-String woertlich).
   const nameEl = document.getElementById('suno-name');
-  // Gesungener Name: Tippt Chris einen Namensteil ("Greta" bei Greta-Marie), bleibt genau der stehen
-  // (auch ein hinterer Teil). Sonst: Rufname aus der Liste (Feld "rufname"), sonst erster Teil.
-  if (nameEl && match.vorname) {
-    const typed = name.trim();
-    const teile = match.vorname.split(/[\s-]+/).map(schuelerNorm);
-    const istTeil = !name.includes(',') && teile.includes(schuelerNorm(typed))
-      && schuelerNorm(typed) !== schuelerNorm(match.vorname.split(/\s+/)[0]);
-    nameEl.value = istTeil ? typed : (match.rufname || match.vorname.split(/\s+/)[0]);
-  }
+  if (nameEl && match.vorname) nameEl.value = match.vorname.split(/\s+/)[0];
   const klasseEl = document.getElementById('suno-klasse');
   const gebEl = document.getElementById('suno-geburtstag');
   const alterEl = document.getElementById('suno-alter');

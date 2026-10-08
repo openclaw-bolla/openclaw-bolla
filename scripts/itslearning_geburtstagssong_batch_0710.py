@@ -31,8 +31,13 @@ JOBS = {
          "🎂 Alles Gute zum Geburtstag, Eva! Zwei Songs, frisch aus meinem Dateiordner in dein Postfach. Bitte nicht mit Klingeltönen verwechseln 🎶💻",
          [B + "7c/Kurs II/Happy Birthday Eva 19.08.26.mp4", B + "7c/Kurs II/Ay-fah Eva's Birthday Beat 🎂💻🎉.mp4"]),
     ],
+    "eva": [  # Nachlauf 08.10.: Eva allein in frischer Sitzung (2. Empfaenger im selben Lauf scheitert)
+        ("Wassermann, Eva",
+         "🎂 Alles Gute zum Geburtstag, Eva! Zwei Songs, frisch aus meinem Dateiordner in dein Postfach. Bitte nicht mit Klingeltönen verwechseln 🎶💻",
+         [B + "7c/Kurs II/Happy Birthday Eva 19.08.26.mp4", B + "7c/Kurs II/Ay-fah Eva's Birthday Beat 🎂💻🎉.mp4"]),
+    ],
 }
-CFG = json.load(open("/home/bolla/workspace/config/telegram_bot.json"))
+CFG =json.load(open("/home/bolla/workspace/config/telegram_bot.json"))
 
 
 def tg(text):
@@ -56,7 +61,10 @@ try:
     with sync_playwright() as p:
         browser, its = sp.login(p)
         try:
-            for emp, msg, songs in jobs:
+            for k, (emp, msg, songs) in enumerate(jobs):
+                if k:  # 2. Empfaenger: Panel haengt nach dem Senden -> Seite frisch laden (Fix 08.10.)
+                    its.reload()
+                    its.wait_for_timeout(4000)
                 try:
                     ok = sp.send_private_message(its, emp, msg, songs)
                 except Exception as e:
