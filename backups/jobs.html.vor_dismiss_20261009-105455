@@ -26,7 +26,7 @@ button{font:inherit;padding:8px 14px;border-radius:8px;border:1px solid var(--bd
 <body>
 <main>
 <h1>🐾 Bolla Jobs</h1>
-<div class="sub"><span id="stand">lädt…</span> · <button onclick="load(true)">Aktualisieren</button></div>
+<div class="sub"><span id="stand">lädt…</span> · <button onclick="load()">Aktualisieren</button></div>
 <div id="out"></div>
 </main>
 <script>
@@ -40,20 +40,14 @@ function fmt(iso){
     d.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"});
   return day+" "+d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
 }
-function jobRow(j,btn){
+function jobRow(j){
   const link=j.link?` · <a href="${esc(j.link)}" target="_blank" rel="noopener">Details</a>`:"";
-  return `<div class="row ${esc(j.status)}"><div class="top"><span class="t">${ICON[j.status]||"•"} ${esc(j.title)}</span><span class="w">${fmt(j.ts)}</span></div>${j.detail?`<div class="d">${esc(j.detail)}${link}</div>`:""}${btn?`<div style="margin-top:8px"><button onclick="dismiss('${esc(j.id)}')">✔ Erledigt</button></div>`:""}</div>`;
+  return `<div class="row ${esc(j.status)}"><div class="top"><span class="t">${ICON[j.status]||"•"} ${esc(j.title)}</span><span class="w">${fmt(j.ts)}</span></div>${j.detail?`<div class="d">${esc(j.detail)}${link}</div>`:""}</div>`;
 }
 function section(title,items,emptyText){
   return `<h2>${title}</h2>`+(items.length?items.join(""):`<div class="empty">${emptyText}</div>`);
 }
-async function dismiss(id){
-  try{await fetch("/api/jobs/dismiss",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});}catch(e){}
-  load();
-}
-async function load(manual){
-  const st=document.getElementById("stand");
-  if(manual)st.textContent="lädt…";
+async function load(){
   try{
     const r=await fetch("/api/jobs",{cache:"no-store"});const d=await r.json();
     const J=d.jobs||[];
@@ -62,11 +56,11 @@ async function load(manual){
     const done=J.filter(j=>j.status==="ok").slice(0,15);
     const up=(d.upcoming||[]).map(u=>`<div class="row"><div class="top"><span class="t">⏳ ${esc(u.title)}</span><span class="w">${fmt(u.when)}</span></div></div>`);
     document.getElementById("out").innerHTML=
-      section("Braucht dich",attn.map(j=>jobRow(j,true)),"Nichts – alles ruhig 👌")+
+      section("Braucht dich",attn.map(jobRow),"Nichts – alles ruhig 👌")+
       section("Läuft gerade",run.map(jobRow),"Nichts läuft.")+
       section("Steht an",up,"Nichts Geplantes in den nächsten 14 Tagen.")+
       section("Zuletzt erledigt",done.map(jobRow),"Noch nichts eingetragen.");
-    document.getElementById("stand").textContent="Stand "+fmt(d.now)+":"+String(new Date(d.now).getSeconds()).padStart(2,"0");
+    document.getElementById("stand").textContent="Stand "+fmt(d.now);
   }catch(e){document.getElementById("stand").textContent="Server nicht erreichbar";}
 }
 load();setInterval(load,30000);

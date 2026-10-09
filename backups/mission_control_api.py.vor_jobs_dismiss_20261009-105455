@@ -9623,8 +9623,6 @@ Antworte NUR als reines JSON: {{"improved_prompt": "..."}}"""
                     self._send_json(append_clipboard(text, source=body.get("source", "manual")))
                 else:
                     self._send_json(save_clipboard(text))
-            elif self.path == "/api/jobs/dismiss":
-                self._send_json(__import__("job_status").dismiss(str(body.get("id", ""))))
             elif self.path == "/api/clipboard/delete":
                 idx = body.get("idx", -1)
                 self._send_json(delete_clipboard_entry(int(idx)))

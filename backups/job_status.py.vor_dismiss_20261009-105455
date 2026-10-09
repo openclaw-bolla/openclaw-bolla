@@ -119,24 +119,6 @@ def upcoming(days=14):
     return sorted(out, key=lambda x: x["when"])
 
 
-def dismiss(job_id):
-    """Meldung als erledigt markieren (Status -> ok), ohne Telegram."""
-    with open(STATE + ".lock", "w") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
-        d = _load()
-        if job_id not in d:
-            return {"ok": False, "error": "unbekannt"}
-        j = d[job_id]
-        j["status"] = "ok"
-        j["detail"] = "von dir als erledigt markiert" + (f" (war: {j['detail']})" if j.get("detail") else "")
-        j["ts"] = datetime.datetime.now().isoformat(timespec="seconds")
-        tmp = STATE + ".tmp"
-        with open(tmp, "w") as f:
-            json.dump(d, f, ensure_ascii=False, indent=1)
-        os.replace(tmp, STATE)
-    return {"ok": True}
-
-
 def snapshot():
     d = _load()
     jobs = [dict(v, id=k) for k, v in d.items()]
