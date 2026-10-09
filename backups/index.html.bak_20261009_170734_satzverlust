@@ -12729,21 +12729,15 @@ function aurora2SatzZeigeErgebnis(job) {
   document.getElementById('aurora2-satz-ergebnis').style.display = 'block';
 }
 
-async function aurora2SatzEntscheidung(entscheidung, kuerzungOk) {
+async function aurora2SatzEntscheidung(entscheidung) {
   if (!_aurora2SatzAktuell || !_aurora2SatzAktuell.id) return;
   const status = document.getElementById('aurora2-satz-status');
   try {
     const res = await fetch(API + '/api/aurora2/satz-entscheidung', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ id: _aurora2SatzAktuell.id, entscheidung, kuerzung_ok: !!kuerzungOk })
+      body: JSON.stringify({ id: _aurora2SatzAktuell.id, entscheidung })
     });
     const data = await res.json();
-    if (data.kuerzung) {
-      const liste = (data.verloren || []).map(z => '• ' + z).join('\n');
-      if (confirm('⚠️ ' + data.error + '\n\nDiese Zeilen würden verschwinden:\n' + liste + '\n\nWirklich übernehmen? (Abbrechen = nichts wird geändert)')) return aurora2SatzEntscheidung(entscheidung, true);
-      if (status) { status.textContent = '🛡️ Abgebrochen — nichts geändert.'; status.style.color = 'var(--dim)'; }
-      return;
-    }
     document.getElementById('aurora2-satz-ergebnis').style.display = 'none';
     if (!data.ok) {
       if (status) { status.textContent = '⚠️ ' + (data.error || 'Fehler'); status.style.color = '#ef4444'; }

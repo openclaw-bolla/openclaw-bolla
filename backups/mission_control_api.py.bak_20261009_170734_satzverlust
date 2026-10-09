@@ -237,36 +237,6 @@ _gluecksrad_state = {"stil": None, "nummer": None}
 # KI-Buch Async-Job (Hintergrund-Thread für Claude-Aufruf)
 _ki_buch_job = {"status": "idle", "antwort": "", "inhalt": "", "inhalt_titel": "", "error": ""}
 _aurora2_job = {"status": "idle", "antwort": "", "inhalt": "", "inhalt_titel": "", "error": ""}
-def _a2_merge_vorschlag(satz, vorschlag):
-    """Sicherung gegen Textverlust: Liefert die KI nur EINE geaenderte Zeile fuer eine mehrzeilige Markierung,
-    wird nur die passende Zeile ersetzt, alle anderen bleiben. -> (text, zusammengefuehrt)"""
-    import difflib
-    sl = satz.split("\n"); vl = [x for x in vorschlag.split("\n") if x.strip()]
-    s_ne = [i for i, x in enumerate(sl) if x.strip()]
-    if len(vl) >= len(s_ne) or not vl:
-        return vorschlag, False
-    res = list(sl); used = set()
-    for v in vl:
-        best = None
-        for i in s_ne:
-            if i in used: continue
-            r = difflib.SequenceMatcher(None, sl[i], v).ratio()
-            if best is None or r > best[0]: best = (r, i)
-        if not best or best[0] < 0.55:
-            return vorschlag, False
-        res[best[1]] = v; used.add(best[1])
-    merged = "\n".join(res)
-    if merged.strip() == satz.strip():
-        return vorschlag, False      # echte Loeschabsicht -> nicht rueckgaengig machen, Annehmen fragt nach
-    return merged, True
-
-def _a2_verlust(satz, vorschlag):
-    """Wuerde das Uebernehmen Zeilen/Text vernichten? -> (bool, zeilen_alt, zeilen_neu, verlorene_zeilen)"""
-    sn = [x for x in satz.split("\n") if x.strip()]; vn = [x for x in vorschlag.split("\n") if x.strip()]
-    verlust = len(vn) < len(sn) or (len(satz) > 120 and len(vorschlag) < 0.75 * len(satz))
-    gone = [x[:90] for x in sn if x not in vn][:8] if verlust else []
-    return verlust, len(sn), len(vn), gone
-
 _aurora2_satz_job = {"status": "idle", "id": "", "kapitel_titel": "", "satz": "", "vorschlag": "", "antwort": "", "geaendert": False, "error": ""}
 
 def _aurora2_glossar_ergaenzen(buch2, kap_eintrag, now):
@@ -9164,10 +9134,7 @@ KONTEXT DANACH:
 Geh direkt auf Chris' Bemerkung ein. Ist es eine Frage oder ein Verständnisproblem: beantworte sie kurz und
 klar. Ist es ein Korrekturwunsch oder hältst du den Satz für unsauber/fehlerhaft: biete einen konkret
 verbesserten Satz an — Inhalt, Fakten, Ton (trocken/lakonisch) und Erzählperspektive exakt beibehalten, nur
-so viel ändern wie nötig. WICHTIG: Dein VORSCHLAG ersetzt die GESAMTE markierte Stelle 1:1. Gib sie deshalb
-VOLLSTÄNDIG zurück — jede Zeile, jeden Absatz, jede Kursiv-/Protokoll-/Listenzeile, auch die unveränderten,
-Wort für Wort — und ändere nur das, was wirklich geändert werden muss. Lass NIE Zeilen weg, kürze nichts,
-fasse nichts zusammen. Soll nur eine Zeile geändert werden, gib trotzdem ALLE Zeilen der Markierung zurück. Ist der Satz schon gut und Chris' Punkt lässt sich ohne Textänderung klären, lass
+so viel ändern wie nötig. Ist der Satz schon gut und Chris' Punkt lässt sich ohne Textänderung klären, lass
 den Vorschlag identisch zum Original.
 
 Antworte AUSSCHLIESSLICH in diesem Format:
@@ -9186,20 +9153,15 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                             return
                         raw = json.loads(r.stdout).get("result", "")
                         def _extract5(tag):
-                            mm = _re7.search(_re7.escape(f"{tag}:") + r"\s*(.*?)(?=\n(?:ANTWORT|VORSCHLAG):|\Z)", raw, _re7.DOTALL)
+                            mm = _re7.search(_re7.escape(f"{tag}:") + r"\s*(.*?)(?=\n[A-Z_]+:|\Z)", raw, _re7.DOTALL)
                             return mm.group(1).strip() if mm else ""
                         antwort = _extract5("ANTWORT")
                         vorschlag = _extract5("VORSCHLAG")
-                        vorschlag_roh = vorschlag
-                        vorschlag, _zf = _a2_merge_vorschlag(satz, vorschlag)
-                        if _zf:
-                            antwort += "\n\n(Hinweis: Mein Vorschlag betraf nur einen Teil deiner Markierung. Ich habe nur die geänderte Zeile ersetzt — alle anderen Zeilen bleiben unverändert.)"
                         geaendert = bool(vorschlag) and vorschlag.strip() != satz.strip()
                         with open(bf2) as fh2: buch2 = json.load(fh2)
                         buch2.setdefault("satz_markierungen", []).append({
                             "id": mark_id, "kapitel_titel": kap_titel, "satz": satz, "frage": frage,
                             "antwort": antwort, "vorschlag": vorschlag,
-                            **({"vorschlag_roh": vorschlag_roh} if _zf else {}),
                             "status": "wartet_entscheidung" if geaendert else "beantwortet",
                             "datum": _dt6.datetime.now().strftime("%Y-%m-%d %H:%M"),
                         })
@@ -9228,17 +9190,6 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                         self._send_json({"ok": False, "error": "Kapitel nicht gefunden."}); return
                     if ziel_text.count(m["satz"]) != 1:
                         self._send_json({"ok": False, "error": "Satz nicht mehr eindeutig gefunden — bitte neu laden."}); return
-                    _verl, _za, _zn, _gone = _a2_verlust(m["satz"], m["vorschlag"])
-                    if _verl and not body.get("kuerzung_ok"):
-                        self._send_json({"ok": False, "kuerzung": True, "zeilen_alt": _za, "zeilen_neu": _zn, "verloren": _gone,
-                                         "error": f"Achtung: Die Änderung würde Text löschen ({_za} Zeilen → {_zn})."}); return
-                    try:
-                        import shutil as _shb, glob as _gl
-                        _bd = os.path.join(WORKSPACE, "backups"); os.makedirs(_bd, exist_ok=True)
-                        _shb.copy2(bf2, os.path.join(_bd, f"aurora2_vor_satz_{mark_id}_{_dt7.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"))
-                        for _old in sorted(_gl.glob(os.path.join(_bd, "aurora2_vor_satz_*.json")))[:-60]: os.remove(_old)
-                    except Exception:
-                        pass
                     neuer_text = ziel_text.replace(m["satz"], m["vorschlag"], 1)
                     if ist_vorwort:
                         buch["vorwort"] = neuer_text
