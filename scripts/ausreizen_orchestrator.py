@@ -329,7 +329,7 @@ def block_a_report():
         try:
             dst = rf"{DESKTOP_WIN}\Makler_Pruefung_{TAG}.html"
             src = subprocess.run(["wslpath", "-w", p], capture_output=True, text=True).stdout.strip()
-            subprocess.run(["powershell.exe", "-NoProfile", "-Command", f"Copy-Item -LiteralPath '{src}' -Destination '{dst}' -Force"],
+            subprocess.run(["/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe", "-NoProfile", "-Command", f"Copy-Item -LiteralPath '{src}' -Destination '{dst}' -Force"],
                            capture_output=True, text=True, timeout=60)
         except Exception as e:
             log(f"Desktop-Kopie fehlgeschlagen: {e}")
@@ -531,7 +531,7 @@ Status: {OUT}/STATUS.md · Log: {LOGF}
     if not DRY:
         try:
             src = subprocess.run(["wslpath", "-w", f"{OUT}/PLAN.md"], capture_output=True, text=True).stdout.strip()
-            subprocess.run(["powershell.exe", "-NoProfile", "-Command",
+            subprocess.run(["/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe", "-NoProfile", "-Command",
                             f"Copy-Item -LiteralPath '{src}' -Destination '{DESKTOP_WIN}\\Ausreizen_Plan_{TAG}.md' -Force"],
                            capture_output=True, text=True, timeout=60)
         except Exception as e:

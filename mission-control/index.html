@@ -2595,7 +2595,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
               </div>
               <!-- Filter -->
               <div style="padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;gap:5px;flex-wrap:wrap;background:rgba(15,26,46,0.8)" id="makler-filter-bar">
-                <button onclick="maklerFilter('alle')" data-f="alle" class="mkf active" style="font-size:12px;padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;cursor:pointer">Alle (32)</button>
+                <button onclick="maklerFilter('alle')" data-f="alle" class="mkf active" style="font-size:12px;padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;cursor:pointer">Alle (34)</button>
                 <button onclick="maklerFilter('neu')" data-f="neu" class="mkf" style="font-size:12px;padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--dim);cursor:pointer">Neu</button>
                 <button onclick="maklerFilter('email_gesendet')" data-f="email_gesendet" class="mkf" style="font-size:12px;padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--dim);cursor:pointer">E-Mail gesendet</button>
                 <button onclick="maklerFilter('feedback_erhalten')" data-f="feedback_erhalten" class="mkf" style="font-size:12px;padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--dim);cursor:pointer">Feedback</button>
@@ -16738,6 +16738,22 @@ async function maklerCycleStatus(id) {
   } catch(e) { console.warn('Makler status update failed', e); }
 }
 
+function _maklerDetailBlock(m) {
+  const row = (label, val) => val ? `<div style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--dim);flex:0 0 84px">${label}</span><span style="color:var(--text);min-width:0;overflow-wrap:anywhere">${val}</span></div>` : '';
+  const web = /^https?:\/\//i.test(m.website || '')
+    ? `<a href="${escHtml(m.website)}" target="_blank" rel="noopener" style="color:#60a5fa">${escHtml(m.website)}</a>`
+    : (m.website ? escHtml(m.website) : '<span style="color:var(--dim)">keine Website bekannt</span>');
+  const mail = m.email
+    ? `<a href="mailto:${escHtml(m.email)}" style="color:#60a5fa">${escHtml(m.email)}</a>`
+    : '<span style="color:var(--dim)">keine E-Mail bekannt</span>';
+  const tel = [m.telefon, m.mobil && !String(m.telefon || '').includes(m.mobil.replace(/^0/, '')) ? m.mobil : ''].filter(Boolean).join(' · ');
+  const eig = m.eignung ? '★'.repeat(m.eignung) + '☆'.repeat(Math.max(0, 5 - m.eignung)) + ` (${m.eignung}/5)` : '';
+  return `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:7px">
+    ${row('Website', web)}${row('E-Mail', mail)}${row('Telefon', escHtml(tel))}${row('Adresse', escHtml(m.adresse || ''))}${row('Eignung', eig)}
+    ${m.hinweis ? `<div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;font-size:14px;line-height:1.5;color:var(--text)"><div style="color:var(--dim);font-size:13px;margin-bottom:3px">Prüfbefund${m.geprueft ? ' · geprüft ' + escHtml(m.geprueft) : ''}</div>${escHtml(m.hinweis)}</div>` : ''}
+  </div>`;
+}
+
 function maklerOpenNotiz(id) {
   if (!_maklerData) return;
   const allMakler = _maklerData.regionen.flatMap(r => r.makler);
@@ -16826,13 +16842,15 @@ Chris & Renate Mandel
                   display:flex;align-items:center;justify-content:space-between">
         <div>
           <div style="font-size:16px;font-weight:700;color:#fff">${escHtml(m.firma)}</div>
-          <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:2px">${m.email ? escHtml(m.email) : (m.telefon || 'Keine Kontaktdaten')}${m.hinweis ? ' · ' + escHtml(m.hinweis) : ''}</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:2px">${m.email ? escHtml(m.email) : (m.telefon || 'Keine Kontaktdaten')}</div>
         </div>
         <button onclick="document.getElementById('makler-notiz-overlay').remove()"
           style="background:rgba(255,255,255,0.1);border:none;color:#fff;font-size:18px;cursor:pointer;border-radius:8px;padding:4px 10px">✕</button>
       </div>
 
       <div style="padding:16px 20px;display:flex;flex-direction:column;gap:14px">
+
+        ${_maklerDetailBlock(m)}
 
         <div style="display:flex;align-items:center;gap:10px">
           <label style="font-size:13px;color:var(--dim);flex-shrink:0">Status:</label>
