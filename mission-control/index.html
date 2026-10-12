@@ -3105,6 +3105,18 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
             <button onclick="loadAurora2()" style="padding:7px 16px;background:rgba(236,72,153,0.15);border:1px solid rgba(236,72,153,0.4);border-radius:8px;color:#ec4899;font-size:13px;cursor:pointer">↻ Laden</button>
           </div>
 
+          <details id="aurora2-fp-karte" open style="background:rgba(99,102,241,0.07);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:4px 16px;margin-bottom:16px">
+            <summary style="cursor:pointer;font-size:15px;font-weight:700;color:var(--bright);padding:10px 0">🛠️ Verbesserungsläufe — was Bolla im Hintergrund am Text macht <span id="aurora2-fp-stand" style="font-size:13px;font-weight:400;color:var(--dim)"></span></summary>
+            <div style="font-size:14px;color:var(--text);line-height:1.7;padding:0 0 12px">
+              <div style="margin-bottom:8px"><b>Ziel:</b> Man soll die Figuren <b>mögen</b> und mit ihnen mitfühlen — keine Figur langweilig, spröde oder abstoßend. Macken bleiben, werden aber menschlich-verständlich gezeigt; Humor ist Zuneigung, nie Spott.</div>
+              <div style="margin-bottom:6px"><b>R1 · Figuren-Pass</b> — Kap. 13–24: ca. 6–8 kleine Eingriffe pro Kapitel <b>direkt im Text</b> (ohne Markierung). Kap. 1–12 (R1e): je 2 <span style="color:#60a5fa;font-weight:600">blau markierte Vorschläge</span> — nichts tun heißt: bleiben drin; du kannst sie ablehnen.</div>
+              <div style="margin-bottom:6px"><b>R2 · Spannung &amp; Humor</b> — Kap. 13–24: Tempo, Cliffhanger-Sog, Humor-Wüsten; dabei auch Daten-/Zahlenfehler korrigiert. Nichts wieder glätten, was Wärme erzeugt.</div>
+              <div style="margin-bottom:6px"><b>R3 · Kontinuität</b> — Kap. 13–24: Prüfung nach der Überarbeitung (Zahlen, Daten, Uhrzeiten, wer-weiß-was, Wortwiederholungen in den neuen Stellen).</div>
+              <div style="margin-bottom:8px"><b>R4 · Messung</b> — Kap. 1–24: Leser-Panel vorher/nachher; ändert nichts, misst nur.</div>
+              <div style="color:var(--dim);font-size:13px"><b>Tabu:</b> Plot, Zahlen, Daten, Cliffhanger-Enden. Jede Änderung mit Backup + Protokoll. &nbsp;·&nbsp; <b>Kennzeichnung links in der Kapitelliste:</b> <span style="color:#22c55e">R1 ✓</span> erledigt · <span style="color:var(--dim)">R3 ⏳</span> noch offen · <span style="color:#60a5fa">✎ 2 Vorschläge</span> (blau im Text).</div>
+            </div>
+          </details>
+
           <div style="display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start">
             <!-- Linke Spalte: Kriterien (kurz) + Figuren + Kapitel -->
             <div style="display:flex;flex-direction:column;gap:14px">
@@ -12218,6 +12230,8 @@ async function loadAurora2() {
       </details>`;
     }).join('');
 
+    const fpStandEl = document.getElementById('aurora2-fp-stand');
+    if (fpStandEl) fpStandEl.textContent = data.figurenpass && data.figurenpass.stand ? '· Stand ' + data.figurenpass.stand : '';
     aurora2RenderFiguren(data);
     aurora2RenderKapitelListe();
     aurora2RenderGlossar();
@@ -12456,6 +12470,32 @@ function aurora2RenderInhaltMitLesemarke(text, lesemarkeKey, opts) {
   else if (markEl) setTimeout(() => markEl.scrollIntoView({block: 'center'}), 30);
 }
 
+// Verbesserungslaeufe (Figuren-Pass): Status je Kapitel aus /api/aurora2 -> figurenpass
+function aurora2FpStatus(n) {
+  const fp = (_aurora2Data && _aurora2Data.figurenpass) || null;
+  if (!fp) return null;
+  const has = (arr) => (arr || []).includes(n);
+  if (n >= 13) return { typ: 'direkt', r1: has(fp.r1), r2: has(fp.r2), r3: has(fp.r3), r4: has(fp.r4) };
+  return { typ: 'einschub', r1e: has(fp.r1e), r4: has(fp.r4) };
+}
+function aurora2FpBadges(n) {
+  const s = aurora2FpStatus(n);
+  if (!s) return '';
+  const pill = (txt, ok) => `<span style="font-size:12px;font-weight:600;margin-right:7px;color:${ok ? '#22c55e' : 'var(--dim)'}">${txt} ${ok ? '✓' : '⏳'}</span>`;
+  let h = '';
+  if (s.typ === 'direkt') h = pill('R1', s.r1) + pill('R2', s.r2) + pill('R3', s.r3);
+  else h = `<span style="font-size:12px;font-weight:600;color:${s.r1e ? '#60a5fa' : 'var(--dim)'}">✎ ${s.r1e ? '2 Vorschläge (blau)' : 'Vorschläge ⏳'}</span>`;
+  return `<div style="margin-top:2px;font-weight:400">${h}</div>`;
+}
+function aurora2FpZeile(n) {
+  const s = aurora2FpStatus(n);
+  if (!s) return '';
+  const ok = (b) => b ? '<span style="color:#22c55e">✓ erledigt</span>' : '<span style="color:var(--dim)">⏳ noch offen</span>';
+  if (s.typ === 'direkt')
+    return `🛠️ Verbesserungsstand: R1 Figuren-Pass ${ok(s.r1)} · R2 Spannung/Humor ${ok(s.r2)} · R3 Kontinuität ${ok(s.r3)} <span style="color:var(--dim)">— Änderungen sind direkt im Text, nicht markiert</span>`;
+  return `🛠️ Verbesserungsstand: R1 Figuren-Pass als <span style="color:#60a5fa">blaue Vorschläge</span> ${s.r1e ? '<span style="color:#22c55e">✓ eingefügt</span>' : '<span style="color:var(--dim)">⏳ noch offen</span>'} <span style="color:var(--dim)">— im Text blau markiert; nichts tun = bleibt drin</span>`;
+}
+
 function aurora2RenderKapitelListe() {
   const kl = document.getElementById('aurora2-kapitel-liste');
   if (!kl || !_aurora2Data) return;
@@ -12465,7 +12505,7 @@ function aurora2RenderKapitelListe() {
     ? kapitel.map((kap,i) => {
         const aktiv = i === _aurora2AktivIdx;
         const marke = lesemarken[kap.titel] ? ` <span title="Letzte Position: ${aurora2Esc(lesemarken[kap.titel].datum||'')}">📍</span>` : '';
-        return `<div onclick="aurora2ZeigeKapitel(${i})" style="padding:7px 9px;cursor:pointer;font-size:13px;border-radius:7px;margin-bottom:3px;${aktiv?'background:rgba(236,72,153,0.18);color:#ec4899;font-weight:600;border:1px solid rgba(236,72,153,0.4)':'color:var(--text);border:1px solid transparent'}" onmouseover="if(${i}!==_aurora2AktivIdx)this.style.background='rgba(255,255,255,0.04)'" onmouseout="if(${i}!==_aurora2AktivIdx)this.style.background=''">📄 ${kap.titel||'Kapitel '+(i+1)}${marke}</div>`;
+        return `<div onclick="aurora2ZeigeKapitel(${i})" style="padding:7px 9px;cursor:pointer;font-size:13px;border-radius:7px;margin-bottom:3px;${aktiv?'background:rgba(236,72,153,0.18);color:#ec4899;font-weight:600;border:1px solid rgba(236,72,153,0.4)':'color:var(--text);border:1px solid transparent'}" onmouseover="if(${i}!==_aurora2AktivIdx)this.style.background='rgba(255,255,255,0.04)'" onmouseout="if(${i}!==_aurora2AktivIdx)this.style.background=''">📄 ${kap.titel||'Kapitel '+(i+1)}${marke}${aurora2FpBadges(i+1)}</div>`;
       }).join('')
     : '<span style="color:var(--dim)">Noch keine Kapitel</span>';
   const vsItem2 = document.getElementById('aurora2-vorspann-item');
@@ -12606,6 +12646,14 @@ function aurora2ZeigeKapitel(idx, opts) {
   if (it) it.textContent = kap.titel || 'Kapitel ' + (idx+1);
   const marke2 = _aurora2Data.lesemarken && _aurora2Data.lesemarken[kap.titel];
   if (im) im.textContent = `${(kap.text||'').split(/\s+/).filter(Boolean).length} Wörter${kap.datum?' · '+kap.datum:''}${marke2 ? ' · 📍 zuletzt hier: '+marke2.datum : ''}`;
+  let fpEl = document.getElementById('aurora2-fp-zeile');
+  if (!fpEl && it && it.parentElement) {
+    fpEl = document.createElement('div');
+    fpEl.id = 'aurora2-fp-zeile';
+    fpEl.style.cssText = 'font-size:13px;line-height:1.6;margin:6px 0 10px;padding:7px 10px;background:rgba(99,102,241,0.07);border-radius:8px';
+    it.parentElement.insertAdjacentElement('afterend', fpEl);
+  }
+  if (fpEl) { fpEl.innerHTML = aurora2FpZeile(idx + 1); fpEl.style.display = fpEl.innerHTML ? 'block' : 'none'; }
   const recap = document.getElementById('aurora2-recap');
   const recapText = document.getElementById('aurora2-recap-text');
   if (recap && recapText) {

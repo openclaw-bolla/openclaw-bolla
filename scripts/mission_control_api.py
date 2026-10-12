@@ -8142,6 +8142,25 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                     with open(f) as fh:
                         _a2_pub = json.load(fh)
                     _a2_pub.pop("geheim", None)
+                    # Verbesserungslaeufe (Figuren-Pass) live aus dessen state.json: R1/R1e/R2/R3/R4 je Kapitel
+                    try:
+                        _fp_state = os.path.join(WORKSPACE, "scratch/aurora_samstag_figurenpass_20261011/state.json")
+                        _fp = {"r1": [], "r1e": [], "r2": [], "r3": [], "r4": [], "stand": ""}
+                        if os.path.isfile(_fp_state):
+                            for _k in json.load(open(_fp_state)).get("done", []):
+                                _n = _k.rsplit(":", 1)[-1]
+                                if not _n.isdigit():
+                                    continue
+                                _n = int(_n)
+                                if _k.startswith("R1e:"): _fp["r1e"].append(_n)
+                                elif _k.startswith("R1:"): _fp["r1"].append(_n)
+                                elif _k.startswith("R4:"): _fp["r4"].append(_n)
+                                elif _k.startswith("rev:fp2:"): _fp["r2"].append(_n)
+                                elif _k.startswith("rev:fp3:"): _fp["r3"].append(_n)
+                            _fp["stand"] = datetime.fromtimestamp(os.path.getmtime(_fp_state)).strftime("%d.%m. %H:%M")
+                        _a2_pub["figurenpass"] = _fp
+                    except Exception:
+                        pass
                     self._send_json(_a2_pub)
                 else:
                     self._send_json({"titel": "AURORA II", "status": "Planung", "kriterien": {}, "kapitel": [], "kommentare": [], "naechsterSchritt": ""})

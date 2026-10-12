@@ -241,7 +241,26 @@
 
   let perSpread = 1;        // Spalten pro „Umblättern": 2 = Doppelseite, 1 = Einzelseite
   let stride = 0;           // Abstand Spaltenanfang → nächster Spaltenanfang
-  function layout() {
+
+  // Welcher Satz steht GERADE (vor einem Layoutwechsel) als Erstes sichtbar im Buch-Fenster?
+  // Wird gebraucht, weil Einzel-/Doppelbildschirm unterschiedliche Spaltenbreiten haben → der Text
+  // fließt beim Umschalten komplett neu, dieselbe Seitenzahl zeigt danach auf ganz anderen Text.
+  function findAnchorSpan() {
+    const book = $('book'), txt = $('text');
+    if (!book || !txt) return null;
+    const spans = txt.querySelectorAll('span.s');
+    if (!spans.length) return null;
+    const bookLeft = book.getBoundingClientRect().left;
+    for (const sp of spans) {
+      const r = sp.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) continue;   // in einer fernen, nicht gerenderten Spalte
+      if (r.right > bookLeft + 1) return sp;            // erster Satz, der noch nicht durchgescrollt ist
+    }
+    return spans[0];
+  }
+
+  function layout(keepAnchor = true) {
+    const anchor = keepAnchor ? findAnchorSpan() : null;   // VOR jeder Größenänderung einfangen
     const pad = 28;
     const segs = getSegments();
     const dual = !!segs;
@@ -282,7 +301,20 @@
     else { $('tapR').style.left = 'auto'; $('tapR').style.right = '0'; }
     const cols = Math.max(1, Math.round((t.scrollWidth + gap) / stride));
     steps = Math.max(1, Math.ceil(cols / perSpread));
-    goSpread(Math.min(spread, steps - 1), false);
+    let target = spread;
+    if (anchor) {
+      // Text liegt nach den neuen Spaltenmaßen schon fertig geflossen da — nur noch messen, WO
+      // der gemerkte Satz jetzt steht (bei transform:0, damit die Messung nicht vom alten
+      // Scroll-Versatz verzerrt wird), und daraus die passende Doppel-/Einzelseite ableiten.
+      const oldTransform = t.style.transform, oldTransition = t.style.transition;
+      t.style.transition = 'none'; t.style.transform = 'translateX(0)';
+      const bookLeft = $('book').getBoundingClientRect().left;
+      const r = anchor.getBoundingClientRect();
+      const colIndex = Math.max(0, Math.round((r.left - bookLeft - left) / stride));
+      target = Math.floor(colIndex / perSpread);
+      t.style.transform = oldTransform; t.style.transition = oldTransition;
+    }
+    goSpread(Math.min(target, steps - 1), false);
   }
 
   function goSpread(n, animate = true) {
@@ -319,7 +351,7 @@
       if (sp) { sp.classList.add('pend'); sp.dataset.mid = m.id; }
     });
     if (resetSpread) spread = 0;
-    requestAnimationFrame(layout);
+    requestAnimationFrame(() => layout(false));   // frischer Kapitelaufbau: Zielseite ist schon bekannt (0 oder gespeichert), kein Anker nötig
   }
 
   /* ---------- Blättern ---------- */
