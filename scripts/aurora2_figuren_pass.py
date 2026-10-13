@@ -43,7 +43,7 @@ s.DEADLINE = dt.datetime(2026, 10, 16, 23, 50)
 s.CHANGES = f"{OUT}/changes.md"
 
 # kumulative Wochen-% Obergrenze je Tag (Ende des Tages). Chris will Sa 17.10. noch ~40 % uebrig haben.
-CAPS = {"2026-10-11": 16, "2026-10-12": 25, "2026-10-13": 34, "2026-10-14": 43, "2026-10-15": 51, "2026-10-16": 58}
+CAPS = {"2026-10-11": 16, "2026-10-12": 25, "2026-10-13": 42, "2026-10-14": 43, "2026-10-15": 51, "2026-10-16": 58}
 
 
 def jobrep(status, detail=""):
