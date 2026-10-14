@@ -1638,13 +1638,13 @@ def summarize_immo_news(title, summary_text):
 _IMMO_CRITERIA_DEFAULT = {
     "lage": [
         "Ort mit Gesundheitszentrum / Fitness + Sauna",
-        "Großraum München West (Ammersee / Starnberg) – nicht München",
+        "Lage: südlich der A8, zwischen Lech (Landsberg–Füssen) und Bad Tölz/Holzkirchen, bis Garmisch; in München nur westliche/südwestliche Stadtteile (z. B. Pasing)",
         "Einkaufsmöglichkeiten / Bäcker",
     ],
     "objekt": [
         "Penthouse inkl. Terrasse Südlage",
         "Neubau – oder günstig + Renovierung",
-        "ca. 100 qm",
+        "ca. 100 qm (ohne Terrasse)",
         "4 Zimmer (3,5)",
         "Max. 3-stöckig – keine Nachbar-Einsicht auf Terrasse",
         "Fußbodenheizung – Wärmepumpe / Fernwärme",

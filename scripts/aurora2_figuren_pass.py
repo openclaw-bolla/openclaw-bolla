@@ -39,11 +39,11 @@ Stop = s.Stop
 DESKTOP = "/mnt/d/OneDrive/Desktop"
 REPORT = f"{DESKTOP}/AURORA_II_Figuren_Pass.html"
 JOB = "aurora2_figuren_pass"
-s.DEADLINE = dt.datetime(2026, 10, 16, 23, 50)
+s.DEADLINE = dt.datetime(2026, 10, 16, 19, 0)
 s.CHANGES = f"{OUT}/changes.md"
 
 # kumulative Wochen-% Obergrenze je Tag (Ende des Tages). Chris will Sa 17.10. noch ~40 % uebrig haben.
-CAPS = {"2026-10-11": 16, "2026-10-12": 25, "2026-10-13": 42, "2026-10-14": 43, "2026-10-15": 51, "2026-10-16": 58}
+CAPS = {"2026-10-14": 83, "2026-10-15": 83, "2026-10-16": 83}   # Chris 14.10.: Woche bis ~83 %, 5h-Fenster max 50 %
 
 
 def jobrep(status, detail=""):
@@ -71,18 +71,18 @@ def gate():
             time.sleep(60)
             continue
         wk, fh = q.get("seven_day_pct") or 0, q.get("five_hour_pct") or 0
-        cap = CAPS.get(now.strftime("%Y-%m-%d"), 58)
-        if wk >= 58:
-            raise Stop(f"Wochen-Obergrenze 58 % erreicht ({wk} %)")
+        cap = CAPS.get(now.strftime("%Y-%m-%d"), 83)
+        if wk >= 83:
+            raise Stop(f"Wochen-Obergrenze 83 % erreicht ({wk} %)")
         if wk >= cap:
             nxt = (now + dt.timedelta(days=1)).replace(hour=0, minute=5, second=0, microsecond=0)
             sec = (nxt - now).total_seconds()
             log(f"Gate: Woche {wk} % >= Tages-Cap {cap} % — pausiere bis {nxt:%a %H:%M}")
             s.sleep_chunks(min(sec, 3600))
             continue
-        if fh >= 92:
+        if fh >= 50:
             wait = (q.get("five_hour_reset_hours") or 0) * 3600 + (q.get("five_hour_reset_minutes") or 5) * 60 + 90
-            log(f"Gate: 5h {fh} % >= 92 % — pausiere {wait // 60} Min bis Reset")
+            log(f"Gate: 5h {fh} % >= 50 % — pausiere {wait // 60} Min bis Reset")
             s.sleep_chunks(wait)
             continue
         return q

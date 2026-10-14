@@ -259,8 +259,31 @@
     return spans[0];
   }
 
+  // Fester Anker: der Satz, der bei der letzten ECHTEN Blätter-Aktion als Erstes sichtbar war.
+  // Beim Spannen feuert resize mehrfach mit Zwischenmaßen — würde jedes Mal neu gemessen, wanderte der
+  // Anker bei jedem Zwischenlayout ein Stück weg. Darum nur bei Benutzer-Navigation neu setzen.
+  let lockedAnchor = null;
+  function anchorForSpread(n) {
+    const t = $('text'), book = $('book');
+    const spans = t.querySelectorAll('span.s');
+    if (!spans.length) return null;
+    const oldT = t.style.transform, oldTr = t.style.transition;
+    t.style.transition = 'none'; t.style.transform = 'translateX(0)';
+    const bookLeft = book.getBoundingClientRect().left;
+    const left = parseFloat(t.style.left) || 0;
+    let found = spans[0];
+    for (const sp of spans) {
+      const r = sp.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) continue;
+      const ci = Math.round((r.left - bookLeft - left) / stride);
+      if (ci >= n * perSpread) { found = sp; break; }
+    }
+    t.style.transform = oldT; t.style.transition = oldTr;
+    return found;
+  }
+
   function layout(keepAnchor = true) {
-    const anchor = keepAnchor ? findAnchorSpan() : null;   // VOR jeder Größenänderung einfangen
+    const anchor = keepAnchor ? ((lockedAnchor && lockedAnchor.isConnected) ? lockedAnchor : findAnchorSpan()) : null;
     const pad = 28;
     const segs = getSegments();
     const dual = !!segs;
@@ -314,10 +337,10 @@
       target = Math.floor(colIndex / perSpread);
       t.style.transform = oldTransform; t.style.transition = oldTransition;
     }
-    goSpread(Math.min(target, steps - 1), false);
+    goSpread(Math.min(target, steps - 1), false, !!anchor);   // mit Anker: Anker behalten, nicht neu setzen
   }
 
-  function goSpread(n, animate = true) {
+  function goSpread(n, animate = true, keepLock = false) {
     spread = Math.max(0, Math.min(n, steps - 1));
     localStorage.setItem('a2_pos', JSON.stringify({ kap: kapIdx, spread }));   // aktuelle Seite merken
     clearSel();
@@ -327,6 +350,7 @@
     $('pageInfo').textContent = `${kapTitel()} · ${spread + 1} / ${steps}`;
     $('btnPrev').disabled = spread === 0;
     $('btnNext').disabled = spread >= steps - 1;
+    if (!keepLock) lockedAnchor = anchorForSpread(spread);
   }
   function kapTitel() { return buch && buch.kapitel && buch.kapitel[kapIdx] ? buch.kapitel[kapIdx].titel.split(':')[0].slice(0, 28) : ''; }
 

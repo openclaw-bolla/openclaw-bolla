@@ -49,11 +49,11 @@ DESKTOP = "/mnt/d/OneDrive/Desktop"
 log = s.log
 Stop = s.Stop
 
-CRITERIA = ("Käufer: Chris & Renate Mandel (Anfang 70/60, Rentner), Suche frühestens Herbst 2027, kein Zeitdruck. "
+CRITERIA = ("Käufer: Chris & Renate Mandel (Anfang 70/60, Rentner), Suche frühestens Herbst 2027 (evtl. Herbst 2028), kein Zeitdruck. "
             "Gesucht: Eigentumswohnung ca. 100 qm, 3,5-4 Zimmer, Penthouse/Dachgeschoss mit Südterrasse, max. 3-stöckig, "
             "Neubau oder günstig + Renovierung, Tiefgarage mit Ladestation, Ort mit Gesundheitszentrum/Fitness+Sauna. "
             "Regionen: Ammersee (Herrsching, Dießen), Starnberg/Starnberger See, Landsberg, Weilheim, Fürstenfeldbruck, "
-            "Gilching, westliche Peripherie (Germering, Puchheim) — nicht München Stadt.")
+            "Gilching, westliche Peripherie (Germering, Puchheim) — plus München-Stadt nur West/Südwest-Stadtteile (Pasing, Aubing, Laim …). Suchgebiet laut Karte config/immo_suchgebiet_karte.png: Augsburg-Süd/Landsberg/Schongau/Füssen (West), Garmisch/Mittenwald (Süd), Bad Tölz/Holzkirchen/Unterhaching (Ost), A8 (Nord). NICHT Memmingen/Kempten/Sonthofen/Allgäu.")
 
 
 def telegram(msg):
