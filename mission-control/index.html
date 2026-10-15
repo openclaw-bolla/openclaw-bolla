@@ -8717,7 +8717,8 @@ async function loadRobin() {
         <div style="font-size:13px;color:var(--dim)">Ansprechpartner Ulm: Zulassungs- &amp; Verteilungsverfahren PJ, Christoph Burkhard, ☎ +49 731 50-24444 · Portal: pj-portal.de</div>`);
 
     const diss = card('Dissertation &amp; Paper', '📚', `
-        ${box('Thema', 'Veränderungen neutrophiler Granulozyten als Diagnose- und Prognosewerkzeug von TRAKI während kardiochirurgischer Eingriffe (CSA-AKI)')}
+        ${box('Dissertation (aktueller Titel)', '<i>Perioperative neutrophil reprogramming and plasma biomarker signatures in cardiac surgery-associated acute kidney injury: a prospective observational study in aortic valve replacement with cardiopulmonary bypass</i>')}
+        ${box('Paper', '<i>Early neutrophil reprogramming and multivariate plasma biomarker signatures in cardiac surgery-associated acute kidney injury: an exploratory cohort study</i> — Erstautor Robin Mandel, Letztautorin R. Halbgebauer')}
         <div style="display:flex;flex-direction:column;gap:6px;font-size:15px;color:var(--bright)">
           <div>✅ Entwurf Dissertation + Paper (EN) fertig <span style="color:var(--dim)">· 07.10.</span></div>
           <div>✅ Rechtschreib-/Format-Durchsicht als Word erstellt <span style="color:var(--dim)">· 07.10.</span></div>
@@ -15226,13 +15227,8 @@ function _maklerRenderList(data) {
     let ub = document.getElementById('makler-unzustellbar');
     const rl = data.unzustellbar || [];
     if (!ub) { ub = document.createElement('div'); ub.id = 'makler-unzustellbar'; list.parentNode.insertBefore(ub, list); }
-    ub.innerHTML = rl.length ? `<div style="background:rgba(248,113,113,0.12);border:2px solid #f87171;border-radius:12px;padding:12px 16px;margin-bottom:14px">
-      <div style="font-size:16px;font-weight:700;color:#f87171;margin-bottom:8px">⚠️ ${rl.length} Rückläufer – Mail unzustellbar</div>
-      ${rl.map(x => `<div style="font-size:14px;line-height:1.5;padding:6px 0;border-top:1px solid rgba(248,113,113,0.25)">
-        <b>${escHtml(x.firma)}</b> <span style="color:var(--dim)">· ${escHtml(x.ort || '')} · ${escHtml(x.datum || '')}</span><br>
-        <span style="color:#fca5a5">${escHtml(x.adresse)}</span> — ${escHtml(x.grund)}<br>
-        <span style="color:var(--dim)">→ ${escHtml(x.folge || '')}</span></div>`).join('')}
-    </div>` : '';
+    const _q = (data.resend_queue || []).length;
+    ub.innerHTML = rl.length ? `<div style="font-size:14px;color:var(--dim);margin-bottom:10px">📭 ${rl.length} Rückläufer automatisch erledigt${_q ? ` · ${_q} Ersatz-Adressen warten auf Neuversand` : ''}</div>` : '';
   }
 
   // Statistik für Projektkarte

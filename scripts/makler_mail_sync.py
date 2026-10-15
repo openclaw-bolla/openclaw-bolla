@@ -48,12 +48,23 @@ def main():
                 if fid: return
         find_folder(f"{G}/me/mailFolders?$top=100")
         msgs = []
-        for folder in ("inbox", "deleteditems"):
+        for folder in ("inbox", "deleteditems", "junkemail"):
             u = (f"{G}/me/mailFolders/{folder}/messages?$top=100&$orderby=receivedDateTime desc"
-                 f"&$select=id,subject,from,receivedDateTime,body&$filter=receivedDateTime ge {SINCE}")
+                 f"&$select=id,subject,from,receivedDateTime,body,conversationId&$filter=receivedDateTime ge {SINCE}")
             msgs += [(folder, x) for x in requests.get(u, headers=H).json().get("value", [])]
-        n_reply = n_bounce = n_moved = 0
+        sent = {}
+        su = (f"{G}/me/mailFolders/sentitems/messages?$top=100&$orderby=sentDateTime desc"
+              f"&$select=conversationId,sentDateTime&$filter=sentDateTime ge {SINCE}")
+        for x in requests.get(su, headers=H).json().get("value", []):
+            c = x.get("conversationId")
+            if c and x.get("sentDateTime", "") > sent.get(c, ""): sent[c] = x["sentDateTime"]
+        n_reply = n_bounce = n_moved = n_spam = 0
         for folder, m in msgs:
+            if folder == "inbox" and fid and sent.get(m.get("conversationId"), "") > m.get("receivedDateTime", "~"):
+                frm0 = ((m.get("from") or {}).get("emailAddress") or {}).get("address", "").lower()
+                if (by_email.get(frm0) or by_dom.get(frm0.split("@")[-1])) and not frm0.startswith(BOUNCE_FROM):
+                    requests.post(f"{G}/me/messages/{m['id']}/move", headers=H, json={"destinationId": fid}); n_moved += 1
+                    done.add(m["id"]); continue
             if m["id"] in done: continue
             frm = ((m.get("from") or {}).get("emailAddress") or {}).get("address", "").lower()
             subj = m.get("subject") or ""
@@ -77,8 +88,11 @@ def main():
                 if fid:
                     requests.post(f"{G}/me/messages/{m['id']}/move", headers=H, json={"destinationId": fid}); n_moved += 1
                 done.add(m["id"]); continue
-            if folder != "inbox": continue
+            if folder not in ("inbox", "junkemail"): continue
             hit = by_email.get(frm) or by_dom.get(frm.split("@")[-1])
+            if folder == "junkemail":
+                if not hit: continue  # fremder Spam bleibt liegen
+                requests.post(f"{G}/me/messages/{m['id']}/move", headers=H, json={"destinationId": "inbox"}); n_spam += 1
             if hit:
                 r, mk = hit
                 cur = d["statuses"].get(mk["id"], {}).get("status")
@@ -92,8 +106,8 @@ def main():
         st["done"] = sorted(done)[-1500:]; st["last"] = datetime.datetime.now().isoformat(timespec="seconds")
         json.dump(st, open(STATE, "w"))
         report("makler-mail-sync", "Makler-Mail-Sync", "ok",
-               f"{n_reply} neue Antworten, {n_bounce} Rückläufer, {n_moved} nach '{FOLDER_NAME}' verschoben")
-        print(n_reply, n_bounce, n_moved)
+               f"{n_reply} neue Antworten, {n_bounce} Rückläufer, {n_moved} nach '{FOLDER_NAME}' verschoben, {n_spam} aus Spam ins Postfach")
+        print(n_reply, n_bounce, n_moved, n_spam)
     except Exception as e:
         report("makler-mail-sync", "Makler-Mail-Sync", "fehler", str(e)[:200]); raise
 
