@@ -98,6 +98,9 @@ def sleep_chunks(sec):
         time.sleep(min(30, max(1, end - time.time())))
 
 
+WEEK_STOP = 98.5   # Wochen-Grenze in %, vom Aufrufer überschreibbar
+
+
 def gate():
     fails = 0
     while True:
@@ -114,7 +117,7 @@ def gate():
             time.sleep(60)
             continue
         wk, fh = q.get("seven_day_pct") or 0, q.get("five_hour_pct") or 0
-        if wk >= 98.5:
+        if wk >= WEEK_STOP:
             raise Stop(f"Wochenkontingent ausgereizt ({wk} %)")
         lim = 92   # Chris: 5h-Fenster bis ~92 % ausreizen, nie weiter — er soll immer Luft haben
         if fh >= lim:

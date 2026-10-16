@@ -36,6 +36,7 @@ try:
 except Exception:
     job_status = None
 
+s.WEEK_STOP = float(os.environ.get("AUSREIZEN_WEEK_STOP", "95"))   # Chris 16.10.: Woche nur bis ~95 % (max. 2 Fenster à ~7 %)
 s.DEADLINE = dt.datetime.fromisoformat(os.environ.get("AUSREIZEN_DEADLINE", "2026-10-17T23:50:00"))
 OUT, log, Stop = s.OUT, s.log, s.Stop
 DRAFTS = f"{W}/scratch/aurora_samstag_wochenende_20261009"

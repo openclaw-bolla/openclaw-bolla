@@ -7892,6 +7892,31 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 pid = dict(_up.parse_qsl(_up.urlparse(self.path).query)).get("id","")
                 self._send_json(projekte_delete(pid) if pid else {"error": "Kein id"}); return
 
+            # "Fertig"-Button in Word-Dateien (Chris 16.10.2026): Klick -> Job auf ok, Log fuer Bolla
+            if self.path.startswith("/api/fertig"):
+                import urllib.parse as _up, json as _fj, datetime as _fd
+                _q = dict(_up.parse_qsl(_up.urlparse(self.path).query))
+                _jid = _q.get("id", "")[:80]
+                if not _jid:
+                    self._send_json({"error": "Kein id"}, status=400); return
+                _js = __import__("job_status")
+                _old = _js._load().get(_jid, {})
+                _js.report(_jid, _old.get("title") or _q.get("titel", _jid), "ok",
+                           "von Chris als fertig markiert " + _fd.datetime.now().strftime("%d.%m. %H:%M"), notify=False)
+                _lf = os.path.expanduser("~/workspace/data/fertig_log.json")
+                try:
+                    _l = _fj.load(open(_lf, encoding="utf-8"))
+                except Exception:
+                    _l = []
+                _l.append({"id": _jid, "ts": _fd.datetime.now().isoformat(timespec="seconds"), "gesehen": False})
+                _fj.dump(_l, open(_lf, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+                _b = ("<html><meta charset='utf-8'><body style='font-family:Segoe UI,Arial;font-size:22px;padding:40px;background:#0b1020;color:#e6edf3'>"
+                      "<h2>✅ Danke – ist vermerkt 🐾</h2><p>Bolla weiß Bescheid. Du kannst dieses Fenster schließen.</p></body></html>").encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(_b)))
+                self.end_headers(); self.wfile.write(_b); return
+
             # Chart Preview (iTunes)
             if self.path.startswith("/api/charts/preview"):
                 import urllib.parse as _cup, urllib.request as _cur2, re as _re_p
