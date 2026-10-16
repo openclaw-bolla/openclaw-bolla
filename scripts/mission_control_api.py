@@ -7864,6 +7864,7 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 "/api/immo-criteria":  get_immo_criteria,
                 "/api/crontab":        get_crontab,
                 "/api/jobs":           lambda: __import__("job_status").snapshot(),
+                "/api/offen":          lambda: json.load(open(os.path.expanduser("~/workspace/data/offene_punkte.json"), encoding="utf-8")),
                 "/api/travel":         get_travel,
                 "/api/amadeus/config": amadeus_get_config,
                 "/api/photos/status":  lambda: dict(_photo_job),
@@ -7902,13 +7903,13 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 _js = __import__("job_status")
                 _old = _js._load().get(_jid, {})
                 _js.report(_jid, _old.get("title") or _q.get("titel", _jid), "ok",
-                           "von Chris als fertig markiert " + _fd.datetime.now().strftime("%d.%m. %H:%M"), notify=False)
+                           {"alle_uebernehmen": "ENTSCHEIDUNG: ALLES ÜBERNEHMEN", "alle_lassen": "ENTSCHEIDUNG: ALLES LASSEN (nichts ändern)"}.get(_q.get("aktion", ""), "von Chris als fertig markiert") + " " + _fd.datetime.now().strftime("%d.%m. %H:%M"), notify=False)
                 _lf = os.path.expanduser("~/workspace/data/fertig_log.json")
                 try:
                     _l = _fj.load(open(_lf, encoding="utf-8"))
                 except Exception:
                     _l = []
-                _l.append({"id": _jid, "ts": _fd.datetime.now().isoformat(timespec="seconds"), "gesehen": False})
+                _l.append({"id": _jid, "aktion": _q.get("aktion", "fertig"), "ts": _fd.datetime.now().isoformat(timespec="seconds"), "gesehen": False})
                 _fj.dump(_l, open(_lf, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
                 _b = ("<html><meta charset='utf-8'><body style='font-family:Segoe UI,Arial;font-size:22px;padding:40px;background:#0b1020;color:#e6edf3'>"
                       "<h2>✅ Danke – ist vermerkt 🐾</h2><p>Bolla weiß Bescheid. Du kannst dieses Fenster schließen.</p></body></html>").encode("utf-8")
@@ -9716,6 +9717,14 @@ Antworte NUR als reines JSON: {{"improved_prompt": "..."}}"""
                     self._send_json(append_clipboard(text, source=body.get("source", "manual")))
                 else:
                     self._send_json(save_clipboard(text))
+            elif self.path == "/api/offen/toggle":
+                _of = os.path.expanduser("~/workspace/data/offene_punkte.json")
+                _l = json.load(open(_of, encoding="utf-8"))
+                for _e in _l:
+                    if _e["id"] == str(body.get("id", "")):
+                        _e["erledigt"] = not _e.get("erledigt", False)
+                json.dump(_l, open(_of, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+                self._send_json({"ok": True})
             elif self.path == "/api/jobs/dismiss":
                 self._send_json(__import__("job_status").dismiss(str(body.get("id", ""))))
             elif self.path == "/api/clipboard/delete":

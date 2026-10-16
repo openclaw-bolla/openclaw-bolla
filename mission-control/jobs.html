@@ -51,6 +51,7 @@ async function dismiss(id){
   try{await fetch("/api/jobs/dismiss",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});}catch(e){}
   load();
 }
+async function tog(id){try{await fetch("/api/offen/toggle",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});}catch(e){}load();}
 async function load(manual){
   const st=document.getElementById("stand");
   if(manual)st.textContent="lädt…";
@@ -60,11 +61,15 @@ async function load(manual){
     const attn=J.filter(j=>j.status==="fehler"||j.status==="aktion");
     const run=J.filter(j=>j.status==="laeuft");
     const done=J.filter(j=>j.status==="ok").slice(0,15);
+    let O=[];try{O=await (await fetch("/api/offen",{cache:"no-store"})).json();}catch(e){}
+    const gr={};O.forEach(o=>{(gr[o.gruppe]=gr[o.gruppe]||[]).push(o);});
+    const offenHtml=`<h2>📌 Offen – Gesamtübersicht (${O.filter(o=>!o.erledigt).length} offen)</h2>`+Object.keys(gr).map(g=>`<div class="d" style="margin:10px 0 2px"><b>${esc(g)}</b></div>`+gr[g].map(o=>`<div class="row ${o.erledigt?"ok":"aktion"}" style="cursor:pointer" onclick="tog('${esc(o.id)}')"><div class="t">${o.erledigt?"☑":"☐"} <span style="${o.erledigt?"text-decoration:line-through;opacity:.6":""}">${esc(o.titel)}</span></div><div class="d">${esc(o.detail)}</div></div>`).join("")).join("");
     const up=(d.upcoming||[]).map(u=>`<div class="row"><div class="top"><span class="t">⏳ ${esc(u.title)}</span><span class="w">${fmt(u.when)}</span></div></div>`);
     document.getElementById("out").innerHTML=
       section("Braucht dich",attn.map(j=>jobRow(j,true)),"Nichts – alles ruhig 👌")+
       section("Läuft gerade",run.map(jobRow),"Nichts läuft.")+
       section("Steht an",up,"Nichts Geplantes in den nächsten 14 Tagen.")+
+      offenHtml+
       section("Zuletzt erledigt",done.map(jobRow),"Noch nichts eingetragen.");
     document.getElementById("stand").textContent="Stand "+fmt(d.now)+":"+String(new Date(d.now).getSeconds()).padStart(2,"0");
   }catch(e){document.getElementById("stand").textContent="Server nicht erreichbar";}
