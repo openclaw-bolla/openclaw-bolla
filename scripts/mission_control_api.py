@@ -2626,6 +2626,14 @@ def get_sos_contacts():
             return json.load(f)
     return {"contacts": [], "medical": {}}
 
+def get_sos_contacts_reni():
+    """SOS-Kontakte für Renis SOS-App (/sos)."""
+    cfg_file = os.path.join(WORKSPACE, "config/sos_contacts_reni.json")
+    if os.path.exists(cfg_file):
+        with open(cfg_file) as f:
+            return json.load(f)
+    return {"contacts": [], "medical": {}}
+
 # ── Bolla Chat-Verlauf ───────────────────────────────────────────────────────
 CHAT_HISTORY_FILE = os.path.join(WORKSPACE, "data/chat_history.json")
 CHAT_HISTORY_MAX = 30
@@ -7430,6 +7438,11 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 "/aurora.html":              ("aurora-reader.html",     "text/html; charset=utf-8", "no-store"),
                 "/manifest.webmanifest":     ("manifest.webmanifest",   "application/manifest+json", "max-age=3600"),
                 "/aurora.webmanifest":       ("aurora.webmanifest",     "application/manifest+json", "no-store"),
+                "/sos":                      ("sos.html",               "text/html; charset=utf-8", "no-store"),
+                "/sos.webmanifest":          ("sos.webmanifest",        "application/manifest+json", "no-store"),
+                "/sos-icon-192.png":         ("sos-icon-192.png",       "image/png", "max-age=604800"),
+                "/sos-icon-512.png":         ("sos-icon-512.png",       "image/png", "max-age=604800"),
+                "/sos-apple-touch.png":      ("sos-apple-touch.png",    "image/png", "max-age=604800"),
                 "/sw.js":                    ("sw.js",                  "application/javascript", "no-store"),
                 "/mc-icon-192.png":          ("mc-icon-192.png",        "image/png", "max-age=604800"),
                 "/mc-icon-512.png":          ("mc-icon-512.png",        "image/png", "max-age=604800"),
@@ -7872,6 +7885,7 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 "/api/photos/config":  get_lmstudio_config,
                 "/api/quicknotes":     get_quicknotes,
                 "/api/sos/contacts":   get_sos_contacts,
+                "/api/sos/contacts-reni": get_sos_contacts_reni,
                 "/api/chat-history":   get_chat_history,
                 "/api/charts":         get_charts,
                 "/api/workshop":       get_workshop,

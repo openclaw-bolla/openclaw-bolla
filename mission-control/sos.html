@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="/sos.webmanifest">
+<link rel="apple-touch-icon" href="/sos-apple-touch.png">
+<meta name="theme-color" content="#dc2626">
+<title>SOS</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,sans-serif;background:#f2f2f7;color:#111;padding:14px;padding-bottom:40px}
+.hero{background:#dc2626;color:#fff;border-radius:18px;padding:20px;text-align:center;margin-bottom:14px}
+.hero .big{font-size:48px}.hero h1{margin:4px 0;font-size:24px}
+#addr{font-size:15px;opacity:.9;line-height:1.4}
+.call{display:block;margin-top:16px;padding:16px;background:rgba(255,255,255,.25);border-radius:12px;color:#fff;text-decoration:none;font-size:22px;font-weight:800}
+h2{font-size:16px;margin:18px 4px 8px;color:#555}
+.card{display:flex;align-items:center;gap:14px;background:#fff;border-radius:14px;padding:16px;margin-bottom:10px;text-decoration:none;color:#111;font-size:18px;font-weight:600;border:0;width:100%;text-align:left}
+.card small{display:block;font-weight:400;font-size:14px;color:#666}
+.card .e{font-size:26px}.card .r{margin-left:auto;font-size:26px}
+.btn{width:100%;padding:14px;font-size:16px;border-radius:12px;border:1px solid #ccc;background:#fff}
+#st{text-align:center;font-size:15px;min-height:22px;margin:6px 0}
+</style></head><body>
+<div class="hero"><div class="big">🆘</div><h1>Notfall</h1>
+<div id="addr">Standort wird ermittelt…</div>
+<a class="call" href="tel:112">📞 112 anrufen</a></div>
+<h2>📍 Standort per WhatsApp senden</h2>
+<div id="share">Standort wird ermittelt…</div>
+<div id="st"></div>
+<h2>Anrufen</h2>
+<div id="contacts"></div>
+<script>
+let lat=null,lon=null,contacts=[];
+const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const maps=()=>lat?`https://maps.google.com/?q=${lat},${lon}`:'';
+function share(){
+  const el=document.getElementById('share');
+  if(!lat){el.innerHTML='<div style="padding:8px;color:#666">Warte auf GPS… Standortfreigabe erlauben.</div>';return;}
+  const t=encodeURIComponent(`🆘 Notfall! Ich brauche Hilfe. Mein Standort:\n${document.getElementById('addr').textContent}\n${maps()}`);
+  const w=contacts.filter(c=>c.wa);
+  el.innerHTML=w.map(c=>`<a class="card" href="https://wa.me/${esc(c.wa)}?text=${t}"><span class="e">${c.emoji||'👤'}</span><span>${esc(c.name)}<small>Standort per WhatsApp senden</small></span><span class="r">💬</span></a>`).join('')
+   +`<button class="btn" onclick="cp()">📋 Standort-Link kopieren</button>`;
+}
+async function cp(){const s=document.getElementById('st');try{await navigator.clipboard.writeText(maps());s.textContent='✓ Link kopiert'}catch(e){s.textContent='Kopieren nicht möglich'}}
+(async()=>{
+  try{const d=await fetch('/api/sos/contacts-reni').then(r=>r.json());contacts=d.contacts||[];
+    document.getElementById('contacts').innerHTML=contacts.filter(c=>c.tel).map(c=>`<a class="card" href="tel:${esc(c.tel)}"><span class="e">${c.emoji||'👤'}</span><span>${esc(c.name)}<small>${esc(c.tel)}</small></span><span class="r">📞</span></a>`).join('');
+  }catch(e){}
+  if(!navigator.geolocation){share();return;}
+  navigator.geolocation.getCurrentPosition(async p=>{
+    lat=p.coords.latitude;lon=p.coords.longitude;
+    try{const n=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,{headers:{'Accept-Language':'de'}}).then(r=>r.json());
+      document.getElementById('addr').textContent=n.display_name||`${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+    }catch(e){document.getElementById('addr').textContent=`${lat.toFixed(5)}, ${lon.toFixed(5)}`}
+    share();
+  },()=>{document.getElementById('addr').textContent='Standort nicht verfügbar';share();},{enableHighAccuracy:true,timeout:15000});
+})();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+</script></body></html>
