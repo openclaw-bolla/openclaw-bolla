@@ -4,7 +4,7 @@
 # regenerierbare Rohbilder (PNG-Frames), verworfene Videos und Logs.
 B=/mnt/c/Tools/blender_proj
 Q=$B/aurora_quer
-T="/mnt/d/OneDrive/Dokumente/Bolla/AURORA II/7_Trailer_Blender"
+T="/mnt/d/OneDrive/Dokumente/Bolla/AURORA II/7_Trailer/Video"
 D=/mnt/d/OneDrive/Desktop/temp
 V5=AURORA_Partikelvideo_Quer_3min_Tunnel_v5_ohne_Ton.mp4
 [ -s "$T/$V5" ] || { echo "v5-Video fehlt im Trailer-Ordner - Abbruch"; exit 1; }

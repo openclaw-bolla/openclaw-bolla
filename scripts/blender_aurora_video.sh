@@ -19,7 +19,7 @@ if [ "$n" -ge "$TOT" ]; then
   OUT=$P/AURORA_Video_3min_ohne_Ton.mp4
   ffmpeg -y -v error -framerate 24 -i $P/frames/f_%04d.png -vf "tpad=stop_mode=clone:stop_duration=30,fade=t=in:st=0:d=2,format=yuv420p" -c:v libx264 -crf 14 -preset slow -movflags +faststart $OUT
   cp $OUT "/mnt/d/OneDrive/Desktop/temp/AURORA_Video_3min_ohne_Ton.mp4"
-  cp $OUT "/mnt/d/OneDrive/Dokumente/Bolla/AURORA II/7_Trailer_Blender/AURORA_Video_3min_ohne_Ton.mp4"
+  cp $OUT "/mnt/d/OneDrive/Dokumente/Bolla/AURORA II/7_Trailer/Video/AURORA_Video_3min_ohne_Ton.mp4"
   python3 -c "from job_status import report; report('aurora-video','AURORA-Video 3 min (Roehre, Cover I -> II)','ok','fertig in $((E-S)) s: Desktop\\\\temp\\\\AURORA_Video_3min_ohne_Ton.mp4')"
 else
   python3 -c "from job_status import report; report('aurora-video','AURORA-Video 3 min (Roehre, Cover I -> II)','fehler','nur $n von $TOT Bildern, Log C:\\\\Tools\\\\blender_proj\\\\aurora_video\\\\render.log')"

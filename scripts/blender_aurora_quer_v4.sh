@@ -19,10 +19,10 @@ E=$(date +%s)
 if [ "$n" -ge "$TOT" ]; then
   OUT=$P/$NAME
   ffmpeg -y -v error -framerate 30 -i $P/frames_v4/f_%04d.png -vf "fade=t=in:st=0:d=1.5,fade=t=out:st=178.5:d=1.5,format=yuv420p" -c:v libx264 -crf 16 -preset slow -movflags +faststart $OUT
-  DST="/mnt/d/OneDrive/Dokumente/Bolla/AURORA II/7_Trailer_Blender"; TMP=/mnt/d/OneDrive/Desktop/temp
+  DST="/mnt/d/OneDrive/Dokumente/Bolla/AURORA II/7_Trailer/Video"; TMP=/mnt/d/OneDrive/Desktop/temp
   if [ -s "$OUT" ]; then
     cp "$OUT" "$DST/$NAME"; cp "$OUT" "$TMP/$NAME"
-    /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command "foreach(\$f in 'D:\OneDrive\Dokumente\Bolla\AURORA II\7_Trailer_Blender\\$NAME','D:\OneDrive\Desktop\temp\\$NAME'){ (Get-Item \$f).LastWriteTime = Get-Date }" >/dev/null 2>&1
+    /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command "foreach(\$f in 'D:\OneDrive\Dokumente\Bolla\AURORA II\7_Trailer\Video\\$NAME','D:\OneDrive\Desktop\temp\\$NAME'){ (Get-Item \$f).LastWriteTime = Get-Date }" >/dev/null 2>&1
     python3 -c "from job_status import report; report('aurora-quer-v4','AURORA-Quervideo Tunnel v4','ok','fertig in $((E-S)) s: Desktop\\\\temp\\\\$NAME')"
   else
     python3 -c "from job_status import report; report('aurora-quer-v4','AURORA-Quervideo Tunnel v4','fehler','ffmpeg lieferte keine Datei')"

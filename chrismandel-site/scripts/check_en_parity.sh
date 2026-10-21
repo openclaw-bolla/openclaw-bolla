@@ -18,6 +18,7 @@ declare -A MAPPING=(
   ["geschichte"]="en/essay"
   ["impressum"]="en/impressum"
   ["ki-forum"]="en/dialogue"
+  ["aurora2"]="en/aurora2"
 )
 
 fail=0

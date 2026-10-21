@@ -10,8 +10,8 @@ for F in land port; do
   E=$(date +%s); n=$(ls $P/aurora_bg/$F/f_*.png 2>/dev/null | wc -l)
   if [ "$n" -ge 480 ]; then
     ffmpeg -y -v error -framerate 24 -i $P/aurora_bg/$F/f_%04d.png -c:v libx264 -pix_fmt yuv420p -crf 16 $P/aurora_bg/AURORA_Punkte_Hintergrund_$F.mp4
-    mkdir -p "/mnt/d/OneDrive/Dokumente/Bolla/AURORA II/7_Trailer_Blender"
-    cp $P/aurora_bg/AURORA_Punkte_Hintergrund_$F.mp4 "/mnt/d/OneDrive/Dokumente/Bolla/AURORA II/7_Trailer_Blender/"
+    mkdir -p "/mnt/d/OneDrive/Dokumente/Bolla/AURORA II/7_Trailer/Video"
+    cp $P/aurora_bg/AURORA_Punkte_Hintergrund_$F.mp4 "/mnt/d/OneDrive/Dokumente/Bolla/AURORA II/7_Trailer/Video/"
     cp $P/aurora_bg/AURORA_Punkte_Hintergrund_$F.mp4 /mnt/d/OneDrive/Desktop/temp/
     python3 -c "from job_status import report; report('blender-aurora-bg-$F','AURORA Punkte-Hintergrund ($F)','ok','fertig in $((E-S)) s, Desktop\\\\temp')"
   else

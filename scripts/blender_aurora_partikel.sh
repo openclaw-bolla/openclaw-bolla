@@ -18,10 +18,10 @@ E=$(date +%s)
 if [ "$n" -ge "$TOT" ]; then
   OUT=$P/AURORA_Partikelvideo_3min_hochkant_ohne_Ton.mp4
   ffmpeg -y -v error -framerate 30 -i $P/frames/f_%04d.png -vf "fade=t=in:st=0:d=1.5,fade=t=out:st=178.5:d=1.5,format=yuv420p" -c:v libx264 -crf 16 -preset slow -movflags +faststart $OUT
-  DST="/mnt/d/OneDrive/Dokumente/Bolla/AURORA II/7_Trailer_Blender"
+  DST="/mnt/d/OneDrive/Dokumente/Bolla/AURORA II/7_Trailer/Video"
   cp $OUT "$DST/"; cp $OUT /mnt/d/OneDrive/Desktop/temp/
-  /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command "(Get-Item 'D:\OneDrive\Dokumente\Bolla\AURORA II\7_Trailer_Blender\AURORA_Partikelvideo_3min_hochkant_ohne_Ton.mp4').LastWriteTime = Get-Date" >/dev/null 2>&1
-  python3 -c "from job_status import report; report('aurora-partikel','AURORA-Partikelvideo 3 min hochkant','ok','fertig in $((E-S)) s: Desktop\\\\temp + Bolla\\\\AURORA II\\\\7_Trailer_Blender')"
+  /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command "(Get-Item 'D:\OneDrive\Dokumente\Bolla\AURORA II\7_Trailer\Video\AURORA_Partikelvideo_3min_hochkant_ohne_Ton.mp4').LastWriteTime = Get-Date" >/dev/null 2>&1
+  python3 -c "from job_status import report; report('aurora-partikel','AURORA-Partikelvideo 3 min hochkant','ok','fertig in $((E-S)) s: Desktop\\\\temp + Bolla\\\\AURORA II\\\\7_Trailer/Video')"
 else
   python3 -c "from job_status import report; report('aurora-partikel','AURORA-Partikelvideo 3 min hochkant','fehler','nur $n von $TOT Bildern, Log C:\\\\Tools\\\\blender_proj\\\\aurora_partikel\\\\render.log')"
 fi

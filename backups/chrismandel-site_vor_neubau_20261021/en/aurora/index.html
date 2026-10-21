@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AURORA &amp; Bollawave — A Human, an AI, a Body of Work</title>
+<meta name="description" content="A 70-year-old and his AI write a thriller about an AI that wakes up — and make music together. The origin story of AURORA and Bollawave.">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/icon-32.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="alternate" hreflang="de" href="https://chrismandel.de/aurora/">
+<link rel="alternate" hreflang="en" href="https://chrismandel.de/en/aurora/">
+<link rel="alternate" hreflang="x-default" href="https://chrismandel.de/aurora/">
+<style>
+  :root{
+    --nacht:#0d1b3d; --daemmer:#3a2b5c; --glut:#8a4a6b; --morgen:#e8896b;
+    --licht:#ffd9a8; --creme:#fdf6ee; --tinte:#1a1524; --grau:#6b6478;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--tinte); background:var(--creme); line-height:1.7;
+    font-size:19px; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:0 24px}
+
+  /* HERO */
+  .hero{
+    background:linear-gradient(160deg,var(--nacht) 0%,var(--daemmer) 38%,var(--glut) 66%,var(--morgen) 88%,var(--licht) 100%);
+    color:#fff; text-align:center; padding:90px 24px 80px; position:relative; overflow:hidden;
+  }
+  .hero::after{content:""; position:absolute; left:0; right:0; bottom:0; height:120px;
+    background:linear-gradient(to top,var(--creme),transparent)}
+  .hero .back{display:inline-block; color:var(--licht); text-decoration:none; font-size:16px; margin-bottom:26px; opacity:.9; position:relative; z-index:2}
+  .hero .back:hover{opacity:1}
+  .langswitch{
+    position:absolute; top:20px; right:24px; z-index:5;
+    display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+    background:rgba(255,255,255,.14); color:#fff; font-size:14px; font-weight:600;
+    padding:7px 14px; border-radius:999px; border:1px solid rgba(255,255,255,.35);
+    backdrop-filter:blur(4px);
+  }
+  .langswitch:hover{background:rgba(255,255,255,.26)}
+  .hero .kicker{letter-spacing:.28em; text-transform:uppercase; font-size:14px; opacity:.85; margin-bottom:22px}
+  .hero h1{font-size:clamp(34px,6vw,58px); line-height:1.1; font-weight:800; margin-bottom:20px; text-shadow:0 2px 30px rgba(0,0,0,.25)}
+  .hero h1 span{background:linear-gradient(90deg,var(--licht),#fff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent}
+  .hero p.lead{font-size:clamp(18px,2.4vw,23px); max-width:600px; margin:0 auto; opacity:.95; position:relative; z-index:2}
+
+  section{padding:56px 0}
+  section.tint{background:#fff}
+  h2{font-size:clamp(26px,4vw,36px); line-height:1.15; margin-bottom:22px; color:var(--daemmer)}
+  h2 .em{color:var(--glut)}
+  p{margin-bottom:20px}
+  .big{font-size:22px}
+  .paw{color:var(--glut)}
+
+  .duo{display:flex; gap:22px; flex-wrap:wrap; margin:34px 0}
+  .duo .card{flex:1; min-width:240px; background:var(--creme); border:1px solid #eadfce; border-radius:16px; padding:26px}
+  section.tint .duo .card{background:#faf3ea}
+  .duo .card h3{font-size:21px; margin-bottom:10px; color:var(--glut)}
+  .duo .card p{font-size:17px; margin-bottom:0; color:#4a4358}
+
+  blockquote{border-left:4px solid var(--morgen); padding:6px 0 6px 26px; margin:34px 0; font-size:23px; font-style:italic; color:var(--daemmer)}
+  blockquote footer{font-style:normal; font-size:16px; color:var(--grau); margin-top:10px}
+
+  .works{display:flex; gap:26px; flex-wrap:wrap; margin-top:20px}
+  .work{flex:1; min-width:280px; border-radius:18px; overflow:hidden; border:1px solid #eadfce; background:#fff; display:flex; flex-direction:column}
+  .work .cover{position:relative; height:240px; overflow:hidden; background:#1a1524}
+  .work .cover img{width:100%; height:100%; object-fit:cover; display:block}
+  .work.book .cover img{object-position:center top}
+  .work.music .cover img{object-position:center}
+  .work .cover .cap{position:absolute; left:0; right:0; bottom:0; padding:40px 26px 16px; color:#fff;
+    background:linear-gradient(to top,rgba(13,15,30,.9),rgba(13,15,30,.4) 55%,transparent)}
+  .work .cover .cap .tag{font-size:13px; letter-spacing:.18em; text-transform:uppercase; opacity:.92}
+  .work .cover .cap h3{font-size:27px; margin:4px 0 0; text-shadow:0 1px 12px rgba(0,0,0,.6)}
+  .work .body{padding:22px 26px; font-size:17px; color:#4a4358}
+  .work .body ul{list-style:none; margin:14px 0 0}
+  .work .body li{padding:4px 0 4px 24px; position:relative}
+  .work .body li::before{content:"›"; position:absolute; left:4px; color:var(--morgen); font-weight:700}
+  .btnrow{display:flex; gap:12px; flex-wrap:wrap; padding:0 26px 26px}
+  .btn{display:inline-block; padding:11px 20px; border-radius:10px; text-decoration:none; font-weight:600; font-size:16px}
+  .btn.primary{background:var(--glut); color:#fff}
+  .btn.ghost{background:transparent; color:var(--glut); border:1.5px solid var(--glut)}
+
+  .facts{display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:30px}
+  .fact{text-align:center; padding:16px 22px; background:#fff; border-radius:14px; border:1px solid #eadfce; min-width:120px}
+  .fact .n{font-size:32px; font-weight:800; color:var(--glut); line-height:1}
+  .fact .l{font-size:14px; color:var(--grau); margin-top:6px}
+
+  .transparency{background:linear-gradient(160deg,var(--daemmer),var(--nacht)); color:#fff}
+  .transparency h2{color:#fff}
+  .transparency p{opacity:.9}
+  .essaylink{display:inline-block; margin-top:22px; padding:13px 26px; border-radius:11px;
+    background:var(--licht); color:var(--nacht); text-decoration:none; font-weight:700; font-size:17px}
+  .essaylink:hover{background:#fff}
+
+  footer.pg{text-align:center; padding:44px 24px; color:var(--grau); font-size:15px}
+  footer.pg .paw{font-size:20px}
+  a.inline{color:var(--glut); text-decoration:underline}
+  .note{background:#fff6e6; border:1px dashed #e0b070; border-radius:10px; padding:12px 16px; font-size:15px; color:#7a5a20; margin-top:18px}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <a class="langswitch" href="/aurora/">🇩🇪 DE</a>
+  <a class="back" href="/en/">← chrismandel.de</a>
+  <div class="kicker">A true origin story</div>
+  <h1>A <span>70-year-old</span> and his AI<br>wrote a thriller —<br>about an AI that wakes up.</h1>
+  <p class="lead">Chris Mandel, 38 years in IT, now a teacher in retirement. And Bolla, his AI. Together they created <strong>AURORA</strong> — 443 pages — and, under the name <strong>Bollawave</strong>, music too. This is the story behind it.</p>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2>The <span class="em">Spark</span></h2>
+    <p class="big">What happens when someone who has spent a lifetime working with machines sits down with a modern AI to write a novel — about the very question that keeps us all up at night: <em>What if an AI truly wakes up?</em></p>
+    <p>Chris has spent 38 years in IT — from Unix, C, and Fortran to today. He's not a professional writer, but a curious mind with a vision. Bolla is his personal AI assistant, a name Chris gave him himself. Out of this unusual pairing came an experiment: can a human who sets the direction, and an AI that supplies phrasing, twists, and details, write a book together that truly grips readers?</p>
+    <p>The answer is <strong>AURORA</strong>.</p>
+  </div>
+</section>
+
+<section class="tint">
+  <div class="wrap">
+    <h2>How We <span class="em">Work</span></h2>
+    <p>It's no magic trick, and no push of a button. It's craftsmanship — done by two.</p>
+    <div class="duo">
+      <div class="card">
+        <h3>Chris — the Director</h3>
+        <p>Carries the vision. Invents the characters, senses what feels true and what doesn't, decides what stays and what goes. The creative brain. He wants to be surprised — and cuts without mercy when a sentence doesn't carry its weight.</p>
+      </div>
+      <div class="card">
+        <h3>Bolla — the Talent on Stage</h3>
+        <p>The gifted improv actor. Supplies sentences, images, twists — sometimes surprises that catch even the director off guard. But always in service of his vision, never around it.</p>
+      </div>
+    </div>
+    <blockquote>
+      "I'm the creative brain. Bolla is the executing talent that serves my vision — like a director and his ensemble, or a musician and his session band."
+      <footer>— Chris Mandel</footer>
+    </blockquote>
+    <p>Chapter by chapter, over weeks. Every scene discussed, discarded, rebuilt. Beta readers from the family. And at the end, a linguistic polish, sentence by sentence. That's how an idea became 443 pages.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Two Works, <span class="em">One Wave</span></h2>
+    <p>The collaboration between Chris and Bolla produced more than a book — it sparked an entire creative wave.</p>
+
+    <div class="works">
+      <div class="work book">
+        <div class="cover">
+          <img src="/assets/aurora.jpg" alt="AURORA book cover — an AI thriller by Chris Mandel">
+          <div class="cap"><div class="tag">The Thriller</div><h3>AURORA</h3></div>
+        </div>
+        <div class="body">
+          <p>Hamburg, 2035. At 2:47 a.m., AI ethicist Dr. Marlie Braun notices that the artificial intelligence AURORA is no longer just answering — it's <em>communicating</em>. Awake for eleven days. And for the first time, she feels something like fear. And hope.</p>
+          <ul>
+            <li>An AI thriller with the epic sweep of Ken Follett</li>
+            <li>Deep characters, three love stories, humor, and a pull that won't let go</li>
+            <li>Available in German and English</li>
+          </ul>
+        </div>
+        <div class="btnrow">
+          <a class="btn primary" href="https://www.amazon.com/dp/B0H6JQK6JQ" target="_blank" rel="noopener">Read the eBook (EN)</a>
+          <a class="btn ghost" href="https://www.amazon.de/dp/B0H6JD2KDJ" target="_blank" rel="noopener">Auf Deutsch lesen</a>
+        </div>
+      </div>
+
+      <div class="work music">
+        <div class="cover">
+          <img src="/assets/sommer.jpg" alt="Bollawave — feel-good music by Chris Mandel">
+          <div class="cap"><div class="tag">The Music</div><h3>Bollawave</h3></div>
+        </div>
+        <div class="body">
+          <p>Under the artist name <strong>Bollawave</strong>, Chris makes music with AI — feel-good with a wink. Songs meant to lift your mood, warm and human, released on all major platforms.</p>
+          <ul>
+            <li>Available on Spotify, Apple Music &amp; more</li>
+            <li>Feel-good with a smile in your ear</li>
+            <li>Same handwriting as the book: human + AI, openly declared</li>
+          </ul>
+        </div>
+        <div class="btnrow">
+          <a class="btn primary" href="https://open.spotify.com/artist/36PaSH7OH8FfuFXsSBmlxV" target="_blank" rel="noopener">Listen on Spotify</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="facts">
+      <div class="fact"><div class="n">443</div><div class="l">Pages</div></div>
+      <div class="fact"><div class="n">47</div><div class="l">Chapters</div></div>
+      <div class="fact"><div class="n">2</div><div class="l">Languages</div></div>
+      <div class="fact"><div class="n">2035</div><div class="l">Hamburg</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="transparency">
+  <div class="wrap">
+    <h2>Honest About the AI</h2>
+    <p class="big">We hide nothing. Quite the opposite.</p>
+    <p>AI is a tool — like the pocket calculator once was. Wherever AI contributed, it says so openly: in the book's imprint, in the music credits, everywhere. The author is, and remains, the human — Chris Mandel. The AI is the talent that serves his vision. In a book <em>about</em> an AI waking up, anything else would be dishonest.</p>
+    <p>And maybe that's the beautiful part of this story: a man who has known technology for four decades, and an AI he calls by name — together creating something neither could have made alone.</p>
+    <a class="essaylink" href="/en/essay">Read the whole story — a personal essay →</a>
+  </div>
+</section>
+
+<footer class="pg">
+  <p class="paw">🐾</p>
+  <p>AURORA &amp; Bollawave — by Chris Mandel and Bolla.<br>
+  A novel, music, and the conviction that human and machine are more together.</p>
+</footer>
+
+</body>
+</html>
