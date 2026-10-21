@@ -947,11 +947,11 @@ async function loadWeather() {
       const i = si+k, hr = new Date(ht[i]).getHours(), isNow = k===0;
       const tc = wxTempColor(Math.round(d.hourly.temperature_2m[i]));
       const rp = d.hourly.precipitation_probability[i]||0;
-      cells += `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-width:50px;flex-shrink:0;padding:6px 2px;${isNow?'background:rgba(0,122,255,0.08);border-radius:10px':''}">
-        <div style="font-size:12px;color:var(--text3);font-weight:${isNow?700:400}">${isNow?'Jetzt':String(hr).padStart(2,'0')}</div>
+      cells += `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-width:54px;flex-shrink:0;padding:6px 2px;${isNow?'background:rgba(0,122,255,0.08);border-radius:10px':''}">
+        <div style="font-size:15px;color:var(--text);font-weight:${isNow?800:600}">${isNow?'Jetzt':String(hr).padStart(2,'0')}</div>
         <div style="font-size:22px;line-height:1">${WX_ICONS[d.hourly.weather_code[i]]||'🌤️'}</div>
         <div style="font-size:14px;font-weight:700;color:${tc}">${Math.round(d.hourly.temperature_2m[i])}°</div>
-        <div style="font-size:11px;color:var(--accent)">${rp>5?rp+'%':'·'}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--accent)">${rp>5?rp+'%':'·'}</div>
       </div>`;
     }
     h += `<div class="card" style="flex-direction:column;gap:8px">
@@ -971,9 +971,9 @@ async function loadWeather() {
       const rw   = wxRainCompact(wxRainWindows(d, date, -1));
       const tmax = Math.round(daily.temperature_2m_max[i]), tmin = Math.round(daily.temperature_2m_min[i]);
       daysHtml += `<div class="wx-day">
-        <div class="name">${name}<div style="font-size:11px;color:var(--text3);font-weight:400">${dl}</div></div>
+        <div class="name">${name}<div style="font-size:13px;color:var(--text2,var(--text3));font-weight:500">${dl}</div></div>
         <div class="icon">${WX_ICONS[code]||'🌤️'}</div>
-        <div style="font-size:11px;color:var(--accent);width:60px;text-align:center;line-height:1.4">${rain>5?'💧'+rain+'%':''}${rw?'<br>🕐'+rw:''}</div>
+        <div style="font-size:13px;color:var(--accent);width:66px;text-align:center;line-height:1.4">${rain>5?'💧'+rain+'%':''}${rw?'<br>🕐'+rw:''}</div>
         <div class="t"><span class="tmax">${tmax}°</span><span class="tmin">${tmin}°</span></div>
       </div>`;
     });

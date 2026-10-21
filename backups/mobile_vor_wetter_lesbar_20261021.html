@@ -1,0 +1,2027 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#007aff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MMP Chris">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/mc-apple-touch.png">
+<link rel="icon" href="/mc-icon-192.png">
+<title>MMP Chris</title>
+<style>
+:root {
+  --bg: #f2f2f7;
+  --card: #ffffff;
+  --text: #1c1c1e;
+  --text2: #6c6c70;
+  --text3: #8e8e93;
+  --sep: rgba(60,60,67,0.12);
+  --accent: #007aff;
+  --green: #34c759;
+  --orange: #ff9500;
+  --red: #ff3b30;
+  --purple: #af52de;
+  --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+  --tab-h: 58px;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom));
+  min-height: 100vh;
+}
+
+/* HEADER */
+.header {
+  position: sticky; top: 0; z-index: 10;
+  padding: 12px 16px 10px;
+  padding-top: calc(12px + env(safe-area-inset-top));
+  background: rgba(242,242,247,0.94);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid var(--sep);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+}
+.header-left { flex: 1; min-width: 0; }
+.header h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.header .sub {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text3);
+}
+.header-refresh {
+  background: none; border: none;
+  font-size: 20px; padding: 4px;
+  cursor: pointer; color: var(--accent);
+  flex-shrink: 0;
+  border-radius: 8px;
+  transition: opacity 0.15s;
+}
+.header-refresh:active { opacity: 0.4; }
+.header-refresh.spinning { animation: spin 0.6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* CONTENT */
+.page { display: none; padding: 12px 16px 20px; }
+.page.active { display: block; }
+
+/* SECTION HEADER */
+.section-head {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text3);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  margin: 16px 4px 6px;
+}
+.section-head:first-child { margin-top: 0; }
+
+/* DATE GROUP */
+.date-group-head {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text2);
+  margin: 14px 4px 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.date-group-head:first-child { margin-top: 0; }
+.date-group-head .badge-today {
+  background: var(--accent); color: #fff;
+  padding: 1px 7px; border-radius: 6px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
+}
+.date-group-head .badge-tomorrow {
+  background: rgba(52,199,89,0.15); color: var(--green);
+  padding: 1px 7px; border-radius: 6px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
+}
+
+/* CARDS */
+.card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.card .left { flex-shrink: 0; }
+.card .right { flex: 1; min-width: 0; }
+.card .title { font-weight: 600; font-size: 15px; line-height: 1.3; }
+.card .meta { font-size: 13px; color: var(--text2); margin-top: 3px; line-height: 1.35; }
+.card .extra { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+.card-dot {
+  width: 40px; height: 40px; border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; background: #eef2f7; flex-shrink: 0;
+}
+.card-dot.blue   { background: rgba(0,122,255,0.12);  color: var(--accent); }
+.card-dot.green  { background: rgba(52,199,89,0.15);  color: var(--green); }
+.card-dot.orange { background: rgba(255,149,0,0.15);  color: var(--orange); }
+.card-dot.pink   { background: rgba(255,45,85,0.15);  color: #ff2d55; }
+.card-dot.purple { background: rgba(175,82,222,0.15); color: var(--purple); }
+
+/* MAIL */
+.mail-card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.initials {
+  width: 40px; height: 40px; border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; color: #fff;
+  flex-shrink: 0; letter-spacing: -0.3px;
+}
+.mail-from { font-weight: 600; font-size: 15px; color: var(--text); }
+.mail-subj { font-size: 14px; color: var(--text); margin-top: 2px; font-weight: 500; }
+.mail-prev { font-size: 13px; color: var(--text3); margin-top: 2px; line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mail-date { font-size: 12px; color: var(--text3); text-align: right; white-space: nowrap; margin-left: 8px; flex-shrink: 0; }
+.mail-body { flex: 1; min-width: 0; }
+.mail-header-row { display: flex; justify-content: space-between; align-items: flex-start; }
+
+.badge {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.3px;
+  background: rgba(0,122,255,0.12); color: var(--accent);
+  margin-right: 6px; vertical-align: 1px;
+}
+.badge.gmail { background: rgba(234,67,53,0.12); color: #ea4335; }
+
+/* WETTER */
+.wx-now {
+  background: linear-gradient(135deg, #4a90e2, #357abd);
+  color: #fff;
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 16px rgba(74,144,226,0.3);
+}
+.wx-now .temp { font-size: 56px; font-weight: 200; line-height: 1; letter-spacing: -2px; }
+.wx-now .desc { font-size: 17px; margin-top: 4px; opacity: 0.95; }
+.wx-now .loc  { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+.wx-now .extra { font-size: 13px; margin-top: 12px; opacity: 0.9; display: flex; gap: 16px; flex-wrap: wrap; }
+.wx-day { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 0.5px solid var(--sep); }
+.wx-day:last-child { border-bottom: none; }
+.wx-day .name { font-weight: 500; width: 50px; }
+.wx-day .icon { font-size: 22px; flex: 1; text-align: center; }
+.wx-day .t { text-align: right; font-variant-numeric: tabular-nums; }
+.wx-day .tmax { font-weight: 600; }
+.wx-day .tmin { color: var(--text3); margin-left: 8px; }
+
+/* REZEPT */
+.recipe-img {
+  width: 100%;
+  border-radius: 16px;
+  display: block;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+.recipe-placeholder {
+  width: 100%; aspect-ratio: 4/3;
+  background: linear-gradient(135deg, #f5f0e8, #ede8dc);
+  border-radius: 16px;
+  margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 72px;
+}
+.ingredient-row {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 9px 0; border-bottom: 0.5px solid var(--sep);
+}
+.ingredient-row:last-child { border-bottom: none; }
+.ingredient-dot { color: var(--accent); font-size: 20px; line-height: 1; flex-shrink: 0; }
+.ingredient-text { font-size: 15px; line-height: 1.4; }
+
+.step-row {
+  display: flex; gap: 14px; padding: 10px 0;
+  border-bottom: 0.5px solid var(--sep);
+  align-items: flex-start;
+}
+.step-row:last-child { border-bottom: none; }
+.step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.step-text { font-size: 15px; line-height: 1.55; padding-top: 4px; flex: 1; }
+
+.primary-btn {
+  width: 100%;
+  padding: 15px;
+  border-radius: 13px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: opacity 0.15s;
+}
+.primary-btn:active { opacity: 0.7; }
+.primary-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* STATES */
+.loading {
+  text-align: center; padding: 40px 20px; color: var(--text3); font-size: 15px;
+}
+.loading::after {
+  content: ''; display: block; margin: 16px auto 0;
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 3px solid var(--sep);
+  border-top-color: var(--accent);
+  animation: spin 0.7s linear infinite;
+}
+.empty { text-align: center; padding: 40px 20px; color: var(--text3); }
+.empty .big { font-size: 48px; margin-bottom: 8px; }
+
+/* BOTTOM NAV */
+.tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+  background: rgba(255,255,255,0.93);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 0.5px solid var(--sep);
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: env(safe-area-inset-bottom);
+  height: calc(var(--tab-h) + env(safe-area-inset-bottom));
+}
+.tabbar::-webkit-scrollbar { display: none; }
+.tabbtn {
+  flex: 0 0 auto;
+  width: 70px;
+  padding: 7px 4px 5px;
+  text-align: center;
+  color: var(--text3);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  letter-spacing: 0.1px;
+}
+.tabbtn .ic { font-size: 23px; display: block; margin-bottom: 2px; }
+.tabbtn.active { color: var(--accent); }
+.tabbtn:active { opacity: 0.45; }
+
+/* CLIPBOARD */
+.clip-textarea {
+  width: 100%;
+  border: 1.5px solid var(--sep);
+  border-radius: 12px;
+  padding: 13px;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fafafa;
+  resize: none;
+  outline: none;
+  line-height: 1.5;
+  min-height: 200px;
+  transition: border-color 0.15s;
+}
+.clip-textarea:focus { border-color: var(--accent); }
+.clip-btn {
+  flex: 1;
+  padding: 12px 8px;
+  border-radius: 11px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  background: rgba(0,122,255,0.12);
+  color: var(--accent);
+  transition: opacity 0.15s;
+}
+.clip-btn:active { opacity: 0.5; }
+.pep-sel {
+  width: 100%;
+  border: 1.5px solid var(--sep);
+  border-radius: 11px;
+  padding: 12px;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fafafa;
+  outline: none;
+}
+.pep-sel:focus { border-color: var(--accent); }
+.pep-dropdown-wrap { position: relative; }
+.pep-dropdown-list {
+  position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; max-height: 240px; overflow-y: auto;
+  background: var(--card); border: 1.5px solid var(--sep); border-radius: 11px; z-index: 50;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+.pep-dropdown-item { padding: 12px; font-size: 15px; color: var(--text); cursor: pointer; border-bottom: 0.5px solid var(--sep); }
+.pep-dropdown-item:last-child { border-bottom: none; }
+.pep-dropdown-item:active { background: rgba(0,0,0,0.06); }
+.clip-btn.green { background: rgba(52,199,89,0.15); color: var(--green); }
+.clip-btn.red   { background: rgba(255,59,48,0.12); color: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1 id="page-title">Kalender</h1>
+    <div class="sub" id="page-sub"></div>
+  </div>
+  <button class="header-refresh" id="refresh-btn" onclick="refreshTab()" title="Aktualisieren">↻</button>
+</div>
+
+<!-- KALENDER -->
+<div class="page active" id="p-cal">
+  <div id="cal-list"><div class="loading">Lade Termine</div></div>
+</div>
+
+<!-- MAILS -->
+<div class="page" id="p-mail">
+  <div id="mail-list"><div class="loading">Lade Mails</div></div>
+</div>
+
+<!-- WETTER -->
+<div class="page" id="p-wx">
+  <div id="wx-content"><div class="loading">Lade Wetter</div></div>
+</div>
+
+<!-- REZEPT -->
+<div class="page" id="p-rezept">
+  <div id="rezept-content"><div class="loading">Generiere Rezept des Tages</div></div>
+</div>
+
+<!-- GEBURTSTAGE -->
+<div class="page" id="p-bd">
+  <div id="bd-list"><div class="loading">Lade Geburtstage</div></div>
+</div>
+
+<!-- LADEN (Ladeplaner entlang Route) -->
+<div class="page" id="p-laden">
+  <div class="card" style="flex-direction:column;gap:10px">
+    <div style="font-size:13px;color:var(--text2);line-height:1.45">Ziel eingeben → nur <b>EnBW</b>-Ladesäulen <b>entlang der Fahrroute</b> (keine Partner-Netzwerke). Kontaktname (z.B. „Steffi", bei Mehrdeutigkeit „Steffi G") reicht auch.</div>
+    <div style="position:relative">
+      <input id="laden-ziel" class="clip-textarea" style="min-height:0;padding:12px 40px 12px 13px" placeholder="Ziel — z. B. Herrsching, Steffi, Ostsee…" enterkeyhint="search" autocomplete="off">
+      <button type="button" onclick="_ladenClearField('laden-ziel')" title="Leeren" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:28px;height:28px;border:none;background:rgba(142,142,147,0.18);border-radius:50%;color:var(--text2);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div style="position:relative">
+      <input id="laden-start" class="clip-textarea" style="min-height:0;padding:12px 40px 12px 13px" placeholder="Start (leer lassen = aktueller Standort)" autocomplete="off">
+      <button type="button" onclick="_ladenClearField('laden-start')" title="Leeren" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:28px;height:28px;border:none;background:rgba(142,142,147,0.18);border-radius:50%;color:var(--text2);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <button class="primary-btn" style="margin:0" onclick="ladenRouteSearch()">🔌 Ladesäulen entlang Route</button>
+  </div>
+  <div id="laden-content"></div>
+</div>
+
+<!-- NOTIZ (Sprachnotiz) -->
+<div class="page" id="p-notiz">
+  <div class="card" style="flex-direction:column;align-items:center;gap:14px;padding:22px 16px">
+    <div id="speech-status" style="font-size:14px;color:var(--text3);text-align:center">Auf „Sprechen" tippen und loslegen — Text erscheint sofort</div>
+    <button id="speech-btn" onclick="toggleSpeech()"
+      style="width:100px;height:100px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:42px;cursor:pointer;box-shadow:0 4px 24px rgba(10,132,255,0.4);transition:transform .1s,box-shadow .1s">🎤</button>
+    <div id="speech-live" style="font-size:14px;color:var(--text3);min-height:20px;text-align:center;font-style:italic"></div>
+  </div>
+  <div class="card" style="flex-direction:column;gap:12px">
+    <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px">Erkannter Text</div>
+    <textarea id="notiz-input" class="clip-textarea" placeholder="Hier erscheint dein gesprochener Text — bei Bedarf korrigierbar…" style="min-height:90px;font-size:17px"></textarea>
+    <div style="display:flex;gap:8px">
+      <button onclick="notizSenden()" class="clip-btn" title="Nur per Telegram an Chris">📩 Telegram</button>
+      <button onclick="notizSpeichern()" class="clip-btn green" title="Nur in Letzte Notizen speichern">💾 Speichern</button>
+      <button onclick="notizKopieren()" class="clip-btn" style="background:rgba(175,82,222,0.12);color:var(--purple)" title="Ins geräteübergreifende Clipboard">📋 Clipboard</button>
+    </div>
+    <div id="notiz-action-status" style="text-align:center;font-size:14px;min-height:20px"></div>
+  </div>
+  <div id="notiz-verlauf-wrap">
+    <div class="section-head">Letzte Notizen</div>
+    <div id="notiz-verlauf"><div class="loading" style="padding:20px"></div></div>
+  </div>
+</div>
+
+<!-- SOS -->
+<div class="page" id="p-sos">
+  <div style="background:#ff3b30;border-radius:18px;padding:20px;margin-bottom:12px;color:#fff;text-align:center">
+    <div style="font-size:48px;margin-bottom:8px">🆘</div>
+    <div style="font-size:22px;font-weight:700;margin-bottom:4px">Notfall</div>
+    <div id="sos-address" style="font-size:14px;opacity:0.85;line-height:1.4">Standort wird ermittelt…</div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <a href="tel:112" style="flex:1;padding:14px;background:rgba(255,255,255,0.22);border-radius:12px;color:#fff;text-decoration:none;font-size:20px;font-weight:800;text-align:center">📞 112 anrufen</a>
+    </div>
+  </div>
+  <div class="section-head">📍 Standort per WhatsApp senden</div>
+  <div id="sos-share"><div class="loading" style="padding:16px">Standort wird ermittelt…</div></div>
+  <div id="sos-send-status" style="text-align:center;font-size:14px;min-height:20px;margin:4px 0 8px"></div>
+  <div class="section-head">Meine Kontakte</div>
+  <div id="sos-contacts"><div class="loading" style="padding:20px"></div></div>
+  <div class="section-head">Medizinische Infos</div>
+  <div id="sos-medical" class="card" style="flex-direction:column;gap:8px"></div>
+</div>
+
+<!-- CLIPBOARD -->
+<div class="page" id="p-clip">
+  <div class="card" style="flex-direction:column;gap:10px">
+    <textarea id="clip-text" class="clip-textarea" placeholder="Neuen Eintrag eingeben…" style="min-height:60px"></textarea>
+    <div style="display:flex;gap:8px">
+      <button onclick="clipboardAppend()" class="clip-btn">➕ Hinzufügen</button>
+      <button onclick="loadClipboard()" class="clip-btn green">🔄 Aktualisieren</button>
+    </div>
+    <div id="clip-status" style="text-align:center;font-size:14px;min-height:20px"></div>
+    <div id="clip-entries" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+  <div class="card" style="flex-direction:column;gap:10px">
+    <h3 style="margin:0;font-size:16px;font-weight:700">🖼️ Bild-Clipboard</h3>
+    <div id="clip-drop-zone"
+      ondragover="clipImgDragOver(event)" ondragleave="clipImgDragLeave(event)" ondrop="clipImgDrop(event)"
+      onclick="document.getElementById('clip-file-input').click()"
+      style="border:2px dashed var(--sep);border-radius:10px;padding:22px 16px;text-align:center;cursor:pointer;color:var(--text3);font-size:14px;transition:border-color 0.2s,background 0.2s">
+      <div style="font-size:30px;margin-bottom:6px">📂</div>
+      <div style="font-size:15px;font-weight:600;color:var(--text2)">Tippen zum Auswählen</div>
+      <div style="font-size:13px;margin-top:3px">Screenshot · Foto · Datei</div>
+      <div style="font-size:11px;margin-top:6px;color:var(--text3)">am PC auch mit <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:3px;padding:1px 5px;font-size:11px">Strg+V</kbd></div>
+    </div>
+    <input type="file" id="clip-file-input" accept="image/*" style="display:none" onchange="clipImgFileSelected(event)">
+    <input type="file" id="clip-camera-input" accept="image/*" capture="environment" style="display:none" onchange="clipCameraFileSelected(event)">
+    <button onclick="document.getElementById('clip-camera-input').click()" class="clip-btn" style="width:100%;background:rgba(52,199,89,0.12);color:var(--green)">📷 Foto aufnehmen → auch Windows-Zwischenablage</button>
+    <button onclick="clipImgFromClipboard()" class="clip-btn" style="width:100%">📋 Aus Zwischenablage einfügen</button>
+    <span id="clip-img-status" style="display:block;font-size:13px;min-height:18px;text-align:center"></span>
+    <div id="clip-img-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px"></div>
+  </div>
+  <div class="card" style="flex-direction:column;gap:10px">
+    <div onclick="clipTrashToggle()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+      <h3 style="margin:0;font-size:16px;font-weight:700">🗑️ Papierkorb</h3>
+      <span id="clip-trash-caret" style="font-size:14px;color:var(--text3)">▸</span>
+    </div>
+    <div id="clip-trash-wrap" style="display:none;flex-direction:column;gap:8px">
+      <div style="font-size:12px;color:var(--text3)">Gelöschte Einträge bleiben 14 Tage erhalten und können wiederhergestellt werden.</div>
+      <div id="clip-trash" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="p-pep">
+  <div class="card" style="flex-direction:column;gap:12px">
+    <div id="pep-drop"
+      onclick="document.getElementById('pep-file').click()"
+      style="border:2px dashed var(--sep);border-radius:10px;padding:22px 16px;text-align:center;cursor:pointer;color:var(--text3)">
+      <div style="font-size:32px;margin-bottom:6px">✨📷</div>
+      <div style="font-size:15px;font-weight:600;color:var(--text2)">Bild(er) oder Video wählen</div>
+      <div style="font-size:13px;margin-top:3px">1 Datei = Post, 2+ Fotos = ein Reel daraus</div>
+    </div>
+    <input type="file" id="pep-file" accept="image/*,video/*" multiple style="display:none" onchange="pepFileSelected(event)">
+    <div id="pep-preview" style="display:none;text-align:center"></div>
+
+    <div id="pep-single-opts" style="display:flex;flex-direction:column;gap:12px">
+      <label style="font-size:14px;font-weight:600;color:var(--text2)">Plattform / Format</label>
+      <select id="pep-platform" class="pep-sel">
+        <option value="insta">📸 Instagram (Bild 4:5)</option>
+        <option value="tiktok">🎵 TikTok (Hochformat-Video)</option>
+      </select>
+    </div>
+
+    <label style="font-size:14px;font-weight:600;color:var(--text2)">Pepp-Stärke</label>
+    <select id="pep-style" class="pep-sel">
+      <option value="auto">✨ Automatisch (empfohlen)</option>
+      <option value="natural">🌱 Dezent-natürlich</option>
+      <option value="vivid">🌞 Sonnig-kräftig</option>
+      <option value="spectacular">🎆 Spektakulär</option>
+    </select>
+
+    <div id="pep-text-opt" style="display:flex;flex-direction:column;gap:12px">
+      <label style="font-size:14px;font-weight:600;color:var(--text2)">Text im Bild (optional)</label>
+      <input id="pep-text" class="clip-textarea" style="min-height:0;padding:10px" placeholder="z.B. Läuft, Sommer! 🌞">
+    </div>
+
+    <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text2)">
+      <input type="checkbox" id="pep-music" style="width:20px;height:20px" onchange="pepToggleSongPicker()"> 🎶 Eigenen Song als Tonspur drunterlegen (nur Video/Reel)
+    </label>
+    <div id="pep-song-wrap" class="pep-dropdown-wrap" style="display:none">
+      <button type="button" onclick="pepToggleSongDropdown()" class="pep-sel" style="text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center">
+        <span id="pep-song-label">Songs werden geladen …</span><span>▾</span>
+      </button>
+      <div id="pep-song-list" class="pep-dropdown-list" style="display:none"></div>
+      <div id="pep-targetdur-wrap" style="display:none;margin-top:10px">
+        <label style="font-size:13px;color:var(--text2)">🎯 Zieldauer (Sek.) — Video wird passend verlangsamt, damit genau so viel vom Song mitläuft</label>
+        <input type="number" id="pep-targetdur" class="clip-textarea" style="min-height:0;padding:10px;margin-top:4px" placeholder="leer = Originallänge behalten" min="1" max="180" step="1">
+      </div>
+    </div>
+
+    <button onclick="pepStart()" id="pep-btn" class="clip-btn green" style="width:100%;font-size:16px;padding:14px">✨ Aufpeppen</button>
+    <div id="pep-status" style="text-align:center;font-size:14px;min-height:20px"></div>
+    <div id="pep-result" style="display:none;flex-direction:column;gap:8px;text-align:center"></div>
+    <button onclick="pepReset()" id="pep-reset-btn" style="display:none;width:100%;font-size:14px;padding:10px;background:transparent;border:1px solid var(--sep);border-radius:8px;color:var(--text2)">🔄 Neu (nächstes Foto/Video)</button>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="tabbar" id="tabbar">
+  <button class="tabbtn" data-tab="sos" style="color:#ff3b30"><span class="ic">🆘</span>SOS</button>
+  <button class="tabbtn active" data-tab="cal"><span class="ic">📅</span>Kalender</button>
+  <button class="tabbtn" data-tab="mail"><span class="ic">📧</span>Mails</button>
+  <button class="tabbtn" data-tab="notiz"><span class="ic">🎙️</span>Notiz</button>
+  <button class="tabbtn" data-tab="clip"><span class="ic">📋</span>Clipboard</button>
+  <button class="tabbtn" data-tab="pep"><span class="ic">✨</span>Aufpeppen</button>
+  <button class="tabbtn" data-tab="wx"><span class="ic">🌤️</span>Wetter</button>
+  <button class="tabbtn" data-tab="bd"><span class="ic">🎂</span>Geburtstag</button>
+  <button class="tabbtn" data-tab="rezept"><span class="ic">🍽️</span>Rezept</button>
+  <button class="tabbtn" data-tab="laden"><span class="ic">🔌</span>Laden</button>
+</nav>
+
+<!-- Floating Mic Button — auf jeder Seite außer Notiz selbst -->
+<button id="fab-mic" onclick="fabMicClick()" aria-label="Sprachnotiz aufnehmen"
+  style="position:fixed;bottom:80px;right:18px;width:60px;height:60px;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:28px;cursor:pointer;box-shadow:0 4px 16px rgba(255,59,48,0.45);z-index:200;display:flex;align-items:center;justify-content:center;transition:transform 0.15s;">🎙️</button>
+
+<script>
+// ===== UTILS =====
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+const INITIALS_COLORS = ['#007aff','#34c759','#ff9500','#ff2d55','#af52de','#5ac8fa','#ff6b35','#30b0c7'];
+function initialsColor(name) {
+  let h = 0;
+  for (let i = 0; i < (name||'').length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff;
+  return INITIALS_COLORS[h % INITIALS_COLORS.length];
+}
+function getInitials(name) {
+  const parts = (name||'').trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+  return (name||'?').slice(0,2).toUpperCase();
+}
+
+// ===== TAB MANAGEMENT =====
+const pageTitle = document.getElementById('page-title');
+const pageSub   = document.getElementById('page-sub');
+const TITLES = {
+  cal:         ['Kalender',       'Kommende Termine'],
+  mail:        ['Mails',          'Ungelesen'],
+  wx:          ['Wetter',         'Norderstedt'],
+  rezept:      ['Rezept',         'Rezept des Tages'],
+  laden:       ['Ladeplaner',     'Säulen entlang deiner Route'],
+  notiz:       ['Sprachnotiz',    'Aufnehmen · Senden · Speichern'],
+  bd:          ['Geburtstage',    'Nächste Anlässe'],
+  clip:        ['Clipboard',      'Geräteübergreifend teilen'],
+  pep:         ['✨ Aufpeppen',   'Bild/Video → Feel-Good-Post'],
+  sos:         ['🆘 Notfall',     'Notruf & Standort']
+};
+
+let activeTab = 'cal';
+const loaded = {};
+
+let _clipAutoTimer = null;
+function switchTab(tab) {
+  if (tab === activeTab) { refreshTab(); return; }
+  const btn = document.querySelector('.tabbtn[data-tab="' + tab + '"]');
+  if (!btn) return;
+  activeTab = tab;
+  document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b === btn));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('p-' + tab).classList.add('active');
+  const [title, sub] = TITLES[tab];
+  pageTitle.textContent = title;
+  pageSub.textContent = sub;
+  btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  loadTab(tab);
+  window.scrollTo(0, 0);
+  // Floating Mic-Button auf Notiz-Seite ausblenden
+  const fab = document.getElementById('fab-mic');
+  if (fab) fab.style.display = (tab === 'notiz') ? 'none' : 'flex';
+  // Auto-Refresh des gclip wenn der Clip-Tab aktiv ist (alle 8 Sek)
+  if (_clipAutoTimer) { clearInterval(_clipAutoTimer); _clipAutoTimer = null; }
+  if (tab === 'clip') _clipAutoTimer = setInterval(loadClipboard, 8000);
+}
+
+// Beim Zurück auf den Tab (App in den Vordergrund) → einmal sofort neu laden
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && activeTab === 'clip') loadClipboard();
+});
+
+document.querySelectorAll('.tabbtn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+function fabMicClick() {
+  // Zur Notiz-Seite + sanftes Feedback. Aufnahme startet User selbst über den großen Mic-Button.
+  switchTab('notiz');
+}
+
+function refreshTab() {
+  delete loaded[activeTab];
+  const ri = document.getElementById('refresh-btn');
+  ri.classList.add('spinning');
+  // Reset content area
+  const containers = {
+    cal: 'cal-list', mail: 'mail-list', wx: 'wx-content',
+    rezept: 'rezept-content', laden: null,
+    notiz: null, bd: 'bd-list',
+    clip: null, sos: null
+  };
+  const cid = containers[activeTab];
+  if (cid) document.getElementById(cid).innerHTML = '<div class="loading">Lade</div>';
+  loadTab(activeTab).finally(() => {
+    setTimeout(() => ri.classList.remove('spinning'), 400);
+  });
+}
+
+async function loadTab(tab) {
+  if (tab !== 'clip' && loaded[tab]) return;
+  if (tab !== 'clip') loaded[tab] = true;
+  try {
+    if      (tab === 'cal')    await loadCalendar();
+    else if (tab === 'mail')   await loadMails();
+    else if (tab === 'wx')     await loadWeather();
+    else if (tab === 'rezept') await loadRezept();
+    else if (tab === 'laden')  await loadLaden();
+    else if (tab === 'notiz')  await loadNotiz();
+    else if (tab === 'bd')     await loadBirthdays();
+    else if (tab === 'clip')        await loadClipboard();
+    else if (tab === 'sos')         await loadSOS();
+  } catch (e) {
+    console.error(tab, e);
+  }
+}
+
+// ===== KALENDER =====
+function parseCalDate(dateStr) {
+  // API returns "18.05." or "18.05.2026" — parse to Date
+  if (!dateStr) return null;
+  const m = dateStr.match(/^(\d{1,2})\.(\d{1,2})\.?(\d{4})?/);
+  if (!m) return null;
+  const day = parseInt(m[1]), mon = parseInt(m[2]) - 1;
+  const year = m[3] ? parseInt(m[3]) : new Date().getFullYear();
+  return new Date(year, mon, day);
+}
+
+async function loadCalendar() {
+  const el = document.getElementById('cal-list');
+  try {
+    const r = await fetch('/api/calendar');
+    const data = await r.json();
+    if (!data || !data.length) {
+      el.innerHTML = '<div class="empty"><div class="big">📅</div>Keine kommenden Termine</div>';
+      return;
+    }
+
+    const now = new Date(); now.setHours(0,0,0,0);
+    const tom = new Date(now); tom.setDate(now.getDate() + 1);
+
+    // Group by date string (raw key)
+    const groups = {};
+    const groupOrder = [];
+    data.forEach(ev => {
+      const key = ev.date || '';
+      if (!groups[key]) { groups[key] = []; groupOrder.push(key); }
+      groups[key].push(ev);
+    });
+
+    let html = '';
+    groupOrder.forEach(key => {
+      const evDate = parseCalDate(key);
+      let label = key, badge = '';
+      if (evDate) {
+        const t = evDate.getTime();
+        if (t === now.getTime()) {
+          badge = '<span class="badge-today">HEUTE</span>';
+          label = '';
+        } else if (t === tom.getTime()) {
+          badge = '<span class="badge-tomorrow">MORGEN</span>';
+          label = key;
+        } else {
+          label = key;
+        }
+      }
+      html += `<div class="date-group-head">${badge}${esc(label)}</div>`;
+      groups[key].forEach(ev => {
+        const timeStr = ev.time ? `<span style="color:var(--accent);font-weight:600">${esc(ev.time)}</span> · ` : '';
+        html += `<div class="card">
+          <div class="left"><div class="card-dot blue" style="font-size:14px;font-weight:700">${esc(ev.weekday || '📅')}</div></div>
+          <div class="right">
+            <div class="title">${esc(ev.title)}</div>
+            <div class="meta">${timeStr}${ev.location ? esc(ev.location) : ''}</div>
+            ${ev.category ? `<div class="extra">📌 ${esc(ev.category)}</div>` : ''}
+          </div>
+        </div>`;
+      });
+    });
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`;
+  }
+}
+
+// ===== MAILS =====
+async function loadMails() {
+  const el = document.getElementById('mail-list');
+  try {
+    const r = await fetch('/api/email');
+    const data = await r.json();
+    const count = data.count || 0;
+    pageSub.textContent = count === 0 ? 'Alles gelesen' : `${count} ungelesen`;
+    if (!data.messages || !data.messages.length) {
+      el.innerHTML = '<div class="empty"><div class="big">📭</div>Alles gelesen — Inbox zero! 🎉</div>';
+      return;
+    }
+
+    // Group by account
+    const byAccount = {};
+    data.messages.forEach(m => {
+      const acc = m.account || 'Sonstige';
+      if (!byAccount[acc]) byAccount[acc] = [];
+      byAccount[acc].push(m);
+    });
+
+    let html = '';
+    Object.entries(byAccount).forEach(([acc, msgs]) => {
+      const isGmail = acc.toLowerCase() === 'gmail';
+      html += `<div class="section-head">${isGmail ? '📬' : '📧'} ${esc(acc)} · ${msgs.length} ungelesen</div>`;
+      msgs.forEach(m => {
+        const init = getInitials(m.from || '?');
+        const bg = initialsColor(m.from || '');
+        const badgeClass = isGmail ? 'badge gmail' : 'badge';
+        html += `<div class="mail-card">
+          <div class="initials" style="background:${bg}">${esc(init)}</div>
+          <div class="mail-body">
+            <div class="mail-header-row">
+              <div class="mail-from">${esc(m.from)}</div>
+              <div class="mail-date">${esc(m.date)}</div>
+            </div>
+            <div class="mail-subj">${esc(m.subject)}</div>
+            <div class="mail-prev">${esc(m.preview || '')}</div>
+          </div>
+        </div>`;
+      });
+    });
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`;
+  }
+}
+
+// ===== WETTER =====
+const WX_ICONS = {
+  0:'☀️', 1:'🌤️', 2:'⛅', 3:'☁️',
+  45:'🌫️', 48:'🌫️',
+  51:'🌦️', 53:'🌦️', 55:'🌦️',
+  61:'🌧️', 63:'🌧️', 65:'🌧️',
+  71:'🌨️', 73:'🌨️', 75:'❄️', 77:'❄️',
+  80:'🌦️', 81:'🌧️', 82:'⛈️',
+  85:'🌨️', 86:'🌨️',
+  95:'⛈️', 96:'⛈️', 99:'⛈️'
+};
+const WX_DESC = {
+  0:'Klar', 1:'Heiter', 2:'Teilweise bewölkt', 3:'Bewölkt',
+  45:'Nebel', 48:'Reifnebel',
+  51:'Leichter Nieselregen', 53:'Nieselregen', 55:'Starker Nieselregen',
+  61:'Leichter Regen', 63:'Regen', 65:'Starker Regen',
+  71:'Leichter Schneefall', 73:'Schneefall', 75:'Starker Schneefall', 77:'Graupel',
+  80:'Leichte Schauer', 81:'Schauer', 82:'Starke Schauer',
+  85:'Schneeschauer', 86:'Starke Schneeschauer',
+  95:'Gewitter', 96:'Gewitter mit Hagel', 99:'Starkes Gewitter'
+};
+
+// Bright-Sky (DWD-Station) → Emoji/Text. Stationsmessung schlägt das Modell bei Bewölkung
+const BS_EMOJI = {
+  'clear-day':'☀️','clear-night':'🌙','partly-cloudy-day':'🌤️','partly-cloudy-night':'🌤️',
+  'cloudy':'☁️','fog':'🌫️','wind':'💨','rain':'🌧️','sleet':'🌨️','snow':'❄️','hail':'🌨️','thunderstorm':'⛈️'
+};
+const BS_DESC = {
+  'clear-day':'Klar','clear-night':'Klar','partly-cloudy-day':'Teils bewölkt','partly-cloudy-night':'Teils bewölkt',
+  'cloudy':'Bewölkt','fog':'Nebel','wind':'Windig','rain':'Regen','sleet':'Schneeregen','snow':'Schnee','hail':'Hagel','thunderstorm':'Gewitter'
+};
+// Station nur nutzen, wenn ihre Bewölkung nicht stark vom Modell abweicht (Plausibilität)
+function bsUsable(bs, cur) {
+  if (!bs || !bs.icon) return false;
+  const o = cur && cur.cloud_cover, b = bs.cloud_cover;
+  return o == null || b == null || Math.abs(b - o) <= 40;
+}
+
+const WX_WIND_DIR = ['N','NO','O','SO','S','SW','W','NW'];
+function wxWindDir(deg) { return WX_WIND_DIR[Math.round((deg||0)/45)%8]; }
+function wxUv(uv) {
+  if (uv<=2) return {label:'Niedrig',color:'#34c759'};
+  if (uv<=5) return {label:'Mittel', color:'#ff9500'};
+  if (uv<=7) return {label:'Hoch',   color:'#ff6b35'};
+  return {label:'Sehr hoch', color:'#ff3b30'};
+}
+function wxTempColor(t) {
+  if (t<=0)  return '#5ac8fa';
+  if (t<=10) return '#34aadc';
+  if (t<=18) return '#34c759';
+  if (t<=24) return '#ff9500';
+  if (t<=30) return '#ff6b35';
+  return '#ff3b30';
+}
+// Repräsentativer Code: heute = aktueller Himmel (sonst zeigt das Tages-Aggregat das trübste Wetter)
+function wxDayCode(d, i) {
+  return (i===0 && d.current && d.current.weather_code!=null) ? d.current.weather_code : d.daily.weather_code[i];
+}
+// Regen-Zeitfenster aus Stundendaten. Menge ist der ehrliche Indikator → Phantom-Regen (30% / 0,0 mm) raus.
+function wxRainWindows(d, dateStr, fromHour) {
+  if (fromHour===undefined) fromHour = -1;
+  const t=d.hourly.time, p=d.hourly.precipitation_probability, a=d.hourly.precipitation, wet=[];
+  for (let i=0;i<t.length;i++) {
+    if (!t[i].startsWith(dateStr)) continue;
+    const hr=parseInt(t[i].slice(11,13)); if (fromHour>=0 && hr<fromHour) continue;
+    const pp=p&&p[i]||0, aa=a&&a[i]||0;
+    if (aa>=0.15 || (pp>=55 && aa>=0.05)) wet.push(hr);
+  }
+  if (!wet.length) return [];
+  const w=[]; let s=wet[0], prev=wet[0];
+  for (let k=1;k<wet.length;k++) { if (wet[k]===prev+1) prev=wet[k]; else { w.push([s,prev]); s=wet[k]; prev=wet[k]; } }
+  w.push([s,prev]); return w;
+}
+function wxRainText(w)    { return w.length ? w.map(([s,e])=>s===e?`${s} Uhr`:`${s}–${e} Uhr`).join(', ') : ''; }
+function wxRainCompact(w) { if (!w.length) return ''; const [s,e]=w[0]; const b=s===e?`${s}h`:`${s}–${e}h`; return w.length>1?b+'·':b; }
+// Hero-Hintergrund je nach Bedingung + Tag/Nacht
+function wxHeroBg(code, isDay) {
+  if (code===0||code===1) return isDay?'linear-gradient(135deg,#2e8fd6,#5bb3e8)':'linear-gradient(135deg,#1a2a52,#2c3e7a)';
+  if (code===2)           return isDay?'linear-gradient(135deg,#4a90c2,#82afc6)':'linear-gradient(135deg,#243352,#3a4a6a)';
+  if (code===3||code===45||code===48) return isDay?'linear-gradient(135deg,#6e8e9e,#95a8b2)':'linear-gradient(135deg,#2e3a44,#46545e)';
+  if (code>=71&&code<=86) return 'linear-gradient(135deg,#7a90a5,#aebfc8)';
+  if (code>=51&&code<=82) return 'linear-gradient(135deg,#34506b,#48607a)';
+  if (code>=95)           return 'linear-gradient(135deg,#1a1326,#2a2236)';
+  return 'linear-gradient(135deg,#4a90e2,#357abd)';
+}
+
+async function loadWeather() {
+  const el = document.getElementById('wx-content');
+  try {
+    const [omR, bsR] = await Promise.all([
+      fetch('https://api.open-meteo.com/v1/forecast?latitude=53.69&longitude=9.98&current=temperature_2m,weather_code,apparent_temperature,wind_speed_10m,wind_direction_10m,relative_humidity_2m,uv_index,precipitation,cloud_cover&hourly=temperature_2m,weather_code,precipitation_probability,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,uv_index_max,wind_speed_10m_max&timezone=Europe/Berlin&forecast_days=7'),
+      fetch('https://api.brightsky.dev/current_weather?lat=53.69&lon=9.98').catch(()=>null)
+    ]);
+    const d = await omR.json();
+    let bs = null; if (bsR) { try { bs = (await bsR.json()).weather || null; } catch(e){} }
+    const cur = d.current, daily = d.daily;
+
+    // Tag/Nacht aus Sonnenstand
+    const now = new Date(cur.time), nowMs = now.getTime();
+    const srMs = new Date(daily.sunrise[0]).getTime(), ssMs = new Date(daily.sunset[0]).getTime();
+    const isDay = nowMs > srMs && nowMs < ssMs;
+    const useBs = bsUsable(bs, cur);
+    const icon = useBs ? (BS_EMOJI[bs.icon] || WX_ICONS[cur.weather_code] || '🌤️') : (WX_ICONS[cur.weather_code] || '🌤️');
+    const desc = useBs ? (BS_DESC[bs.icon]  || WX_DESC[cur.weather_code]  || '')   : (WX_DESC[cur.weather_code]  || '');
+    const bg = wxHeroBg(cur.weather_code, isDay);
+    const uv = wxUv(cur.uv_index||0);
+    const todayStr = cur.time.slice(0,10), nowHour = now.getHours();
+    const rainTxt = wxRainText(wxRainWindows(d, todayStr, nowHour));
+    const sr = daily.sunrise[0].slice(11,16), ss = daily.sunset[0].slice(11,16);
+    const srMin = parseInt(sr)*60+parseInt(sr.slice(3)), ssMin = parseInt(ss)*60+parseInt(ss.slice(3));
+    const nowMin = now.getHours()*60 + now.getMinutes();
+    const dayProg = Math.max(0, Math.min(1, (nowMin-srMin)/((ssMin-srMin)||1)));
+
+    // ── HERO ──
+    let h = `<div class="wx-now" style="background:${bg}">
+      <div class="loc">📍 Norderstedt · ${useBs?'DWD-Station':'Modell'}</div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-top:6px">
+        <div class="temp">${Math.round(cur.temperature_2m)}°</div>
+        <div style="margin-top:8px;font-size:46px">${icon}</div>
+      </div>
+      <div class="desc">${desc}</div>
+      <div class="extra">
+        <span>Gefühlt ${Math.round(cur.apparent_temperature)}°</span>
+        <span>💨 ${Math.round(cur.wind_speed_10m)} km/h ${wxWindDir(cur.wind_direction_10m)}</span>
+        <span>💧 ${cur.relative_humidity_2m}%</span>
+        <span>☀️ UV ${Math.round(cur.uv_index||0)} ${uv.label}</span>
+      </div>
+      ${rainTxt ? `<div style="display:inline-block;font-size:13px;margin-top:12px;font-weight:600;background:rgba(255,255,255,0.18);padding:5px 12px;border-radius:14px">🌧 Regen ~${rainTxt}</div>` : ''}
+      <div style="margin-top:14px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;opacity:0.92;margin-bottom:4px"><span>☀️ ${sr}</span><span>${ss} 🌙</span></div>
+        <div style="height:4px;border-radius:2px;background:rgba(255,255,255,0.25);position:relative">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:${(dayProg*100).toFixed(0)}%;background:rgba(255,220,120,0.9);border-radius:2px"></div>
+          ${dayProg>0&&dayProg<1 ? `<div style="position:absolute;left:${(dayProg*100).toFixed(0)}%;top:-3px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:#ffd66e;box-shadow:0 0 6px #ffd66e"></div>` : ''}
+        </div>
+      </div>
+    </div>`;
+
+    // ── 24-STUNDEN-VERLAUF (horizontal) ──
+    const ht = d.hourly.time;
+    let si = ht.findIndex(t => t >= cur.time.slice(0,13));
+    if (si < 0) si = 0;
+    const N = Math.min(24, ht.length - si);
+    let cells = '';
+    for (let k=0;k<N;k++) {
+      const i = si+k, hr = new Date(ht[i]).getHours(), isNow = k===0;
+      const tc = wxTempColor(Math.round(d.hourly.temperature_2m[i]));
+      const rp = d.hourly.precipitation_probability[i]||0;
+      cells += `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-width:50px;flex-shrink:0;padding:6px 2px;${isNow?'background:rgba(0,122,255,0.08);border-radius:10px':''}">
+        <div style="font-size:12px;color:var(--text3);font-weight:${isNow?700:400}">${isNow?'Jetzt':String(hr).padStart(2,'0')}</div>
+        <div style="font-size:22px;line-height:1">${WX_ICONS[d.hourly.weather_code[i]]||'🌤️'}</div>
+        <div style="font-size:14px;font-weight:700;color:${tc}">${Math.round(d.hourly.temperature_2m[i])}°</div>
+        <div style="font-size:11px;color:var(--accent)">${rp>5?rp+'%':'·'}</div>
+      </div>`;
+    }
+    h += `<div class="card" style="flex-direction:column;gap:8px">
+      <div class="section-head" style="margin:0">24-Stunden-Verlauf</div>
+      <div style="display:flex;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px">${cells}</div>
+    </div>`;
+
+    // ── 7-TAGE-VORHERSAGE ──
+    let daysHtml = '';
+    daily.time.slice(0,7).forEach((date,i) => {
+      if (i===0) return; // heute steckt im Hero
+      const dt = new Date(date);
+      const name = dt.toLocaleDateString('de-DE',{weekday:'short'});
+      const dl   = dt.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'});
+      const code = wxDayCode(d,i);
+      const rain = daily.precipitation_probability_max[i]||0;
+      const rw   = wxRainCompact(wxRainWindows(d, date, -1));
+      const tmax = Math.round(daily.temperature_2m_max[i]), tmin = Math.round(daily.temperature_2m_min[i]);
+      daysHtml += `<div class="wx-day">
+        <div class="name">${name}<div style="font-size:11px;color:var(--text3);font-weight:400">${dl}</div></div>
+        <div class="icon">${WX_ICONS[code]||'🌤️'}</div>
+        <div style="font-size:11px;color:var(--accent);width:60px;text-align:center;line-height:1.4">${rain>5?'💧'+rain+'%':''}${rw?'<br>🕐'+rw:''}</div>
+        <div class="t"><span class="tmax">${tmax}°</span><span class="tmin">${tmin}°</span></div>
+      </div>`;
+    });
+    h += `<div class="card" style="flex-direction:column">
+      <div class="section-head" style="margin:0 0 6px">7-Tage-Vorhersage</div>
+      ${daysHtml}
+    </div>`;
+
+    el.innerHTML = h;
+  } catch (e) {
+    el.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`;
+  }
+}
+
+// ===== REZEPT =====
+async function loadRezept() {
+  const el = document.getElementById('rezept-content');
+  try {
+    const r = await fetch('/api/recipe');
+    const d = await r.json();
+
+    const imgHtml = d.bild
+      ? `<img class="recipe-img" src="data:image/jpeg;base64,${d.bild}" alt="${esc(d.titel)}">`
+      : `<div class="recipe-placeholder">🍽️</div>`;
+
+    const zutaten = (d.zutaten || []).map(z =>
+      `<div class="ingredient-row">
+        <span class="ingredient-dot">•</span>
+        <span class="ingredient-text">${esc(z)}</span>
+      </div>`).join('');
+
+    const anweisungen = (d.anweisungen || []).map((a, i) =>
+      `<div class="step-row">
+        <div class="step-num">${i + 1}</div>
+        <div class="step-text">${esc(a)}</div>
+      </div>`).join('');
+
+    el.innerHTML = `
+      ${imgHtml}
+      <div class="card" style="flex-direction:column;gap:8px">
+        <div style="font-size:22px;font-weight:700;letter-spacing:-0.3px;line-height:1.2">${esc(d.titel)}</div>
+        <div style="font-size:15px;color:var(--text2);line-height:1.5">${esc(d.beschreibung || '')}</div>
+      </div>
+      <div class="section-head">Zutaten</div>
+      <div class="card" style="flex-direction:column;gap:0;padding:12px 16px">
+        ${zutaten || '<div style="color:var(--text3)">Keine Zutaten</div>'}
+      </div>
+      <div class="section-head">Zubereitung</div>
+      <div class="card" style="flex-direction:column;gap:0;padding:12px 16px">
+        ${anweisungen || '<div style="color:var(--text3)">Keine Schritte</div>'}
+      </div>
+      <button class="primary-btn" id="save-rezept-btn" onclick="saveRezept()">💾 Als Word-Datei speichern</button>
+      <div id="rezept-status" style="text-align:center;font-size:14px;min-height:22px;padding-bottom:4px"></div>
+    `;
+    pageSub.textContent = d.titel || 'Rezept des Tages';
+  } catch (e) {
+    el.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`;
+  }
+}
+
+async function saveRezept() {
+  const btn = document.getElementById('save-rezept-btn');
+  const status = document.getElementById('rezept-status');
+  if (!btn) return;
+  btn.textContent = '⏳ Wird gespeichert…';
+  btn.disabled = true;
+  status.textContent = '';
+  try {
+    const r = await fetch('/api/recipe');
+    const d = await r.json();
+    const resp = await fetch('/api/recipe/save', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(d)
+    });
+    const res = await resp.json();
+    status.textContent = '✓ Gespeichert: ' + (res.filename || 'Rezept.docx');
+    status.style.color = 'var(--green)';
+  } catch (e) {
+    status.textContent = '⚠️ ' + e.message;
+    status.style.color = 'var(--red)';
+  }
+  btn.textContent = '💾 Als Word-Datei speichern';
+  btn.disabled = false;
+}
+
+// ===== GEBURTSTAGE =====
+async function loadBirthdays() {
+  const el = document.getElementById('bd-list');
+  try {
+    const r = await fetch('/api/birthdays');
+    const data = await r.json();
+    if (!data || !data.length) {
+      el.innerHTML = '<div class="empty"><div class="big">🎂</div>Keine Geburtstage hinterlegt</div>';
+      return;
+    }
+    const soon   = data.filter(b => b.days <= 7 || b.today);
+    const others = data.filter(b => !b.today && b.days > 7);
+
+    let html = '';
+    if (soon.length) {
+      html += '<div class="section-head">Bald</div>';
+      html += soon.map(b => birthdayCard(b)).join('');
+    }
+    if (others.length) {
+      html += '<div class="section-head">Demnächst</div>';
+      html += others.map(b => birthdayCard(b)).join('');
+    }
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`;
+  }
+}
+
+function birthdayCard(b) {
+  const daysTxt = b.today ? '🎉 HEUTE!' : b.days === 1 ? 'morgen' : `in ${b.days} Tagen`;
+  const ageTxt  = b.age ? ` · wird ${b.age}` : '';
+  const dotClass = b.today ? 'pink' : b.days <= 7 ? 'orange' : 'green';
+  return `<div class="card">
+    <div class="left"><div class="card-dot ${dotClass}">🎂</div></div>
+    <div class="right">
+      <div class="title">${esc(b.name)}</div>
+      <div class="meta">${esc(b.date)} · ${daysTxt}${ageTxt}</div>
+    </div>
+  </div>`;
+}
+
+// ===== CLIPBOARD =====
+async function loadClipboard() {
+  const list = document.getElementById('clip-entries');
+  try {
+    const r = await fetch('/api/clipboard');
+    const d = await r.json();
+    const entries = d.entries || [];
+    if (entries.length === 0) {
+      list.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px 0">Keine Einträge</div>';
+    } else {
+      const srcIcon = s => s==='voice'?'🎤':s==='bolla-anweisung'?'🤖':'✏️';
+      // Linkify URLs + Audio-Player für Audio-Links
+      const linkify = (text) => {
+        let esc = text.replace(/</g,'&lt;');
+        // Abschnitts-Überschriften "--- TITEL ---" fett hervorheben
+        esc = esc.replace(/^---\s*(.+?)\s*---$/gm, '<b>$1</b>');
+        // **fett** wie Markdown
+        esc = esc.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+        // Zeilenumbrüche erhalten (sonst verschluckt der Browser sie)
+        esc = esc.replace(/\n/g, '<br>');
+        return esc.replace(/(https?:\/\/[^\s]+)/g, (url) => {
+          if (/\.(mp4|mov|m4v|avi)(\?|$)/i.test(url)) {
+            const fn = url.split('/').pop().split('?')[0] || 'bolla-video.mp4';
+            return `<video controls preload="metadata" src="${url}" style="width:100%;margin-top:6px;border-radius:6px"></video>`
+              + `<a href="${url}" download="${fn}" style="display:inline-block;margin-top:6px;padding:8px 12px;background:rgba(34,197,94,0.15);color:#22c55e;border-radius:6px;font-size:14px;font-weight:600;text-decoration:none">⬇ Auf Handy speichern</a>`;
+          }
+          if (/\.(wav|mp3|ogg|m4a|webm)(\?|$)/i.test(url)) {
+            return `<a href="${url}" target="_blank" style="color:var(--accent)">${url}</a><br><audio controls preload="none" src="${url}" style="width:100%;margin-top:6px"></audio>`;
+          }
+          if (/\.(png|jpe?g|gif|webp)(\?|$)/i.test(url)) {
+            const fn = url.split('/').pop().split('?')[0] || 'bolla-bild.jpg';
+            return `<a href="${url}" target="_blank" style="color:var(--accent)">${url}</a><br><img src="${url}" style="max-width:100%;margin-top:6px;border-radius:6px">`
+              + `<br><a href="${url}" download="${fn}" style="display:inline-block;margin-top:6px;padding:8px 12px;background:rgba(34,197,94,0.15);color:#22c55e;border-radius:6px;font-size:14px;font-weight:600;text-decoration:none">⬇ Auf Handy speichern</a>`;
+          }
+          return `<a href="${url}" target="_blank" style="color:var(--accent);text-decoration:underline">${url}</a>`;
+        });
+      };
+      list.innerHTML = entries.slice().reverse().map((e, revI) => {
+        const i = entries.length - 1 - revI;
+        const ts = e.ts ? new Date(e.ts).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+        return `<div style="border:1px solid var(--sep);border-radius:8px;padding:10px;background:var(--bg2)">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${srcIcon(e.source)} ${ts}</div>
+          <div style="font-size:14px;line-height:1.5;word-break:break-word">${linkify(e.text)}</div>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button onclick="clipCopyEntry(${i})" class="clip-btn" style="font-size:12px;padding:4px 8px">📋 Kopieren</button>
+            <button onclick="clipDelEntry(${i})" class="clip-btn red" style="font-size:12px;padding:4px 8px">✕</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  } catch (e) {
+    showClipStatus('⚠️ ' + e.message, false);
+  }
+  loadClipboardImages();
+  if (document.getElementById('clip-trash-wrap')?.style.display === 'flex') loadClipboardTrash();
+}
+async function clipboardAppend() {
+  const ta = document.getElementById('clip-text');
+  const text = ta.value.trim();
+  if (!text) return;
+  try {
+    await fetch('/api/clipboard', {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text, append:true, source:'manual'})});
+    ta.value = '';
+    showClipStatus('✓ Hinzugefügt', true);
+    loadClipboard();
+  } catch (e) { showClipStatus('⚠️ ' + e.message, false); }
+}
+async function clipCopyEntry(idx) {
+  const r = await fetch('/api/clipboard'); const d = await r.json();
+  const text = d.entries?.[idx]?.text || '';
+  try { await navigator.clipboard.writeText(text); showClipStatus('✓ Kopiert', true); }
+  catch (e) { showClipStatus('⚠️ ' + e.message, false); }
+}
+async function clipDelEntry(idx) {
+  if (!confirm('Eintrag löschen?')) return;
+  try {
+    await fetch('/api/clipboard/delete', {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({idx})});
+    loadClipboard();
+  } catch (e) { showClipStatus('⚠️ ' + e.message, false); }
+}
+function showClipStatus(msg, ok) {
+  const el = document.getElementById('clip-status');
+  el.textContent = msg; el.style.color = ok ? 'var(--green)' : 'var(--red)';
+  if (msg) setTimeout(() => { el.textContent = ''; }, 2500);
+}
+function clipTrashToggle() {
+  const wrap = document.getElementById('clip-trash-wrap');
+  const caret = document.getElementById('clip-trash-caret');
+  const open = wrap.style.display !== 'flex';
+  wrap.style.display = open ? 'flex' : 'none';
+  if (caret) caret.textContent = open ? '▾' : '▸';
+  if (open) loadClipboardTrash();
+}
+async function loadClipboardTrash() {
+  const list = document.getElementById('clip-trash');
+  try {
+    const r = await fetch('/api/clipboard/trash');
+    const d = await r.json();
+    const entries = d.entries || [];
+    if (entries.length === 0) {
+      list.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px 0">Papierkorb ist leer</div>';
+      return;
+    }
+    const srcIcon = s => s==='voice'?'🎤':s==='bolla-anweisung'?'🤖':'✏️';
+    list.innerHTML = entries.slice().reverse().map((e, revI) => {
+      const i = entries.length - 1 - revI;
+      const del = e.deleted_ts ? new Date(e.deleted_ts).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+      const txt = (e.text||'').replace(/</g,'&lt;');
+      return `<div style="border:1px solid var(--sep);border-radius:8px;padding:10px;background:var(--bg2);opacity:0.85">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${srcIcon(e.source)} gelöscht ${del}</div>
+        <div style="font-size:14px;line-height:1.5;word-break:break-word">${txt}</div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button onclick="clipRestore(${i})" class="clip-btn green" style="font-size:12px;padding:4px 8px">↩️ Wiederherstellen</button>
+          <button onclick="clipTrashDelete(${i})" class="clip-btn red" style="font-size:12px;padding:4px 8px">✕ Endgültig</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    list.innerHTML = '<div style="color:var(--red);font-size:13px;padding:8px 0">Fehler beim Laden</div>';
+  }
+}
+async function clipRestore(idx) {
+  try {
+    await fetch('/api/clipboard/restore', {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({idx})});
+    showClipStatus('✓ Wiederhergestellt', true);
+    loadClipboard();
+    loadClipboardTrash();
+  } catch (e) { showClipStatus('⚠️ ' + e.message, false); }
+}
+async function clipTrashDelete(idx) {
+  if (!confirm('Eintrag endgültig löschen? Das kann nicht rückgängig gemacht werden.')) return;
+  try {
+    await fetch('/api/clipboard/trash/delete', {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({idx})});
+    loadClipboardTrash();
+  } catch (e) { showClipStatus('⚠️ ' + e.message, false); }
+}
+async function loadClipboardImages() {
+  const grid = document.getElementById('clip-img-grid');
+  try {
+    const d = await fetch('/api/clipboard/images').then(r => r.json());
+    if (!d.images || d.images.length === 0) { grid.innerHTML = ''; return; }
+    grid.innerHTML = d.images.map(img => `
+      <div style="position:relative;background:var(--bg);border:1px solid var(--sep);border-radius:10px;overflow:hidden;aspect-ratio:1">
+        <img src="/api/clipboard/image/${encodeURIComponent(img.filename)}" alt="${img.filename}"
+          style="width:100%;height:100%;object-fit:cover;cursor:pointer;display:block"
+          onclick="clipboardImageFullscreen('/api/clipboard/image/${encodeURIComponent(img.filename)}')"
+          title="${img.filename}">
+        <button onclick="clipboardDeleteImage('${img.filename}')"
+          style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:5px;width:26px;height:26px;font-size:14px;cursor:pointer;line-height:1;padding:0">✕</button>
+      </div>`).join('');
+  } catch(e) { /* ignore */ }
+}
+async function _clipImgUpload(file, toWindows) {
+  if (!file || !file.type.startsWith('image/')) { _clipImgStatus('Kein Bild', false); return; }
+  _clipImgStatus('Wird hochgeladen…', true);
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const r = await fetch('/api/clipboard/image', {method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({image_b64:e.target.result.split(',')[1], mime:file.type, to_windows:!!toWindows})});
+      const d = await r.json();
+      if (toWindows) {
+        _clipImgStatus(d.windows_clip_ok ? '✓ Auch in Windows-Zwischenablage (Strg+V am Studio)' : '✓ Gespeichert, Windows-Zwischenablage fehlgeschlagen', !!d.windows_clip_ok);
+      } else {
+        _clipImgStatus('✓ Gespeichert', true);
+      }
+      setTimeout(() => _clipImgStatus('', true), 3000);
+      loadClipboardImages();
+    } catch(e) { _clipImgStatus('Fehler', false); }
+  };
+  reader.readAsDataURL(file);
+}
+function _clipImgStatus(msg, ok) {
+  const el = document.getElementById('clip-img-status');
+  el.textContent = msg; el.style.color = ok ? 'var(--green)' : 'var(--red)';
+}
+function clipImgDragOver(e) {
+  e.preventDefault();
+  const z = document.getElementById('clip-drop-zone');
+  z.style.borderColor = 'var(--accent)'; z.style.background = 'rgba(0,122,255,0.07)';
+}
+function clipImgDragLeave(e) {
+  const z = document.getElementById('clip-drop-zone');
+  z.style.borderColor = ''; z.style.background = '';
+}
+function clipImgDrop(e) { e.preventDefault(); clipImgDragLeave(e); _clipImgUpload(e.dataTransfer.files[0]); }
+function clipImgFileSelected(e) { _clipImgUpload(e.target.files[0]); e.target.value = ''; }
+function clipCameraFileSelected(e) { _clipImgUpload(e.target.files[0], true); e.target.value = ''; }
+
+// ===== AUFPEPPEN =====
+let _pepFiles = [];
+let _pepIsVid = false;
+function pepFileSelected(e) {
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
+  _pepFiles = files;
+  const multi = files.length > 1;
+  document.getElementById('pep-single-opts').style.display = multi ? 'none' : 'flex';
+  document.getElementById('pep-text-opt').style.display = multi ? 'none' : 'flex';
+  const isVid = !multi && files[0].type.startsWith('video');
+  _pepIsVid = isVid;
+  document.getElementById('pep-targetdur-wrap').style.display =
+    (isVid && document.getElementById('pep-music').checked) ? 'block' : 'none';
+  if (!multi) document.getElementById('pep-platform').value = isVid ? 'tiktok' : 'insta';
+  const prev = document.getElementById('pep-preview');
+  prev.style.display = 'block';
+  if (multi) {
+    prev.innerHTML = files.map(f =>
+      `<img src="${URL.createObjectURL(f)}" style="width:70px;height:70px;object-fit:cover;border-radius:8px;margin:3px">`
+    ).join('');
+  } else {
+    const url = URL.createObjectURL(files[0]);
+    prev.innerHTML = isVid
+      ? `<video src="${url}" style="max-width:100%;max-height:240px;border-radius:10px" muted playsinline></video>`
+      : `<img src="${url}" style="max-width:100%;max-height:240px;border-radius:10px">`;
+  }
+  document.getElementById('pep-drop').querySelector('div:nth-child(2)').textContent =
+    multi ? `${files.length} Fotos ausgewählt → wird EIN Reel` : files[0].name;
+}
+function _pepFileB64(f) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res({ file_b64: r.result.split(',')[1], filename: f.name });
+    r.onerror = rej;
+    r.readAsDataURL(f);
+  });
+}
+let _pepSongs = [];
+let _pepSongPick = null; // gewählter Dateiname; null = automatisch neuester Song
+async function pepLoadSongs() {
+  if (_pepSongs.length) return;
+  try {
+    const r = await fetch('/api/aufpeppen-songs');
+    const d = await r.json();
+    _pepSongs = d.songs || [];
+    const list = document.getElementById('pep-song-list');
+    const _esc = t => t.replace(/'/g, "\\'");
+    list.innerHTML = _pepSongs.map(s =>
+      `<div class="pep-dropdown-item" onclick="pepSongPick('${_esc(s.filename)}','${_esc(s.title)}')">${s.title}</div>`
+    ).join('');
+    if (_pepSongs.length) {
+      _pepSongPick = _pepSongs[0].filename;
+      document.getElementById('pep-song-label').textContent = _pepSongs[0].title + ' (neuester)';
+    } else {
+      document.getElementById('pep-song-label').textContent = 'Keine eigenen Songs gefunden';
+    }
+  } catch (e) {
+    document.getElementById('pep-song-label').textContent = 'Songs konnten nicht geladen werden';
+  }
+}
+function pepToggleSongPicker() {
+  const on = document.getElementById('pep-music').checked;
+  document.getElementById('pep-song-wrap').style.display = on ? 'block' : 'none';
+  document.getElementById('pep-targetdur-wrap').style.display = (on && _pepIsVid) ? 'block' : 'none';
+  if (on) pepLoadSongs();
+}
+function pepToggleSongDropdown() {
+  const list = document.getElementById('pep-song-list');
+  list.style.display = list.style.display === 'block' ? 'none' : 'block';
+}
+function pepSongPick(filename, title) {
+  _pepSongPick = filename;
+  document.getElementById('pep-song-label').textContent = title;
+  document.getElementById('pep-song-list').style.display = 'none';
+}
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.pep-dropdown-wrap')) return;
+  const list = document.getElementById('pep-song-list');
+  if (list) list.style.display = 'none';
+});
+async function pepStart() {
+  if (!_pepFiles.length) { pepStatus('Erst Bild(er)/Video wählen 📷', false); return; }
+  const btn = document.getElementById('pep-btn');
+  btn.disabled = true; btn.style.opacity = '0.5';
+  pepStatus('✨ Wird aufgepeppt … einen Moment', true);
+  document.getElementById('pep-result').style.display = 'none';
+  try {
+    const multi = _pepFiles.length > 1;
+    let r;
+    if (multi) {
+      const files = await Promise.all(_pepFiles.map(_pepFileB64));
+      r = await fetch('/api/aufpeppen-multi', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          files,
+          style: document.getElementById('pep-style').value,
+          music: document.getElementById('pep-music').checked ? (_pepSongPick || 'song') : ''
+        })
+      });
+    } else {
+      const { file_b64, filename } = await _pepFileB64(_pepFiles[0]);
+      r = await fetch('/api/aufpeppen', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          file_b64, filename,
+          platform: document.getElementById('pep-platform').value,
+          style: document.getElementById('pep-style').value,
+          text: document.getElementById('pep-text').value.trim(),
+          music: document.getElementById('pep-music').checked ? (_pepSongPick || 'song') : '',
+          target_dur: (_pepIsVid && document.getElementById('pep-targetdur').value)
+            ? Number(document.getElementById('pep-targetdur').value) : null
+        })
+      });
+    }
+    const d = await r.json();
+    if (!r.ok || d.error) { pepStatus('⚠️ ' + (d.error || 'Fehlgeschlagen'), false); return; }
+    pepStatus('✅ Fertig!', true);
+    _pepLastFilename = d.filename;
+    _pepLastKind = d.kind;
+    _pepLastPosterName = d.poster ? d.poster.split('/').pop() : '';
+    _pepCaptionsState = 'idle';
+    const res = document.getElementById('pep-result');
+    res.style.display = 'flex';
+    const media = d.kind === 'video'
+      ? `<video src="${d.url}" ${d.poster ? `poster="${d.poster}"` : ''} preload="auto" controls playsinline style="max-width:100%;border-radius:10px;background:#000"></video>`
+      : `<img src="${d.url}" style="max-width:100%;border-radius:10px">`;
+    res.innerHTML = media
+      + `<a href="${d.url}" download="${d.filename}" onclick="pepEnsureCaptions()" style="display:inline-block;margin-top:4px;padding:12px;background:rgba(34,197,94,0.15);color:#22c55e;border-radius:8px;font-size:15px;font-weight:600;text-decoration:none">⬇ Auf Handy speichern</a>`
+      + `<button onclick="pepReveal('${d.filename}');pepEnsureCaptions()" style="display:inline-block;margin-top:4px;padding:12px;background:rgba(0,122,255,0.15);color:var(--accent);border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer">📁 Im Ordner „Aufgepeppt" speichern</button>`
+      + `<div id="pep-reveal-status" style="font-size:12px;color:var(--text3)"></div>`
+      + `<div id="pep-captions" style="display:none;margin-top:4px"></div>`;
+    document.getElementById('pep-reset-btn').style.display = 'block';
+  } catch (e) {
+    pepStatus('⚠️ Fehler: ' + e.message, false);
+  } finally {
+    btn.disabled = false; btn.style.opacity = '1';
+  }
+}
+let _pepLastFilename = '';
+let _pepLastKind = '';
+let _pepLastPosterName = '';
+let _pepCaptionsState = 'idle'; // idle|loading|done
+async function pepEnsureCaptions() {
+  if (_pepCaptionsState !== 'idle' || !_pepLastFilename) return;
+  _pepCaptionsState = 'loading';
+  const box = document.getElementById('pep-captions');
+  if (!box) return;
+  box.style.display = 'block';
+  box.innerHTML = '<div style="font-size:13px;color:var(--text3);margin-top:6px">✨ Captions für TikTok & Insta werden geschrieben …</div>';
+  try {
+    const r = await fetch('/api/aufpeppen/captions', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ filename: _pepLastFilename, kind: _pepLastKind, poster: _pepLastPosterName })
+    });
+    const d = await r.json();
+    if (!r.ok || d.error) {
+      box.innerHTML = `<div style="font-size:13px;color:var(--red);margin-top:6px">⚠️ ${d.error || 'Captions fehlgeschlagen'}</div>`;
+      _pepCaptionsState = 'idle';
+      return;
+    }
+    box.innerHTML = pepCaptionBlock('🎵 TikTok', d.tiktok, 'tt') + pepCaptionBlock('📸 Instagram', d.instagram, 'ig')
+      + (d.saved_to_desktop
+          ? '<div style="font-size:12px;color:var(--text3);margin-top:4px">📄 Auch als .txt neben der Datei in „Aufgepeppt" gespeichert</div>'
+          : '');
+    _pepCaptionsState = 'done';
+  } catch (e) {
+    box.innerHTML = `<div style="font-size:13px;color:var(--red);margin-top:6px">⚠️ Fehler: ${e.message}</div>`;
+    _pepCaptionsState = 'idle';
+  }
+}
+function pepCaptionBlock(label, text, id) {
+  const safe = (text || '').replace(/</g, '&lt;');
+  return `<div style="text-align:left;background:var(--bg2);border:1px solid var(--sep);border-radius:8px;padding:10px;margin-top:8px">
+    <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">${label}</div>
+    <div id="pep-cap-${id}" style="font-size:14px;white-space:pre-wrap;line-height:1.4">${safe}</div>
+    <button onclick="pepCopyCaption('${id}')" class="clip-btn" style="font-size:12px;padding:4px 8px;margin-top:6px">📋 Kopieren</button>
+  </div>`;
+}
+async function pepCopyCaption(id) {
+  const el = document.getElementById('pep-cap-' + id);
+  if (!el) return;
+  try { await navigator.clipboard.writeText(el.textContent); pepStatus('✓ Caption kopiert', true); }
+  catch (e) { pepStatus('⚠️ Kopieren fehlgeschlagen', false); }
+}
+async function pepReveal(filename) {
+  const st = document.getElementById('pep-reveal-status');
+  if (st) st.textContent = 'Öffne Ordner am PC …';
+  try {
+    const r = await fetch('/api/aufpeppen/reveal', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ filename })
+    });
+    const d = await r.json();
+    if (st) st.textContent = (r.ok && d.ok) ? `✅ Liegt in ${d.path}` : ('⚠️ ' + (d.error || 'Fehlgeschlagen'));
+  } catch (e) {
+    if (st) st.textContent = '⚠️ Fehler: ' + e.message;
+  }
+}
+function pepStatus(msg, ok) {
+  const el = document.getElementById('pep-status');
+  el.textContent = msg; el.style.color = ok ? 'var(--green)' : 'var(--red)';
+}
+function pepReset() {
+  _pepFiles = [];
+  _pepIsVid = false;
+  _pepLastFilename = ''; _pepLastKind = ''; _pepLastPosterName = ''; _pepCaptionsState = 'idle';
+  document.getElementById('pep-file').value = '';
+  document.getElementById('pep-preview').style.display = 'none';
+  document.getElementById('pep-preview').innerHTML = '';
+  document.getElementById('pep-single-opts').style.display = 'flex';
+  document.getElementById('pep-text-opt').style.display = 'flex';
+  document.getElementById('pep-text').value = '';
+  document.getElementById('pep-music').checked = false;
+  document.getElementById('pep-song-wrap').style.display = 'none';
+  document.getElementById('pep-targetdur-wrap').style.display = 'none';
+  document.getElementById('pep-targetdur').value = '';
+  document.getElementById('pep-drop').querySelector('div:nth-child(2)').textContent = 'Bild(er) oder Video wählen';
+  document.getElementById('pep-result').style.display = 'none';
+  document.getElementById('pep-reset-btn').style.display = 'none';
+  pepStatus('', true);
+}
+
+document.addEventListener('paste', e => {
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (file) {
+        const z = document.getElementById('clip-drop-zone');
+        if (z) { z.style.borderColor = 'var(--accent)'; z.style.background = 'rgba(0,122,255,0.07)'; setTimeout(() => { z.style.borderColor = ''; z.style.background = ''; }, 800); }
+        _clipImgUpload(file);
+      }
+      break;
+    }
+  }
+});
+async function clipImgFromClipboard() {
+  if (!navigator.clipboard || !navigator.clipboard.read) {
+    _clipImgStatus('Zwischenablage hier nicht verfügbar — bitte „Tippen zum Auswählen"', false);
+    return;
+  }
+  _clipImgStatus('Lese Zwischenablage…', true);
+  try {
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      const type = item.types.find(t => t.startsWith('image/'));
+      if (type) {
+        const blob = await item.getType(type);
+        _clipImgUpload(new File([blob], 'screenshot.png', {type}));
+        return;
+      }
+    }
+    _clipImgStatus('Nichts kopiert — tippe oben aufs Kästchen und wähl den Screenshot aus der Galerie', false);
+  } catch (err) {
+    _clipImgStatus('Geht hier nicht — tippe oben aufs Kästchen und wähl den Screenshot aus der Galerie', false);
+  }
+}
+async function clipboardDeleteImage(filename) {
+  await fetch('/api/clipboard/image/delete', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({filename})});
+  loadClipboardImages();
+}
+function clipboardImageFullscreen(url) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;overflow:auto';
+  overlay.innerHTML = `
+    <img src="${url}" style="max-width:95vw;max-height:90vh;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,0.6);cursor:zoom-in;transition:max-width .15s,max-height .15s">
+    <button aria-label="Schließen" style="position:fixed;top:14px;right:14px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(0,0,0,0.65);color:#fff;font-size:22px;line-height:44px;text-align:center;cursor:pointer;z-index:10000">✕</button>`;
+  const img = overlay.querySelector('img');
+  const closeBtn = overlay.querySelector('button');
+  let zoomed = false;
+  img.onclick = (e) => {
+    e.stopPropagation();
+    zoomed = !zoomed;
+    if (zoomed) {
+      img.style.maxWidth = 'none';
+      img.style.maxHeight = 'none';
+      img.style.width = '220vw';
+      img.style.cursor = 'zoom-out';
+    } else {
+      img.style.maxWidth = '95vw';
+      img.style.maxHeight = '90vh';
+      img.style.width = '';
+      img.style.cursor = 'zoom-in';
+    }
+  };
+  const close = () => { document.body.removeChild(overlay); document.removeEventListener('keydown', escKey); };
+  closeBtn.onclick = close;
+  overlay.onclick = close;   // Klick auf den dunklen Rand schließt weiterhin
+  function escKey(e) { if (e.key === 'Escape') close(); }
+  document.addEventListener('keydown', escKey);
+  document.body.appendChild(overlay);
+}
+
+// ===== LADEPLANER (Säulen ENTLANG der Route) =====
+async function loadLaden() {
+  // Passiv: Suche startet Chris per Button. Enter im Feld triggert ebenfalls.
+  const z = document.getElementById('laden-ziel');
+  if (z && !z._wired) {
+    z._wired = true;
+    const go = e => { if (e.key === 'Enter') { e.preventDefault(); ladenRouteSearch(); } };
+    z.addEventListener('keydown', go);
+    document.getElementById('laden-start').addEventListener('keydown', go);
+  }
+}
+
+function _ladenClearField(id) {
+  const el = document.getElementById(id);
+  if (el) { el.value = ''; el.focus(); }
+}
+
+// Adresse per Reverse-Geocoding — lazy, nur auf Klick/Popup-Öffnen (nicht im Voraus für alle Säulen)
+async function _ladenFetchAdresse(lat, lon) {
+  try {
+    const r = await fetch(`/api/laden/adresse?lat=${lat}&lon=${lon}`);
+    const j = await r.json();
+    return j.adresse || '';
+  } catch (e) { return ''; }
+}
+
+function _ladenCopyText(text, btn) {
+  if (!text || !navigator.clipboard) return;
+  navigator.clipboard.writeText(text).then(() => {
+    if (btn) {
+      const old = btn.textContent;
+      btn.textContent = '✓ kopiert';
+      setTimeout(() => { btn.textContent = old; }, 1500);
+    }
+  }).catch(() => {});
+}
+
+async function ladenCardAdresse(lat, lon, elId, btn) {
+  const el = document.getElementById(elId);
+  const old = btn.textContent;
+  btn.disabled = true; btn.textContent = '…';
+  const addr = await _ladenFetchAdresse(lat, lon);
+  btn.disabled = false;
+  if (el) el.textContent = addr || 'Adresse nicht gefunden';
+  if (addr) {
+    btn.textContent = old;
+    _ladenCopyText(addr, btn);
+  } else {
+    btn.textContent = old;
+  }
+}
+
+function _ladenCurrentPos(timeoutMs) {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      p => resolve({ lat: p.coords.latitude, lon: p.coords.longitude }),
+      () => resolve(null),
+      { enableHighAccuracy: false, timeout: timeoutMs || 8000 }
+    );
+  });
+}
+
+async function ladenRouteSearch() {
+  const ziel     = document.getElementById('laden-ziel').value.trim();
+  const startTxt = document.getElementById('laden-start').value.trim();
+  const el = document.getElementById('laden-content');
+  if (!ziel) { el.innerHTML = '<div class="empty">Bitte ein Ziel eingeben</div>'; return; }
+
+  let url = '/api/laden/route?ziel=' + encodeURIComponent(ziel);
+  if (startTxt) {
+    url += '&start=' + encodeURIComponent(startTxt);
+  } else {
+    el.innerHTML = '<div class="loading">Standort wird ermittelt</div>';
+    const pos = await _ladenCurrentPos(8000);
+    if (pos) url += '&start_lat=' + pos.lat + '&start_lon=' + pos.lon;
+    // sonst: Server nimmt Norderstedt (Zuhause) als Start
+  }
+  el.innerHTML = '<div class="loading">Route &amp; Ladesäulen werden gesucht<br><span style="font-size:12px">bei langen Strecken kann das ~1 Min dauern</span></div>';
+
+  try {
+    const d = await fetch(url).then(r => r.json());
+    if (d.error) { el.innerHTML = `<div class="empty">⚠️ ${esc(d.error)}</div>`; return; }
+    ladenRenderRoute(d);
+  } catch (e) {
+    el.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`;
+  }
+}
+
+function ladenStationCard(s, color, idx) {
+  const meta = [s.operator, s.kw ? s.kw + ' kW' : '', s.capacity ? s.capacity + ' Pl.' : ''].filter(Boolean).join(' · ');
+  const sub  = [s.route_km != null ? `bei km ${s.route_km}` : '', s.detour_m != null ? `${s.detour_m} m ab Route` : ''].filter(Boolean).join(' · ');
+  const addrId = `laden-card-addr-${idx}`;
+  return `<div class="card" style="align-items:center;gap:10px">
+    <div class="left"><div class="card-dot" style="background:${color}22;color:${color};font-size:22px">⚡</div></div>
+    <div class="right">
+      <div class="title">${esc(s.name)}</div>
+      <div class="meta">${esc(meta)}</div>
+      ${sub ? `<div class="extra">📍 ${esc(sub)}${s.addr ? ' · ' + esc(s.addr) : ''}</div>` : (s.addr ? `<div class="extra">${esc(s.addr)}</div>` : '')}
+      <div id="${addrId}" style="font-size:12px;color:var(--text2);margin-top:3px"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+      <a href="${s.maps}" target="_blank" style="padding:8px 12px;background:rgba(0,122,255,0.12);border-radius:9px;color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap;text-align:center">Karte</a>
+      <button onclick="ladenCardAdresse(${s.lat},${s.lon},'${addrId}',this)" style="padding:8px 12px;background:rgba(52,199,89,0.12);border:none;border-radius:9px;color:var(--green);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">📋 Adresse</button>
+    </div>
+  </div>`;
+}
+
+let _ladenMap = null;
+function _ladenInitMap(d) {
+  const mapDiv = document.getElementById('laden-map-el');
+  if (!mapDiv || !window.L) return;
+  if (_ladenMap) { _ladenMap.remove(); _ladenMap = null; }
+  _ladenMap = L.map('laden-map-el', { zoomControl: true });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap contributors © CARTO', subdomains: 'abcd', maxZoom: 20
+  }).addTo(_ladenMap);
+
+  const bounds = [];
+  if (d.route && d.route.length) {
+    L.polyline(d.route, { color: '#0a84ff', weight: 4, opacity: 0.8 }).addTo(_ladenMap);
+    d.route.forEach(p => bounds.push(p));
+  }
+  const groups = [['enbw', '#34c759'], ['aral', '#ff9500'], ['sonstige', '#8e8e93']];
+  groups.forEach(([key, color]) => {
+    (d[key] || []).forEach((s, i) => {
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="width:26px;height:26px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:14px">⚡</div>`,
+        iconSize: [26, 26], iconAnchor: [13, 13]
+      });
+      const meta = [s.operator, s.kw ? s.kw + ' kW' : ''].filter(Boolean).join(' · ');
+      const popId = `laden-pop-${key}-${i}`;
+      const marker = L.marker([s.lat, s.lon], { icon }).addTo(_ladenMap);
+      marker.bindPopup(`<b>${esc(s.name)}</b><br>${esc(meta)}<br>
+        <div id="${popId}" style="margin:6px 0;font-size:12px;color:#555">${s.addr ? esc(s.addr) : 'Adresse wird geladen…'}</div>
+        <button onclick="_ladenCopyText(document.getElementById('${popId}').textContent, this)" style="padding:4px 10px;font-size:12px;border:none;border-radius:7px;background:rgba(52,199,89,0.15);color:#248a3d;cursor:pointer;font-weight:600">📋 Adresse kopieren</button>`);
+      marker.on('popupopen', async () => {
+        if (s.addr) return;   // OSM-Adresse schon vorhanden, kein Reverse-Geocoding nötig
+        const el = document.getElementById(popId);
+        if (!el || el.dataset.loaded) return;
+        el.dataset.loaded = '1';
+        const addr = await _ladenFetchAdresse(s.lat, s.lon);
+        el.textContent = addr || 'Adresse nicht gefunden';
+      });
+      bounds.push([s.lat, s.lon]);
+    });
+  });
+
+  if (bounds.length) {
+    _ladenMap.fitBounds(bounds, { padding: [24, 24] });
+  } else {
+    _ladenMap.setView([51.0, 10.0], 6);
+  }
+}
+
+function ladenRenderRoute(d) {
+  const el = document.getElementById('laden-content');
+  const km    = d.dist_km != null ? `${d.dist_km} km` : '';
+  const dauer = d.dauer_min != null ? `${Math.floor(d.dauer_min/60)} h ${d.dauer_min%60} min` : '';
+  let h = `<div class="card" style="flex-direction:column;gap:4px;border-left:3px solid var(--accent)">
+    <div style="font-weight:700;font-size:15px">${esc(d.start)} → ${esc(d.ziel)}</div>
+    <div style="font-size:13px;color:var(--text2)">🛣️ ${km}${dauer ? ' · ⏱️ ' + dauer : ''} · ${d.count} Säulen entlang der Route</div>
+  </div>
+  <div id="laden-map-el" style="height:320px;border-radius:12px;overflow:hidden;border:1px solid var(--border,rgba(255,255,255,0.1));margin:4px 0"></div>`;
+
+  if (d.enbw && d.enbw.length) {
+    h += `<div class="section-head" style="color:var(--green)">✅ EnBW · ~46 ct/kWh</div>`;
+    h += d.enbw.map((s, i) => ladenStationCard(s, '#34c759', 'enbw' + i)).join('');
+  } else {
+    h += '<div class="empty"><div class="big">🔌</div>Keine EnBW-Säulen entlang dieser Route gefunden</div>';
+  }
+  el.innerHTML = h;
+
+  if (!document.getElementById('leaflet-css-laden')) {
+    const l = document.createElement('link'); l.id = 'leaflet-css-laden'; l.rel = 'stylesheet';
+    l.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(l);
+  }
+  if (!window.L) {
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s.onload = () => setTimeout(() => _ladenInitMap(d), 100);
+    document.head.appendChild(s);
+  } else {
+    setTimeout(() => _ladenInitMap(d), 100);
+  }
+}
+
+// ===== SPRACHNOTIZ (komplett Web Speech API — kein Whisper/Server mehr) =====
+async function loadNotiz() {
+  loadNotizVerlauf();
+}
+
+// --- Live-Spracherkennung (Web Speech API, Google-Cloud — kein Upload, sofort) ---
+let _recog = null, _recogActive = false, _speechBase = '';
+function toggleSpeech() {
+  if (_recogActive) { if (_recog) _recog.stop(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const statusEl = document.getElementById('speech-status');
+  const liveEl = document.getElementById('speech-live');
+  const btn = document.getElementById('speech-btn');
+  const ta = document.getElementById('notiz-input');
+  if (!SR) {
+    statusEl.textContent = '⚠️ Live-Erkennung hier nicht verfügbar — nutze die Aufnahme unten';
+    return;
+  }
+  _recog = new SR();
+  _recog.lang = 'de-DE';
+  _recog.interimResults = true;
+  _recog.continuous = false;
+  _recog.maxAlternatives = 1;
+  _speechBase = ta.value.trim() ? ta.value.trim() + ' ' : '';
+  _recog.onstart = () => {
+    _recogActive = true;
+    btn.textContent = '⏹️';
+    btn.style.background = '#ff3b30';
+    btn.style.boxShadow = '0 0 0 8px rgba(255,59,48,0.2),0 4px 24px rgba(255,59,48,0.4)';
+    statusEl.textContent = '🎤 Sprich jetzt — nochmal tippen zum Stoppen';
+    liveEl.textContent = '';
+  };
+  _recog.onresult = (e) => {
+    let finalText = '', interim = '';
+    for (let i = 0; i < e.results.length; i++) {
+      const tr = e.results[i];
+      if (tr.isFinal) finalText += tr[0].transcript + ' ';
+      else interim += tr[0].transcript;
+    }
+    ta.value = (_speechBase + finalText + interim).replace(/\s+/g, ' ').trim();
+    liveEl.textContent = interim ? '… ' + interim : '';
+  };
+  _recog.onerror = (e) => {
+    if (e.error === 'no-speech') return;
+    statusEl.textContent = '⚠️ ' + (e.error === 'not-allowed' ? 'Mikrofon-Zugriff verweigert' : 'Fehler: ' + e.error);
+  };
+  _recog.onend = () => {
+    _recogActive = false;
+    btn.textContent = '🎤';
+    btn.style.background = 'var(--accent)';
+    btn.style.boxShadow = '0 4px 24px rgba(10,132,255,0.4)';
+    liveEl.textContent = '';
+    statusEl.textContent = ta.value.trim()
+      ? '✓ Fertig — prüfen und Aktion wählen'
+      : 'Auf „Sprechen" tippen und loslegen';
+  };
+  try { _recog.start(); }
+  catch (e) { statusEl.textContent = '⚠️ Start fehlgeschlagen: ' + e.message; }
+}
+
+async function notizSenden() {
+  // 📩 Telegram-Button: NUR Telegram, kein Speichern
+  const text = document.getElementById('notiz-input').value.trim();
+  if (!text) return;
+  const st = document.getElementById('notiz-action-status');
+  st.textContent = '📩 Wird gesendet…'; st.style.color = 'var(--text3)';
+  try {
+    await fetch('/api/quickmsg', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ text, save_note: false })});
+    st.textContent = '✓ Per Telegram gesendet'; st.style.color = 'var(--green)';
+    setTimeout(() => { st.textContent = ''; }, 3000);
+  } catch (e) { st.textContent = '⚠️ ' + e.message; st.style.color = 'var(--red)'; }
+}
+
+async function notizSpeichern() {
+  // 💾 Speichern-Button: NUR in "Letzte Notizen", kein Telegram
+  const text = document.getElementById('notiz-input').value.trim();
+  if (!text) return;
+  const st = document.getElementById('notiz-action-status');
+  st.textContent = '💾 Wird gespeichert…'; st.style.color = 'var(--text3)';
+  try {
+    await fetch('/api/quicknotes/add', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ text })});
+    st.textContent = '✓ In Letzte Notizen gespeichert'; st.style.color = 'var(--green)';
+    loadNotizVerlauf();
+    setTimeout(() => { st.textContent = ''; }, 3000);
+  } catch (e) { st.textContent = '⚠️ ' + e.message; st.style.color = 'var(--red)'; }
+}
+
+async function notizKopieren() {
+  // 📋 Kopieren-Button: ins gclip (geräteübergreifend, nicht Windows-Zwischenablage)
+  const text = document.getElementById('notiz-input').value.trim();
+  if (!text) return;
+  const st = document.getElementById('notiz-action-status');
+  st.textContent = '📋 Ins Clipboard…'; st.style.color = 'var(--text3)';
+  try {
+    await fetch('/api/clipboard', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ text, append: true, source: 'voice' })});
+    st.textContent = '✓ Im Clipboard (auch im Studio sichtbar)'; st.style.color = 'var(--green)';
+    setTimeout(() => { st.textContent = ''; }, 3000);
+  } catch (e) { st.textContent = '⚠️ ' + e.message; st.style.color = 'var(--red)'; }
+}
+
+async function notizDelete(idx) {
+  if (!confirm('Notiz löschen?')) return;
+  try {
+    await fetch('/api/quicknotes/delete', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ idx })});
+    loadNotizVerlauf();
+  } catch (e) {}
+}
+
+async function loadNotizVerlauf() {
+  const el = document.getElementById('notiz-verlauf');
+  try {
+    const r = await fetch('/api/quicknotes');
+    const notes = await r.json();
+    if (!notes.length) { el.innerHTML = '<div style="color:var(--text3);font-size:14px;padding:8px 4px">Noch keine gespeicherten Notizen</div>'; return; }
+    el.innerHTML = notes.slice(0, 10).map((n, i) => {
+      const ts = new Date(n.ts).toLocaleString('de-DE', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      return `<div class="card" style="align-items:flex-start;gap:10px">
+        <div class="card-dot purple" style="font-size:16px;flex-shrink:0">📝</div>
+        <div class="right">
+          <div style="font-size:15px;line-height:1.4">${esc(n.text)}</div>
+          <div class="extra">${ts}</div>
+        </div>
+        <button onclick="notizDelete(${i})" title="Löschen"
+          style="background:transparent;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px 8px;align-self:flex-start">✕</button>
+      </div>`;
+    }).join('');
+  } catch (e) { el.innerHTML = ''; }
+}
+
+// ===== SOS =====
+let _sosLat = null, _sosLon = null, _sosContacts = [];
+
+async function loadSOS() {
+  // Load contacts & medical info
+  try {
+    const d = await fetch('/api/sos/contacts').then(r => r.json());
+    const contacts = d.contacts || [];
+    _sosContacts = contacts;
+    const med = d.medical || {};
+    document.getElementById('sos-contacts').innerHTML = contacts.length
+      ? contacts.map(c => c.tel
+          ? `<a href="tel:${esc(c.tel)}" class="card" style="text-decoration:none;align-items:center;gap:14px">
+              <div class="card-dot green" style="font-size:20px">${c.emoji || '👤'}</div>
+              <div class="right"><div class="title">${esc(c.name)}</div><div class="meta">${esc(c.tel)}</div></div>
+              <div style="font-size:24px">📞</div>
+            </a>`
+          : `<div class="card" style="opacity:0.5;align-items:center">
+              <div class="card-dot" style="font-size:20px">${c.emoji || '👤'}</div>
+              <div class="right"><div class="title">${esc(c.name)}</div><div class="meta" style="font-size:12px">Nummer in sos_contacts.json eintragen</div></div>
+            </div>`
+        ).join('')
+      : '<div style="color:var(--text3);font-size:14px;padding:8px">Kontakte in config/sos_contacts.json eintragen</div>';
+
+    const medRows = [
+      med.blood_type    && ['🩸', 'Blutgruppe', med.blood_type],
+      med.lenses        && ['👁️', 'Linsen', med.lenses],
+      med.allergies     && ['⚠️', 'Allergien', med.allergies],
+      med.medications   && ['💊', 'Medikamente', med.medications],
+      med.doctor        && ['🏥', 'Hausarzt', med.doctor],
+      med.insurance     && ['📋', 'Krankenkasse', med.insurance],
+    ].filter(Boolean);
+    document.getElementById('sos-medical').innerHTML = medRows.length
+      ? medRows.map(([ic, label, val]) =>
+          `<div style="display:flex;gap:10px;padding:6px 0;border-bottom:0.5px solid var(--sep)">
+            <span style="font-size:18px;flex-shrink:0">${ic}</span>
+            <div><div style="font-size:12px;color:var(--text3)">${esc(label)}</div><div style="font-size:15px">${esc(val)}</div></div>
+          </div>`).join('')
+      : '<div style="color:var(--text3);font-size:14px">Infos in config/sos_contacts.json eintragen</div>';
+  } catch (e) { /* ignore */ }
+
+  // Get GPS position
+  if (!navigator.geolocation) { sosRenderShare(); return; }
+  navigator.geolocation.getCurrentPosition(async pos => {
+    _sosLat = pos.coords.latitude;
+    _sosLon = pos.coords.longitude;
+    try {
+      const nr = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${_sosLat}&lon=${_sosLon}`, {headers:{'Accept-Language':'de'}});
+      const nd = await nr.json();
+      const addr = nd.display_name || `${_sosLat.toFixed(5)}, ${_sosLon.toFixed(5)}`;
+      document.getElementById('sos-address').textContent = addr;
+    } catch {
+      document.getElementById('sos-address').textContent = `${_sosLat.toFixed(5)}, ${_sosLon.toFixed(5)}`;
+    }
+    sosRenderShare();
+  }, () => {
+    document.getElementById('sos-address').textContent = 'Standort nicht verfügbar';
+    sosRenderShare();
+  });
+}
+
+function _sosMapsLink() {
+  return (_sosLat && _sosLon) ? `https://maps.google.com/?q=${_sosLat},${_sosLon}` : '';
+}
+
+// Standort teilen: native WhatsApp-Deeplinks an die Notfallkontakte (Chris' Telegram macht keinen Sinn).
+function sosRenderShare() {
+  const el = document.getElementById('sos-share');
+  if (!el) return;
+  const maps = _sosMapsLink();
+  if (!maps) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:14px;padding:10px 8px;line-height:1.4">Warte auf GPS-Standort…<br><span style="font-size:12px">Standortfreigabe im Browser nötig.</span></div>';
+    return;
+  }
+  const addr = document.getElementById('sos-address').textContent || '';
+  const text = encodeURIComponent(`🆘 Notfall! Ich brauche Hilfe. Mein Standort:\n${addr}\n${maps}`);
+  const waContacts = _sosContacts.filter(c => c.wa);
+  let h = waContacts.map(c =>
+    `<a href="https://wa.me/${c.wa}?text=${text}" target="_blank" class="card" style="text-decoration:none;align-items:center;gap:14px;border-left:3px solid var(--green)">
+      <div class="card-dot green" style="font-size:20px">${c.emoji || '💬'}</div>
+      <div class="right"><div class="title">${esc(c.name)}</div><div class="meta">Standort per WhatsApp senden</div></div>
+      <div style="font-size:22px">💬</div>
+    </a>`).join('');
+  if (!waContacts.length) {
+    h += '<div style="color:var(--text3);font-size:13px;padding:8px">Keine WhatsApp-Kontakte in sos_contacts.json (Feld „wa")</div>';
+  }
+  h += `<button onclick="sosCopyMaps()" class="clip-btn" style="width:100%;margin-top:4px">📋 Standort-Link kopieren</button>`;
+  el.innerHTML = h;
+}
+
+async function sosCopyMaps() {
+  const st = document.getElementById('sos-send-status');
+  const maps = _sosMapsLink();
+  if (!maps) { st.textContent = 'Noch kein Standort'; st.style.color = 'var(--red)'; return; }
+  try {
+    await navigator.clipboard.writeText(maps);
+    st.textContent = '✓ Standort-Link kopiert'; st.style.color = 'var(--green)';
+  } catch {
+    st.textContent = maps; st.style.color = 'var(--text2)';
+  }
+}
+
+// ===== INIT =====
+pageTitle.textContent = TITLES.cal[0];
+pageSub.textContent   = TITLES.cal[1];
+loadTab('cal');
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
