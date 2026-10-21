@@ -28,8 +28,10 @@ rows = [
   "—", "14.10. Kontaktdaten + Preisrahmen gesendet, in Gesuchdatei"],
  ["KSK München – BaufinanzierungsCenter", "München · Hr. Basile (Baufinanzierung)", "leonardo.basile@kskmse.de", "Wartet auf Objekte",
   "—", "19.10. Antwort: nimmt uns in Datenbank auf; Anschrift + Mail gesendet (ohne Telefon)"],
- ["Lieb Immobilien", "Weilheim · Hr. Lieb", "info@lieb-immobilien.de", "Wartet auf Antwort",
-  "Exposé der Neubauwohnung abwarten und prüfen (Aufzug, Südterrasse, ~100 m²)", "19.10. bietet passende Neubauwohnung an; Anschrift, Festnetz + Kriterien gesendet, Exposé erbeten"],
+ ["Lieb Immobilien", "Weilheim · Hr. Lieb", "info@lieb-immobilien.de", "Wartet auf Objekte",
+  "Nur noch bei Penthouse/DG mit großer Südterrasse + Aufzug melden", "19.10. Anschrift, Festnetz + Kriterien gesendet; 21.10. Exposé Peißenberg (nur überdachter Balkon) → Absage gesendet, Kontakt bleibt offen"],
+ ["deltapro Immobilien", "Gilching · Fr. Götz", "info@deltapro.immobilien", "Absage",
+  "—", "21.10. Antwort mit Westpark-Sendling (kein PH/keine Terrasse) + Obermenzing DG 145 m² (Preis viel zu hoch) → Absage gesendet"],
  ["Schneider & Prell Immobilientreuhand", "Wolfratshausen · Fr. Pfeiffer", "h.pfeiffer@schneider-prell.de", "Wartet auf Objekte",
   "—", "14.10. Kontaktformular ausgefüllt (Anschrift, Festnetz)"],
  ["FT Immobilien 24", "Unterföhring · Hr. Tortorici", "kontakt@ftimmobilien24.com", "Wartet auf Objekte",
@@ -70,23 +72,51 @@ ws.add_data_validation(dv); dv.add(f"D2:D{ws.max_row + 20}")
 a = wb.create_sheet("Angebote")
 head = ["Makler", "Objekt / Lage", "Typ", "Preis €", "m²", "Score", "Wertung", "Notiz",
         "Aufzug", "Südterrasse", "Lage im Suchraum", "Gesundheit/Fitness", "Neubau/gepflegt", "Fußbodenheizung",
-        "Tiefgarage+Ladestation", "Keller", "ruhig", "Preis im Rahmen", "Größe ca. 100"]
+        "Tiefgarage+Ladestation", "Keller", "ruhig", "Preis im Rahmen", "Größe ca. 100",
+        "Provision % (Käufer, inkl. MwSt.)", "Nebenkosten €", "Gesamtkosten €"]
 a.append(head)
 ci = {h: i + 1 for i, h in enumerate(head)}
 W = {"Südterrasse": 3, "Lage im Suchraum": 3, "Gesundheit/Fitness": 2, "Neubau/gepflegt": 2, "Fußbodenheizung": 1,
      "Tiefgarage+Ladestation": 1, "Keller": 1, "ruhig": 1, "Preis im Rahmen": 2, "Größe ca. 100": 3}
+PROV = "Provision % (Käufer, inkl. MwSt.)"
+PW = 1        # Gewicht Provision (klein: ~5 %)
+PMAX = 3.57   # 3,57 % (üblicher Höchstsatz inkl. MwSt.) = 0 Punkte, provisionsfrei = voll
 def score(r):
     parts = [f'{w}*IF({L(ci[k])}{r}="J",1,IF({L(ci[k])}{r}="N",0,0.5))' for k, w in W.items()]
-    return (f'IF(OR({L(ci["Typ"])}{r}="Etagenwohnung",{L(ci["Aufzug"])}{r}="N"),0,'
-            f'ROUND(100*({"+".join(parts)})/{sum(W.values())},0))')
+    pv = f'{L(ci[PROV])}{r}'   # Provision: nur bei neuen Objekten gepflegt; leer = zählt nicht (nicht rückwirkend)
+    pt = f'IF({pv}="",0,PW*IF({pv}="?",0.5,MAX(0,1-{pv}/PMAX)))'
+    return (f'IF(OR({L(ci["Typ"])}{r}="Etagenwohnung",{L(ci["Aufzug"])}{r}="N",{L(ci["Südterrasse"])}{r}="N"),0,'
+            f'ROUND(100*({"+".join(parts)}+{pt})/({sum(W.values())}+IF({pv}="",0,PW)),0))').replace("PW", str(PW)).replace("PMAX", str(PMAX))
 data = [
  ["Aigner Immobilien", "Obermenzing, 81247 München (Obj. 43421, 4 Zi.)", "Etagenwohnung", None, 91.42, None, "Absage",
   "Etagenwohnung = No-Go; Absage 14.10. gesendet", "?", "?", "J", "?", "?", "?", "?", "?", "?"],
  ["Engel & Völkers Weilheim", "Neubauprojekt „Am Hochufer“, Weilheim", "?", 615000, None, None, "Absage",
   "15.10. abgelehnt: keine Terrasse", "?", "N", "J", "?", "J", "?", "?", "?", "?"],
+ ["Lieb Immobilien", "Neubau-DG, Wörther Str. 45, Peißenberg (5-Familienhaus, fertig Anfang 2027)", "Dachgeschoss", 599000, 122, None, "Absage",
+  "21.10. Absage: nur überdachter Balkon (große Terrasse = K.O.), Aufzug unklar; sonst FBH, WP, Keller, Garage", "?", "N", "J", "?", "J", "J", "J", "J", "?"],
+ ["deltapro Immobilien", "Obermenzing DG ca. 145 m², Bj. 2008/09 (+ Neubau Westpark Sendling)", "Dachgeschoss", None, 145, None, "Absage",
+  "21.10. Absage: Westpark ohne PH/Terrasse, Obermenzing Preis weit über Rahmen", "?", "?", "J", "?", "N", "?", "?", "?", "?"],
 ]
+# Automatisch von der Triage erfasste Angebote (21.10.2026): alles ausser dem Altbestand ("im_excel")
+import json as _json, os as _os
+_TYP = {"Penthouse": "Penthouse", "Dachgeschoss": "Dachgeschoss", "Etagenwohnung": "Etagenwohnung",
+        "Erdgeschoss": "Erdgeschoss/Garten", "Gartenwohnung": "Erdgeschoss/Garten"}
+_WERT = {"A": "Absage", "B": "offen", "C": "Interessant"}
+_tp = "/home/bolla/workspace/data/makler_angebote.json"
+if _os.path.exists(_tp):
+    for t in _json.load(open(_tp)).get("angebote", []):
+        if t.get("im_excel"): continue
+        terr = "N" if t.get("terrasse") == "N" else t.get("suedterrasse", "?")
+        fehlt = ", ".join(t.get("fehlt") or [])
+        note = f'{t.get("datum", "")} Triage (Fach {t.get("fach")}, Score {t.get("score")})' + (f'; offen: {fehlt}' if fehlt else "")
+        prov = t.get("provision_pct")
+        data.append([t["makler"], t.get("objekt", ""), _TYP.get(t.get("typ"), "?"), t.get("preis"), t.get("qm"), None,
+                     _WERT.get(t.get("fach"), "offen"), note, t.get("aufzug", "?"), terr, t.get("lage", "?"),
+                     t.get("gesundheit", "?"), t.get("neubau", "?"), t.get("fbh", "?"), t.get("tiefgarage", "?"),
+                     t.get("keller", "?"), t.get("ruhig", "?"), "?" if prov is None else prov])
 LAST = 100
 for i, d in enumerate(data, start=2):
+    if len(d) > 17: a.cell(i, ci[PROV], d[17])
     for j, v in enumerate(d):
         col = ci[head[j]] if j < 8 else None
     a.cell(i, ci["Makler"], d[0]); a.cell(i, ci["Objekt / Lage"], d[1]); a.cell(i, ci["Typ"], d[2])
@@ -98,16 +128,21 @@ for i in range(2, LAST + 1):
     a.cell(i, ci["Preis im Rahmen"], f'=IF(A{i}="","",IF(D{i}="","?",IF(D{i}<=1250000,"J","N")))')
     a.cell(i, ci["Größe ca. 100"], f'=IF(A{i}="","",IF(E{i}="","?",IF(AND(E{i}>=90,E{i}<=115),"J","N")))')
     a.cell(i, ci["Score"], f'=IF(A{i}="","",{score(i)})')
+    pr, nk = L(ci[PROV]), L(ci["Nebenkosten €"])
+    a.cell(i, ci["Nebenkosten €"], f'=IF(OR(D{i}="",{pr}{i}="",{pr}{i}="?"),"",ROUND(D{i}*(Legende!$B$9+Legende!$B$10+{pr}{i}/100),0))')
+    a.cell(i, ci["Gesamtkosten €"], f'=IF({nk}{i}="","",D{i}+{nk}{i})')
 for c in a[1]:
     c.font = Font(bold=True, color="FFFFFF"); c.fill = PatternFill("solid", fgColor=HEAD)
     c.alignment = Alignment(wrap_text=True, vertical="center", horizontal="center")
 a.row_dimensions[1].height = 44
-for i, w in enumerate([30, 44, 16, 13, 8, 9, 14, 44] + [12] * 11, start=1): a.column_dimensions[L(i)].width = w
+for i, w in enumerate([30, 44, 16, 13, 8, 9, 14, 44] + [12] * 11 + [16, 15, 16], start=1): a.column_dimensions[L(i)].width = w
 for row in a.iter_rows(min_row=2, max_row=LAST):
     for c in row:
         c.border = BOX
         c.alignment = Alignment(wrap_text=True, vertical="top", horizontal="left" if c.column <= 3 or c.column == 8 else "center")
-for r in range(2, LAST + 1): a.cell(r, ci["Preis €"]).number_format = '#,##0 "€"'
+for r in range(2, LAST + 1):
+    for k in ("Preis €", "Nebenkosten €", "Gesamtkosten €"): a.cell(r, ci[k]).number_format = '#,##0 "€"'
+    a.cell(r, ci[PROV]).number_format = '0.000"%"'
 a.freeze_panes = "C2"
 a.auto_filter.ref = f"A1:{L(len(head))}{LAST}"
 # Kriterien-Spalten ab I einklappbar (gruppiert, standardmäßig sichtbar)
@@ -132,12 +167,22 @@ for val, col in (("Interessant", "63BE7B"), ("Vielleicht", "FFEB84"), ("Absage",
 g = wb.create_sheet("Legende")
 for t in ["Übersicht: 1 Zeile pro Makler, Spalte „Stand“ per Auswahlliste; Filter oben in jeder Spalte.",
           "Angebote: J / N / ? je Kriterium, Score 0–100 rechnet sich selbst (J = voll, ? = halb, N = 0).",
-          "K.O. (Score 0): Typ = Etagenwohnung oder Aufzug = N.",
+          "K.O. (Score 0): Typ = Etagenwohnung, Aufzug = N oder keine große Terrasse (Südterrasse = N; Balkon/überdachter Balkon zählt nicht).",
           "Gewichte: " + ", ".join(f"{k} ×{w}" for k, w in W.items()),
           "Preis im Rahmen: bis 1.250.000 €. Größe ca. 100: 90–115 m².",
-          "Kriterien-Spalten (I–S) lassen sich über das [–] oben einklappen."]:
+          "Kriterien-Spalten (I–S) lassen sich über das [–] oben einklappen.",
+          "Kosten (ab 21.10.2026, nur NEUE Objekte): Spalte „Provision %“ eintragen (0 = provisionsfrei, ? = unbekannt) → Nebenkosten und Gesamtkosten rechnen sich selbst.",
+          "Provision im Score: Gewicht ×1 (klein). Provisionsfrei = volle Punkte, 3,57 % = 0 Punkte. Leer = zählt nicht (alte Objekte bleiben unverändert)."]:
     g.append([t])
 g.column_dimensions["A"].width = 120
+g["A9"], g["B9"] = "Annahme Grunderwerbsteuer Bayern", 0.035
+g["A10"], g["B10"] = "Annahme Notar + Grundbuch (ca.)", 0.02
+for c in ("B9", "B10"): g[c].number_format = "0.0%"; g[c].font = Font(bold=True)
 
 for p in ("/home/bolla/workspace/data/makler_antworten_archiv.xlsx", "/mnt/d/OneDrive/Desktop/Makler_Antworten_Archiv_neu.xlsx"):
     wb.save(p); print("gespeichert", p)
+import subprocess as _sp   # OneDrive/Explorer zur Aktualisierung anstossen (WSL-Schreibzugriff meldet sich nicht von selbst)
+try:
+    _sp.run(["/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe", "-NoProfile", "-Command",
+             "(Get-Item 'D:\\OneDrive\\Desktop\\Makler_Antworten_Archiv_neu.xlsx').LastWriteTime=Get-Date"], timeout=30, capture_output=True)
+except Exception: pass

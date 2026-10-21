@@ -5,7 +5,7 @@
   B = Score<60 / Infos fehlen -> Rückfrage-ENTWURF
   C = Score>=60       -> Telegram-Ping + Besichtigungs-ENTWURF
 Es wird NIE automatisch gesendet. Aufruf: ohne Arg = Postfach seit letztem Lauf; --dry = nur anzeigen."""
-import json, re, sys, html, subprocess, datetime, requests
+import json, re, sys, os, shutil, html, subprocess, datetime, requests
 sys.path.insert(0, "/home/bolla/workspace/scripts")
 from outlook_oauth2 import refresh_access_token
 from job_status import report, _telegram
@@ -14,6 +14,7 @@ DATA = "/home/bolla/workspace/data/makler_status.json"
 OUT = "/home/bolla/workspace/data/makler_angebote.json"
 G = "https://graph.microsoft.com/v1.0"
 SCHWELLE = 60
+CLAUDE = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")  # Cron hat keinen PATH
 SINCE = "2026-10-14T00:00:00Z"
 NO_DRAFT = {"gabriela.weber@engelvoelkers.com"}  # Chris antwortet selbst (Weilheim, 15.10.2026)
 KEYS = re.compile(r"exposé|expose|angebot|objekt|kaufpreis|wohnfläche|penthouse|zimmer", re.I)
@@ -22,8 +23,8 @@ W = {"suedterrasse": 3, "lage": 3, "gesundheit": 2, "neubau": 2, "fbh": 1, "tief
 PROMPT = """Extrahiere aus dieser Makler-Mail die Eckdaten EINES Wohnungsangebots. Antworte NUR mit JSON, Werte "J"/"N"/"?" wo nicht anders genannt:
 {"ist_angebot":true|false,"objekt":"Kurzbeschreibung+Ort","typ":"Penthouse|Dachgeschoss|Etagenwohnung|Erdgeschoss|Gartenwohnung|Haus|?","terrasse":"J|N|?",
 "preis":Zahl|null,"qm":Zahl|null,"zimmer":Zahl|null,"aufzug":"J|N|?","suedterrasse":"J|N|?","lage":"J|N|?","gesundheit":"J|N|?",
-"neubau":"J|N|?","fbh":"J|N|?","tiefgarage":"J|N|?","keller":"J|N|?","ruhig":"J|N|?","fehlt":["Liste fehlender Angaben"]}
-"lage": J wenn südlich A8 zwischen Lech und Bad Tölz/Garmisch bzw. westl. München. MAIL:
+"neubau":"J|N|?","fbh":"J|N|?","tiefgarage":"J|N|?","keller":"J|N|?","ruhig":"J|N|?","provision_pct":Zahl|null,"fehlt":["Liste fehlender Angaben"]}
+"provision_pct": Käuferprovision in Prozent inkl. MwSt. (0 = provisionsfrei, null = nicht genannt).\n"terrasse": J NUR bei echter großer Terrasse (Platz für Esstisch mit 6 Personen, Grill, 2 Sonnenliegen; ab ca. 20 m²). Balkon, überdachter Balkon, Loggia, kleine Terrasse = N. Keine Angabe/Größe unbekannt = ?.\n"lage": J wenn südlich A8 zwischen Lech und Bad Tölz/Garmisch bzw. westl. München. MAIL:
 """
 
 def strip(m):
@@ -63,7 +64,7 @@ def main():
         txt = strip(m)
         if not mkl or not KEYS.search(m.get("subject", "") + " " + txt): continue
         if dry: print("KANDIDAT:", mkl["firma"], "|", m["subject"][:70]); continue
-        r = subprocess.run(["claude", "-p", PROMPT + txt[:6000], "--model", "haiku"], capture_output=True, text=True, timeout=180)
+        r = subprocess.run([CLAUDE, "-p", PROMPT + txt[:6000], "--model", "haiku"], capture_output=True, text=True, timeout=180)
         j = re.search(r"\{.*\}", r.stdout, re.S)
         st["done"].append(m["id"])
         if not j: continue
@@ -79,7 +80,7 @@ def main():
         sal = "Sehr geehrte Damen und Herren,\n\n"
         sig = "\n\nMit freundlichen Grüßen\nChris & Renate Mandel"
         if fach == "A":
-            draft(H, frm, "Re: " + m["subject"], sal + "vielen Dank für Ihr Angebot. Leider entspricht das Objekt nicht unseren Anforderungen (wir suchen ausschließlich ein Penthouse bzw. eine Dachgeschosswohnung mit Terrasse und Aufzug), sodass wir davon absehen müssen. Wir bleiben aber gerne in Ihrer Interessentenliste." + sig)
+            draft(H, frm, "Re: " + m["subject"], sal + "vielen Dank für Ihr Angebot. Leider entspricht das Objekt nicht unseren Anforderungen (wir suchen ausschließlich ein Penthouse bzw. eine Dachgeschosswohnung mit großer Terrasse und Aufzug), sodass wir davon absehen müssen. Wir bleiben aber gerne in Ihrer Interessentenliste." + sig)
         elif fach == "B":
             fehlt = ", ".join(a.get("fehlt") or ["Etage/Aufzug, Hausgeld, Verfügbarkeit"])
             draft(H, frm, "Re: " + m["subject"], sal + f"vielen Dank für Ihr Angebot. Können Sie uns bitte noch folgende Angaben nennen: {fehlt}?" + sig)
@@ -88,8 +89,16 @@ def main():
             _telegram(f"🏠 Treffer ({s}/100): {a.get('objekt','')[:80]} · {a.get('preis') or '?'} € · {a.get('qm') or '?'} m² · {mkl['firma']} — Entwurf liegt in Outlook")
     if not dry:
         st["done"] = st["done"][-1500:]; json.dump(st, open(OUT, "w"), ensure_ascii=False, indent=2)
-        report("makler-angebote-triage", "Angebots-Triage", "ok", f"{n} neue Angebote bewertet")
+        xl = ""
+        if n:  # Excel automatisch nachziehen (Chris 21.10.2026: nichts von Hand eintragen)
+            r = subprocess.run([sys.executable, "/home/bolla/workspace/scripts/makler_excel_bauen_v2.py"], capture_output=True, text=True, timeout=300)
+            xl = ", Excel aktualisiert" if r.returncode == 0 else ", EXCEL-FEHLER: " + r.stderr[-150:]
+        report("makler-angebote-triage", "Angebots-Triage", "fehler" if "FEHLER" in xl else "ok", f"{n} neue Angebote bewertet{xl}")
     print("neue Angebote:", n)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:  # Absturz darf nie still bleiben (Cron 19.-21.10.2026: 'claude' nicht im PATH)
+        report("makler-angebote-triage", "Angebots-Triage", "fehler", f"{type(e).__name__}: {e}"[:300])
+        raise
