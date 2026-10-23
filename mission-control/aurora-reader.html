@@ -63,6 +63,17 @@
   #sheet .status { color:var(--muted); margin:8px 0 0; } #sheet .status:empty, #sheet .fehler:empty { display:none; }
   #sheet textarea { margin-top:12px; }
 
+  /* ---- Sammelmodus ---- */
+  #text span.s.note { background:#fff1cf; border-bottom:2px dotted #d97706; cursor:pointer; }
+  #sheet .chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  #sheet .chip { border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:999px; padding:9px 16px; font-size:16px; min-height:44px; cursor:pointer; }
+  #sheet .chip.on { background:#fff1cf; border-color:#d97706; color:#92400e; font-weight:600; }
+  #btnSammel { background:#fff1cf; border-color:#d97706; color:#92400e; font-weight:600; }
+  #sheet .item { border:1px solid var(--line); border-radius:12px; padding:12px; margin-top:12px; }
+  #sheet .item .q { font-family: Georgia, serif; font-size:16px; font-style:italic; color:var(--muted); line-height:1.4; }
+  #sheet .item .tag { font-size:14px; color:#92400e; margin-top:6px; }
+  #sheet .item .done { color:var(--muted); font-size:14px; margin-top:8px; }
+
   /* ---- Offene Vorschläge ---- */
   #pending { font-family: system-ui, sans-serif; font-size:15px; background:#f3e8ff; color:var(--accent); padding:10px 14px; border-radius:10px; margin:12px 0; cursor:pointer; }
 
@@ -90,6 +101,7 @@
     <div class="titel" id="titel">AURORA II</div>
   </div>
   <div class="half hr">
+    <button class="btn" id="btnSammel" style="display:none" aria-label="Gesammelte Hinweise senden"></button>
     <button class="btn fs-btn" id="btnFull" aria-label="Vollbild">⛶</button>
     <button class="btn fs-btn" id="fsDown" aria-label="Schrift kleiner">A−</button>
     <button class="btn fs-btn" id="fsUp" aria-label="Schrift größer">A+</button>
@@ -128,16 +140,28 @@
 
 <div id="sheetWrap">
   <div id="sheet">
-    <h3>Satz korrigieren</h3>
+    <h3 id="sheetTitel">Satz markieren</h3>
     <div class="satz" id="sheetSatz"></div>
     <div class="status" id="sheetStatus"></div>
     <div class="fehler" id="sheetFehler"></div>
     <div id="sheetInput">
+      <div class="chips" id="chips">
+        <button class="chip" data-t="vin">vin</button>
+        <button class="chip" data-t="gramm">gramm</button>
+        <button class="chip" data-t="nicht witzig genug">nicht witzig genug</button>
+      </div>
+      <textarea id="sheetFrage" rows="3" placeholder="Eigene Bemerkung (optional) — oder leer lassen = nur prüfen"></textarea>
       <div class="row">
-        <button class="btn primary" id="btnSenden">Senden an Bolla</button>
+        <button class="btn primary" id="btnMerken">📝 Merken</button>
+        <button class="btn" id="btnSenden">Sofort fragen</button>
+        <button class="btn warn" id="btnNotizLoeschen" style="display:none">🗑 Löschen</button>
         <button class="btn" id="btnSchliessen1">Abbrechen</button>
       </div>
-      <textarea id="sheetFrage" rows="3" placeholder="Was stimmt nicht? Oder: wer/was ist das? (leer lassen = nur prüfen)"></textarea>
+    </div>
+    <div id="sheetList" style="display:none">
+      <div id="listHead" class="label" style="margin-top:0"></div>
+      <div id="listItems"></div>
+      <div class="row" id="listButtons"></div>
     </div>
     <div id="sheetResult" style="display:none">
       <div class="row" id="resButtons"></div>
@@ -162,6 +186,8 @@
   let fontPx = Number(localStorage.getItem('a2_font')) || 19;
   let curSel = null;        // { satz, kapitel_titel }
   let curMarkId = null;
+  let curNoteId = null;
+  let sammel = { notizen: [], auswertung: null, batch: {} };
 
   const isWide = () => window.innerWidth >= 900;
   const SENT_RE = /[^.!?…]*[.!?…]+[”"“»«’')*\]]*\s*|[^.!?…]+$/g;
@@ -351,6 +377,7 @@
     $('btnPrev').disabled = spread === 0;
     $('btnNext').disabled = spread >= steps - 1;
     if (!keepLock) lockedAnchor = anchorForSpread(spread);
+    if (animate && spread >= steps - 1 && steps > 1 && notesHere().length) toast('📖 Kapitel zu Ende — oben 📤 tippen, um deine ' + notesHere().length + ' Hinweise zu senden');
   }
   function kapTitel() { return buch && buch.kapitel && buch.kapitel[kapIdx] ? buch.kapitel[kapIdx].titel.split(':')[0].slice(0, 28) : ''; }
 
@@ -374,6 +401,8 @@
       const sp = Array.from(t.querySelectorAll('span.s')).find(s => s.textContent.includes(m.satz));
       if (sp) { sp.classList.add('pend'); sp.dataset.mid = m.id; }
     });
+    markNotes();
+    updateSammelUI();
     if (resetSpread) spread = 0;
     requestAnimationFrame(() => layout(false));   // frischer Kapitelaufbau: Zielseite ist schon bekannt (0 oder gespeichert), kein Anker nötig
   }
@@ -437,6 +466,10 @@
       const m = (buch.satz_markierungen || []).find(x => x.id === sp.dataset.mid);
       if (m) { clearSel(); openResult(m); return; }
     }
+    if (sp.dataset.nid) {   // gesammelter Hinweis -> bearbeiten/löschen
+      const n = sammel.notizen.find(x => x.id === sp.dataset.nid);
+      if (n) { clearSel(); openSheet(n.satz, n); return; }
+    }
     const p = sp.parentElement, i = sentSpans(p).indexOf(sp);
     if (selP === p && selA === i && selB === i) { clearSel(); return; }
     clearSel(); selP = p; selA = selB = i; paintSel(); showBar();
@@ -455,19 +488,39 @@
   };
 
   /* ---------- Dialog ---------- */
-  function openSheet(satz) {
+  function openSheet(satz, note) {
     curMarkId = null;
+    curNoteId = note ? note.id : null;
+    $('sheetTitel').textContent = note ? 'Gemerkter Hinweis' : 'Satz markieren';
     $('sheetSatz').textContent = satz;
     $('sheetInput').style.display = 'block';
     $('sheetResult').style.display = 'none';
-    $('sheetFrage').value = '';
+    $('sheetList').style.display = 'none';
+    $('sheetFrage').value = note ? (note.frage || '') : '';
+    $('btnNotizLoeschen').style.display = note ? '' : 'none';
+    $('btnMerken').textContent = note ? '📝 Speichern' : '📝 Merken';
+    syncChips();
     $('sheetStatus').textContent = '';
     $('sheetFehler').textContent = '';
     $('sheetWrap').classList.add('on');
-    $('sheetFrage').focus();
     curSel = { satz, kapitel_titel: buch.kapitel[kapIdx].titel };
   }
-  function closeSheet() { $('sheetWrap').classList.remove('on'); }
+  function syncChips() {
+    const v = $('sheetFrage').value.toLowerCase();
+    document.querySelectorAll('#chips .chip').forEach(c => c.classList.toggle('on', new RegExp('(^|[^\\wäöüß])' + c.dataset.t + '($|[^\\wäöüß])').test(v)));
+  }
+  document.querySelectorAll('#chips .chip').forEach(c => c.onclick = () => {
+    const ta = $('sheetFrage'), t = c.dataset.t;
+    if (c.classList.contains('on')) {
+      ta.value = ta.value.replace(new RegExp('(^|[^\\wäöüß])' + t + '(?![\\wäöüß])[,;:]?\\s*', 'i'), '$1').trim();
+    } else {
+      ta.value = (ta.value.trim() ? ta.value.trim().replace(/[,;]$/, '') + ', ' : '') + t;
+    }
+    syncChips();
+  });
+  $('sheetFrage').addEventListener('input', syncChips);
+
+  function closeSheet() { $('sheetWrap').classList.remove('on'); $('sheetSatz').style.display = ''; }
   $('btnSchliessen1').onclick = closeSheet;
   $('sheetWrap').addEventListener('click', e => { if (e.target === $('sheetWrap')) closeSheet(); });
 
@@ -495,6 +548,169 @@
     }
   };
 
+  /* ---------- Sammelmodus ---------- */
+  async function loadSammel() {
+    try { sammel = await (await fetch(API + '/api/aurora2/sammel', { cache: 'no-store' })).json(); } catch (e) {}
+    markNotes(); updateSammelUI();
+  }
+  function notesHere() {
+    if (!buch || !buch.kapitel || !buch.kapitel[kapIdx]) return [];
+    return (sammel.notizen || []).filter(n => n.kapitel_titel === buch.kapitel[kapIdx].titel);
+  }
+  function updateSammelUI() {
+    const b = $('btnSammel'); if (!b) return;
+    const n = notesHere().length;
+    if (sammel.batch && sammel.batch.status === 'running') { b.style.display = ''; b.textContent = '⏳'; }
+    else if (n) { b.style.display = ''; b.textContent = '📤 ' + n; }
+    else if (sammel.auswertung) { b.style.display = ''; b.textContent = '📋'; }
+    else b.style.display = 'none';
+  }
+  function markNotes() {
+    document.querySelectorAll('#text span.s.note').forEach(x => { x.classList.remove('note'); delete x.dataset.nid; });
+    notesHere().forEach(n => {
+      document.querySelectorAll('#text p').forEach(p => {
+        const full = p.textContent, idx = full.indexOf(n.satz);
+        if (idx < 0) return;
+        let off = 0;
+        sentSpans(p).forEach(sp => {
+          const a = off, b = off + sp.textContent.length; off = b;
+          if (b > idx && a < idx + n.satz.length) { sp.classList.add('note'); sp.dataset.nid = n.id; }
+        });
+      });
+    });
+  }
+  $('btnMerken').onclick = async () => {
+    if (!curSel) return;
+    $('btnMerken').disabled = true; $('sheetFehler').textContent = '';
+    try {
+      const r = await fetch(API + '/api/aurora2/sammel-merken', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: curNoteId || '', satz: curSel.satz, kapitel_titel: curSel.kapitel_titel, frage: $('sheetFrage').value.trim() })
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || 'Fehler');
+      await loadSammel();
+      closeSheet();
+      toast('📝 Gemerkt (' + j.anzahl + ' in diesem Kapitel)');
+    } catch (err) {
+      $('sheetFehler').textContent = 'Fehler: ' + err.message;
+    } finally { $('btnMerken').disabled = false; }
+  };
+  $('btnNotizLoeschen').onclick = async () => {
+    if (!curNoteId) return;
+    await fetch(API + '/api/aurora2/sammel-loeschen', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: curNoteId }) });
+    await loadSammel(); closeSheet(); toast('Hinweis gelöscht');
+  };
+  function showListMode(titel) {
+    $('sheetTitel').textContent = titel;
+    $('sheetSatz').style.display = 'none';
+    $('sheetInput').style.display = 'none'; $('sheetResult').style.display = 'none'; $('sheetList').style.display = 'block';
+    $('sheetStatus').textContent = ''; $('sheetFehler').textContent = '';
+    $('sheetWrap').classList.add('on');
+  }
+  function kurz(t, n) { t = (t || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n) + '…' : t; }
+  function openSendList() {
+    const list = notesHere();
+    if (!list.length) { if (sammel.auswertung) openAuswertung(); return; }
+    showListMode('Kapitel abschließen & senden');
+    $('listHead').textContent = list.length + ' gesammelte Hinweise in „' + buch.kapitel[kapIdx].titel + '“';
+    const box = $('listItems'); box.textContent = '';
+    list.forEach(n => {
+      const d = document.createElement('div'); d.className = 'item';
+      const q = document.createElement('div'); q.className = 'q'; q.textContent = '„' + kurz(n.satz, 160) + '“'; d.appendChild(q);
+      const t = document.createElement('div'); t.className = 'tag'; t.textContent = n.frage ? '→ ' + n.frage : '→ (nur prüfen)'; d.appendChild(t);
+      if (n.fehler) { const f = document.createElement('div'); f.className = 'fehler'; f.textContent = 'Letzter Versuch fehlgeschlagen: ' + n.fehler; d.appendChild(f); }
+      const row = document.createElement('div'); row.className = 'row';
+      row.appendChild(btn('✎ Bearbeiten', 'btn', () => { $('sheetSatz').style.display = ''; openSheet(n.satz, n); }));
+      row.appendChild(btn('🗑', 'btn warn', async () => { await fetch(API + '/api/aurora2/sammel-loeschen', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: n.id }) }); await loadSammel(); openSendList(); }));
+      d.appendChild(row); box.appendChild(d);
+    });
+    const b = $('listButtons'); b.textContent = '';
+    b.appendChild(btn('📤 Alle ' + list.length + ' senden', 'btn primary', sendeAlle));
+    b.appendChild(btn('Schließen', 'btn', closeSheet));
+  }
+  $('btnSammel').onclick = () => {
+    if (sammel.batch && sammel.batch.status === 'running') { showProgress(); return; }
+    openSendList();
+  };
+  async function sendeAlle() {
+    const titel = buch.kapitel[kapIdx].titel;
+    try {
+      const r = await (await fetch(API + '/api/aurora2/sammel-senden', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kapitel_titel: titel }) })).json();
+      if (!r.ok) throw new Error(r.error || 'Fehler');
+      await loadSammel(); showProgress();
+    } catch (err) { $('sheetFehler').textContent = 'Fehler: ' + err.message; }
+  }
+  let progTimer = null;
+  function showProgress() {
+    showListMode('Bolla liest nach…');
+    $('listItems').textContent = ''; $('listHead').textContent = '';
+    const b = $('listButtons'); b.textContent = '';
+    b.appendChild(btn('Im Hintergrund weiterlaufen lassen', 'btn', closeSheet));
+    clearInterval(progTimer);
+    const tick = async () => {
+      await loadSammel();
+      const bt = sammel.batch || {};
+      $('sheetStatus').textContent = bt.status === 'running' ? `Hinweis ${Math.min(bt.done + 1, bt.total)} von ${bt.total} …  (jeder dauert etwa eine halbe Minute)` : '';
+      if (bt.status !== 'running') {
+        clearInterval(progTimer); progTimer = null;
+        await loadBuchQuiet(); showChapter(kapIdx, false);
+        if (bt.status === 'error') { $('sheetFehler').textContent = 'Fehler: ' + (bt.error || 'unbekannt'); return; }
+        if ($('sheetWrap').classList.contains('on')) openAuswertung(); else toast('✅ Auswertung fertig — 📋 oben tippen');
+      }
+    };
+    progTimer = setInterval(tick, 3000); tick();
+  }
+  async function entscheidenId(id, aktion, kuerzungOk) {
+    const r = await fetch(API + '/api/aurora2/satz-entscheidung', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, entscheidung: aktion, kuerzung_ok: !!kuerzungOk }) });
+    const j = await r.json();
+    if (j.kuerzung) {
+      const liste = (j.verloren || []).map(z => '• ' + z).join('\n');
+      if (confirm('⚠️ ' + j.error + '\n\nDiese Zeilen würden verschwinden:\n' + liste + '\n\nWirklich übernehmen? (Abbrechen = nichts wird geändert)')) return entscheidenId(id, aktion, true);
+      return { ok: false, error: 'Abgebrochen — nichts geändert.' };
+    }
+    return j;
+  }
+  function openAuswertung() {
+    const aw = sammel.auswertung;
+    if (!aw) { closeSheet(); return; }
+    const keep = $('sheet').scrollTop;
+    showListMode('Auswertung');
+    $('listHead').textContent = 'Bolla zu deinen Hinweisen in „' + aw.kapitel_titel + '“ (' + aw.datum + ')';
+    const box = $('listItems'); box.textContent = '';
+    (aw.ids || []).forEach(id => {
+      const m = (buch.satz_markierungen || []).find(x => x.id === id);
+      if (!m) return;
+      const d = document.createElement('div'); d.className = 'item';
+      const q = document.createElement('div'); q.className = 'q'; q.textContent = '„' + kurz(m.satz, 160) + '“'; d.appendChild(q);
+      if (m.frage) { const t = document.createElement('div'); t.className = 'tag'; t.textContent = '→ ' + kurz(m.frage, 120); d.appendChild(t); }
+      const a = document.createElement('div'); a.className = 'antwort'; a.textContent = m.antwort || '(keine Antwort)'; d.appendChild(a);
+      const hatV = m.status === 'wartet_entscheidung' && m.vorschlag && m.vorschlag.trim() !== (m.satz || '').trim();
+      if (hatV) {
+        const l = document.createElement('div'); l.className = 'label'; l.textContent = 'Vorschlag'; d.appendChild(l);
+        const v = document.createElement('div'); v.className = 'vorschlag'; v.textContent = m.vorschlag; d.appendChild(v);
+        const row = document.createElement('div'); row.className = 'row';
+        const err = document.createElement('div'); err.className = 'fehler';
+        const go = async akt => { const j = await entscheidenId(m.id, akt); if (!j.ok) { err.textContent = j.error || 'Fehler'; return; } await loadBuchQuiet(); openAuswertung(); };
+        row.appendChild(btn('✓ Übernehmen', 'btn ok', () => go('annehmen')));
+        row.appendChild(btn('✗ Verwerfen', 'btn warn', () => go('ablehnen')));
+        d.appendChild(row); d.appendChild(err);
+      } else if (m.status === 'uebernommen' || m.status === 'abgelehnt') {
+        const x = document.createElement('div'); x.className = 'done'; x.textContent = m.status === 'uebernommen' ? '✓ übernommen' : '✗ verworfen'; d.appendChild(x);
+      } else {
+        const x = document.createElement('div'); x.className = 'done'; x.textContent = 'Keine Textänderung nötig.'; d.appendChild(x);
+      }
+      box.appendChild(d);
+    });
+    const b = $('listButtons'); b.textContent = '';
+    b.appendChild(btn('✔ Fertig (ausblenden)', 'btn primary', async () => {
+      await fetch(API + '/api/aurora2/sammel-loeschen', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: '', auswertung_schliessen: true }) });
+      await loadSammel(); await loadBuchQuiet(); showChapter(kapIdx, false); closeSheet();
+    }));
+    b.appendChild(btn('Später', 'btn', async () => { await loadBuchQuiet(); showChapter(kapIdx, false); closeSheet(); }));
+    $('sheet').scrollTop = keep;
+  }
+
   async function pollResult() {
     for (let i = 0; i < 150; i++) {
       await new Promise(res => setTimeout(res, 2000));
@@ -521,6 +737,9 @@
     curMarkId = m.id;
     $('sheetSatz').textContent = m.satz || '';
     $('sheetInput').style.display = 'none';
+    $('sheetList').style.display = 'none';
+    $('sheetSatz').style.display = '';
+    $('sheetTitel').textContent = 'Bolla antwortet';
     $('sheetResult').style.display = 'block';
     $('sheetWrap').classList.add('on');
     $('resAntwort').textContent = m.antwort || '(keine Antwort)';
@@ -565,7 +784,7 @@
   // Nur bei geänderter BREITE neu layouten — die Bildschirmtastatur ändert nur die Höhe und darf nichts zurücksetzen
   let lastW = window.innerWidth;
   window.addEventListener('resize', () => { if (window.innerWidth !== lastW) { lastW = window.innerWidth; requestAnimationFrame(layout); } });
-  loadBuch().catch(err => { $('text').textContent = 'Konnte Buch nicht laden: ' + err.message; });
+  loadBuch().then(loadSammel).then(() => { if (sammel.batch && sammel.batch.status === 'running') showProgress(); }).catch(err => { $('text').textContent = 'Konnte Buch nicht laden: ' + err.message; });
 })();
 </script>
 </body>

@@ -267,6 +267,107 @@ def _a2_verlust(satz, vorschlag):
     gone = [x[:90] for x in sn if x not in vn][:8] if verlust else []
     return verlust, len(sn), len(vn), gone
 
+# ---- AURORA II Sammelmodus (Chris 23.10.2026): Hinweise je Kapitel sammeln, gebündelt senden ----
+_A2_SAMMEL_FILE = os.path.join(WORKSPACE, "data/aurora2_sammel.json")
+_a2_sammel_lock = threading.Lock()
+_a2_sammel_batch = {"status": "idle", "kapitel_titel": "", "total": 0, "done": 0, "fehler": 0, "ids": []}
+
+def _a2_sammel_load():
+    try:
+        with open(_A2_SAMMEL_FILE) as fh:
+            d = json.load(fh)
+    except Exception:
+        d = {}
+    d.setdefault("notizen", [])
+    d.setdefault("auswertung", None)
+    return d
+
+def _a2_sammel_save(d):
+    tmp = _A2_SAMMEL_FILE + ".tmp"
+    with open(tmp, "w") as fh:
+        json.dump(d, fh, ensure_ascii=False, indent=2)
+    os.replace(tmp, _A2_SAMMEL_FILE)
+
+def _a2_frage_expand(frage):
+    """Chris' Kürzel (vin / gramm / nicht witzig genug) in vollständige Arbeitsanweisungen für Opus ausschreiben."""
+    import re as _rx
+    f = (frage or "").strip()
+    if not f:
+        return f
+    ersatz = [
+        (r"nicht\s+witzig\s+genug", "Nicht witzig genug: schlage eine pointiertere, witzigere Fassung vor (trocken/lakonisch, KEIN Slapstick, Inhalt und Fakten unverändert, Humor-Niveau wie in Kapitel 10)."),
+        (r"vin|verstehe\s+ich\s+nicht", "Verstehe ich nicht: erkläre kurz, was hier gemeint ist bzw. ob die Logik stimmt; ist die Stelle unklar formuliert, schlage eine klarere Fassung vor."),
+        (r"gramm", "Grammatik, Zeiten, Satzbau und Rechtschreibung dieser Stelle prüfen und ggf. korrigieren."),
+    ]
+    for pat, rep in ersatz:
+        f = _rx.sub(r"(?<![\w])(?:" + pat + r")(?![\w])", rep, f, flags=_rx.IGNORECASE)
+    return f
+
+def _a2_sammel_worker(kap_titel, ids):
+    """Schickt die gesammelten Hinweise eines Kapitels nacheinander an die bestehende satz-frage-Pipeline (localhost)."""
+    import time as _tm
+    global _a2_sammel_batch
+    api = "http://127.0.0.1:18790"
+    def _post(path, payload):
+        req = urllib.request.Request(api + path, data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"})
+        return json.loads(urllib.request.urlopen(req, timeout=30).read())
+    def _get(path):
+        return json.loads(urllib.request.urlopen(api + path, timeout=30).read())
+    ergebnis_ids = []
+    try:
+        for nid in ids:
+            with _a2_sammel_lock:
+                d = _a2_sammel_load()
+                n = next((x for x in d["notizen"] if x["id"] == nid), None)
+            if not n:
+                _a2_sammel_batch["done"] += 1
+                continue
+            mark_id, fehler = None, ""
+            for _versuch in range(30):   # läuft gerade eine Sofort-Frage, kurz warten
+                try:
+                    r = _post("/api/aurora2/satz-frage", {"kapitel_titel": n["kapitel_titel"], "satz": n["satz"], "frage": _a2_frage_expand(n.get("frage", ""))})
+                except Exception as ex:
+                    fehler = str(ex); break
+                if r.get("status") == "running":
+                    _tm.sleep(4); continue
+                if r.get("status") == "started":
+                    mark_id = r.get("id"); break
+                fehler = r.get("error") or "Unbekannter Fehler"; break
+            if mark_id and not fehler:
+                for _i in range(150):
+                    _tm.sleep(2)
+                    st = _get("/api/aurora2/satz-frage-status")
+                    if st.get("id") == mark_id and st.get("status") == "done":
+                        break
+                    if st.get("id") == mark_id and st.get("status") == "error":
+                        fehler = st.get("error") or "Claude-Fehler"; break
+                else:
+                    fehler = "Zeitüberschreitung"
+            with _a2_sammel_lock:
+                d = _a2_sammel_load()
+                n = next((x for x in d["notizen"] if x["id"] == nid), None)
+                if n:
+                    if fehler:
+                        n["fehler"] = fehler
+                    else:
+                        d["notizen"] = [x for x in d["notizen"] if x["id"] != nid]
+                        ergebnis_ids.append(mark_id)
+                _a2_sammel_save(d)
+            _a2_sammel_batch["done"] += 1
+            if fehler:
+                _a2_sammel_batch["fehler"] += 1
+        with _a2_sammel_lock:
+            d = _a2_sammel_load()
+            if ergebnis_ids:
+                d["auswertung"] = {"kapitel_titel": kap_titel, "ids": ergebnis_ids, "datum": datetime.now().strftime("%Y-%m-%d %H:%M")}
+            _a2_sammel_save(d)
+        _a2_sammel_batch["ids"] = ergebnis_ids
+        _a2_sammel_batch["status"] = "done"
+    except Exception as ex:
+        _a2_sammel_batch["status"] = "error"
+        _a2_sammel_batch["error"] = str(ex)
+
+
 _aurora2_satz_job = {"status": "idle", "id": "", "kapitel_titel": "", "satz": "", "vorschlag": "", "antwort": "", "geaendert": False, "error": ""}
 
 def _aurora2_glossar_ergaenzen(buch2, kap_eintrag, now):
@@ -8173,6 +8274,12 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
             elif self.path == "/api/aurora2/generiere-status":
                 self._send_json(_aurora2_job)
 
+            elif self.path == "/api/aurora2/sammel":
+                with _a2_sammel_lock:
+                    d = _a2_sammel_load()
+                d["batch"] = _a2_sammel_batch
+                self._send_json(d)
+
             elif self.path == "/api/aurora2/satz-frage-status":
                 self._send_json(_aurora2_satz_job)
 
@@ -9268,6 +9375,68 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                         _aurora2_satz_job = {"status": "error", "id": mark_id, "kapitel_titel": kap_titel, "satz": satz, "vorschlag": "", "antwort": "", "geaendert": False, "error": str(ex)}
                 _thr5.Thread(target=_run5, daemon=True).start()
                 self._send_json({"status": "started", "id": mark_id})
+
+            elif self.path == "/api/aurora2/sammel-merken":
+                import uuid as _uu9
+                with open(os.path.join(WORKSPACE, "data/aurora2.json")) as fh:
+                    buch = json.load(fh)
+                satz = (body.get("satz") or "").strip()
+                kap_titel = (body.get("kapitel_titel") or "").strip()
+                frage = (body.get("frage") or "").strip()
+                nid = (body.get("id") or "").strip()
+                if not satz or not kap_titel:
+                    self._send_json({"ok": False, "error": "Satz oder Kapitel fehlt"}); return
+                if kap_titel == "__VORWORT__":
+                    ziel = buch.get("vorwort", "")
+                else:
+                    k = next((k for k in buch.get("kapitel", []) if k.get("titel") == kap_titel), None)
+                    ziel = k.get("text", "") if k else ""
+                if ziel.count(satz) != 1:
+                    self._send_json({"ok": False, "error": "Text nicht eindeutig gefunden — bitte exakt markieren"}); return
+                with _a2_sammel_lock:
+                    d = _a2_sammel_load()
+                    n = next((x for x in d["notizen"] if x["id"] == nid), None) if nid else None
+                    if n:
+                        n["frage"] = frage; n.pop("fehler", None)
+                    else:
+                        d["notizen"].append({"id": _uu9.uuid4().hex[:8], "kapitel_titel": kap_titel, "satz": satz, "frage": frage,
+                                             "datum": datetime.now().strftime("%Y-%m-%d %H:%M")})
+                    _a2_sammel_save(d)
+                    anzahl = len([x for x in d["notizen"] if x["kapitel_titel"] == kap_titel])
+                self._send_json({"ok": True, "anzahl": anzahl})
+
+            elif self.path == "/api/aurora2/sammel-loeschen":
+                nid = (body.get("id") or "").strip()
+                with _a2_sammel_lock:
+                    d = _a2_sammel_load()
+                    d["notizen"] = [x for x in d["notizen"] if x["id"] != nid]
+                    if body.get("auswertung_schliessen"):
+                        d["auswertung"] = None
+                    _a2_sammel_save(d)
+                self._send_json({"ok": True})
+
+            elif self.path == "/api/aurora2/sammel-senden":
+                global _a2_sammel_batch
+                if _a2_sammel_batch.get("status") == "running":
+                    self._send_json({"ok": False, "error": "Es läuft schon eine Auswertung."}); return
+                kap_titel = (body.get("kapitel_titel") or "").strip()
+                with _a2_sammel_lock:
+                    d = _a2_sammel_load()
+                    liste = [x for x in d["notizen"] if x["kapitel_titel"] == kap_titel]
+                if not liste:
+                    self._send_json({"ok": False, "error": "Für dieses Kapitel ist nichts gesammelt."}); return
+                # in Textreihenfolge abarbeiten
+                try:
+                    with open(os.path.join(WORKSPACE, "data/aurora2.json")) as fh:
+                        _b = json.load(fh)
+                    _t = _b.get("vorwort", "") if kap_titel == "__VORWORT__" else next((k.get("text", "") for k in _b.get("kapitel", []) if k.get("titel") == kap_titel), "")
+                    liste.sort(key=lambda x: _t.find(x["satz"]))
+                except Exception:
+                    pass
+                ids = [x["id"] for x in liste]
+                _a2_sammel_batch = {"status": "running", "kapitel_titel": kap_titel, "total": len(ids), "done": 0, "fehler": 0, "ids": []}
+                threading.Thread(target=_a2_sammel_worker, args=(kap_titel, ids), daemon=True).start()
+                self._send_json({"ok": True, "total": len(ids)})
 
             elif self.path == "/api/aurora2/satz-entscheidung":
                 bf2 = os.path.join(WORKSPACE, "data/aurora2.json")

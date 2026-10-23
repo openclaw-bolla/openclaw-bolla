@@ -3145,16 +3145,32 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                 <div id="aurora2-satz-zeile" style="display:none;flex-direction:column;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
                   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
                     <button onclick="aurora2SatzOeffnen()" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);color:#ef4444;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer">🚩 Frage/Korrektur zu markiertem Satz</button>
-                    <span style="font-size:12px;color:var(--dim)">Satz im Text oben markieren, dann klicken — Bemerkung eingeben, ich antworte sofort.</span>
+                    <span style="font-size:12px;color:var(--dim)">Satz im Text oben markieren, dann klicken — Hinweis wird gesammelt und nach dem Kapitel gebündelt gesendet.</span>
                     <span id="aurora2-satz-status" style="font-size:12px"></span>
                   </div>
+                  <!-- Sammelmodus: gesammelte Hinweise + Auswertung -->
+                  <div id="aurora2-sm-box" style="display:none;background:var(--bg);border:1px solid rgba(245,158,11,0.5);border-radius:10px;padding:12px">
+                    <div id="aurora2-sm-kopf" style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:8px"></div>
+                    <div id="aurora2-sm-liste"></div>
+                    <div id="aurora2-sm-status" style="font-size:13px;color:var(--dim);margin:6px 0"></div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                      <button id="aurora2-sm-senden" onclick="aurora2SmSenden()" style="background:rgba(245,158,11,0.18);color:#f59e0b;border:1px solid rgba(245,158,11,0.5);border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer;font-weight:700"></button>
+                    </div>
+                  </div>
+                  <div id="aurora2-sm-auswertung" style="display:none;background:var(--bg);border:1px solid rgba(34,197,94,0.4);border-radius:10px;padding:12px"></div>
                   <!-- Eingabe-Panel: Bemerkung/Frage/Korrekturwunsch -->
                   <div id="aurora2-satz-panel" style="display:none;background:var(--bg);border:1px solid rgba(239,68,68,0.35);border-radius:10px;padding:12px">
                     <div style="font-size:12px;color:var(--dim);margin-bottom:6px">Markierter Satz:</div>
                     <div id="aurora2-satz-original" style="font-size:13px;color:var(--text);font-style:italic;margin-bottom:10px;padding:8px 10px;background:var(--card);border-radius:8px;line-height:1.5"></div>
-                    <textarea id="aurora2-satz-frage-input" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();aurora2SatzAbsenden();}" style="width:100%;box-sizing:border-box;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit;resize:vertical;outline:none" placeholder="Frage, Verständnisproblem oder Korrekturwunsch — oder leer lassen für 'einfach mal draufschauen' (Enter = Absenden, Shift+Enter = Zeilenumbruch)"></textarea>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+                      <button type="button" class="a2sm-chip" data-t="vin" onclick="aurora2SmChip('vin')">vin</button>
+                      <button type="button" class="a2sm-chip" data-t="gramm" onclick="aurora2SmChip('gramm')">gramm</button>
+                      <button type="button" class="a2sm-chip" data-t="nicht witzig genug" onclick="aurora2SmChip('nicht witzig genug')">nicht witzig genug</button>
+                    </div>
+                    <textarea id="aurora2-satz-frage-input" rows="2" oninput="aurora2SmChipSync()" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();aurora2SmMerken();}" style="width:100%;box-sizing:border-box;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit;resize:vertical;outline:none" placeholder="Kürzel oben antippen und/oder eigene Bemerkung — oder leer lassen für 'einfach mal draufschauen' (Enter = Merken, Shift+Enter = Zeilenumbruch)"></textarea>
                     <div style="display:flex;gap:8px;margin-top:8px">
-                      <button onclick="aurora2SatzAbsenden()" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.4);border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer;font-weight:600">Absenden</button>
+                      <button onclick="aurora2SmMerken()" style="background:rgba(245,158,11,0.18);color:#f59e0b;border:1px solid rgba(245,158,11,0.5);border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer;font-weight:700">📝 Merken</button>
+                      <button onclick="aurora2SatzAbsenden()" style="background:transparent;color:#ef4444;border:1px solid rgba(239,68,68,0.4);border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer">Sofort fragen</button>
                       <button onclick="aurora2SatzAbbrechen()" style="background:transparent;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer">Abbrechen</button>
                     </div>
                   </div>
@@ -12699,6 +12715,7 @@ function aurora2ZeigeVorwort(opts) {
   }
   const ziel = document.getElementById('aurora2-kommentar-ziel');
   if (ziel) ziel.textContent = `→ bezieht sich auf "Vorwort"`;
+  aurora2SmLaden();
   aurora2RenderKapitelListe();
 }
 
@@ -12752,7 +12769,133 @@ function aurora2ZeigeKapitel(idx, opts) {
   }
   const ziel = document.getElementById('aurora2-kommentar-ziel');
   if (ziel) ziel.textContent = `→ bezieht sich auf "${kap.titel||'Kapitel '+(idx+1)}"`;
+  aurora2SmLaden();
   aurora2RenderKapitelListe();
+}
+
+/* ---------- AURORA II Sammelmodus (Chris 23.10.2026): Hinweise sammeln, nach dem Kapitel gebündelt senden ---------- */
+let _aurora2Sm = { notizen: [], auswertung: null, batch: {} };
+let _aurora2SmTimer = null;
+(function(){ const st = document.createElement('style'); st.textContent = '.a2sm-chip{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:999px;padding:6px 14px;font-size:13px;cursor:pointer}.a2sm-chip.on{background:rgba(245,158,11,0.2);border-color:#f59e0b;color:#f59e0b;font-weight:700}'; document.head.appendChild(st); })();
+function aurora2SmKap() {
+  if (_aurora2AktivIdx === 'vorwort') return '__VORWORT__';
+  const k = _aurora2Data && _aurora2Data.kapitel && _aurora2Data.kapitel[_aurora2AktivIdx];
+  return k ? k.titel : null;
+}
+function aurora2SmChipSync() {
+  const v = (document.getElementById('aurora2-satz-frage-input').value || '').toLowerCase();
+  document.querySelectorAll('.a2sm-chip').forEach(c => c.classList.toggle('on', new RegExp('(^|[^\\wäöüß])' + c.dataset.t + '($|[^\\wäöüß])').test(v)));
+}
+function aurora2SmChip(t) {
+  const ta = document.getElementById('aurora2-satz-frage-input');
+  const on = document.querySelector('.a2sm-chip[data-t="' + t + '"]').classList.contains('on');
+  if (on) ta.value = ta.value.replace(new RegExp('(^|[^\\wäöüß])' + t + '(?![\\wäöüß])[,;:]?\\s*', 'i'), '$1').trim();
+  else ta.value = (ta.value.trim() ? ta.value.trim().replace(/[,;]$/, '') + ', ' : '') + t;
+  aurora2SmChipSync(); ta.focus();
+}
+async function aurora2SmLaden() {
+  try { _aurora2Sm = await fetch(API + '/api/aurora2/sammel', { cache: 'no-store' }).then(r => r.json()); } catch (e) { return; }
+  aurora2SmRender();
+  if (_aurora2Sm.batch && _aurora2Sm.batch.status === 'running' && !_aurora2SmTimer) aurora2SmPoll();
+}
+function aurora2SmKurz(t, n) { t = (t || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n) + '…' : t; }
+function aurora2SmRender() {
+  const box = document.getElementById('aurora2-sm-box'); if (!box) return;
+  const kap = aurora2SmKap();
+  const liste = (_aurora2Sm.notizen || []).filter(n => n.kapitel_titel === kap);
+  const laeuft = _aurora2Sm.batch && _aurora2Sm.batch.status === 'running';
+  const aw = _aurora2Sm.auswertung;
+  box.style.display = (liste.length || laeuft) ? 'block' : 'none';
+  document.getElementById('aurora2-sm-kopf').textContent = `📝 ${liste.length} gesammelte Hinweise in diesem Kapitel`;
+  const ul = document.getElementById('aurora2-sm-liste'); ul.textContent = '';
+  liste.forEach(n => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--border);font-size:13px;line-height:1.5';
+    const t = document.createElement('div'); t.style.flex = '1';
+    const q = document.createElement('div'); q.style.cssText = 'font-style:italic;color:var(--dim)'; q.textContent = '„' + aurora2SmKurz(n.satz, 140) + '“'; t.appendChild(q);
+    const f = document.createElement('div'); f.style.color = '#f59e0b'; f.textContent = '→ ' + (n.frage || '(nur prüfen)'); t.appendChild(f);
+    if (n.fehler) { const e = document.createElement('div'); e.style.color = '#ef4444'; e.textContent = 'Letzter Versuch fehlgeschlagen: ' + n.fehler; t.appendChild(e); }
+    const x = document.createElement('button'); x.textContent = '🗑';
+    x.style.cssText = 'background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:7px;padding:3px 9px;cursor:pointer';
+    x.onclick = async () => { await fetch(API + '/api/aurora2/sammel-loeschen', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: n.id }) }); aurora2SmLaden(); };
+    row.appendChild(t); row.appendChild(x); ul.appendChild(row);
+  });
+  const btn = document.getElementById('aurora2-sm-senden');
+  btn.style.display = laeuft ? 'none' : (liste.length ? '' : 'none');
+  btn.textContent = `📤 Kapitel abschließen — alle ${liste.length} senden`;
+  const st = document.getElementById('aurora2-sm-status');
+  const bt = _aurora2Sm.batch || {};
+  st.textContent = laeuft ? `⏳ Bolla liest nach… Hinweis ${Math.min(bt.done + 1, bt.total)} von ${bt.total} (je ca. eine halbe Minute)` : '';
+  aurora2SmRenderAuswertung(aw, laeuft);
+}
+async function aurora2SmMerken() {
+  if (!_aurora2SatzAktuell) return;
+  const status = document.getElementById('aurora2-satz-status');
+  const frage = document.getElementById('aurora2-satz-frage-input').value.trim();
+  try {
+    const j = await fetch(API + '/api/aurora2/sammel-merken', { method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ kapitel_titel: _aurora2SatzAktuell.kapTitel, satz: _aurora2SatzAktuell.satz, frage }) }).then(r => r.json());
+    if (!j.ok) { if (status) { status.textContent = '⚠️ ' + (j.error || 'Fehler'); status.style.color = '#ef4444'; } return; }
+    document.getElementById('aurora2-satz-panel').style.display = 'none';
+    _aurora2SatzAktuell = null;
+    if (status) { status.textContent = '📝 Gemerkt (' + j.anzahl + ' in diesem Kapitel)'; status.style.color = '#f59e0b'; }
+    if (window.getSelection) window.getSelection().removeAllRanges();
+    aurora2SmLaden();
+  } catch (e) { if (status) { status.textContent = '⚠️ Netzwerkfehler'; status.style.color = '#ef4444'; } }
+}
+async function aurora2SmSenden() {
+  const kap = aurora2SmKap(); if (!kap) return;
+  const j = await fetch(API + '/api/aurora2/sammel-senden', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ kapitel_titel: kap }) }).then(r => r.json());
+  if (!j.ok) { document.getElementById('aurora2-sm-status').textContent = '⚠️ ' + (j.error || 'Fehler'); return; }
+  await aurora2SmLaden(); aurora2SmPoll();
+}
+function aurora2SmPoll() {
+  clearInterval(_aurora2SmTimer);
+  _aurora2SmTimer = setInterval(async () => {
+    try { _aurora2Sm = await fetch(API + '/api/aurora2/sammel', { cache: 'no-store' }).then(r => r.json()); } catch (e) { return; }
+    if (!(_aurora2Sm.batch && _aurora2Sm.batch.status === 'running')) {
+      clearInterval(_aurora2SmTimer); _aurora2SmTimer = null;
+      await loadAurora2();   // frische satz_markierungen
+    }
+    aurora2SmRender();
+  }, 3000);
+}
+function aurora2SmRenderAuswertung(aw, laeuft) {
+  const el = document.getElementById('aurora2-sm-auswertung'); if (!el) return;
+  if (!aw || laeuft) { el.style.display = 'none'; return; }
+  el.style.display = 'block'; el.textContent = '';
+  const h = document.createElement('div'); h.style.cssText = 'font-size:13px;font-weight:700;color:#22c55e;margin-bottom:8px';
+  h.textContent = `✅ Auswertung zu „${aw.kapitel_titel}“ (${aw.datum})`; el.appendChild(h);
+  (aw.ids || []).forEach(id => {
+    const m = ((_aurora2Data && _aurora2Data.satz_markierungen) || []).find(x => x.id === id); if (!m) return;
+    const d = document.createElement('div'); d.style.cssText = 'padding:10px 0;border-top:1px solid var(--border);font-size:14px;line-height:1.6';
+    const q = document.createElement('div'); q.style.cssText = 'font-style:italic;color:var(--dim);font-size:13px'; q.textContent = '„' + aurora2SmKurz(m.satz, 160) + '“'; d.appendChild(q);
+    if (m.frage) { const f = document.createElement('div'); f.style.cssText = 'color:#f59e0b;font-size:12px'; f.textContent = '→ ' + aurora2SmKurz(m.frage, 110); d.appendChild(f); }
+    const a = document.createElement('div'); a.style.cssText = 'margin-top:4px;color:var(--text)'; a.textContent = m.antwort || '(keine Antwort)'; d.appendChild(a);
+    const hatV = m.status === 'wartet_entscheidung' && m.vorschlag && m.vorschlag.trim() !== (m.satz || '').trim();
+    if (hatV) {
+      const v = document.createElement('div'); v.style.cssText = 'margin-top:6px;padding:6px 9px;background:var(--card);border-radius:7px;color:#22c55e;font-size:13px;white-space:pre-wrap'; v.textContent = m.vorschlag; d.appendChild(v);
+      const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:8px;margin-top:6px';
+      const err = document.createElement('span'); err.style.cssText = 'color:#ef4444;font-size:12px';
+      const go = async (akt, kOk) => {
+        const j = await fetch(API + '/api/aurora2/satz-entscheidung', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: m.id, entscheidung: akt, kuerzung_ok: !!kOk }) }).then(r => r.json());
+        if (j.kuerzung) { const l = (j.verloren || []).map(z => '• ' + z).join('\n'); if (confirm('⚠️ ' + j.error + '\n\nDiese Zeilen würden verschwinden:\n' + l + '\n\nWirklich übernehmen?')) return go(akt, true); return; }
+        if (!j.ok) { err.textContent = j.error || 'Fehler'; return; }
+        await loadAurora2(); aurora2SmRender();
+      };
+      const ok = document.createElement('button'); ok.textContent = '✅ Übernehmen'; ok.style.cssText = 'background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.4);border-radius:8px;padding:5px 14px;font-size:13px;cursor:pointer;font-weight:600'; ok.onclick = () => go('annehmen');
+      const no = document.createElement('button'); no.textContent = '❌ Verwerfen'; no.style.cssText = 'background:transparent;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:5px 14px;font-size:13px;cursor:pointer'; no.onclick = () => go('ablehnen');
+      row.appendChild(ok); row.appendChild(no); row.appendChild(err); d.appendChild(row);
+    } else {
+      const x = document.createElement('div'); x.style.cssText = 'margin-top:4px;color:var(--dim);font-size:12px';
+      x.textContent = m.status === 'uebernommen' ? '✓ übernommen' : m.status === 'abgelehnt' ? '✗ verworfen' : 'Keine Textänderung nötig.'; d.appendChild(x);
+    }
+    el.appendChild(d);
+  });
+  const fin = document.createElement('button'); fin.textContent = '✔ Fertig (Auswertung ausblenden)';
+  fin.style.cssText = 'margin-top:10px;background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.4);border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer;font-weight:600';
+  fin.onclick = async () => { await fetch(API + '/api/aurora2/sammel-loeschen', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: '', auswertung_schliessen: true }) }); aurora2SmLaden(); };
+  el.appendChild(fin);
 }
 
 let _aurora2SatzAktuell = null; // { kapTitel, satz }
