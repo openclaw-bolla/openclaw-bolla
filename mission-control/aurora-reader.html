@@ -30,7 +30,7 @@
   #text { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
   #text span.s { -webkit-tap-highlight-color:transparent; border-radius:3px; }
   #text span.s.sel { background:#ffe28a; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
-  #text span.s.pend { background:#f3e8ff; border-bottom:2px dotted var(--accent); cursor:pointer; }
+  #text span.s.pend { background:#e9d5ff; color:#2e1065; border-bottom:3px dotted #7e22ce; cursor:pointer; }
   #selBar { position:fixed; bottom:52px; z-index:30; display:none; gap:8px; font-family:system-ui,sans-serif; }
   #selBar .btn { flex:1; min-height:52px; box-shadow:0 6px 18px rgba(0,0,0,.22); padding:6px 8px; font-size:15px; }
   #toast { position:fixed; top:64px; left:50%; transform:translateX(-50%); z-index:60; background:#2b2622; color:#fff; padding:12px 18px; border-radius:12px; font-family:system-ui,sans-serif; font-size:16px; display:none; max-width:90vw; }
@@ -193,6 +193,7 @@
   const SENT_RE = /[^.!?…]*[.!?…]+[”"“»«’')*\]]*\s*|[^.!?…]+$/g;
 
   /* ---------- Laden ---------- */
+  let restoring = false;
   async function loadBuch() {
     const r = await fetch(API + '/api/aurora2', { cache: 'no-store' });
     buch = await r.json();
@@ -202,7 +203,18 @@
     const saved = JSON.parse(localStorage.getItem('a2_pos') || 'null');
     const ok = saved && buch.kapitel[saved.kap];
     spread = ok ? (saved.spread || 0) : 0;
+    restoring = true;
     showChapter(ok ? saved.kap : 0, false);
+    // Layout braucht einen Moment (Schrift, Spannen über beide Displays). Danach per gemerktem Satz auf die richtige Seite.
+    const finish = () => {
+      if (ok && saved.sent >= 0) {
+        const sp = $('text').querySelectorAll('span.s')[saved.sent];
+        if (sp) { lockedAnchor = sp; layout(true); }
+      }
+      restoring = false;
+    };
+    const fr = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+    fr.then(() => setTimeout(finish, 700));
   }
 
   /* ---------- Kapitelliste ---------- */
@@ -368,7 +380,13 @@
 
   function goSpread(n, animate = true, keepLock = false) {
     spread = Math.max(0, Math.min(n, steps - 1));
-    localStorage.setItem('a2_pos', JSON.stringify({ kap: kapIdx, spread }));   // aktuelle Seite merken
+    if (!restoring) {   // während des Wiederherstellens/Erstlayouts NIE speichern (steps ist da noch zu klein → würde auf Seite 0 klemmen)
+      try {
+        const a = anchorForSpread(spread);
+        const idx = a ? Array.prototype.indexOf.call($('text').querySelectorAll('span.s'), a) : -1;
+        localStorage.setItem('a2_pos', JSON.stringify({ kap: kapIdx, spread, sent: idx }));   // aktuelle Seite merken (Satz-Index = layout-unabhängig)
+      } catch (e) {}
+    }
     clearSel();
     const t = $('text');
     t.style.transition = animate ? 'transform .28s ease' : 'none';
@@ -398,8 +416,15 @@
     });
     // Offene Korrekturvorschläge dieses Kapitels im Text markieren (lila gepunktet, antippbar)
     (buch.satz_markierungen || []).filter(m => m.kapitel_titel === k.titel && m.status === 'wartet_entscheidung').forEach(m => {
-      const sp = Array.from(t.querySelectorAll('span.s')).find(s => s.textContent.includes(m.satz));
-      if (sp) { sp.classList.add('pend'); sp.dataset.mid = m.id; }
+      const spans = Array.from(t.querySelectorAll('span.s'));
+      const hit = spans.find(s => s.textContent.includes(m.satz));
+      if (hit) { hit.classList.add('pend'); hit.dataset.mid = m.id; return; }
+      // Stelle über mehrere Sätze/Absätze: alle überlappenden Sätze markieren
+      const norm = x => x.replace(/\s+/g, ' ').trim();
+      let pos = 0, cat = '';
+      const ranges = spans.map(s => { const tx = norm(s.textContent) + ' '; const r = [pos, pos + tx.length, s]; cat += tx; pos += tx.length; return r; });
+      const q = norm(m.satz), i = cat.indexOf(q);
+      if (i >= 0) ranges.filter(r => r[0] < i + q.length && r[1] > i).forEach(r => { r[2].classList.add('pend'); r[2].dataset.mid = m.id; });
     });
     markNotes();
     updateSammelUI();

@@ -16,6 +16,7 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
 import urllib.request
 
@@ -119,7 +120,7 @@ def gate():
         wk, fh = q.get("seven_day_pct") or 0, q.get("five_hour_pct") or 0
         if wk >= WEEK_STOP:
             raise Stop(f"Wochenkontingent ausgereizt ({wk} %)")
-        lim = 92   # Chris: 5h-Fenster bis ~92 % ausreizen, nie weiter — er soll immer Luft haben
+        lim = float(os.environ.get("AUSREIZEN_5H_LIMIT", "75"))   # Chris 23.10.: 75 % (ein Schritt kostet bis ~13 Pkt, 92 hat Reserve gefressen)
         if fh >= lim:
             wait = (q.get("five_hour_reset_hours") or 0) * 3600 + (q.get("five_hour_reset_minutes") or 5) * 60 + 90
             if now + dt.timedelta(seconds=wait) > DEADLINE:
@@ -130,16 +131,50 @@ def gate():
         return q
 
 
+def _run_watchdog(cmd, prompt, timeout):
+    """Wie subprocess.run, aber bricht den Schritt ab, sobald das 5h-Fenster HARD erreicht (Chris 23.10.).
+    Rueckgabe: (CompletedProcess|None, abgebrochen:bool)."""
+    hard = float(os.environ.get("AUSREIZEN_5H_HARD", "85"))
+    p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=HOME)
+    out = {}
+
+    def comm():
+        out["o"], out["e"] = p.communicate(prompt)
+    th = threading.Thread(target=comm, daemon=True)
+    th.start()
+    t0, nxt = time.time(), time.time() + 30
+    while th.is_alive():
+        th.join(2)
+        if os.path.exists(STOP):
+            p.kill(); th.join(5)
+            raise Stop("Stopdatei")
+        if time.time() - t0 > timeout:
+            p.kill(); th.join(5)
+            raise subprocess.TimeoutExpired(cmd, timeout)
+        if time.time() >= nxt:
+            nxt = time.time() + 30
+            q = quota()
+            if q and (q.get("five_hour_pct") or 0) >= hard:
+                log(f"Watchdog: 5h {q.get('five_hour_pct')} % >= {hard} % — Schritt abgebrochen, Gate pausiert bis Reset")
+                p.kill(); th.join(5)
+                return None, True
+    return subprocess.CompletedProcess(cmd, p.returncode, out.get("o", ""), out.get("e", "")), False
+
+
 def claude(prompt, tag, timeout=1800, model=MODEL):
-    for attempt in range(4):
+    attempt = 0
+    while attempt < 4:
         gate()
         t0 = time.time()
         try:
-            r = subprocess.run([CL, "-p", "--output-format", "json", "--model", model], input=prompt,
-                               capture_output=True, text=True, timeout=timeout, cwd=HOME)
+            r, killed = _run_watchdog([CL, "-p", "--output-format", "json", "--model", model], prompt, timeout)
         except subprocess.TimeoutExpired:
             log(f"Timeout {tag} (Versuch {attempt + 1})")
+            attempt += 1
             continue
+        if killed:
+            continue          # zaehlt nicht als Fehlversuch; gate() pausiert bis zum Reset und macht dann selbst weiter
+        attempt += 1
         try:
             j = json.loads(r.stdout)
         except Exception:
