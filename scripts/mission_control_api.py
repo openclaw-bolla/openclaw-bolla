@@ -3149,9 +3149,14 @@ def tonies_nudge(body):
 import threading as _th
 _TONIES_LOCK = _th.Lock()
 TONIES_WORD_DIR = "/mnt/d/OneDrive/Dokumente/Bolla/Tonies"
-_TONIES_REGELN = ("Hintergrund: Weihnachtsgeschenk fuer Kleinkinder (Marie und Anton sind Zwillinge, geboren Februar 2025; "
-                  "Mia ist ein weiteres Enkelkind). Absender sind Opa Chris und Oma Reni. Zeitlos formulieren, keine Altersangaben, "
-                  "keine Jahreszahlen. Kindgerecht, warm, leichter Humor, einfache Woerter, viel Wiederholung und Mitmachlaute.")
+_TONIES_ALTER = {
+    "marie": ("Marie ist ein Zwilling und wird zu Weihnachten knapp 2 Jahre alt (Kleinkind): sehr einfache Woerter, kurze Saetze, viel Wiederholung, Mitmachlaute.", "ca. 350-450 Woerter, ca. 4 Minuten laut vorgelesen"),
+    "anton": ("Anton ist ein Zwilling und wird zu Weihnachten knapp 2 Jahre alt (Kleinkind): sehr einfache Woerter, kurze Saetze, viel Wiederholung, Mitmachlaute.", "ca. 350-450 Woerter, ca. 4 Minuten laut vorgelesen"),
+    "mia": ("Mia wird zu Weihnachten 5 Jahre alt (Vorschulkind): kleine Handlung mit Spannungsbogen, etwas reicherer Wortschatz, Raetsel/Fragen zum Mitraten, Humor, gern etwas Vorlesefantasie.", "ca. 800-1000 Woerter, ca. 7-8 Minuten laut vorgelesen"),
+}
+def _tonies_regeln(kind):
+    return ("Hintergrund: Weihnachtsgeschenk fuer ein Enkelkind. Absender sind Opa Chris und Oma Reni. "
+            + _TONIES_ALTER[kind][0] + " Das Alter selbst NICHT im Text nennen, keine Jahreszahlen, zeitlos formulieren. Warm, leichter Humor.")
 
 def _tonies_claude(prompt, timeout=420):
     r = subprocess.run(["claude", "-p", prompt, "--model", "sonnet"], capture_output=True, text=True, timeout=timeout)
@@ -3206,7 +3211,7 @@ def _tonies_job(kind, teil, wunsch):
         besser = (f"\nVerbesserungswunsch von Chris (unbedingt umsetzen): {wunsch}" if wunsch else "")
         if teil == "song":
             vorher = (f"\nBisherige Fassung (nur verbessern, nicht komplett neu):\nTitel: {alt.get('titel','')}\nStyle: {alt.get('style','')}\nLyrics:\n{alt.get('lyrics','')}" if alt and wunsch else "")
-            pr = (f"{_TONIES_REGELN}\nSchreibe einen kurzen Bolla-Song (Suno) fuer {k['name']}. Attribute: {attr}.{vorher}{besser}\n"
+            pr = (f"{_tonies_regeln(kind)}\nSchreibe einen kurzen Bolla-Song (Suno) fuer {k['name']}. Attribute: {attr}.{vorher}{besser}\n"
                   "Lyrics deutsch, ca. 2 Strophen + eingaengiger Refrain mit Namen, Suno-Tags in eckigen Klammern ([Verse], [Chorus]), "
                   "natuerlich reimend, keine Floskeln. Style: englischer Beschreibungstext fuer das Suno-Feld (Genre, Tempo, Instrumente, "
                   "warme Kinderstimme-Stimmung), NIEMALS Kuenstler- oder Bandnamen. "
@@ -3215,7 +3220,7 @@ def _tonies_job(kind, teil, wunsch):
             erg = {"titel": erg.get("titel", ""), "style": erg.get("style", ""), "lyrics": erg.get("lyrics", "")}
         elif teil == "lied":
             andere = [f"{o['name']}: {o['lied'].get('ergebnis',{}).get('titel') or o['lied'].get('titel','')}" for ok, o in data["kinder"].items() if ok != kind]
-            pr = (f"{_TONIES_REGELN}\nSchlage EIN bekanntes deutsches Kinderlied vor, das Opa und Oma gut selbst einsingen koennen, fuer {k['name']}. "
+            pr = (f"{_tonies_regeln(kind)}\nSchlage EIN bekanntes deutsches Kinderlied vor, das Opa und Oma gut selbst einsingen koennen, fuer {k['name']}. "
                   f"Attribute: {attr}. Diese Lieder haben die anderen Kinder schon (nicht doppelt): {'; '.join(andere)}.{besser}\n"
                   'Antworte NUR als JSON: {"titel":"...","grund":"ein Satz warum es zu dem Kind passt"}')
             erg = _tonies_json(_tonies_claude(pr, 180))
@@ -3227,7 +3232,7 @@ def _tonies_job(kind, teil, wunsch):
                 try:
                     vorher = "\nBisherige Fassung (inkl. evtl. Handkorrekturen von Chris in Word) – nur verbessern:\n" + "\n".join(f"{w}: {t}" for w, t in _tonies_read_docx(pfad))
                 except Exception: pass
-            pr = (f"{_TONIES_REGELN}\nSchreibe eine Vorlesegeschichte fuer {k['name']} (ca. 600-800 Woerter, ca. 5-6 Minuten), Attribute: {attr}. "
+            pr = (f"{_tonies_regeln(kind)}\nSchreibe eine Vorlesegeschichte fuer {k['name']} ({_TONIES_ALTER[kind][1]}), Attribute: {attr}. "
                   f"Opa und Oma lesen im Wechsel (jeweils 1-4 Saetze pro Wechsel), mit Tierlauten/Motorgeraeuschen zum Mitmachen, sanftes Ende zum Einschlafen.{vorher}{besser}\n"
                   'Antworte NUR als JSON: {"titel":"...","zeilen":[["Opa","Text"],["Oma","Text"]]}')
             j = _tonies_json(_tonies_claude(pr))
