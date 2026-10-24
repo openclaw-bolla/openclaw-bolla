@@ -3067,6 +3067,239 @@ def board_nudge(pid):
     append_clipboard(prompt, source="nudge")  # Anstups auch in die MP-Clipboard-Liste
     return {"ok": True, "prompt": prompt}
 
+
+# ---- Tonie-Projekt (Weihnachten 2026) ----
+TONIES_FILE = os.path.join(WORKSPACE, "data/tonies.json")
+TONIES_STAGES = ["offen", "text", "audio", "hochgeladen"]
+
+def _tonies_default():
+    def kachel(): return {"stage": "offen", "wunsch": "", "titel": ""}
+    kinder = {}
+    for k, name, attr, box in (("marie", "Marie", "Tiere", True), ("anton", "Anton", "Autos, Elefanten", True), ("mia", "Mia", "", False)):
+        kinder[k] = {"name": name, "attribute": attr, "box": box,
+                     "song": kachel(), "lied": kachel(), "geschichte": kachel()}
+    return {"kinder": kinder, "allgemein": {"wunsch": ""}, "fahrplan": [
+        {"id": "f1", "text": "Kreativ-Tonies + 2 Boxen (Marie, Anton) bestellen, Lieferung zu uns (Mia: nur Kreativ-Tonie)", "done": False},
+        {"id": "f2", "text": "Jedes Kind ein anderes Kinderlied festlegen", "done": False},
+        {"id": "f3", "text": "Suno-Downloads für 3 Bolla-Songs einplanen (vor Rückstellung auf Pro)", "done": False},
+        {"id": "f4", "text": "Geschichten schreiben (Opa/Oma im Wechsel) + Word mit Farbmarkierung", "done": False},
+        {"id": "f5", "text": "Aufnahmen: Chris + Reni singen/lesen", "done": False},
+        {"id": "f6", "text": "Tonies einmal auf WLAN-Box stellen, dann Upload (meine.tonies.de)", "done": False},
+        {"id": "f7", "text": "Verpacken, mitnehmen; in Kaufering nur WLAN an Box eintragen", "done": False}]}
+
+def tonies_get():
+    if os.path.exists(TONIES_FILE):
+        try:
+            with open(TONIES_FILE, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return _tonies_default()
+
+def tonies_save(body):
+  with _TONIES_LOCK:
+    data = tonies_get()
+    kind, teil = body.get("kind"), body.get("teil")
+    if kind in data["kinder"]:
+        k = data["kinder"][kind]
+        if "attribute" in body: k["attribute"] = str(body["attribute"])[:500]
+        if teil in ("song", "lied", "geschichte"):
+            for fld in ("wunsch", "titel"):
+                if fld in body: k[teil][fld] = str(body[fld])[:3000]
+            if body.get("stage") in TONIES_STAGES: k[teil]["stage"] = body["stage"]
+    if "allgemein_wunsch" in body:
+        data["allgemein"]["wunsch"] = str(body["allgemein_wunsch"])[:3000]
+    if body.get("fahrplan_toggle"):
+        for fp in data["fahrplan"]:
+            if fp["id"] == body["fahrplan_toggle"]: fp["done"] = not fp["done"]
+    os.makedirs(os.path.dirname(TONIES_FILE), exist_ok=True)
+    with open(TONIES_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return {"ok": True, "data": data}
+
+def tonies_nudge(body):
+    data = tonies_get()
+    kind, teil = body.get("kind"), body.get("teil")
+    q = {"nudges": []}
+    if os.path.exists(BOARD_NUDGES_FILE):
+        try:
+            with open(BOARD_NUDGES_FILE, encoding="utf-8") as f: q = json.load(f)
+        except Exception: pass
+    if kind in data["kinder"] and teil in ("song", "lied", "geschichte"):
+        k = data["kinder"][kind]; t = k[teil]
+        label = {"song": "Bolla-Song", "lied": "Kinderlied", "geschichte": "Geschichte (Opa/Oma im Wechsel, Word mit Farbmarkierung)"}[teil]
+        prompt = (f"Tonie-Projekt: bitte kümmere dich um {label} für {k['name']}.\n"
+                  f"Attribute des Kindes: {k['attribute'] or '(noch keine)'}\nStand: {t['stage']}\n"
+                  f"Titel/Notiz: {t.get('titel') or '-'}\nVerbesserungswünsche: {t['wunsch'] or '-'}\n"
+                  f"Details: Memory project_tonie_zwillinge.md, Daten data/tonies.json.")
+        title = f"Tonie {k['name']} – {label.split(' (')[0]}"
+    else:
+        prompt = ("Tonie-Projekt Weihnachten 2026: bitte Gesamtstand prüfen und nächsten Schritt aus dem Fahrplan angehen.\n"
+                  f"Allgemeine Wünsche: {data['allgemein']['wunsch'] or '-'}\nDaten: data/tonies.json, Memory project_tonie_zwillinge.md.")
+        title = "Tonie-Projekt gesamt"
+    q.setdefault("nudges", []).append({"projId": "tonies", "title": title,
+        "ts": datetime.now().isoformat(timespec="seconds"), "prompt": prompt})
+    with open(BOARD_NUDGES_FILE, "w", encoding="utf-8") as f:
+        json.dump(q, f, ensure_ascii=False, indent=2)
+    append_clipboard(prompt, source="nudge")
+    return {"ok": True, "prompt": prompt}
+
+
+# ---- Tonies v2: Ergebnisse erzeugen (Song/Lied/Geschichte-Word) ----
+import threading as _th
+_TONIES_LOCK = _th.Lock()
+TONIES_WORD_DIR = "/mnt/d/OneDrive/Dokumente/Bolla/Tonies"
+_TONIES_REGELN = ("Hintergrund: Weihnachtsgeschenk fuer Kleinkinder (Marie und Anton sind Zwillinge, geboren Februar 2025; "
+                  "Mia ist ein weiteres Enkelkind). Absender sind Opa Chris und Oma Reni. Zeitlos formulieren, keine Altersangaben, "
+                  "keine Jahreszahlen. Kindgerecht, warm, leichter Humor, einfache Woerter, viel Wiederholung und Mitmachlaute.")
+
+def _tonies_claude(prompt, timeout=420):
+    r = subprocess.run(["claude", "-p", prompt, "--model", "sonnet"], capture_output=True, text=True, timeout=timeout)
+    out = (r.stdout or "").strip()
+    if not out:
+        raise RuntimeError((r.stderr or "keine Antwort")[:200])
+    return out
+
+def _tonies_json(txt):
+    a, b = txt.find("{"), txt.rfind("}")
+    return json.loads(txt[a:b + 1])
+
+def _tonies_docx_path(kind, name):
+    return os.path.join(TONIES_WORD_DIR, f"Geschichte_{name}.docx")
+
+def _tonies_write_docx(path, name, titel, zeilen):
+    from docx import Document
+    from docx.shared import Pt, RGBColor
+    d = Document()
+    st = d.styles["Normal"]; st.font.name = "Aptos"; st.font.size = Pt(14)
+    st.paragraph_format.line_spacing = 1.15; st.paragraph_format.space_after = Pt(0); st.paragraph_format.space_before = Pt(0)
+    h = d.add_paragraph(); r = h.add_run(f"{titel} – eine Geschichte für {name}"); r.bold = True; r.font.size = Pt(18)
+    l = d.add_paragraph(); r = l.add_run("Opa (Chris) "); r.bold = True; r.font.color.rgb = RGBColor(0x1F, 0x4E, 0x9E)
+    r = l.add_run("blau   "); r.font.color.rgb = RGBColor(0x1F, 0x4E, 0x9E)
+    r = l.add_run("Oma (Reni) "); r.bold = True; r.font.color.rgb = RGBColor(0xB0, 0x2A, 0x6B)
+    r = l.add_run("magenta"); r.font.color.rgb = RGBColor(0xB0, 0x2A, 0x6B)
+    d.add_paragraph()
+    for wer, text in zeilen:
+        col = RGBColor(0x1F, 0x4E, 0x9E) if wer == "Opa" else RGBColor(0xB0, 0x2A, 0x6B)
+        p = d.add_paragraph(); a = p.add_run(f"{wer}: "); a.bold = True; a.font.color.rgb = col
+        b = p.add_run(text); b.font.color.rgb = col
+        d.add_paragraph()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    d.save(path)
+
+def _tonies_read_docx(path):
+    from docx import Document
+    zeilen = []
+    for p in Document(path).paragraphs:
+        t = p.text.strip()
+        for wer in ("Opa", "Oma"):
+            if t.startswith(wer + ":"):
+                zeilen.append((wer, t[len(wer) + 1:].strip()))
+    return zeilen
+
+def _tonies_job(kind, teil, wunsch):
+    fehler = ""; erg = None
+    try:
+        with _TONIES_LOCK:
+            data = tonies_get(); k = data["kinder"][kind]; alt = k[teil].get("ergebnis") or {}
+        attr = k["attribute"] or "(keine bekannt – bleib allgemein, nur der Vorname)"
+        besser = (f"\nVerbesserungswunsch von Chris (unbedingt umsetzen): {wunsch}" if wunsch else "")
+        if teil == "song":
+            vorher = (f"\nBisherige Fassung (nur verbessern, nicht komplett neu):\nTitel: {alt.get('titel','')}\nStyle: {alt.get('style','')}\nLyrics:\n{alt.get('lyrics','')}" if alt and wunsch else "")
+            pr = (f"{_TONIES_REGELN}\nSchreibe einen kurzen Bolla-Song (Suno) fuer {k['name']}. Attribute: {attr}.{vorher}{besser}\n"
+                  "Lyrics deutsch, ca. 2 Strophen + eingaengiger Refrain mit Namen, Suno-Tags in eckigen Klammern ([Verse], [Chorus]), "
+                  "natuerlich reimend, keine Floskeln. Style: englischer Beschreibungstext fuer das Suno-Feld (Genre, Tempo, Instrumente, "
+                  "warme Kinderstimme-Stimmung), NIEMALS Kuenstler- oder Bandnamen. "
+                  'Antworte NUR als JSON: {"titel":"...","style":"...","lyrics":"..."}')
+            erg = _tonies_json(_tonies_claude(pr))
+            erg = {"titel": erg.get("titel", ""), "style": erg.get("style", ""), "lyrics": erg.get("lyrics", "")}
+        elif teil == "lied":
+            andere = [f"{o['name']}: {o['lied'].get('ergebnis',{}).get('titel') or o['lied'].get('titel','')}" for ok, o in data["kinder"].items() if ok != kind]
+            pr = (f"{_TONIES_REGELN}\nSchlage EIN bekanntes deutsches Kinderlied vor, das Opa und Oma gut selbst einsingen koennen, fuer {k['name']}. "
+                  f"Attribute: {attr}. Diese Lieder haben die anderen Kinder schon (nicht doppelt): {'; '.join(andere)}.{besser}\n"
+                  'Antworte NUR als JSON: {"titel":"...","grund":"ein Satz warum es zu dem Kind passt"}')
+            erg = _tonies_json(_tonies_claude(pr, 180))
+            erg = {"titel": erg.get("titel", ""), "grund": erg.get("grund", "")}
+        elif teil == "geschichte":
+            pfad = _tonies_docx_path(kind, k["name"])
+            vorher = ""
+            if wunsch and os.path.exists(pfad):
+                try:
+                    vorher = "\nBisherige Fassung (inkl. evtl. Handkorrekturen von Chris in Word) – nur verbessern:\n" + "\n".join(f"{w}: {t}" for w, t in _tonies_read_docx(pfad))
+                except Exception: pass
+            pr = (f"{_TONIES_REGELN}\nSchreibe eine Vorlesegeschichte fuer {k['name']} (ca. 600-800 Woerter, ca. 5-6 Minuten), Attribute: {attr}. "
+                  f"Opa und Oma lesen im Wechsel (jeweils 1-4 Saetze pro Wechsel), mit Tierlauten/Motorgeraeuschen zum Mitmachen, sanftes Ende zum Einschlafen.{vorher}{besser}\n"
+                  'Antworte NUR als JSON: {"titel":"...","zeilen":[["Opa","Text"],["Oma","Text"]]}')
+            j = _tonies_json(_tonies_claude(pr))
+            zeilen = [(("Oma" if str(w).lower().startswith("oma") else "Opa"), str(t)) for w, t in j["zeilen"]]
+            _tonies_write_docx(pfad, k["name"], j.get("titel", "Geschichte"), zeilen)
+            erg = {"titel": j.get("titel", ""), "datei": pfad, "woerter": sum(len(t.split()) for _, t in zeilen)}
+    except Exception as e:
+        fehler = f"{type(e).__name__}: {str(e)[:200]}"
+    with _TONIES_LOCK:
+        data = tonies_get(); t = data["kinder"][kind][teil]
+        t["busy"] = False; t["fehler"] = fehler
+        if erg:
+            t["ergebnis"] = erg
+            if wunsch: t["wunsch"] = ""
+            if t.get("stage") == "offen": t["stage"] = "text"
+        _tonies_write(data)
+
+def _tonies_write(data):
+    os.makedirs(os.path.dirname(TONIES_FILE), exist_ok=True)
+    with open(TONIES_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def tonies_generate(body):
+    kind, teil = body.get("kind"), body.get("teil")
+    wunsch = str(body.get("wunsch", "")).strip()[:2000]
+    with _TONIES_LOCK:
+        data = tonies_get()
+        if kind not in data["kinder"] or teil not in ("song", "lied", "geschichte"):
+            return {"ok": False, "error": "unbekannt"}
+        t = data["kinder"][kind][teil]
+        if t.get("busy"):
+            return {"ok": False, "error": "läuft schon"}
+        t["busy"] = True; t["fehler"] = ""
+        _tonies_write(data)
+    _th.Thread(target=_tonies_job, args=(kind, teil, wunsch), daemon=True).start()
+    return {"ok": True}
+
+def tonies_verwerfen(body):
+    kind, teil = body.get("kind"), body.get("teil")
+    with _TONIES_LOCK:
+        data = tonies_get()
+        if kind not in data["kinder"] or teil not in ("song", "lied", "geschichte"):
+            return {"ok": False}
+        k = data["kinder"][kind]; t = k[teil]
+        if teil == "geschichte":
+            try: os.remove(_tonies_docx_path(kind, k["name"]))
+            except OSError: pass
+        t["ergebnis"] = {}; t["fehler"] = ""; t["stage"] = "offen"
+        _tonies_write(data)
+    return {"ok": True}
+
+def tonies_uebernehmen(body):
+    kind, teil = body.get("kind"), body.get("teil")
+    with _TONIES_LOCK:
+        data = tonies_get()
+        t = data["kinder"][kind][teil]
+        if teil == "lied" and t.get("ergebnis"):
+            t["titel"] = t["ergebnis"].get("titel", "")
+        t["stage"] = "text" if t.get("stage") == "offen" else t["stage"]
+        _tonies_write(data)
+    return {"ok": True}
+
+def tonies_open(body):
+    kind = body.get("kind")
+    data = tonies_get()
+    if kind not in data["kinder"]: return {"ok": False}
+    pfad = _tonies_docx_path(kind, data["kinder"][kind]["name"])
+    if not os.path.exists(pfad): return {"ok": False, "error": "Datei fehlt"}
+    win = subprocess.run(["wslpath", "-w", pfad], capture_output=True, text=True).stdout.strip()
+    subprocess.Popen(["/mnt/c/Windows/explorer.exe", win])
+    return {"ok": True}
+
 SCHULJAHR_FILE = os.path.join(WORKSPACE, "data/schuljahr2627.json")
 
 def _schuljahr_load():
@@ -8373,6 +8606,9 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 else:
                     self._send_json({"titel": "Thriller-Projekt", "status": "Planung", "kriterien": {}, "kapitel": [], "kommentare": [], "naechsterSchritt": ""})
 
+            elif self.path == "/api/tonies":
+                self._send_json(tonies_get())
+
             elif self.path == "/api/board":
                 self._send_json(board_list())
 
@@ -9578,6 +9814,18 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                 self._send_json(board_action_toggle(body.get("projId",""), body.get("actId","")))
             elif self.path == "/api/board/action-delete":
                 self._send_json(board_action_delete(body.get("projId",""), body.get("actId","")))
+            elif self.path == "/api/tonies/save":
+                self._send_json(tonies_save(body))
+            elif self.path == "/api/tonies/nudge":
+                self._send_json(tonies_nudge(body))
+            elif self.path == "/api/tonies/generate":
+                self._send_json(tonies_generate(body))
+            elif self.path == "/api/tonies/verwerfen":
+                self._send_json(tonies_verwerfen(body))
+            elif self.path == "/api/tonies/uebernehmen":
+                self._send_json(tonies_uebernehmen(body))
+            elif self.path == "/api/tonies/open":
+                self._send_json(tonies_open(body))
             elif self.path == "/api/board/nudge":
                 self._send_json(board_nudge(body.get("projId","")))
             elif self.path == "/api/board/action-nudge":

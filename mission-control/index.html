@@ -935,6 +935,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
         <div class="nav-section-items" id="nav-section-items-familie">
           <div class="nav-item" data-page="robin"><span class="icon">🌍</span><span>Robin</span></div>
           <div class="nav-item" data-page="geburtstage"><span class="icon">🎂</span><span>Geburtstage</span></div>
+          <div class="nav-item" data-page="tonies"><span class="icon">🎁</span><span>Tonies</span></div>
         </div>
       </div>
 
@@ -1550,6 +1551,11 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
       <!-- ROBIN -->
       <div class="page" id="page-robin">
         <div class="grid" id="robin-content"><div class="loading">Lade...</div></div>
+      </div>
+
+      <!-- TONIES -->
+      <div class="page" id="page-tonies">
+        <div id="tonies-content"><div class="loading">Lade...</div></div>
       </div>
 
       <!-- GEBURTSTAGE -->
@@ -5043,6 +5049,7 @@ function showPage(page) {
   if (page === 'differenzierung') initDiff();
   if (page === 'robin')      loadRobin();
   if (page === 'geburtstage')loadBirthdays();
+  if (page === 'tonies')     loadTonies();
   if (page === 'wetter')     loadWeatherFull();
   if (page === 'kalender')   loadCalendar();
   if (page === 'email')      loadEmailFull();
@@ -5459,7 +5466,7 @@ function openSectionForPage(page) {
   const sectionMap = {
     dashboard: 'start', bolla: 'start', wetter: 'start',
     schule: 'arbeit', korrektur: 'arbeit', differenzierung: 'arbeit', entschaerfer: 'arbeit', gluecksrad: 'arbeit', schuljahr2627: 'arbeit', kalender: 'arbeit', email: 'arbeit', clipboard: 'arbeit', board: 'arbeit', projekte: 'arbeit', 'ki-workshop': 'arbeit', urlaub: 'arbeit',
-    robin: 'familie', geburtstage: 'familie',
+    robin: 'familie', geburtstage: 'familie', tonies: 'familie',
     'ki-news': 'kreativ', 'ki-buch': 'kreativ', aurora2: 'kreativ', bildgen: 'kreativ', suno: 'kreativ', fotoanalyse: 'kreativ', kiforum: 'kreativ',
     localserver: 'system', system: 'system', claudecode: 'system', surface: 'system', redesigns: 'system', brain: 'system',
     archiv: 'archiv'
@@ -5602,6 +5609,7 @@ async function initNavDrag() {
     'board': 'nav-section-items-familie',
     'robin': 'nav-section-items-familie',
     'geburtstage': 'nav-section-items-familie',
+    'tonies': 'nav-section-items-familie',
     'bildgen': 'nav-section-items-kreativ',
     'suno': 'nav-section-items-kreativ',
     'fotoanalyse': 'nav-section-items-kreativ',
@@ -8632,6 +8640,91 @@ async function loadBirthdays() {
 }
 
 // ===== ROBIN =====
+
+// ---- 🎁 Tonies ----
+const TONIE_STAGES = [['offen','⚪ offen'],['text','📝 Text fertig'],['audio','🎧 Audio fertig'],['hochgeladen','✅ im Tonie']];
+const TONIE_TEILE = [['song','🎵 Bolla-Song'],['lied','🎤 Kinderlied'],['geschichte','📖 Geschichte (Opa/Oma)']];
+let _tonies = null;
+async function loadTonies() {
+  const el = document.getElementById('tonies-content');
+  try { _tonies = await (await fetch(API + '/api/tonies')).json(); } catch(e) { el.innerHTML = '<div class="loading">Fehler beim Laden</div>'; return; }
+  const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const d = _tonies, fs = 'font-size:15px';
+  let h = '<div class="card" style="margin-bottom:14px"><div style="font-weight:600;font-size:17px;margin-bottom:8px">🎁 Tonie-Projekt Weihnachten 2026 – Fahrplan</div>';
+  d.fahrplan.forEach(f => { h += `<label style="display:block;${fs};padding:3px 0;cursor:pointer"><input type="checkbox" ${f.done?'checked':''} onchange="tonieSave({fahrplan_toggle:'${f.id}'})"> <span style="${f.done?'text-decoration:line-through;opacity:.6':''}">${esc(f.text)}</span></label>`; });
+  h += `<textarea id="tonie-allg" rows="2" style="width:100%;margin-top:8px;${fs}" placeholder="Allgemeine Wünsche / Verbesserungen">${esc(d.allgemein.wunsch)}</textarea>
+    <div style="margin-top:6px"><button onclick="tonieSave({allgemein_wunsch:document.getElementById('tonie-allg').value})">💾 Speichern</button> <button onclick="tonieNudge({})">📌 Gesamt anstupsen</button></div></div>`;
+  h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px">';
+  Object.entries(d.kinder).forEach(([k, kid]) => {
+    h += `<div class="card"><div style="font-weight:600;font-size:18px">${esc(kid.name)} <span style="font-size:13px;opacity:.7">${kid.box?'Box + Kreativ-Tonie':'nur Kreativ-Tonie'}</span></div>
+      <div style="margin:6px 0"><input id="ta-${k}" value="${esc(kid.attribute)}" placeholder="Attribute (z.B. Tiere, Autos)" style="width:70%;${fs}"> <button onclick="tonieSave({kind:'${k}',attribute:document.getElementById('ta-${k}').value})">💾</button></div>`;
+    TONIE_TEILE.forEach(([t, lbl]) => {
+      const x = kid[t], erg = x.ergebnis || {}, has = Object.keys(erg).length > 0;
+      const cp = (txt, what) => `<button onclick="tonieCopy(this,'${k}','${t}','${what}')">📋 ${what==='style'?'Style':what==='lyrics'?'Lyrics':'Kopieren'}</button>`;
+      const box = 'background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px;margin:6px 0;white-space:pre-wrap;font-size:15px;line-height:1.5';
+      h += `<div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px"><b style="${fs}">${lbl}</b>
+        <select id="ts-${k}-${t}" style="${fs};margin-left:6px" onchange="tonieSaveKachel('${k}','${t}')">${TONIE_STAGES.map(s=>`<option value="${s[0]}" ${x.stage===s[0]?'selected':''}>${s[1]}</option>`).join('')}</select>`;
+      if (x.busy) h += `<div style="${box}">⏳ Bolla arbeitet daran … (dauert ca. 1–3 Min)</div>`;
+      else if (x.fehler) h += `<div style="${box};color:#ef4444">⚠️ ${esc(x.fehler)}</div>`;
+      if (!x.busy && has) {
+        if (t === 'song') h += `<div style="${box}"><b>${esc(erg.titel)}</b></div><div style="font-size:13px;opacity:.7">Style (Suno)</div><div id="tr-${k}-${t}-style" style="${box}">${esc(erg.style)}</div><div style="font-size:13px;opacity:.7">Lyrics (Suno)</div><div id="tr-${k}-${t}-lyrics" style="${box}">${esc(erg.lyrics)}</div>${cp('', 'style')} ${cp('', 'lyrics')}`;
+        if (t === 'lied') h += `<div style="${box}"><b>${esc(erg.titel)}</b>\n${esc(erg.grund)}</div><button onclick="tonieUebernehmen('${k}','${t}')">✅ Nehmen wir</button>`;
+        if (t === 'geschichte') h += `<div style="${box}">📄 <b>${esc(erg.titel)}</b> – ${erg.woerter||'?'} Wörter<br><span style="font-size:13px;opacity:.7">Word: OneDrive\\Dokumente\\Bolla\\Tonies\\Geschichte_${esc(kid.name)}.docx (Opa blau, Oma magenta)</span></div><button onclick="tonieOpen('${k}')">📂 Word öffnen</button>`;
+        h += ` <button onclick="tonieVerwerfen('${k}','${t}')">🗑 Verwerfen</button>`;
+      }
+      h += `<textarea id="tw-${k}-${t}" rows="2" style="width:100%;margin-top:6px;${fs}" placeholder="${has?'Was soll besser werden? (ersetzt die jetzige Fassung)':'Wünsche vorab (optional)'}">${esc(x.wunsch)}</textarea>
+        <button ${x.busy?'disabled':''} onclick="tonieGenerate('${k}','${t}')">${has?'✏️ Verbessern':'📌 Erzeugen'}</button>
+        <input id="tt-${k}-${t}" type="hidden" value="${esc(x.titel)}"></div>`;
+    });
+    h += '</div>';
+  });
+  el.innerHTML = h + '</div>';
+}
+async function tonieSave(body) {
+  const r = await (await fetch(API + '/api/tonies/save', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})).json();
+  if (r.ok) loadTonies(); return r;
+}
+async function tonieSaveKachel(k, t) {
+  const g = id => document.getElementById(id).value;
+  return tonieSave({kind:k, teil:t, stage:g(`ts-${k}-${t}`), titel:g(`tt-${k}-${t}`), wunsch:g(`tw-${k}-${t}`)});
+}
+
+async function tonieGenerate(k, t) {
+  const w = document.getElementById(`tw-${k}-${t}`).value;
+  await tonieSave({kind:k, teil:t, wunsch:''});
+  const r = await (await fetch(API + '/api/tonies/generate', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({kind:k, teil:t, wunsch:w})})).json();
+  if (!r.ok) alert(r.error || 'Fehler');
+  loadTonies();
+}
+async function tonieVerwerfen(k, t) {
+  if (!confirm('Fassung wirklich verwerfen' + (t==='geschichte' ? ' (Word-Datei wird gelöscht)' : '') + '?')) return;
+  await fetch(API + '/api/tonies/verwerfen', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({kind:k, teil:t})});
+  loadTonies();
+}
+async function tonieUebernehmen(k, t) {
+  await fetch(API + '/api/tonies/uebernehmen', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({kind:k, teil:t})});
+  loadTonies();
+}
+async function tonieOpen(k) {
+  const r = await (await fetch(API + '/api/tonies/open', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({kind:k})})).json();
+  if (!r.ok) alert(r.error || 'Fehler');
+}
+function tonieCopy(btn, k, t, what) {
+  const txt = document.getElementById(`tr-${k}-${t}-${what}`).innerText;
+  navigator.clipboard.writeText(txt).then(() => { const o = btn.innerText; btn.innerText = '✅ kopiert'; setTimeout(() => btn.innerText = o, 1500); });
+}
+setInterval(() => {
+  const pg = document.getElementById('page-tonies');
+  if (!pg || !pg.classList.contains('active') || !_tonies) return;
+  const busy = Object.values(_tonies.kinder).some(kd => ['song','lied','geschichte'].some(t => kd[t].busy));
+  const ae = document.activeElement;
+  if (busy && !(ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT'))) loadTonies();
+}, 5000);
+async function tonieNudge(body) {
+  const r = await (await fetch(API + '/api/tonies/nudge', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})).json();
+  if (r.ok) { try { await navigator.clipboard.writeText(r.prompt); } catch(e) {} alert('📌 Angestupst – Auftrag liegt in der Queue und in der Zwischenablage.'); }
+}
+
 async function loadRobin() {
   try {
     const robin = await fetch(API + '/api/robin').then(x => x.json());
