@@ -8655,6 +8655,89 @@ async function loadBirthdays() {
 // ---- 🎁 Tonies ----
 const TONIE_STAGES = [['offen','⚪ offen'],['text','📝 Text fertig'],['audio','🎧 Audio fertig'],['hochgeladen','✅ im Tonie']];
 const TONIE_TEILE = [['song','🎵 Bolla-Song'],['lied','🎤 Kinderlied'],['geschichte','📖 Geschichte (Opa/Oma)']];
+// Katalog bekannter Kinderlieder: [Titel, Hinweis, Tags]. Tags: tiere auto elefant ruhig mitmach klein(ab 2) gross(ab 4)
+const TONIE_LIEDER = [
+ ['Alle meine Entchen','Der Klassiker, 2 Zeilen, jeder kennt ihn','tiere klein'],
+ ['Ein Elefant kam spaziern','Kettenlied: immer ein Elefant mehr (Spinnenfaden)','elefant tiere mitmach gross'],
+ ['Die Räder vom Bus','Wheels on the Bus: Hupen, Wischer, Brummen – mit Gesten','auto mitmach klein'],
+ ['Fuhr ein Fuhrmann','Pferd und Wagen, einfache Melodie','auto tiere klein'],
+ ['Hoch auf dem gelben Wagen','Gemütliche Kutschfahrt, Volkslied','auto ruhig gross'],
+ ['Auf der Mauer, auf der Lauer','Sitzt \'ne kleine Wanze – Wortspiel mit Vokalen','tiere mitmach gross'],
+ ['Drei Chinesen mit dem Kontrabass','Vokalwechsel-Spaß (a, e, i, o, u)','mitmach gross'],
+ ['Backe, backe Kuchen','Klatschlied mit Handbewegungen','mitmach klein'],
+ ['Hänschen klein','Uraltes Wanderlied','klein'],
+ ['Häschen in der Grube','Hüpfen und Mitmachen','tiere mitmach klein'],
+ ['Kuckuck, Kuckuck, ruft\'s aus dem Wald','Tanzlied, Kuckuck-Rufe zum Mitmachen','tiere mitmach klein'],
+ ['Der Kuckuck und der Esel','Tierwettstreit, viele Tierlaute','tiere gross'],
+ ['Ein Vogel wollte Hochzeit machen','Viele Tiere kommen zur Hochzeit','tiere mitmach gross'],
+ ['Fuchs, du hast die Gans gestohlen','Kurzes Lied, bekannt','tiere klein'],
+ ['Alle Vögel sind schon da','Frühlingslied mit Vogelstimmen','tiere klein'],
+ ['Summ, summ, summ, Bienchen summ herum','Sehr leicht zu singen','tiere klein'],
+ ['Kleine Kätzchen, kleine Hunde','Tiere und Laute zum Nachmachen','tiere mitmach klein'],
+ ['Old MacDonald hat \'ne Farm','Bauernhoftiere und Laute','tiere mitmach klein'],
+ ['Wer hat die schönsten Schäfchen','Abendlied, ruhig','tiere ruhig gross'],
+ ['Weißt du, wie viel Sternlein stehen','Ruhiges Abendlied, passt zu Weihnachten','ruhig gross'],
+ ['Guten Abend, gut\' Nacht','Wiegenlied (Brahms)','ruhig klein'],
+ ['Schlaf, Kindlein, schlaf','Wiegenlied, Schäfchen und Schaf','ruhig tiere klein'],
+ ['Der Mond ist aufgegangen','Klassisches Abendlied','ruhig gross'],
+ ['Hopp, hopp, hopp, Pferdchen lauf Galopp','Reitlied zum Wippen auf dem Knie','tiere mitmach klein'],
+ ['Zehn kleine Zappelmänner','Zählen und Mitmachen','mitmach klein'],
+ ['Fünf kleine Fische','Zähllied, jeder Fisch weniger','tiere mitmach gross'],
+ ['Wenn du glücklich bist, dann klatsche in die Hand','Mitmachlied mit Klatschen und Stampfen','mitmach klein'],
+ ['Laterne, Laterne','Sonne, Mond und Sterne','ruhig klein'],
+ ['Morgen, Kinder, wird\'s was geben','Weihnachtslied','ruhig klein'],
+ ['Alle Jahre wieder','Weihnachtslied','ruhig klein'],
+ ['Ihr Kinderlein, kommet','Weihnachtslied, ruhig','ruhig gross'],
+ ['Schneeflöckchen, Weißröckchen','Winterlied','ruhig klein'],
+ ['Kommt ein Vogel geflogen','Wiegenlied mit Vogel','tiere ruhig klein'],
+];
+function tonieBegriffe(txt) {
+  const t = (txt||'').toLowerCase(), tags = [], words = t.split(/[^a-zäöüß]+/).filter(w => w.length > 2);
+  if (/ruhig|abend|schlaf|wiegen|nacht|leise|weihnacht|kuschel/.test(t)) tags.push('ruhig');
+  if (/tier|hund|katze|vogel|ente|schaf|pferd|hase|kuh|fisch|bien/.test(t)) tags.push('tiere');
+  if (/mitmach|klatsch|beweg|tanz|hüpf|spiel|zappel|gesten/.test(t)) tags.push('mitmach');
+  if (/auto|fahr|bus|zug|brumm/.test(t)) tags.push('auto');
+  if (/elefant/.test(t)) tags.push('elefant');
+  return {tags, words};
+}
+function tonieLiedeFuer(k, kid) {
+  // Passende zuerst: Alter + Attribute; bereits gewählte Lieder anderer Kinder ausblenden
+  const gross = k === 'mia', attr = (kid.attribute||'').toLowerCase();
+  const want = [], bg = tonieBegriffe(((kid.lied.ergebnis||{}).begriffe)||'');
+  if (/tier/.test(attr)) want.push('tiere');
+  if (/auto|bus|fahr/.test(attr)) want.push('auto');
+  if (/elefant/.test(attr)) want.push('elefant');
+  const belegt = Object.entries(_tonies.kinder).filter(([o]) => o !== k).map(([,o]) => o.lied.titel).filter(Boolean);
+  return TONIE_LIEDER.filter(l => !belegt.includes(l[0])).map(l => {
+    const tags = l[2].split(' ');
+    let sc = 0; want.forEach(w => { if (tags.includes(w)) sc += 3; });
+    bg.tags.forEach(w => { if (tags.includes(w)) sc += 5; });
+    bg.words.forEach(w => { if ((l[0] + ' ' + l[1]).toLowerCase().includes(w)) sc += 4; });
+    sc += tags.includes(gross ? 'gross' : 'klein') ? 2 : (tags.includes('gross') || tags.includes('klein') ? -2 : 0);
+    return {t: l[0], h: l[1], sc};
+  }).sort((a, b) => b.sc - a.sc);
+}
+let _tonieKat = {};
+let _tonieAudio = null, _tonieBtn = null;
+function tonieStopp() { if (_tonieAudio) { _tonieAudio.pause(); _tonieAudio = null; } if (_tonieBtn) { _tonieBtn.textContent = '▶ Reinhören'; _tonieBtn = null; } }
+async function tonieHoeren(btn) {
+  const t = btn.dataset.t, info = btn.parentNode.querySelector('.tp-info');
+  if (_tonieBtn === btn) { tonieStopp(); return; }
+  tonieStopp(); btn.textContent = '⏳ suche …'; if (info) info.textContent = '';
+  try {
+    const r = await (await fetch('https://itunes.apple.com/search?country=de&entity=song&limit=8&term=' + encodeURIComponent(t + ' Kinderlied'))).json();
+    const hit = (r.results || []).find(x => x.previewUrl);
+    if (!hit) { btn.textContent = '▶ Reinhören'; if (info) info.innerHTML = 'Nichts gefunden – <a href="https://www.youtube.com/results?search_query=' + encodeURIComponent(t + ' Kinderlied') + '" target="_blank" style="color:var(--accent2)">bei YouTube suchen</a>'; return; }
+    _tonieAudio = new Audio(hit.previewUrl); _tonieBtn = btn;
+    _tonieAudio.onended = tonieStopp;
+    await _tonieAudio.play();
+    btn.textContent = '⏹ Stopp';
+    if (info) info.textContent = '30-Sek-Ausschnitt: ' + hit.trackName + ' – ' + hit.artistName;
+  } catch (e) { tonieStopp(); btn.textContent = '▶ Reinhören'; if (info) info.textContent = 'Konnte nicht abspielen.'; }
+}
+async function tonieLiedWaehlen(k, t) { await tonieSave({kind:k, teil:'lied', titel:t, stage:'text'}); }
+async function tonieLiedAendern(k) { await tonieSave({kind:k, teil:'lied', titel:''}); _tonieLiedOffen = k; loadTonies(); }
+let _tonieLiedOffen = null;
 let _tonies = null;
 async function loadTonies() {
   const el = document.getElementById('tonies-content');
@@ -8670,6 +8753,33 @@ async function loadTonies() {
     h += `<div class="card"><div style="font-weight:600;font-size:18px">${esc(kid.name)} <span style="font-size:13px;opacity:.7">${kid.box?'Box + Kreativ-Tonie':'nur Kreativ-Tonie'}</span></div>
       <div style="margin:6px 0"><input id="ta-${k}" value="${esc(kid.attribute)}" placeholder="Attribute (z.B. Tiere, Autos)" style="width:70%;${fs}"> <button onclick="tonieSave({kind:'${k}',attribute:document.getElementById('ta-${k}').value})">💾</button></div>`;
     TONIE_TEILE.forEach(([t, lbl]) => {
+      if (t === 'lied') {
+        const x = kid.lied, gew = x.titel, erg = x.ergebnis || {}, vs = erg.vorschlaege || [];
+        const boxl = 'background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px;margin:6px 0';
+        const btnH = tt => `<button data-t="${esc(tt)}" onclick="tonieHoeren(this)">▶ Reinhören</button>`;
+        h += `<div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px"><b style="${fs}">${lbl}</b>
+          <input id="tw-${k}-lied" value="${esc(x.wunsch)}" placeholder="Begriffe, z.B. ruhig, Tiere, mitmachen" style="width:100%;margin-top:6px;${fs}">
+          <button ${x.busy?'disabled':''} onclick="tonieGenerate('${k}','lied')">📌 Erzeugen</button>
+          <button onclick="tonieVerwerfen('${k}','lied')">🗑 Verwerfen</button>`;
+        if (x.busy) h += `<div style="${boxl};${fs}">⏳ Bolla sucht passende Lieder … (ca. 1 Min)</div>`;
+        else if (x.fehler) h += `<div style="${boxl};color:#ef4444;${fs}">⚠️ ${esc(x.fehler)}</div>`;
+        if (gew) {
+          h += `<div style="${boxl};${fs}">✅ <b>${esc(gew)}</b></div>
+            <div>${btnH(gew)} <button onclick="tonieLiedAendern('${k}')">🔄 Anderes Lied</button><div class="tp-info" style="font-size:13px;opacity:.7;margin-top:4px"></div></div></div>`;
+        } else {
+          const row = (l, neu) => `<div style="padding:7px 8px;border-bottom:1px solid var(--border)"><div style="${fs}">${neu?'🆕 ':''}<b>${esc(l.t)}</b></div><div style="font-size:13px;opacity:.7">${esc(l.h)}</div>
+            ${btnH(l.t)}<button data-t="${esc(l.t)}" onclick="tonieLiedWaehlen('${k}',this.dataset.t)">✅ Nehmen wir</button><div class="tp-info" style="font-size:13px;opacity:.7"></div></div>`;
+          const neu = vs.map(v => ({t: v.titel, h: v.hinweis, n: v.neu}));
+          const rest = tonieLiedeFuer(k, kid).filter(l => !neu.some(n => n.t.toLowerCase() === l.t.toLowerCase()));
+          const offen = (_tonieKat[k] !== undefined) ? _tonieKat[k] : neu.length === 0;
+          const rowN = (l) => row(l, l.n);
+          h += `<div style="font-size:13px;opacity:.7;margin:6px 0 4px">${erg.begriffe ? 'Begriffe: <b>' + esc(erg.begriffe) + '</b> · ' : ''}🆕 = neu erzeugt (bleiben, bis du verwirfst). „Reinhören“ spielt 30 Sek. direkt hier.</div>
+            ${neu.length ? `<div style="max-height:300px;overflow:auto;border:1px solid var(--border);border-radius:8px">${neu.map(rowN).join('')}</div>` : ''}
+            <details ${offen?'open':''} ontoggle="_tonieKat['${k}']=this.open" style="margin-top:8px"><summary style="cursor:pointer;${fs}">📚 Alle bekannten Lieder (${rest.length})${erg.begriffe?' – nach deinen Begriffen sortiert':''}</summary>
+            <div style="max-height:360px;overflow:auto;border:1px solid var(--border);border-radius:8px;margin-top:6px">${rest.map(l => row(l, false)).join('')}</div></details></div>`;
+        }
+        return;
+      }
       const x = kid[t], erg = x.ergebnis || {}, has = Object.keys(erg).length > 0;
       const cp = (txt, what) => `<button onclick="tonieCopy(this,'${k}','${t}','${what}')">📋 ${what==='style'?'Style':what==='lyrics'?'Lyrics':'Kopieren'}</button>`;
       const box = 'background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px;margin:6px 0;white-space:pre-wrap;font-size:15px;line-height:1.5';

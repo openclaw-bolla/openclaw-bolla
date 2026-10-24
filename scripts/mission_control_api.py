@@ -3219,12 +3219,23 @@ def _tonies_job(kind, teil, wunsch):
             erg = _tonies_json(_tonies_claude(pr))
             erg = {"titel": erg.get("titel", ""), "style": erg.get("style", ""), "lyrics": erg.get("lyrics", "")}
         elif teil == "lied":
-            andere = [f"{o['name']}: {o['lied'].get('ergebnis',{}).get('titel') or o['lied'].get('titel','')}" for ok, o in data["kinder"].items() if ok != kind]
-            pr = (f"{_tonies_regeln(kind)}\nSchlage EIN bekanntes deutsches Kinderlied vor, das Opa und Oma gut selbst einsingen koennen, fuer {k['name']}. "
-                  f"Attribute: {attr}. Diese Lieder haben die anderen Kinder schon (nicht doppelt): {'; '.join(andere)}.{besser}\n"
-                  'Antworte NUR als JSON: {"titel":"...","grund":"ein Satz warum es zu dem Kind passt"}')
-            erg = _tonies_json(_tonies_claude(pr, 180))
-            erg = {"titel": erg.get("titel", ""), "grund": erg.get("grund", "")}
+            andere = [o['lied'].get('titel','') for ok, o in data["kinder"].items() if ok != kind]
+            andere = [x for x in andere if x]
+            schon = [v.get("titel", "") for v in (alt.get("vorschlaege") or [])]
+            pr = (f"{_tonies_regeln(kind)}\nNenne 6 bekannte deutsche Kinderlieder, die Opa und Oma gut selbst einsingen koennen, fuer {k['name']}. "
+                  f"Attribute: {attr}. Begriffe/Wuensche von Chris: {wunsch or '-'}. Nicht nehmen (andere Kinder haben sie schon): {'; '.join(andere) or '-'}. "
+                  f"Schon vorgeschlagen, NICHT wiederholen: {'; '.join(schon) or '-'}.\n"
+                  "WICHTIG: Nur Lieder, die wirklich existieren und allgemein bekannt sind (Volkslieder, Klassiker). NICHTS erfinden, im Zweifel weglassen. "
+                  "Titel exakt so, wie man sie sucht. "
+                  'Antworte NUR als JSON: {"vorschlaege":[{"titel":"...","hinweis":"kurz, worum es geht / warum es passt"}]}')
+            j = _tonies_json(_tonies_claude(pr, 180))
+            neu = [{"titel": str(v.get("titel", ""))[:100], "hinweis": str(v.get("hinweis", ""))[:200]} for v in j.get("vorschlaege", []) if v.get("titel") and not any(w in str(v.get("hinweis", "")).lower() for w in ("nicht sicher", "weglassen", "unsicher", "erfunden"))]
+            vorh = [v for v in (alt.get("vorschlaege") or [])]
+            have = {v["titel"].lower() for v in vorh}
+            alle = [dict(v, neu=False) for v in vorh] + [dict(v, neu=True) for v in neu if v["titel"].lower() not in have]
+            for v in alle[:len(alle) - sum(1 for v in alle if v.get("neu"))]: v["neu"] = False
+            begr = ", ".join(x for x in [alt.get("begriffe", ""), wunsch] if x)[:300]
+            erg = {"vorschlaege": alle[-30:], "begriffe": begr}
         elif teil == "geschichte":
             pfad = _tonies_docx_path(kind, k["name"])
             vorher = ""
@@ -3281,6 +3292,7 @@ def tonies_verwerfen(body):
             try: os.remove(_tonies_docx_path(kind, k["name"]))
             except OSError: pass
         t["ergebnis"] = {}; t["fehler"] = ""; t["stage"] = "offen"
+        if teil == "lied": t["titel"] = ""
         _tonies_write(data)
     return {"ok": True}
 
