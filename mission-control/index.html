@@ -3166,15 +3166,6 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                     <span id="aurora2-satz-status" style="font-size:12px"></span>
                   </div>
                   <!-- Sammelmodus: gesammelte Hinweise + Auswertung -->
-                  <div id="aurora2-sm-box" style="display:none;background:var(--bg);border:1px solid rgba(245,158,11,0.5);border-radius:10px;padding:12px">
-                    <div id="aurora2-sm-kopf" style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:8px"></div>
-                    <div id="aurora2-sm-liste"></div>
-                    <div id="aurora2-sm-status" style="font-size:13px;color:var(--dim);margin:6px 0"></div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap">
-                      <button id="aurora2-sm-senden" onclick="aurora2SmSenden()" style="background:rgba(245,158,11,0.18);color:#f59e0b;border:1px solid rgba(245,158,11,0.5);border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer;font-weight:700"></button>
-                    </div>
-                  </div>
-                  <div id="aurora2-sm-auswertung" style="display:none;background:var(--bg);border:1px solid rgba(34,197,94,0.4);border-radius:10px;padding:12px"></div>
                   <!-- Eingabe-Panel: Bemerkung/Frage/Korrekturwunsch -->
                   <div id="aurora2-satz-panel" style="display:none;background:var(--bg);border:1px solid rgba(239,68,68,0.35);border-radius:10px;padding:12px">
                     <div style="font-size:12px;color:var(--dim);margin-bottom:6px">Markierter Satz:</div>
@@ -3205,6 +3196,19 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
                       <button id="aurora2-satz-ablehnen-btn" onclick="aurora2SatzEntscheidung('ablehnen')" style="background:transparent;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer">❌ Verwerfen</button>
                     </div>
                   </div>
+                  <!-- Gesammelte Hinweise: unter dem Frage/Korrektur-Feld, ausklappbar -->
+                  <div id="aurora2-sm-box" style="display:none;background:var(--bg);border:1px solid rgba(245,158,11,0.5);border-radius:10px;padding:12px">
+                    <details id="aurora2-sm-det" ontoggle="window._a2SmOffen=this.open">
+                      <summary id="aurora2-sm-kopf" style="cursor:pointer;font-size:13px;font-weight:700;color:#f59e0b;padding:2px 0 6px"></summary>
+                      <div id="aurora2-sm-liste"></div>
+                    </details>
+                    <div id="aurora2-sm-status" style="font-size:13px;color:var(--dim);margin:6px 0"></div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                      <button id="aurora2-sm-senden" onclick="aurora2SmSenden()" style="background:rgba(245,158,11,0.18);color:#f59e0b;border:1px solid rgba(245,158,11,0.5);border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer;font-weight:700"></button>
+                    </div>
+                  </div>
+                  <!-- Auswertung (übernommene/eingebaute Sätze): unter dem Frage/Korrektur-Feld, ausklappbar -->
+                  <div id="aurora2-sm-auswertung" style="display:none;background:var(--bg);border:1px solid rgba(34,197,94,0.4);border-radius:10px;padding:4px 12px"></div>
                 </div>
               </div>
 
@@ -13045,6 +13049,7 @@ function aurora2SmRender() {
   const laeuft = _aurora2Sm.batch && _aurora2Sm.batch.status === 'running';
   const aw = _aurora2Sm.auswertung;
   box.style.display = (liste.length || laeuft) ? 'block' : 'none';
+  { const dt = document.getElementById('aurora2-sm-det'); if (dt && dt.open !== (window._a2SmOffen === true)) dt.open = window._a2SmOffen === true; }
   document.getElementById('aurora2-sm-kopf').textContent = `📝 ${liste.length} gesammelte Hinweise in diesem Kapitel`;
   const ul = document.getElementById('aurora2-sm-liste'); ul.textContent = '';
   liste.forEach(n => {
@@ -13100,11 +13105,17 @@ function aurora2SmPoll() {
   }, 3000);
 }
 function aurora2SmRenderAuswertung(aw, laeuft) {
-  const el = document.getElementById('aurora2-sm-auswertung'); if (!el) return;
+  let el = document.getElementById('aurora2-sm-auswertung'); if (!el) return;
   if (!aw || laeuft) { el.style.display = 'none'; return; }
   el.style.display = 'block'; el.textContent = '';
-  const h = document.createElement('div'); h.style.cssText = 'font-size:13px;font-weight:700;color:#22c55e;margin-bottom:8px';
-  h.textContent = `✅ Auswertung zu „${aw.kapitel_titel}“ (${aw.datum})`; el.appendChild(h);
+  const det = document.createElement('details');
+  const offen = (aw.ids || []).some(id => { const m = ((_aurora2Data && _aurora2Data.satz_markierungen) || []).find(x => x.id === id); return m && m.status === 'wartet_entscheidung'; });
+  det.open = offen || window._a2AwOffen === true;
+  det.ontoggle = () => { window._a2AwOffen = det.open; };
+  const h = document.createElement('summary'); h.style.cssText = 'cursor:pointer;padding:8px 0;font-size:13px;font-weight:700;color:#22c55e';
+  h.textContent = `✅ Auswertung zu „${aw.kapitel_titel}“ (${aw.datum})`; det.appendChild(h);
+  el.appendChild(det);
+  const wrap = el; el = det;
   (aw.ids || []).forEach(id => {
     const m = ((_aurora2Data && _aurora2Data.satz_markierungen) || []).find(x => x.id === id); if (!m) return;
     const d = document.createElement('div'); d.style.cssText = 'padding:10px 0;border-top:1px solid var(--border);font-size:14px;line-height:1.6';
