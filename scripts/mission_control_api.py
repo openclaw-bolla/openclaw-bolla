@@ -3212,7 +3212,7 @@ def _tonies_job(kind, teil, wunsch):
         if teil == "song":
             vorher = (f"\nBisherige Fassung (nur verbessern, nicht komplett neu):\nTitel: {alt.get('titel','')}\nStyle: {alt.get('style','')}\nExclude: {alt.get('exclude','')}\nLyrics:\n{alt.get('lyrics','')}" if alt and wunsch else "")
             pr = (f"{_tonies_regeln(kind)}\nSchreibe einen kurzen Bolla-Song (Suno v6) fuer {k['name']}. Attribute: {attr}.{vorher}{besser}\n"
-                  "Lyrics deutsch, ca. 2 Strophen + eingaengiger Refrain mit Namen, natuerlich reimend, keine Floskeln, Laenge max. ca. 2 Minuten. "
+                  "Lyrics deutsch, ca. 2 Strophen + eingaengiger Refrain mit Namen, natuerlich reimend, keine Floskeln, Laenge: Zwillinge max. ca. 2 Minuten; MIA ca. 3 Minuten (3 Strophen mit je eigener kleiner Pointe, Refrain nach jeder Strophe, kurze Bridge, Outro). "
                   "SUNO-v6-REGELN: (1) Jede Sektion beginnt mit einem Klammer-Tag MIT kurzer englischer Vortragsanweisung, z.B. "
                   "[Verse 1 | soft warm vocal, gentle ukulele, slow and cozy] oder [Chorus | bright, joyful singalong, claps]. Keine nackten [Verse]-Tags. "
                   "(2) Tiergeraeusche/Motorgeraeusche NUR als gesungene Lautmalerei in den Lyrics (Wau, wau! / Brumm, brumm!). KEINE eigenen Geraeusch-Tags wie [dog barks] - Suno ignoriert sie (getestet). "
@@ -3226,13 +3226,19 @@ def _tonies_job(kind, teil, wunsch):
                   "Fuer die Zwillinge: Refrain besonders einfach, fast nur Lautmalerei + Name. "
                   "(6) HUMOR + OPA/OMA: Opa Chris ist der Spassmacher der Familie, Oma Reni und Opa machen alles zusammen - BEIDE kommen im Lied vor (Opa und Oma gemeinsam, nie nur einer), "
                   "liebevoll-komisch (Opa stolpert/verwechselt/macht Quatschgeraeusche, Oma lacht, tanzt, spielt mit). "
-                  "WICHTIG Fakten: Opa Chris traegt KEINE Brille (kuenstliche Linsen) - nie Brillen-Witze; Witze muessen allgemein passen (z.B. Handy/Hut/Schluessel suchen, Dinge verwechseln, ungeschickt sein). "
+                  "WICHTIG Fakten: Opa Chris traegt KEINE Brille (kuenstliche Linsen) - nie Brillen-Witze; Witze muessen allgemein passen (z.B. Handy/Schluessel suchen, Dinge verwechseln, ungeschickt sein). Opa traegt nur Muetzen, KEINE Huete. Erfinde KEINE weiteren Details ueber Opa/Oma (Kleidung, Gewohnheiten, Eigenschaften, Besitz) - nur was hier steht, sonst neutral lassen. "
                   "FUER MIA (5) GILT ABWEICHEND VON (5): Der Refrain ist NICHT nur Lautmalerei - 4 bis 6 Zeilen mit kleinem Bild/Pointe und Reim, dazu genau EINE kurze Mitmach-Zeile (z.B. Ausruf oder Klatsch-Zeile), die jedes Mal wortgleich kommt; "
                   "kein reines hurra-tralala-Gebabbel. "
                   "Fuer Mia (5): deutlich mehr Humor - Wortwitz, absurde Reime, "
                   "komische Ueberraschungen in den Strophen, Opa als Tollpatsch, Oma mit trockenem Konter; der Refrain bleibt kurz. Fuer die Zwillinge (ca. 2): kein Wortwitz, "
                   "sondern Quatsch-Geraeusche, Slapstick und Ueberraschung (Opa macht Brumm/Wau/Troet, Oma macht mit), Sprache sehr einfach. "
                   "Erfinde KEINE Unsinnswoerter, die es nicht gibt - nur echte deutsche Woerter bzw. eindeutige Lautmalerei. "
+                  "(7) REIME VON ANFANG AN SAUBER: Vorgehen intern in 3 Schritten, bevor du antwortest: (a) Lege fuer jede Strophe und den Refrain zuerst die Reimpaare fest (Paarreim AABB), und zwar als echte, klangreine deutsche Woerter "
+                  "(z.B. Haus/raus, lacht/gemacht, leis/weiss) - nicht erzwungen; (b) schreibe dann die Zeilen so, dass das Reimwort am ZEILENENDE steht und die Pointe traegt; "
+                  "(c) pruefe JEDE Zeile: reimt sie wirklich auf ihre Partnerzeile (gleicher Vokal+Endlaut, nicht nur aehnlich), hat sie etwa gleich viele Silben wie die Partnerzeile (max. +-2), ist der Satz normales Deutsch? "
+                  "Wenn nicht: Zeile umbauen, NICHT mit Fuellwoertern (ganz, fein, so, ja) oder verdrehter Wortstellung retten. Kein Reimwort darf nur fuers Reimen eingefuegt sein und keinen Sinn ergeben. "
+                  "Jede Strophe hat eine gerade Zeilenzahl und kein Reimpaar bleibt ohne Partner (kein 'Schatz' ohne Gegenstueck). Gesprochene Zitate (Oma sagt ...) reimen ebenfalls oder werden zur Reimzeile. "
+                  "Lautmalerei-Zeilen (Wau, wau!) duerfen ohne Reim stehen. Gib nur die geprueften, fertigen Zeilen aus. "
                   "(4) Alles Unerwuenschte in das Feld exclude: kurze englische Begriffe, kommagetrennt, max. 6 (z.B. harsh vocals, heavy drums, distorted guitar, autotune, rap, electronic bass). "
                   'Antworte NUR als JSON: {"titel":"...","style":"...","exclude":"...","lyrics":"..."}')
             erg = _tonies_json(_tonies_claude(pr))
