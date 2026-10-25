@@ -8654,7 +8654,7 @@ async function loadBirthdays() {
 
 // ---- 🎁 Tonies ----
 const TONIE_STAGES = [['offen','⚪ offen'],['text','📝 Text fertig'],['audio','🎧 Audio fertig'],['hochgeladen','✅ im Tonie']];
-const TONIE_TEILE = [['song','🎵 Bolla-Song'],['lied','🎤 Kinderlied'],['geschichte','📖 Geschichte (Opa/Oma)']];
+const TONIE_TEILE = [['song','🎵 Bolla-Song'],['lied','🎶 Kinderlied'],['geschichte','📖 Geschichte (Opa/Oma)']];
 // Katalog bekannter Kinderlieder: [Titel, Hinweis, Tags]. Tags: tiere auto elefant ruhig mitmach klein(ab 2) gross(ab 4)
 const TONIE_LIEDER = [
  ['Alle meine Entchen','Der Klassiker, 2 Zeilen, jeder kennt ihn','tiere klein'],
@@ -8743,21 +8743,22 @@ async function loadTonies() {
   const el = document.getElementById('tonies-content');
   try { _tonies = await (await fetch(API + '/api/tonies')).json(); } catch(e) { el.innerHTML = '<div class="loading">Fehler beim Laden</div>'; return; }
   const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-  const d = _tonies, fs = 'font-size:15px';
+  const d = _tonies, fs = 'font-size:15px', HD = 'font-weight:600;font-size:17px';
   let h = '<div class="card" style="margin-bottom:14px"><div style="font-weight:600;font-size:17px;margin-bottom:8px">🎁 Tonie-Projekt Weihnachten 2026 – Fahrplan</div>';
   d.fahrplan.forEach(f => { h += `<label style="display:block;${fs};padding:3px 0;cursor:pointer"><input type="checkbox" ${f.done?'checked':''} onchange="tonieSave({fahrplan_toggle:'${f.id}'})"> <span style="${f.done?'text-decoration:line-through;opacity:.6':''}">${esc(f.text)}</span></label>`; });
   h += `<textarea id="tonie-allg" rows="2" style="width:100%;margin-top:8px;${fs}" placeholder="Allgemeine Wünsche / Verbesserungen">${esc(d.allgemein.wunsch)}</textarea>
-    <div style="margin-top:6px"><button onclick="tonieSave({allgemein_wunsch:document.getElementById('tonie-allg').value})">💾 Speichern</button> <button onclick="tonieNudge({})">📌 Gesamt anstupsen</button></div></div>`;
+    <div style="margin-top:6px"><button onclick="tonieSave({allgemein_wunsch:document.getElementById('tonie-allg').value})">💾 Speichern</button> <button onclick="tonieNudge({})">📌 Gesamt anstupsen</button> <button onclick="tonieAllesAlle()">🔁 Alle Kinder: alles neu</button></div></div>`;
   h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px">';
   Object.entries(d.kinder).forEach(([k, kid]) => {
     h += `<div class="card"><div style="font-weight:600;font-size:18px">${esc(kid.name)} <span style="font-size:13px;opacity:.7">${kid.box?'Box + Kreativ-Tonie':'nur Kreativ-Tonie'}</span></div>
-      <div style="margin:6px 0"><input id="ta-${k}" value="${esc(kid.attribute)}" placeholder="Attribute (z.B. Tiere, Autos)" style="width:70%;${fs}"> <button onclick="tonieSave({kind:'${k}',attribute:document.getElementById('ta-${k}').value})">💾</button></div>`;
+      <div style="margin:6px 0"><input id="ta-${k}" value="${esc(kid.attribute)}" placeholder="Attribute (z.B. Tiere, Autos)" style="width:70%;${fs}"> <button onclick="tonieAlles('${k}')">🔁 Speichern &amp; alles neu erzeugen</button></div>`;
     TONIE_TEILE.forEach(([t, lbl]) => {
       if (t === 'lied') {
         const x = kid.lied, gew = x.titel, erg = x.ergebnis || {}, vs = erg.vorschlaege || [];
         const boxl = 'background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px;margin:6px 0';
         const btnH = tt => `<button data-t="${esc(tt)}" onclick="tonieHoeren(this)">▶ Reinhören</button>`;
-        h += `<div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px"><b style="${fs}">${lbl}</b>
+        h += `<div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px"><div style="${HD}">${lbl}</div>
+          <div style="font-size:13px;opacity:.7;margin-top:6px">Begriffe / Kriterien (z.B. ruhig, Tiere, mitmachen):</div>
           <input id="tw-${k}-lied" value="${esc(x.wunsch)}" placeholder="Begriffe, z.B. ruhig, Tiere, mitmachen" style="width:100%;margin-top:6px;${fs}">
           <button ${x.busy?'disabled':''} onclick="tonieGenerate('${k}','lied')">📌 Erzeugen</button>
           <button onclick="tonieVerwerfen('${k}','lied')">🗑 Verwerfen</button>`;
@@ -8781,16 +8782,18 @@ async function loadTonies() {
         return;
       }
       const x = kid[t], erg = x.ergebnis || {}, has = Object.keys(erg).length > 0;
-      const cp = (txt, what) => `<button onclick="tonieCopy(this,'${k}','${t}','${what}')">📋 ${what==='style'?'Style':what==='lyrics'?'Lyrics':'Kopieren'}</button>`;
+      const cp = (txt, what) => `<button onclick="tonieCopy(this,'${k}','${t}','${what}')">📋 ${what==='style'?'Style':what==='lyrics'?'Lyrics':what==='exclude'?'Exclude':'Kopieren'}</button>`;
+      const okb = 'background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.5);border-radius:8px;padding:8px;margin:6px 0;font-size:14px';
       const box = 'background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px;margin:6px 0;white-space:pre-wrap;font-size:15px;line-height:1.5';
-      h += `<div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px"><b style="${fs}">${lbl}</b>
-        <select id="ts-${k}-${t}" style="${fs};margin-left:6px" onchange="tonieSaveKachel('${k}','${t}')">${TONIE_STAGES.map(s=>`<option value="${s[0]}" ${x.stage===s[0]?'selected':''}>${s[1]}</option>`).join('')}</select>`;
+      h += `<div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px"><div style="${HD}">${lbl}${(!x.busy && has) ? ' <span style="font-size:13px;font-weight:600;color:#22c55e">✅ fertig</span>' : ''}</div>
+        <div style="font-size:13px;opacity:.7;margin-top:6px">Bearbeitungsstand (nur zum Abhaken, löst nichts aus):</div>
+        <select id="ts-${k}-${t}" style="${fs}" onchange="tonieSaveKachel('${k}','${t}')">${TONIE_STAGES.map(s=>`<option value="${s[0]}" ${x.stage===s[0]?'selected':''}>${s[1]}</option>`).join('')}</select>`;
       if (x.busy) h += `<div style="${box}">⏳ Bolla arbeitet daran … (dauert ca. 1–3 Min)</div>`;
       else if (x.fehler) h += `<div style="${box};color:#ef4444">⚠️ ${esc(x.fehler)}</div>`;
       if (!x.busy && has) {
-        if (t === 'song') h += `<div style="${box}"><b>${esc(erg.titel)}</b></div><div style="font-size:13px;opacity:.7">Style (Suno)</div><div id="tr-${k}-${t}-style" style="${box}">${esc(erg.style)}</div><div style="font-size:13px;opacity:.7">Lyrics (Suno)</div><div id="tr-${k}-${t}-lyrics" style="${box}">${esc(erg.lyrics)}</div>${cp('', 'style')} ${cp('', 'lyrics')}`;
+        if (t === 'song') h += `<div style="${box}"><b>${esc(erg.titel)}</b></div><div style="font-size:13px;opacity:.7">Style (Suno)</div><div id="tr-${k}-${t}-style" style="${box}">${esc(erg.style)}</div>${erg.exclude ? `<div style="font-size:13px;opacity:.7">Exclude Styles (Suno-Feld „Exclude“)</div><div id="tr-${k}-${t}-exclude" style="${box}">${esc(erg.exclude)}</div>` : ''}<div style="font-size:13px;opacity:.7">Lyrics (Suno)</div><div id="tr-${k}-${t}-lyrics" style="${box}">${esc(erg.lyrics)}</div><div style="${okb}">✅ Song-Text fertig – in Suno: Modell <b>v6</b>, <b>Variety = Off</b>, Style Influence eher hoch, Exclude-Feld füllen.</div>${cp('', 'style')} ${erg.exclude ? cp('', 'exclude') : ''} ${cp('', 'lyrics')}`;
         if (t === 'lied') h += `<div style="${box}"><b>${esc(erg.titel)}</b>\n${esc(erg.grund)}</div><button onclick="tonieUebernehmen('${k}','${t}')">✅ Nehmen wir</button>`;
-        if (t === 'geschichte') h += `<div style="${box}">📄 <b>${esc(erg.titel)}</b> – ${erg.woerter||'?'} Wörter<br><span style="font-size:13px;opacity:.7">Word: OneDrive\\Dokumente\\Bolla\\Tonies\\Geschichte_${esc(kid.name)}.docx (Opa blau, Oma magenta)</span></div><button onclick="tonieOpen('${k}')">📂 Word öffnen</button>`;
+        if (t === 'geschichte') h += `<div style="${box}">📄 <b>${esc(erg.titel)}</b> – ${erg.woerter||'?'} Wörter<br><span style="font-size:13px;opacity:.7">Word: OneDrive\\Dokumente\\Bolla\\Tonies\\Geschichte_${esc(kid.name)}.docx (Opa blau, Oma magenta)</span></div><div style="${okb}">✅ Geschichte ist fertig – Word liegt bereit.</div><button onclick="tonieOpen('${k}')">📂 Word öffnen</button>`;
         h += ` <button onclick="tonieVerwerfen('${k}','${t}')">🗑 Verwerfen</button>`;
       }
       h += `<textarea id="tw-${k}-${t}" rows="2" style="width:100%;margin-top:6px;${fs}" placeholder="${has?'Was soll besser werden? (ersetzt die jetzige Fassung)':'Wünsche vorab (optional)'}">${esc(x.wunsch)}</textarea>
@@ -8800,6 +8803,28 @@ async function loadTonies() {
     h += '</div>';
   });
   el.innerHTML = h + '</div>';
+}
+async function tonieAttr(k) {
+  const v = document.getElementById('ta-' + k).value;
+  await tonieSave({kind:k, attribute:v});
+  const kid = _tonies.kinder[k];
+  if (['song','lied','geschichte'].some(t => Object.keys(kid[t].ergebnis||{}).length)) {
+    if (confirm('Neue Attribute gespeichert. Song, Lied und Geschichte für ' + kid.name + ' jetzt alle neu erzeugen?')) tonieAlles(k, true);
+  }
+}
+async function tonieAlles(k, schonBestaetigt) {
+  const kid = _tonies.kinder[k];
+    const attr = document.getElementById('ta-' + k).value;
+  await fetch(API + '/api/tonies/save', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({kind:k, attribute:attr})});
+  const begriffe = (document.getElementById(`tw-${k}-lied`)||{}).value || kid.lied.wunsch || attr;
+  await fetch(API + '/api/tonies/verwerfen', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({kind:k, teil:'lied'})});
+  const go = (t, w) => fetch(API + '/api/tonies/generate', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({kind:k, teil:t, wunsch:w})});
+  await Promise.all([go('song',''), go('geschichte',''), go('lied', begriffe)]);
+  loadTonies();
+}
+async function tonieAllesAlle() {
+  if (!confirm('Für ALLE Kinder Song, Lied und Geschichte neu erzeugen? (9 Aufträge, dauert einige Minuten, ersetzt alle bisherigen Fassungen)')) return;
+  for (const k of Object.keys(_tonies.kinder)) await tonieAlles(k, true);
 }
 async function tonieSave(body) {
   const r = await (await fetch(API + '/api/tonies/save', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})).json();

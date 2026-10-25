@@ -3210,14 +3210,19 @@ def _tonies_job(kind, teil, wunsch):
         attr = k["attribute"] or "(keine bekannt – bleib allgemein, nur der Vorname)"
         besser = (f"\nVerbesserungswunsch von Chris (unbedingt umsetzen): {wunsch}" if wunsch else "")
         if teil == "song":
-            vorher = (f"\nBisherige Fassung (nur verbessern, nicht komplett neu):\nTitel: {alt.get('titel','')}\nStyle: {alt.get('style','')}\nLyrics:\n{alt.get('lyrics','')}" if alt and wunsch else "")
-            pr = (f"{_tonies_regeln(kind)}\nSchreibe einen kurzen Bolla-Song (Suno) fuer {k['name']}. Attribute: {attr}.{vorher}{besser}\n"
-                  "Lyrics deutsch, ca. 2 Strophen + eingaengiger Refrain mit Namen, Suno-Tags in eckigen Klammern ([Verse], [Chorus]), "
-                  "natuerlich reimend, keine Floskeln. Style: englischer Beschreibungstext fuer das Suno-Feld (Genre, Tempo, Instrumente, "
-                  "warme Kinderstimme-Stimmung), NIEMALS Kuenstler- oder Bandnamen. "
-                  'Antworte NUR als JSON: {"titel":"...","style":"...","lyrics":"..."}')
+            vorher = (f"\nBisherige Fassung (nur verbessern, nicht komplett neu):\nTitel: {alt.get('titel','')}\nStyle: {alt.get('style','')}\nExclude: {alt.get('exclude','')}\nLyrics:\n{alt.get('lyrics','')}" if alt and wunsch else "")
+            pr = (f"{_tonies_regeln(kind)}\nSchreibe einen kurzen Bolla-Song (Suno v6) fuer {k['name']}. Attribute: {attr}.{vorher}{besser}\n"
+                  "Lyrics deutsch, ca. 2 Strophen + eingaengiger Refrain mit Namen, natuerlich reimend, keine Floskeln, Laenge max. ca. 2 Minuten. "
+                  "SUNO-v6-REGELN: (1) Jede Sektion beginnt mit einem Klammer-Tag MIT kurzer englischer Vortragsanweisung, z.B. "
+                  "[Verse 1 | soft warm vocal, gentle ukulele, slow and cozy] oder [Chorus | bright, joyful singalong, claps]. Keine nackten [Verse]-Tags. "
+                  "(2) Tiergeraeusche/Motorgeraeusche vor allem als gesungene Lautmalerei in den Lyrics (Wau, wau! / Brumm, brumm!). Zusaetzlich hoechstens 2-3 kurze englische Geraeusch-Hinweise "
+                  "in eigenen eckigen Klammern zwischen den Zeilen, z.B. [dog barks] oder [elephant trumpets] - das sind nur Hinweise, kein Befehl. "
+                  "(3) Style: englischer Beschreibungstext, max. ca. 500 Zeichen, Reihenfolge Genre/Tempo, Gesang, Instrumente, Stimmung. "
+                  "Keine Kuenstler-/Bandnamen, keine Qualitaetswoerter (crisp, professional, radio-ready), KEINE Verneinungen im Style (kein 'no drums'). "
+                  "(4) Alles Unerwuenschte in das Feld exclude: kurze englische Begriffe, kommagetrennt, max. 6 (z.B. harsh vocals, heavy drums, distorted guitar, autotune, rap, electronic bass). "
+                  'Antworte NUR als JSON: {"titel":"...","style":"...","exclude":"...","lyrics":"..."}')
             erg = _tonies_json(_tonies_claude(pr))
-            erg = {"titel": erg.get("titel", ""), "style": erg.get("style", ""), "lyrics": erg.get("lyrics", "")}
+            erg = {"titel": erg.get("titel", ""), "style": erg.get("style", ""), "exclude": erg.get("exclude", ""), "lyrics": erg.get("lyrics", "")}
         elif teil == "lied":
             andere = [o['lied'].get('titel','') for ok, o in data["kinder"].items() if ok != kind]
             andere = [x for x in andere if x]
@@ -3248,6 +3253,9 @@ def _tonies_job(kind, teil, wunsch):
                   'Antworte NUR als JSON: {"titel":"...","zeilen":[["Opa","Text"],["Oma","Text"]]}')
             j = _tonies_json(_tonies_claude(pr))
             zeilen = [(("Oma" if str(w).lower().startswith("oma") else "Opa"), str(t)) for w, t in j["zeilen"]]
+            if os.path.exists(pfad):
+                try: shutil.copy2(pfad, pfad[:-5] + "_vorher.docx")
+                except Exception: pass
             _tonies_write_docx(pfad, k["name"], j.get("titel", "Geschichte"), zeilen)
             erg = {"titel": j.get("titel", ""), "datei": pfad, "woerter": sum(len(t.split()) for _, t in zeilen)}
     except Exception as e:
