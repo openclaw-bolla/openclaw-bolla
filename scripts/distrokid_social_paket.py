@@ -19,6 +19,7 @@ Chris postet selbst in den Desktop-Apps: TikTok-Video + Instagram-Bild + Instagr
 TikTok: KI-Label beim Upload AN (Mehr anzeigen -> KI-generierte Inhalte).
 Danach Zielordner löschbar.
 """
+import limit_gate  # gemeinsames 5h-Limit-Gate (25.10.2026)
 import os, re, sys, shutil, subprocess, json, urllib.request
 
 ARCHIVE = "/mnt/d/OneDrive/Dokumente/Bolla/Suno_DistroKid"
@@ -107,7 +108,7 @@ def llm_caption(title, platform, link):
         "Gib AUSSCHLIESSLICH den Caption-Text aus, ohne Link und ohne Suno-Hinweis (die haenge ich selbst an)."
     )
     try:
-        r = subprocess.run([CLAUDE, "-p", "--model", MODEL, prompt],
+        r = limit_gate.run([CLAUDE, "-p", "--model", MODEL, prompt],
                            capture_output=True, text=True, timeout=180)
         out = (r.stdout or "").strip()
         if out and "unavailable" not in out.lower():

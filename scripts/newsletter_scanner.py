@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Newsletter-Scanner: checkt Aldi Nord, Penny, Lidl, Edeka, Rewe, Famila auf Watchlist-Artikel."""
+import limit_gate  # gemeinsames 5h-Limit-Gate (25.10.2026)
 import json, os, re, subprocess, sys, urllib.request, urllib.parse
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
@@ -194,7 +195,7 @@ Antworte NUR mit einem JSON-Array. Für jeden Treffer ein Objekt:
 Wenn nichts gefunden: []
 Kein Text außerhalb des JSON-Arrays."""
     try:
-        r = subprocess.run(["claude", "-p", prompt], capture_output=True, text=True, timeout=90)
+        r = limit_gate.run(["claude", "-p", prompt], capture_output=True, text=True, timeout=90)
         text = r.stdout.strip()
         print(f"  Claude Antwort: {text[:200]}")
         match = re.search(r'\[.*?\]', text, re.DOTALL)
@@ -222,7 +223,7 @@ Antworte NUR mit einem JSON-Array, ein Objekt pro Produkt:
 
 Preise als Zahl mit Punkt (z.B. 2.49), kein Währungszeichen, kein Komma. "old_price" nur setzen wenn ein Streichpreis genannt wird, sonst null. Nur Produkte mit erkennbarem Preis aufnehmen. Kein Text außerhalb des JSON-Arrays."""
     try:
-        r = subprocess.run(["claude", "-p", prompt], capture_output=True, text=True, timeout=90)
+        r = limit_gate.run(["claude", "-p", prompt], capture_output=True, text=True, timeout=90)
         text = r.stdout.strip()
         match = re.search(r'\[.*\]', text, re.DOTALL)
         if match:

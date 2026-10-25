@@ -15,6 +15,7 @@ per Telegram.
 
 Idempotent + serialisiert über Exklusiv-Lock (kein Parallellauf bei Overlap).
 """
+import limit_gate  # gemeinsames 5h-Limit-Gate (25.10.2026)
 import os, json, subprocess, datetime, urllib.request, fcntl
 
 HOME = "/home/bolla"
@@ -100,7 +101,7 @@ def process_modul(m):
     log(f"Neuer Auftrag zu Modul '{titel}': {auftrag[:100]}")
     prompt = PROMPT_TMPL.format(titel=titel, auftrag=auftrag)
     try:
-        r = subprocess.run([CLAUDE, "-p", "--model", MODEL,
+        r = limit_gate.run([CLAUDE, "-p", "--model", MODEL,
                             "--dangerously-skip-permissions", prompt],
                            capture_output=True, text=True, timeout=2400, env=os.environ)
     except Exception as e:

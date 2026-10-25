@@ -1,3 +1,4 @@
+import limit_gate  # gemeinsames 5h-Limit-Gate (25.10.2026)
 import os, re, json, random, sys, time, subprocess, urllib.request, urllib.error
 from PIL import Image, ImageOps
 
@@ -213,7 +214,7 @@ def _vision_batch_call(paths):
         "Antworte AUSSCHLIESSLICH mit genau einer Zeile pro Foto im Format '<Nummer>: <Ort oder unknown>', auf Deutsch, "
         "keine Erklaerung, kein weiterer Text."
     )
-    r = subprocess.run(["claude", "-p", prompt, "--model", VISION_MODEL], capture_output=True, text=True, timeout=300)
+    r = limit_gate.run(["claude", "-p", prompt, "--model", VISION_MODEL], capture_output=True, text=True, timeout=300)
     res = {}
     for line in (r.stdout or "").splitlines():
         m = re.match(r"^\s*(\d+)\s*[:.)]\s*(.+?)\s*$", line)

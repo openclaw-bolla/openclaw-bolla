@@ -21,6 +21,7 @@ verdrängen — bei jedem Lauf werden nur die alten "prospekt"-Einträge ersetzt
 Einträge bleiben unangetastet stehen. mission_control_api.py's _aldi_offer_hits() braucht
 keine Anpassung, da sie offers[] generisch über .get() liest (zusätzliches "source"-Feld
 stört nicht)."""
+import limit_gate  # gemeinsames 5h-Limit-Gate (25.10.2026)
 import json, os, re, subprocess, sys, time, urllib.request
 from pathlib import Path
 from datetime import datetime
@@ -93,7 +94,7 @@ Antworte NUR mit einem JSON-Array, ein Objekt pro Produkt:
 
 Preise als Zahl mit Punkt (z.B. 2.49), kein Währungszeichen, kein Komma. "old_price" nur setzen wenn ein Streichpreis genannt wird, sonst null. Gültigkeitszeitraum wenn auf der Seite angegeben (sonst leer lassen). Nur Produkte mit erkennbarem Preis aufnehmen. Ignoriere reine Werbe-/App-/Rezeptseiten ohne Produktpreise. Kein Text außerhalb des JSON-Arrays."""
     try:
-        r = subprocess.run(["claude", "-p", prompt], capture_output=True, text=True, timeout=CLAUDE_TIMEOUT)
+        r = limit_gate.run(["claude", "-p", prompt], capture_output=True, text=True, timeout=CLAUDE_TIMEOUT)
         text = r.stdout.strip()
         match = re.search(r'\[.*\]', text, re.DOTALL)
         if match:

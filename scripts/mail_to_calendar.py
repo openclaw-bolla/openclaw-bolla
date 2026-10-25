@@ -3,6 +3,7 @@
 Mail → Kalender Automatisierung für Chris Mandel
 Liest E-Mails (Outlook + IMAP), erkennt Termine per Claude, trägt in Outlook-Kalender ein.
 """
+import limit_gate  # gemeinsames 5h-Limit-Gate (25.10.2026)
 import json, urllib.request, urllib.parse, time, re, sys
 import imaplib, email as email_lib
 from email.header import decode_header as hdr_decode
@@ -131,7 +132,7 @@ Regeln:
 - Kategorie "Event" für: Oper, Konzert, Theater, Festival, Veranstaltung
 - konfidenz "niedrig" wenn Datum unklar oder kein eindeutiger Termin"""
 
-    result = subprocess.run(
+    result = limit_gate.run(
         ["/home/bolla/.local/bin/claude", "-p", prompt],
         capture_output=True, text=True, timeout=60
     )

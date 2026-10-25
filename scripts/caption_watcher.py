@@ -15,6 +15,7 @@ Der Wächter erkennt neue solche Einträge, erzeugt mit headless `claude -p`
 Kein Telegram, kein Server-Neustart nötig — nutzt nur die Clipboard-API.
 Idempotent über State-Datei (verarbeitete Einträge gemerkt).
 """
+import limit_gate  # gemeinsames 5h-Limit-Gate (25.10.2026)
 import os, sys, json, re, subprocess, hashlib, datetime, urllib.request, fcntl
 
 HOME = "/home/bolla"
@@ -74,7 +75,7 @@ def make_caption(context):
         "Gib AUSSCHLIESSLICH die Caption aus, ohne Vorrede, ohne Anführungszeichen.\n\n"
         f"Worum es geht: {context.strip()}"
     )
-    r = subprocess.run([CLAUDE, "-p", "--model", MODEL, prompt],
+    r = limit_gate.run([CLAUDE, "-p", "--model", MODEL, prompt],
                        capture_output=True, text=True, timeout=180, env=os.environ)
     out = (r.stdout or "").strip()
     if not out or "unavailable" in out.lower():
