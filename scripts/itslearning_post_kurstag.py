@@ -40,41 +40,23 @@ def mem_ok():
 # die 4 Ziel-Kurse (Kurs-IDs bleiben das ganze Schuljahr stabil, siehe Tabelle unten) und je einen
 # individuell formulierten Mitteilungstext (NIE denselben Text kopieren, NIE "vorher/schon jetzt
 # herunterladen" schreiben - Download passiert am Kurstag selbst, siehe [[project_itslearning_automation]]).
-DAY_PREFIX = "04"
+DAY_PREFIX = "05"
 
 # Kurs-IDs (Schuljahr 26/27, stabil): 7a I=190735 7a II=190738 7b I=190741 7b II=190743
 #                                     7c I=190861 7c II=190878 7d I=190860 7d II=190877
-# Kurstag 4 "The Basics: Codierung" — nur die "II"-Kurse.
-# Termine (Schulkalender): 7d II + 7b II = Mi 07.10.2026  |  7a II + 7c II = Do 08.10.2026
-# Paket (discover_files 04-): 04-The Basics - Codierung.pdf (14 Seiten, = PPTX, geprueft 04.10.), 04-Praktikum.html
-# KEIN 04-Praktikum.pdf (Chris-Regel: Praktikum nie als PDF).
-# Texte aus scratch/kurstag4_gruppeII_mitteilungen.md (26.09. vorbereitet, 04.10. gegen Wochentage geprueft)
-# ⏰ Versand laut Chris ERST Mo 05.10.2026 nachmittags (nicht frueher!).
+# Kurstag 5 "Basics Office: WebApps, Designer, Copilot" - nur die "I"-Kurse.
+# Termine: 7d I + 7b I = Mi 28.10.2026  |  7a I + 7c I = Do 29.10.2026
+# Paket (discover_files 05-): 05-Basics Office - WebApps-Designer-Copilot.pdf, 05-Praktikum.html (Handouts/Praktikum)
+# Versand laut Chris immer DIENSTAG der Kurstag-Woche (Di 27.10. 14:30).
 COURSES = [
-    {"id": 190877, "kuerzel": "7d II", "text":
-        "🔢 Hallo liebe 7d! Am Mittwoch, 07.10., wird's ein bisschen mathematisch: Wir schauen uns an, "
-        "wie ein Computer eigentlich rechnet und speichert - alles nur mit Nullen und Einsen. "
-        "1️⃣ Zu Beginn laden wir gemeinsam die Folien „The Basics: Codierung\" und 📎 Praktikum 4 herunter. "
-        "2️⃣ Ich erkläre euch Bit, Byte, KB, MB, GB - und warum euer Handyspeicher gefühlt immer zu klein ist. "
-        "3️⃣ Im Praktikum 4 rechnet ihr dann selbst zwischen den Einheiten um. Bis Mittwoch! 😊"},
-    {"id": 190743, "kuerzel": "7b II", "text":
-        "💾 Liebe 7b, am Mittwoch, 07.10., geht's um die Bausteine, aus denen im Computer wirklich alles "
-        "besteht: Bits und Bytes. 1️⃣ Erst laden wir zusammen die Folien „The Basics: Codierung\" und "
-        "📎 Praktikum 4 herunter. 2️⃣ Ich zeige euch, wie aus Nullen und Einsen Buchstaben, Fotos und ganze "
-        "Filme werden. 3️⃣ Danach übt ihr im Praktikum 4 selbst mit den Speichereinheiten zu rechnen. "
-        "Freu mich auf euch! 🙂"},
-    {"id": 190738, "kuerzel": "7a II", "text":
-        "🖥️ Hallo 7a! Am Donnerstag, 08.10., geht's um Bits, Bytes und Codierung - also die Frage, wie ein "
-        "Computer aus Nullen und Einsen Texte, Bilder und Videos macht. 1️⃣ Zu Stundenbeginn holen wir uns "
-        "gemeinsam die Folien „The Basics: Codierung\" und 📎 Praktikum 4. 2️⃣ Ich erkläre euch, warum bei "
-        "128 GB der Speicher schneller knapp wird, als man denkt. 3️⃣ Im Praktikum 4 übt ihr selbstständig: "
-        "Bit, Byte, KB, MB, GB umrechnen und schätzen. Bis Donnerstag! 🚀"},
-    {"id": 190878, "kuerzel": "7c II", "text":
-        "🔢 Liebe 7c, am Donnerstag, 08.10., lernt ihr, wie ein Computer überhaupt speichert. "
-        "1️⃣ Wir laden zu Beginn zusammen die Folien „The Basics: Codierung\" und 📎 Praktikum 4 herunter. "
-        "2️⃣ Ich erkläre euch die Grundlagen dazu - unter anderem, warum eine Netflix-Folge offline mehrere "
-        "GB braucht. 3️⃣ Im Praktikum 4 übt ihr dann selbst das Umrechnen zwischen den Speichereinheiten. "
-        "Auf geht's! 💻"},
+    {"id": 190860, "kuerzel": "7d I", "text":
+        '🌐 Hallo liebe 7d! Am Mittwoch, 28.10., machen wir den Browser zu eurer Werkzeugkiste. 1️⃣ Zu Beginn laden wir gemeinsam die Folien „Basics Office: WebApps, Designer, Copilot" und 📎 Praktikum 5 herunter. 2️⃣ Ich zeige euch, was WebApps sind, wie Tabs und Lesezeichen euch Zeit sparen und worin sich Copilot und ChatGPT unterscheiden. 3️⃣ Im Praktikum 5 werdet ihr dann zu KI-Detektiven: Welcher Text stammt wirklich von einer KI? Bis Mittwoch! 🕵️'},
+    {"id": 190741, "kuerzel": "7b I", "text":
+        '🎨 Liebe 7b, am Mittwoch, 28.10., wird es kreativ: Wir probieren aus, wie eine KI aus ein paar Worten ein Bild zaubert. 1️⃣ Erst holen wir uns zusammen die Folien „Basics Office: WebApps, Designer, Copilot" und 📎 Praktikum 5. 2️⃣ Ich erkläre euch, was ein Prompt ist, was der Microsoft Designer kann und was Programme im Browser so besonders macht. 3️⃣ Danach löst ihr im Praktikum 5 Aufgaben rund um Browser, WebApps und KI – am Ende wartet ein kleines Detektivspiel. Freu mich auf euch! 😊'},
+    {"id": 190735, "kuerzel": "7a I", "text":
+        '💻 Hallo 7a! Am Donnerstag, 29.10., geht\'s um Programme, die man gar nicht installieren muss: WebApps. 1️⃣ Zu Stundenbeginn laden wir gemeinsam die Folien „Basics Office: WebApps, Designer, Copilot" und 📎 Praktikum 5 herunter. 2️⃣ Ich zeige euch, wie ihr im Browser fit werdet, was ein guter Prompt ist und wie der Designer aus einer Idee ein Bild macht. 3️⃣ Im Praktikum 5 beantwortet ihr erst selbst die Fragen und prüft dann die Lösung – zum Schluss wird\'s spannend mit dem KI-Detektiv. Bis Donnerstag! 🚀'},
+    {"id": 190861, "kuerzel": "7c I", "text":
+        '🤖 Liebe 7c, am Donnerstag, 29.10., lernt ihr Copilot, ChatGPT und den Microsoft Designer kennen – und wie man mit einer KI richtig „spricht". 1️⃣ Wir laden zu Beginn zusammen die Folien „Basics Office: WebApps, Designer, Copilot" und 📎 Praktikum 5 herunter. 2️⃣ Ich erkläre euch WebApps, den Umgang mit Tabs und Lesezeichen und was einen guten Prompt ausmacht. 3️⃣ Im Praktikum 5 knobelt ihr dann selbst und versucht, die echte KI-Antwort unter fünf Texten zu finden. Auf geht\'s! 🔍'},
 ]
 
 
