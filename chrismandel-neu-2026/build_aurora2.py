@@ -5,19 +5,19 @@ T = {
  "de": dict(lang="de", out="aurora2/index.html", other="/en/aurora2/", other_label="🇬🇧 EN", home="/",
    back="← chrismandel.de", title="AURORA II — der Trailer",
    desc="Der Trailer zu AURORA II, der Fortsetzung des KI-Thrillers von Chris Mandel.",
-   kicker="Das Video zum Buch", h1="AURORA II", sub="Schön, dass du den QR-Code gescannt hast. Das hier ist der Trailer — drei Minuten, bei denen es sich lohnt, den Ton leise zu lassen und genau hinzusehen.",
-   note="Der Trailer läuft ohne Ton. Ein eigener Song zum Buch ist in Arbeit.",
+   kicker="Das Video zum Buch", h1="AURORA II", sub="Schön, dass du den QR-Code gescannt hast. Das hier ist der Trailer — zweieinhalb Minuten, die mit Ton am besten wirken. Schalt den Ton an und sieh genau hin.",
+   note="Der Song im Trailer heißt „Kein Zaubertrick (feat. Aurora)“ und ist eigens zum Buch entstanden.",
    h2="Neu bei AURORA?", p="AURORA ist ein Thriller über eine KI, die aufwacht — geschrieben von Chris Mandel gemeinsam mit seiner eigenen KI Bolla. Band I gibt es als Taschenbuch und E-Book.",
    b1="Zu AURORA", b1h="/aurora/", b2="Wer schreibt hier?", b2h="/geschichte/",
-   foot="Chris Mandel · chrismandel.de", imp="Impressum", imp_h="/impressum/", fb="Dein Browser kann das Video nicht abspielen."),
+   foot="Chris Mandel · chrismandel.de", imp="Impressum", imp_h="/impressum/", fb="Dein Browser kann das Video nicht abspielen.", vid="aurora2-trailer.mp4?v=2"),
  "en": dict(lang="en", out="en/aurora2/index.html", other="/aurora2/", other_label="🇩🇪 DE", home="/en/",
    back="← chrismandel.de", title="AURORA II — the trailer",
    desc="The trailer for AURORA II, the sequel to Chris Mandel's AI thriller.",
-   kicker="The video for the book", h1="AURORA II", sub="Glad you scanned the QR code. This is the trailer — three minutes that are worth watching closely, even with the sound off.",
-   note="The trailer has no sound. A song for the book is in the works.",
+   kicker="The video for the book", h1="AURORA II", sub="Glad you scanned the QR code. This is the trailer — two and a half minutes that work best with the sound on. Turn it up and look closely.",
+   note="The song in the trailer is called “No Magic Trick (feat. Aurora)” and was made especially for the book. (German version: “Kein Zaubertrick”.)",
    h2="New to AURORA?", p="AURORA is a thriller about an AI that wakes up — written by Chris Mandel together with his own AI, Bolla. Book I is available in paperback and as an e-book.",
    b1="Go to AURORA", b1h="/en/aurora/", b2="Who is writing this?", b2h="/en/essay/",
-   foot="Chris Mandel · chrismandel.de", imp="Legal notice", imp_h="/en/impressum/", fb="Your browser cannot play this video."),
+   foot="Chris Mandel · chrismandel.de", imp="Legal notice", imp_h="/en/impressum/", fb="Your browser cannot play this video.", vid="aurora2-trailer-en.mp4?v=1"),
 }
 TPL = """<!DOCTYPE html>
 <html lang="{lang}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -46,7 +46,7 @@ footer{{text-align:center;margin-top:44px;font-size:15px;opacity:.7}} footer a{{
 </style></head><body><div class="wrap">
 <div class="top"><a href="{home}">{back}</a><a class="l" href="{other}">{other_label}</a></div>
 <div class="kicker">{kicker}</div><h1>{h1}</h1><p class="sub">{sub}</p>
-<div class="player"><video controls preload="metadata" playsinline poster="/assets/aurora2-poster.jpg"><source src="/assets/aurora2-trailer.mp4" type="video/mp4">{fb}</video></div>
+<div class="player"><video controls preload="metadata" playsinline poster="/assets/aurora2-poster.jpg"><source src="/assets/{vid}" type="video/mp4">{fb}</video></div>
 <p class="note">{note}</p>
 <div class="card"><h2>{h2}</h2><p>{p}</p><a class="btn p" href="{b1h}">{b1}</a><a class="btn g" href="{b2h}">{b2}</a></div>
 <footer>{foot} · <a href="{imp_h}">{imp}</a></footer>
