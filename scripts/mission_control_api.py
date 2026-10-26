@@ -3345,6 +3345,72 @@ def tonies_open(body):
     subprocess.Popen(["/mnt/c/Windows/explorer.exe", win])
     return {"ok": True}
 
+def tonies_liedtext(body):
+    """Liedtext des gewaehlten Kinderlieds als Word (zum Mitsingen). Nur gemeinfreie/traditionelle Lieder."""
+    kind = body.get("kind")
+    data = tonies_get()
+    if kind not in data["kinder"]: return {"ok": False, "error": "Kind unbekannt"}
+    k = data["kinder"][kind]; titel = (k["lied"].get("titel") or "").strip()
+    if not titel: return {"ok": False, "error": "Erst ein Lied waehlen"}
+    pr = (f"Schreibe den Liedtext des deutschen Kinderlieds \"{titel}\" zum Mitsingen. NUR wenn es ein traditionelles/gemeinfreies Lied ist "
+          "und du den Text sicher kennst. Nichts erfinden, nichts ergaenzen, keine Urheberrechts-geschuetzten Texte. "
+          "Antworte ausschliesslich als JSON: {\"ok\": true, \"strophen\": [\"Zeile1\\nZeile2\", ...], \"hinweis\": \"\"} "
+          "oder {\"ok\": false, \"grund\": \"...\"} wenn unsicher oder geschuetzt.")
+    try:
+        j = _tonies_json(_tonies_claude(pr, 180))
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:200]}
+    if not j.get("ok") or not j.get("strophen"):
+        return {"ok": False, "error": "Text nicht sicher bekannt oder geschuetzt: " + str(j.get("grund", ""))[:150]}
+    from docx import Document
+    from docx.shared import Pt
+    d = Document()
+    st = d.styles["Normal"]; st.font.name = "Aptos"; st.font.size = Pt(18)
+    st.paragraph_format.line_spacing = 1.3
+    r = d.add_paragraph().add_run(titel); r.bold = True; r.font.size = Pt(24)
+    for s in j["strophen"]:
+        d.add_paragraph(s)
+    safe = re.sub(r'[\\/:*?"<>|]', "", titel).strip()
+    pfad = os.path.join(TONIES_WORD_DIR, f"Lied_{k['name']}_{safe}.docx")
+    os.makedirs(TONIES_WORD_DIR, exist_ok=True)
+    d.save(pfad)
+    win = subprocess.run(["wslpath", "-w", pfad], capture_output=True, text=True).stdout.strip()
+    subprocess.Popen(["/mnt/c/Windows/explorer.exe", win])
+    return {"ok": True, "datei": pfad}
+
+def tonies_playback(body):
+    """Suno-v6-Prompt fuer eine Instrumental-Version (Playback) des gewaehlten Kinderlieds."""
+    kind = body.get("kind")
+    data = tonies_get()
+    if kind not in data["kinder"]: return {"ok": False, "error": "Kind unbekannt"}
+    titel = (data["kinder"][kind]["lied"].get("titel") or "").strip()
+    if not titel: return {"ok": False, "error": "Erst ein Lied waehlen"}
+    import tonie_playback as _tp
+    if titel.lower() in _tp.SONGS:
+        try:
+            n = int(_tonies_json(_tonies_claude(f"Wie viele Strophen hat das Kinderlied \"{titel}\" in der ueblichen gesungenen Fassung? Antworte NUR als JSON {{\"anzahl\": Zahl}}", 90)).get("anzahl", 2))
+        except Exception:
+            n = 2
+        n = max(1, min(n, 8))
+        safe = re.sub(r'[\\/:*?"<>|]', "", titel).strip()
+        pfad = os.path.join(TONIES_WORD_DIR, f"Playback_{safe}.mp3")
+        os.makedirs(TONIES_WORD_DIR, exist_ok=True)
+        try:
+            subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "tonie_playback.py"), titel, pfad, "--runden", str(n)], check=True, capture_output=True, timeout=120)
+        except Exception as e:
+            return {"ok": False, "error": "Playback-Rendering fehlgeschlagen: " + str(e)[:150]}
+        win = subprocess.run(["wslpath", "-w", os.path.dirname(pfad)], capture_output=True, text=True).stdout.strip()
+        subprocess.Popen(["/mnt/c/Windows/explorer.exe", win])
+        return {"ok": True, "datei": pfad, "strophen": n}
+    pr = (f"Schreibe fuer Suno v6 einen Style-Prompt (max. 400 Zeichen, englisch, ohne Verneinungen, ohne Qualitaetswoerter, ohne Kuenstlernamen) "
+          f"fuer eine reine Instrumental-Begleitung des deutschen Kinderlieds \"{titel}\" zum Mitsingen: klare Melodie, gleichmaessiges ruhiges Tempo, "
+          "einfache Arrangement, vorne Melodieinstrument, 4 Zaehler Intro. Antworte NUR als JSON: {\"style\": \"...\", \"exclude\": \"vocals, choir, lyrics\"}")
+    try:
+        j = _tonies_json(_tonies_claude(pr, 120))
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:200]}
+    return {"ok": True, "style": j.get("style", ""), "exclude": j.get("exclude", "vocals, choir, lyrics")}
+
 SCHULJAHR_FILE = os.path.join(WORKSPACE, "data/schuljahr2627.json")
 
 def _schuljahr_load():
@@ -9869,6 +9935,10 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                 self._send_json(tonies_verwerfen(body))
             elif self.path == "/api/tonies/uebernehmen":
                 self._send_json(tonies_uebernehmen(body))
+            elif self.path == "/api/tonies/playback":
+                self._send_json(tonies_playback(body))
+            elif self.path == "/api/tonies/liedtext":
+                self._send_json(tonies_liedtext(body))
             elif self.path == "/api/tonies/open":
                 self._send_json(tonies_open(body))
             elif self.path == "/api/board/nudge":
