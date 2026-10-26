@@ -31,7 +31,7 @@ T = {
   "tiles": [
    dict(href="/aurora2/", shot="shot-aurora2.jpg", url="chrismandel.de/aurora2", kicker="Die Fortsetzung", tag="Neu",
         title="AURORA II — der Trailer zum Buch",
-        text="Drei Minuten Video zur Fortsetzung — ohne Spoiler, ohne Ton. Es lohnt sich, genau hinzusehen."),
+        text="Zweieinhalb Minuten Video mit eigenem Song zur Fortsetzung — ohne Spoiler. Ton an, genau hinsehen."),
    dict(href="/aurora/", shot="shot-aurora.jpg", url="chrismandel.de/aurora", kicker="Buch &amp; Musik", tag="Debüt",
         title="AURORA — ein Thriller über eine KI, die aufwacht",
         text="Geschrieben von einem Siebzigjährigen gemeinsam mit seiner eigenen KI. Dazu gibt es Musik — und die ganze Entstehungsgeschichte."),
@@ -73,7 +73,7 @@ T = {
   "tiles": [
    dict(href="/en/aurora2/", shot="shot-en-aurora2.jpg", url="chrismandel.de/en/aurora2", kicker="The sequel", tag="New",
         title="AURORA II — the trailer for the book",
-        text="Three minutes of video for the sequel — no spoilers, no sound. Worth watching closely."),
+        text="Two and a half minutes of video with its own song for the sequel — no spoilers. Sound on, look closely."),
    dict(href="/en/aurora/", shot="shot-en-aurora.jpg", url="chrismandel.de/en/aurora", kicker="Book &amp; Music", tag="Debut",
         title="AURORA — a thriller about an AI that wakes up",
         text="Written by a seventy-year-old together with his own AI. There is music too — and the full story of how it came to be."),
