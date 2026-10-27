@@ -11,7 +11,9 @@ Nutzung: Drop-in fuer subprocess.run
     r = limit_gate.run([...], capture_output=True, text=True, timeout=90, wait=False)                  # Cron: ueberspringen
 Bei wait=False und Limit kommt ein CompletedProcess mit returncode 75 und stderr "limit_gate: ..." zurueck
 (bestehende Fehlerbehandlung der Aufrufer greift, der naechste Cron-Lauf versucht es erneut).
-Env: LIMIT_GATE_5H (75), LIMIT_GATE_HARD (85), LIMIT_GATE_OFF=1 schaltet das Gate ab.
+Schwellen kommen aus limit_policy.py (27.10.2026): Mo/Di/Fr/Sa tagsueber 67/80 % (20 % bleiben frei), sonst 75/85 %.
+heavy=True (schwere/optionale Jobs): zusaetzlich Woche >= 60 % Mo-Fr bis 19:00 -> uebersprungen (Alltagsreserve).
+Env: LIMIT_GATE_5H, LIMIT_GATE_HARD (ueberschreiben die Policy), LIMIT_GATE_OFF=1 schaltet das Gate ab.
 """
 import json
 import os
@@ -19,6 +21,8 @@ import subprocess
 import threading
 import time
 import urllib.request
+
+import limit_policy
 
 QUOTA_URL = "http://127.0.0.1:18790/api/claudequota"
 RC_LIMIT = 75
@@ -55,10 +59,12 @@ def _limited(cmd, msg):
     return subprocess.CompletedProcess(cmd, RC_LIMIT, "", "limit_gate: " + msg)
 
 
-def run(cmd, *, input=None, timeout=None, wait=True, capture_output=True, text=True, check=False, **kw):
+def run(cmd, *, input=None, timeout=None, wait=True, heavy=False, capture_output=True, text=True, check=False, **kw):
     if os.environ.get("LIMIT_GATE_OFF") == "1":
         return subprocess.run(cmd, input=input, timeout=timeout, capture_output=capture_output, text=text, check=check, **kw)
-    gate, hard = _num("LIMIT_GATE_5H", 75), _num("LIMIT_GATE_HARD", 85)
+    gate, hard = limit_policy.limits()
+    if heavy and limit_policy.week_blocked(quota()):
+        return _limited(cmd, "Woche >= 60 % (Alltagsreserve Mo-Fr) - schwerer Job uebersprungen")
     for _ in range(4):
         q = _blocked(gate)
         if q:
@@ -103,6 +109,6 @@ def _watched(cmd, input, timeout, hard, text, kw):
 if __name__ == "__main__":      # Selbsttest ohne Tokens: python3 limit_gate.py
     r = run(["echo", "ok"], timeout=10, wait=False)
     print("rc", r.returncode, r.stdout.strip(), "| Quota:", (quota() or {}).get("five_hour_pct"))
-    os.environ["LIMIT_GATE_5H"] = "0"
+    os.environ["LIMIT_GATE_5H"] = "0.0001"
     r = run(["echo", "nie"], timeout=10, wait=False)
     print("Gate-Test (Schwelle 0): rc", r.returncode, r.stderr.strip())

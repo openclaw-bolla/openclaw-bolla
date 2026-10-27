@@ -20,6 +20,9 @@ import threading
 import time
 import urllib.request
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import limit_policy  # noqa: E402
+
 W = "/home/bolla/workspace"
 HOME = os.path.expanduser("~")
 DATA = f"{W}/data/aurora2.json"
@@ -120,7 +123,7 @@ def gate():
         wk, fh = q.get("seven_day_pct") or 0, q.get("five_hour_pct") or 0
         if wk >= WEEK_STOP:
             raise Stop(f"Wochenkontingent ausgereizt ({wk} %)")
-        lim = float(os.environ.get("AUSREIZEN_5H_LIMIT", "75"))   # Chris 23.10.: 75 % (ein Schritt kostet bis ~13 Pkt, 92 hat Reserve gefressen)
+        lim = float(os.environ.get("AUSREIZEN_5H_LIMIT") or limit_policy.limits()[0])   # Chris 23.10.: 75 % (ein Schritt kostet bis ~13 Pkt, 92 hat Reserve gefressen)
         if fh >= lim:
             wait = (q.get("five_hour_reset_hours") or 0) * 3600 + (q.get("five_hour_reset_minutes") or 5) * 60 + 90
             if now + dt.timedelta(seconds=wait) > DEADLINE:
@@ -134,7 +137,7 @@ def gate():
 def _run_watchdog(cmd, prompt, timeout):
     """Wie subprocess.run, aber bricht den Schritt ab, sobald das 5h-Fenster HARD erreicht (Chris 23.10.).
     Rueckgabe: (CompletedProcess|None, abgebrochen:bool)."""
-    hard = float(os.environ.get("AUSREIZEN_5H_HARD", "85"))
+    hard = float(os.environ.get("AUSREIZEN_5H_HARD") or limit_policy.limits()[1])
     p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=HOME)
     out = {}
 
