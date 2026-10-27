@@ -8,8 +8,9 @@ SR = 44100
 NOTE = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "H": 11}
 
 def midi(n):
-    # n wie "C4", "G3"
-    return 12 * (int(n[-1]) + 1) + NOTE[n[0]]
+    # n wie "C4", "G3", "F#4", "Hb3" (H = deutsches H, b/# optional)
+    acc = {"#": 1, "b": -1}.get(n[1], 0) if len(n) == 3 else 0
+    return 12 * (int(n[-1]) + 1) + NOTE[n[0]] + acc
 
 def hz(m):
     return 440.0 * 2 ** ((m - 69) / 12)
@@ -27,6 +28,14 @@ SONGS = {
     },
 }
 
+NOTEN_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "tonie_noten.json")
+try:
+    import json
+    with open(NOTEN_FILE, encoding="utf-8") as _f:
+        SONGS.update({k.lower(): v for k, v in json.load(_f).items()})
+except Exception:
+    pass
+
 def spieluhr(f, dauer, vel=0.5):
     """Weicher Spieluhr-/Glockenspiel-Klang: FM mit schnellem Obertonabfall."""
     t = np.arange(int(SR * dauer)) / SR
@@ -36,17 +45,20 @@ def spieluhr(f, dauer, vel=0.5):
     a = int(SR * 0.004); x[:a] *= np.linspace(0, 1, a)
     return x * vel
 
+_HARFE = {}
 def harfe(f, dauer, vel=0.35):
-    """Gezupfte Saite (Karplus-Strong), warm."""
-    n = int(SR * dauer); p = max(2, int(SR / f))
-    buf = np.random.RandomState(7).uniform(-1, 1, p)
-    buf = np.convolve(buf, np.ones(3) / 3, mode="same")
-    out = np.empty(n)
-    for i in range(n):
-        j = i % p
-        out[i] = buf[j]
-        buf[j] = 0.4975 * (buf[j] + buf[(j + 1) % p])
-    return out * vel
+    """Gezupfte Saite (Karplus-Strong), warm. Blockweise vektorisiert + pro Ton gecacht (schnell)."""
+    key = (round(f, 3), dauer)
+    if key not in _HARFE:
+        n = int(SR * dauer); p = max(2, int(SR / f))
+        buf = np.random.RandomState(7).uniform(-1, 1, p)
+        buf = np.convolve(buf, np.ones(3) / 3, mode="same")
+        out = np.empty(n + p)
+        for i in range(0, n, p):
+            out[i:i + p] = buf
+            buf = 0.4975 * (buf + np.roll(buf, -1)) * 2 * 0.5 * 1.0
+        _HARFE[key] = out[:n]
+    return _HARFE[key] * vel
 
 def mix_in(track, start, snd):
     e = min(len(track), start + len(snd))
@@ -70,7 +82,7 @@ def render(song, bpm=None, runden=3):
             mix_in(tr, int(SR * (t0 + pos * beat)), spieluhr(hz(midi(note)), b * beat * 1.6 + 0.8))
             pos += b
         for i, (gt, typ) in enumerate(s["akkorde"]):
-            g = midi(gt); toene = [g, g + 4, g + 7, g + 12]
+            g = midi(gt); toene = [g, g + (3 if typ == "moll" else 4), g + 7, g + 12]
             for q in range(takt):  # Harfen-Arpeggio, je Schlag ein Ton
                 m = toene[[0, 1, 2, 1][q % 4]] if q % 2 == 0 else toene[3 if q == 1 else 2]
                 mix_in(tr, int(SR * (t0 + (i * takt + q) * beat)), harfe(hz(m), 1.3))

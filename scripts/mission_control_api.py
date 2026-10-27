@@ -5,6 +5,7 @@ Liefert Kalender, E-Mail und andere Daten an Mission Control (localhost:18790)
 """
 
 import json
+import re
 import os
 import sys
 import subprocess
@@ -3350,7 +3351,7 @@ def tonies_liedtext(body):
     kind = body.get("kind")
     data = tonies_get()
     if kind not in data["kinder"]: return {"ok": False, "error": "Kind unbekannt"}
-    k = data["kinder"][kind]; titel = (k["lied"].get("titel") or "").strip()
+    k = data["kinder"][kind]; titel = str(body.get("titel") or k["lied"].get("titel") or "").strip()[:120]
     if not titel: return {"ok": False, "error": "Erst ein Lied waehlen"}
     pr = (f"Schreibe den Liedtext des deutschen Kinderlieds \"{titel}\" zum Mitsingen. NUR wenn es ein traditionelles/gemeinfreies Lied ist "
           "und du den Text sicher kennst. Nichts erfinden, nichts ergaenzen, keine Urheberrechts-geschuetzten Texte. "
@@ -3383,33 +3384,56 @@ def tonies_playback(body):
     kind = body.get("kind")
     data = tonies_get()
     if kind not in data["kinder"]: return {"ok": False, "error": "Kind unbekannt"}
-    titel = (data["kinder"][kind]["lied"].get("titel") or "").strip()
+    titel = str(body.get("titel") or data["kinder"][kind]["lied"].get("titel") or "").strip()[:120]
     if not titel: return {"ok": False, "error": "Erst ein Lied waehlen"}
     import tonie_playback as _tp
-    if titel.lower() in _tp.SONGS:
+    if titel.lower() not in _tp.SONGS:
+        # Noten einmalig von Claude aufschreiben lassen, pruefen, cachen (Chris hoert selbst Probe)
+        pr = (f"Schreibe die Melodie des traditionellen deutschen Kinderlieds \"{titel}\" als Noten. NUR wenn du Melodie und Rhythmus sicher kennst und das Lied gemeinfrei ist. "
+              "Transponiere nach C-Dur (oder A-Moll), Noten in der Form C4, D4, F#4 (H statt B, Oktave 3-5). Rhythmus in Schlaegen (Viertel=1, Halbe=2, Achtel=0.5, punktierte Viertel=1.5). "
+              "takt = Schlaege pro Takt (3 oder 4), bpm 90-120. akkorde = genau EIN Akkord pro Takt (Grundton mit Oktave 3, 'dur' oder 'moll'). "
+              "Die Summe aller Schlaege der Melodie muss genau takt * Anzahl Akkorde ergeben (ggf. Auftakt weglassen). Nur EINE Strophe/Durchgang der Melodie. "
+              "strophen = Anzahl der Strophen in der ueblichen gesungenen Fassung. "
+              "Antworte NUR als JSON: {\"ok\": true, \"takt\": 4, \"bpm\": 100, \"strophen\": 3, \"melodie\": [[\"C4\", 1], ...], \"akkorde\": [[\"C3\", \"dur\"], ...]} oder {\"ok\": false, \"grund\": \"...\"}")
         try:
-            n = int(_tonies_json(_tonies_claude(f"Wie viele Strophen hat das Kinderlied \"{titel}\" in der ueblichen gesungenen Fassung? Antworte NUR als JSON {{\"anzahl\": Zahl}}", 90)).get("anzahl", 2))
+            j = _tonies_json(_tonies_claude(pr, 180))
+            if not j.get("ok"): return {"ok": False, "error": "Melodie nicht sicher bekannt: " + str(j.get("grund", ""))[:150]}
+            mel = [(str(n), float(b)) for n, b in j["melodie"]]; ak = [(str(g), str(t)) for g, t in j["akkorde"]]
+            takt = int(j["takt"])
+            for n, _b in mel: _tp.midi(n)
+            for g, _t in ak: _tp.midi(g)
+            if takt not in (3, 4) or abs(sum(b for _, b in mel) - takt * len(ak)) > 0.01:
+                return {"ok": False, "error": "Noten passen nicht zusammen (Takte stimmen nicht) – nochmal versuchen"}
+            noten = {}
+            try:
+                with open(_tp.NOTEN_FILE, encoding="utf-8") as f: noten = json.load(f)
+            except Exception: pass
+            noten[titel.lower()] = {"takt": takt, "bpm": int(j.get("bpm", 100)), "strophen": max(1, min(int(j.get("strophen", 2)), 8)), "melodie": mel, "akkorde": ak, "quelle": "claude 27.10.2026, ungeprueft"}
+            with open(_tp.NOTEN_FILE, "w", encoding="utf-8") as f: json.dump(noten, f, ensure_ascii=False, indent=1)
+            _tp.SONGS[titel.lower()] = noten[titel.lower()]
+        except Exception as e:
+            return {"ok": False, "error": "Noten konnten nicht erstellt werden: " + str(e)[:150]}
+    n = _tp.SONGS[titel.lower()].get("strophen")
+    if not n:  # einmal fragen, dann in tonie_noten.json merken -> naechstes Mal sofort
+        try:
+            n = max(1, min(int(_tonies_json(_tonies_claude(f"Wie viele Strophen hat das Kinderlied \"{titel}\" in der ueblichen gesungenen Fassung? Antworte NUR als JSON {{\"anzahl\": Zahl}}", 90)).get("anzahl", 2)), 8))
         except Exception:
             n = 2
-        n = max(1, min(n, 8))
-        safe = re.sub(r'[\\/:*?"<>|]', "", titel).strip()
-        pfad = os.path.join(TONIES_WORD_DIR, f"Playback_{safe}.mp3")
-        os.makedirs(TONIES_WORD_DIR, exist_ok=True)
         try:
-            subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "tonie_playback.py"), titel, pfad, "--runden", str(n)], check=True, capture_output=True, timeout=120)
-        except Exception as e:
-            return {"ok": False, "error": "Playback-Rendering fehlgeschlagen: " + str(e)[:150]}
-        win = subprocess.run(["wslpath", "-w", os.path.dirname(pfad)], capture_output=True, text=True).stdout.strip()
-        subprocess.Popen(["/mnt/c/Windows/explorer.exe", win])
-        return {"ok": True, "datei": pfad, "strophen": n}
-    pr = (f"Schreibe fuer Suno v6 einen Style-Prompt (max. 400 Zeichen, englisch, ohne Verneinungen, ohne Qualitaetswoerter, ohne Kuenstlernamen) "
-          f"fuer eine reine Instrumental-Begleitung des deutschen Kinderlieds \"{titel}\" zum Mitsingen: klare Melodie, gleichmaessiges ruhiges Tempo, "
-          "einfache Arrangement, vorne Melodieinstrument, 4 Zaehler Intro. Antworte NUR als JSON: {\"style\": \"...\", \"exclude\": \"vocals, choir, lyrics\"}")
+            with open(_tp.NOTEN_FILE, encoding="utf-8") as f: noten = json.load(f)
+        except Exception: noten = {}
+        noten.setdefault(titel.lower(), dict(_tp.SONGS[titel.lower()]))["strophen"] = n
+        with open(_tp.NOTEN_FILE, "w", encoding="utf-8") as f: json.dump(noten, f, ensure_ascii=False, indent=1)
+    safe = re.sub(r'[\\/:*?"<>|]', "", titel).strip()
+    pfad = os.path.join(TONIES_WORD_DIR, f"Playback_{safe}.mp3")
+    os.makedirs(TONIES_WORD_DIR, exist_ok=True)
     try:
-        j = _tonies_json(_tonies_claude(pr, 120))
+        subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "tonie_playback.py"), titel, pfad, "--runden", str(n)], check=True, capture_output=True, timeout=180)
     except Exception as e:
-        return {"ok": False, "error": str(e)[:200]}
-    return {"ok": True, "style": j.get("style", ""), "exclude": j.get("exclude", "vocals, choir, lyrics")}
+        return {"ok": False, "error": "Playback-Rendering fehlgeschlagen: " + str(e)[:150]}
+    win = subprocess.run(["wslpath", "-w", os.path.dirname(pfad)], capture_output=True, text=True).stdout.strip()
+    subprocess.Popen(["/mnt/c/Windows/explorer.exe", win])
+    return {"ok": True, "datei": pfad, "strophen": n}
 
 SCHULJAHR_FILE = os.path.join(WORKSPACE, "data/schuljahr2627.json")
 

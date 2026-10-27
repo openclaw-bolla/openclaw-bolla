@@ -299,6 +299,10 @@ if __name__ == "__main__":
                     results.append((c["kuerzel"], "UPLOAD FEHLGESCHLAGEN"))
                     continue
                 post_ok = post_message(its, c["id"], c["text"], files)
+                if not post_ok:  # Ressource-Dialog war manchmal direkt nach dem Upload noch nicht aktuell (7c I, 27.10.2026) -> einmal frisch wiederholen
+                    print("  🔁 Wiederhole Mitteilung einmal ...")
+                    its.wait_for_timeout(8000)
+                    post_ok = post_message(its, c["id"], c["text"], files)
                 results.append((c["kuerzel"], "OK" if post_ok else "MITTEILUNG FEHLGESCHLAGEN"))
         finally:
             browser.close()
