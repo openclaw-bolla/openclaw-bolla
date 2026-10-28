@@ -8835,10 +8835,10 @@ async function loadTonies() {
           h += `<div style="${dim}">`;
           if (t === 'song') {
             const cp = what => `<button onclick="tonieCopy(this,'${k}','${t}','${what}')">📋 ${what==='titel'?'Titel kopieren':what==='style'?'Style kopieren':what==='lyrics'?'Lyrics kopieren':'Exclude kopieren'}</button>`;
-            h += `<div style="${sm}">Titel (Suno-Feld „Song Title“)</div><div id="tr-${k}-${t}-titel" style="${box}"><b>${esc(erg.titel)}</b></div>${cp('titel')}
-              <div style="${sm};margin-top:6px">Style (Suno-Feld „Style of Music“)</div><div id="tr-${k}-${t}-style" style="${box}">${esc(erg.style)}</div>${cp('style')}
-              ${erg.exclude ? `<div style="${sm};margin-top:6px">Exclude (Suno-Feld „Exclude Styles“)</div><div id="tr-${k}-${t}-exclude" style="${box}">${esc(erg.exclude)}</div>${cp('exclude')}` : ''}
-              <div style="${sm};margin-top:6px">Lyrics (Suno-Feld „Lyrics“)</div><div id="tr-${k}-${t}-lyrics" style="${box}">${esc(erg.lyrics)}</div>${cp('lyrics')}
+            h += `<div style="${sm}">Titel (Suno-Feld „Song Title“)</div><div id="tr-${k}-${t}-titel" style="${box}"><b>${esc(erg.titel)}</b></div>
+              <div style="${sm};margin-top:6px">Style (Suno-Feld „Style of Music“)</div><div id="tr-${k}-${t}-style" style="${box}">${esc(erg.style)}</div>
+              ${erg.exclude ? `<div style="${sm};margin-top:6px">Exclude (Suno-Feld „Exclude Styles“)</div><div id="tr-${k}-${t}-exclude" style="${box}">${esc(erg.exclude)}</div>` : ''}
+              <div style="${sm};margin-top:6px">Lyrics (Suno-Feld „Lyrics“)</div><div id="tr-${k}-${t}-lyrics" style="${box}">${esc(erg.lyrics)}</div><div>${cp('titel')}${cp('style')}${erg.exclude ? cp('exclude') : ''}${cp('lyrics')}</div>
               <div style="${okb}">In Suno: Modell <b>v6</b>, <b>Variety = Off</b>, Style Influence eher hoch.</div>`;
           } else {
             h += `<div style="${box}">📄 <b>${esc(erg.titel)}</b> – ${erg.woerter||'?'} Wörter<br><span style="${sm}">Word: OneDrive\\Dokumente\\Bolla\\Tonies\\Geschichte_${esc(kid.name)}.docx (Opa blau, Oma magenta)</span></div>

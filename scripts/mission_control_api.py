@@ -3367,6 +3367,28 @@ def tonies_open(body):
     subprocess.Popen(["/mnt/c/Windows/explorer.exe", win])
     return {"ok": True}
 
+def _tonies_lied_quelle(titel):
+    """Echte Textquelle (de.wikibooks Liederbuch) holen. Rueckgabe (text, url) oder (None, None)."""
+    import urllib.request, urllib.parse
+    def get(u):
+        return urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "Bolla/1.0"}), timeout=20).read().decode("utf-8", "replace")
+    try:
+        q = urllib.parse.quote(titel)
+        hits = json.loads(get(f"https://de.wikibooks.org/w/api.php?action=query&list=search&srsearch=intitle:{q}+Liederbuch&srlimit=5&format=json"))["query"]["search"]
+        for h in hits:
+            t = h["title"]
+            if not t.lower().startswith("liederbuch/") or titel.lower().split()[0] not in t.lower(): continue
+            raw = get("https://de.wikibooks.org/w/index.php?action=raw&title=" + urllib.parse.quote(t.replace(" ", "_")))
+            m = re.search(r"<poem>(.*?)</poem>", raw, re.S)
+            if not m: continue
+            txt = re.sub(r"\{\{crd\|[^}]*\}\}", "", m.group(1))
+            txt = re.sub(r"(?m)^;.*\n?", "", txt)  # Strophen-Ueberschriften
+            txt = re.sub(r"(?<=\w)-(?=[a-zäöüß])", "", txt)  # Silbentrennung (Maien-zeit)
+            return txt.strip(), "https://de.wikibooks.org/wiki/" + urllib.parse.quote(t.replace(" ", "_"))
+    except Exception:
+        pass
+    return None, None
+
 def tonies_liedtext(body):
     """Liedtext des gewaehlten Kinderlieds als Word (zum Mitsingen). Nur gemeinfreie/traditionelle Lieder."""
     kind = body.get("kind")
@@ -3374,17 +3396,22 @@ def tonies_liedtext(body):
     if kind not in data["kinder"]: return {"ok": False, "error": "Kind unbekannt"}
     k = data["kinder"][kind]; titel = str(body.get("titel") or k["lied"].get("titel") or "").strip()[:120]
     if not titel: return {"ok": False, "error": "Erst ein Lied waehlen"}
-    pr = (f"Schreibe den Liedtext des deutschen Kinderlieds \"{titel}\" zum Mitsingen. Gib ALLE ueblichen Strophen vollstaendig wieder (z.B. bei Volksliedern alle gaengigen Folgestrophen, nicht nur die erste; "
-          "jede Strophe ein Eintrag, Wiederholungszeilen ausgeschrieben). NUR wenn es ein traditionelles/gemeinfreies Lied ist "
-          "und du den Text sicher kennst. Nichts erfinden, nichts ergaenzen, keine Urheberrechts-geschuetzten Texte. "
-          "Antworte ausschliesslich als JSON: {\"ok\": true, \"strophen\": [\"Zeile1\\nZeile2\", ...], \"hinweis\": \"\"} "
-          "oder {\"ok\": false, \"grund\": \"...\"} wenn unsicher oder geschuetzt.")
+    quelle_txt, quelle_url = _tonies_lied_quelle(titel)
+    if not quelle_txt:  # Chris-Regel 28.10.26: Word nur mit echter Quelle, nie aus dem Modell-Gedaechtnis
+        return {"ok": False, "error": "Keine echte Textquelle (Wikibooks-Liederbuch) gefunden - Word NICHT erstellt. Bitte Quelle pruefen/nennen lassen."}
+    pr = (f"Unten steht die QUELLE (echter Liedtext, Wikibooks-Liederbuch, Akkordmarken sind entfernt) des Kinderlieds \"{titel}\". "
+          "Teile sie in Strophen (jede Strophe ein Eintrag, Zeilen mit \\n, Zeilenwiederholungen so wie in der Quelle belassen). "
+          "Uebernimm den Wortlaut EXAKT aus der Quelle: nichts ergaenzen, nichts glaetten, keine Anfuehrungszeichen hinzufuegen. "
+          "Antworte ausschliesslich als JSON: {\"ok\": true, \"strophen\": [\"Zeile1\\nZeile2\", ...]}\n\nQUELLE:\n" + quelle_txt)
     try:
         j = _tonies_json(_tonies_claude(pr, 180))
     except Exception as e:
         return {"ok": False, "error": str(e)[:200]}
     if not j.get("ok") or not j.get("strophen"):
-        return {"ok": False, "error": "Text nicht sicher bekannt oder geschuetzt: " + str(j.get("grund", ""))[:150]}
+        return {"ok": False, "error": "Text nicht uebernehmbar: " + str(j.get("grund", ""))[:150]}
+    _norm = lambda t: re.sub(r"\W+", "", t.lower())  # Abgleich: Ergebnis muss woertlich der Quelle entsprechen
+    if _norm("".join(j["strophen"])) != _norm(quelle_txt):
+        return {"ok": False, "error": "Abgleich mit Quelle fehlgeschlagen (Text weicht ab) - Word NICHT erstellt."}
     from docx import Document
     from docx.shared import Pt
     d = Document()
@@ -3396,6 +3423,7 @@ def tonies_liedtext(body):
     safe = re.sub(r'[\\/:*?"<>|]', "", titel).strip()
     pfad = os.path.join(TONIES_WORD_DIR, f"Lied_{k['name']}_{safe}.docx")
     os.makedirs(TONIES_WORD_DIR, exist_ok=True)
+    d.add_paragraph().add_run("Quelle: " + quelle_url).font.size = Pt(9)
     d.save(pfad)
     try:  # Strophenzahl fuers Playback an den Liedtext koppeln (alle Strophen muessen Platz haben)
         import tonie_playback as _tp
@@ -4888,7 +4916,10 @@ def get_recipe_of_day():
     bild_b64 = None
     try:
         bildprompt = data.get("bildprompt", f"appetizing {data.get('titel','food')} dish, food photography")
-        img_b64, err = bildgen_generate(bildprompt, aspect_ratio="4:3")
+        # Cloudflare flux-1-schnell (praktisch kostenlos); Gemini/MAI sind zu teuer fürs Tagesrezept
+        img_b64, err = cf_workers_ai_generate(bildprompt, width=1024, height=768, cf_model="flux-1-schnell")
+        if not img_b64:
+            print(f"Rezept Cloudflare-Bildfehler: {err}")
         if img_b64:
             bild_b64 = img_b64
     except Exception as e:

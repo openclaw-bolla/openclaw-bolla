@@ -82,13 +82,14 @@ def render(song, bpm=None, runden=3):
         t0 = vorspann + r * dauer_lied
         pos = 0
         for note, b in s["melodie"]:
-            mix_in(tr, int(SR * (t0 + pos * beat)), spieluhr(hz(midi(note)), b * beat * 1.6 + 0.8))
+            if note != "R":  # R = Pause
+                mix_in(tr, int(SR * (t0 + pos * beat)), spieluhr(hz(midi(note)), b * beat * 1.6 + 0.8))
             pos += b
         for i, (gt, typ) in enumerate(s["akkorde"]):
             g = midi(gt); toene = [g, g + (3 if typ == "moll" else 4), g + 7, g + 12]
             for q in range(takt):  # Harfen-Arpeggio, je Schlag ein Ton
                 m = toene[[0, 1, 2, 1][q % 4]] if q % 2 == 0 else toene[3 if q == 1 else 2]
-                mix_in(tr, int(SR * (t0 + (i * takt + q) * beat)), harfe(hz(m), 1.3))
+                mix_in(tr, int(SR * (t0 + (s.get("auftakt", 0) + i * takt + q) * beat)), harfe(hz(m), 1.3))
     # leichter Hall
     hall = np.zeros_like(tr)
     for d, g in ((0.043, 0.28), (0.071, 0.2), (0.113, 0.14)):
