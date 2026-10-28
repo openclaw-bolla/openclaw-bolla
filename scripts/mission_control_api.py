@@ -3088,7 +3088,25 @@ def _tonies_default():
         {"id": "f6", "text": "Tonies einmal auf WLAN-Box stellen, dann Upload (meine.tonies.de)", "done": False},
         {"id": "f7", "text": "Verpacken, mitnehmen; in Kaufering nur WLAN an Box eintragen", "done": False}]}
 
+_TONIES_BUSY_GERESETET = False
+
+def _tonies_busy_reset():
+    """Nach Serverneustart laufen keine Jobs mehr: haengende busy-Flags loeschen (sonst ewig 'wird erzeugt')."""
+    global _TONIES_BUSY_GERESETET
+    _TONIES_BUSY_GERESETET = True
+    try:
+        with open(TONIES_FILE, encoding="utf-8") as f: d = json.load(f)
+        ge = False
+        for kd in d.get("kinder", {}).values():
+            for t in kd.values():
+                if isinstance(t, dict) and t.get("busy"):
+                    t["busy"] = False; t["fehler"] = "Auftrag wurde durch Serverneustart abgebrochen - bitte noch mal starten."; ge = True
+        if ge: _tonies_write(d)
+    except Exception:
+        pass
+
 def tonies_get():
+    if not _TONIES_BUSY_GERESETET: _tonies_busy_reset()
     if os.path.exists(TONIES_FILE):
         try:
             with open(TONIES_FILE, encoding="utf-8") as f:
@@ -3167,8 +3185,11 @@ def _tonies_claude(prompt, timeout=420):
     return out
 
 def _tonies_json(txt):
-    a, b = txt.find("{"), txt.rfind("}")
-    return json.loads(txt[a:b + 1])
+    a = txt.find("{")
+    try:
+        return json.JSONDecoder().raw_decode(txt[a:])[0]  # ignoriert Text hinter dem ersten JSON-Objekt
+    except ValueError:
+        return json.loads(txt[a:txt.rfind("}") + 1])
 
 def _tonies_docx_path(kind, name):
     return os.path.join(TONIES_WORD_DIR, f"Geschichte_{name}.docx")
@@ -3353,7 +3374,8 @@ def tonies_liedtext(body):
     if kind not in data["kinder"]: return {"ok": False, "error": "Kind unbekannt"}
     k = data["kinder"][kind]; titel = str(body.get("titel") or k["lied"].get("titel") or "").strip()[:120]
     if not titel: return {"ok": False, "error": "Erst ein Lied waehlen"}
-    pr = (f"Schreibe den Liedtext des deutschen Kinderlieds \"{titel}\" zum Mitsingen. NUR wenn es ein traditionelles/gemeinfreies Lied ist "
+    pr = (f"Schreibe den Liedtext des deutschen Kinderlieds \"{titel}\" zum Mitsingen. Gib ALLE ueblichen Strophen vollstaendig wieder (z.B. bei Volksliedern alle gaengigen Folgestrophen, nicht nur die erste; "
+          "jede Strophe ein Eintrag, Wiederholungszeilen ausgeschrieben). NUR wenn es ein traditionelles/gemeinfreies Lied ist "
           "und du den Text sicher kennst. Nichts erfinden, nichts ergaenzen, keine Urheberrechts-geschuetzten Texte. "
           "Antworte ausschliesslich als JSON: {\"ok\": true, \"strophen\": [\"Zeile1\\nZeile2\", ...], \"hinweis\": \"\"} "
           "oder {\"ok\": false, \"grund\": \"...\"} wenn unsicher oder geschuetzt.")
@@ -3375,6 +3397,13 @@ def tonies_liedtext(body):
     pfad = os.path.join(TONIES_WORD_DIR, f"Lied_{k['name']}_{safe}.docx")
     os.makedirs(TONIES_WORD_DIR, exist_ok=True)
     d.save(pfad)
+    try:  # Strophenzahl fuers Playback an den Liedtext koppeln (alle Strophen muessen Platz haben)
+        import tonie_playback as _tp
+        with open(_tp.NOTEN_FILE, encoding="utf-8") as f: noten = json.load(f)
+        if titel.lower() in noten:
+            noten[titel.lower()]["strophen"] = max(1, min(len(j["strophen"]), 8))
+            with open(_tp.NOTEN_FILE, "w", encoding="utf-8") as f: json.dump(noten, f, ensure_ascii=False, indent=1)
+    except Exception: pass
     win = subprocess.run(["wslpath", "-w", pfad], capture_output=True, text=True).stdout.strip()
     subprocess.Popen(["/mnt/c/Windows/explorer.exe", win])
     return {"ok": True, "datei": pfad}

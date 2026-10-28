@@ -8658,7 +8658,7 @@ async function loadBirthdays() {
 
 // ---- 🎁 Tonies ----
 const TONIE_STAGES = [['offen','⚪ offen'],['text','📝 Text fertig'],['audio','🎧 Audio fertig'],['hochgeladen','✅ im Tonie']];
-const TONIE_TEILE = [['song','🎵 Bolla-Song'],['lied','🎶 Kinderlied'],['geschichte','📖 Geschichte (Opa/Oma)']];
+const TONIE_TEILE = [['song','🎵 Bolla-Song'],['geschichte','📖 Geschichte (Opa/Oma)'],['lied','🎶 Kinderlied']];
 // Katalog bekannter Kinderlieder: [Titel, Hinweis, Tags]. Tags: tiere auto elefant ruhig mitmach klein(ab 2) gross(ab 4)
 const TONIE_LIEDER = [
  ['Alle meine Entchen','Der Klassiker, 2 Zeilen, jeder kennt ihn','tiere klein'],
@@ -8786,7 +8786,7 @@ async function loadTonies() {
   const warn = 'background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.6);border-radius:8px;padding:8px;margin:6px 0;font-size:14px';
   const okb = 'background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.5);border-radius:8px;padding:8px;margin:6px 0;font-size:14px';
   let h = `<div class="card" style="margin-bottom:14px"><div style="${HD};margin-bottom:6px">🎁 Tonie-Projekt Weihnachten 2026</div>
-    <div style="${fs};line-height:1.6">Pro Kind gibt es <b>3 Teile</b>: 🎵 Song · 🎶 Kinderlied · 📖 Geschichte. So geht's:<br>
+    <div style="${fs};line-height:1.6">Pro Kind gibt es <b>3 Teile</b>: 🎵 Song · 📖 Geschichte · 🎶 Kinderlied. So geht's:<br>
     <b>1.</b> Beim Kind die <b>Attribute</b> eintragen (z. B. „Tiere, Autos“) – wird beim Verlassen des Feldes automatisch gespeichert.<br>
     <b>2.</b> Teil <b>erzeugen</b> (Song/Geschichte macht Bolla in ca. 1–3 Min, das Lied wählst du aus einer Liste).<br>
     <b>3.</b> Anschauen → passt es nicht: <b>Verbessern</b> (mit deinem Wunsch) oder <b>Neu erzeugen</b>. Passt es: Häkchen setzen, wenn aufgenommen und im Tonie.<br>
@@ -8834,9 +8834,9 @@ async function loadTonies() {
           const dim = x.busy ? 'opacity:.45' : '';
           h += `<div style="${dim}">`;
           if (t === 'song') {
-            const cp = what => `<button onclick="tonieCopy(this,'${k}','${t}','${what}')">📋 ${what==='style'?'Style kopieren':what==='lyrics'?'Lyrics kopieren':'Exclude kopieren'}</button>`;
-            h += `<div style="${box}"><b>${esc(erg.titel)}</b></div>
-              <div style="${sm}">Style (Suno-Feld „Style of Music“)</div><div id="tr-${k}-${t}-style" style="${box}">${esc(erg.style)}</div>${cp('style')}
+            const cp = what => `<button onclick="tonieCopy(this,'${k}','${t}','${what}')">📋 ${what==='titel'?'Titel kopieren':what==='style'?'Style kopieren':what==='lyrics'?'Lyrics kopieren':'Exclude kopieren'}</button>`;
+            h += `<div style="${sm}">Titel (Suno-Feld „Song Title“)</div><div id="tr-${k}-${t}-titel" style="${box}"><b>${esc(erg.titel)}</b></div>${cp('titel')}
+              <div style="${sm};margin-top:6px">Style (Suno-Feld „Style of Music“)</div><div id="tr-${k}-${t}-style" style="${box}">${esc(erg.style)}</div>${cp('style')}
               ${erg.exclude ? `<div style="${sm};margin-top:6px">Exclude (Suno-Feld „Exclude Styles“)</div><div id="tr-${k}-${t}-exclude" style="${box}">${esc(erg.exclude)}</div>${cp('exclude')}` : ''}
               <div style="${sm};margin-top:6px">Lyrics (Suno-Feld „Lyrics“)</div><div id="tr-${k}-${t}-lyrics" style="${box}">${esc(erg.lyrics)}</div>${cp('lyrics')}
               <div style="${okb}">In Suno: Modell <b>v6</b>, <b>Variety = Off</b>, Style Influence eher hoch.</div>`;
