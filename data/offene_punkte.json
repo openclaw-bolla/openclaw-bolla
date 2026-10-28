@@ -162,6 +162,33 @@
   "erledigt": false
  },
  {
+  "id": "p_kalender_rueckfragen",
+  "prio": "2",
+  "abschnitt": "Zuerst",
+  "gruppe": "Kalender-Rückfragen",
+  "titel": "Kalender-Rückfragen aus Mails: offene Termine klären (/ka_ja, /ka_nein) + Antwort-Befehl fertig bauen",
+  "detail": "Chris 28.10.2026: bei jedem moin nennen. mail_to_calendar.py fragt bei unsicherer Konfidenz per Telegram 'Antwort: /ka_ja oder /ka_nein (kommt bald)', der Handler dafür existiert NICHT → Chris' /ka_ja-Tipps (2×) liefen ins Leere, Bezug (welcher Termin) unbekannt. Bei moin: (1) in logs/mail_calendar_processed.json Einträge mit Status 'pending' der letzten Tage zeigen (Titel/Datum aus Mail nachschlagen), Chris fragen, ggf. eintragen (vorher Kalender-Duplikat-Check!); (2) Befehle /ka_ja /ka_nein im telegram_bot mit Zuordnung zur letzten Rückfrage bauen (ID in Nachricht mitgeben), dann Punkt streichen. Siehe feedback_kalender_duplikat_check.md.",
+  "erledigt": false
+ },
+ {
+  "id": "p_preisalarm_scooter",
+  "prio": "3",
+  "abschnitt": "Zuerst",
+  "gruppe": "Preisalarm E-Scooter",
+  "titel": "Preisalarm ePowerFun ePF-2 Pro 653 Wh einrichten: 3× pro Woche (Mo/Mi/Fr), Telegram nur bei Preissenkung",
+  "detail": "Chris 28.10.2026 per Telegram. Annahme: 'der eine' = ePF-2 Pro 653 Wh (ca. 680–820 €), vorher kurz bestätigen lassen, falls er einen anderen meint. Umsetzung am Studio (Telegram-Sitzung kann weder python noch Cron): Skript scripts/preisalarm_scooter.py (Preis von idealo/Herstellerseite epowerfun.de + 1–2 Shops holen, in data/preisalarm_scooter.json den niedrigsten Preis speichern, report() auf /jobs, Telegram NUR bei neuem Tiefstpreis — Chris 28.10.: Tiefstpreis reicht, keine feste Schwelle), Cron Mo/Mi/Fr 08:00 mit limit_gate, kein Claude-Aufruf nötig (reines Scraping, keine Kosten). Hersteller-Frage offen: Fertigungsort bei ePowerFun nachfragen (Mail-Entwurf erst zeigen).",
+  "erledigt": false
+ },
+ {
+  "id": "p46",
+  "prio": "2",
+  "abschnitt": "Zuerst",
+  "gruppe": "AURORA II",
+  "titel": "AURORA II Kap. 17: Wortzahl prüfen — Reader zeigt 43 Seiten (Duo aufgeklappt), Kap. 1–3 nur 11; laut Bericht Kap. 17–24 ≈3.600 W (≈18 S.)",
+  "detail": "28.10. Telegram: Chris wundert sich über 43 Seiten bei Kap. 17. Wörter pro Kapitel zählen (aurora2.json), Ausreißer klären, ggf. Hinweis in Sammelmodus. | ERLEDIGT 28.10.: Duo-Anzeige korrekt (Kap.17=7.938 W=43 S.). Kürzung ungleich: Kap.1-8 -7%, 9-16 -20%, 17-24 ca. -42% (je alt 2 Kap. -> 1). Gesamt 200.915 -> 153.971 W. Backups je Welle vorhanden.",
+  "erledigt": true
+ },
+ {
   "id": "p_scooter",
   "prio": "3",
   "abschnitt": "Projekte auf Zuruf",
