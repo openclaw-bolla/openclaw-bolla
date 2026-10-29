@@ -8541,11 +8541,13 @@ async function loadRecipe() {
     const bildHTMLMobile = d.bild
       ? `<img src="data:image/png;base64,${d.bild}" class="recipe-img" style="width:calc(100% - 16px);height:auto;object-fit:contain;border-radius:8px;display:block;margin:0 8px 8px">`
       : '';
+    const maiBtn = `<button id="recipe-mai-btn" onclick="regenRecipeImageMai()" title="Neues Bild mit MAI (~10 ct)" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:14px;padding:4px 10px;cursor:pointer;margin:0 0 8px">🎨 Neu mit MAI (~10 ct)</button>`;
     document.getElementById('recipe-card').innerHTML = `
       <div style="font-size:16px;font-weight:700;color:var(--bright);margin-bottom:10px">${d.titel}</div>
       <div class="recipe-layout" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;align-items:start">
         <div style="grid-column:1/3;text-align:center">
-          ${bildHTMLMobile}
+          <div id="recipe-img-wrap">${bildHTMLMobile}</div>
+          ${maiBtn}
           <div style="font-size:14px;color:var(--dim);line-height:1.6;font-style:italic;text-align:left">${d.beschreibung||''}</div>
         </div>
         <div>
@@ -8560,6 +8562,24 @@ async function loadRecipe() {
   } catch(e) {
     document.getElementById('recipe-card').innerHTML = '<div style="font-size:13px;color:var(--dim)">Rezept konnte nicht geladen werden.</div>';
   }
+}
+
+async function regenRecipeImageMai() {
+  const btn = document.getElementById('recipe-mai-btn');
+  const orig = btn.textContent;
+  btn.textContent = '⏳ MAI malt…'; btn.disabled = true;
+  try {
+    const r = await fetch(API + '/api/recipe/mai-image', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
+    const res = await r.json();
+    if (!res.ok) throw new Error(res.error || 'Fehler');
+    _recipeData.bild = res.bild;
+    document.getElementById('recipe-img-wrap').innerHTML = `<img src="data:image/png;base64,${res.bild}" class="recipe-img" style="width:calc(100% - 16px);height:auto;object-fit:contain;border-radius:8px;display:block;margin:0 8px 8px">`;
+    btn.textContent = orig;
+  } catch(e) {
+    btn.textContent = '❌ ' + e.message.slice(0, 40);
+    setTimeout(() => { btn.textContent = orig; }, 4000);
+  }
+  btn.disabled = false;
 }
 
 // ===== REZEPT SPEICHERN =====

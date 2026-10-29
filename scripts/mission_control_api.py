@@ -4936,6 +4936,23 @@ def get_recipe_of_day():
     return data
 
 
+def recipe_regen_image_mai():
+    """Neues Rezeptbild mit MAI (~10 ct) auf Knopfdruck; ersetzt das Bild im Tages-Cache."""
+    from datetime import date
+    cache_file = os.path.join(WORKSPACE, f"cache/recipe_{date.today().isoformat()}.json")
+    with open(cache_file) as f:
+        data = json.load(f)
+    prompt = data.get("bildprompt") or f"appetizing {data.get('titel','food')} dish, food photography"
+    b64, err = bildgen_mai_generate(prompt, model="mai-image-2.5", width=1024, height=768)
+    if not b64:
+        return {"ok": False, "error": err}
+    kosten_ledger_add("mai_image", MAI_IMG_PREIS, "Rezept des Tages")
+    data["bild"] = b64
+    with open(cache_file, "w") as f:
+        json.dump(data, f, ensure_ascii=False)
+    return {"ok": True, "bild": b64}
+
+
 REZEPTE_DIR = "/mnt/d/OneDrive/Dokumente/Rezepte-Cocktails"
 
 def save_recipe_docx(data):
@@ -10045,6 +10062,11 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                 self._send_json(save_travel_recommendation(uid, typ, body.get("empfehlung")))
             elif self.path == "/api/travel/request-refresh":
                 self._send_json({"ok": True})
+            elif self.path == "/api/recipe/mai-image":
+                try:
+                    self._send_json(recipe_regen_image_mai())
+                except Exception as e:
+                    self._send_json({"ok": False, "error": str(e)}, status=500)
             elif self.path == "/api/recipe/save":
                 try:
                     fname = save_recipe_docx(body)

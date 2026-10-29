@@ -19,6 +19,7 @@ IMAP_CFG       = Path("/home/bolla/workspace/config/wtnet_account.json")
 TG_CFG         = Path("/home/bolla/workspace/config/telegram_bot.json")
 PROCESSED_FILE  = Path("/home/bolla/workspace/logs/mail_calendar_processed.json")
 LAST_RUN_FILE   = Path("/home/bolla/workspace/logs/mail_calendar_last_run.json")
+PENDING_FILE    = Path("/home/bolla/workspace/data/ka_pending.json")  # offene Rückfragen für /ka_ja /ka_nein
 GRAPH          = "https://graph.microsoft.com/v1.0/me"
 
 CATEGORIES = {
@@ -475,14 +476,22 @@ def main():
                 processed[mid] = "error"
         else:
             print(f"   ❓ Unsicher → Telegram\n")
-            telegram(f"❓ <b>Kalender-Rückfrage:</b>\n"
+            import hashlib
+            ka_id = hashlib.md5(mid.encode()).hexdigest()[:4]
+            try:
+                pend = json.loads(PENDING_FILE.read_text()) if PENDING_FILE.exists() else {}
+            except Exception:
+                pend = {}
+            pend[ka_id] = {"mid": mid, "info": info, "erstellt": datetime.now().strftime("%Y-%m-%d %H:%M")}
+            PENDING_FILE.write_text(json.dumps(pend, ensure_ascii=False, indent=1))
+            telegram(f"❓ <b>Kalender-Rückfrage {ka_id}:</b>\n"
                      f"<b>{titel}</b>\n"
                      f"📆 {datum}  ⏰ {info.get('uhrzeit_start','?')}\n"
                      f"📍 {info.get('ort','')}\n"
                      f"🏷 {info.get('kategorie','')}\n"
                      f"Konfidenz: {konfidenz}\n"
                      f"Begründung: {info.get('begruendung','')}\n\n"
-                     f"Antwort: /ka_ja oder /ka_nein (kommt bald)")
+                     f"Antwort: /ka_ja {ka_id} oder /ka_nein {ka_id}")
             processed[mid] = "pending"
             uncertain += 1
 

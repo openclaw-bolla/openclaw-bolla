@@ -11,6 +11,8 @@ import json
 import logging
 import mimetypes
 import os
+import re
+from pathlib import Path
 import subprocess
 import requests
 import time
@@ -622,6 +624,55 @@ def should_respond(msg):
     return False
 
 
+def handle_ka_command(text, sender_id, chat_id, msg_id):
+    """/ka_ja [id] und /ka_nein [id]: Antwort auf Kalender-Rückfragen aus mail_to_calendar.py."""
+    m = re.match(r"^/ka_(ja|nein)(?:@\w+)?(?:\s+(\w+))?\s*$", text.strip().lower())
+    if not m or sender_id != int(CHRIS_ID):
+        return False
+    antwort, ka_id = m.group(1), m.group(2)
+    pend_file = Path("/home/bolla/workspace/data/ka_pending.json")
+    try:
+        pend = json.loads(pend_file.read_text()) if pend_file.exists() else {}
+    except Exception:
+        pend = {}
+    if not pend:
+        send_message(chat_id, "Keine offene Kalender-Rückfrage 🐾", reply_to=msg_id)
+        return True
+    if not ka_id:
+        if len(pend) > 1:
+            zeilen = [f"{k}: {v['info'].get('titel','?')} ({v['info'].get('datum','?')})" for k, v in pend.items()]
+            send_message(chat_id, "Mehrere offen — bitte mit Nummer antworten, z. B. /ka_" + antwort + " " + next(iter(pend)) + "\n" + "\n".join(zeilen), reply_to=msg_id)
+            return True
+        ka_id = next(iter(pend))
+    eintrag = pend.get(ka_id)
+    if not eintrag:
+        send_message(chat_id, f"Rückfrage {ka_id} nicht gefunden.", reply_to=msg_id)
+        return True
+    info, mid = eintrag["info"], eintrag["mid"]
+    processed_file = Path("/home/bolla/workspace/logs/mail_calendar_processed.json")
+    processed = json.loads(processed_file.read_text())
+    if antwort == "nein":
+        processed[mid] = "declined"
+        reply = f"Okay, \u201e{info.get('titel')}\u201c kommt nicht in den Kalender."
+    else:
+        import mail_to_calendar as mtc
+        token = mtc.get_token()
+        if mtc.check_duplicate(info["datum"], info["titel"], token):
+            processed[mid] = "duplicate"
+            reply = f"\u201e{info.get('titel')}\u201c steht schon im Kalender \u2014 nichts doppelt eingetragen."
+        elif mtc.create_event(info, token):
+            processed[mid] = "added"
+            reply = f"\u2705 Eingetragen: {info.get('titel')} am {info.get('datum')}"
+        else:
+            send_message(chat_id, "Eintragen hat nicht geklappt \u2014 Rückfrage bleibt offen.", reply_to=msg_id)
+            return True
+    processed_file.write_text(json.dumps(processed, indent=2))
+    del pend[ka_id]
+    pend_file.write_text(json.dumps(pend, ensure_ascii=False, indent=1))
+    send_message(chat_id, reply, reply_to=msg_id)
+    return True
+
+
 def main():
     log.info("Bolla Telegram Bot gestartet 🐾")
     adb_was_connected = adb_connected()
@@ -691,6 +742,10 @@ def main():
 
                 # AURORA-Stolperstein zuerst (Sammel-Modus/Präfix/Steuerbefehle) — vor ADB & Claude
                 if not media and handle_satz_command(text, sender_id, chat_id, msg_id):
+                    continue
+
+                # Kalender-Rückfragen /ka_ja /ka_nein
+                if not media and handle_ka_command(text, sender_id, chat_id, msg_id):
                     continue
 
                 # ADB-Befehle (nur von Chris, nur bei reinem Text)
