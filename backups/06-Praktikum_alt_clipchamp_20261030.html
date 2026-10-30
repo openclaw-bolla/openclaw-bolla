@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Praktikum: Eigenes Video aufnehmen &amp; schneiden</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --text: #1c1c1e;
+    --dim: #5b5f66;
+    --accent: #0a66c2;
+    --accent-bg: #e8f1fc;
+    --wichtig: #c0392b;
+    --wichtig-bg: #fdecea;
+    --wichtig-border: #f3b8b0;
+    --done-bg: #eafaf0;
+    --done-border: #8fd9ad;
+    --border: #dde1e7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 80px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    font-size: 20px;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  .header {
+    background: linear-gradient(135deg, #0a66c2, #0850a0);
+    color: #fff;
+    border-radius: 18px;
+    padding: 24px 26px;
+    margin-bottom: 18px;
+  }
+  .header h1 { margin: 0 0 6px; font-size: 29px; line-height: 1.25; }
+  .header .zeit { font-size: 18px; opacity: 0.92; }
+
+  .hinweis {
+    background: var(--accent-bg);
+    border: 2px solid #b7d4f2;
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    font-size: 19px;
+  }
+
+  .wichtig-box {
+    background: var(--wichtig-bg);
+    border: 3px solid var(--wichtig-border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--wichtig);
+  }
+  .wichtig-box span.klein {
+    display: block;
+    font-weight: 400;
+    font-size: 17px;
+    color: #7a2a22;
+    margin-top: 6px;
+  }
+
+  .step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    transition: background .2s, border-color .2s;
+  }
+  .step.done { background: var(--done-bg); border-color: var(--done-border); }
+
+  .step-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step.done .step-num { background: #2e9e56; }
+  .step-title { font-size: 22px; font-weight: 700; flex: 1; }
+  .opt-badge {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--dim);
+    background: #eef0f3;
+    padding: 3px 10px;
+    border-radius: 8px;
+    margin-left: 10px;
+    white-space: nowrap;
+  }
+
+  .step ol, .step ul { margin: 0; padding-left: 26px; }
+  .step li { margin-bottom: 8px; }
+  .step .zusatz {
+    margin-top: 10px;
+    font-size: 18px;
+    color: var(--dim);
+    background: #f4f6f9;
+    border-radius: 10px;
+    padding: 10px 14px;
+  }
+
+  .os-wrap {
+    display: flex;
+    gap: 14px;
+    margin: 12px 0;
+    flex-wrap: wrap;
+  }
+  .os-box {
+    flex: 1;
+    min-width: 240px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .os-box.android { border-color: #8fd9ad; background: #f3fbf5; }
+  .os-box.ios { border-color: #b7d4f2; background: #f5f9fe; }
+  .os-box h3 { margin: 0 0 8px; font-size: 19px; }
+  .os-box ol { padding-left: 22px; }
+  .os-box li { margin-bottom: 6px; font-size: 18px; }
+
+  .fill-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .fill-row label { font-size: 19px; min-width: 90px; }
+  .fill-row input[type="text"] {
+    flex: 1;
+    min-width: 180px;
+    font-size: 19px;
+    padding: 9px 12px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit;
+  }
+  .fill-row input[type="text"]:focus { border-color: var(--accent); outline: none; }
+
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+  }
+  .check-row input[type="checkbox"] {
+    width: 26px; height: 26px;
+    flex-shrink: 0;
+  }
+  .check-row label { font-size: 18px; font-weight: 600; color: var(--dim); }
+  .step.done .check-row label { color: #2e9e56; }
+
+  .progress-wrap {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    padding: 10px 0 14px;
+    z-index: 5;
+  }
+  .progress-bar {
+    height: 14px;
+    background: #e0e4ea;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width .3s;
+  }
+  .progress-label { font-size: 16px; color: var(--dim); margin-top: 6px; text-align: center; }
+
+  .end-box {
+    background: var(--card);
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    padding: 22px;
+    text-align: center;
+    margin-top: 10px;
+  }
+  .end-box .info { font-size: 16px; color: var(--dim); margin-top: 12px; }
+
+  @media print {
+    .progress-wrap, .check-row { display: none !important; }
+    .step { break-inside: avoid; border: 1px solid #ccc; }
+    body { background: #fff; padding: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">0 von 4 Schritten erledigt</div>
+  </div>
+
+  <div class="header">
+    <h1>🎬 Praktikum: Eigenes Video aufnehmen &amp; schneiden</h1>
+    <div class="zeit">⏱️ ca. 30&ndash;35 Minuten &nbsp;·&nbsp; Einzelarbeit mit deinem eigenen Handy</div>
+  </div>
+
+  <div class="hinweis">
+    Arbeite die Schritte <b>der Reihe nach</b> durch. Häkchen unten in jedem Kasten setzen, wenn ein
+    Schritt fertig ist. <b>Wichtig:</b> Dein Handy hat vielleicht eine andere Android- oder iOS-Version
+    als das deines Nachbarn &ndash; Menüs können <b>anders aussehen oder anders heißen</b>. Lass dich davon
+    nicht verwirren, das <b>Symbol</b> (meist ein Kreis) ist fast immer wiederzuerkennen. Frag notfalls
+    ein Handy in der Nähe mit dem gleichen Betriebssystem.
+  </div>
+
+  <div class="wichtig-box">
+    ⚖️ Urheberrecht: „Für dich angucken und behalten – meist okay, wenn die Quelle legal ist.
+    Hochladen oder weitergeben – das kann richtig teuer werden, und die Rechnung kriegen eure Eltern.“
+    <span class="klein">Nimm heute deshalb nur unbedenkliches Material auf: dein eigenes Handy-Display,
+    eine App, ein Spiel, dich selbst &ndash; kein fremdes Video von YouTube &amp; Co.</span>
+    <span class="klein"><b>Wichtig zur Einordnung:</b> Dein eigenes Video zwischen deinen eigenen Geräten
+    hin- und herzuschieben (z.&nbsp;B. übers Handy hoch in deine itslearning-Bibliothek und am PC wieder
+    runterladen) ist völlig unproblematisch &ndash; das ist Eigenbedarf, kein „Hochladen/Weitergeben".
+    Das Urheberrecht betrifft nur <b>fremde, ganze Videos</b>, die du veröffentlichst oder verbreitest.</span>
+    <span class="klein"><b>Für ein Referat:</b> Ein paar Sekunden aus einem Musik- oder Videoausschnitt für
+    eine Präsentation vor der Klasse mitzuschneiden und zu zeigen, ist erlaubt (§&nbsp;60a
+    Unterrichtsschranke) &ndash; solange es nur in der Klasse gezeigt wird und nirgends öffentlich
+    hochgeladen wird (kein YouTube, Insta, Schul-Homepage). Quelle kurz nennen ist gute Praxis.</span>
+  </div>
+
+  <div class="step" data-step="1">
+    <div class="step-head"><div class="step-num">1</div><div class="step-title">Video aufnehmen (Bildschirmaufzeichnung)</div></div>
+    <p>Wische vom oberen Bildschirmrand nach unten zu den Schnelleinstellungen und suche das Symbol
+    fürs Aufnehmen (meist ein <b>gefüllter Kreis</b>, manchmal mit rotem Punkt).</p>
+    <div class="os-wrap">
+      <div class="os-box android">
+        <h3>🤖 Android</h3>
+        <ol>
+          <li>Schnelleinstellungen öffnen (2× von oben nach unten wischen)</li>
+          <li>Kachel <b>„Bildschirmrekorder"</b> oder <b>„Bildschirmaufzeichnung"</b> antippen (Name je nach Handy/Version leicht anders)</li>
+          <li>Falls die Kachel fehlt: über den Stift/Bearbeiten-Button in den Schnelleinstellungen nach „Aufnahme" suchen und die Kachel dort hinzufügen</li>
+          <li>Auf „Start" tippen, 10&ndash;15 Sekunden etwas aufnehmen (z. B. eine App öffnen), dann auf „Stopp"</li>
+        </ol>
+      </div>
+      <div class="os-box ios">
+        <h3>🍎 iOS (iPhone)</h3>
+        <ol>
+          <li>Kontrollzentrum öffnen (von oben rechts nach unten wischen, bei älteren iPhones mit Home-Button von unten nach oben)</li>
+          <li>Symbol <b>„Bildschirmaufnahme"</b> (gefüllter Kreis) antippen</li>
+          <li>Falls es dort fehlt: Einstellungen → Kontrollzentrum → „Bildschirmaufnahme" hinzufügen</li>
+          <li>10&ndash;15 Sekunden etwas aufnehmen, dann oben auf die rote Statusleiste tippen und „Stopp"</li>
+        </ol>
+      </div>
+    </div>
+    <div class="zusatz">💡 Alternative, falls die Aufnahme partout nicht klappt: ein kurzes Video ganz normal
+    mit der Kamera-App filmen (z. B. dich selbst, wie du etwas erklärst).</div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+
+  <div class="step" data-step="2">
+    <div class="step-head"><div class="step-num">2</div><div class="step-title">Video schneiden (trimmen)</div></div>
+    <p>Öffne dein aufgenommenes Video und schneide vorne und/oder hinten ein Stück ab.</p>
+    <div class="os-wrap">
+      <div class="os-box android">
+        <h3>🤖 Android</h3>
+        <ol>
+          <li>App <b>Google Photos</b> öffnen, dein Video in der Galerie suchen und antippen</li>
+          <li>Unten auf <b>„Bearbeiten"</b> tippen</li>
+          <li>Im Zeitleisten-Balken die beiden Enden mit dem Finger nach innen ziehen</li>
+          <li>Mit <b>„Speichern"</b> bzw. <b>„Kopie speichern"</b> bestätigen</li>
+        </ol>
+      </div>
+      <div class="os-box ios">
+        <h3>🍎 iOS (iPhone)</h3>
+        <ol>
+          <li>App <b>Fotos</b> öffnen, dein Video antippen</li>
+          <li>Oben rechts auf <b>„Bearbeiten"</b> tippen</li>
+          <li>Im Filmstreifen unten die gelben Ränder mit dem Finger nach innen ziehen</li>
+          <li>Unten rechts auf <b>„Fertig"</b> tippen (speichert automatisch)</li>
+        </ol>
+      </div>
+    </div>
+    <div class="zusatz">Egal welches Handy: das Prinzip ist bei fast jedem Video-Editor gleich &ndash;
+    Anfang und Ende an einer Zeitleiste ziehen, um den Clip kürzer zu machen. Genau das haben wir eben
+    auch bei Clipchamp am PC gesehen.</div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+
+  <div class="step" data-step="3">
+    <div class="step-head"><div class="step-num">3</div><div class="step-title">Video auf den PC übertragen</div></div>
+    <p>Damit dein Video auch am PC ankommt, hast du mehrere Möglichkeiten:</p>
+    <ol>
+      <li><b>🌟 Über die itslearning-Bibliothek (am elegantesten, kein Kabel nötig):</b> Am Handy die
+      itslearning-App öffnen → Profilbild oben rechts antippen → <b>„Dateien"</b> → <b>„Meine Dateien
+      hinzufügen"</b> → dein Video auswählen. Am Schul-PC: itslearning im Browser öffnen → oben
+      <b>„Bibliothek"</b> → Video anklicken → herunterladen.</li>
+      <li><b>Mit OTG-Kabel</b> (falls vorhanden): USB-Stick direkt ans Handy stecken, dann in der
+      Dateien-App (Android: „Dateien"/„Files" &middot; iOS: „Dateien") das Video auf den Stick kopieren.</li>
+      <li><b>Ohne OTG-Kabel und ohne itslearning:</b> Handy per USB-Kabel an einen Schul-PC anschließen,
+      im Handy-Menü „USB-Einstellungen" auf <b>„Dateiübertragung"</b> stellen, Video vom Handy auf den PC
+      kopieren, von dort auf deinen Stick.</li>
+    </ol>
+    <div class="zusatz">💡 Kein Kabel zur Hand? Dann ist Option 1 (itslearning-Bibliothek) genau richtig
+    für dich &ndash; die braucht nur WLAN. Fürs Stick-Verfahren: frag Chris oder deinen Nachbarn kurz nach
+    einem OTG-Kabel, im Klassensatz sind meist welche dabei.</div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+
+  <div class="step" data-step="4">
+    <div class="step-head"><div class="step-num">4</div><div class="step-title">Rückblick <span class="opt-badge">optional</span></div></div>
+    <div class="fill-row"><label>App benutzt:</label><input type="text" placeholder="Google Photos, Fotos, oder ???"></div>
+    <div class="fill-row"><label>Was war schwierig:</label><input type="text" placeholder="Was hat am längsten gedauert?"></div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+
+  <div class="end-box">
+    <div>🎉 Geschafft! Dein fertiges Video ist jetzt am PC angekommen (Bibliothek oder Stick).</div>
+    <div class="info">Zeig es gerne kurz Chris oder deinem Sitznachbarn.</div>
+  </div>
+
+</div>
+<script>
+function updateProgress() {
+  var boxes = document.querySelectorAll('.check-row input[type="checkbox"]');
+  var done = 0;
+  boxes.forEach(function(b){ if (b.checked) done++; });
+  var pct = Math.round(done / boxes.length * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = done + ' von ' + boxes.length + ' Schritten erledigt';
+}
+function toggleDone(box) {
+  var step = box.closest('.step');
+  step.classList.toggle('done', box.checked);
+  updateProgress();
+}
+updateProgress();
+</script>
+</body>
+</html>
