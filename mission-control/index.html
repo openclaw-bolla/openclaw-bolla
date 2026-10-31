@@ -8760,128 +8760,40 @@ async function tonieHoeren(btn) {
   } catch (e) { tonieStopp(); btn.textContent = '▶ Reinhören'; if (info) info.textContent = 'Konnte nicht abspielen.'; }
 }
 async function tonieLiedWaehlen(k, t) { await tonieSave({kind:k, teil:'lied', titel:t, stage:'text'}); }
-async function tonieLiedtext(btn, k, titel) {
-  const info = btn.parentNode.querySelector('.tp-info'); btn.disabled = true; btn.textContent = '⏳ schreibe …';
-  try {
-    const r = await (await fetch(API + '/api/tonies/liedtext', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({kind:k, titel:titel||''})})).json();
-    if (info) info.textContent = r.ok ? 'Word geöffnet (OneDrive\\Dokumente\\Bolla\\Tonies).' : '⚠️ ' + (r.error || 'Fehler');
-  } catch (e) { if (info) info.textContent = '⚠️ Fehler'; }
-  btn.disabled = false; btn.textContent = titel ? '📄 Liedtext' : '📄 Liedtext (Word)';
+function tonieInfo(btn, kind, html) {
+  // kind: run (gelb) | ok (gruen) | err (rot) – feste, gut sichtbare Statuszeile direkt unter den Knoepfen
+  const info = btn.parentNode.querySelector('.tp-info'); if (!info) return;
+  const c = {run:'#eab308', ok:'#22c55e', err:'#ef4444'}[kind];
+  info.style.cssText = `font-size:15px;margin-top:8px;padding:10px 12px;border-radius:8px;border:2px solid ${c};background:${c}22;line-height:1.45`;
+  info.innerHTML = html;
 }
-async function tonieLiedPlayback(btn, k, titel) {
-  const info = btn.parentNode.querySelector('.tp-info'); btn.disabled = true; btn.textContent = '⏳ schreibe …';
-  try {
-    const r = await (await fetch(API + '/api/tonies/playback', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({kind:k, titel:titel||''})})).json();
-    if (r.ok && r.datei) {
-      if (info) info.textContent = '✅ Playback fertig (' + r.strophen + ' Strophe' + (r.strophen > 1 ? 'n' : '') + ', Ordner Tonies geöffnet): ' + r.datei.split('/').pop();
-    } else if (r.ok) {
-      try { await navigator.clipboard.writeText(r.style); } catch (e) {}
-      if (info) info.innerHTML = '✅ Style in Zwischenablage → Suno: <b>Instrumental</b> einschalten, Style einfügen, Exclude: <b>' + (r.exclude||'vocals') + '</b>.<br><i>' + r.style.replace(/</g,'&lt;') + '</i>';
-    } else if (info) info.textContent = '⚠️ ' + (r.error || 'Fehler');
-  } catch (e) { if (info) info.textContent = '⚠️ Fehler'; }
-  btn.disabled = false; btn.textContent = '🎹 Playback';
+async function tonieDatei(btn, k, titel, url, was, laufText) {
+  const lbl = btn.textContent; btn.disabled = true; btn.textContent = '⏳ läuft …';
+  tonieInfo(btn, 'run', '⏳ <b>' + laufText + '</b> – bitte warten, das kann bis zu 1–2 Minuten dauern. Nichts anklicken, die Meldung hier ändert sich von selbst.');
+  let r;
+  try { r = await (await fetch(API + url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({kind:k, titel:titel||''})})).json(); }
+  catch (e) { r = {ok:false, error:'Server nicht erreichbar (läuft Mission Control?)'}; }
+  btn.disabled = false; btn.textContent = lbl;
+  if (r.ok) {
+    const nm = r.datei ? r.datei.split('/').pop() : '';
+    const extra = was === 'Playback' ? ` (${r.strophen} Strophe${r.strophen > 1 ? 'n' : ''})` : '';
+    tonieInfo(btn, 'ok', `✅ <b>${was} fertig${extra}.</b> Der Ordner/das Dokument wurde auf dem PC geöffnet.<br><span style="font-size:13px;opacity:.85">Datei: ${esc(nm)}<br>Ablage: OneDrive\\Dokumente\\Bolla\\Tonies</span>`);
+    tonieToast('✅ ' + was + ' fertig: ' + nm);
+  } else {
+    tonieInfo(btn, 'err', `❌ <b>${was} wurde NICHT erstellt.</b><br>Grund: ${esc(r.error || 'unbekannter Fehler')}<br><span style="font-size:13px;opacity:.85">Es liegt keine neue Datei im Ordner Tonies.</span>`);
+    tonieToast('❌ ' + was + ' nicht erstellt: ' + (r.error || 'Fehler'), true);
+  }
 }
+function tonieLiedtext(btn, k, titel) { return tonieDatei(btn, k, titel, '/api/tonies/liedtext', 'Liedtext (Word)', 'Liedtext wird aus dem Wikibooks-Liederbuch geholt und als Word gesetzt'); }
+function tonieLiedPlayback(btn, k, titel) { return tonieDatei(btn, k, titel, '/api/tonies/playback', 'Playback', 'Playback (MP3) wird aus den Noten gerendert'); }
 async function tonieLiedAendern(k) { await tonieSave({kind:k, teil:'lied', titel:''}); _tonieLiedOffen = k; loadTonies(); }
 let _tonieLiedOffen = null;
 let _tonies = null;
 function tonieToast(msg, bad) {
   let t = document.getElementById('tonie-toast');
-  if (!t) { t = document.createElement('div'); t.id = 'tonie-toast'; t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:9999;padding:12px 18px;border-radius:10px;font-size:15px;max-width:90vw;box-shadow:0 4px 18px rgba(0,0,0,.5);color:#fff'; document.body.appendChild(t); }
-  t.style.background = bad ? '#b91c1c' : '#15803d'; t.textContent = msg; t.style.display = 'block';
-  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 5000);
-}
-const TONIE_HILFE = {
-  song: 'Bolla schreibt Style + Lyrics für Suno. Du kopierst beides in Suno und lädst den fertigen Song herunter.',
-  lied: 'Du wählst ein echtes, bekanntes Kinderlied aus. Dazu gibt es Liedtext (Word) und ein Playback zum Mitsingen. Dieses Lied wird bei „neu erzeugen“ NIE überschrieben.',
-  geschichte: 'Bolla schreibt eine Vorlesegeschichte als Word-Datei (Opa blau, Oma magenta). Handkorrekturen in Word bleiben bei „Verbessern“ erhalten.'
-};
-async function loadTonies() {
-  const el = document.getElementById('tonies-content');
-  try { _tonies = await (await fetch(API + '/api/tonies')).json(); } catch(e) { el.innerHTML = '<div class="loading">Fehler beim Laden</div>'; return; }
-  const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-  const d = _tonies, fs = 'font-size:15px', HD = 'font-weight:600;font-size:17px';
-  const sm = 'font-size:13px;opacity:.7';
-  const box = 'background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px;margin:6px 0;white-space:pre-wrap;font-size:15px;line-height:1.5';
-  const boxl = 'background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px;margin:6px 0';
-  const warn = 'background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.6);border-radius:8px;padding:8px;margin:6px 0;font-size:14px';
-  const okb = 'background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.5);border-radius:8px;padding:8px;margin:6px 0;font-size:14px';
-  let h = `<div class="card" style="margin-bottom:14px"><div style="${HD};margin-bottom:6px">🎁 Tonie-Projekt Weihnachten 2026</div>
-    <div style="${fs};line-height:1.6">Pro Kind gibt es <b>3 Teile</b>: 🎵 Song · 📖 Geschichte · 🎶 Kinderlied. So geht's:<br>
-    <b>1.</b> Beim Kind die <b>Attribute</b> eintragen (z. B. „Tiere, Autos“) – wird beim Verlassen des Feldes automatisch gespeichert.<br>
-    <b>2.</b> Teil <b>erzeugen</b> (Song/Geschichte macht Bolla in ca. 1–3 Min, das Lied wählst du aus einer Liste).<br>
-    <b>3.</b> Anschauen → passt es nicht: <b>Verbessern</b> (mit deinem Wunsch) oder <b>Neu erzeugen</b>. Passt es: Häkchen setzen, wenn aufgenommen und im Tonie.<br>
-    <span style="${sm}">Gespeichert wird alles sofort von selbst in <code>workspace/data/tonies.json</code>. Word-Dateien liegen in <code>OneDrive\\Dokumente\\Bolla\\Tonies</code>. Es gibt keinen „Speichern“-Knopf, weil nichts ungespeichert bleibt.</span></div>
-    <details style="margin-top:8px"><summary style="cursor:pointer;${fs}">📋 Fahrplan bis Weihnachten (${d.fahrplan.filter(f=>f.done).length}/${d.fahrplan.length} erledigt)</summary><div style="margin-top:6px">`;
-  d.fahrplan.forEach(f => { h += `<label style="display:block;${fs};padding:3px 0;cursor:pointer"><input type="checkbox" ${f.done?'checked':''} onchange="tonieSave({fahrplan_toggle:'${f.id}'})"> <span style="${f.done?'text-decoration:line-through;opacity:.6':''}">${esc(f.text)}</span></label>`; });
-  h += `</div></details>
-    <div style="margin-top:10px"><button title="Startet für alle 3 Kinder Song + Geschichte neu (6 Aufträge, ca. 5–10 Min). Die bisherigen Fassungen bleiben sichtbar, bis die neuen fertig sind. Gewählte Kinderlieder bleiben unangetastet." onclick="tonieAllesAlle()">🔁 Alle Kinder: Song + Geschichte neu erzeugen</button></div></div>`;
-  h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px">';
-  Object.entries(d.kinder).forEach(([k, kid]) => {
-    h += `<div class="card"><div style="font-weight:600;font-size:19px">${esc(kid.name)} <span style="${sm}">${kid.box?'Box + Kreativ-Tonie':'nur Kreativ-Tonie'}</span></div>
-      <div style="${sm};margin-top:6px">Attribute (Interessen des Kindes, fließen in Song und Geschichte ein):</div>
-      <input id="ta-${k}" value="${esc(kid.attribute)}" placeholder="z. B. Tiere, Autos, Elefanten" style="width:100%;${fs}" onchange="tonieAttrSave('${k}')">
-      <div><button title="Speichert die Attribute und erzeugt Song + Geschichte für ${esc(kid.name)} komplett neu. Das gewählte Kinderlied bleibt. Bisherige Fassungen bleiben sichtbar, bis die neuen fertig sind." onclick="tonieAlles('${k}')">🔁 Song + Geschichte neu erzeugen</button></div>`;
-    TONIE_TEILE.forEach(([t, lbl]) => {
-      const x = kid[t], erg = x.ergebnis || {};
-      const has = t === 'lied' ? !!x.titel : Object.keys(erg).length > 0;
-      const aud = x.stage === 'audio' || x.stage === 'hochgeladen', up = x.stage === 'hochgeladen';
-      const badge = x.busy ? '<span style="font-size:13px;color:#eab308">⏳ wird erzeugt</span>' : up ? '<span style="font-size:13px;color:#22c55e">✅ im Tonie</span>' : aud ? '<span style="font-size:13px;color:#22c55e">🎧 Audio fertig</span>' : has ? '<span style="font-size:13px;color:#22c55e">📝 Text fertig</span>' : '<span style="font-size:13px;opacity:.6">⚪ noch leer</span>';
-      const farbe = {song:'#a855f7', lied:'#3b82f6', geschichte:'#f59e0b'}[t];
-      h += `<div style="border:2px solid ${farbe};border-radius:12px;margin-top:16px;overflow:hidden"><div style="background:${farbe}33;border-bottom:2px solid ${farbe};padding:10px 12px"><div style="font-weight:700;font-size:18px">${lbl} ${badge}</div><div style="${sm};margin-top:2px;opacity:.85">${TONIE_HILFE[t]}</div></div><div style="padding:6px 12px 12px">`;
-      if (x.busy) h += `<div style="${warn}">⏳ Bolla arbeitet daran (ca. 1–3 Min).${has && t !== 'lied' ? ' Die bisherige Fassung bleibt unten sichtbar, bis die neue fertig ist.' : ''} Die Seite aktualisiert sich selbst.</div>`;
-      else if (x.fehler) h += `<div style="${boxl};color:#ef4444;${fs}">⚠️ ${esc(x.fehler)}<br><span style="${sm}">Nochmal auf „Erzeugen“ klicken.</span></div>`;
-
-      if (t === 'lied') {
-        const gew = x.titel, vs = erg.vorschlaege || [];
-        if (gew) {
-          h += `<div style="${okb}">✅ Gewähltes Lied: <b>${esc(gew)}</b></div>
-            <div><button data-t="${esc(gew)}" title="30 Sekunden Ausschnitt direkt hier" onclick="tonieHoeren(this)">▶ Reinhören</button><button title="Liedtext als Word → Ordner: OneDrive\\Dokumente\\Bolla\\Tonies" data-t="${esc(gew)}" onclick="tonieLiedtext(this,'${k}',this.dataset.t)">📄 Liedtext (Word)</button><button title="Playback als MP3 (selbst gerenderte Spieluhr, Noten einmalig von Bolla aufgeschrieben – bitte Probe hören) → Ordner: OneDrive\\Dokumente\\Bolla\\Tonies" data-t="${esc(gew)}" onclick="tonieLiedPlayback(this,'${k}',this.dataset.t)">🎹 Playback</button><button title="Wählt das Lied ab und zeigt die Liste wieder" onclick="tonieLiedAendern('${k}')">🔄 Anderes Lied wählen</button><div class="tp-info" style="${sm};margin-top:4px"></div></div>`;
-        } else {
-          const row = (l, neu) => `<div style="padding:7px 8px;border-bottom:1px solid var(--border)"><div style="${fs}">${neu?'🆕 ':''}<b>${esc(l.t)}</b></div><div style="${sm}">${esc(l.h)}</div>
-            <button data-t="${esc(l.t)}" onclick="tonieHoeren(this)">▶ Reinhören</button><button data-t="${esc(l.t)}" onclick="tonieLiedWaehlen('${k}',this.dataset.t)">✅ Dieses nehmen</button><button data-t="${esc(l.t)}" title="Kompletter Liedtext als Word → Ordner: OneDrive\\Dokumente\\Bolla\\Tonies" onclick="tonieLiedtext(this,'${k}',this.dataset.t)">📄 Liedtext</button><button data-t="${esc(l.t)}" title="Playback als MP3 für dieses Lied erzeugen (ohne es zu wählen) → Ordner: OneDrive\\Dokumente\\Bolla\\Tonies" onclick="tonieLiedPlayback(this,'${k}',this.dataset.t)">🎹 Playback</button><div class="tp-info" style="${sm}"></div></div>`;
-          const neu = vs.map(v => ({t: v.titel, h: v.hinweis, n: v.neu}));
-          const rest = tonieLiedeFuer(k, kid).filter(l => !neu.some(n => n.t.toLowerCase() === l.t.toLowerCase()));
-          const offen = (_tonieKat[k] !== undefined) ? _tonieKat[k] : neu.length === 0;
-          h += `<div style="${sm};margin-top:8px">Suchbegriffe (z. B. ruhig, Tiere, mitmachen) – danach „Lieder vorschlagen“:</div>
-            <input id="tw-${k}-lied" value="${esc(x.wunsch)}" placeholder="ruhig, Tiere, mitmachen" style="width:100%;${fs}">
-            <button ${x.busy?'disabled':''} onclick="tonieGenerate('${k}','lied')">💡 Lieder vorschlagen</button><button title="Löscht die Vorschläge" onclick="tonieVerwerfen('${k}','lied')">🗑 Vorschläge löschen</button>
-            ${neu.length ? `<div style="${sm};margin:6px 0 4px">🆕 Neue Vorschläge${erg.begriffe ? ' zu „' + esc(erg.begriffe) + '“' : ''} (bleiben, bis du löschst):</div><div style="max-height:300px;overflow:auto;border:1px solid var(--border);border-radius:8px">${neu.map(l => row(l, true)).join('')}</div>` : ''}
-            <details ${offen?'open':''} ontoggle="_tonieKat['${k}']=this.open" style="margin-top:8px"><summary style="cursor:pointer;${fs}">📚 Alle bekannten Lieder (${rest.length}) – passende zuerst</summary>
-            <div style="max-height:360px;overflow:auto;border:1px solid var(--border);border-radius:8px;margin-top:6px">${rest.map(l => row(l, false)).join('')}</div></details>`;
-        }
-      } else {
-        if (has) {
-          const dim = x.busy ? 'opacity:.45' : '';
-          h += `<div style="${dim}">`;
-          if (t === 'song') {
-            const cp = what => `<button onclick="tonieCopy(this,'${k}','${t}','${what}')">📋 ${what==='titel'?'Titel kopieren':what==='style'?'Style kopieren':what==='lyrics'?'Lyrics kopieren':'Exclude kopieren'}</button>`;
-            h += `<div style="${sm}">Titel (Suno-Feld „Song Title“)</div><div id="tr-${k}-${t}-titel" style="${box}"><b>${esc(erg.titel)}</b></div>
-              <div style="${sm};margin-top:6px">Style (Suno-Feld „Style of Music“)</div><div id="tr-${k}-${t}-style" style="${box}">${esc(erg.style)}</div>
-              ${erg.exclude ? `<div style="${sm};margin-top:6px">Exclude (Suno-Feld „Exclude Styles“)</div><div id="tr-${k}-${t}-exclude" style="${box}">${esc(erg.exclude)}</div>` : ''}
-              <div style="${sm};margin-top:6px">Lyrics (Suno-Feld „Lyrics“)</div><div id="tr-${k}-${t}-lyrics" style="${box}">${esc(erg.lyrics)}</div><div>${cp('titel')}${cp('style')}${erg.exclude ? cp('exclude') : ''}${cp('lyrics')}</div>
-              <div style="${okb}">In Suno: Modell <b>v6</b>, <b>Variety = Off</b>, Style Influence eher hoch.</div>`;
-          } else {
-            h += `<div style="${box}">📄 <b>${esc(erg.titel)}</b> – ${erg.woerter||'?'} Wörter<br><span style="${sm}">Word: OneDrive\\Dokumente\\Bolla\\Tonies\\Geschichte_${esc(kid.name)}.docx (Opa blau, Oma magenta)</span></div>
-              <button title="Öffnet den Ordner mit der Word-Datei" onclick="tonieOpen('${k}')">📂 Word öffnen</button>`;
-          }
-          h += '</div>';
-        }
-        h += `<div style="margin-top:8px"><button ${x.busy?'disabled':''} title="${has?'Schreibt eine komplett neue Fassung (ohne Rücksicht auf die alte)':'Bolla schreibt die erste Fassung'}" onclick="tonieGenerate('${k}','${t}',true)">${has?'🔁 Neu erzeugen':'📌 Erzeugen'}</button>${has ? `<button title="Löscht die Fassung${t==='geschichte'?' samt Word-Datei':''}" onclick="tonieVerwerfen('${k}','${t}')">🗑 Löschen</button>` : ''}</div>`;
-        if (has) h += `<textarea id="tw-${k}-${t}" rows="2" style="width:100%;margin-top:6px;${fs}" placeholder="Was soll besser werden? z. B. „kürzer“, „mehr Humor“, „Elefant einbauen“"></textarea>
-          <button ${x.busy?'disabled':''} title="Überarbeitet die jetzige Fassung nach deinem Wunsch (ersetzt sie)" onclick="tonieGenerate('${k}','${t}',false)">✏️ Mit diesem Wunsch verbessern</button>`;
-      }
-      if (has && !x.busy) h += `<div style="margin-top:8px"><label style="${fs};cursor:pointer"><input type="checkbox" ${aud?'checked':''} onchange="tonieStage('${k}','${t}','audio',this.checked)"> 🎧 Audio fertig (aufgenommen / Song heruntergeladen)</label><br><label style="${fs};cursor:pointer"><input type="checkbox" ${up?'checked':''} onchange="tonieStage('${k}','${t}','hochgeladen',this.checked)"> ✅ Im Tonie hochgeladen</label></div>`;
-      h += '</div></div>';
-    });
-    h += '</div>';
-  });
-  const sy = window.scrollY;
-  el.innerHTML = h + '</div>';
-  window.scrollTo(0, sy);
-}
-async function tonieAttrSave(k) {
-  const r = await tonieApi('/api/tonies/save', {kind:k, attribute:document.getElementById('ta-' + k).value});
-  tonieToast(r.ok ? '✓ Attribute gespeichert' : '⚠️ Speichern fehlgeschlagen', !r.ok);
+  if (!t) { t = document.createElement('div'); t.id = 'tonie-toast'; t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:9999;padding:14px 20px;border-radius:10px;font-size:16px;font-weight:600;max-width:90vw;box-shadow:0 4px 18px rgba(0,0,0,.5);color:#fff;cursor:pointer'; t.onclick = () => t.style.display = 'none'; document.body.appendChild(t); }
+  t.style.background = bad ? '#b91c1c' : '#15803d'; t.textContent = msg + (bad ? '  (zum Schließen anklicken)' : ''); t.style.display = 'block';
+  clearTimeout(t._h); if (!bad) t._h = setTimeout(() => t.style.display = 'none', 8000);
 }
 async function tonieApi(path, body) {
   try { return await (await fetch(API + path, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})).json(); }
@@ -8931,7 +8843,7 @@ async function tonieUebernehmen(k, t) {
 }
 async function tonieOpen(k) {
   const r = await (await fetch(API + '/api/tonies/open', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({kind:k})})).json();
-  if (!r.ok) alert(r.error || 'Fehler');
+  tonieToast(r.ok ? '📂 Word-Ordner geöffnet' : '❌ ' + (r.error || 'Fehler'), !r.ok);
 }
 function tonieCopy(btn, k, t, what) {
   const txt = document.getElementById(`tr-${k}-${t}-${what}`).innerText;

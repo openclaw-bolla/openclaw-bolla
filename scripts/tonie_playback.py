@@ -69,7 +69,7 @@ LUFT_BEATS = 2  # kurze Atempause zwischen den Strophen
 
 def render(song, bpm=None, runden=3):
     s = SONGS[song]
-    beat = 60.0 / max(bpm or s["bpm"], MIN_BPM); takt = s["takt"]  # Mitsing-Tempo, nie langsamer als MIN_BPM
+    beat = 60.0 / max(bpm or s["bpm"], s.get("min_bpm", MIN_BPM)); takt = s["takt"]  # Mitsing-Tempo, nie langsamer als MIN_BPM
     dauer_lied = sum(b for _, b in s["melodie"]) * beat + LUFT_BEATS * beat
     vorspann = takt * beat
     total = vorspann + dauer_lied * runden + 3.0

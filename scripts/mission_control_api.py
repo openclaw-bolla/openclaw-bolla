@@ -3373,6 +3373,7 @@ def _tonies_lied_quelle(titel):
     def get(u):
         return urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "Bolla/1.0"}), timeout=20).read().decode("utf-8", "replace")
     try:
+        titel = re.sub(r"[^\w\s]", " ", titel); titel = re.sub(r"\s+", " ", titel).strip()  # Satzzeichen raus (Komma haelt die Suche/den Titelabgleich auf)
         q = urllib.parse.quote(titel)
         hits = json.loads(get(f"https://de.wikibooks.org/w/api.php?action=query&list=search&srsearch=intitle:{q}+Liederbuch&srlimit=5&format=json"))["query"]["search"]
         for h in hits:
@@ -3380,8 +3381,12 @@ def _tonies_lied_quelle(titel):
             if not t.lower().startswith("liederbuch/") or titel.lower().split()[0] not in t.lower(): continue
             raw = get("https://de.wikibooks.org/w/index.php?action=raw&title=" + urllib.parse.quote(t.replace(" ", "_")))
             m = re.search(r"<poem>(.*?)</poem>", raw, re.S)
-            if not m: continue
-            txt = re.sub(r"\{\{crd\|[^}]*\}\}", "", m.group(1))
+            body = m.group(1) if m else None
+            if body is None:  # Seiten ohne <poem>: Strophen stehen nach der letzten "== Ueberschrift ==" bis {{Fussnoten}}
+                m2 = re.search(r"(?ms)^==[^=\n]+==\s*\n(;.*?)(?=\{\{Fußnoten|<noinclude>|\Z)", raw)
+                if m2: body = m2.group(1)
+            if not body: continue
+            txt = re.sub(r"\{\{crd\|[^}]*\}\}", "", body)
             txt = re.sub(r"(?m)^;.*\n?", "", txt)  # Strophen-Ueberschriften
             txt = re.sub(r"(?<=\w)-(?=[a-zäöüß])", "", txt)  # Silbentrennung (Maien-zeit)
             return txt.strip(), "https://de.wikibooks.org/wiki/" + urllib.parse.quote(t.replace(" ", "_"))
