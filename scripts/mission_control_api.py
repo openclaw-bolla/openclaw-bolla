@@ -3074,19 +3074,12 @@ TONIES_FILE = os.path.join(WORKSPACE, "data/tonies.json")
 TONIES_STAGES = ["offen", "text", "audio", "hochgeladen"]
 
 def _tonies_default():
+    """Neutrale Vorlage (seit 01.11.2026): EIN Kind 'neu' (Name/Attribute/Alter oben eintragen), drei Boxen Song/Geschichte/Kinderlied.
+    Das Weihnachtsprojekt 2026 (Marie/Anton/Mia) ist archiviert: data/archiv/tonies_weihnachten2026_marie_anton_mia.json"""
     def kachel(): return {"stage": "offen", "wunsch": "", "titel": ""}
-    kinder = {}
-    for k, name, attr, box in (("marie", "Marie", "Tiere", True), ("anton", "Anton", "Autos, Elefanten", True), ("mia", "Mia", "", False)):
-        kinder[k] = {"name": name, "attribute": attr, "box": box,
-                     "song": kachel(), "lied": kachel(), "geschichte": kachel()}
-    return {"kinder": kinder, "allgemein": {"wunsch": ""}, "fahrplan": [
-        {"id": "f1", "text": "Kreativ-Tonies + 2 Boxen (Marie, Anton) bestellen, Lieferung zu uns (Mia: nur Kreativ-Tonie)", "done": False},
-        {"id": "f2", "text": "Jedes Kind ein anderes Kinderlied festlegen", "done": False},
-        {"id": "f3", "text": "Suno-Downloads für 3 Bolla-Songs einplanen (vor Rückstellung auf Pro)", "done": False},
-        {"id": "f4", "text": "Geschichten schreiben (Opa/Oma im Wechsel) + Word mit Farbmarkierung", "done": False},
-        {"id": "f5", "text": "Aufnahmen: Chris + Reni singen/lesen", "done": False},
-        {"id": "f6", "text": "Tonies einmal auf WLAN-Box stellen, dann Upload (meine.tonies.de)", "done": False},
-        {"id": "f7", "text": "Verpacken, mitnehmen; in Kaufering nur WLAN an Box eintragen", "done": False}]}
+    return {"kinder": {"neu": {"name": "", "attribute": "", "alter": "", "box": False,
+                               "song": kachel(), "lied": kachel(), "geschichte": kachel()}},
+            "allgemein": {"wunsch": ""}, "fahrplan": []}
 
 _TONIES_BUSY_GERESETET = False
 
@@ -3122,6 +3115,8 @@ def tonies_save(body):
     if kind in data["kinder"]:
         k = data["kinder"][kind]
         if "attribute" in body: k["attribute"] = str(body["attribute"])[:500]
+        if "name" in body: k["name"] = str(body["name"]).strip()[:60]
+        if "alter" in body: k["alter"] = str(body["alter"]).strip()[:20]
         if teil in ("song", "lied", "geschichte"):
             for fld in ("wunsch", "titel"):
                 if fld in body: k[teil][fld] = str(body[fld])[:3000]
@@ -3173,9 +3168,20 @@ _TONIES_ALTER = {
     "anton": ("Anton ist ein Zwilling und wird zu Weihnachten knapp 2 Jahre alt (Kleinkind): sehr einfache Woerter, kurze Saetze, viel Wiederholung, Mitmachlaute.", "ca. 350-450 Woerter, ca. 4 Minuten laut vorgelesen"),
     "mia": ("Mia wird zu Weihnachten 5 Jahre alt (Vorschulkind): kleine Handlung mit Spannungsbogen, etwas reicherer Wortschatz, Raetsel/Fragen zum Mitraten, Humor, gern etwas Vorlesefantasie.", "ca. 800-1000 Woerter, ca. 7-8 Minuten laut vorgelesen"),
 }
+def _tonies_alter(kind):
+    """(Stilhinweis, Laenge) - feste Eintraege fuer das Projekt 2026, sonst aus dem Feld 'Alter' des Kindes."""
+    if kind in _TONIES_ALTER: return _TONIES_ALTER[kind]
+    try: a = int(re.search(r"\d+", str(tonies_get()["kinder"][kind].get("alter", ""))).group())
+    except Exception: a = None
+    if a is not None and a <= 3:
+        return ("Das Kind ist ein Kleinkind: sehr einfache Woerter, kurze Saetze, viel Wiederholung, Mitmachlaute.", "ca. 350-450 Woerter, ca. 4 Minuten laut vorgelesen")
+    if a is not None and a >= 8:
+        return ("Das Kind ist ein Grundschulkind: lebendige Handlung mit Spannung, Humor, Wortwitz, ruhig auch etwas laengere Saetze.", "ca. 1100-1400 Woerter, ca. 10 Minuten laut vorgelesen")
+    return ("Das Kind ist ein Vorschulkind: kleine Handlung mit Spannungsbogen, etwas reicherer Wortschatz, Raetsel/Fragen zum Mitraten, Humor, gern etwas Vorlesefantasie.", "ca. 800-1000 Woerter, ca. 7-8 Minuten laut vorgelesen")
+
 def _tonies_regeln(kind):
-    return ("Hintergrund: Weihnachtsgeschenk fuer ein Enkelkind. Absender sind Opa Chris und Oma Reni. "
-            + _TONIES_ALTER[kind][0] + " Das Alter selbst NICHT im Text nennen, keine Jahreszahlen, zeitlos formulieren. Warm, leichter Humor.")
+    return ("Hintergrund: Geschenk fuer ein Kind (Absender: Opa Chris und Oma Reni). "
+            + _tonies_alter(kind)[0] + " Das Alter selbst NICHT im Text nennen, keine Jahreszahlen, zeitlos formulieren. Warm, leichter Humor.")
 
 def _tonies_claude(prompt, timeout=420):
     r = subprocess.run(["claude", "-p", prompt, "--model", "sonnet"], capture_output=True, text=True, timeout=timeout)
@@ -3290,7 +3296,7 @@ def _tonies_job(kind, teil, wunsch):
                 try:
                     vorher = "\nBisherige Fassung (inkl. evtl. Handkorrekturen von Chris in Word) – nur verbessern:\n" + "\n".join(f"{w}: {t}" for w, t in _tonies_read_docx(pfad))
                 except Exception: pass
-            pr = (f"{_tonies_regeln(kind)}\nSchreibe eine Vorlesegeschichte fuer {k['name']} ({_TONIES_ALTER[kind][1]}), Attribute: {attr}. "
+            pr = (f"{_tonies_regeln(kind)}\nSchreibe eine Vorlesegeschichte fuer {k['name']} ({_tonies_alter(kind)[1]}), Attribute: {attr}. "
                   f"Opa und Oma lesen im Wechsel (jeweils 1-4 Saetze pro Wechsel), mit Tierlauten/Motorgeraeuschen zum Mitmachen, sanftes Ende zum Einschlafen.{vorher}{besser}\n"
                   'Antworte NUR als JSON: {"titel":"...","zeilen":[["Opa","Text"],["Oma","Text"]]}')
             j = _tonies_json(_tonies_claude(pr))
@@ -3323,6 +3329,8 @@ def tonies_generate(body):
         data = tonies_get()
         if kind not in data["kinder"] or teil not in ("song", "lied", "geschichte"):
             return {"ok": False, "error": "unbekannt"}
+        if not str(data["kinder"][kind].get("name", "")).strip():
+            return {"ok": False, "error": "Bitte oben zuerst einen Namen eintragen"}
         t = data["kinder"][kind][teil]
         if t.get("busy"):
             return {"ok": False, "error": "läuft schon"}
@@ -3369,9 +3377,14 @@ def tonies_open(body):
 
 def _tonies_lied_quelle(titel):
     """Echte Textquelle (de.wikibooks Liederbuch) holen. Rueckgabe (text, url) oder (None, None)."""
-    import urllib.request, urllib.parse
+    import urllib.request, urllib.parse, urllib.error, time
     def get(u):
-        return urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "Bolla/1.0"}), timeout=20).read().decode("utf-8", "replace")
+        for versuch in range(5):  # Wikimedia antwortet bei mehreren Abrufen schnell mit 429 -> warten und neu versuchen
+            try:
+                return urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "Bolla/1.0"}), timeout=20).read().decode("utf-8", "replace")
+            except urllib.error.HTTPError as e:
+                if e.code != 429 or versuch == 4: raise
+                time.sleep(10 * (versuch + 1))
     try:
         titel = re.sub(r"[^\w\s]", " ", titel); titel = re.sub(r"\s+", " ", titel).strip()  # Satzzeichen raus (Komma haelt die Suche/den Titelabgleich auf)
         q = urllib.parse.quote(titel)
@@ -3384,11 +3397,11 @@ def _tonies_lied_quelle(titel):
             body = m.group(1) if m else None
             if body is None:  # Seiten ohne <poem>: Strophen stehen nach der letzten "== Ueberschrift ==" bis {{Fussnoten}}
                 m2 = re.search(r"(?ms)^==[^=\n]+==\s*\n(;.*?)(?=\{\{Fußnoten|<noinclude>|\Z)", raw)
-                if m2: body = m2.group(1)
+                if m2: body = re.split(r"(?m)^(?:#|;Begleit|<!--|<br)", m2.group(1))[0]  # Aufzaehlung weiterer Strophen/Begleitvorschlag gehoert nicht zum Text
             if not body: continue
             txt = re.sub(r"\{\{crd\|[^}]*\}\}", "", body)
             txt = re.sub(r"(?m)^;.*\n?", "", txt)  # Strophen-Ueberschriften
-            txt = re.sub(r"(?<=\w)-(?=[a-zäöüß])", "", txt)  # Silbentrennung (Maien-zeit)
+            txt = re.sub(r"(?<=\w)-[ \t]*\n?[ \t]*\n?[ \t]*(?=[a-zäöüß])", "", txt)  # Silbentrennung (Maien-zeit, Mo- tor-)
             return txt.strip(), "https://de.wikibooks.org/wiki/" + urllib.parse.quote(t.replace(" ", "_"))
     except Exception:
         pass
@@ -3407,6 +3420,7 @@ def tonies_liedtext(body):
     pr = (f"Unten steht die QUELLE (echter Liedtext, Wikibooks-Liederbuch, Akkordmarken sind entfernt) des Kinderlieds \"{titel}\". "
           "Teile sie in Strophen (jede Strophe ein Eintrag, Zeilen mit \\n, Zeilenwiederholungen so wie in der Quelle belassen). "
           "Uebernimm den Wortlaut EXAKT aus der Quelle: nichts ergaenzen, nichts glaetten, keine Anfuehrungszeichen hinzufuegen. "
+          "Gedehnte Singsilben (z. B. 'tooooor') und Silbentrennstriche in normaler Schreibweise schreiben (Motorrad), sonst nichts aendern. "
           "Antworte ausschliesslich als JSON: {\"ok\": true, \"strophen\": [\"Zeile1\\nZeile2\", ...]}\n\nQUELLE:\n" + quelle_txt)
     try:
         j = _tonies_json(_tonies_claude(pr, 180))
@@ -3414,7 +3428,7 @@ def tonies_liedtext(body):
         return {"ok": False, "error": str(e)[:200]}
     if not j.get("ok") or not j.get("strophen"):
         return {"ok": False, "error": "Text nicht uebernehmbar: " + str(j.get("grund", ""))[:150]}
-    _norm = lambda t: re.sub(r"\W+", "", t.lower())  # Abgleich: Ergebnis muss woertlich der Quelle entsprechen
+    _norm = lambda t: re.sub(r"(.)\1+", r"\1", re.sub(r"\W+", "", t.lower()))  # Dehnungen (tooor) und Doppelbuchstaben gleich behandeln; Abgleich: Ergebnis muss woertlich der Quelle entsprechen
     if _norm("".join(j["strophen"])) != _norm(quelle_txt):
         return {"ok": False, "error": "Abgleich mit Quelle fehlgeschlagen (Text weicht ab) - Word NICHT erstellt."}
     from docx import Document
@@ -3449,6 +3463,9 @@ def tonies_playback(body):
     titel = str(body.get("titel") or data["kinder"][kind]["lied"].get("titel") or "").strip()[:120]
     if not titel: return {"ok": False, "error": "Erst ein Lied waehlen"}
     import tonie_playback as _tp
+    try:  # von Hand ergaenzte Noten ohne Server-Neustart uebernehmen
+        with open(_tp.NOTEN_FILE, encoding="utf-8") as _f: _tp.SONGS.update({k.lower(): v for k, v in json.load(_f).items()})
+    except Exception: pass
     if titel.lower() not in _tp.SONGS:
         # Noten einmalig von Claude aufschreiben lassen, pruefen, cachen (Chris hoert selbst Probe)
         pr = (f"Schreibe die Melodie des traditionellen deutschen Kinderlieds \"{titel}\" als Noten. NUR wenn du Melodie und Rhythmus sicher kennst und das Lied gemeinfrei ist. "
@@ -6501,6 +6518,86 @@ def adb_pair(host, code):
         return {"ok": False, "error": "Timeout — Duo nicht erreichbar?"}
     except FileNotFoundError:
         return {"ok": False, "error": "adb nicht installiert"}
+
+def _adb_scan_ports(ip, lo=30000, hi=50000):
+    """Offene TCP-Ports im Wireless-Debugging-Bereich (mDNS geht aus WSL2 nicht)."""
+    import socket, concurrent.futures as cf
+    def t(p):
+        s = socket.socket(); s.settimeout(0.6)
+        try:
+            s.connect((ip, p)); return p
+        except Exception:
+            return None
+        finally:
+            s.close()
+    with cf.ThreadPoolExecutor(400) as ex:
+        return [p for p in ex.map(t, range(lo, hi)) if p]
+
+def _adb_valid_ip(ip):
+    import re
+    return bool(re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}", (ip or "").strip()))
+
+def adb_pair_auto(ip, code):
+    """Koppeln mit nur IP + Code: Kopplungs-Port per Scan finden, dann Connect-Port suchen,
+    festen Port 5555 setzen und verbinden."""
+    import subprocess
+    ip = (ip or "").strip(); code = (code or "").strip()
+    if not _adb_valid_ip(ip) or not code.isdigit() or len(code) != 6:
+        return {"ok": False, "error": "IP und 6-stelliger Code erforderlich"}
+    ports = _adb_scan_ports(ip)
+    if not ports:
+        return {"ok": False, "error": "Keine offenen Ports gefunden. Am Handy 'Debugging über WLAN' einschalten und den Kopplungs-Dialog offen lassen (Display an, gleiches WLAN)."}
+    paired = None
+    for p in ports:
+        try:
+            r = subprocess.run(["adb", "pair", f"{ip}:{p}"], input=(code + "\n").encode(),
+                               capture_output=True, timeout=15)
+            msg = (r.stdout.decode("utf-8", "replace") + r.stderr.decode("utf-8", "replace")).lower()
+            if "successfully paired" in msg:
+                paired = p; break
+        except Exception:
+            continue
+    if not paired:
+        return {"ok": False, "error": "Code abgelehnt (Code und Dialog müssen zusammenpassen — Dialog neu öffnen, neuen Code eingeben)."}
+    res = adb_connect_auto(ip, skip_ports=[paired])
+    if res.get("ok"):
+        res["message"] = "Gekoppelt und verbunden: " + res.get("message", "")
+    else:
+        res["message"] = "Gekoppelt, aber Verbinden fehlgeschlagen: " + (res.get("error") or "")
+        res["ok"] = False
+    return res
+
+def adb_connect_auto(ip, skip_ports=()):
+    """Verbinden nur per IP: erst :5555, sonst Connect-Port suchen und 5555 wieder setzen."""
+    ip = (ip or "").strip()
+    if not _adb_valid_ip(ip):
+        return {"ok": False, "error": "Ungültige IP"}
+    def online(target):
+        rc, out, _ = _adb_run(["devices"], timeout=5)
+        for line in out.decode("utf-8", "replace").splitlines()[1:]:
+            parts = line.split()
+            if len(parts) >= 2 and parts[0] == target and parts[1] == "device":
+                return True
+        return False
+    _adb_run(["connect", f"{ip}:5555"], timeout=8)
+    if online(f"{ip}:5555"):
+        return {"ok": True, "message": f"{ip}:5555 verbunden"}
+    for p in _adb_scan_ports(ip):
+        if p in skip_ports:
+            continue
+        tgt = f"{ip}:{p}"
+        _adb_run(["connect", tgt], timeout=8)
+        import time; time.sleep(1.5)
+        if online(tgt):
+            _adb_run(["tcpip", "5555"], timeout=10, device=tgt)
+            time.sleep(3)
+            _adb_run(["connect", f"{ip}:5555"], timeout=8)
+            _adb_run(["disconnect", tgt], timeout=5)
+            if online(f"{ip}:5555"):
+                return {"ok": True, "message": f"{ip}:5555 verbunden (Port neu gesetzt)"}
+            return {"ok": True, "message": f"{tgt} verbunden"}
+        _adb_run(["disconnect", tgt], timeout=5)
+    return {"ok": False, "error": "Nicht erreichbar. Zuerst 'Koppeln' (Code vom Handy), oder am Handy 'Debugging über WLAN' einschalten."}
 
 def adb_connect(host):
     host = (host or "").strip()
@@ -10222,6 +10319,10 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                 self._send_json(do_studio_action(body.get("action", "")))
             elif self.path == "/api/adb/pair":
                 self._send_json(adb_pair(body.get("host", ""), body.get("code", "")))
+            elif self.path == "/api/adb/pair_auto":
+                self._send_json(adb_pair_auto(body.get("ip", ""), body.get("code", "")))
+            elif self.path == "/api/adb/connect_auto":
+                self._send_json(adb_connect_auto(body.get("ip", "")))
             elif self.path == "/api/adb/connect":
                 self._send_json(adb_connect(body.get("host", "")))
             elif self.path == "/api/adb/disconnect":
