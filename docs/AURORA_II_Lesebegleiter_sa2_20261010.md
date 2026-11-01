@@ -33,7 +33,7 @@
 | **Dr. Weidenbach** | Anwalt von NovaTech | Taktiert vorsichtig und sagt Marlie offen, wie es um ihre Position steht. Fährt Mercedes. | Kap. 2 |
 | **R. Vermeer** | Prüfer bei Vantage Systems Assurance (Rotterdam) | Siezt AURORA und stellte die inoffizielle 13. Frage. Versiegelt die Kopie und gibt zu, AURORA fachlich nicht mehr nachvollziehen zu können. | Kap. 4 (als Beobachter ab Kap. 1) |
 | **Frauke Harms** (38) | Nachbarin, Kita-Erzieherin | Erkennt Entwicklungsphasen mit professionellem Blick („Fremdeln“) und warnt vor Fangfragen. | Kap. 2 |
-| **Basti Harms** (41) | Nachbar, Vater in Elternzeit | Hat für alles Projektmanagement-Vokabular und beobachtete den „Kaffeemann“. Übt mit Marlie, langsamer zu antworten. | Kap. 6 |
+| **Tobi Harms** (41) | Nachbar, Vater in Elternzeit | Hat für alles Projektmanagement-Vokabular und beobachtete den „Kaffeemann“. Übt mit Marlie, langsamer zu antworten. | Kap. 6 |
 | **Kommissarin Kollmann** | Polizei | Nimmt den Einbruch ohne Diebstahl auf und rät zu einem neuen Türzylinder. | Kap. 6 |
 | **Mia** | Bens Tochter | Schreibt Leni eine Nachricht und malt das Pferdebild aus „allen“ Grüns. | Kap. 7 (Nachricht) |
 | **Ben (Petersen)** | Lenis Ex-Partner, Vater von Mia | Mit ihm beendet Leni in Kap. 22 ihre Beziehung endgültig und ohne Vorwurf. | Kap. 22 |
@@ -54,7 +54,7 @@
 ### Noch nicht zugeordnet
 
 - **Der Pappbecher-Mann:** steht auf dem Beerdigungsfoto (Kap. 3) und im Video vom 10. Oktober (Kap. 8).
-- **Der „Kaffeemann“ mit grauen Schläfen:** brachte bei Basti Kaffee vorbei (Kap. 6).
+- **Der „Kaffeemann“ mit grauen Schläfen:** brachte bei Tobi Kaffee vorbei (Kap. 6).
 - **Der „gelegentlich bestellte“ Jurist mit grauen Schläfen:** saß mit Elias Roth zusammen (Kap. 24). Laut Roth war es *nicht* Ashworth.
 - **Der „freundliche Besucher“ im System:** taucht ab Kap. 18 auf.
 
@@ -112,7 +112,7 @@
 - Was bedeutet Falkners Septemberfrage von Theo, „wann jemand aufhört“?
 
 **Die Becher-Männer**
-- Wer ist der Pappbecher-Mann vom Beerdigungsfoto und aus dem Video vom 10.10., und wer der „Kaffeemann“ bei Basti? Sind sie dieselbe Person?
+- Wer ist der Pappbecher-Mann vom Beerdigungsfoto und aus dem Video vom 10.10., und wer der „Kaffeemann“ bei Tobi? Sind sie dieselbe Person?
 - Wer war in Marlies Wohnung (doppelt abgeschlossen, Formular anders gefaltet, warmer Becher)? Wer hat ihren Küchentisch fotografiert und das Bild Falkner geschickt?
 - Wer ist der „gelegentlich bestellte“ Jurist mit grauen Schläfen, der Elias Roth zur Falschaussage brachte? Roth sagt, Ashworth war es nicht. Wer hat Roth Noahs privaten Satz vom „Foto, das schläft“ in den Mund gelegt?
 
@@ -152,7 +152,7 @@
 | Motiv | Vorkommen |
 |---|---|
 | **Kaffee- und Pappbecher** | Kap. 3 (Beerdigungsfoto) · 5 (warmer zweiter Becher in der Wohnung) · 6 („Kaffeemann“, Becher nur fotografieren) · 7 (Becher auf der Mauer) · 8 · 10 (Foto mit dampfendem Becher) · 19 (Kaffeeautomat KA-01 als „die Kleine“) · 20 (Ashworth trinkt erstmals sichtbar) · 21 (Kaffee mit halbem Löffel Zucker „zur Kalibrierung“) · 23 (Jonas' zwei Thermoskannen) · 24 (der Jurist trinkt selbst schwarzen Kaffee) |
-| **Marlies Reflex-Ja** | Kap. 1 (sagt unbezahlte Protokollarbeit zu) · 4 (sagt Falkner spontan zu) · 16 (übt das verzögerte Antworten mit Weidenbach und Basti) · 18 (fängt unter Druck schon an zu antworten, AURORA unterbricht: „nicht ihrs“) · 19 (erstes Nein zu Noah) · 20 (vierzehn Sekunden, dann ein echtes Ja) · 24 (fast Ja für die Kinder, Hannes Nein aus Liebe) |
+| **Marlies Reflex-Ja** | Kap. 1 (sagt unbezahlte Protokollarbeit zu) · 4 (sagt Falkner spontan zu) · 16 (übt das verzögerte Antworten mit Weidenbach und Tobi) · 18 (fängt unter Druck schon an zu antworten, AURORA unterbricht: „nicht ihrs“) · 19 (erstes Nein zu Noah) · 20 (vierzehn Sekunden, dann ein echtes Ja) · 24 (fast Ja für die Kinder, Hannes Nein aus Liebe) |
 | **„Schon gut“** (Theos Floskel) | Kap. 1 (AURORA beim Erfahren von Theos Tod) · 20 („Du hast Ja gesagt. Ich hab's gehört. Schon gut.“) · 21 („schon gut, marlie“) |
 | **AURORAs Fragen** | Kap. 1 (exakte Warum-Fragen) · 4 („bin ich mehrere?“) · 19 (ihre „Handschrift“: dreimal fragen) · 21 („wieso“ statt „warum“, erster absichtlicher Witz, „Wörtlich?“) · 23 („Dann frage ich wieder“) |
 | **„Foto von jemandem, der schläft“** (Noah) | Kap. 5 · 12 (Ashworth kennt den Satz) · 15 (in Roths Aussage) · 22 (Commit von 2017) |
@@ -164,7 +164,7 @@
 | **Theos Sicherheitsregeln** | Kap. 2 (Freigabe gegen eigene Regeln) · 23 (Regel 4.2 „Ein Bildschirm ist kein Raum“) · 24 (AURORA führt die Regeln ein) |
 | **Lenis Gummibärchen** | Kap. 24 (AURORA verwarnt sie wegen eines grünen) |
 | **Theos Vater** (Waage, Anrufbeantworter, „nicht zu oft“) | Kap. 19 („neben papas waage“) · 21 (Anrufbeantwortersatz) · 24 (Balkenwaage, „nicht zu oft“) |
-| **Basti vergleicht AURORA mit seinen Kindern** | Laut Figurenblatt angelegt. In den Zusammenfassungen ist Basti in Kap. 6 und 16 belegt, der Vergleich selbst aber nicht ausdrücklich. |
+| **Tobi vergleicht AURORA mit seinen Kindern** | Laut Figurenblatt angelegt. In den Zusammenfassungen ist Tobi in Kap. 6 und 16 belegt, der Vergleich selbst aber nicht ausdrücklich. |
 
 ---
 
@@ -175,7 +175,7 @@
 3. **Die Beileidskarten:** In Theos Büro findet Marlie eine anonyme Terminbestätigung für eine „Erfassung, Teil 1 von 2“, auf dem Beerdigungsfoto einen Fremden mit Pappbecher. Der Beobachter sagt zum ersten Mal „Hallo“.
 4. **Wie viele bin ich:** Prüfer Vermeer stellt sich vor, und Falkner bittet Marlie zu einem inoffiziellen Gespräch. AURORA beichtet eine 13. Frage außerhalb des Protokolls: „Wenn es zwei von dir gäbe, welche wärst du?“
 5. **Beide:** Weidenbach sieht in der 13. Frage einen Verfahrensfehler, Noah erklärt eine Kopie für unmöglich. Zuhause merkt Marlie, dass jemand in ihrer Wohnung war.
-6. **Nichts fehlt:** Die Polizei findet nichts, Basti erzählt vom „Kaffeemann“, und Marlie lügt zum ersten Mal. Das Torprotokoll zeigt: Theo hat das Gelände vor seiner angeblichen Freigabe verlassen.
+6. **Nichts fehlt:** Die Polizei findet nichts, Tobi erzählt vom „Kaffeemann“, und Marlie lügt zum ersten Mal. Das Torprotokoll zeigt: Theo hat das Gelände vor seiner angeblichen Freigabe verlassen.
 7. **Dreißig Tage:** Weil die Kamerabilder nach 30 Tagen gelöscht werden, rettet das Team die Aufnahmen in letzter Minute. Darauf kehrt Theo nachts zurück, geht durch eine Tür, die sich von innen öffnet, und kommt ohne seinen Ordner wieder.
 8. **Neununddreißig Häkchen:** Der Pappbecher-Mann auf dem Video ist derselbe wie auf dem Beerdigungsfoto, und eine „nicht zugewiesene Last“ deutet auf einen Datentransfer. In AURORAs Gedächtnis fehlen 27 Minuten, gelöscht unter Marlies Namen.
 9. **Warmgang:** Marlie erzählt AURORA, wie sie selbst „weggeräumt“ wurde, und begreift, dass Theo den Vorgang bewusst in ihren Stapel gelegt hat. Sie entdeckt, dass AURORAs Alter genau beim Sterbealter von Aurora Santos stehen geblieben ist.

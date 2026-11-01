@@ -946,7 +946,6 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
         <div class="nav-section-items" id="nav-section-items-familie">
           <div class="nav-item" data-page="robin"><span class="icon">🌍</span><span>Robin</span></div>
           <div class="nav-item" data-page="geburtstage"><span class="icon">🎂</span><span>Geburtstage</span></div>
-          <div class="nav-item" data-page="tonies"><span class="icon">🎁</span><span>Tonies</span></div>
         </div>
       </div>
 
@@ -5034,7 +5033,7 @@ function showPage(page) {
   [...document.body.classList].forEach(c => { if (c.startsWith('theme-')) document.body.classList.remove(c); });
   if (PAGE_THEMES[page]) document.body.classList.add('theme-' + PAGE_THEMES[page]);
   if (item) document.getElementById('page-title').textContent = item.querySelector('span:nth-child(2)')?.textContent || '';
-  else { const _t = {'ki-buch':'Thriller-Projekt','ki-workshop':'Projekte-Workspace'}[page]; if (_t) document.getElementById('page-title').textContent = _t; }
+  else { const _t = {'ki-buch':'Thriller-Projekt','ki-workshop':'Projekte-Workspace','tonies':'Tonie-Werkstatt'}[page]; if (_t) document.getElementById('page-title').textContent = _t; }
   const cmdBar = document.getElementById('mail-cmd-bar');
   if (page !== 'email') { if (cmdBar) cmdBar.style.display='none'; closeMailResult(); _selectedMails=[]; }
   if (page === 'dashboard')  { loadCalendarData(); loadEmailData(); loadClaudeCode(); tbLoad(); loadRecipe(); loadPhoto(); loadBirthdays(); renderGreeting(); loadDashAgents(); }
@@ -5386,7 +5385,14 @@ const ARCHIV_ITEMS = [
 function renderArchiv() {
   const grid = document.getElementById('archiv-grid');
   if (!grid) return;
-  grid.innerHTML = ARCHIV_ITEMS.map(it => `
+  const tonieKachel = `
+    <div class="card" style="cursor:pointer;border-left:4px solid rgb(236,72,153)" onclick="showPage('tonies')">
+      <div class="card-head" style="margin-bottom:10px"><span class="card-title" style="font-size:20px;text-transform:none;letter-spacing:0">🎁 Tonie-Werkstatt</span></div>
+      <div style="font-size:15px;color:var(--accent);font-weight:600;margin-bottom:10px">🟢 Vorlage · wiederverwendbar</div>
+      <div style="font-size:16px;color:var(--text);line-height:1.6">Name + Attribute eintragen → Bolla-Song, Geschichte und Kinderlied für eine Toniebox. Die drei Boxen füllen sich selbst.</div>
+      <div style="margin-top:16px;font-size:16px;color:var(--accent);font-weight:700">Öffnen →</div>
+    </div>`;
+  grid.innerHTML = tonieKachel + ARCHIV_ITEMS.map(it => `
     <div class="card" style="cursor:pointer;border-left:4px solid rgb(${it.color})" onclick="openArchivItem('${it.id}')">
       <div class="card-head" style="margin-bottom:10px"><span class="card-title" style="font-size:20px;text-transform:none;letter-spacing:0">${it.icon} ${it.title}</span></div>
       <div style="font-size:15px;color:var(--accent);font-weight:600;margin-bottom:10px">${it.tag}</div>
@@ -5466,7 +5472,7 @@ function openSectionForPage(page) {
   const sectionMap = {
     dashboard: 'start', bolla: 'start', wetter: 'start',
     schule: 'arbeit', korrektur: 'arbeit', differenzierung: 'arbeit', entschaerfer: 'arbeit', gluecksrad: 'arbeit', schuljahr2627: 'arbeit', kalender: 'arbeit', email: 'arbeit', clipboard: 'arbeit', board: 'arbeit', projekte: 'arbeit', 'ki-workshop': 'arbeit', urlaub: 'arbeit',
-    robin: 'familie', geburtstage: 'familie', tonies: 'familie',
+    robin: 'familie', geburtstage: 'familie', tonies: 'archiv',
     'ki-news': 'kreativ', 'ki-buch': 'kreativ', aurora2: 'kreativ', bildgen: 'kreativ', suno: 'kreativ', fotoanalyse: 'kreativ', kiforum: 'kreativ',
     localserver: 'system', system: 'system', claudecode: 'system', surface: 'system', redesigns: 'system', brain: 'system',
     archiv: 'archiv'
@@ -5609,7 +5615,7 @@ async function initNavDrag() {
     'board': 'nav-section-items-familie',
     'robin': 'nav-section-items-familie',
     'geburtstage': 'nav-section-items-familie',
-    'tonies': 'nav-section-items-familie',
+    'tonies': 'nav-section-items-archiv',
     'bildgen': 'nav-section-items-kreativ',
     'suno': 'nav-section-items-kreativ',
     'fotoanalyse': 'nav-section-items-kreativ',
@@ -8780,6 +8786,11 @@ function tonieToast(msg, bad) {
   t.style.background = bad ? '#b91c1c' : '#15803d'; t.textContent = msg + (bad ? '  (zum Schließen anklicken)' : ''); t.style.display = 'block';
   clearTimeout(t._h); if (!bad) t._h = setTimeout(() => t.style.display = 'none', 8000);
 }
+const TONIE_HILFE = {
+  song: 'Bolla schreibt Style + Lyrics für Suno. Du kopierst beides in Suno und lädst den fertigen Song herunter.',
+  lied: 'Du wählst ein echtes, bekanntes Kinderlied aus. Dazu gibt es Liedtext (Word) und ein Playback zum Mitsingen. Dieses Lied wird bei „neu erzeugen“ NIE überschrieben.',
+  geschichte: 'Bolla schreibt eine Vorlesegeschichte als Word-Datei (Opa blau, Oma magenta). Handkorrekturen in Word bleiben bei „Verbessern“ erhalten.'
+};
 async function loadTonies() {
   const el = document.getElementById('tonies-content');
   try { _tonies = await (await fetch(API + '/api/tonies')).json(); } catch(e) { el.innerHTML = '<div class="loading">Fehler beim Laden</div>'; return; }
@@ -8790,13 +8801,13 @@ async function loadTonies() {
   const boxl = 'background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px;margin:6px 0';
   const warn = 'background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.6);border-radius:8px;padding:8px;margin:6px 0;font-size:14px';
   const okb = 'background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.5);border-radius:8px;padding:8px;margin:6px 0;font-size:14px';
-  let h = `<div class="card" style="margin-bottom:14px"><div style="${HD};margin-bottom:6px">🎁 Tonie-Werkstatt (neutrale Vorlage)</div>
+  let h = `<div class="card" style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:6px"><button onclick="showPage('archiv')" title="Zurück zum Archiv" style="background:rgba(255,255,255,0.07);border:1px solid var(--border);color:var(--bright);border-radius:9px;padding:6px 12px;font-size:14px;font-weight:600;cursor:pointer">← Archiv</button><div style="${HD}">🎁 Tonie-Werkstatt (neutrale Vorlage)</div></div>
     <div style="${fs};line-height:1.6">Pro Kind gibt es <b>3 Teile</b>: 🎵 Song · 📖 Geschichte · 🎶 Kinderlied.<br>
     <b>1.</b> Oben <b>Name</b> und <b>Attribute</b> eintragen (Alter ist optional und steuert Sprache/Länge der Geschichte).<br>
     <b>2.</b> <b>„Alles erzeugen“</b> klicken – Song, Geschichte und Liedvorschläge entstehen in den drei Boxen (ca. 1–3 Min).<br>
     <b>3.</b> Pro Box: anschauen, <b>Verbessern</b> oder <b>Neu erzeugen</b>; Häkchen setzen, wenn aufgenommen und im Tonie.<br>
     <span style="${sm}">Alles wird sofort in <code>workspace/data/tonies.json</code> gespeichert, Word/MP3 liegen in <code>OneDrive\\Dokumente\\Bolla\\Tonies</code>. 
-    Archiv: Projekt Weihnachten 2026 (Marie, Anton, Mia – alle drei bespielt, abgeschlossen 01.11.2026) in <code>workspace/data/archiv/</code> und <code>workspace/archiv/tonies_2026_weihnachten/</code>. Offen bis Dezember: Übergabe der Figuren an Daniel/Steffi.</span></div></div>`;
+    Frühere Projekte liegen unter <code>workspace/data/archiv/</code>.</span></div></div>`;
   h += `<div class="card" style="margin-bottom:14px"><details open><summary style="cursor:pointer;${HD}">🎛️ Bedienung Toniebox 2 &amp; tonies-App (Kurzüberblick)</summary>
     <div style="${fs};line-height:1.55;margin-top:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px">
     <div><b>▶️ Abspielen</b><br>Figur mittig auf die Box stellen. Figur abnehmen = Stopp (aufsetzen = weiter an der Stelle).<br>
@@ -8827,7 +8838,7 @@ async function loadTonies() {
       const aud = x.stage === 'audio' || x.stage === 'hochgeladen', up = x.stage === 'hochgeladen';
       const badge = x.busy ? '<span style="font-size:13px;color:#eab308">⏳ wird erzeugt</span>' : up ? '<span style="font-size:13px;color:#22c55e">✅ im Tonie</span>' : aud ? '<span style="font-size:13px;color:#22c55e">🎧 Audio fertig</span>' : has ? '<span style="font-size:13px;color:#22c55e">📝 Text fertig</span>' : '<span style="font-size:13px;opacity:.6">⚪ noch leer</span>';
       const farbe = {song:'#a855f7', lied:'#3b82f6', geschichte:'#f59e0b'}[t];
-      h += `<div style="border:2px solid ${farbe};border-radius:12px;overflow:hidden"><div style="background:${farbe}33;border-bottom:2px solid ${farbe};padding:10px 12px"><div style="font-weight:700;font-size:18px">${lbl} ${badge}</div><div style="${sm};margin-top:2px;opacity:.85">${TONIE_HILFE[t]}</div></div><div style="padding:6px 12px 12px">`;
+      h += `<div style="border:2px solid ${farbe};border-radius:12px;overflow:hidden;background:var(--card)"><div style="background:${farbe}33;border-bottom:2px solid ${farbe};padding:10px 12px"><div style="font-weight:700;font-size:18px">${lbl} ${badge}</div><div style="${sm};margin-top:2px;opacity:.85">${TONIE_HILFE[t]}</div></div><div style="padding:6px 12px 12px">`;
       if (x.busy) h += `<div style="${warn}">⏳ Bolla arbeitet daran (ca. 1–3 Min).${has && t !== 'lied' ? ' Die bisherige Fassung bleibt unten sichtbar, bis die neue fertig ist.' : ''} Die Seite aktualisiert sich selbst.</div>`;
       else if (x.fehler) h += `<div style="${boxl};color:#ef4444;${fs}">⚠️ ${esc(x.fehler)}<br><span style="${sm}">Nochmal auf „Erzeugen“ klicken.</span></div>`;
 
