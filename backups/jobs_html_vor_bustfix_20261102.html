@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bolla Jobs</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--tx:#1b1f24;--mut:#5b6572;--bd:#dde1e7;--ok:#1a7f37;--warn:#b42318;--run:#0b63c5;--act:#a15c00;--soon:#5b6572}
+@media (prefers-color-scheme:dark){:root{--bg:#14171b;--card:#1d2127;--tx:#eceff3;--mut:#9aa5b1;--bd:#2c323a;--ok:#4cc26d;--warn:#ff7b72;--run:#58a6ff;--act:#e3b341;--soon:#9aa5b1}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:18px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:760px;margin:0 auto;padding:16px}
+h1{font-size:26px;margin:4px 0 2px}
+.sub{color:var(--mut);font-size:16px;margin-bottom:12px}
+h2{font-size:20px;margin:22px 0 8px}
+.row{background:var(--card);border:1px solid var(--bd);border-left:6px solid var(--soon);border-radius:10px;padding:12px 14px;margin:8px 0}
+.row.ok{border-left-color:var(--ok)}.row.fehler{border-left-color:var(--warn)}.row.laeuft{border-left-color:var(--run)}.row.aktion{border-left-color:var(--act)}
+.t{font-weight:600}.d{color:var(--mut);font-size:16px;margin-top:2px}
+.w{font-size:16px;color:var(--mut);white-space:nowrap}
+.top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+a{color:var(--run)}
+.empty{color:var(--mut);padding:6px 2px}
+button{font:inherit;font-size:16px;padding:8px 14px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);cursor:pointer}
+button.pri{background:var(--run);color:#fff;border-color:var(--run)}
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 4px}
+.tools input[type=search]{flex:1 1 200px;font:inherit;font-size:16px;padding:9px 12px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx)}
+.tools label{font-size:16px;color:var(--mut);display:flex;gap:6px;align-items:center}
+.heute{background:var(--card);border:2px solid var(--act);border-radius:12px;padding:6px 12px 10px;margin:12px 0}
+.heute h2{margin:8px 0 4px}
+.auf{font-size:16px;color:var(--act);font-weight:600;margin:6px 0}
+details.sec{background:var(--card);border:1px solid var(--bd);border-radius:10px;margin:8px 0}
+details.sec>summary{font-weight:600;font-size:18px;padding:12px 14px;cursor:pointer}
+details.it{border-top:1px solid var(--bd);padding:0 14px}
+details.it>summary{padding:9px 0;cursor:pointer;font-size:16px;list-style-position:inside}
+details.it>summary .g{color:var(--mut);font-size:14px}
+details.it.done>summary .tt{text-decoration:line-through;opacity:.6}
+.body{padding:0 0 12px}
+.body .d{white-space:pre-wrap}
+textarea{width:100%;min-height:70px;font:inherit;font-size:16px;padding:8px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);margin-top:8px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.vm{font-size:16px;border:1px dashed var(--act);border-radius:8px;padding:6px 10px;margin-top:8px;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.vm small{color:var(--mut);font-size:14px;display:block}
+#msg{color:var(--ok);font-size:16px}
+</style>
+</head>
+<body>
+<main>
+<h1>🐾 Bolla Jobs</h1>
+<div class="sub"><span id="stand">lädt…</span> · <button onclick="load(true)">Aktualisieren</button> <span id="msg"></span></div>
+<div class="tools"><input type="search" id="q" placeholder="Suchen in offenen Punkten…" oninput="onSearch()"><label><input type="checkbox" id="hideDone" checked onchange="rerender()"> Erledigte ausblenden</label></div>
+<div id="out"></div>
+</main>
+<script>
+const ICON={laeuft:"🔄",ok:"✅",fehler:"⚠️",aktion:"👉"};
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ORDER=["Zuerst","Fällig / Fristen","Laufende Fälle","Projekte auf Zuruf","Zwischendurch-Ideen"];
+const openSet=new Set(), drafts=new Map();
+let DATA=null, O=[], sig="";
+function fmt(iso){
+  const d=new Date(iso),n=new Date();
+  const day=d.toDateString()===n.toDateString()?"heute":
+    d.toDateString()===new Date(n.getTime()+864e5).toDateString()?"morgen":
+    d.toDateString()===new Date(n.getTime()-864e5).toDateString()?"gestern":
+    d.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"});
+  return day+" "+d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+}
+function jobRow(j,btn){
+  const link=j.link?` · <a href="${esc(j.link)}" target="_blank" rel="noopener">Details</a>`:"";
+  return `<div class="row ${esc(j.status)}"><div class="top"><span class="t">${ICON[j.status]||"•"} ${esc(j.title)}</span><span class="w">${fmt(j.ts)}</span></div>${j.detail?`<div class="d">${esc(j.detail)}${link}</div>`:""}${btn?`<div style="margin-top:8px"><button onclick="dismiss('${esc(j.id)}')">✔ Erledigt</button></div>`:""}</div>`;
+}
+function section(title,items,emptyText){
+  return `<h2>${title}</h2>`+(items.length?items.join(""):`<div class="empty">${emptyText}</div>`);
+}
+async function post(url,obj){
+  const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(obj)});
+  let j={};try{j=await r.json();}catch(e){}
+  if(!r.ok)throw new Error(j.error||("HTTP "+r.status));return j;
+}
+async function dismiss(id){try{await post("/api/jobs/dismiss",{id});}catch(e){}load();}
+async function tog(id){try{await post("/api/offen/toggle",{id});}catch(e){}load();}
+function itemHtml(o,pre){
+  pre=pre||"";const key=pre+"i:"+o.id, av=o.auftraege||[];
+  const vm=av.map((a,i)=>`<div class="vm"><div>✉️ ${esc(a.text)}<small>${esc(fmt(a.ts))} · ${esc(a.status)}</small></div><button onclick="delAuf('${esc(o.id)}',${i})">🗑</button></div>`).join("");
+  return `<details class="it${o.erledigt?" done":""}" data-key="${key}"${openSet.has(key)?" open":""}><summary><span class="tt">${esc(o.titel)}</span>${o.gruppe?` <span class="g">· ${esc(o.gruppe)}</span>`:""}${av.length?` ✉️${av.length}`:""}</summary><div class="body"><div class="d">${esc(o.detail)}</div>${vm}<textarea id="ta_${pre}${esc(o.id)}" data-id="${esc(o.id)}" placeholder="Kommentar / Auftrag" maxlength="2000" oninput="drafts.set(this.dataset.id,this.value)">${esc(drafts.get(o.id)||"")}</textarea><div class="btns"><button class="pri" onclick="vormerken('${esc(o.id)}')">Fürs Terminal vormerken</button><button onclick="tog('${esc(o.id)}')">${o.erledigt?"↩ Wieder öffnen":"☑ Erledigt"}</button></div></div></details>`;
+}
+async function vormerken(id){
+  const text=(drafts.get(id)||"").trim();
+  if(!text){flash("Bitte erst Text eingeben",true);return;}
+  try{await post("/api/offen/auftrag",{id,text});drafts.delete(id);flash("✓ vorgemerkt");await load();}
+  catch(e){flash("Fehler: "+e.message,true);}
+}
+async function delAuf(id,index){
+  try{await post("/api/offen/auftrag/loeschen",{id,index});flash("✓ gelöscht");await load();}
+  catch(e){flash("Fehler: "+e.message,true);}
+}
+let ft;function flash(t,err){const m=document.getElementById("msg");m.textContent=t;m.style.color=err?"var(--warn)":"var(--ok)";clearTimeout(ft);ft=setTimeout(()=>m.textContent="",4000);}
+function onSearch(){rerender();}
+function match(o,q){return !q||(o.titel+" "+o.detail+" "+o.gruppe+" "+(o.auftraege||[]).map(a=>a.text).join(" ")).toLowerCase().includes(q);}
+function render(){
+  if(!DATA)return;
+  const d=DATA, J=d.jobs||[];
+  const q=document.getElementById("q").value.trim().toLowerCase();
+  const hide=document.getElementById("hideDone").checked;
+  const vis=O.filter(o=>(!hide||!o.erledigt)&&match(o,q));
+  const nAuf=O.reduce((n,o)=>n+(o.auftraege||[]).filter(a=>a.status==="vorgemerkt").length,0);
+  const attn=J.filter(j=>j.status==="fehler"||j.status==="aktion");
+  const run=J.filter(j=>j.status==="laeuft");
+  const done=J.filter(j=>j.status==="ok").slice(0,15);
+  const heute=vis.filter(o=>!o.erledigt&&(o.abschnitt==="Zuerst"||o.abschnitt==="Fällig / Fristen"));
+  const abs=ORDER.concat([...new Set(O.map(o=>o.abschnitt))].filter(a=>a&&!ORDER.includes(a)));
+  const secs=abs.map(a=>{
+    const it=vis.filter(o=>o.abschnitt===a).sort((x,y)=>(+x.prio||99)-(+y.prio||99));
+    if(!it.length)return "";
+    const key="s:"+a;
+    return `<details class="sec" data-key="${key}"${(openSet.has(key)||q)?" open":""}><summary>${esc(a)} (${it.length})</summary>${it.map(o=>itemHtml(o)).join("")}</details>`;
+  }).join("");
+  const up=(d.upcoming||[]).map(u=>`<div class="row"><div class="top"><span class="t">⏳ ${esc(u.title)}</span><span class="w">${fmt(u.when)}</span></div></div>`);
+  const out=document.getElementById("out");
+  const sy=window.scrollY, ae=document.activeElement, aid=ae&&ae.id, ss=ae&&ae.selectionStart;
+  out.innerHTML=
+    (nAuf?`<div class="auf">✉️ ${nAuf} ${nAuf===1?"Auftrag":"Aufträge"} fürs Terminal vorgemerkt</div>`:"")+
+    `<div class="heute"><h2>🔥 Heute wichtig (${heute.length})</h2>${heute.length?heute.map(o=>itemHtml(o,"h:")).join(""):'<div class="empty">Nichts Dringendes 👌</div>'}</div>`+
+    section("Braucht dich",attn.map(j=>jobRow(j,true)),"Nichts – alles ruhig 👌")+
+    section("Läuft gerade",run.map(jobRow),"Nichts läuft.")+
+    section("Steht an",up,"Nichts Geplantes in den nächsten 14 Tagen.")+
+    `<h2>📌 Offen – Übersicht</h2>`+(secs||'<div class="empty">Keine Treffer.</div>')+
+    section("Zuletzt erledigt",done.map(jobRow),"Noch nichts eingetragen.");
+  if(aid){const e=document.getElementById(aid);if(e){e.focus();try{e.setSelectionRange(ss,ss);}catch(_){}}}
+  window.scrollTo(0,sy);
+}
+function rerender(){render();}
+document.getElementById("out").addEventListener("toggle",ev=>{
+  const k=ev.target.dataset&&ev.target.dataset.key;if(!k)return;
+  if(ev.target.open)openSet.add(k);else openSet.delete(k);
+},true);
+async function load(manual){
+  const st=document.getElementById("stand");
+  try{
+    const bust="?_="+Date.now();
+    const r=await fetch("/api/jobs"+bust,{cache:"no-store"});const d=await r.json();
+    let o=O;try{o=await (await fetch("/api/offen"+bust,{cache:"no-store"})).json();}catch(e){}
+    const ns=JSON.stringify([d.jobs,d.upcoming,o]);
+    if(ns!==sig){sig=ns;DATA=d;O=o;render();}
+    const n=new Date(d.now);
+    st.textContent="Stand "+fmt(d.now)+":"+String(n.getSeconds()).padStart(2,"0");
+    if(manual){const t=new Date();flash("✓ aktualisiert "+t.toLocaleTimeString("de-DE"));}
+  }catch(e){st.textContent="Server nicht erreichbar";if(manual)flash("Fehler beim Laden",true);}
+}
+load();setInterval(load,30000);
+</script>
+</body>
+</html>

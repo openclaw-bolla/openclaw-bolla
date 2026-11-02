@@ -19,8 +19,14 @@ Primärquellen: die KDP-Hilfeseiten zu "Hörbücher mit virtueller Stimme"
 (kdp.amazon.com/de_DE/help/topic/GMPQGZAZJH6FF456 und kdp.amazon.com/en_US/help/topic/G3QRL9HQNF273Q2H),
 dazu aktuelle News. Stand der letzten Prüfung (24.10.2026): nur US-/UK-/AU-Englisch, Spanisch (2),
 Französisch, Italienisch; Deutsch NICHT dabei; nur US-Marktplatz, Beta.
-Antworte in der ERSTEN Zeile exakt mit JA (Deutsch ist jetzt offiziell unterstützt oder
-angekündigt mit Termin) oder NEIN. Bei JA danach 2-3 Sätze mit Quelle/URL, inkl. Marktplatz-
+ZUSÄTZLICH (Chris 02.11.2026, Hörbuch mit eigener geklonter Stimme via ElevenLabs): Prüfe, ob es
+inzwischen einen DEUTSCHEN Veröffentlichungsweg für KI-/ElevenLabs-vertonte Hörbücher gibt:
+(a) Spotify for Authors / Findaway Voices: ElevenLabs-Erstellungstool inzwischen auf Deutsch (Stand
+Mai 2026: Beta nur Englisch, Deutsch später), (b) Google Play Books Auto-Narration für Deutsch,
+(c) Audible/ACX nimmt deutsche KI-Stimmen/eigene Klone an, (d) weitere deutsche Plattformen
+(z. B. Bookwire, BookBeat, Storytel) für KI-Hörbücher. Stand 02.11.2026: Deutsch nirgends belegt.
+Antworte in der ERSTEN Zeile exakt mit JA (Deutsch bei KDP Virtual Voice ODER bei einem der
+unter (a)–(d) genannten Wege ist jetzt offiziell möglich oder mit Termin angekündigt) oder NEIN. Bei JA danach 2-3 Sätze mit Quelle/URL (welcher Weg genau), inkl. Marktplatz-
 Beschränkungen und Kosten. Nichts erfinden; im Zweifel NEIN."""
 
 def main():

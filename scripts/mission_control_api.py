@@ -7807,6 +7807,47 @@ def wm_conflicts():
     return _wm_cached("conflicts", 900, fetch)
 
 
+# --- Offene Punkte: atomare Mutation (Toggle, Aufträge fürs Terminal) ---
+_OFFEN_LOCK = threading.Lock()
+_OFFEN_FILE = os.path.expanduser("~/workspace/data/offene_punkte.json")
+
+def offen_mutate(path, body):
+    with _OFFEN_LOCK:
+        lst = json.load(open(_OFFEN_FILE, encoding="utf-8"))
+        pid = str(body.get("id", ""))
+        e = next((x for x in lst if x.get("id") == pid), None)
+        if e is None:
+            return {"ok": False, "error": "id unbekannt"}, 404
+        if path == "/api/offen/toggle":
+            e["erledigt"] = not e.get("erledigt", False)
+        elif path == "/api/offen/auftrag":
+            text = body.get("text", "")
+            if not isinstance(text, str) or not text.strip():
+                return {"ok": False, "error": "Text fehlt"}, 400
+            text = text.strip()
+            if len(text) > 2000:
+                return {"ok": False, "error": "Text zu lang (max. 2000 Zeichen)"}, 400
+            e.setdefault("auftraege", []).append({"text": text, "ts": datetime.now().astimezone().isoformat(timespec="seconds"), "status": "vorgemerkt"})
+        else:
+            try:
+                idx = int(body.get("index"))
+            except (TypeError, ValueError):
+                return {"ok": False, "error": "index ungültig"}, 400
+            a = e.get("auftraege") or []
+            if not (0 <= idx < len(a)):
+                return {"ok": False, "error": "index ungültig"}, 400
+            a.pop(idx)
+            if not a:
+                e.pop("auftraege", None)
+        tmp = _OFFEN_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(lst, f, ensure_ascii=False, indent=1)
+            f.flush(); os.fsync(f.fileno())
+        os.chmod(tmp, os.stat(_OFFEN_FILE).st_mode & 0o777)
+        os.replace(tmp, _OFFEN_FILE)
+        return {"ok": True, "auftraege": e.get("auftraege", [])}, 200
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass  # silent
@@ -10475,14 +10516,9 @@ Antworte NUR als reines JSON: {{"improved_prompt": "..."}}"""
                     self._send_json(append_clipboard(text, source=body.get("source", "manual")))
                 else:
                     self._send_json(save_clipboard(text))
-            elif self.path == "/api/offen/toggle":
-                _of = os.path.expanduser("~/workspace/data/offene_punkte.json")
-                _l = json.load(open(_of, encoding="utf-8"))
-                for _e in _l:
-                    if _e["id"] == str(body.get("id", "")):
-                        _e["erledigt"] = not _e.get("erledigt", False)
-                json.dump(_l, open(_of, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-                self._send_json({"ok": True})
+            elif self.path in ("/api/offen/toggle", "/api/offen/auftrag", "/api/offen/auftrag/loeschen"):
+                _res, _st = offen_mutate(self.path, body)
+                self._send_json(_res, status=_st)
             elif self.path == "/api/jobs/dismiss":
                 self._send_json(__import__("job_status").dismiss(str(body.get("id", ""))))
             elif self.path == "/api/clipboard/delete":
