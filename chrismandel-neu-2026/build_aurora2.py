@@ -10,7 +10,7 @@ T = {
    h2="Neu bei AURORA?", p="AURORA ist ein Thriller über eine KI, die aufwacht — geschrieben von Chris Mandel gemeinsam mit seiner eigenen KI Bolla. Band I gibt es als Taschenbuch und E-Book.",
    b1="Zu AURORA", b1h="/aurora/", b2="Wer schreibt hier?", b2h="/geschichte/",
    foot="Chris Mandel · chrismandel.de", imp="Impressum", imp_h="/impressum/", fb="Dein Browser kann das Video nicht abspielen.", vid="aurora2-trailer.mp4?v=4", cap="Trailer zum Roman AURORA II von Chris Mandel · Winter 2026/27",
-   yt="https://youtu.be/yxVho5QYpYY", yt_t="▶ Auch auf YouTube ansehen",
+   yt="https://youtu.be/nHqiI6ukVhE", yt_t="▶ Auch auf YouTube ansehen",
    soon_h="AURORA II erscheint zum Jahreswechsel", soon_p="Der zweite Band ist in den letzten Zügen — voraussichtlich erscheint er zum Jahreswechsel 2026/27. Wenn du Bescheid bekommen möchtest, sobald es soweit ist, schick mir einfach eine kurze Mail. Bis dahin lohnt sich Band I.", soon_b1="📧 Benachrichtige mich", soon_b1h="mailto:ernstmandel@outlook.de?subject=AURORA%20II%20%E2%80%93%20bitte%20benachrichtigen&body=Hallo%20Chris%2C%20bitte%20gib%20mir%20Bescheid%2C%20sobald%20AURORA%20II%20erscheint.", soon_b2="📖 Band I jetzt lesen", soon_b2h="/aurora/"),
  "en": dict(lang="en", out="en/aurora2/index.html", other="/aurora2/", other_label="🇩🇪 DE", home="/en/",
    back="← chrismandel.de", title="AURORA II — the trailer",
@@ -20,7 +20,7 @@ T = {
    h2="New to AURORA?", p="AURORA is a thriller about an AI that wakes up — written by Chris Mandel together with his own AI, Bolla. Book I is available in paperback and as an e-book.",
    b1="Go to AURORA", b1h="/en/aurora/", b2="Who is writing this?", b2h="/en/essay/",
    foot="Chris Mandel · chrismandel.de", imp="Legal notice", imp_h="/en/impressum/", fb="Your browser cannot play this video.", vid="aurora2-trailer-en.mp4?v=3", cap="Trailer for the novel AURORA II by Chris Mandel · Winter 2026/27",
-   yt="https://youtu.be/mHssAaEraGg", yt_t="▶ Also on YouTube",
+   yt="https://youtu.be/95rjwiNDdCM", yt_t="▶ Also on YouTube",
    soon_h="AURORA II is coming around New Year", soon_p="The second book is in its final stretch — it is expected around the turn of the year 2026/27. If you would like to hear as soon as it is out, just send me a short email. Until then, Book I is waiting for you.", soon_b1="📧 Notify me", soon_b1h="mailto:ernstmandel@outlook.de?subject=AURORA%20II%20%E2%80%93%20please%20notify%20me&body=Hello%20Chris%2C%20please%20let%20me%20know%20as%20soon%20as%20AURORA%20II%20is%20out.", soon_b2="📖 Read Book I now", soon_b2h="/en/aurora/"),
 }
 TPL = """<!DOCTYPE html>

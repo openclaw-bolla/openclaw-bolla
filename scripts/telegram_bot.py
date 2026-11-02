@@ -724,9 +724,9 @@ def main():
                 log.info(f"Antworte auf: {text[:80]}" + (f" [{media[2]}]" if media else ""))
 
                 # Sprachnachricht von Chris: per Azure transkribieren → ab hier wie Text behandeln
-                if media and media[2] == "Sprachnachricht" and sender_id == int(CHRIS_ID):
+                if media and media[2] in ("Sprachnachricht", "Audio") and sender_id == int(CHRIS_ID):
                     requests.post(f"{API}/sendChatAction", json={"chat_id": chat_id, "action": "typing"})
-                    ogg = download_telegram_file(media[0], ".ogg")
+                    ogg = download_telegram_file(media[0], ".mp3" if media[2] == "Audio" else ".ogg")
                     transcript = transcribe_voice(ogg) if ogg else None
                     if ogg:
                         try:
