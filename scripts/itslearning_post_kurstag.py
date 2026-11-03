@@ -118,6 +118,20 @@ def login(pw):
     return browser, its
 
 
+def files_present(its, course_id, files, tries=12):
+    """Prueft (mit Neuladen), ob ALLE Dateien in den Ressourcen des Kurses liegen. Chris 03.11.2026:
+    Upload gilt erst als erledigt, wenn die Dateien wirklich dort stehen (Kurstag 6: 7b/7c verloren)."""
+    for _ in range(tries):
+        its.goto(f"https://moin.itslearning.com/main.aspx?CourseID={course_id}", timeout=20000)
+        its.wait_for_timeout(2000)
+        click_first(its, ["text=Ressourcen"])
+        its.wait_for_timeout(2500)
+        if all(its.get_by_text(f["basename"]).count() > 0 for f in files):
+            return True
+        its.wait_for_timeout(4000)
+    return False
+
+
 def upload_files(its, course_id, files):
     """Laedt alle Dateien (Standard-Paket) in den Ressourcen-Ordner des Kurses hoch, falls noch nicht da."""
     its.goto(f"https://moin.itslearning.com/main.aspx?CourseID={course_id}", timeout=20000)
@@ -183,29 +197,43 @@ def upload_files(its, course_id, files):
         its.screenshot(path=f"{OUT_DIR}/FAIL_{course_id}_uploadpreview.png", full_page=True)
         return False
 
+    # "Speichern" ist gesperrt (grau), solange der Upload-Fortschrittsbalken laeuft (Kurstag 6, 03.11.2026:
+    # 7b/7c verloren Dateien, weil auf den gesperrten Knopf geklickt wurde). Erst klicken, wenn aktiv.
     saved = None
-    for fr in its.frames:
-        try:
-            if fr.locator("text=Speichern").count() > 0:
-                fr.locator("text=Speichern").first.click(timeout=3000)
-                saved = fr
-                break
-        except Exception:
-            continue
-    its.wait_for_timeout(2500)
+    for _ in range(90):   # bis ~3 Minuten
+        for fr in its.frames:
+            try:
+                btn = fr.locator("button:has-text('Speichern'), input[value='Speichern']").first
+                if btn.count() > 0 and btn.is_enabled():
+                    btn.click(timeout=3000)
+                    saved = fr
+                    break
+            except Exception:
+                continue
+        if saved:
+            break
+        its.wait_for_timeout(2000)
+    its.wait_for_timeout(8000)
     if not saved:
         print("  ❌ 'Speichern'-Button nicht gefunden")
         its.screenshot(path=f"{OUT_DIR}/FAIL_{course_id}_savebtn.png", full_page=True)
         return False
 
-    print(f"  ✅ {len(missing)} Datei(en) hochgeladen und gespeichert (Kurs {course_id})")
+    if not files_present(its, course_id, files):
+        print(f"  ❌ Upload NICHT verifiziert: Dateien fehlen nach Speichern in den Ressourcen (Kurs {course_id})")
+        return False
+    print(f"  ✅ {len(missing)} Datei(en) hochgeladen, gespeichert und in den Ressourcen verifiziert (Kurs {course_id})")
     return True
 
 
 def post_message(its, course_id, text, files):
     """Schreibt Mitteilung mit Text + haengt alle Dateien an + veroeffentlicht."""
     its.goto(f"https://moin.itslearning.com/main.aspx?CourseID={course_id}", timeout=20000)
-    its.wait_for_timeout(2000)
+    its.wait_for_timeout(2500)
+    snippet = text[12:52]   # eindeutiger Textausschnitt fuer Doppelpost-Schutz + Verifikation
+    if its.get_by_text(snippet, exact=False).count() > 0:
+        print(f"  ⏭ Mitteilung steht schon im Kurs {course_id} - nicht doppelt gepostet")
+        return True
 
     click_first(its, ["text=Mitteilung schreiben", "[contenteditable='true']"])
     its.wait_for_timeout(700)
@@ -272,7 +300,14 @@ def post_message(its, course_id, text, files):
         print("  ❌ 'Veröffentlichen'-Button nicht gefunden")
         return False
 
-    print(f"  ✅ Mitteilung veroeffentlicht (Kurs {course_id})")
+    # Verifikation: Mitteilung muss danach wirklich im Kurs stehen (Text + angehaengte Datei)
+    its.wait_for_timeout(3000)
+    its.goto(f"https://moin.itslearning.com/main.aspx?CourseID={course_id}", timeout=20000)
+    its.wait_for_timeout(3000)
+    if its.get_by_text(snippet, exact=False).count() == 0:
+        print(f"  ❌ Mitteilung NICHT verifiziert (Text nicht im Kurs {course_id} zu sehen)")
+        return False
+    print(f"  ✅ Mitteilung veroeffentlicht und verifiziert (Kurs {course_id})")
     return True
 
 
@@ -299,9 +334,12 @@ if __name__ == "__main__":
                     results.append((c["kuerzel"], "UPLOAD FEHLGESCHLAGEN"))
                     continue
                 post_ok = post_message(its, c["id"], c["text"], files)
-                if not post_ok:  # Ressource-Dialog war manchmal direkt nach dem Upload noch nicht aktuell (7c I, 27.10.2026) -> einmal frisch wiederholen
-                    print("  🔁 Wiederhole Mitteilung einmal ...")
-                    its.wait_for_timeout(8000)
+                for attempt in (2, 3):   # Ressource-Dialog war manchmal nach dem Upload noch nicht aktuell -> bis zu 3 Versuche mit Neuladen
+                    if post_ok:
+                        break
+                    print(f"  🔁 Wiederhole Mitteilung (Versuch {attempt}/3) ...")
+                    its.wait_for_timeout(10000)
+                    files_present(its, c["id"], files, tries=3)   # Ressourcenliste frisch laden
                     post_ok = post_message(its, c["id"], c["text"], files)
                 results.append((c["kuerzel"], "OK" if post_ok else "MITTEILUNG FEHLGESCHLAGEN"))
         finally:
