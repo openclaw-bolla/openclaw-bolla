@@ -38,6 +38,8 @@ def log(msg):
 
 
 def send_telegram(bot_token, chat_id, text):
+    import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung  # Chris 03.11.2026: kein Telegram mehr
+    return mc_meldung("spotify-watcher", "bollawave: Spotify-Release-Watcher", text)
     requests.post(
         f"https://api.telegram.org/bot{bot_token}/sendMessage",
         json={"chat_id": chat_id, "text": text, "parse_mode": "HTML",

@@ -6,9 +6,9 @@ LOG=/home/bolla/workspace/logs/ausreizen_orchestrator.log
 if [ -f /tmp/aurora_samstag_stop ]; then echo "$(date) Stopp-Datei vorhanden, kein Start" >> $LOG; exit 0; fi
 if [ ! -f "$ORCH" ]; then
   python3 - <<'PY'
-import json,requests
-c=json.load(open("/home/bolla/workspace/config/telegram_bot.json"))
-requests.post(f"https://api.telegram.org/bot{c['bot_token']}/sendMessage",json={"chat_id":c["chris_id"],"text":"⚠️ Ausreizen-Start Fr 19:00: Orchestrator-Skript fehlt noch — nichts gestartet. Bolla muss es bauen."},timeout=10)
+import sys; sys.path.insert(0,"/home/bolla/workspace/scripts")
+from job_status import report
+report('ausreizen-start','Wochenend-Ausreizen starten',"fehler","⚠️ Ausreizen-Start Fr 19:00: Orchestrator-Skript fehlt noch — nichts gestartet. Bolla muss es bauen.")
 PY
   exit 1
 fi

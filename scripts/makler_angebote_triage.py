@@ -86,7 +86,7 @@ def main():
             draft(H, frm, "Re: " + m["subject"], sal + f"vielen Dank für Ihr Angebot. Können Sie uns bitte noch folgende Angaben nennen: {fehlt}?" + sig)
         else:
             draft(H, frm, "Re: " + m["subject"], sal + "vielen Dank, das Objekt interessiert uns. Gerne würden wir es besichtigen — welche Termine kämen in Frage?" + sig)
-            _telegram(f"🏠 Treffer ({s}/100): {a.get('objekt','')[:80]} · {a.get('preis') or '?'} € · {a.get('qm') or '?'} m² · {mkl['firma']} — Entwurf liegt in Outlook")
+            report('makler-treffer', 'Makler: neuer Treffer', 'aktion', f"🏠 Treffer ({s}/100): {a.get('objekt','')[:80]} · {a.get('preis') or '?'} € · {a.get('qm') or '?'} m² · {mkl['firma']} — Entwurf liegt in Outlook")
     if not dry:
         st["done"] = st["done"][-1500:]; json.dump(st, open(OUT, "w"), ensure_ascii=False, indent=2)
         xl = ""

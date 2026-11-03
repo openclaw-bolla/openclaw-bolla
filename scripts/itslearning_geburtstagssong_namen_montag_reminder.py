@@ -24,6 +24,8 @@ SCHULJAHR = Path("/home/bolla/workspace/data/schuljahr2627.json")
 
 
 def tg(text):
+    import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung  # Chris 03.11.2026: kein Telegram mehr
+    return mc_meldung('itsl-geburtstagssong-namen', 'itslearning: Geburtstagssong-Namen', text)
     urllib.request.urlopen(urllib.request.Request(
         f"https://api.telegram.org/bot{BOT}/sendMessage",
         data=json.dumps({"chat_id": CHRIS, "text": text, "parse_mode": "Markdown",

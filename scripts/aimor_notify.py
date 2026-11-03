@@ -44,9 +44,6 @@ text = (
     f"Oder sag mir einfach Bescheid 🐾"
 )
 
-r = requests.post(
-    f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-    json={"chat_id": CHRIS_ID, "text": text, "parse_mode": "Markdown"},
-    timeout=15,
-)
-print(f"Telegram: {r.status_code} — {r.json().get('ok')}")
+import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung
+mc_meldung("aimor-notify", "Aimor: Fotoauswahl zum Monatsersten", text)  # Chris 03.11.2026: kein Telegram mehr
+print("MC-Meldung eingetragen")

@@ -26,6 +26,8 @@ INTERVAL_DAYS = 3
 MAX_REMINDERS = 6
 
 def tg(text):
+    import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung  # Chris 03.11.2026: kein Telegram mehr
+    return mc_meldung('suno-ostern-reminder', 'Suno Oster-Songs: Erinnerung', text)
     urllib.request.urlopen(urllib.request.Request(
         f"https://api.telegram.org/bot{BOT}/sendMessage",
         data=json.dumps({"chat_id":CHRIS,"text":text,"parse_mode":"Markdown",

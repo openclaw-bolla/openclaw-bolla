@@ -31,6 +31,8 @@ AUTOREPLY = ["this is an automated", "automatic reply", "out of office",
 
 
 def tg(text):
+    import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung  # Chris 03.11.2026: kein Telegram mehr
+    return mc_meldung('wiso-traderepublic', 'WISO/Trade Republic: Support-Watcher', text)
     try:
         urllib.request.urlopen(urllib.request.Request(
             f"https://api.telegram.org/bot{BOT}/sendMessage",

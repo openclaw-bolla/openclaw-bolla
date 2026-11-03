@@ -22,6 +22,8 @@ def norm(s):
     return re.sub(r"[^a-z0-9äöüß]", "", (s or "").lower())
 
 def telegram(text):
+    import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung  # Chris 03.11.2026: kein Telegram mehr
+    return mc_meldung('distrokid-staging-cleanup', 'DistroKid: Staging aufräumen', text)
     try:
         import urllib.request, urllib.parse
         cfg = json.loads(TGCFG.read_text())

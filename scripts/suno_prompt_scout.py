@@ -61,6 +61,8 @@ Falls doch etwas gefunden: max. 3 Punkte, Format pro Punkt:
 
 
 def telegram(msg):
+    import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung  # Chris 03.11.2026: kein Telegram mehr
+    return mc_meldung('suno-prompt-scout', 'Suno: Prompt-Scout', msg)
     import requests
     requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",

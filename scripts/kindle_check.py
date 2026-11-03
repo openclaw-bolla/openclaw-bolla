@@ -26,6 +26,8 @@ Antworte in einem dieser Formate:
 - NOCH_NICHT: [kurze aktuelle Info zum Status]"""
 
 def telegram(msg):
+    import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung  # Chris 03.11.2026: kein Telegram mehr
+    return mc_meldung('kindle-check', 'Kindle-App für Windows 11: Check', msg)
     requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
         json={"chat_id": CHRIS_ID, "text": msg, "parse_mode": "HTML"},

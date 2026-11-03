@@ -152,8 +152,10 @@ def process(test=False, seed=False):
                f"{' + HyperFollow-Link' if hf else ''})\n\n"
                f"➡️ TikTok: Video hochladen · Insta: Bild posten.\n"
                f"Beschreibung aus der .txt einfügen, KI-Label aktivieren, posten. 🐾")
-        try: m2c.telegram(msg)
-        except Exception as e: print("   ⚠ Telegram-Fehler:", e)
+        try:
+            import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung
+            mc_meldung("distrokid-promo", "DistroKid: Promo-Material bereit", msg)  # kein Telegram mehr
+        except Exception as e: print("   ⚠ MC-Meldung-Fehler:", e)
         processed.add(mail["id"])
         print(f"   ✓ Material erzeugt + Telegram gesendet ({rel})")
     save_processed(processed)

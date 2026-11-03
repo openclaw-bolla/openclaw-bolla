@@ -34,6 +34,8 @@ def save_state(s):
     STATE_PATH.write_text(json.dumps(s, indent=2, ensure_ascii=False))
 
 def tg(text):
+    import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung  # Chris 03.11.2026: kein Telegram mehr
+    return mc_meldung('aurora-shop-watcher', 'AURORA: Shop-Wächter', text)
     try:
         requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
                       json={"chat_id": CHRIS_ID, "text": text, "parse_mode": "Markdown",

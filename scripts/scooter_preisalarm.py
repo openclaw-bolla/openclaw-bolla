@@ -22,6 +22,8 @@ cfg = json.loads(Path("/home/bolla/workspace/config/telegram_bot.json").read_tex
 
 
 def telegram(text):
+    import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung  # Chris 03.11.2026: kein Telegram mehr
+    return mc_meldung('scooter-preisalarm', 'E-Scooter: Preisalarm', text)
     requests.post(
         f"https://api.telegram.org/bot{cfg['bot_token']}/sendMessage",
         data={"chat_id": cfg["chris_id"], "text": text}, timeout=20)

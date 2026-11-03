@@ -30,6 +30,8 @@ COURSES = [
 ]
 
 def tg(text):
+    import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung  # Chris 03.11.2026: kein Telegram mehr
+    return mc_meldung('itsl-naechste-termine-II', 'itslearning: Nächste Termine Gruppe II', text)
     """Rueckmeldung an Chris per Telegram (Regel: Cron-Jobs melden immer, ob vollzogen)."""
     import json
     import urllib.request

@@ -43,6 +43,8 @@ Antworte NUR wenn du 1-3 wirklich relevante Tipps gefunden hast. Format:
 Wenn nichts Wichtiges gefunden: antworte exakt mit dem Wort NICHTS"""
 
 def telegram(msg):
+    import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung  # Chris 03.11.2026: kein Telegram mehr
+    return mc_meldung('hardware-tips', 'Hardware-Tipps', msg)
     requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
         json={"chat_id": CHRIS_ID, "text": msg, "parse_mode": "HTML"},

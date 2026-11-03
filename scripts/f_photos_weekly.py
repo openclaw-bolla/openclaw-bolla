@@ -14,6 +14,8 @@ MIN_POOL = 105     # 7 Tage x 15
 
 
 def tg(t):
+    import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung  # Chris 03.11.2026: kein Telegram mehr
+    return mc_meldung('f-photos-weekly', 'Foto-Pool /f: Wochen-Neubau', t)
     try:
         urllib.request.urlopen(urllib.request.Request(
             f"https://api.telegram.org/bot{CFG['bot_token']}/sendMessage",

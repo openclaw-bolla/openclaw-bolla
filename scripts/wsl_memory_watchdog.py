@@ -108,6 +108,8 @@ def kill_all_chromium():
 
 
 def telegram(msg):
+    import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung  # Chris 03.11.2026: kein Telegram mehr
+    return mc_meldung('wsl-memory-watchdog', 'WSL-Speicher-Watchdog', msg)
     try:
         cfg = json.loads((WORKSPACE / "config/telegram_bot.json").read_text())
         import requests

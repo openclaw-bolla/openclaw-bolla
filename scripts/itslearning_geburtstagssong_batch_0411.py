@@ -36,6 +36,8 @@ CFG =json.load(open("/home/bolla/workspace/config/telegram_bot.json"))
 
 
 def tg(text):
+    import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung  # Chris 03.11.2026: kein Telegram mehr
+    return mc_meldung('itsl-geburtstagssong-0411', 'itslearning: Geburtstagssongs 04.11.', text)
     urllib.request.urlopen(urllib.request.Request(
         f"https://api.telegram.org/bot{CFG['bot_token']}/sendMessage",
         data=json.dumps({"chat_id": CFG["chris_id"], "text": text}).encode(),

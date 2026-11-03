@@ -11,6 +11,8 @@ BOT, CHRIS = CFG["bot_token"], CFG["chris_id"]
 STATE = Path("/home/bolla/workspace/config/pixel8_setup_reminder_state.json")
 
 def tg(text):
+    import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung  # Chris 03.11.2026: kein Telegram mehr
+    return mc_meldung('pixel8-setup-reminder', 'Pixel 8: Einrichtungs-Erinnerung', text)
     urllib.request.urlopen(urllib.request.Request(
         f"https://api.telegram.org/bot{BOT}/sendMessage",
         data=json.dumps({"chat_id": CHRIS, "text": text, "parse_mode": "Markdown",

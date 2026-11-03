@@ -28,6 +28,8 @@ def log(msg):
     print(f"[{ts}] {msg}", flush=True)
 
 def tg(text):
+    import sys; sys.path.insert(0, "/home/bolla/workspace/scripts"); from job_status import mc_meldung  # Chris 03.11.2026: kein Telegram mehr
+    return mc_meldung('aurora-fable-watcher', 'AURORA: Fable-Watcher', text)
     try:
         c = json.load(open(TG_CFG))
         urllib.request.urlopen(urllib.request.Request(

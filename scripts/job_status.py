@@ -24,7 +24,7 @@ import urllib.request
 STATE = "/home/bolla/workspace/data/job_status.json"
 TG_CFG = "/home/bolla/workspace/config/telegram_bot.json"
 MAX_JOBS = 80
-TG_STATUS = ("fehler", "aktion")
+TG_STATUS = ()  # Chris 03.11.2026: nichts mehr per Telegram, alles oben in MC-Jobs (fehler/aktion stehen dort ganz oben)
 
 
 def _load():
@@ -147,3 +147,13 @@ def snapshot():
 
 if __name__ == "__main__":
     print(json.dumps(snapshot(), ensure_ascii=False, indent=1))
+
+
+# ---------- Ersatz fuer eigene Telegram-Sender (Chris 03.11.2026) ----------
+def mc_meldung(job_id, title, text, status=None):
+    """Ersatz fuer tg()/telegram() in Cron-Skripten: Meldung landet in MC-Jobs (fehler/aktion ganz oben).
+    Status automatisch: beginnt mit ⚠️/❌ -> fehler; beginnt mit ✅ -> ok; sonst aktion."""
+    t = re.sub(r"[*_`]|</?[a-z]+>", "", str(text)).strip()
+    if status is None:
+        status = "fehler" if t[:2] in ("⚠️", "❌", "⚠") or t.startswith("⚠") else ("ok" if t.startswith("✅") else "aktion")
+    report(job_id, title, status, t[:700])
