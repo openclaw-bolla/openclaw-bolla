@@ -42,24 +42,43 @@ def click_first(page, selectors, timeout=5000):
     return None
 
 
-def login(pw):
+def _login_einmal(pw):
     browser = pw.chromium.launch()
-    context = browser.new_context(viewport={"width": 1500, "height": 1000})
-    page = context.new_page()
-    page.goto("https://portal.schule-sh.de/", timeout=20000)
-    page.wait_for_timeout(800)
-    click_first(page, ["text=Anmelden"])
-    page.wait_for_timeout(1000)
-    page.fill("input[name='username']", creds["username"])
-    page.fill("input[name='password']", creds["password"])
-    click_first(page, ["button[type='submit']", "input[type='submit']", "text=Anmelden"])
-    page.wait_for_timeout(2500)
-    with context.expect_page(timeout=15000) as new_page_info:
-        click_first(page, ["text=itslearning"])
-    its = new_page_info.value
-    its.wait_for_load_state("load", timeout=20000)
-    its.wait_for_timeout(2000)
-    return browser, its
+    try:
+        context = browser.new_context(viewport={"width": 1500, "height": 1000})
+        page = context.new_page()
+        page.goto("https://portal.schule-sh.de/", timeout=45000)
+        page.wait_for_timeout(800)
+        click_first(page, ["text=Anmelden"])
+        page.wait_for_timeout(1000)
+        page.fill("input[name='username']", creds["username"])
+        page.fill("input[name='password']", creds["password"])
+        click_first(page, ["button[type='submit']", "input[type='submit']", "text=Anmelden"])
+        page.wait_for_timeout(2500)
+        with context.expect_page(timeout=15000) as new_page_info:
+            click_first(page, ["text=itslearning"])
+        its = new_page_info.value
+        its.wait_for_load_state("load", timeout=20000)
+        its.wait_for_timeout(2000)
+        return browser, its
+    except BaseException:
+        browser.close()
+        raise
+
+
+def login(pw, versuche=3, pause=90):
+    """Login mit Retry (Portal/itslearning haengt gelegentlich, z.B. 05.11.26 14:05)."""
+    import time
+    letzter = None
+    for n in range(1, versuche + 1):
+        browser = None
+        try:
+            return _login_einmal(pw)
+        except Exception as e:
+            letzter = e
+            print(f"  Login-Versuch {n}/{versuche} fehlgeschlagen: {e!r}"[:300])
+            time.sleep(pause if n < versuche else 0)
+    raise letzter
 
 
 def send_private_message(its, empfaenger, message, songs):
