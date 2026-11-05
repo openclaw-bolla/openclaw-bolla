@@ -249,7 +249,7 @@ body += schritt(7, "Ein Video suchen", """
 body += schritt(8, "Mit dem Snipping-Tool aufnehmen", """
     <p class="frage">So nimmst du einen <b>Ausschnitt</b> des Bildschirms als Video auf:</p>
     <ol class="liste">
-      <li>Drücke gleichzeitig die Tasten <b>Windows + Umschalt + S</b> (<b>Umschalt</b> = die Taste mit dem dicken Pfeil nach oben).
+      <li>Drücke gleichzeitig die Tasten <b>Windows + Shift + S</b> (<b>Shift</b> = die Taste mit dem dicken Pfeil nach oben).
           Alternativ: Startmenü &rarr; <b>„Snipping Tool“</b> tippen und öffnen.</li>
       <li>Oben erscheint eine kleine Leiste. Klicke auf das <b>Video-Symbol</b> (Filmkamera) und dann auf <b>„Neu“</b>
           bzw. <b>„Aufnahme“</b>.</li>
