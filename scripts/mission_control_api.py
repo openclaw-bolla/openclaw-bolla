@@ -10106,7 +10106,7 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                                      input=prompt, capture_output=True, text=True, timeout=240,
                                      cwd=os.path.expanduser("~"))
                         if r.returncode != 0:
-                            _aurora2_satz_job = {"status": "error", "id": mark_id, "kapitel_titel": kap_titel, "satz": satz, "vorschlag": "", "antwort": "", "geaendert": False, "error": r.stderr[:200] or "Claude-Fehler"}
+                            _aurora2_satz_job = {"status": "error", "id": mark_id, "kapitel_titel": kap_titel, "satz": satz, "vorschlag": "", "antwort": "", "geaendert": False, "error": (r.stderr.strip() or r.stdout.strip())[:200] or "Claude-Fehler"}
                             return
                         raw = json.loads(r.stdout).get("result", "")
                         def _extract5(tag):
