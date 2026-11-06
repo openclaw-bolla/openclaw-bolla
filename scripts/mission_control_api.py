@@ -2516,6 +2516,128 @@ def reise_calendar_sync(sid, entry, station):
         return {"ok": False, "error": str(e)}
 
 
+def _unsub_safe_url(url):
+    """Nur http(s) und keine internen/privaten Ziele (Header kommt aus fremder Mail)."""
+    import urllib.parse, socket, ipaddress
+    u = urllib.parse.urlparse(url)
+    if u.scheme not in ("http", "https") or not u.hostname:
+        return False
+    try:
+        for fam, _, _, _, sa in socket.getaddrinfo(u.hostname, None):
+            ip = ipaddress.ip_address(sa[0])
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+                return False
+    except Exception:
+        return False
+    return True
+
+
+def mail_unsubscribe(mails):
+    """Newsletter abbestellen (Chris 06.11.2026: Knopf 'Abmelden' in der Mail-Leiste).
+    Reihenfolge je Mail: 1) RFC-8058 One-Click-POST, 2) mailto: (Abmelde-Mail von ernstmandel@outlook.de),
+    3) https-Link per GET (mit Hinweis, falls Bestätigungsseite nötig), 4) sonst Link aus dem Text nennen."""
+    import re, html as _h, urllib.request, urllib.parse
+    out = []
+    removed = []
+    ol_token = None
+    for m in mails:
+        who = _h.escape(m.get("from") or m.get("from_email") or "?")
+        mid, account = m.get("id", ""), m.get("account", "")
+        lu, lup, body_links = "", "", []
+        try:
+            if account == "Outlook" and mid:
+                if ol_token is None:
+                    ol_token = get_token()
+                req = urllib.request.Request(
+                    f"https://graph.microsoft.com/v1.0/me/messages/{mid}?$select=internetMessageHeaders,body",
+                    headers={"Authorization": f"Bearer {ol_token}", "Prefer": 'outlook.body-content-type="html"'})
+                d = json.loads(urllib.request.urlopen(req, timeout=15).read())
+                for h in d.get("internetMessageHeaders") or []:
+                    n = (h.get("name") or "").lower()
+                    if n == "list-unsubscribe":
+                        lu = h.get("value", "")
+                    elif n == "list-unsubscribe-post":
+                        lup = h.get("value", "")
+                body_html = (d.get("body") or {}).get("content", "")
+                for a in re.finditer(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', body_html, re.S | re.I):
+                    txt = re.sub(r"<[^>]+>", "", a.group(2))
+                    if re.search(r"abmeld|abbestell|austrag|unsubscribe|opt.?out|newsletter.*beend", txt + a.group(1), re.I):
+                        body_links.append(_h.unescape(a.group(1)))
+            elif account == "wtnet" and mid:
+                import imaplib
+                cfg = json.loads(Path(os.path.join(WORKSPACE, "config/wtnet_account.json")).read_text())
+                with imaplib.IMAP4_SSL(cfg["imap_host"], cfg["imap_port"], timeout=15) as imap:
+                    imap.login(cfg["email"], cfg["password"]); imap.select("INBOX", readonly=True)
+                    _, dat = imap.uid("fetch", mid.encode(), "(BODY.PEEK[HEADER.FIELDS (LIST-UNSUBSCRIBE LIST-UNSUBSCRIBE-POST)])")
+                    raw = (dat[0][1] if dat and dat[0] else b"").decode("utf-8", "replace")
+                    raw = re.sub(r"\r?\n[ \t]+", " ", raw)
+                    for line in raw.splitlines():
+                        if line.lower().startswith("list-unsubscribe-post:"):
+                            lup = line.split(":", 1)[1].strip()
+                        elif line.lower().startswith("list-unsubscribe:"):
+                            lu = line.split(":", 1)[1].strip()
+            else:
+                out.append(f"⚠ {who}: kein Konto/ID"); continue
+        except Exception as e:
+            out.append(f"⚠ {who}: Mail konnte nicht gelesen werden ({_h.escape(str(e))[:120]})"); continue
+
+        https_url = next((u for u in re.findall(r"<(https?://[^>]+)>", lu)), "")
+        mailto = next((u for u in re.findall(r"<(mailto:[^>]+)>", lu)), "")
+        done = False
+        if https_url and "one-click" in lup.lower() and _unsub_safe_url(https_url):
+            try:
+                r = urllib.request.urlopen(urllib.request.Request(
+                    https_url, data=b"List-Unsubscribe=One-Click", method="POST",
+                    headers={"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0"}), timeout=20)
+                out.append(f"✓ {who}: abgemeldet (One-Click, HTTP {r.status})"); done = True
+            except Exception as e:
+                out.append(f"⚠ {who}: One-Click fehlgeschlagen ({_h.escape(str(e))[:100]})")
+        if not done and mailto and account == "Outlook":
+            try:
+                mu = urllib.parse.urlparse(mailto)
+                q = urllib.parse.parse_qs(mu.query)
+                subj = (q.get("subject") or ["unsubscribe"])[0]
+                bd = (q.get("body") or ["unsubscribe"])[0]
+                to = urllib.parse.unquote(mu.path)
+                payload = {"message": {"subject": subj, "body": {"contentType": "Text", "content": bd},
+                                       "toRecipients": [{"emailAddress": {"address": to}}]}, "saveToSentItems": True}
+                urllib.request.urlopen(urllib.request.Request(
+                    "https://graph.microsoft.com/v1.0/me/sendMail", data=json.dumps(payload).encode(), method="POST",
+                    headers={"Authorization": f"Bearer {ol_token}", "Content-Type": "application/json"}), timeout=15)
+                out.append(f"✓ {who}: Abmelde-Mail an {_h.escape(to)} gesendet (von ernstmandel@outlook.de)"); done = True
+            except Exception as e:
+                out.append(f"⚠ {who}: Abmelde-Mail fehlgeschlagen ({_h.escape(str(e))[:100]})")
+        if not done and https_url and _unsub_safe_url(https_url):
+            try:
+                r = urllib.request.urlopen(urllib.request.Request(https_url, headers={"User-Agent": "Mozilla/5.0"}), timeout=20)
+                out.append(f"✓? {who}: Abmelde-Link aufgerufen (HTTP {r.status}) — ggf. fehlt noch eine Bestätigung auf der Seite: {_h.escape(https_url)}"); done = True
+            except Exception as e:
+                out.append(f"⚠ {who}: Link-Aufruf fehlgeschlagen ({_h.escape(str(e))[:100]})")
+        if done and out and out[-1].startswith("✓ "):
+            # Chris 06.11.2026: nach erfolgreicher Abmeldung darf die Mail weg (bei '✓?' bleibt sie: Link evtl. noch nötig)
+            try:
+                if account == "Outlook":
+                    urllib.request.urlopen(urllib.request.Request(
+                        f"https://graph.microsoft.com/v1.0/me/messages/{mid}", method="DELETE",
+                        headers={"Authorization": f"Bearer {ol_token}"}), timeout=10)
+                else:
+                    import imaplib
+                    cfg = json.loads(Path(os.path.join(WORKSPACE, "config/wtnet_account.json")).read_text())
+                    with imaplib.IMAP4_SSL(cfg["imap_host"], cfg["imap_port"], timeout=15) as imap:
+                        imap.login(cfg["email"], cfg["password"]); imap.select("INBOX")
+                        imap.uid("store", mid.encode(), "+FLAGS", "\\Deleted"); imap.expunge()
+                removed.append({"id": mid, "subject": m.get("subject", ""), "date": m.get("date", "")})
+                out[-1] += " · Mail gelöscht"
+            except Exception as e:
+                out[-1] += f" · (Mail löschen fehlgeschlagen: {_h.escape(str(e))[:80]})"
+        if not done:
+            if body_links:
+                out.append(f"ℹ {who}: kein automatischer Abmelde-Header. Link im Text (bitte selbst öffnen): {_h.escape(body_links[0])}")
+            else:
+                out.append(f"ℹ {who}: kein Abmelde-Link gefunden (kein Newsletter oder nur im Mailtext versteckt).")
+    return {"type": "unsub", "text": "\n".join(out) or "Nichts zu tun.", "removed": removed}
+
+
 def mail_command(data):
     """Führt einen Sprachbefehl auf eine oder mehrere Mails aus."""
     import subprocess, smtplib, re, urllib.request
@@ -2537,6 +2659,10 @@ def mail_command(data):
         return (f"{prefix}Von: {m.get('from','')} <{m.get('from_email','')}>\n"
                 f"Betreff: {m.get('subject','')}\nDatum: {m.get('date','')}\n"
                 f"Inhalt: {m.get('preview','')}")
+
+    # ── Newsletter abmelden ────────────────────────────────────────────────────
+    if any(w in instr_low for w in ["abmeld", "abbestell", "unsubscribe", "austrag"]):
+        return mail_unsubscribe(mails)
 
     # ── Löschen ────────────────────────────────────────────────────────────────
     if any(w in instr_low for w in ["lösch", "loesch", "delete", "entfern", "wegmach"]):
@@ -7848,6 +7974,47 @@ def offen_mutate(path, body):
         return {"ok": True, "auftraege": e.get("auftraege", [])}, 200
 
 
+# ── Bolla Songs: Stil-Vorlagen (Chris 06.11.2026) ─────────────────────────────────────────
+# Eine Vorlage legt Style + Exclude FEST fest (werden nach der Generierung deterministisch
+# gesetzt) und gibt dem Songwriter-Prompt Zusatzregeln für Text, Tags und Titel.
+# Neue Vorlage = neuer Eintrag hier + Chip in index.html (SUNO_VORLAGEN). Quelle der ersten
+# Vorlage: Philip- und Morten-Songs (Phonk), 06.11.2026.
+SUNO_VORLAGEN = {
+    "phonk": {
+        "label": "Phonk",
+        "style": ("Drift phonk, 140 BPM, double-time hi-hats, sharp metallic cowbell hits leading the melody, "
+                  "heavy distorted 808 bass, gritty lo-fi tape texture, chopped pitched-down vocal chops, "
+                  "aggressive deep rap vocal with hype shouts, punchy and fun"),
+        "exclude": "pop, ballad, acoustic guitar, female vocals, sung autotune chorus, EDM drop",
+        "inst": (
+            "STIL-VORLAGE PHONK (verbindlich, überschreibt widersprechende Regeln weiter unten):\n"
+            "- Songtext IMMER auf Englisch, als deep confident rap mit Shout-Refrain.\n"
+            "- Strophen: 8 Zeilen, Paarreime, kurze knackige Zeilen (6-9 Silben). Refrain: 4 kurze Zeilen, "
+            "wörtlich identisch bei jedem Vorkommen, mit Mitgröl-Einwürfen in Klammern wie '(Hey!)' nach dem Namen; "
+            "Anker-Zeile mit Name (und Datum, falls Geburtstag) in jedem Refrain.\n"
+            "- Struktur: [Intro], [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], [Final Chorus], [Outro]. "
+            "Intro und Outro bestehen nur aus Name, Wiederholung und ggf. Datum/Anlass.\n"
+            "- AUSNAHME von der Regel 'keine Instrumentenangaben im Lyrics-Feld': In den Abschnitts-Tags DARFST und SOLLST du "
+            "Klanganweisungen geben, und zwar mit ' | ': Intro '[Intro | sharp cowbell hits alone, pitched-down chopped vocal, tape hiss]', "
+            "Strophen '[Verse 1 | deep confident rap, double-time hi-hats, 808 bass rolling in, cowbell on every beat]', "
+            "Pre-Chorus 'build, hi-hats speed up, filtered bass, cowbell rolls', Chorus 'full drop, distorted 808, crowd shouts, "
+            "cowbell hits on every beat', Bridge 'beat strips back, only cowbell and sub-bass, whispered', "
+            "Final Chorus 'full drop, crowd shouts, extra cowbell hits', Outro 'chopped vocal, tape stop, fade'. "
+            "KEINE BPM-Zahlen in den Tags.\n"
+            "- Das Wort 'cowbell' NIE in den gesungenen Textzeilen (Suno singt es sonst nur, statt es zu spielen) — "
+            "nur in den eckigen Tags.\n"
+            "- Inhalt: Witz und Bilder passend zum Anlass/Thema; bei Schulkontext liebevolle Computerraum-Pointen "
+            "(Tastenkürzel, Ordnung, Folien), nie auf Kosten der Person; keine erfundenen persönlichen Fakten; "
+            "keine Klischeewörter wie hyper, zappelig, chaotisch; kein Alter, keine Kosenamen.\n"
+            "- Zeitlos: kein 'heute', kein Jahr, keine Altersangabe. Das Datum (Tag und Monat ausgeschrieben, z.B. 'Tenth of November') "
+            "darf in Intro, Refrain und Outro vorkommen, wenn es ein Geburtstagssong ist.\n"
+            "- Titel: kurzer englischer Titel mit dem Namen und Emojis, vorn 🔥 (bei Geburtstag 🔥🎂), hinten 🔔🎧, "
+            "Form '<Emojis> <Name> <kurze Phonk-Wendung> <Emojis>', keine Zahlen."
+        ),
+    },
+}
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass  # silent
@@ -11061,6 +11228,9 @@ Antworte NUR als reines JSON ohne Markdown:
                 geburtstag = body.get("geburtstag", "").strip()
                 abspieltag = body.get("abspieltag", "").strip()
                 sprache = body.get("sprache", "de")
+                _vorlage = SUNO_VORLAGEN.get((body.get("vorlage") or "").strip())
+                if _vorlage:
+                    sprache = "en"  # Vorlagen sind englisch (muss VOR lang_inst/Regeln gesetzt sein)
                 hit = body.get("hit", "").strip()
                 style_hint = body.get("style_hint", "").strip()
                 kontext = body.get("kontext", "").strip()
@@ -11171,6 +11341,8 @@ Antworte NUR als reines JSON ohne Markdown:
                     lang_inst = "in English"
                 style_hint_inst = (f"ZUSÄTZLICHE STIL-HINWEISE (vom Nutzer, haben höchste Priorität): {style_hint}\n"
                                    f"Diese Eigenschaften MÜSSEN den Style-Prompt dominieren — sie beschreiben den echten Sound des Songs.") if style_hint else ""
+                if _vorlage:
+                    style_hint_inst += ("\n" if style_hint_inst else "") + _vorlage["inst"]
 
                 def _fetch_song_info(query):
                     """Sucht im Web nach musikalischen Eigenschaften/Einordnung des Songs.
@@ -11742,6 +11914,9 @@ Gib deine Antwort als JSON zurück (kein Markdown, nur reines JSON):
                     if idx < 0:
                         raise ValueError("Kein JSON-Objekt in Antwort gefunden")
                     song_data, _ = json.JSONDecoder().raw_decode(raw, idx)
+                    if _vorlage:
+                        song_data["style"] = _vorlage["style"]
+                        song_data["exclude"] = _vorlage["exclude"]
                     if sprache == "de" and "style" in song_data:
                         s = song_data["style"].rstrip(", ")
                         # LEHRE (19.08.2026, Opus-Audit): STYLE_RULE verlangt jetzt bereits einen expliziten

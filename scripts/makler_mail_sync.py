@@ -8,7 +8,7 @@ Status in data/makler_status.json, Job-Status via job_status.report (Telegram nu
 import json, re, sys, html, datetime, requests
 sys.path.insert(0, "/home/bolla/workspace/scripts")
 from outlook_oauth2 import refresh_access_token
-from job_status import report
+from job_status import report, mc_meldung
 
 DATA = "/home/bolla/workspace/data/makler_status.json"
 STATE = "/home/bolla/workspace/state/makler_mail_sync.json"
@@ -58,7 +58,8 @@ def main():
         for x in requests.get(su, headers=H).json().get("value", []):
             c = x.get("conversationId")
             if c and x.get("sentDateTime", "") > sent.get(c, ""): sent[c] = x["sentDateTime"]
-        n_reply = n_bounce = n_moved = n_spam = 0
+        n_reply = n_bounce = n_moved = n_spam = n_follow = 0
+        follow = []
         for folder, m in msgs:
             if folder == "inbox" and fid and sent.get(m.get("conversationId"), "") > m.get("receivedDateTime", "~"):
                 frm0 = ((m.get("from") or {}).get("emailAddress") or {}).get("address", "").lower()
@@ -101,12 +102,22 @@ def main():
                     d["statuses"][mk["id"]] = {"status": "feedback_erhalten", "datum": today(),
                         "notiz": f"Antwort {today()}: {subj[:60]} – {snippet}"}
                     n_reply += 1
+                elif m["id"] not in done and folder == "inbox":
+                    # Folgeantwort eines Maklers, der schon 'feedback_erhalten' o. ä. hat (bisher still ignoriert)
+                    snippet = re.sub(r"\s+", " ", body)[:180]
+                    st0 = d["statuses"].setdefault(mk["id"], {"status": cur or "feedback_erhalten"})
+                    st0["notiz"] = (st0.get("notiz", "") + f" | Folgeantwort {today()}: {subj[:50]} – {snippet}")[:900]
+                    st0["datum"] = today()
+                    follow.append(f"{mk['firma']}: {subj[:50]}")
+                    n_follow += 1
             done.add(m["id"])
         json.dump(d, open(DATA, "w"), ensure_ascii=False, indent=2)
         st["done"] = sorted(done)[-1500:]; st["last"] = datetime.datetime.now().isoformat(timespec="seconds")
         json.dump(st, open(STATE, "w"))
+        if follow:
+            mc_meldung("makler-folgeantwort", "Makler: neue Folgeantwort", "Neue Antwort von " + "; ".join(follow) + " – bitte lesen/nachfassen (Excel pflegen, Mail nach 'Immos 2027-28' verschieben).")
         report("makler-mail-sync", "Makler-Mail-Sync", "ok",
-               f"{n_reply} neue Antworten, {n_bounce} Rückläufer, {n_moved} nach '{FOLDER_NAME}' verschoben, {n_spam} aus Spam ins Postfach")
+               f"{n_reply} neue Antworten, {n_bounce} Rückläufer, {n_moved} nach '{FOLDER_NAME}' verschoben, {n_spam} aus Spam ins Postfach, {n_follow} Folgeantworten")
         print(n_reply, n_bounce, n_moved, n_spam)
     except Exception as e:
         report("makler-mail-sync", "Makler-Mail-Sync", "fehler", str(e)[:200]); raise
