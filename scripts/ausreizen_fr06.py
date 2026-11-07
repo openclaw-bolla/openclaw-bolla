@@ -79,8 +79,9 @@ def stop_reason():
     if dt.datetime.now() >= DEADLINE:
         return "Deadline Sa 22:55"
     q = limit_gate.quota() or {}
-    if float(q.get("seven_day_pct") or 0) >= WEEK_STOP:
-        return f"Woche {q.get('seven_day_pct')} % >= {WEEK_STOP}"
+    cap = WEEK_STOP if dt.datetime.now().hour >= 20 else float(os.environ.get("AUSREIZEN_WEEK_STOP_TAG", "90"))
+    if float(q.get("seven_day_pct") or 0) >= cap:
+        return f"Woche {q.get('seven_day_pct')} % >= {cap}"
     return None
 
 

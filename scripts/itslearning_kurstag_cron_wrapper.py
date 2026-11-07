@@ -23,7 +23,7 @@ try:
     summ = out.split("=== ZUSAMMENFASSUNG ===")[-1].strip() if "=== ZUSAMMENFASSUNG ===" in out else out[-600:]
     lines = [l for l in summ.splitlines() if ":" in l]
     ok = r.returncode == 0 and len(lines) >= 4 and all(l.strip().endswith(": OK") for l in lines)
-    tg(("✅ itslearning Kurstag 6 (I-Kurse): PDF + Praktikum + Mitteilung in allen 4 Kursen gepostet 🐾\n" if ok else
-        "⚠️ itslearning Kurstag 6 (I-Kurse) NICHT sauber durch:\n") + summ[:900])
+    tg(("✅ itslearning Kurstag 7 (I-Kurse): PDF + Praktikum + Mitteilung in allen 4 Kursen gepostet 🐾\n" if ok else
+        "⚠️ itslearning Kurstag 7 (I-Kurse) NICHT sauber durch:\n") + summ[:900])
 except Exception as e:
-    tg(f"⚠️ itslearning Kurstag 6 Cron: Abbruch {e!r}"[:900])
+    tg(f"⚠️ itslearning Kurstag 7 Cron: Abbruch {e!r}"[:900])

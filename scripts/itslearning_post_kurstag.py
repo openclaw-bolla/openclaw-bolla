@@ -40,23 +40,24 @@ def mem_ok():
 # die 4 Ziel-Kurse (Kurs-IDs bleiben das ganze Schuljahr stabil, siehe Tabelle unten) und je einen
 # individuell formulierten Mitteilungstext (NIE denselben Text kopieren, NIE "vorher/schon jetzt
 # herunterladen" schreiben - Download passiert am Kurstag selbst, siehe [[project_itslearning_automation]]).
-DAY_PREFIX = "06"
+DAY_PREFIX = "07"
 
 # Kurs-IDs (Schuljahr 26/27, stabil): 7a I=190735 7a II=190738 7b I=190741 7b II=190743
 #                                     7c I=190861 7c II=190878 7d I=190860 7d II=190877
-# Kurstag 6 "Handyvideo, YouTube, Urheberrecht" - nur die "I"-Kurse.
-# Termine: 7d I + 7b I = Mi 04.11.2026  |  7a I + 7c I = Do 05.11.2026
-# Paket (discover_files 06-): 06-Basics Office - Handyvideo-YouTube-Urheberrecht.pdf, 06-Praktikum.html (Handouts/Praktikum)
-# Versand laut Chris immer DIENSTAG der Kurstag-Woche (Di 03.11.).
+# Kurstag 7 "PowerPoint Profi: Einstieg (+ 4 Schritte)" - nur die "I"-Kurse.
+# Termine: 7d I + 7b I = Mi 11.11.2026  |  7a I + 7c I = Do 12.11.2026
+# Paket (discover_files 07-): 07-1 Powerpoint Profi Einstieg.pdf, 07-1.1 4 Schritte.pdf (beide 1:1-Export von Chris' PPTX),
+#                             07-Praktikum.html (Handouts/Praktikum)
+# Versand: Di 10.11. 11:00 (nach Chris' Freigabe am Mo 09.11.). Mitteilungen erwaehnen das Grossprojekt NICHT (Chris 07.11.).
 COURSES = [
     {"id": 190860, "kuerzel": "7d I", "text":
-        '🎬 Liebe 7d, am Mittwoch, 04.11., wird euer Handy zum Filmstudio! 1️⃣ Ich zeige euch, wie ihr euren Handybildschirm aufnehmt und das Video kürzt. 2️⃣ Zu Beginn des Praktikums laden wir gemeinsam die Folien „Basics Office: Videos, Clipchamp" und 📎 Praktikum 6 herunter. 3️⃣ Im Praktikum erfahrt ihr, wie ein Video vom Handy auf den PC kommt – und nehmt am PC mit dem Snipping-Tool einen kurzen Ausschnitt auf. Wer ein Handy dabeihat, nimmt es gern mit – ohne Handy arbeitet ihr einfach zu zweit. Bis Mittwoch! 📱'},
+        '🖥️ Liebe 7d, am Mittwoch, 11.11., steigen wir in PowerPoint richtig ein! 1️⃣ Ich zeige euch, was man mit PowerPoint alles machen kann – viele Beispiele, die ich komplett selbst gebastelt habe, ganz ohne KI. Lasst euch überraschen! 🤩 Dazu gibt\'s die „4 Schritte zu einer sehr guten Präsentation". 2️⃣ Zu Beginn des Praktikums laden wir gemeinsam die Folien „PowerPoint Profi: Einstieg", die „4 Schritte" und 📎 Praktikum 7 herunter. 3️⃣ Im Praktikum legt ihr dann los. Bis Mittwoch! ✨'},
     {"id": 190741, "kuerzel": "7b I", "text":
-        '📱 Hallo liebe 7b! Am Mittwoch, 04.11., geht\'s ums Videomachen – am Handy und am PC. 1️⃣ Ihr lernt, wie man den Handybildschirm aufzeichnet und die Aufnahme kürzt. 2️⃣ Sobald das Praktikum beginnt, holen wir uns gemeinsam die Folien „Basics Office: Videos, Clipchamp" und 📎 Praktikum 6. 3️⃣ Dann probiert ihr am PC das Snipping-Tool aus und filmt einen kurzen Bildschirmausschnitt – dabei achten wir auf den Datenschutz. Handy gern mitbringen, Partnerarbeit ist aber auch völlig okay. Freu mich auf euch! 😊'},
+        '🎨 Hallo liebe 7b! Am Mittwoch, 11.11., lernt ihr PowerPoint von seiner spektakulären Seite kennen. 1️⃣ Ich führe euch jede Menge Beispiele vor, die ich alle selbst erstellt habe – ohne KI, nur mit PowerPoint und etwas Fantasie. Dazu verrate ich euch die „4 Schritte" zu einer richtig guten Präsentation. 2️⃣ Sobald das Praktikum beginnt, holen wir uns gemeinsam die Folien „PowerPoint Profi: Einstieg", die „4 Schritte" und 📎 Praktikum 7. 3️⃣ Danach seid ihr dran! Freu mich auf euch! 😊'},
     {"id": 190735, "kuerzel": "7a I", "text":
-        '🎥 Liebe 7a, am Donnerstag, 05.11., machen wir kleine Videos – und zwar mit dem, was ihr schon in der Tasche habt. 1️⃣ Ich zeige euch die Bildschirmaufnahme bei Android und iPhone und wie ihr Anfang und Ende wegschneidet. 2️⃣ Zu Beginn des Praktikums laden wir zusammen die Folien „Basics Office: Videos, Clipchamp" und 📎 Praktikum 6 herunter. 3️⃣ Im Praktikum klären wir, wie das Video per Stick oder itslearning an den PC kommt, und ihr nehmt mit dem Snipping-Tool eine Szene von maximal 15 Sekunden auf. Wer ein Handy dabeihat, darf es mitbringen. Bis Donnerstag! 🚀'},
+        '🚀 Liebe 7a, am Donnerstag, 12.11., beginnt unser PowerPoint-Abenteuer! 1️⃣ Zuerst gibt\'s viel zu sehen: Ich zeige euch Beispiele, die ich ohne KI selbst gemacht habe – damit ihr eine Idee bekommt, was mit PowerPoint alles möglich ist. Außerdem lernt ihr die „4 Schritte zu einer sehr guten Präsentation" kennen. 2️⃣ Zu Beginn des Praktikums laden wir zusammen die Folien „PowerPoint Profi: Einstieg", die „4 Schritte" und 📎 Praktikum 7 herunter. 3️⃣ Im Praktikum geht\'s dann selbst los. Bis Donnerstag! 🎉'},
     {"id": 190861, "kuerzel": "7c I", "text":
-        '🎞️ Hallo 7c! Am Donnerstag, 05.11., dreht sich alles um Videos: aufnehmen, kürzen, auf den PC bringen. 1️⃣ Ich erkläre euch, wie ihr euren Handybildschirm filmt und das Video kürzt. 2️⃣ Wenn das Praktikum startet, laden wir gemeinsam die Folien „Basics Office: Videos, Clipchamp" und 📎 Praktikum 6 herunter. 3️⃣ Dort lernt ihr zwei Wege, ein Video vom Handy auf den PC zu bekommen, und nehmt am PC einen kurzen Videoausschnitt mit dem Snipping-Tool auf. Handy dabei? Super, sonst zu zweit. Auf geht\'s! 🎬'},
+        '✨ Hallo 7c! Am Donnerstag, 12.11., schauen wir uns an, was in PowerPoint alles steckt. 1️⃣ Ich habe viele Beispiele vorbereitet – alle selbst gemacht, ohne KI – und zeige euch, welche Möglichkeiten ihr habt. Dazu kommen die „4 Schritte" zu einer sehr guten Präsentation. 2️⃣ Wenn das Praktikum startet, laden wir gemeinsam die Folien „PowerPoint Profi: Einstieg", die „4 Schritte" und 📎 Praktikum 7 herunter. 3️⃣ Dann seid ihr an der Reihe. Auf geht\'s! 🌟'},
 ]
 
 
