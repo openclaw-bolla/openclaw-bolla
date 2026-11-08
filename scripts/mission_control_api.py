@@ -8012,6 +8012,36 @@ SUNO_VORLAGEN = {
             "Form '<Emojis> <Name> <kurze Phonk-Wendung> <Emojis>', keine Zahlen."
         ),
     },
+    "poprap": {
+        "label": "Pop-Rap",
+        "style": ("Modern melodic pop-rap, 128 BPM, bouncy trap drums, warm punchy 808 bass, bright catchy synth hook, "
+                  "snappy finger snaps, confident rap verses with a big sung singalong chorus, glossy radio-ready mix, "
+                  "feel-good and energetic"),
+        "exclude": "ballad, acoustic guitar, screamo, metal, country, spoken word, lo-fi tape hiss",
+        "inst": (
+            "STIL-VORLAGE POP-RAP (verbindlich, überschreibt widersprechende Regeln weiter unten):\n"
+            "- Songtext IMMER auf Englisch. Strophen gerappt (flow, locker, cool), Refrain GESUNGEN und extrem eingängig "
+            "(Mitsing-Hook wie aktuelle Chart-Hits).\n"
+            "- Strophen: 8 Zeilen, Paarreime oder Kreuzreime, natürlicher Sprechrhythmus (7-10 Silben). Refrain: 4 kurze Zeilen, "
+            "wörtlich identisch bei jedem Vorkommen, Anker-Zeile mit Name (und Datum, falls Geburtstag) in jedem Refrain, "
+            "ein kurzer Ohrwurm-Einwurf wie '(Oh-oh!)' oder '(Yeah!)' in Klammern.\n"
+            "- Struktur: [Intro], [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Pre-Chorus], [Chorus], [Bridge], [Final Chorus], [Outro]. "
+            "Intro und Outro nur Name, Wiederholung und ggf. Datum/Anlass.\n"
+            "- AUSNAHME von der Regel 'keine Instrumentenangaben im Lyrics-Feld': In den Abschnitts-Tags DARFST und SOLLST du "
+            "Klanganweisungen geben, mit ' | ': Intro '[Intro | bright synth hook alone, finger snaps]', "
+            "Verse '[Verse 1 | confident melodic rap, bouncy trap drums, warm 808]', "
+            "Pre-Chorus 'build, drums filter up, rising synth', Chorus 'big sung hook, full drums, stacked vocals, singalong', "
+            "Bridge 'beat drops out, snaps and vocal only', Final Chorus 'biggest chorus, stacked harmonies, ad-libs', "
+            "Outro 'synth hook fades, final ad-lib'. KEINE BPM-Zahlen in den Tags.\n"
+            "- Inhalt: Witz und Bilder passend zum Anlass/Thema; bei Schulkontext liebevolle Computerraum-Pointen "
+            "(Tastenkürzel, Ordnung, Folien), nie auf Kosten der Person; keine erfundenen persönlichen Fakten; "
+            "keine Klischeewörter wie hyper, zappelig, chaotisch; kein Alter, keine Kosenamen.\n"
+            "- Zeitlos: kein 'heute', kein Jahr, keine Altersangabe. Das Datum (Tag und Monat ausgeschrieben) "
+            "darf in Intro, Refrain und Outro vorkommen, wenn es ein Geburtstagssong ist.\n"
+            "- Titel: kurzer englischer Titel mit dem Namen und Emojis, vorn 🎤 (bei Geburtstag 🎤🎂), hinten ✨🎧, "
+            "Form '<Emojis> <Name> <kurze Pop-Wendung> <Emojis>', keine Zahlen."
+        ),
+    },
 }
 
 
