@@ -8330,6 +8330,7 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
                 "/sos-icon-512.png":         ("sos-icon-512.png",       "image/png", "max-age=604800"),
                 "/sos-apple-touch.png":      ("sos-apple-touch.png",    "image/png", "max-age=604800"),
                 "/sw.js":                    ("sw.js",                  "application/javascript", "no-store"),
+                "/englisch.js":              ("englisch.js",            "application/javascript; charset=utf-8", "no-store"),
                 "/mc-icon-192.png":          ("mc-icon-192.png",        "image/png", "max-age=604800"),
                 "/mc-icon-512.png":          ("mc-icon-512.png",        "image/png", "max-age=604800"),
                 "/mc-apple-touch.png":       ("mc-apple-touch.png",     "image/png", "max-age=604800"),
@@ -8645,6 +8646,27 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
 
             if self.path == "/api/bolla/voices":
                 self._send_json(azure_list_voices())
+                return
+
+            # ===== Englisch-Trainer (MP Familie + mmp) =====
+            if _path_only == "/api/englisch/heute":
+                import englisch_api; self._send_json(englisch_api.heute()); return
+            if _path_only == "/api/englisch/fortschritt":
+                import englisch_api; self._send_json(englisch_api.fortschritt()); return
+            if _path_only.startswith("/api/englisch/img/"):
+                import englisch_api
+                _ip = englisch_api.bild_pfad(_path_only.split("/api/englisch/img/", 1)[1])
+                if _ip:
+                    with open(_ip, "rb") as _f:
+                        body = _f.read()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "image/png" if _ip.endswith(".png") else "image/jpeg")
+                    self.send_header("Cache-Control", "public, max-age=604800")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+                else:
+                    self.send_error(404)
                 return
 
             if self.path == "/api/speech/config":
@@ -10494,6 +10516,12 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                 self._handle_bolla_stream(body)
             elif self.path == "/api/bolla/tts":
                 self._handle_tts(body)
+            elif self.path == "/api/englisch/ergebnis":
+                import englisch_api; self._send_json(englisch_api.ergebnis(body))
+            elif self.path == "/api/englisch/zeit":
+                import englisch_api; self._send_json(englisch_api.zeit_addieren(body))
+            elif self.path == "/api/englisch/feedback":
+                import englisch_api; self._send_json(englisch_api.feedback(body))
             elif self.path == "/api/mail-command":
                 self._send_json(mail_command(body))
             elif self.path == "/api/spam-rule":

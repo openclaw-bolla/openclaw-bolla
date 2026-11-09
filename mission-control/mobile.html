@@ -369,20 +369,15 @@ body {
 
 <div class="header">
   <div class="header-left">
-    <h1 id="page-title">Kalender</h1>
+    <h1 id="page-title">Englisch</h1>
     <div class="sub" id="page-sub"></div>
   </div>
   <button class="header-refresh" id="refresh-btn" onclick="refreshTab()" title="Aktualisieren">↻</button>
 </div>
 
-<!-- KALENDER -->
-<div class="page active" id="p-cal">
-  <div id="cal-list"><div class="loading">Lade Termine</div></div>
-</div>
-
-<!-- MAILS -->
-<div class="page" id="p-mail">
-  <div id="mail-list"><div class="loading">Lade Mails</div></div>
+<!-- ENGLISCH (Einstiegsseite; Trainer-Code gemeinsam mit MP: /englisch.js) -->
+<div class="page active" id="p-en">
+  <div id="en-root"></div>
 </div>
 
 <!-- WETTER -->
@@ -558,8 +553,7 @@ body {
 <!-- BOTTOM NAV -->
 <nav class="tabbar" id="tabbar">
   <button class="tabbtn" data-tab="sos" style="color:#ff3b30"><span class="ic">🆘</span>SOS</button>
-  <button class="tabbtn active" data-tab="cal"><span class="ic">📅</span>Kalender</button>
-  <button class="tabbtn" data-tab="mail"><span class="ic">📧</span>Mails</button>
+  <button class="tabbtn active" data-tab="en"><span class="ic">🇬🇧</span>Englisch</button>
   <button class="tabbtn" data-tab="notiz"><span class="ic">🎙️</span>Notiz</button>
   <button class="tabbtn" data-tab="clip"><span class="ic">📋</span>Clipboard</button>
   <button class="tabbtn" data-tab="pep"><span class="ic">✨</span>Aufpeppen</button>
@@ -573,6 +567,7 @@ body {
 <button id="fab-mic" onclick="fabMicClick()" aria-label="Sprachnotiz aufnehmen"
   style="position:fixed;bottom:80px;right:18px;width:60px;height:60px;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:28px;cursor:pointer;box-shadow:0 4px 16px rgba(255,59,48,0.45);z-index:200;display:flex;align-items:center;justify-content:center;transition:transform 0.15s;">🎙️</button>
 
+<script src="/englisch.js"></script>
 <script>
 // ===== UTILS =====
 function esc(s) {
@@ -596,8 +591,7 @@ function getInitials(name) {
 const pageTitle = document.getElementById('page-title');
 const pageSub   = document.getElementById('page-sub');
 const TITLES = {
-  cal:         ['Kalender',       'Kommende Termine'],
-  mail:        ['Mails',          'Ungelesen'],
+  en:          ['🇬🇧 Englisch',   'Tägliches Training · 10–15 min'],
   wx:          ['Wetter',         'Norderstedt'],
   rezept:      ['Rezept',         'Rezept des Tages'],
   laden:       ['Ladeplaner',     'Säulen entlang deiner Route'],
@@ -608,7 +602,7 @@ const TITLES = {
   sos:         ['🆘 Notfall',     'Notruf & Standort']
 };
 
-let activeTab = 'cal';
+let activeTab = 'en';
 const loaded = {};
 
 let _clipAutoTimer = null;
@@ -628,7 +622,7 @@ function switchTab(tab) {
   window.scrollTo(0, 0);
   // Floating Mic-Button auf Notiz-Seite ausblenden
   const fab = document.getElementById('fab-mic');
-  if (fab) fab.style.display = (tab === 'notiz') ? 'none' : 'flex';
+  if (fab) fab.style.display = (tab === 'notiz' || tab === 'en') ? 'none' : 'flex';
   // Auto-Refresh des gclip wenn der Clip-Tab aktiv ist (alle 8 Sek)
   if (_clipAutoTimer) { clearInterval(_clipAutoTimer); _clipAutoTimer = null; }
   if (tab === 'clip') _clipAutoTimer = setInterval(loadClipboard, 8000);
@@ -654,7 +648,7 @@ function refreshTab() {
   ri.classList.add('spinning');
   // Reset content area
   const containers = {
-    cal: 'cal-list', mail: 'mail-list', wx: 'wx-content',
+    en: 'en-root', wx: 'wx-content',
     rezept: 'rezept-content', laden: null,
     notiz: null, bd: 'bd-list',
     clip: null, sos: null
@@ -670,8 +664,7 @@ async function loadTab(tab) {
   if (tab !== 'clip' && loaded[tab]) return;
   if (tab !== 'clip') loaded[tab] = true;
   try {
-    if      (tab === 'cal')    await loadCalendar();
-    else if (tab === 'mail')   await loadMails();
+    if      (tab === 'en')     await loadEnglisch();
     else if (tab === 'wx')     await loadWeather();
     else if (tab === 'rezept') await loadRezept();
     else if (tab === 'laden')  await loadLaden();
@@ -684,120 +677,10 @@ async function loadTab(tab) {
   }
 }
 
-// ===== KALENDER =====
-function parseCalDate(dateStr) {
-  // API returns "18.05." or "18.05.2026" — parse to Date
-  if (!dateStr) return null;
-  const m = dateStr.match(/^(\d{1,2})\.(\d{1,2})\.?(\d{4})?/);
-  if (!m) return null;
-  const day = parseInt(m[1]), mon = parseInt(m[2]) - 1;
-  const year = m[3] ? parseInt(m[3]) : new Date().getFullYear();
-  return new Date(year, mon, day);
-}
-
-async function loadCalendar() {
-  const el = document.getElementById('cal-list');
-  try {
-    const r = await fetch('/api/calendar');
-    const data = await r.json();
-    if (!data || !data.length) {
-      el.innerHTML = '<div class="empty"><div class="big">📅</div>Keine kommenden Termine</div>';
-      return;
-    }
-
-    const now = new Date(); now.setHours(0,0,0,0);
-    const tom = new Date(now); tom.setDate(now.getDate() + 1);
-
-    // Group by date string (raw key)
-    const groups = {};
-    const groupOrder = [];
-    data.forEach(ev => {
-      const key = ev.date || '';
-      if (!groups[key]) { groups[key] = []; groupOrder.push(key); }
-      groups[key].push(ev);
-    });
-
-    let html = '';
-    groupOrder.forEach(key => {
-      const evDate = parseCalDate(key);
-      let label = key, badge = '';
-      if (evDate) {
-        const t = evDate.getTime();
-        if (t === now.getTime()) {
-          badge = '<span class="badge-today">HEUTE</span>';
-          label = '';
-        } else if (t === tom.getTime()) {
-          badge = '<span class="badge-tomorrow">MORGEN</span>';
-          label = key;
-        } else {
-          label = key;
-        }
-      }
-      html += `<div class="date-group-head">${badge}${esc(label)}</div>`;
-      groups[key].forEach(ev => {
-        const timeStr = ev.time ? `<span style="color:var(--accent);font-weight:600">${esc(ev.time)}</span> · ` : '';
-        html += `<div class="card">
-          <div class="left"><div class="card-dot blue" style="font-size:14px;font-weight:700">${esc(ev.weekday || '📅')}</div></div>
-          <div class="right">
-            <div class="title">${esc(ev.title)}</div>
-            <div class="meta">${timeStr}${ev.location ? esc(ev.location) : ''}</div>
-            ${ev.category ? `<div class="extra">📌 ${esc(ev.category)}</div>` : ''}
-          </div>
-        </div>`;
-      });
-    });
-    el.innerHTML = html;
-  } catch (e) {
-    el.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`;
-  }
-}
-
-// ===== MAILS =====
-async function loadMails() {
-  const el = document.getElementById('mail-list');
-  try {
-    const r = await fetch('/api/email');
-    const data = await r.json();
-    const count = data.count || 0;
-    pageSub.textContent = count === 0 ? 'Alles gelesen' : `${count} ungelesen`;
-    if (!data.messages || !data.messages.length) {
-      el.innerHTML = '<div class="empty"><div class="big">📭</div>Alles gelesen — Inbox zero! 🎉</div>';
-      return;
-    }
-
-    // Group by account
-    const byAccount = {};
-    data.messages.forEach(m => {
-      const acc = m.account || 'Sonstige';
-      if (!byAccount[acc]) byAccount[acc] = [];
-      byAccount[acc].push(m);
-    });
-
-    let html = '';
-    Object.entries(byAccount).forEach(([acc, msgs]) => {
-      const isGmail = acc.toLowerCase() === 'gmail';
-      html += `<div class="section-head">${isGmail ? '📬' : '📧'} ${esc(acc)} · ${msgs.length} ungelesen</div>`;
-      msgs.forEach(m => {
-        const init = getInitials(m.from || '?');
-        const bg = initialsColor(m.from || '');
-        const badgeClass = isGmail ? 'badge gmail' : 'badge';
-        html += `<div class="mail-card">
-          <div class="initials" style="background:${bg}">${esc(init)}</div>
-          <div class="mail-body">
-            <div class="mail-header-row">
-              <div class="mail-from">${esc(m.from)}</div>
-              <div class="mail-date">${esc(m.date)}</div>
-            </div>
-            <div class="mail-subj">${esc(m.subject)}</div>
-            <div class="mail-prev">${esc(m.preview || '')}</div>
-          </div>
-        </div>`;
-      });
-    });
-    el.innerHTML = html;
-  } catch (e) {
-    el.innerHTML = `<div class="empty">⚠️ ${esc(e.message)}</div>`;
-  }
+// ===== ENGLISCH =====
+async function loadEnglisch() {
+  if (!window.EnglischTrainer) { document.getElementById('en-root').innerHTML = '<div class="empty">⚠️ Trainer-Skript nicht geladen</div>'; return; }
+  EnglischTrainer.mount(document.getElementById('en-root'));
 }
 
 // ===== WETTER =====
@@ -2015,9 +1898,10 @@ async function sosCopyMaps() {
 }
 
 // ===== INIT =====
-pageTitle.textContent = TITLES.cal[0];
-pageSub.textContent   = TITLES.cal[1];
-loadTab('cal');
+pageTitle.textContent = TITLES.en[0];
+pageSub.textContent   = TITLES.en[1];
+loadTab('en');
+{ const _fab = document.getElementById('fab-mic'); if (_fab) _fab.style.display = 'none'; }
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(()=>{});

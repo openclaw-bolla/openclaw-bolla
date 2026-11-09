@@ -887,6 +887,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"></script>
+<script src="/englisch.js"></script>
 </head>
 <body>
 
@@ -944,6 +945,7 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
       <div class="nav-block" id="navblock-familie">
         <div class="nav-section open" onclick="toggleNavSection('familie')" id="nav-sec-familie"><span class="nav-section-grip">⠿</span>Familie <span class="nav-section-chevron">▶</span></div>
         <div class="nav-section-items" id="nav-section-items-familie">
+          <div class="nav-item" data-page="englisch"><span class="icon">🇬🇧</span><span>Englisch</span></div>
           <div class="nav-item" data-page="robin"><span class="icon">🌍</span><span>Robin</span></div>
           <div class="nav-item" data-page="geburtstage"><span class="icon">🎂</span><span>Geburtstage</span></div>
         </div>
@@ -1556,6 +1558,11 @@ body.theme-ballons { /* 🎂 Geburtstage: helle Ballon-Trauben am Himmel */
       <!-- EMAIL -->
       <div class="page" id="page-email">
         <div class="grid" id="email-content"><div class="loading">Lade...</div></div>
+      </div>
+
+      <!-- ENGLISCH-TRAINER (shared: /englisch.js, auch in mmp) -->
+      <div class="page" id="page-englisch">
+        <div id="englisch-root" style="padding:8px 14px"></div>
       </div>
 
       <!-- ROBIN -->
@@ -5059,6 +5066,7 @@ function showPage(page) {
   if (page === 'claudecode') { loadClaudeCode(); loadBollaMemory(); }
   if (page === 'korrektur')       initKorrektur();
   if (page === 'differenzierung') initDiff();
+  if (page === 'englisch')   { if (window.EnglischTrainer) EnglischTrainer.mount(document.getElementById('englisch-root')); }
   if (page === 'robin')      loadRobin();
   if (page === 'geburtstage')loadBirthdays();
   if (page === 'tonies')     loadTonies();
@@ -5626,6 +5634,7 @@ async function initNavDrag() {
     'reise-sommerreise2026': 'nav-section-items-arbeit',
     'ki-workshop': 'nav-section-items-arbeit',
     'board': 'nav-section-items-familie',
+    'englisch': 'nav-section-items-familie',
     'robin': 'nav-section-items-familie',
     'geburtstage': 'nav-section-items-familie',
     'tonies': 'nav-section-items-archiv',
@@ -12905,7 +12914,7 @@ function aurora2FpEinschubZaehl(n) {
   const d = _aurora2Data || {};
   const kap = (d.kapitel || [])[n - 1];
   if (!kap) return {gesamt: 0, offen: 0};
-  const l = (d.einschub_vorschlaege || []).filter(e => String(e.id || '').startsWith('ei-fp-') && e.kapitel_titel === kap.titel && e.status !== 'abgelehnt_geloescht');
+  const l = (d.einschub_vorschlaege || []).filter(e => /^ei-(fp|saat)-/.test(String(e.id || '')) && e.kapitel_titel === kap.titel && e.status !== 'abgelehnt_geloescht');
   return {gesamt: l.length, offen: l.filter(e => e.status === 'wartet' || e.status === 'korrektur_angefragt').length};
 }
 function aurora2FpBadges(n) {

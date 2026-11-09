@@ -30,6 +30,8 @@
   #text { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
   #text span.s { -webkit-tap-highlight-color:transparent; border-radius:3px; }
   #text span.s.sel { background:#ffe28a; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
+  #text span.s.blau { background:#dbeafe; color:#1e3a8a; border-bottom:3px solid #2563eb; cursor:pointer; }
+  #chapters .badge.blau { background:#dbeafe; color:#1d4ed8; margin-left:6px; }
   #text span.s.pend { background:#e9d5ff; color:#2e1065; border-bottom:3px dotted #7e22ce; cursor:pointer; }
   #selBar { position:fixed; bottom:52px; z-index:30; display:none; gap:8px; font-family:system-ui,sans-serif; }
   #selBar .btn { flex:1; min-height:52px; box-shadow:0 6px 18px rgba(0,0,0,.22); padding:6px 8px; font-size:15px; }
@@ -230,6 +232,8 @@
       b.appendChild(t);
       const n = (buch.satz_markierungen || []).filter(m => m.kapitel_titel === k.titel && m.status === 'wartet_entscheidung').length;
       if (n) { const bd = document.createElement('span'); bd.className = 'badge'; bd.textContent = n + ' offen'; b.appendChild(bd); }
+      const nb = (buch.einschub_vorschlaege || []).filter(e => e.kapitel_titel === k.titel && (e.status === 'wartet' || e.status === 'korrektur_angefragt')).length;
+      if (nb) { const bd = document.createElement('span'); bd.className = 'badge blau'; bd.textContent = '✎ ' + nb + ' blau'; b.appendChild(bd); }
       b.onclick = () => { showChapter(i, true); closeChapters(); };
       list.appendChild(b);
     });
@@ -420,11 +424,20 @@
       const hit = spans.find(s => s.textContent.includes(m.satz));
       if (hit) { hit.classList.add('pend'); hit.dataset.mid = m.id; return; }
       // Stelle über mehrere Sätze/Absätze: alle überlappenden Sätze markieren
-      const norm = x => x.replace(/\s+/g, ' ').trim();
+      const norm = x => x.replace(/\s+/g, '');
       let pos = 0, cat = '';
-      const ranges = spans.map(s => { const tx = norm(s.textContent) + ' '; const r = [pos, pos + tx.length, s]; cat += tx; pos += tx.length; return r; });
+      const ranges = spans.map(s => { const tx = norm(s.textContent) ; const r = [pos, pos + tx.length, s]; cat += tx; pos += tx.length; return r; });
       const q = norm(m.satz), i = cat.indexOf(q);
       if (i >= 0) ranges.filter(r => r[0] < i + q.length && r[1] > i).forEach(r => { r[2].classList.add('pend'); r[2].dataset.mid = m.id; });
+    });
+    // Offene blaue Einschub-Vorschläge (Figuren-Pass / Saat) im Text hervorheben
+    (buch.einschub_vorschlaege || []).filter(e => e.kapitel_titel === k.titel && (e.status === 'wartet' || e.status === 'korrektur_angefragt') && e.text).forEach(e => {
+      const spans = Array.from(t.querySelectorAll('span.s'));
+      const norm = x => x.replace(/\s+/g, '');   // ohne Leerzeichen: Satz-Splitter trennt z. B. »?«, fragte« hinter »?«
+      let pos = 0, cat = '';
+      const ranges = spans.map(s2 => { const tx = norm(s2.textContent); const r = [pos, pos + tx.length, s2]; cat += tx; pos += tx.length; return r; });
+      const q = norm(e.text), qi = cat.indexOf(q);
+      if (qi >= 0) ranges.filter(r => r[0] < qi + q.length && r[1] > qi).forEach(r => { r[2].classList.add('blau'); r[2].dataset.eid = e.id; });
     });
     markNotes();
     updateSammelUI();
@@ -490,6 +503,10 @@
     if (sp.dataset.mid) {   // offener Vorschlag -> direkt Antwort + Übernehmen/Verwerfen zeigen
       const m = (buch.satz_markierungen || []).find(x => x.id === sp.dataset.mid);
       if (m) { clearSel(); openResult(m); return; }
+    }
+    if (sp.dataset.eid) {   // blauer Einschub-Vorschlag -> Behalten / Weg
+      const ei = (buch.einschub_vorschlaege || []).find(x => x.id === sp.dataset.eid);
+      if (ei) { clearSel(); openEinschub(ei); return; }
     }
     if (sp.dataset.nid) {   // gesammelter Hinweis -> bearbeiten/löschen
       const n = sammel.notizen.find(x => x.id === sp.dataset.nid);
@@ -779,6 +796,42 @@
       $('resAntwort').textContent += `\n\n(bereits ${m.status === 'uebernommen' ? 'übernommen' : 'verworfen'})`;
     }
     b.appendChild(btn('Schließen', 'btn', closeSheet));
+  }
+  let curEinschubId = null;
+  function openEinschub(ei) {
+    curEinschubId = ei.id;
+    $('sheetSatz').textContent = ei.text || '';
+    $('sheetInput').style.display = 'none';
+    $('sheetList').style.display = 'none';
+    $('sheetSatz').style.display = '';
+    $('sheetTitel').textContent = '✎ Blauer Vorschlag';
+    $('sheetResult').style.display = 'block';
+    $('sheetWrap').classList.add('on');
+    $('resAntwort').textContent = ei.begruendung || '';
+    $('resVorschlagBox').style.display = 'none';
+    $('sheetFehler').textContent = '';
+    const b = $('resButtons'); b.textContent = '';
+    b.appendChild(btn('✓ Behalten', 'btn ok', () => entscheidenEinschub('annehmen')));
+    b.appendChild(btn('✗ Weg damit', 'btn warn', () => entscheidenEinschub('ablehnen')));
+    b.appendChild(btn('Schließen', 'btn', closeSheet));
+  }
+  async function entscheidenEinschub(aktion) {
+    if (!curEinschubId) return;
+    try {
+      const r = await fetch(API + '/api/aurora2/einschub-entscheidung', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: curEinschubId, aktion })
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || 'Fehler');
+      await loadBuchQuiet();
+      showChapter(kapIdx, false);
+      renderChapterList();
+      closeSheet();
+      toast(aktion === 'annehmen' ? '✓ Einschub bleibt' : '✗ Einschub entfernt');
+    } catch (err) {
+      $('sheetFehler').textContent = 'Fehler: ' + err.message;
+    }
   }
   function btn(label, cls, fn) { const x = document.createElement('button'); x.className = cls; x.textContent = label; x.onclick = fn; return x; }
 
