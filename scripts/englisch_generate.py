@@ -28,21 +28,21 @@ TITEL = "Englisch-Trainer: Tagesset"
 
 # slot: (typ, kategorie, anzeigetitel, minuten, anzahl_items)
 POOL = {
-    "colloc":    ("mc", "Wortschatz", "Collocations", 1.3, 4),
-    "nuance":    ("mc", "Wortschatz", "Nuancen & Wortwahl", 1.3, 4),
-    "register":  ("mc", "Stil", "Formal vs. informell", 1.3, 4),
-    "phrasal":   ("input", "Phrasal Verbs", "Phrasal Verbs", 1.5, 4),
-    "idiom":     ("input", "Idiome", "Idioms & Redewendungen", 1.5, 4),
-    "grammar":   ("input", "Grammatik", "Advanced Grammar", 1.5, 4),
-    "wordform":  ("input", "Wortbildung", "Word Formation", 1.3, 4),
-    "fehler":    ("fehler", "Fehlerjagd", "Fehlerjagd", 1.3, 4),
-    "listen":    ("listen", "Hörverstehen", "Listening", 2.2, 3),
-    "rewrite":   ("selfcheck", "Umformulieren", "Sentence Transformation", 2.0, 3),
-    "translate": ("selfcheck", "Übersetzen", "Deutsch → Englisch", 2.0, 3),
-    "bild":      ("selfcheck", "Bildbeschreibung", "Describe the Picture", 2.5, 1),
-    "write":     ("selfcheck", "Schreiben", "Kurz schreiben (mit Bolla-Feedback)", 2.5, 1),
-    "read":      ("read", "Aussprache", "Laut lesen", 1.5, 2),
-    "speak":     ("speak", "Sprechen", "Frei sprechen", 1.5, 1),
+    "colloc":    ("mc", "Wortschatz", "Collocations", 1.0, 3),
+    "nuance":    ("mc", "Wortschatz", "Nuancen & Wortwahl", 1.0, 3),
+    "register":  ("mc", "Stil", "Formal vs. informell", 1.0, 3),
+    "phrasal":   ("mc", "Phrasal Verbs", "Phrasal Verbs", 1.2, 3),
+    "idiom":     ("input", "Idiome", "Idioms & Redewendungen", 1.2, 3),
+    "grammar":   ("mc", "Grammatik", "Advanced Grammar", 1.2, 3),
+    "wordform":  ("mc", "Wortbildung", "Word Formation", 1.0, 3),
+    "fehler":    ("fehler", "Fehlerjagd", "Fehlerjagd", 1.0, 3),
+    "listen":    ("listen", "Hörverstehen", "Listening", 2.0, 3),
+    "rewrite":   ("selfcheck", "Umformulieren", "Sentence Transformation", 1.5, 2),
+    "translate": ("selfcheck", "Übersetzen", "Deutsch → Englisch", 1.5, 2),
+    "bild":      ("selfcheck", "Bildbeschreibung", "Describe the Picture", 2.0, 1),
+    "write":     ("selfcheck", "Schreiben", "Kurz schreiben (mit Bolla-Feedback)", 2.0, 1),
+    "read":      ("read", "Aussprache", "Laut lesen", 1.2, 2),
+    "speak":     ("speak", "Sprechen", "Frei sprechen", 1.2, 1),
 }
 
 THEMEN = [
@@ -60,33 +60,15 @@ STIMMEN = ["en-GB-SoniaNeural", "en-GB-RyanNeural", "en-US-AriaNeural", "en-US-G
 
 
 def waehle_slots(datum):
+    """Kurzfassung ~6-8 min, ohne Tippen/Sprechen: read + 3 mc + 1 Extra (fehler/listen/translate/bild)."""
     rng = random.Random(datum)
-    s = ["read"]
-    s += rng.sample(["colloc", "nuance", "register"], rng.choice([1, 2]))
-    s += rng.sample(["phrasal", "idiom", "grammar", "wordform"], 2)
-    if rng.random() < 0.55:
-        s.append("fehler")
-    if rng.random() < 0.6:
-        s.append("listen")
-    s.append(rng.choice(["rewrite", "translate"]))
-    s.append("bild" if rng.random() < 0.5 else "write")
-    if rng.random() < 0.65:
-        s.append("speak")
+    s = ["read", rng.choice(["colloc", "nuance", "register"]), "phrasal", rng.choice(["grammar", "wordform"])]
+    s.append(rng.choice(["fehler", "listen", "translate", "bild"]))
 
     def summe():
         return sum(POOL[k][3] for k in s)
-    reihenfolge_vorzug = ["colloc", "nuance", "register", "fehler", "phrasal", "idiom"]
-    while summe() > 14.0:                       # zu lang: letzte "Extra"-Aufgabe raus
-        for k in ("write", "bild", "speak", "listen", "nuance", "register", "fehler"):
-            if k in s:
-                s.remove(k)
-                break
-    for k in reihenfolge_vorzug:                # zu kurz: auffuellen
-        if summe() >= 11.0:
-            break
-        if k not in s:
-            s.append(k)
-    # Lernreihenfolge: leicht -> schwer -> sprechen am Ende
+    while summe() > 9.0 and "listen" in s:
+        s.remove("listen")
     ordnung = ["colloc", "nuance", "register", "phrasal", "idiom", "grammar", "wordform", "fehler", "listen",
                "rewrite", "translate", "bild", "write", "read", "speak"]
     return sorted(s, key=ordnung.index), round(summe(), 1)
@@ -113,7 +95,7 @@ def baue_prompt(datum, slots, thema):
     for i, k in enumerate(slots, 1):
         typ, kat, titel, minu, n = POOL[k]
         liste.append(f'  a{i}: Slot "{k}" -> typ "{typ}", kat "{kat}", titel "{titel}", {n} Item(s)')
-    return f"""Du erzeugst das heutige Tagesset ({datum}) für einen Englisch-Trainer. Lerner: Chris, Deutsch als Muttersprache, IT-erfahren, Lehrer, Niveau B2→C1 (Cambridge Advanced). Ziel: täglich 10–15 Minuten, abwechslungsreich, anspruchsvoll aber fair. Aufgabentexte Englisch; Anweisungen und Erklärungen auf DEUTSCH (kurz, freundlich, ein Hauch trockener Humor erlaubt).
+    return f"""Du erzeugst das heutige Tagesset ({datum}) für einen Englisch-Trainer. Lerner: Chris, Deutsch als Muttersprache, IT-erfahren, Lehrer, Niveau B2→C1 (Cambridge Advanced). Ziel: täglich nur 6–9 Minuten (KURZ halten, genau die vorgegebene Item-Anzahl, nicht mehr), abwechslungsreich, anspruchsvoll aber fair. Aufgabentexte Englisch; Anweisungen und Erklärungen auf DEUTSCH (kurz, freundlich, ein Hauch trockener Humor erlaubt).
 Tagesthema (lose Klammer für Sätze und Texte, nicht stur): {thema}.
 Bereits abgefragt (NICHT wiederholen): {", ".join(lem[-120:]) or "–"}. Letzte Themen: {", ".join(alte_themen) or "–"}.
 Schwerpunkte des Lerners (gerne etwas häufiger bedienen): {", ".join(schwach_kat) or "keine"}; Aussprache-Problemwörter (in 'read' einbauen, falls sinnvoll): {", ".join(schwach_w) or "keine"}.
@@ -133,7 +115,8 @@ Formatvorgaben je typ (alle Felder Pflicht, nur ein JSON-Objekt, KEIN Markdown-Z
 - speak: "frage": "offene Frage/Szenario (en), Antwort ca. 30–45 s", "min_sek": 30, "hilfen": [4 nützliche Phrasen/Redemittel (en)], "anweisung": "de".
 
 Zusätzlich auf oberster Ebene: "thema": "{thema}" (oder verfeinert, en), "gruss": "1 kurzer launiger Satz auf Deutsch von Bolla zum heutigen Tag (max. 140 Zeichen)", "lemmas": ["20–30 Schlüsselbegriffe/Phrasen dieses Sets, englisch, für die Wiederholungsvermeidung"], "aufgaben": [ {{"id": "a1", "slot": "<slot>", ...Felder gemäß typ...}}, ... ].
-Qualität: korrektes, natürliches britisches/amerikanisches Englisch, keine erfundenen Redewendungen; Erklärungen sachlich richtig. Nur JSON."""
+Übersetzungen (PFLICHT, Deutsch): Jedes Item der Typen mc, input und fehler bekommt zusätzlich "de" (natürliche deutsche Übersetzung des ganzen Satzes, Lücke mit der richtigen Lösung eingesetzt; bei fehler: des korrigierten Satzes), "wort_de" (deutsche Bedeutung des gesuchten Wortes/Ausdrucks bzw. der Korrektur, kurz) und "beispiel" (1 weiterer englischer Beispielsatz mit genau diesem Wort/Ausdruck). Bei listen zusätzlich auf Ebene der Aufgabe "text_de" (Übersetzung des Hörtexts). Bei read zusätzlich "saetze_de" (Liste der Übersetzungen der Sätze).
+Merkbilder (assoziatives Lernen): Bei den Slots colloc, phrasal und idiom bekommt JEDES Item zusätzlich "bild_prompt": englischer Prompt für ein Bild-Modell, eine einprägsame, leicht witzige Szene, die die Bedeutung des gesuchten Ausdrucks (gern wörtlich-skurril) visualisiert, KEIN Text im Bild, illustrativer Stil. Und "merkhilfe": 1 kurzer deutscher Satz als Eselsbrücke/Bildgeschichte.\nQualität: korrektes, natürliches britisches/amerikanisches Englisch, keine erfundenen Redewendungen; Erklärungen sachlich richtig. Nur JSON."""
 
 
 def parse_json(text):
@@ -186,7 +169,7 @@ def pruefe_und_normalisiere(j, slots, datum):
         ergebnis.append(a)
     j["aufgaben"] = ergebnis
     j["datum"] = datum
-    j["ziel_min"] = max(10, min(15, round(sum(a["min"] for a in ergebnis))))
+    j["ziel_min"] = max(5, min(10, round(sum(a["min"] for a in ergebnis))))
     j.setdefault("lemmas", [])
     j.setdefault("gruss", "")
     return j
@@ -217,6 +200,27 @@ def bilder(j, datum):
         a["bild"] = fn
         neu.append(a)
     j["aufgaben"] = neu
+    for i, a in enumerate(neu, 1):
+        a["id"] = f"a{i}"
+        if a["slot"] in ("colloc", "phrasal", "idiom"):
+            for n_, it in enumerate(a.get("items", []), 1):
+                if it.get("merkhilfe"):
+                    it["erklaerung"] = (it.get("erklaerung") or "") + "\n🧠 " + it["merkhilfe"]
+                pr = it.get("bild_prompt")
+                if not pr:
+                    continue
+                try:
+                    b64, mime = m.cf_workers_ai_generate(pr + ", colorful illustration, no text", 768, 576, cf_model="flux-1-schnell")
+                    if not b64:
+                        continue
+                    ext = "png" if "png" in (mime or "") else "jpg"
+                    fn = f"{datum}_{a['id']}_i{n_}.{ext}"
+                    os.makedirs(api.IMG, exist_ok=True)
+                    with open(os.path.join(api.IMG, fn), "wb") as f:
+                        f.write(base64.b64decode(b64))
+                    it["bild"] = fn
+                except Exception as e:
+                    print("Item-Bild fehlgeschlagen:", e)
     for i, a in enumerate(neu, 1):         # ids stabil halten (nach Streichung neu nummerieren)
         a["id"] = f"a{i}"
         if a.get("bild"):
@@ -225,7 +229,7 @@ def bilder(j, datum):
             if old != os.path.join(api.IMG, newfn) and os.path.exists(old):
                 os.replace(old, os.path.join(api.IMG, newfn))
                 a["bild"] = newfn
-    j["ziel_min"] = max(10, min(15, round(sum(a["min"] for a in neu))))
+    j["ziel_min"] = max(5, min(10, round(sum(a["min"] for a in neu))))
     return j
 
 

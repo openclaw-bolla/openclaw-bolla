@@ -61,6 +61,8 @@ def get_outlook_contacts(token):
     while url:
         r = requests.get(url, headers=headers)
         data = r.json()
+        if r.status_code != 200 or "error" in data:
+            raise RuntimeError(f"Outlook-Kontakte laden fehlgeschlagen: {r.status_code} {str(data)[:200]}")
         contacts.extend(data.get("value", []))
         url = data.get("@odata.nextLink")
     return contacts
@@ -105,6 +107,8 @@ def get_google_contacts(token):
         r = requests.get("https://people.googleapis.com/v1/people/me/connections",
                          headers=headers, params=params)
         data = r.json()
+        if r.status_code != 200 or "error" in data:
+            raise RuntimeError(f"Google-Kontakte laden fehlgeschlagen: {r.status_code} {str(data)[:200]}")
         contacts.extend(data.get("connections", []))
         page_token = data.get("nextPageToken")
         if not page_token:
@@ -447,6 +451,9 @@ def main():
 
     google_contacts = get_google_contacts(g_token)
     print(f"  Gmail:   {len(google_contacts)} Kontakte")
+    # Sicherung gegen Dubletten-Flut (Befund 10.11.2026): leere/stark abweichende Liste = Abbruch statt alles neu anlegen
+    if not outlook_contacts or not google_contacts or abs(len(outlook_contacts) - len(google_contacts)) > 0.2 * max(len(outlook_contacts), len(google_contacts)):
+        raise SystemExit("ABBRUCH: Kontaktzahlen unplausibel (Outlook %d / Gmail %d) - kein Sync, um Dubletten zu vermeiden" % (len(outlook_contacts), len(google_contacts)))
 
     # Indices aufbauen
     google_index = build_google_index(google_contacts)

@@ -6095,7 +6095,7 @@ def get_token_budget():
         return {"error": str(e), "pct": None}
 
 
-_claude_quota_cache = {"ts": 0, "data": None}
+_claude_quota_cache = {"ts": 0, "data": None, "backoff_until": 0}
 
 # Öffentliche Claude-Code OAuth client_id (für Token-Refresh)
 _CLAUDE_OAUTH_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
@@ -6158,6 +6158,17 @@ def get_claude_quota():
     import urllib.error as _ue
     if _claude_quota_cache["data"] and _t.time() - _claude_quota_cache["ts"] < 60:
         return _claude_quota_cache["data"]
+
+    def _stale(grund):
+        """Letzter guter Wert (mit Stand-Zeit) statt nacktem Fehler; sonst Fehler."""
+        d = _claude_quota_cache["data"]
+        if d:
+            return dict(d, stale=True, stale_since=_t.strftime("%H:%M", _t.localtime(_claude_quota_cache["ts"])), stale_reason=grund)
+        return {"error": grund}
+
+    # 429-Backoff: waehrend der Sperre Anthropic NICHT erneut anfragen (sonst bleibt das Limit dauerhaft offen)
+    if _t.time() < _claude_quota_cache.get("backoff_until", 0):
+        return _stale("Anthropic-Usage-Endpunkt rate-limited (Backoff aktiv)")
 
     def _fetch(token):
         req = _ur.Request(
@@ -6250,8 +6261,16 @@ def get_claude_quota():
         _claude_quota_cache["ts"] = _t.time()
         _claude_quota_cache["data"] = data
         return data
+    except _ue.HTTPError as e:
+        if e.code == 429:
+            try:
+                ra = int(e.headers.get("Retry-After", "0") or 0)
+            except Exception:
+                ra = 0
+            _claude_quota_cache["backoff_until"] = _t.time() + max(ra, 300)
+        return _stale(str(e))
     except Exception as e:
-        return {"error": str(e)}
+        return _stale(str(e))
 
 
 _KOSTEN_FILE = "/home/bolla/workspace/config/kosten.json"
@@ -8651,6 +8670,8 @@ font-weight:600;padding:13px 26px;border-radius:12px}}</style></head>
             # ===== Englisch-Trainer (MP Familie + mmp) =====
             if _path_only == "/api/englisch/heute":
                 import englisch_api; self._send_json(englisch_api.heute()); return
+            if _path_only == "/api/englisch/woerter":
+                import englisch_api; self._send_json(englisch_api.woerter_liste()); return
             if _path_only == "/api/englisch/fortschritt":
                 import englisch_api; self._send_json(englisch_api.fortschritt()); return
             if _path_only.startswith("/api/englisch/img/"):
@@ -10518,6 +10539,14 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                 self._handle_tts(body)
             elif self.path == "/api/englisch/ergebnis":
                 import englisch_api; self._send_json(englisch_api.ergebnis(body))
+            elif self.path == "/api/englisch/uebersetzen":
+                import englisch_api; self._send_json(englisch_api.uebersetzen(body))
+            elif self.path == "/api/englisch/wort":
+                import englisch_api; self._send_json(englisch_api.wort_add(body))
+            elif self.path == "/api/englisch/wort-ergebnis":
+                import englisch_api; self._send_json(englisch_api.wort_ergebnis(body))
+            elif self.path == "/api/englisch/wort-loeschen":
+                import englisch_api; self._send_json(englisch_api.wort_loeschen(body))
             elif self.path == "/api/englisch/zeit":
                 import englisch_api; self._send_json(englisch_api.zeit_addieren(body))
             elif self.path == "/api/englisch/feedback":

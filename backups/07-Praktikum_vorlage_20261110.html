@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Praktikum: Dein Großprojekt – der Start</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --text: #1c1c1e;
+    --dim: #5b5f66;
+    --accent: #7b2ff7;
+    --accent2: #f72585;
+    --accent-bg: #f3ebfe;
+    --wichtig: #c0392b;
+    --wichtig-bg: #fdecea;
+    --wichtig-border: #f3b8b0;
+    --done-bg: #eafaf0;
+    --done-border: #8fd9ad;
+    --border: #dde1e7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 80px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    font-size: 20px;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  .header {
+    background: linear-gradient(135deg, #7b2ff7, #f72585);
+    color: #fff;
+    border-radius: 18px;
+    padding: 24px 26px;
+    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header h1 { margin: 0 0 6px; font-size: 29px; line-height: 1.25; }
+  .header .zeit { font-size: 18px; opacity: 0.92; }
+
+  /* Zeitstrahl-Illustration: Kurstag 7 -> Schuljahresende */
+  .timeline {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 20px 10px;
+    margin-bottom: 18px;
+  }
+  .timeline-title { font-size: 17px; color: var(--dim); margin-bottom: 8px; font-weight: 700; }
+  .timeline svg { width: 100%; height: auto; display: block; }
+
+  .hinweis {
+    background: var(--accent-bg);
+    border: 2px solid #d9c2fb;
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    font-size: 19px;
+  }
+
+  .wichtig-box {
+    background: var(--wichtig-bg);
+    border: 3px solid var(--wichtig-border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--wichtig);
+  }
+  .wichtig-box span.klein {
+    display: block;
+    font-weight: 400;
+    font-size: 17px;
+    color: #7a2a22;
+    margin-top: 6px;
+  }
+
+  .step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    transition: background .2s, border-color .2s;
+  }
+  .step.done { background: var(--done-bg); border-color: var(--done-border); }
+
+  .step-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step.done .step-num { background: #2e9e56; }
+  .step-title { font-size: 22px; font-weight: 700; flex: 1; }
+  .opt-badge {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--dim);
+    background: #eef0f3;
+    padding: 3px 10px;
+    border-radius: 8px;
+    margin-left: 10px;
+    white-space: nowrap;
+  }
+
+  .step p { margin-top: 0; }
+
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 12px 0 6px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-bg);
+    border: 2px solid #d9c2fb;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .badge.eigen { background: #fff4e0; border-color: #f7cf85; }
+
+  .beispiel-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 12px 0 6px;
+  }
+  .beispiel {
+    flex: 1;
+    min-width: 220px;
+    background: #f9f7ff;
+    border: 1px dashed #c9a8f5;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 17px;
+    color: var(--dim);
+  }
+  .beispiel b { color: var(--text); }
+
+  .step .zusatz {
+    margin-top: 10px;
+    font-size: 18px;
+    color: var(--dim);
+    background: #f4f6f9;
+    border-radius: 10px;
+    padding: 10px 14px;
+  }
+
+  .fill-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .fill-row label { font-size: 19px; min-width: 160px; }
+  .fill-row input[type="text"] {
+    flex: 1;
+    min-width: 180px;
+    font-size: 19px;
+    padding: 9px 12px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit;
+  }
+  .fill-row input[type="text"]:focus { border-color: var(--accent); outline: none; }
+
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+  }
+  .check-row input[type="checkbox"] {
+    width: 26px; height: 26px;
+    flex-shrink: 0;
+  }
+  .check-row label { font-size: 18px; font-weight: 600; color: var(--dim); }
+  .step.done .check-row label { color: #2e9e56; }
+
+  .progress-wrap {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    padding: 10px 0 14px;
+    z-index: 5;
+  }
+  .progress-bar {
+    height: 14px;
+    background: #e0e4ea;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #7b2ff7, #f72585);
+    width: 0%;
+    transition: width .3s;
+  }
+  .progress-label { font-size: 16px; color: var(--dim); margin-top: 6px; text-align: center; }
+
+  .end-box {
+    background: var(--card);
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    padding: 22px;
+    text-align: center;
+    margin-top: 10px;
+  }
+  .end-box .info { font-size: 16px; color: var(--dim); margin-top: 12px; }
+
+  @media print {
+    .progress-wrap, .check-row { display: none !important; }
+    .step { break-inside: avoid; border: 1px solid #ccc; }
+    body { background: #fff; padding: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">0 von 4 Schritten erledigt</div>
+  </div>
+
+  <div class="header">
+    <h1>🚀 Praktikum: Dein Großprojekt – der Start</h1>
+    <div class="zeit">⏱️ ca. 15&ndash;20 Minuten &nbsp;·&nbsp; heute nur die Vorüberlegungen</div>
+  </div>
+
+  <div class="timeline">
+    <div class="timeline-title">📅 So geht's weiter – dein Projekt wächst mit jedem PowerPoint-Kurstag</div>
+    <svg viewBox="0 0 720 90" xmlns="http://www.w3.org/2000/svg">
+      <line x1="30" y1="45" x2="690" y2="45" stroke="#d9c2fb" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="30" cy="45" r="16" fill="#7b2ff7"/>
+      <text x="30" y="50" font-size="14" fill="#fff" text-anchor="middle" font-family="Arial" font-weight="bold">7</text>
+      <text x="30" y="80" font-size="13" fill="#5b5f66" text-anchor="middle" font-family="Arial">heute</text>
+      <circle cx="230" cy="45" r="12" fill="#c9a8f5"/>
+      <text x="230" y="80" font-size="13" fill="#5b5f66" text-anchor="middle" font-family="Arial">Kurstag 8&ndash;9</text>
+      <circle cx="430" cy="45" r="12" fill="#c9a8f5"/>
+      <text x="430" y="80" font-size="13" fill="#5b5f66" text-anchor="middle" font-family="Arial">Kurstag 10&ndash;16</text>
+      <circle cx="660" cy="45" r="16" fill="#f72585"/>
+      <text x="660" y="15" font-size="22" text-anchor="middle" font-family="Arial">🏁</text>
+      <text x="660" y="80" font-size="13" fill="#5b5f66" text-anchor="middle" font-family="Arial">Schuljahresende</text>
+    </svg>
+  </div>
+
+  <div class="hinweis">
+    Ab heute startet ihr euer <b>eigenes großes Projekt</b> &ndash; es begleitet euch durch den <b>ganzen Rest
+    des Schuljahres</b>. In jedem kommenden PowerPoint-Kurstag probiert ihr die neue Funktion des Tages
+    direkt in eurem eigenen Projekt aus, statt in einer Extra-Übung. Am Schuljahresende habt ihr eine
+    eigene, richtig coole Präsentation zu einem Thema, das euch wirklich interessiert.
+  </div>
+
+  <div class="wichtig-box">
+    🙅 Kein Referat!
+    <span class="klein">Ihr müsst das Projekt später nicht wie einen klassischen Vortrag auswendig
+    vorsprechen. Es geht ums Ausprobieren und Gestalten &ndash; jede Folie darf spektakulär und verspielt
+    aussehen, wie eine coole Titelfolie.</span>
+  </div>
+
+  <div class="step" data-step="1">
+    <div class="step-head"><div class="step-num">1</div><div class="step-title">Dein Thema wählen</div></div>
+    <p>Wähle ein Thema, das dich wirklich interessiert &ndash; du arbeitest die nächsten Monate damit.</p>
+    <div class="badge-row">
+      <span class="badge">🎮 Brawl Stars</span>
+      <span class="badge">⛏️ Minecraft</span>
+      <span class="badge">🎤 Taylor Swift</span>
+      <span class="badge">👻 Snapchat</span>
+      <span class="badge">🎵 TikTok</span>
+      <span class="badge eigen">💡 eigene Idee</span>
+    </div>
+    <div class="fill-row"><label>Mein Thema:</label><input type="text" placeholder="z. B. Minecraft"></div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+
+  <div class="step" data-step="2">
+    <div class="step-head"><div class="step-num">2</div><div class="step-title">Deinem Projekt einen eigenen Namen geben</div></div>
+    <p>Es gibt <b>keinen festen Projektnamen</b> von Chris &ndash; jeder denkt sich einen eigenen Namen aus,
+    passend zum eigenen Thema.</p>
+    <div class="beispiel-row">
+      <div class="beispiel">Thema Minecraft → <b>„Projekt Blockwelt"</b></div>
+      <div class="beispiel">Thema Taylor Swift → <b>„Projekt Swiftie"</b></div>
+    </div>
+    <div class="fill-row"><label>Name meines Projekts:</label><input type="text" placeholder="Dein eigener Projektname"></div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+
+  <div class="step" data-step="3">
+    <div class="step-head"><div class="step-num">3</div><div class="step-title">Erste Ideen kurz notieren <span class="opt-badge">nur Stichworte</span></div></div>
+    <p>Was soll später mal in deinem Projekt vorkommen? Reicht in 1&ndash;2 Wörtern.</p>
+    <div class="fill-row"><label>Charaktere/Personen:</label><input type="text" placeholder="Wer kommt vor?"></div>
+    <div class="fill-row"><label>Was ist gut:</label><input type="text" placeholder="..."></div>
+    <div class="fill-row"><label>Was ist schlecht:</label><input type="text" placeholder="..."></div>
+    <div class="fill-row"><label>Tipps &amp; Tricks:</label><input type="text" placeholder="..."></div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+
+  <div class="step" data-step="4">
+    <div class="step-head"><div class="step-num">4</div><div class="step-title">Projekt-Ordner auf dem Stick anlegen</div></div>
+    <p>Neuen Ordner auf deinem <b>Stick</b> anlegen (Rechtsklick → Neu → Ordner) und mit dem Namen deines
+    Projekts benennen. Dort landet ab jetzt jeder Kurstag deines Projekts.</p>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+
+  <div class="end-box">
+    <div>🎉 Auftakt geschafft! Dein Projekt ist gestartet.</div>
+    <div class="info">Beim nächsten PowerPoint-Kurstag geht's direkt weiter &ndash; mit der ersten echten Folie in deinem Projekt.</div>
+  </div>
+
+</div>
+<script>
+function updateProgress() {
+  var boxes = document.querySelectorAll('.check-row input[type="checkbox"]');
+  var done = 0;
+  boxes.forEach(function(b){ if (b.checked) done++; });
+  var pct = Math.round(done / boxes.length * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = done + ' von ' + boxes.length + ' Schritten erledigt';
+}
+function toggleDone(box) {
+  var step = box.closest('.step');
+  step.classList.toggle('done', box.checked);
+  updateProgress();
+}
+updateProgress();
+</script>
+</body>
+</html>

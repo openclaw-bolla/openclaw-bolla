@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Praktikum: Dein Projekt bekommt Folien</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --text: #1c1c1e;
+    --dim: #5b5f66;
+    --accent: #7b2ff7;
+    --accent2: #f72585;
+    --accent-bg: #f3ebfe;
+    --wichtig: #c0392b;
+    --wichtig-bg: #fdecea;
+    --wichtig-border: #f3b8b0;
+    --done-bg: #eafaf0;
+    --done-border: #8fd9ad;
+    --border: #dde1e7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 80px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    font-size: 20px;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  .header {
+    background: linear-gradient(135deg, #7b2ff7, #f72585);
+    color: #fff;
+    border-radius: 18px;
+    padding: 24px 26px;
+    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header h1 { margin: 0 0 6px; font-size: 29px; line-height: 1.25; }
+  .header .zeit { font-size: 18px; opacity: 0.92; }
+
+  /* Zeitstrahl-Illustration: Kurstag 7 -> Schuljahresende */
+  .timeline {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 20px 10px;
+    margin-bottom: 18px;
+  }
+  .timeline-title { font-size: 17px; color: var(--dim); margin-bottom: 8px; font-weight: 700; }
+  .timeline svg { width: 100%; height: auto; display: block; }
+
+  .hinweis {
+    background: var(--accent-bg);
+    border: 2px solid #d9c2fb;
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    font-size: 19px;
+  }
+
+  .wichtig-box {
+    background: var(--wichtig-bg);
+    border: 3px solid var(--wichtig-border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--wichtig);
+  }
+  .wichtig-box span.klein {
+    display: block;
+    font-weight: 400;
+    font-size: 17px;
+    color: #7a2a22;
+    margin-top: 6px;
+  }
+
+  .step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    transition: background .2s, border-color .2s;
+  }
+  .step.done { background: var(--done-bg); border-color: var(--done-border); }
+
+  .step-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step.done .step-num { background: #2e9e56; }
+  .step-title { font-size: 22px; font-weight: 700; flex: 1; }
+  .opt-badge {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--dim);
+    background: #eef0f3;
+    padding: 3px 10px;
+    border-radius: 8px;
+    margin-left: 10px;
+    white-space: nowrap;
+  }
+
+  .step p { margin-top: 0; }
+
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 12px 0 6px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-bg);
+    border: 2px solid #d9c2fb;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .badge.eigen { background: #fff4e0; border-color: #f7cf85; }
+
+  .beispiel-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 12px 0 6px;
+  }
+  .beispiel {
+    flex: 1;
+    min-width: 220px;
+    background: #f9f7ff;
+    border: 1px dashed #c9a8f5;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 17px;
+    color: var(--dim);
+  }
+  .beispiel b { color: var(--text); }
+
+  .step .zusatz {
+    margin-top: 10px;
+    font-size: 18px;
+    color: var(--dim);
+    background: #f4f6f9;
+    border-radius: 10px;
+    padding: 10px 14px;
+  }
+
+  .fill-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .fill-row label { font-size: 19px; min-width: 160px; }
+  .fill-row input[type="text"] {
+    flex: 1;
+    min-width: 180px;
+    font-size: 19px;
+    padding: 9px 12px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit;
+  }
+  .fill-row input[type="text"]:focus { border-color: var(--accent); outline: none; }
+
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+  }
+  .check-row input[type="checkbox"] {
+    width: 26px; height: 26px;
+    flex-shrink: 0;
+  }
+  .check-row label { font-size: 18px; font-weight: 600; color: var(--dim); }
+  .step.done .check-row label { color: #2e9e56; }
+
+  .progress-wrap {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    padding: 10px 0 14px;
+    z-index: 5;
+  }
+  .progress-bar {
+    height: 14px;
+    background: #e0e4ea;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #7b2ff7, #f72585);
+    width: 0%;
+    transition: width .3s;
+  }
+  .progress-label { font-size: 16px; color: var(--dim); margin-top: 6px; text-align: center; }
+
+  .end-box {
+    background: var(--card);
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    padding: 22px;
+    text-align: center;
+    margin-top: 10px;
+  }
+  .end-box .info { font-size: 16px; color: var(--dim); margin-top: 12px; }
+
+  @media print {
+    .progress-wrap, .check-row { display: none !important; }
+    .step { break-inside: avoid; border: 1px solid #ccc; }
+    body { background: #fff; padding: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">0 von 5 Schritten erledigt</div>
+  </div>
+
+  <div class="header">
+    <h1>🎨 Praktikum: Dein Projekt bekommt Folien</h1>
+    <div class="zeit">⏱️ ca. 25&ndash;30 Minuten &nbsp;·&nbsp; Vorlage, Layout, Ansichten &amp; Speichern</div>
+  </div>
+
+  <div class="hinweis">
+    Du arbeitest heute <b>in deinem eigenen Projekt</b> weiter. Du brauchst dafür dein Thema und deinen
+    Projekt-Ordner auf dem Stick aus dem letzten Kurstag. Arbeite am <b>HP-Laptop</b> &ndash; dort ist
+    PowerPoint installiert.
+  </div>
+
+  <div class="wichtig-box">
+    💾 Zwischendurch speichern!
+    <span class="klein">Drücke immer wieder gleichzeitig die Tasten <b>Strg</b> und <b>S</b>. Dann geht nichts verloren,
+    wenn der Laptop mal ausgeht.</span>
+  </div>
+
+  <div class="step" data-step="1">
+    <div class="step-head"><div class="step-num">1</div><div class="step-title">PowerPoint öffnen und eine Vorlage wählen</div></div>
+    <p>Öffne PowerPoint. Klicke oben links auf <b>Datei</b> und dann auf <b>Neu</b>. Du siehst jetzt viele
+    fertige Vorlagen &ndash; das sind Designs mit Farben und Schriften, die schon zusammenpassen.</p>
+    <p>Suche dir eine Vorlage, die zu <b>deinem Thema</b> passt, und klicke sie einmal an. Dann auf <b>Erstellen</b>.</p>
+    <div class="zusatz">💡 Tipp: Ein Minecraft-Projekt darf ruhig bunt und eckig aussehen, ein Taylor-Swift-Projekt eher glitzernd. Es gibt kein falsch, nur: Man soll den Text gut lesen können.</div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+
+  <div class="step" data-step="2">
+    <div class="step-head"><div class="step-num">2</div><div class="step-title">Neue Folien mit verschiedenen Layouts anlegen</div></div>
+    <p>Ein <b>Layout</b> sagt, wo auf der Folie was steht &ndash; zum Beispiel oben ein Titel und darunter Text oder ein Bild.</p>
+    <p>Klicke oben auf den Reiter <b>Start</b>. Klicke dann auf den <b>kleinen Pfeil unter „Neue Folie"</b>
+    (nicht auf das große Symbol). Es öffnet sich eine Auswahl mit Layouts.</p>
+    <div class="badge-row">
+      <span class="badge">📰 Titel</span>
+      <span class="badge">📝 Titel und Inhalt</span>
+      <span class="badge">🖼️ Bild mit Beschriftung</span>
+    </div>
+    <p>Lege <b>mindestens 3 Folien</b> mit <b>verschiedenen Layouts</b> an. Schreibe auf jede Folie eine Überschrift zu deinem Projekt.</p>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+
+  <div class="step" data-step="3">
+    <div class="step-head"><div class="step-num">3</div><div class="step-title">Ansichten ausprobieren</div></div>
+    <p>Dieselben Folien kann man auf <b>verschiedene Arten ansehen</b>. Du findest die Ansichten oben im Reiter <b>Ansicht</b>
+    oder ganz unten rechts in der <b>Statuszeile</b> (das ist der graue Streifen am unteren Fensterrand).</p>
+    <p>Probiere diese drei Ansichten nacheinander aus und schau dir an, was sich ändert:</p>
+    <div class="beispiel-row">
+      <div class="beispiel"><b>Normal</b> – hier arbeitest du</div>
+      <div class="beispiel"><b>Foliensortierung</b> – alle Folien klein nebeneinander, zum Umsortieren</div>
+      <div class="beispiel"><b>Notizenseite</b> – Platz für deine Stichwörter unter der Folie</div>
+    </div>
+    <div class="zusatz">🔍 Mit dem <b>Zoom</b> (Schieberegler unten rechts) machst du die Folie größer oder kleiner. Probier es aus.</div>
+    <p>Aufgabe: Ziehe in der <b>Foliensortierung</b> eine Folie an eine andere Stelle (Maustaste gedrückt halten und loslassen).
+    Schreibe in der Notizenseite bei einer Folie 2&ndash;3 Stichwörter auf.</p>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+
+  <div class="step" data-step="4">
+    <div class="step-head"><div class="step-num">4</div><div class="step-title">Entwurfsvorschläge ansehen <span class="opt-badge">nur wenn es bei dir erscheint</span></div></div>
+    <p>Klicke auf eine Folie mit Titel und Text. Gehe dann im Reiter <b>Start</b> ganz rechts auf <b>Designer</b> oder <b>Entwurf</b>.
+    Wenn dort Vorschläge erscheinen, klicke auf einen, der dir gefällt.</p>
+    <div class="zusatz">ℹ️ Diese Funktion gibt es nur mit Internet und nicht auf jedem Laptop. Wenn bei dir nichts erscheint, ist das in Ordnung &ndash; geh einfach zum nächsten Schritt.</div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt (oder nicht vorhanden)</label></div>
+  </div>
+
+  <div class="step" data-step="5">
+    <div class="step-head"><div class="step-num">5</div><div class="step-title">In deinem Projekt-Ordner speichern</div></div>
+    <p>Klicke auf <b>Datei</b> und dann auf <b>Speichern unter</b>. Wähle deinen <b>Stick</b> und darauf deinen <b>Projekt-Ordner</b>.
+    Gib der Datei einen Namen, zum Beispiel <b>Projekt-Folien-1</b>. Das Dateiformat soll <b>PowerPoint-Präsentation (.pptx)</b> sein.</p>
+    <div class="zusatz">🔎 Prüfe danach im Explorer: Liegt die Datei wirklich in deinem Projekt-Ordner auf dem Stick?</div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+
+  <div class="end-box">
+    <div>🎉 Geschafft! Dein Projekt hat jetzt echte Folien.</div>
+    <div class="info">Beim nächsten PowerPoint-Kurstag kommen Bilder und Formen dazu.</div>
+  </div>
+
+</div>
+<script>
+function updateProgress() {
+  var boxes = document.querySelectorAll('.check-row input[type="checkbox"]');
+  var done = 0;
+  boxes.forEach(function(b){ if (b.checked) done++; });
+  var pct = Math.round(done / boxes.length * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = done + ' von ' + boxes.length + ' Schritten erledigt';
+}
+function toggleDone(box) {
+  var step = box.closest('.step');
+  step.classList.toggle('done', box.checked);
+  updateProgress();
+}
+updateProgress();
+</script>
+</body>
+</html>

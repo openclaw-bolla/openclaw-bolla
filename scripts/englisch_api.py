@@ -90,6 +90,163 @@ def _generator_anstossen():
         return False
 
 
+WOERTER = os.path.join(WS, "data", "englisch_woerter.json")
+GELERNT_AB = 3        # so oft in Folge gewusst -> "gelernt"
+
+
+def _lade_w():
+    try:
+        with open(WOERTER, encoding="utf-8") as f:
+            d = json.load(f)
+        return d if isinstance(d, list) else []
+    except Exception:
+        return []
+
+
+def _speichere_w(d):
+    tmp = WOERTER + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, WOERTER)
+
+
+TRANS_CACHE = os.path.join(DIR, "trans_cache.json")
+
+
+def _cf_translate(text):
+    import urllib.request
+    try:
+        c = json.load(open(os.path.join(WS, "config", "cloudflare_token.json")))
+        url = f"https://api.cloudflare.com/client/v4/accounts/{c['account_id']}/ai/run/@cf/meta/m2m100-1.2b"
+        r = urllib.request.Request(url, data=json.dumps({"text": text, "source_lang": "english", "target_lang": "german"}).encode(),
+                                   headers={"Authorization": "Bearer " + c["api_token"], "Content-Type": "application/json"})
+        j = json.loads(urllib.request.urlopen(r, timeout=30).read())
+        return (j.get("result") or {}).get("translated_text") or ""
+    except Exception:
+        return ""
+
+
+def uebersetzen(body):
+    """Fallback-Uebersetzung EN->DE (Cloudflare m2m100, kostenlos), mit Cache. body: {text}"""
+    text = re.sub(r"\s+", " ", str(body.get("text") or "")).strip()[:600]
+    if not text:
+        return {"error": "kein Text"}
+    try:
+        cache = json.load(open(TRANS_CACHE, encoding="utf-8"))
+    except Exception:
+        cache = {}
+    if text in cache:
+        return {"ok": True, "de": cache[text], "maschinell": True}
+    de = _cf_translate(text)
+    if not de:
+        return {"error": "Übersetzung gerade nicht möglich"}
+    cache[text] = de
+    try:
+        with open(TRANS_CACHE, "w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False)
+    except Exception:
+        pass
+    return {"ok": True, "de": de, "maschinell": True}
+
+
+def _beispiel_haiku(en):
+    """1 kurzer Beispielsatz zu einem Wort (nur wenn Chris ein Wort von Hand eintraegt). Leer bei Limit/Fehler."""
+    try:
+        sys.path.insert(0, os.path.join(WS, "scripts"))
+        import limit_gate
+        r = limit_gate.run([CLAUDE, "-p", "--model", "haiku", "Schreibe genau EINEN natürlichen englischen Beispielsatz (max. 15 Wörter, Niveau B2) mit dem Ausdruck: " + en + " . Antworte NUR mit dem Satz."],
+                           capture_output=True, text=True, timeout=60, wait=False, cwd=WS)
+        if r.returncode == 0:
+            return (r.stdout or "").strip().split("\n")[0][:300]
+    except Exception:
+        pass
+    return ""
+
+
+def woerter_liste():
+    with _Sperre():
+        w = _lade_w()
+    return {"woerter": w, "offen": sum(1 for x in w if x.get("streak", 0) < GELERNT_AB), "gelernt": sum(1 for x in w if x.get("streak", 0) >= GELERNT_AB)}
+
+
+def wort_add(body):
+    """Wort merken. body: {en, de?, bsp?, bild?}. Dubletten (gleiches en) werden zurueckgesetzt statt doppelt."""
+    en = str(body.get("en") or "").strip()[:80]
+    if not en:
+        return {"error": "Wort fehlt"}
+    de = str(body.get("de") or "").strip()[:300]
+    bsp = str(body.get("bsp") or "").strip()[:400]
+    bild = os.path.basename(str(body.get("bild") or ""))[:80]
+    if not de:
+        de = _cf_translate(en)[:300]          # kostenlos (Cloudflare); bei Phrasen/Saetzen ok
+    if not bsp and len(en.split()) <= 6:
+        bsp = _beispiel_haiku(en)             # kleiner Zusatz-Call, nur fuer von Hand eingetragene Woerter
+    with _Sperre():
+        w = _lade_w()
+        for x in w:
+            if x["en"].lower() == en.lower():
+                x["streak"] = 0
+                if de and not x.get("de"):
+                    x["de"] = de
+                if bsp and not x.get("bsp"):
+                    x["bsp"] = bsp
+                _speichere_w(w)
+                return {"ok": True, "neu": False, "anzahl": len(w)}
+        w.append({"id": "w" + dt.datetime.now().strftime("%y%m%d%H%M%S%f")[:15], "en": en, "de": de, "bsp": bsp, "bild": bild,
+                  "streak": 0, "gesehen": 0, "gewusst": 0, "letzte": "", "hinzu": heute_str()})
+        _speichere_w(w)
+    return {"ok": True, "neu": True, "anzahl": len(w)}
+
+
+def wort_ergebnis(body):
+    wid = str(body.get("id") or "")
+    gewusst = bool(body.get("gewusst"))
+    with _Sperre():
+        w = _lade_w()
+        for x in w:
+            if x["id"] == wid:
+                x["gesehen"] = x.get("gesehen", 0) + 1
+                x["letzte"] = heute_str()
+                if gewusst:
+                    x["gewusst"] = x.get("gewusst", 0) + 1
+                    x["streak"] = x.get("streak", 0) + 1
+                else:
+                    x["streak"] = 0
+                _speichere_w(w)
+                return {"ok": True, "gelernt": x["streak"] >= GELERNT_AB}
+    return {"error": "unbekannt"}
+
+
+def wort_loeschen(body):
+    wid = str(body.get("id") or "")
+    with _Sperre():
+        w = [x for x in _lade_w() if x["id"] != wid]
+        _speichere_w(w)
+    return {"ok": True}
+
+
+def _woerter_aufgabe(d, n=5):
+    import random
+    with _Sperre():
+        w = _lade_w()
+    offen = [x for x in w if x.get("streak", 0) < GELERNT_AB]
+    if not offen:
+        return None
+    frisch = [x for x in offen if x.get("letzte") != d] or []
+    if not frisch:
+        return None
+    # je weniger Streak, desto oefter (Gewicht 3,2,1)
+    pool, pick = list(frisch), []
+    while pool and len(pick) < n:
+        g = [GELERNT_AB - x.get("streak", 0) for x in pool]
+        x = random.choices(pool, weights=g)[0]
+        pool.remove(x)
+        pick.append(x)
+    return {"id": "aW", "slot": "karten", "typ": "karten", "kat": "Meine Wörter", "titel": "Meine Wörter (Karteikarten)",
+            "min": round(0.4 * len(pick) + 0.4, 1), "anweisung": "Wörter, die du dir gemerkt hast. 3× in Folge gewusst = gelernt, sonst kommen sie wieder.",
+            "items": [{"wid": x["id"], "en": x["en"], "de": x.get("de", ""), "bsp": x.get("bsp", ""), "bild": x.get("bild", ""), "streak": x.get("streak", 0)} for x in pick]}
+
+
 def heute():
     """Tages-Set + Stand von heute. Fehlt es, kommt das juengste Set als Wiederholung und der Generator startet."""
     d = heute_str()
@@ -107,6 +264,13 @@ def heute():
     with _Sperre():
         fort = _lade_fort()
     tag = fort["tage"].get(d, {})
+    try:
+        kw = _woerter_aufgabe(d) if not s.get("wiederholung_von") or True else None
+        if kw:
+            s = dict(s)
+            s["aufgaben"] = [kw] + [a for a in s["aufgaben"] if a.get("id") != "aW"]
+    except Exception:
+        pass
     return {"datum": d, "set": s, "hinweis": hinweis, "heute": tag, "ziel_min": s.get("ziel_min", ZIEL_MIN)}
 
 

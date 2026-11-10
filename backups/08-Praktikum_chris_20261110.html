@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Praktikum: Dein Projekt &ndash; Ansichten und Entwurf</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --text: #1c1c1e;
+    --dim: #5b5f66;
+    --accent: #7b2ff7;
+    --accent2: #f72585;
+    --accent-bg: #f3ebfe;
+    --wichtig: #c0392b;
+    --wichtig-bg: #fdecea;
+    --wichtig-border: #f3b8b0;
+    --done-bg: #eafaf0;
+    --done-border: #8fd9ad;
+    --border: #dde1e7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 80px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    font-size: 20px;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  .header {
+    background: linear-gradient(135deg, #7b2ff7, #f72585);
+    color: #fff;
+    border-radius: 18px;
+    padding: 24px 26px;
+    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header h1 { margin: 0 0 6px; font-size: 29px; line-height: 1.25; }
+  .header .zeit { font-size: 18px; opacity: 0.92; }
+
+  /* Zeitstrahl-Illustration: Kurstag 7 -> Schuljahresende */
+  .timeline {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 20px 10px;
+    margin-bottom: 18px;
+  }
+  .timeline-title { font-size: 17px; color: var(--dim); margin-bottom: 8px; font-weight: 700; }
+  .timeline svg { width: 100%; height: auto; display: block; }
+
+  .hinweis {
+    background: var(--accent-bg);
+    border: 2px solid #d9c2fb;
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    font-size: 19px;
+  }
+
+  .wichtig-box {
+    background: var(--wichtig-bg);
+    border: 3px solid var(--wichtig-border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--wichtig);
+  }
+  .wichtig-box span.klein {
+    display: block;
+    font-weight: 400;
+    font-size: 17px;
+    color: #7a2a22;
+    margin-top: 6px;
+  }
+
+  .step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    transition: background .2s, border-color .2s;
+  }
+  .step.done { background: var(--done-bg); border-color: var(--done-border); }
+
+  .step-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step.done .step-num { background: #2e9e56; }
+  .step-title { font-size: 22px; font-weight: 700; flex: 1; }
+  .opt-badge {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--dim);
+    background: #eef0f3;
+    padding: 3px 10px;
+    border-radius: 8px;
+    margin-left: 10px;
+    white-space: nowrap;
+  }
+
+  .step p { margin-top: 0; }
+
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 12px 0 6px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-bg);
+    border: 2px solid #d9c2fb;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .badge.eigen { background: #fff4e0; border-color: #f7cf85; }
+
+  .beispiel-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 12px 0 6px;
+  }
+  .beispiel {
+    flex: 1;
+    min-width: 220px;
+    background: #f9f7ff;
+    border: 1px dashed #c9a8f5;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 17px;
+    color: var(--dim);
+  }
+  .beispiel b { color: var(--text); }
+
+  .step .zusatz {
+    margin-top: 10px;
+    font-size: 18px;
+    color: var(--dim);
+    background: #f4f6f9;
+    border-radius: 10px;
+    padding: 10px 14px;
+  }
+
+  .fill-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .fill-row label { font-size: 19px; min-width: 160px; }
+  .fill-row input[type="text"] {
+    flex: 1;
+    min-width: 180px;
+    font-size: 19px;
+    padding: 9px 12px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit;
+  }
+  .fill-row input[type="text"]:focus { border-color: var(--accent); outline: none; }
+
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+  }
+  .check-row input[type="checkbox"] {
+    width: 26px; height: 26px;
+    flex-shrink: 0;
+  }
+  .check-row label { font-size: 18px; font-weight: 600; color: var(--dim); }
+  .step.done .check-row label { color: #2e9e56; }
+
+  .progress-wrap {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    padding: 10px 0 14px;
+    z-index: 5;
+  }
+  .progress-bar {
+    height: 14px;
+    background: #e0e4ea;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #7b2ff7, #f72585);
+    width: 0%;
+    transition: width .3s;
+  }
+  .progress-label { font-size: 16px; color: var(--dim); margin-top: 6px; text-align: center; }
+
+  .end-box {
+    background: var(--card);
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    padding: 22px;
+    text-align: center;
+    margin-top: 10px;
+  }
+  .end-box .info { font-size: 16px; color: var(--dim); margin-top: 12px; }
+
+  @media print {
+    .progress-wrap, .check-row { display: none !important; }
+    .step { break-inside: avoid; border: 1px solid #ccc; }
+    body { background: #fff; padding: 0; }
+  }
+  .teil {
+    font-size: 24px; font-weight: 800; margin: 30px 0 14px; padding: 12px 18px;
+    border-radius: 14px; background: var(--accent-bg); border: 2px solid #d9c2fb;
+  }
+  .teil.kreativ { background: #fff4e0; border-color: #f7cf85; }
+  .ansichten { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0 6px; }
+  .ansicht { flex:1; min-width:150px; text-align:center; background:#f9f7ff; border:2px solid #d9c2fb;
+    border-radius:12px; padding:10px 8px; font-size:17px; font-weight:600; }
+  .ansicht svg { width:64px; height:44px; display:block; margin:0 auto 6px; }
+  kbd { background:#eef0f3; border:1px solid #c5cad2; border-bottom-width:3px; border-radius:6px; padding:1px 8px; font-size:17px; font-family:inherit; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">0 von 8 Schritten erledigt</div>
+  </div>
+
+  <div class="header">
+    <h1>🎨 Praktikum: Dein Projekt &ndash; Ansichten &amp; Entwurf</h1>
+    <div class="zeit">⏱️ ca. 40 Minuten &nbsp;·&nbsp; alles direkt in deinem eigenen Projekt</div>
+  </div>
+
+  <div class="wichtig-box">
+    💾 Immer auf deinem eigenen Stick arbeiten!
+    <span class="klein">Speichere deine Präsentation im <b>Projekt-Ordner auf deinem Stick</b> &ndash; mit dem Projektnamen als Dateiname.</span>
+  </div>
+
+  <div class="teil">Teil 1 &ndash; Die ersten Folien deines Projekts</div>
+
+  <div class="step" data-step="1">
+    <div class="step-head"><div class="step-num">1</div><div class="step-title">PowerPoint (oder Impress) öffnen &ndash; neue leere Präsentation </div></div>
+    <p>Starte <b>PowerPoint</b> (oder <b>Impress</b>) und lege eine neue, leere Präsentation an:
+    <b>Datei &rarr; Neu &rarr; Leere Präsentation</b>.</p>
+    <div class="zusatz">🔎 Bei Impress: <b>Datei &rarr; Neu &rarr; Impress-Präsentation</b>.</div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+  <div class="step" data-step="2">
+    <div class="step-head"><div class="step-num">2</div><div class="step-title">Auf deinem Stick speichern &ndash; Projektname = Dateiname </div></div>
+    <p><b>Datei &rarr; Speichern unter &rarr; Durchsuchen</b> &rarr; deinen <b>Stick</b> und deinen <b>Projekt-Ordner</b> auswählen.
+    Als <b>Dateiname</b> nimmst du den <b>Namen deines Projekts</b>.</p>
+    <div class="zusatz">💡 Die Endung (<b>.pptx</b> bei PowerPoint, <b>.odp</b> bei Impress) setzt das Programm automatisch &ndash; du tippst sie nicht selbst. Unter dem Dateinamen steht der <b>Dateityp</b> &ndash; den lässt du so, wie er ist (PowerPoint-Präsentation&nbsp;*.pptx).</div>
+    <div class="fill-row"><label>Mein Dateiname:</label><input type="text" placeholder="z. B. Projekt Blockwelt"></div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+  <div class="step" data-step="3">
+    <div class="step-head"><div class="step-num">3</div><div class="step-title">Eine Vorlage / ein Design passend zu deinem Thema wählen </div></div>
+    <p>Gehe auf <b>Entwurf</b> und such ein Design aus, das <b>zu deinem Thema passt</b> &ndash;
+    ein Minecraft-Projekt sieht anders aus als ein Taylor-Swift-Projekt.</p>
+    <div class="zusatz">🔎 Bei <b>Impress</b> gibt es kein Register „Entwurf“: Ansicht &rarr; Seitenleiste &rarr; <b>Masterfolien</b> &ndash; dort ein Design anklicken.</div>
+    <div class="beispiel-row">
+      <div class="beispiel">⛏️ Minecraft &rarr; <b>eckig, grün/braun</b></div>
+      <div class="beispiel">🎤 Taylor Swift &rarr; <b>glitzernd, bunt</b></div>
+    </div>
+    <div class="zusatz">⭐ <b>Tipp:</b> Die Vorlage soll einen <b>Bezug zum Inhalt</b> haben!</div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+  <div class="step" data-step="4">
+    <div class="step-head"><div class="step-num">4</div><div class="step-title">Titelfolie: Dein Projektname </div></div>
+    <p>Schreibe den <b>Namen deines Projekts</b> auf die erste Folie (Titel) &ndash; so wie eine spektakuläre Titelfolie.</p>
+    <div class="fill-row"><label>Mein Titel:</label><input type="text" placeholder="Dein Projektname"></div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+  <div class="step" data-step="5">
+    <div class="step-head"><div class="step-num">5</div><div class="step-title">Neue Folie mit passendem Layout </div></div>
+    <p><b>Start &rarr; Neue Folie</b> &ndash; wähle das Layout <b>Titel und Inhalt</b> (bei Impress: <b>Folie &rarr; Neue Folie</b>, Layout „Titel, Inhalt“). Schreibe oben eine Überschrift
+    (z. B. <i>Charaktere</i>) und unten 2&ndash;3 Stichworte aus deinen Notizen vom letzten Mal.</p>
+    <div class="zusatz">🧩 <b>Titel</b> = Text &nbsp;·&nbsp; <b>Inhalt</b> = Bilder, Video, Audio, Diagramme &hellip;</div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+  <div class="step" data-step="6">
+    <div class="step-head"><div class="step-num">6</div><div class="step-title">Dein Projekt als PDF speichern <span class="opt-badge">optional</span></div></div>
+    <p>Das PDF ist das wichtigste <b>Austauschformat</b> &ndash; das kann jeder öffnen, auch ohne PowerPoint.
+    <b>Datei &rarr; Speichern unter</b> &rarr; wieder in deinen <b>Projekt-Ordner</b> auf dem Stick &rarr; bei <b>Dateityp</b> <b>PDF (*.pdf)</b> auswählen &rarr; <b>Speichern</b>.</p>
+    <div class="zusatz">🔎 Bei <b>Impress</b>: <b>Datei &rarr; Exportieren als &rarr; Als PDF exportieren</b>.</div>
+    <div class="zusatz">🤔 Schau im Projekt-Ordner nach: Jetzt liegen dort <b>zwei Dateien</b> mit gleichem Namen &ndash; woran erkennst du, welche welche ist?</div>
+    <div class="fill-row"><label>Meine zwei Endungen:</label><input type="text" placeholder=".pptx und …"></div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+  <div class="step" data-step="7">
+    <div class="step-head"><div class="step-num">7</div><div class="step-title">Screenshot &amp; Entwurfsvorschläge <span class="opt-badge">optional</span></div></div>
+    <p>Füge ein Bild zu deinem Thema ein &ndash; z. B. einen Screenshot mit
+    <kbd>Windows</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> (Snipping Tool): Bereich aufziehen, dann in der Folie mit <kbd>Strg</kbd> + <kbd>V</kbd> einfügen.</p>
+    <p><b>Nur wenn du die Schaltfläche hast:</b> <b>Start &rarr; Entwurfsvorschläge</b> (früher „Designer“) zeigt dir Layout-Vorschläge für deine Folie.</p>
+    <div class="zusatz">🔎 Die <b>Entwurfsvorschläge</b> gibt es nur in PowerPoint mit Microsoft-365-Abo und Internet &ndash; nicht in Impress und nicht im alten Office der Schul-Laptops. Fehlt der Knopf, überspringst du diesen Teil einfach.</div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+
+  <div class="teil kreativ">Teil 2 &ndash; Kreativ weiterarbeiten 🎉</div>
+
+  <div class="step" data-step="8">
+    <div class="step-head"><div class="step-num">8</div><div class="step-title">Mach dein Projekt schöner &ndash; ganz nach deinem Geschmack</div></div>
+    <p>Jetzt bist du dran: Gestalte deine Titelfolie und die erste Folie weiter, <b>so spektakulär du willst</b>.
+    Das kannst du zum Beispiel ausprobieren:</p>
+    <div class="badge-row">
+      <span class="badge">🎨 anderes Design / andere Farben</span>
+      <span class="badge">🧩 weitere Folie mit anderem Layout</span>
+      <span class="badge">🖼️ Bilder zu deinem Thema</span>
+      <span class="badge">🧭 das Menüband erforschen (alle Register einmal anklicken)</span>
+    </div>
+    <div class="zusatz">🙅 Kein Referat &ndash; es geht ums Ausprobieren und Gestalten. Speichere zum Schluss nochmal mit <kbd>Strg</kbd> + <kbd>S</kbd>.</div>
+    <div class="check-row"><input type="checkbox" onchange="toggleDone(this)"><label>Erledigt</label></div>
+  </div>
+
+  <div class="end-box">
+    <div>🎉 Geschafft! Dein Projekt hat jetzt echte Folien.</div>
+    <div class="info">Beim nächsten PowerPoint-Kurstag baust du die nächste Funktion in dein Projekt ein.</div>
+  </div>
+
+</div>
+<script>
+function updateProgress() {
+  var boxes = document.querySelectorAll('.check-row input[type="checkbox"]');
+  var done = 0;
+  boxes.forEach(function(b){ if (b.checked) done++; });
+  var pct = Math.round(done / boxes.length * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = done + ' von ' + boxes.length + ' Schritten erledigt';
+}
+function toggleDone(box) {
+  var step = box.closest('.step');
+  step.classList.toggle('done', box.checked);
+  updateProgress();
+}
+updateProgress();
+</script>
+</body>
+</html>
