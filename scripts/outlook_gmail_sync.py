@@ -310,7 +310,12 @@ def sync_outlook_to_gmail(ms_token, g_token, outlook_contacts, google_index):
         
         # Match finden
         resource_name = etag = None
-        for email in emails:
+        # Name zuerst (Fix 12.11.2026: geteilte E-Mail Daniel/Stephanie Garschagen verwechselte Kontakte)
+        if name.lower() in google_index:
+            resource_name, etag = google_index[name.lower()]
+        elif name_key(name) in google_index:
+            resource_name, etag = google_index[name_key(name)]
+        for email in ([] if resource_name else emails):
             if email in google_index:
                 resource_name, etag = google_index[email]
                 break
@@ -380,7 +385,12 @@ def sync_gmail_to_outlook(ms_token, g_token, google_contacts, outlook_index):
 
         # Match finden
         outlook_match = None
-        for email in emails:
+        # Name zuerst (Fix 12.11.2026, s.o.)
+        if name.lower() in outlook_index:
+            outlook_match = outlook_index[name.lower()]
+        elif name_key(name) in outlook_index:
+            outlook_match = outlook_index[name_key(name)]
+        for email in ([] if outlook_match else emails):
             if email in outlook_index:
                 outlook_match = outlook_index[email]
                 break
