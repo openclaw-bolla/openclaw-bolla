@@ -31,3 +31,5 @@
 - 11.11.2026: Band-I-Abgleich Kreft: Widerspruch gefunden (Band I: bewaffneter Räumer in Serverhalle B, von Theo überwältigt, Marias Leuten übergeben; Band II K14/16: 'nie gesehen, nur Festplatten gelöscht'). Kanon-Eintrag aktualisiert, Chris-Entscheidung offen.
 - 11.11.2026: Chris bestätigt: Kreft = Räumer aus Band I; Kap. 14/16 angleichen (Kanon ENTSCHIEDEN). Sichtung Sa.
 - 11.11.2026: Lektorats-Aufträge (Zwei Papiere, Kreft) gebündelt in scratch/aurora2_lektorat_auftraege.md + endspurt_plan; Orchestrator samstag_fable_lektorat.py muss sie einbinden (noch zu bauen).
+
+- 13.11.2026 ~18:10: Immo Herfeldt: Antwort auf "Aktualisierung Ihres Suchauftrages" (11.11.) gesendet, Original nach Outlook Projekte/Immos 2027-28 archiviert, Tracker-Notiz ergänzt. makler_mail_sync.py: Folgeantworten werden jetzt auto-archiviert (Backup backups/makler_mail_sync_vor_folge_move_20261113.py, noch ungetestet im Echtlauf). TODO: bei moin/Sessionstart offene MC-Meldungen "makler-folgeantwort" selbst prüfen und melden.

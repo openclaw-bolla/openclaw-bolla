@@ -110,12 +110,14 @@ def main():
                     st0["datum"] = today()
                     follow.append(f"{mk['firma']}: {subj[:50]}")
                     n_follow += 1
+                    if fid:  # Folgeantwort ebenfalls automatisch archivieren (Chris 13.11.2026)
+                        requests.post(f"{G}/me/messages/{m['id']}/move", headers=H, json={"destinationId": fid}); n_moved += 1
             done.add(m["id"])
         json.dump(d, open(DATA, "w"), ensure_ascii=False, indent=2)
         st["done"] = sorted(done)[-1500:]; st["last"] = datetime.datetime.now().isoformat(timespec="seconds")
         json.dump(st, open(STATE, "w"))
         if follow:
-            mc_meldung("makler-folgeantwort", "Makler: neue Folgeantwort", "Neue Antwort von " + "; ".join(follow) + " – bitte lesen/nachfassen (Excel pflegen, Mail nach 'Immos 2027-28' verschieben).")
+            mc_meldung("makler-folgeantwort", "Makler: neue Folgeantwort", "Neue Antwort von " + "; ".join(follow) + " – bitte lesen/nachfassen (Mail ist bereits nach 'Immos 2027-28' archiviert).")
         report("makler-mail-sync", "Makler-Mail-Sync", "ok",
                f"{n_reply} neue Antworten, {n_bounce} Rückläufer, {n_moved} nach '{FOLDER_NAME}' verschoben, {n_spam} aus Spam ins Postfach, {n_follow} Folgeantworten")
         print(n_reply, n_bounce, n_moved, n_spam)
