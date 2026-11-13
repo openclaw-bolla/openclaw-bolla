@@ -33,3 +33,5 @@
 - 11.11.2026: Lektorats-Aufträge (Zwei Papiere, Kreft) gebündelt in scratch/aurora2_lektorat_auftraege.md + endspurt_plan; Orchestrator samstag_fable_lektorat.py muss sie einbinden (noch zu bauen).
 
 - 13.11.2026 ~18:10: Immo Herfeldt: Antwort auf "Aktualisierung Ihres Suchauftrages" (11.11.) gesendet, Original nach Outlook Projekte/Immos 2027-28 archiviert, Tracker-Notiz ergänzt. makler_mail_sync.py: Folgeantworten werden jetzt auto-archiviert (Backup backups/makler_mail_sync_vor_folge_move_20261113.py, noch ungetestet im Echtlauf). TODO: bei moin/Sessionstart offene MC-Meldungen "makler-folgeantwort" selbst prüfen und melden.
+- 13.11.2026 ~19:00: scripts/samstag_fable_lektorat.py gebaut (Stufe1/2/Test/Einbauen), nur Syntax geprüft. NÄCHSTER SCHRITT Sa früh: --test 13, Pp-Kosten messen, dann --stufe1. Subagent-Fork wurde vom Limit-Wächter blockiert (Woche 68 %), inline gebaut.
+- 14.11. 07:45 Cron fable-lektorat-sa-start gesetzt (--test 13 → --stufe1). Chris Sa: vor 11:00 ca. 1 h, ab 16:00 wenig Zeit. Z Flip: WhatsApp-adb-pull gestrichen.
