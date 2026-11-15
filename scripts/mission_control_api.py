@@ -10341,6 +10341,14 @@ VORSCHLAG: <verbesserter Satz ODER exakt der unveränderte Originalsatz, wenn ke
                     with open(bf2, "w") as fh:
                         json.dump(buch, fh, ensure_ascii=False, indent=2)
                     self._send_json({"ok": True})
+                elif aktion == "ablehnen" and e.get("ersetzt") and kap["text"].count(e["text"]) == 1:
+                    # Ersetzungs-Vorschlag: Originalformulierung zurueckschreiben
+                    kap["text"] = kap["text"].replace(e["text"], e["ersetzt"], 1)
+                    buch.setdefault("statistik", {})["woerter_gesamt"] = sum(len(k["text"].split()) for k in buch["kapitel"])
+                    e["status"] = "abgelehnt"; e["erledigt_am"] = now
+                    with open(bf2, "w") as fh:
+                        json.dump(buch, fh, ensure_ascii=False, indent=2)
+                    self._send_json({"ok": True, "neuer_text": kap["text"]})
                 elif aktion == "ablehnen":
                     if kap["text"].count(e["text"]) != 1:
                         self._send_json({"ok": False, "error": "Einschub-Text nicht mehr eindeutig im Kapitel — bitte manuell prüfen."}); return
