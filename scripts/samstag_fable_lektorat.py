@@ -57,9 +57,10 @@ for p in (OUT, S1, S2):
 
 CHARTA = f"""Grundregeln (AURORA II, Roman von Chris Mandel): Arbeite selbststaendig, keine Rueckfragen. Aendere NICHTS in {JSON} (nur lesen).
 Lies zuerst {M}/feedback_aurora_ii_humor_standard.md (Humor-Maßstab = Kap. 10), {M}/feedback_kreative_individualitaet.md, {M}/feedback_aurora_zahlen_exakt.md,
-{M}/feedback_blaue_markierung_vorschlaege.md, {M}/feedback_aurora_zielgruppe_kein_spoiler.md, {AUFTR} (Pflicht-Auftraege, v. a. Kap. 9-11, 14, 16) und in {JSON} die Felder 'kanon', 'kriterien', 'satz_markierungen', 'lesemarken'.
+{M}/feedback_blaue_markierung_vorschlaege.md, {M}/feedback_aurora_zielgruppe_kein_spoiler.md, {M}/feedback_aurora_ii_leicht_lesbar.md (PFLICHT: Verstaendlichkeit auf hohem literarischem Niveau, kein Groschenroman, nichts glaetten), {AUFTR} (Pflicht-Auftraege, v. a. Kap. 9-11, 14, 16) und in {JSON} die Felder 'kanon', 'kriterien', 'satz_markierungen', 'lesemarken'.
 Chris' markierte Saetze (satz_markierungen) bleiben woertlich. Keine neuen Fakten/Zahlen/Daten, Band-I-Zahlen exakt. Tochter-Wendung nie spoilern.
-Ziel der Politur: Chris will deutlich mehr schmunzeln: Humor gleichrangig mit Spannung. Situationskomik, trockene Beobachtung, Figuren-Running-Gags, Wortwitz - nie aufgesetzt/albern, ernste Szenen bleiben ernst, kein Gag ohne Figurenbezug. Stil der starken Szenen, nicht generisch."""
+Ziel der Politur: Chris will deutlich mehr schmunzeln: Humor gleichrangig mit Spannung. Situationskomik, trockene Beobachtung, Figuren-Running-Gags, Wortwitz - nie aufgesetzt/albern, ernste Szenen bleiben ernst, kein Gag ohne Figurenbezug. Stil der starken Szenen, nicht generisch.
+LESBARKEIT MIT ANSPRUCH (Chris-Pflicht 16.11.2026, gleichrangig mit Humor): Chris will AURORA II LEICHTER LESBAR, aber auf literarisch hohem Niveau: Er ist ein guter, qualitativ hochwertiger Schreiber und der Stil darf NIE zum Groschenroman absinken. Es ist ausdruecklich erwuenscht, dass man ab und zu einen Satz langsam lesen muss: dichte, kunstvolle, ironische, mehrschichtige Saetze, Subtext, Rhythmus, lange Saetze mit Bogen und kurze Saetze als Pointe bleiben erhalten. Nichts glaetten, nichts vereinfachen, was gut ist; kein Floskel-Deutsch, keine Allerweltsbilder, kein Erklaerbaer-Ton. Zu beheben sind NUR Stellen, die auch nach aufmerksamem, langsamem Lesen unklar bleiben, weil man raten muss, was gemeint ist: raetselhafte Bildsprueche, die nicht aufgehen (Metapher nur, wenn sie beim Nachdenken sofort Sinn ergibt), Halbsaetze, bei denen das Gemeinte fehlt, ueberladene Schachtelsaetze, die den Faden verlieren, und Motive ohne Einordnung (z. B. Zaehlen von Ja/Nein, Strichliste, 'unentziehbar': beim Auftreten im Text kurz klaeren). Schluesselwoerter, auf die es ankommt, beim Namen nennen. Test: Geht der Satz beim aufmerksamen Lesen auf, ohne dass die Leserin raten muss? Dann bleibt er, auch wenn er Aufmerksamkeit verlangt. Geht er nicht auf, formuliere ihn so um, dass er auf gleichem sprachlichen Niveau aufgeht. Beispiel eines Fehlers: 'Zaehlen muss man, wenn man nicht weiss, wem das Ja gehoert' (Bild geht nicht auf); besser: 'Nachzaehlen muss nur einer, der nicht weiss, ob sein Ja wirklich seins ist. Meins ist meins, und mein Nein auch' (gleicher Ton, geht auf). Humor und Ton bleiben immer erhalten."""
 
 # P1 wird nur per .replace befuellt (keine format-Klammern noetig)
 P1 = CHARTA + """
@@ -69,7 +70,7 @@ STUFE 1 - GUTACHTEN, NUR die Kapitel @LISTE@ (read-only). Lies NUR diese Kapitel
 Schreibe SOFORT NACH JEDEM Kapitel (nicht erst am Ende!) die Datei @S1@/kapNN.json (NN zweistellig) mit genau diesem JSON-Objekt:
 {"n": <Nr>, "titel": "...", "humor_dichte": <0-5>, "spannung": <0-5>, "uebergang": "<1 Satz zum Anschluss>",
  "starke_szenen": ["<woertlich die ersten 12 Woerter>"], "schwache_szenen": [{"anfang": "<woertlich die ersten 12 Woerter>", "grund": "<kurz>"}],
- "befunde": ["<max. 3 Befunde, je 1 Zeile: Spannung/Figuren/Stil/Schachtelsaetze/Konsistenz>"]}
+ "befunde": ["<max. 3 Befunde, je 1 Zeile: Spannung/Figuren/Stil/Schachtelsaetze/Konsistenz/Verstaendlichkeit (schwer verstaendliche oder bruchstueckhafte Saetze woertlich-kurz nennen)>"]}
 Antwort am Ende: max. 2 Zeilen."""
 
 P2 = CHARTA + """
