@@ -88,6 +88,9 @@ def _name_for(cmd):
     for key, name in _NAMES:
         if key in cmd:
             return name
+    c = re.search(r"#\s*(.+?)\s*$", cmd)  # Kommentar am Zeilenende der Cron-Zeile = bester Anzeigename
+    if c:
+        return c.group(1)[:70]
     m = re.search(r"([\w\-]+)\.(?:py|sh)", cmd)
     return m.group(1).replace("_", " ") if m else cmd[:40]
 

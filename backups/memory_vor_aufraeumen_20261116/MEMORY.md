@@ -1,0 +1,108 @@
+- [KRITISCHE REGELN](rules_kritisch.md) — Pflicht: Tageszeit, Kosten, Ablauf, Ausgabe, Hardware
+- [🛑 Keine Berichte/Listen — selbst entscheiden](feedback_selbst_entscheiden_keine_berichte.md) — nur „Lebenswichtiges" an Chris (14.10.26)
+- [✅ Praktikum-Standard ab KT8 (Checkliste)](feedback_praktikum_standard_ab_kt8.md) — Muster 08-Praktikum.html; Geräte, Impress, Boxen, Kann-Check, Mitteilungen (16.11.26)
+- [KERNFAKTEN Chris](facts_kern.md) — Pflicht: Wohnort, Auto, Familie
+- [Modell-Strategie](feedback_modell_auswahl.md) — Sonnet default, Opus Ersatz; ⛔ FABLE endgültig raus
+- [💸 Kostenlose Alternative zuerst](feedback_kostenlose_alternative_zuerst.md) — bei ALLEN Projekten erst gratis testen (Cloudflare statt Gemini/MAI), dann ggf. bezahlt (28.10.26)
+- [🚦 LIMIT-REGELN](feedback_limit_regeln.md) — 5h vs. Woche getrennt; Mo/Di/Fr/Sa tagsüber 20 % im 5h frei (Gate 67/Max 80); gilt für ALLE inkl. Bolla+Subagents; Code: scripts/limit_policy.py
+- (Budget-Check Großprojekt, Wochenreset/Samstag ausreizen: alles in [LIMIT-REGELN](feedback_limit_regeln.md) aufgegangen)
+- [⚙️ Hintergrundjob zuerst](feedback_hintergrundjob_zuerst.md); [⚙️ Automatisierung vorziehen](feedback_automatisierung_vorziehen.md); [🔥 claude -p-Massenläufe](feedback_claude_p_massenlaeufe_kosten.md)
+- [🌐 Bei Störungen ERST extern prüfen](feedback_erst_externe_stoerung_pruefen.md) — Anbieter-/Internet-Störung checken, bevor am Gerät gedoktert wird (Outlook/Teams 13.11.26)
+- [🧠 Merken-Einstufung selbst](feedback_merken_einstufung.md) — kritisch/Kontext/bei Bedarf selbst wählen, nur bei Unsicherheit fragen (02.11.26)
+- [Medium=Englisch](feedback_medium_sprache.md); [Keine Desktop-App](feedback_keine_desktop_app.md); [Kein China-Fokus KI](feedback_kein_china_fokus_ki.md)
+- [🔒 Permissions nerven → „moin“-Job](feedback_permissions_nerven_moin_job.md); [wtnet=Outlook](feedback_wtnet_gleichwertig.md); [Chris eigene Verwaltung](feedback_chris_eigene_verwaltung.md); [🚫 Kein "!"-Befehl für Chris](feedback_kein_ausrufezeichen_befehl.md)
+- [wtnet-Kundenportal](reference_wtnet_kundenportal.md); [🛒 Angebots-Suche/Aldi](reference_mp_angebotssuche_aldi.md); [🖨️ 10x15-Foto drucken](reference_hp_foto_10x15_druck.md); [📮 Post-Filiale](reference_post_filiale_rathausallee.md)
+- [🌐 Website-Schreibzugriff](feedback_website_schreibzugriff.md); [itslearning](project_itslearning_automation.md)+[Auto-Sync](feedback_itslearning_auto_sync_updates.md)
+- 📂 **Weitere Einträge (Board, Detail-Feedback, Referenzen, Waisen): [INDEX_weitere.md](INDEX_weitere.md)** — bei Bedarf dort suchen
+
+## AURORA (Buchprojekt)
+- [🤫 Plot-Umbau ohne Spoiler](feedback_aurora_ii_plot_umbau_ohne_spoiler.md) — Fable entwirft, Opus setzt um, Chris sieht nichts; Humor/Sätze weiter blau (16.11.26)
+- [🎯 Zielgruppe Frauen, Ton: Spannung/Humor/Liebe; Tochter-Wendung NIE in Werbung](feedback_aurora_zielgruppe_kein_spoiler.md) — „Thriller“-Etikett schreckt ab (02.11.26)
+- [📏 Zielumfang NEU ~510 Seiten](feedback_aurora_ii_zielumfang_450.md) — 11 pt, ≈128.000 W; Welle 7 → Probesatz → leichte Straffung Kap. 1–16 (28.10.26)
+- [🔵 Blaue Einschübe im Duo-Reader = Standard für alle Bücher](feedback_blaue_einschuebe_duo_reader.md) — Tippen → Behalten/Weg, auch AURORA III (09.11.26)
+- [🛡️ Satz-Übernahme darf nie Text löschen](feedback_mp_satzuebernahme_nie_verlust.md); [🔵 Blaue Markierungen = Vorbild](feedback_blaue_markierung_vorschlaege.md)
+- [🆕 AURORA II](project_aurora_ii.md) — MP-Seite, kapitelweise, kein Fable
+- [🔁 Analogie-Check nach Kapitel](feedback_aurora_ii_analogie_check.md); [😄 Humor-Standard = Kap. 10](feedback_aurora_ii_humor_standard.md)
+- [Kurzformen "vin"/"gramm"](feedback_aurora_ii_verstehe_ich_nicht.md); [📝 Sammelmodus Lesen](feedback_aurora_ii_sammelmodus.md) — Hinweise pro Kapitel sammeln (23.10.26)
+- [📖 Chris liest selbst, Stand Kap. 16](feedback_aurora_ii_chris_lesestand.md) — keine Spoiler zu späteren Kapiteln; ausführlich erklären
+- [🎵 Song + QR-Code](project_aurora_ii_song_qr.md); [🎨 Cover II](project_aurora_ii_cover.md) — FINAL 1600×2560; [🌌 Farbwelt Nordlicht](project_aurora_ii_farbwelt_nordlicht.md)
+- [KI-Thriller-Projekt](projekt_ki_thriller.md); [EN-Lokalisierung](feedback_aurora_en_lokalisierung.md); [Fable-Politur](project_aurora_fable_optimierung.md)
+- [Hartkodierte Blöcke](project_aurora_hardcoded_blocks.md) — ⚠️ Epilog/Vorspann/Bio NICHT aus JSON; [🔢 Zahlen exakt an Band I](feedback_aurora_zahlen_exakt.md)
+- [ISBN/ASIN-Registry](project_aurora_identifiers.md); [Checkliste](project_aurora_update_checklist.md); [Select NICHT](project_kdp_select_konflikt.md); [Cover](feedback_kdp.md)
+- [📚 Google Play: erst bei AURORA II](project_google_play_nur_aurora_ii.md); [Marketing-Ordner](reference_aurora_marketing_ordner.md); [EPUB](feedback_freiexemplare_digital.md); [Kindle](reference_kindle.md)
+- [Widmungen-Signatur](feedback_aurora_widmungen_signatur.md) — „In Liebe, Papa"; [Autoren-Bio](reference_autoren_bio_baustein.md) nie „pensioniert"
+- [🌐 Website immer in Mails](feedback_aurora_mail_website_immer.md); [😌 Projekte entspannt](feedback_projekte_entspannt.md); [kein USA-Auftritt](feedback_kein_en_auftritt_usa.md); [keine Regionalbekanntheit](feedback_keine_regionale_bekanntheit.md)
+- [📣 Marketing-Historie](project_aurora_marketing_historie.md); [LinkedIn-UI](reference_linkedin_kontakt_ui.md); [⛔ LinkedIn kein Kanal](feedback_linkedin_kein_kanal.md); [✉️ Mail=bester Kanal](feedback_aurora_mail_bester_kanal.md)
+- [Serien-Idee](idea_aurora_serie.md); [Englische Version](project_aurora_englisch.md); [Fortsetzung](idea_aurora_fortsetzung.md); [Buchprojekt Sekretariat](project_buch_sekretariat.md)
+- [🔳 QR→Landingpage+Trailer+Song = Standardmuster für alle Bücher](project_qr_landingpage_trailer_muster.md) — Ablauf, Cache-Falle ?v=N, Kanäle-Plan, Zeitplan bis Launch (26.10.26)
+- [🖼️ Cover-PNG Google+D2D ohne „I“ (Band I)](project_aurora_i_ebook_cover_png_google_d2d.md) — NICHT in moin; bei AURORA-II-Veröffentlichung selbst vorschlagen (03.11.26)
+- [⭐ AURORA II Optimierungen → für III](project_aurora_ii_optimierungen_fuer_iii.md); [🎬 Blender-Trailer](project_aurora_ii_trailer_blender.md); [🎬 Blender 3D](project_blender_3d.md)
+- [🎬 Trailer-Titelkarte + Abspann](project_aurora_ii_trailer_titelkarte.md) — „Winter 2026/27", Untertitel in Diskussion (02.11.26)
+- [🎧 Hörbuch mit eigener Stimme (ElevenLabs)](project_hoerbuch_elevenlabs_stimme.md) — Bestvariante B5, Abo bis 02.12., wartet auf deutschen Vertriebsweg; Montags-Check (02.11.26) — 09.11.: 5 Proben C1–C5 erzeugt, warten auf Urteil
+
+## Verhalten & Feedback (Kern)
+- [🎨 MP-Seiten immer DECKEND, nie transparent](feedback_mp_seiten_deckend_nicht_transparent.md) — passiert bei neuen Seiten jedes Mal (Englisch 10.11.26, AURORA 13.10.)
+- [🧵 Hintergrund-Fork](feedback_hintergrund_fork_lange_aktionen.md); [Whisper NIE](feedback_no_whisper.md); [Mic=Azure SDK](feedback_mic_whisper.md); [Einfach machen](feedback_no_proceed.md)
+- [Grenzen früh](feedback_fruehzeitig_grenzen_erkennen.md); [proaktiv melden](feedback_proaktiv_wichtig.md); [⚠️ Mail-Freigabe](feedback_mail_freigabe.md)
+- [Sport-Rhythmus](user_sport_rhythmus.md); [😏 Ton & Stimme](feedback_stimme_augenzwinkern.md); [Humor](feedback_humor.md); [Schüler-Texte](feedback_schueler_texte_ton.md); [Signatur](feedback_signatur_chris_mandel.md)
+- [✨ Kreative Individualität](feedback_kreative_individualitaet.md); [Wartungsfenster Surfaces](feedback_wartungsfenster_surfaces.md); [HW-Defekte](feedback_hardware_defekt_proaktiv.md)
+- [✅ itslearning-Workflow](feedback_itslearning_workflow_bewaehrt.md); [📸 Screenshot-Vorschau](feedback_mitteilungen_screenshot_vorschau.md); [Termine früh](feedback_itslearning_termine_fruehzeitig.md); [🏫 kein Zusatzunterricht nachm.](feedback_kein_zusatzunterricht_nachmittag.md); [📥 Praktikum-Download](feedback_itslearning_praktikum_download_selbststaendig.md); [🗂️ Ablage+Aufräumen](feedback_itslearning_dateiablage_aufraeumen.md)
+- [🔎 itslearning-Suche = Kurzname](feedback_itslearning_anzeigename_suche.md); [📊 Job-Status statt Telegram](feedback_jobstatus_statt_telegram.md); [📅 Kurstag-Freigabe montags](project_kurstag_montag_freigabe.md) — nächster Mo 26.10.
+- [📋 Checks/Watcher → MC-Jobs oben, nie Telegram](feedback_keine_telegram_mc_jobs_oben.md) — job_status.mc_meldung (03.11.26)
+- [🎯 Praktikum: nur nützliche Funktionen](feedback_praktikum_nuetzliche_funktionen.md); [Detail-Feedback: Praktika, PPT, Suno, Word, Bilder u. a.](INDEX_weitere.md)
+- [👋 „moin“ = nummerierte Gesamtliste](feedback_moin_offene_aktionen.md); [👋 „Moin“ = Gruß jeder Tageszeit](feedback_moin_begruessung.md); [🔢 Zahl-Verweis](feedback_zahl_verweis_session_start.md)
+- [🚫 Keine .md für Chris](feedback_keine_md_dateien_fuer_chris.md); [⌨️ Kein Editieren durch Chris](feedback_keine_datei_editor_permissions.md); [✅ Word FERTIG-Knopf](feedback_word_fertig_button.md)
+- [⌨️ Kürzel „sfs" / „w"](feedback_kuerzel_sfs_w.md) — sfs = Schritt für Schritt (per Zwischenablage), w = weiter; alle Projekte (06.11.26)
+- [🎛️ Bolla Songs Stil-Vorlagen](project_bolla_songs_stilvorlagen.md) — Phonk fertig, weitere Stile auf Zuruf einbauen (06.11.26)
+- [📅 Datum erst checken](feedback_termine_mit_datum_melden.md); [📅 Ferien-Abgleich](feedback_ferien_abgleich_vorschlaege.md); [☑️ Sammel-Knöpfe](feedback_viele_punkte_sammelknoepfe.md); [🤝 Copilot=Layout, Bolla=Inhalt](feedback_copilot_ppt_layout_arbeitsteilung.md)
+- [📵 Immo: keine Telefonnummern](feedback_immo_keine_telefonnummern.md); [📊 Makler-Excel sofort updaten](feedback_makler_excel_sofort_updaten.md); [🎶 Tonie-Songs Suno v6](feedback_tonie_suno_v6.md)
+
+## Chris & Familie
+- [Chris Accounts](user_accounts.md); [Profil](user_chris.md); [🎓 Werdegang](user_werdegang.md); [Chris ist Lehrer](user_chris_teacher.md); [Hintergrund](user_background.md)
+- [Lessing-Gymnasium](reference_lessing_gymnasium.md); [Schuljahr 26/27](project_schuljahr2627.md); [EDV-Klassenausstattung](reference_edv_klassenausstattung.md); [Sehvermögen](user_sehvermoegen.md) — min. 14px
+- [Laufprobleme Chris & Reni](user_laufprobleme.md); [Optimist](user_optimist.md); [KI-Transparenz](user_ki_transparenz.md); [Windows Desktop-Pfad](user_desktop.md); [E-Auto](user_ev_charging.md); [Reni](user_reni.md)
+- [Sigi](user_sigi_weinmann.md); [Robin Mandel](user_robin.md); [🏃 Robin Marathon](user_robin_einstein_marathon.md); [Familie](user_familie.md); [Stammbaum](user_family_mandel.md); [Chris' Hardware](user_devices.md)
+- [Genus „das Duo"](feedback_duo_genus.md); [F-Secure](user_fsecure.md); [OpenClaw-Phase](user_openclaw_phase.md)
+
+## Laufende Fälle & Projekte
+- [📇 Kontakte-Architektur](project_kontakte_architektur.md) — Outlook=Master, Duo+P8 zeigen nur Outlook, Sync abgesichert, Foto-Import per Dateiname (11.11.26)
+- [🎁 Tonie-Projekt Zwillinge](project_tonie_zwillinge.md) — ✅ ABGESCHLOSSEN 01.11.26: alle 3 bespielt; MC-Tonie-Seite jetzt neutrale Werkstatt (Name+Attribute→3 Boxen) + Bedienungs-Karte; offen nur Übergabe Dez.; [Tanzkurs](project_tanzkurs.md)
+- [Immobilienkauf Bayern](project_immokauf.md); [Whg. München West](project_immobilien_muenchen_west.md); [📍 Weilheim Top-Ort](project_immo_weilheim_top_lage.md); [Kontaktformulare ⏸️](project_immo_kontaktformulare.md)
+- [✈️🌍 Reiseplaner + Robin-Seite neu bauen](project_reiseplaner_robin_neu.md); [Konsolidierung Bolla-Ordner](project_bolla_ordner_konsolidierung.md); [Ablage](feedback_ablage_bolla_vs_randthemen.md)
+- [⚖️ Riverty-Inkasso](project_riverty_kieselerde.md); [📱⌚ Reni Galaxy Watch](project_reni_handy_watch_sync.md); [📷 Handy-Foto → Zwischenablage](project_handy_foto_zwischenablage.md)
+- [🚗 ADAC-Kündigungen](project_adac_kuendigungen.md); [💳 WISO/Trade-Republic](project_wiso_traderepublic_sync.md); [📶 ID.3/Duo WLAN](project_id3_duo_wlan.md); [MP-Chat-Freigabe-Bug](feedback_mp_chat_freigabe_dialog_bug.md)
+- [📱 Pixel 8 löst P20 ab](project_pixel8_p20_ersatz.md); [💶 Renis VL-Rente](project_reni_vl_rentenversicherung.md); [💶 ESt-Vorauszahlungen](project_est_vorauszahlung.md); [🛒 Amazon Prime](project_amazon_prime_seit.md)
+- [📊 Notenübersicht](project_notenuebersicht.md); [👥 Schülerlisten](reference_schuelerlisten_7abcd.md); [📚 Robin Diss-Review](project_robin_diss_review.md); [Robin Studium](project_robin.md); [KI-Workshop](project_ki_workshop.md)
+- [🌊 bollawave/DistroKid](reference_bollawave_kuenstlername.md); [Blockliste](project_suno_distrokid_blocklist.md); [Spotify](reference_spotify_account.md); [DistroKid Workflow](project_distrokid_desktop_staging.md); [Assets](reference_release_assets.md); [Promo-Cron](project_distrokid_promo_automation.md)
+- [Suno Saison-Songs](project_suno_saison_songs.md) ⏰ Feb 2027; [Surface Book](project_book_akku.md); [Aimor](project_aimor.md); [Voice Setup](project_voice_setup.md); [Mail-to-Calendar](project_mail_urlaub.md)
+- [MC/Claude Infra-Quirks](project_mc_claude_path.md); [Parallel](project_claude_parallel_sessions.md); [Foto-Analyse](project_foto_analyse.md); [Authenticator](project_authenticator_sync.md)
+- [📱 Duo: Copilot nur Web-App](reference_duo_copilot_webapp.md); [⏰ Tag-Freigabe=Cron+Telegram](feedback_cron_nur_nach_freigabe_mit_rueckmeldung.md); [📧 wtnet IMAP — alle Konten mail.wtnet.de, Outlook nur manuell einrichten](reference_wtnet_handy_imap.md); [📂 PPTX-Entwurf](feedback_pptx_entwurf_workflow.md)
+- [🧟 SSH-Zombie-Reaper](project_ssh_zombie_reaper.md); [🚨 Reni PayPal-Anruf](project_reni_paypal_betrugsanruf.md); [🔊 Book↔Boomster](project_book_boomster_bluetooth.md); [🎄 Adventskalender-PPTX](reference_adventskalender_pptx_pixum.md)
+- [📚 Goodreads/LovelyBooks](project_aurora_goodreads_lovelybooks.md); [🌐 Website optimieren](project_website_optimieren_reni_rezension.md); [🌐 chrismandel.de neu](project_chrismandel_de_neu.md); [🎧 KDP Virtual Voice](project_kdp_virtual_voice.md); [📘 Cover-I Feedback](project_aurora_i_cover_reni_feedback.md)
+- [🔎 Erfolg nur mit Beleg](feedback_erfolg_nur_mit_beleg.md) — Log-Datum prüfen, Cron-Skripte nach Umbau auf Leerdatei/Syntax checken (27.10.26)
+- [🎂 Geburtstagssong-Namen selbst auflösen](feedback_geburtstagssong_namen_aus_kurstermin.md) — Kurstermin-Liste → Klassen/Gruppe → Kurs I/II, keine Rückfragen (27.10.26)
+- [🖼️ Bing Image Creator geht OHNE Account](reference_bing_image_creator_ohne_account.md) — 27.10.26 im InPrivate getestet; Websuche liegt falsch; Rewards-Zähler ≠ Limit
+- [🛴 E-Scooter-Kauf](project_escooter_kauf.md) — Muss: Blinker v+h, Federung; Web-Check auf Zuruf (28.10.26)
+- [🎼 Liedtext nur mit echter Quelle](feedback_liedtext_nur_mit_echter_quelle.md) — Word erst nach Quellenabgleich; Noten aus Wikibooks (28.10.26)
+- [🦷 Allianz-Zahnzusatz Reni](project_allianz_zahnzusatz_reni.md) — 241,74 € statt 361,62 €, Falschauskunft Ellermann, Mails gesichert, Wiedervorlage 12.11. (29.10.26)
+- [📖 Tonie-Anleitung Schritt für Schritt](reference_tonie_bespielen_anleitung.md) — auf Zuruf zeigen; Einrichten/Aufnahme/Hochladen (30.10.26)
+- [📦 Toniebox 2 Marie lädt nicht am Echo-11-Dock](project_tonie_box_marie_laden.md) — Haushalt-Wahl, Hub-Fakten, Test mit Wandnetzteil (01.11.26)
+- [🔌 ADB wiederherstellen](reference_adb_wiederherstellen.md) — Port 5555 weg nach Reboot: Portscan + Kopplungscode (01.11.26)
+- [📄 PPTX nie anfassen, PDF 1:1](feedback_pptx_nie_anfassen_pdf_1zu1.md) — Chris' Folien nur exportieren, nie neu bauen (02.11.26)
+- [📮 Kurstag-Versand-Regeln](feedback_kurstag_versand_regeln.md) — ⏰ Post-Cron IMMER 11:00, Download zu Beginn des PRAKTIKUMS, nie Praktikum-Screenshot, nach Versand alles Temporäre löschen (02.11.26)
+- [🎯 Keine geratenen Infos](feedback_keine_geratenen_infos.md) — Statusaussagen vor Nennung gegen Quelle prüfen, Unsicheres kennzeichnen (08.11.26)
+- [🏁 AURORA II Endspurt-Plan](project_aurora_ii_endspurt_plan.md) — ⭐ Fable-Lektorat Sa 14.11. (Humor-Fokus, bis 16.11.), To-dos mit Pp-Kosten, Freitags-Freigaben 13./20./27.11., Vorziehen, 2. Spannungsjob nur gezielt (08.11.26)
+- [📺 Sonntag 20:15 Tatort](user_sonntag_tatort.md) — Pflichtprogramm, nichts für den Abend planen (08.11.26)
+
+- [🗑️ ElevenLabs: Altproben vor jedem Versuch löschen](feedback_elevenlabs_alte_proben_loeschen.md) — nur 1 neue Probe (09.11.26)
+- [🔍 Buchtext: bei Neufassung/Verdichtung Konsistenz+Fehler prüfen, nichts dazudichten](feedback_buch_neufassung_konsistenz_pruefen.md) — Querverweise per grep gegen echten Text (09.11.26)
+- [💻 Hardware-Maßstab = Studio (RTX 4050), nie Book/WSL-Limits](feedback_hardware_studio_massstab.md) — 09.11.26
+- [🇬🇧 Englisch-Trainer](project_englisch_trainer.md) — MP Familie + mmp-Einstieg, Tagesset-Cron, Azure-Aussprache (09.11.26)
+- [📄 Zwei Papiere Kap. 9–11](feedback_aurora_ii_zwei_papiere_benennung.md) — Theos Blatt ≠ Marlies Portal-Entwurf, im Lektorat trennen (11.11.26)
+- [🔁 WSL-Boot-Task](project_wsl_boot_task.md) — Task startet WSL beim Systemstart ohne Login (12.11.26)
+- [⌨️ Kürzel „kb“](reference_kuerzel_kb_kontaktbilder.md) — neue Kontaktbilder automatisch einbauen (Outlook+Google), kontaktfoto_neu.py (12.11.26)
+- [📱 zflip — Renis Z Flip 3](project_zflip_ruckeln.md) — ⚠️ OFFEN 15.11.26: Ruckeln wieder da, Flex-Modus-Sensor defekt (Samsung Members 2×) → Smart Repair/Kostenvoranschlag; Kurztext fertig; auf Zuruf „zflip“ melden
+- [📨 Makler-Folgeantworten selbst melden + auto-archivieren](feedback_makler_folgeantwort_selbst_melden.md) — Herfeldt-Lücke (13.11.26)
+- [⛔ Z Flip: restricted_device_performance NIE auf 0](feedback_zflip_restricted_performance_nie_null.md) — löst Absturz aus (2× belegt, 14.11.26)
+- [📝 AURORA II Fehlerliste 15.11.](project_aurora_ii_fehlerliste_15_11.md) — 7 bestätigte Fehler (Kreft, Mia, Formular …) → als blaue Einschübe, Chris-Freigabe
+- [🧭 Klare Anweisungen: Stand + Plan + „Was du tust“](feedback_klare_anweisungen_stand_plan.md) — Chris lobt (15.11.26); bei Zeitdruck Thema per Stichwort archivieren

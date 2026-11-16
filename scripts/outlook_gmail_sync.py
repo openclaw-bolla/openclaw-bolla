@@ -197,7 +197,10 @@ def google_to_outlook_body(contact):
         body["displayName"] = names[0].get("displayName", "")
         body["givenName"] = names[0].get("givenName", "")
         body["surname"] = names[0].get("familyName", "")
-    
+        # fileAs („Speichern unter“) setzen, sonst sortiert Outlook neue Kontakte falsch (ganz vorne, Vorname Nachname)
+        if body["surname"] and body["givenName"]:
+            body["fileAs"] = f'{body["surname"]}, {body["givenName"]}'
+
     emails = contact.get("emailAddresses", [])
     if emails:
         body["emailAddresses"] = [{"address": e["value"], "name": e.get("type", "")} for e in emails]

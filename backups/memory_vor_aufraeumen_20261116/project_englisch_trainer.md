@@ -1,0 +1,22 @@
+---
+name: project-englisch-trainer
+description: Englisch-Trainer (B2→C1, 10–15 min/Tag, Aussprache per Azure) in MP Familie + mmp-Einstiegsseite — Architektur, Cron, offene Punkte
+metadata:
+  type: project
+---
+
+**Gebaut 09.11.2026 (Chris-Wunsch):** „Duolingo, nur besser" — täglich 10–15 min, wechselnde Aufgabentypen, fortgeschritten, Aussprache. MP: Sidebar **Familie → 🇬🇧 Englisch** (`page-englisch`); mmp (`/m`): **Einstiegs-Tab 🇬🇧 Englisch**, Tabs Kalender+Mails komplett entfernt (Backend-Routen bleiben). Backups `backups/*_vor_englisch_20261109.*`.
+**Dateien:** `mission-control/englisch.js` (EIN geteilter Client, mountet in MP+mmp; Klassen mit `en-`-Prefix wegen mmp-`.card`-Kollision), `scripts/englisch_api.py` (Routen /api/englisch/heute|fortschritt|ergebnis|zeit|feedback|img/*, in mission_control_api.py eingehängt), `scripts/englisch_generate.py` (Tagesset: 1× `claude -p --model sonnet` über limit_gate wait=False + Cloudflare flux-1-schnell-Bilder), Daten `data/englisch/YYYY-MM-DD.json`, `data/englisch/img/`, `data/englisch_fortschritt.json` (Streak/Statistik geräteübergreifend).
+**Aufgabentypen:** mc (Collocations/Nuancen/Register), input (Phrasal Verbs/Idioms/Grammar/Wortbildung), fehler (Fehlerjagd), listen (Azure-TTS, US/UK wählbar), selfcheck (Umformulieren/Übersetzen/Bildbeschreibung/Schreiben; Schreiben+Bild mit „Feedback von Bolla" = on-demand `claude -p`, max 8/Tag), read (laut lesen) + speak (frei sprechen) mit **Azure Pronunciation Assessment** im Browser (Key via /api/speech/config; REST-Test mit Key OK). NIE Whisper/Web Speech.
+**Tagesmix:** deterministisch per Datum (waehle_slots), ~11–14 min, Thema rotiert, Verlauf (lemmas) + Schwächen (Kategorien/Aussprachewörter) fließen in den Prompt. Fehlt das Tagesset: Wiederholung + Generator wird angestoßen (max alle 20 min).
+**Tag geschafft** = ≥70 % der Aufgaben oder ≥10 min → Streak.
+**Cron (noch NICHT gesetzt – Auto-Mode verweigerte crontab):** `40 2 * * *` `englisch_generate.py` (heute+2 Tage auffüllen) und `30 5 * * *` `englisch_generate.py --heute` (Nachholer), Log `logs/englisch_generate.log`, MC-Job `englisch-tagesset`. Sets für 09.–11.11. existieren.
+**Offen/ungetestet:** echte Mikro-Aufnahme (Browser-Mic + Azure SDK-JSON-Struktur; Parser kann SDK- und REST-Form) — Chris muss einmal auf Handy/Studio testen; Bildaufgabe (Cloudflare-Bild getestet, Aufgabe selbst noch nicht in einem echten Set gesehen).
+Siehe [[feedback_mic_whisper]], [[feedback_kostenlose_alternative_zuerst]], [[feedback_limit_regeln]].
+
+**Update 10.11.2026 (Chris-Feedback nach 1. Test, Aufnahme klappt):** Zu lang → Ziel jetzt **6–9 min**, je 3 Items (Slots: read + 1 mc + 2 input + 1 Extra + 40 % speak). **Assoziatives Lernen:** colloc/phrasal/idiom-Items bekommen Merkbild (Cloudflare, `it.bild`) + `merkhilfe` (Eselsbrücke, an Erklärung gehängt). **Meine Wörter:** 📌-Knopf nach mc/input/fehler + manuelles Hinzufügen auf Übersicht; `data/englisch_woerter.json`; Karteikarten-Aufgabe `aW` (typ karten, bis 5 zufällige offene Wörter, gewichtet) wird in /heute vorangestellt; 3× in Folge gewusst = gelernt. Routen /api/englisch/woerter|wort|wort-ergebnis|wort-loeschen. Sets 11.–13.11. neu erzeugt (10.11. noch alt/lang). Cron 02:40 + 05:30 am 10.11. mit Chris-Freigabe gesetzt.
+
+**Update 10.11. (2): Chris will NICHTS Tippen/Frei-Sprechen:** Idiome, Sentence Transformation, Schreiben, Frei sprechen aus dem Tagesmix raus; phrasal/grammar/wordform jetzt Multiple Choice (Antippen). Tagesmix: Laut lesen + 3× MC + 1 Extra (Fehlerjagd/Listening/Übersetzen/Bild), ~6–7 min. Sets 11.–13.11. neu.
+
+**Update 10.11. (3): Übersetzung + Beispielsatz.** Generator liefert je mc/input/fehler-Item `de` (Satz), `wort_de`, `beispiel`; listen `text_de`; read `saetze_de`. Button „🇩🇪 Übersetzung“ in allen Übungen (transBtn in englisch.js); fehlt `de` (alte Sets, z. B. 10.11.): Fallback POST /api/englisch/uebersetzen (Cloudflare m2m100, kostenlos, Cache data/englisch/trans_cache.json, als „maschinell“ markiert, Qualität mäßig). „Meine Wörter“: 📌 übernimmt wort_de + beispiel; von Hand eingetragene Wörter bekommen Übersetzung per Cloudflare + Beispielsatz per `claude -p haiku` (limit_gate, wait=False). Sets 11.–13.11. neu. ACHTUNG: `pkill -f mission_control_api` killt die eigene Shell → Server per `setsid nohup scripts/start_mc_server.sh &` neu starten.
+**10.11. (4): MP-Seite war transparent → englisch.js jetzt deckend (CSS-Variablen --en-*, themeVars() im mount); siehe [[feedback_mp_seiten_deckend_nicht_transparent]].**

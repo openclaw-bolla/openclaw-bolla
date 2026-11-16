@@ -65,7 +65,7 @@ for f in new:
     os.makedirs(bk, exist_ok=True)
     old = s.get_outlook_photo(t, c["id"])
     if old: open(f"{bk}/{c['id'][-12:].replace('/','_')}.jpg", "wb").write(old)
-    im2.thumbnail((720, 720)); b = io.BytesIO(); im2.save(b, "JPEG", quality=90); data = b.getvalue()
+    im2.thumbnail((256, 256)); b = io.BytesIO(); im2.save(b, "JPEG", quality=90); data = b.getvalue()
     s.set_outlook_photo(t, c["id"], data)
     if gtoken is None: gtoken = s.get_google_token(); gidx = s.build_google_index(s.get_google_contacts(gtoken))
     g = gidx.get(c["displayName"].lower()) or gidx.get(s.name_key(c["displayName"]))

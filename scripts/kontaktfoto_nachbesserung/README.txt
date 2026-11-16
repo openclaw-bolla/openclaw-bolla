@@ -1,0 +1,3 @@
+Nachbesserung Kontaktfotos (16.11.2026). Arbeitsordner = /tmp/claude-1000/nb (Pfade in den Skripten relativ/hartkodiert dorthin; Modelle in scripts/models/).
+1. ents.py -> ents.json (Gruppen-IDs aus API .../recognizedEntities). 2. collect.py -> pro Gruppe via API (filter detectedEntity/recognizedEntity/id, expand detectedEntities = exakte Gesichts-Boxen + Aufnahmedatum) die 8 besten Originale laden.
+3. analyze.py/runner.py -> YuNet/SFace-Bewertung, Vorschlag ERSETZEN/behalten. WICHTIG: Automatik liefert nur Vorschläge (zu viel Gewicht auf Alter; Hut/Sonnenbrille/Blick nach unten) -> IMMER Vorher/Nachher-Tafel ansehen und von Hand auswählen, dann Datei als <Kontaktname>.jpg nach Kontaktbilder und kontaktfoto_neu.py.

@@ -40,24 +40,24 @@ def mem_ok():
 # die 4 Ziel-Kurse (Kurs-IDs bleiben das ganze Schuljahr stabil, siehe Tabelle unten) und je einen
 # individuell formulierten Mitteilungstext (NIE denselben Text kopieren, NIE "vorher/schon jetzt
 # herunterladen" schreiben - Download passiert am Kurstag selbst, siehe [[project_itslearning_automation]]).
-DAY_PREFIX = "07"
+DAY_PREFIX = "08"
 
 # Kurs-IDs (Schuljahr 26/27, stabil): 7a I=190735 7a II=190738 7b I=190741 7b II=190743
 #                                     7c I=190861 7c II=190878 7d I=190860 7d II=190877
-# Kurstag 7 "PowerPoint Profi: Einstieg (+ 4 Schritte)" - nur die "I"-Kurse.
-# Termine: 7d I + 7b I = Mi 11.11.2026  |  7a I + 7c I = Do 12.11.2026
-# Paket (discover_files 07-): 07-1 Powerpoint Profi Einstieg.pdf, 07-1.1 4 Schritte.pdf (beide 1:1-Export von Chris' PPTX),
-#                             07-Praktikum.html (Handouts/Praktikum)
-# Versand: Di 10.11. 11:00 (nach Chris' Freigabe am Mo 09.11.). Mitteilungen erwaehnen das Grossprojekt NICHT (Chris 07.11.).
+# Kurstag 8 "PowerPoint Profi: Ansichten" - nur die "I"-Kurse.
+# Termine: 7d I + 7b I = Mi 18.11.2026  |  7a I + 7c I = Do 19.11.2026
+# Paket (discover_files 08-): 08-2 Powerpoint Profi Ansichten.pdf (1:1-Export von Chris' PPTX, neu 16.11.2026),
+#                             08-Praktikum.html (Handouts/Praktikum)
+# Versand: Di 17.11. 11:00 (nach Chris' Freigabe am Mo 16.11.). Mitteilungen erwaehnen das Grossprojekt NICHT (Chris 07.11.).
 COURSES = [
     {"id": 190860, "kuerzel": "7d I", "text":
-        '🖥️ Liebe 7d, am Mittwoch, 11.11., steigen wir in PowerPoint richtig ein! 1️⃣ Ich zeige euch, was man mit PowerPoint alles machen kann – viele Beispiele, die ich komplett selbst gebastelt habe, ganz ohne KI. Lasst euch überraschen! 🤩 Dazu gibt\'s die „4 Schritte zu einer sehr guten Präsentation". 2️⃣ Zu Beginn des Praktikums laden wir gemeinsam die Folien „PowerPoint Profi: Einstieg", die „4 Schritte" und 📎 Praktikum 7 herunter. 3️⃣ Im Praktikum legt ihr dann los. Bis Mittwoch! ✨'},
+        '🖥️ Liebe 7d, am Mittwoch, 18.11., schauen wir PowerPoint mal „von innen" an! 1️⃣ Ich zeige euch die Benutzeroberfläche mit Menüband und Multifunktionsleiste, wie ihr ein Design passend zu eurem Thema findet, was Folienlayouts und Ansichten können – und worauf ihr beim Speichern achten müsst. 2️⃣ Zu Beginn des Praktikums laden wir die Folien „Powerpoint Profi: Ansichten" und 📎 Praktikum 8 herunter. 3️⃣ Im Praktikum legt ihr dann selbst los. Bis Mittwoch! ✨'},
     {"id": 190741, "kuerzel": "7b I", "text":
-        '🎨 Hallo liebe 7b! Am Mittwoch, 11.11., lernt ihr PowerPoint von seiner spektakulären Seite kennen. 1️⃣ Ich führe euch jede Menge Beispiele vor, die ich alle selbst erstellt habe – ohne KI, nur mit PowerPoint und etwas Fantasie. Dazu verrate ich euch die „4 Schritte" zu einer richtig guten Präsentation. 2️⃣ Sobald das Praktikum beginnt, holen wir uns gemeinsam die Folien „PowerPoint Profi: Einstieg", die „4 Schritte" und 📎 Praktikum 7. 3️⃣ Danach seid ihr dran! Freu mich auf euch! 😊'},
+        '🎨 Hallo liebe 7b! Am Mittwoch, 18.11., entdeckt ihr, wie PowerPoint aufgebaut ist und wo ihr was findet. 1️⃣ Wir schauen uns das Menüband an, suchen ein Design, das zum Thema passt, probieren Folienlayouts aus und sehen uns die verschiedenen Ansichten an. Zum Schluss klären wir, welche Dateiformate es beim Speichern gibt. 2️⃣ Sobald das Praktikum beginnt, holen wir uns die Folien „Powerpoint Profi: Ansichten" und 📎 Praktikum 8. 3️⃣ Danach seid ihr dran! Freu mich auf euch! 😊'},
     {"id": 190735, "kuerzel": "7a I", "text":
-        '🚀 Liebe 7a, am Donnerstag, 12.11., beginnt unser PowerPoint-Abenteuer! 1️⃣ Zuerst gibt\'s viel zu sehen: Ich zeige euch Beispiele, die ich ohne KI selbst gemacht habe – damit ihr eine Idee bekommt, was mit PowerPoint alles möglich ist. Außerdem lernt ihr die „4 Schritte zu einer sehr guten Präsentation" kennen. 2️⃣ Zu Beginn des Praktikums laden wir zusammen die Folien „PowerPoint Profi: Einstieg", die „4 Schritte" und 📎 Praktikum 7 herunter. 3️⃣ Im Praktikum geht\'s dann selbst los. Bis Donnerstag! 🎉'},
+        '🚀 Liebe 7a, am Donnerstag, 19.11., geht unser PowerPoint-Abenteuer weiter! 1️⃣ Diesmal lernt ihr, euch in PowerPoint zurechtzufinden: Menüband, Designs und Layouts, die verschiedenen Ansichten und die wichtigsten Dateiformate. 2️⃣ Zu Beginn des Praktikums laden wir die Folien „Powerpoint Profi: Ansichten" und 📎 Praktikum 8 herunter. 3️⃣ Im Praktikum geht\'s dann selbst los. Bis Donnerstag! 🎉'},
     {"id": 190861, "kuerzel": "7c I", "text":
-        '✨ Hallo 7c! Am Donnerstag, 12.11., schauen wir uns an, was in PowerPoint alles steckt. 1️⃣ Ich habe viele Beispiele vorbereitet – alle selbst gemacht, ohne KI – und zeige euch, welche Möglichkeiten ihr habt. Dazu kommen die „4 Schritte" zu einer sehr guten Präsentation. 2️⃣ Wenn das Praktikum startet, laden wir gemeinsam die Folien „PowerPoint Profi: Einstieg", die „4 Schritte" und 📎 Praktikum 7 herunter. 3️⃣ Dann seid ihr an der Reihe. Auf geht\'s! 🌟'},
+        '✨ Hallo 7c! Am Donnerstag, 19.11., sehen wir uns an, wie ihr in PowerPoint den Überblick behaltet. 1️⃣ Ich erkläre euch die Benutzeroberfläche und zeige, wie ihr ein passendes Design und das richtige Folienlayout findet. Auch das Speichern in verschiedenen Formaten kommt dran. 2️⃣ Wenn das Praktikum startet, laden wir die Folien „Powerpoint Profi: Ansichten" und 📎 Praktikum 8 herunter. 3️⃣ Dann seid ihr an der Reihe. Auf geht\'s! 🌟'},
 ]
 
 

@@ -24,6 +24,6 @@ for f in sorted(os.listdir(DIR)):
     os.makedirs(bk, exist_ok=True)
     old = s.get_outlook_photo(t, c["id"])
     if old: open(f"{bk}/{c['id'][-12:].replace('/','_')}.jpg", "wb").write(old)
-    im = ImageOps.exif_transpose(Image.open(os.path.join(DIR, f))).convert("RGB"); im.thumbnail((720, 720)); b = io.BytesIO(); im.save(b, "JPEG", quality=90)
+    im = ImageOps.exif_transpose(Image.open(os.path.join(DIR, f))).convert("RGB"); im.thumbnail((256, 256)); b = io.BytesIO(); im.save(b, "JPEG", quality=90)
     s.set_outlook_photo(t, c["id"], b.getvalue()); done += 1
 print("fertig:", done if APPLY else "Dry-Run")

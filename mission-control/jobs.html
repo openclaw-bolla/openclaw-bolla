@@ -68,6 +68,10 @@ function jobRow(j,btn){
   const link=j.link?` · <a href="${esc(j.link)}" target="_blank" rel="noopener">Details</a>`:"";
   return `<div class="row ${esc(j.status)}"><div class="top"><span class="t">${ICON[j.status]||"•"} ${esc(j.title)}</span><span class="w">${fmt(j.ts)}</span></div>${j.detail?`<div class="d">${esc(j.detail)}${link}</div>`:""}${btn?`<div style="margin-top:8px"><button onclick="dismiss('${esc(j.id)}')">✔ Erledigt</button></div>`:""}</div>`;
 }
+function fold(title,items,key){
+  if(!items.length)return "";
+  return `<details class="sec" data-key="${key}"${openSet.has(key)?" open":""}><summary>${title} (${items.length})</summary>${items.join("")}</details>`;
+}
 function section(title,items,emptyText){
   return `<h2>${title}</h2>`+(items.length?items.join(""):`<div class="empty">${emptyText}</div>`);
 }
@@ -120,11 +124,11 @@ function render(){
   out.innerHTML=
     (nAuf?`<div class="auf">✉️ ${nAuf} ${nAuf===1?"Auftrag":"Aufträge"} fürs Terminal vorgemerkt</div>`:"")+
     `<div class="heute"><h2>🔥 Heute wichtig (${heute.length})</h2>${heute.length?heute.map(o=>itemHtml(o,"h:")).join(""):'<div class="empty">Nichts Dringendes 👌</div>'}</div>`+
-    section("Braucht dich",attn.map(j=>jobRow(j,true)),"Nichts – alles ruhig 👌")+
-    section("Läuft gerade",run.map(jobRow),"Nichts läuft.")+
     section("Steht an",up,"Nichts Geplantes in den nächsten 14 Tagen.")+
+    (run.length?section("Läuft gerade",run.map(jobRow),""):"")+
     `<h2>📌 Offen – Übersicht</h2>`+(secs||'<div class="empty">Keine Treffer.</div>')+
-    section("Zuletzt erledigt",done.map(jobRow),"Noch nichts eingetragen.");
+    fold("👉 Braucht dich",attn.map(j=>jobRow(j,true)),"j:attn")+
+    fold("✅ Zuletzt erledigt",done.map(jobRow),"j:done");
   if(aid){const e=document.getElementById(aid);if(e){e.focus();try{e.setSelectionRange(ss,ss);}catch(_){}}}
   window.scrollTo(0,sy);
 }
