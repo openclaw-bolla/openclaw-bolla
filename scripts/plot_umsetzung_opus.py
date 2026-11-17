@@ -18,6 +18,35 @@ JSON = f"{W}/data/aurora2.json"
 JOB = "plot-umsetzung"
 sys.path.insert(0, f"{W}/scripts")
 os.makedirs(OUT, exist_ok=True)
+# Chris 17.11.2026 (10:54 ausgebremst): Opus-Kapitelschritt kostet ~40 Pp im 5h-Fenster (gemessen: 11 -> 51 %), nicht 13.
+# -> NUR nachts starten (22:00-03:00; nach 03:00 wuerde ein neues Fenster bis in den Morgen reichen), Start nur bei 5h <= 55 %.
+STEP_KOSTEN = 40
+os.environ["LIMIT_GATE_5H"] = "55"      # 55 + 40 = 95
+os.environ["LIMIT_GATE_HARD"] = "98"
+
+
+def ausnahme():
+    """Chris-Ausnahme von der 5h-Regel (data/limit_ausnahme.json: {"von","bis","gate","hard","grund"}), nur im Zeitraum gueltig."""
+    try:
+        e = json.load(open(f"{W}/data/limit_ausnahme.json"))
+        if dt.datetime.fromisoformat(e["von"]) <= dt.datetime.now() <= dt.datetime.fromisoformat(e["bis"]):
+            return e
+    except Exception:
+        pass
+    return None
+
+
+def nacht_fenster():
+    # Start nur bis 02:00: ein dann geoeffnetes Fenster endet spaetestens 07:00 (Schule/Morgen frei)
+    h = dt.datetime.now().hour
+    return h >= 22 or h < 2
+
+
+def regeln_setzen():
+    e = ausnahme()
+    os.environ["LIMIT_GATE_5H"] = str(e.get("gate", 60)) if e else "55"
+    os.environ["LIMIT_GATE_HARD"] = str(e.get("hard", 99)) if e else "98"
+    return e
 
 # Reihenfolge laut b3 Abschnitt 7: Ernte (37-39), Schluss (40), Saat+Straffung 29-36 nach Ertrag, dann 19-28
 ORDER = [37, 38, 39, 40, 30, 32, 35, 29, 33, 34, 31, 36, 24, 28, 19, 20, 26, 21, 22, 23, 25, 27]
@@ -125,15 +154,21 @@ def main():
             fehlt = None
             if versuch == 2:
                 fehlt = pruefen(n, buch())[2]
-            for _ in range(40):                                    # Gate-Warten (max. ~20 h)
+            for _ in range(400):                                   # Gate-/Nacht-Warten
                 if os.path.exists(STOP):
                     log("Notbremse"); melde("⚠️ Notbremse gesetzt, Umsetzung gestoppt. Neustart: Datei /tmp/aurora_samstag_stop löschen, dann „plot weiter“.", "aktion"); return
+                ex = regeln_setzen()
+                if not ex and not nacht_fenster():
+                    log("Tagsüber/Morgenschutz: kein Start (Fenster 22:00-03:00), warte 15 Min"); time.sleep(900); continue
                 q = limit_gate.quota() or {}
-                log(f"Kap. {n} (Versuch {versuch}): 5h {q.get('five_hour_pct')} %, Woche {q.get('seven_day_pct')} %")
+                log(f"Kap. {n} (Versuch {versuch}){' [Chris-Ausnahme bis '+ex['bis']+']' if ex else ''}: 5h {q.get('five_hour_pct')} %, Woche {q.get('seven_day_pct')} %")
+                t0 = time.time()
                 r = limit_gate.run([CL, "-p", "--model", MODEL, "--allowedTools", "Read,Write,Bash,Glob,Grep"],
                                    input=prompt(n, fehlt), capture_output=True, text=True, timeout=3300, wait=False, heavy=True)
                 if r.returncode == 75:
                     log("Gate: nicht gestartet, warte 30 Min"); time.sleep(1800); continue
+                if r.returncode != 0 and time.time() - t0 < 180 and not os.path.exists(f"{OUT}/kap{n}.md"):
+                    log(f"Kap. {n}: sofortiger Abbruch rc={r.returncode} (vermutlich Session-Limit, Quota-Anzeige evtl. veraltet) - kein Fehlversuch, warte 30 Min"); time.sleep(1800); continue
                 break
             q2 = limit_gate.quota() or {}
             log(f"Kap. {n}: rc={r.returncode} | nachher 5h {q2.get('five_hour_pct')} %, Woche {q2.get('seven_day_pct')} %")
