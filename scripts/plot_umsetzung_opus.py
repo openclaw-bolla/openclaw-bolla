@@ -164,7 +164,7 @@ def main():
                 log(f"Kap. {n} (Versuch {versuch}){' [Chris-Ausnahme bis '+ex['bis']+']' if ex else ''}: 5h {q.get('five_hour_pct')} %, Woche {q.get('seven_day_pct')} %")
                 t0 = time.time()
                 r = limit_gate.run([CL, "-p", "--model", MODEL, "--allowedTools", "Read,Write,Bash,Glob,Grep"],
-                                   input=prompt(n, fehlt), capture_output=True, text=True, timeout=3300, wait=False, heavy=True)
+                                   input=prompt(n, fehlt), capture_output=True, text=True, timeout=3300, wait=False, heavy=not (ex and ex.get('woche_frei')))
                 if r.returncode == 75:
                     log("Gate: nicht gestartet, warte 30 Min"); time.sleep(1800); continue
                 if r.returncode != 0 and time.time() - t0 < 180 and not os.path.exists(f"{OUT}/kap{n}.md"):
