@@ -295,6 +295,9 @@ def _a2_frage_expand(frage):
     f = (frage or "").strip()
     if not f:
         return f
+    # idempotent: schon ausgeschriebene Anweisung nicht noch einmal ersetzen (Sammel-Worker + satz-frage rufen beide auf)
+    if any(m in f for m in ("erkläre kurz, was hier gemeint ist", "schlage eine pointiertere", "Grammatik, Zeiten, Satzbau")):
+        return f
     ersatz = [
         (r"nicht\s+witzig\s+genug", "Nicht witzig genug: schlage eine pointiertere, witzigere Fassung vor (trocken/lakonisch, KEIN Slapstick, Inhalt und Fakten unverändert, Humor-Niveau wie in Kapitel 10)."),
         (r"vin|verstehe\s+ich\s+nicht", "Verstehe ich nicht: erkläre kurz, was hier gemeint ist bzw. ob die Logik stimmt; ist die Stelle unklar formuliert, schlage eine klarere Fassung vor."),
@@ -10093,7 +10096,7 @@ Antworte AUSSCHLIESSLICH in genau diesem Format mit den Trennmarken (kein JSON, 
                     buch = json.load(fh)
                 satz = (body.get("satz") or "").strip()
                 kap_titel = (body.get("kapitel_titel") or "").strip()
-                frage = (body.get("frage") or "").strip()
+                frage = _a2_frage_expand((body.get("frage") or "").strip())   # Kürzel vin/gramm/nicht witzig genug auch bei Direktfrage ausschreiben (21.11.2026)
                 if not satz or not kap_titel:
                     self._send_json({"ok": False, "error": "Satz oder Kapitel fehlt"}); return
                 if kap_titel == "__VORWORT__":
