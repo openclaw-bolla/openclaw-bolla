@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zeichentrainer</title>
+<style>
+  :root{--bg:#e8e6e1;--panel:#fbfaf8;--ink:#1d1d1d;--mute:#5d5b56;--acc:#1f4fc4;--line:#cbc8bf}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:16px/1.45 "Segoe UI",system-ui,sans-serif}
+  body{display:grid;grid-template-columns:310px 1fr;grid-template-rows:auto 1fr;height:100vh}
+  header{grid-column:1/3;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+  header h1{font-size:18px;margin:0 10px 0 0}
+  button,select{font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;min-height:42px}
+  button:hover{border-color:#8d8a80}
+  button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  button.main{background:var(--ink);color:#fff;border-color:var(--ink)}
+  label{display:inline-flex;gap:6px;align-items:center;color:var(--mute)}
+  input[type=range]{width:120px}
+  .sep{width:1px;height:28px;background:var(--line);margin:0 4px}
+  aside{padding:14px;overflow:auto;background:var(--panel);border-right:1px solid var(--line)}
+  aside h2{font-size:15px;margin:14px 0 6px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute)}
+  #list button{display:block;width:100%;text-align:left;margin-bottom:6px}
+  #hints{margin:0;padding-left:0;list-style:none}
+  #hints li{margin-bottom:8px;font-size:15px}
+  .note{font-size:14px;color:var(--mute)}
+  main{display:flex;align-items:center;justify-content:center;padding:14px;min-height:0;min-width:0}
+  #stage{position:relative;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.18);touch-action:none;cursor:crosshair}
+  #stage canvas{position:absolute;inset:0;width:100%;height:100%}
+  @media (max-width:900px){body{grid-template-columns:1fr}aside{display:none}header{grid-column:1}}
+</style>
+</head>
+<body>
+<header>
+  <h1>✏️ Zeichentrainer</h1>
+  <button id="bPen" class="on" title="B">Stift</button>
+  <button id="bEr" title="E — oder Surface-Pen umdrehen">Radierer</button>
+  <label>Dicke <input id="size" type="range" min="2" max="24" value="7"></label>
+  <span class="sep"></span>
+  <button id="bUndo" title="Strg+Z">↶ Zurück</button>
+  <button id="bRedo" title="Strg+Y">↷ Vor</button>
+  <button id="bClear">Neu</button>
+  <span class="sep"></span>
+  <button id="bO" class="on">Umriss</button>
+  <button id="bH" class="on">Schraffur-Hilfe</button>
+  <span class="sep"></span>
+  <label><input id="withTpl" type="checkbox"> Vorlage mitspeichern</label>
+  <button id="bSave" class="main">PNG speichern</button>
+</header>
+
+<aside>
+  <h2>Vorlage</h2>
+  <div id="list"></div>
+  <h2>So gehst du vor</h2>
+  <ul id="hints"></ul>
+  <h2>Neue Vorlage</h2>
+  <p class="note">Sag Bolla im Chat, was du üben willst („Apfel mit Schatten“, „Tasse von schräg oben“ …). Bolla legt die Vorlage an — danach hier <b>F5</b>.</p>
+  <h2>Stift</h2>
+  <p class="note">Druck = Linienstärke. Stift umdrehen = Radierer. Handballen wird ignoriert. Wo du zeichnest, verschwinden die Vorlagenlinien.</p>
+</aside>
+
+<main>
+  <div id="stage">
+    <canvas id="cO" width="1600" height="1200"></canvas>
+    <canvas id="cH" width="1600" height="1200"></canvas>
+    <canvas id="cU" width="1600" height="1200"></canvas>
+  </div>
+</main>
+
+<script>document.write('<script src="vorlagen.js?v='+Date.now()+'"><\/script>')</script>
+<script>
+(() => {
+  const W = 1600, H = 1200;
+  const $ = (id) => document.getElementById(id);
+  const cO = $('cO'), cH = $('cH'), cU = $('cU');
+  const xO = cO.getContext('2d'), xH = cH.getContext('2d'), xU = cU.getContext('2d');
+  const stage = $('stage'), main = document.querySelector('main');
+  const INK = '#111', ERASE_MARGIN = 12;
+
+  let tpl = null, imgO = null, imgH = null;
+  let strokes = [], redo = [], cur = null;
+  let tool = 'pen';
+  // M merkt sich, wo Strich-Tinte die Vorlage verdeckt; Radieren gibt die Vorlage dort wieder frei
+  const M = document.createElement('canvas'); M.width = W; M.height = H;
+  const xM = M.getContext('2d');
+  let replaying = false;
+  function refreshTemplate() {
+    for (const [x, img] of [[xO, imgO], [xH, imgH]]) {
+      x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, W, H);
+      if (img) x.drawImage(img, 0, 0);
+      x.globalCompositeOperation = 'destination-out'; x.drawImage(M, 0, 0);
+      x.globalCompositeOperation = 'source-over';
+    }
+  }
+
+  // ---------- Layout ----------
+  function fit() {
+    const r = main.getBoundingClientRect();
+    const s = Math.min((r.width - 28) / W, (r.height - 28) / H);
+    stage.style.width = W * s + 'px';
+    stage.style.height = H * s + 'px';
+  }
+  addEventListener('resize', fit);
+
+  // ---------- Vorlagen ----------
+  function svgImage(inner, defs, color, sw) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${defs || ''}</defs>` +
+      `<g fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${inner || ''}</g></svg>`;
+    return new Promise((res) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = () => res(null);
+      i.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    });
+  }
+  async function loadTemplate(t) {
+    tpl = t;
+    strokes = []; redo = []; cur = null;
+    imgO = await svgImage(t.outline, t.defs, '#8a8a8a', 6);
+    imgH = await svgImage(t.hatch, t.defs, '#bdbdbd', 3);
+    rebuild();
+    $('hints').innerHTML = (t.hints || []).map((h) => `<li>${h}</li>`).join('');
+    [...$('list').children].forEach((b) => b.classList.toggle('on', b.dataset.id === t.id));
+    try { localStorage.setItem('zt_last', t.id); } catch (e) {}
+  }
+  function buildList() {
+    const box = $('list');
+    box.innerHTML = '';
+    (window.VORLAGEN || []).forEach((t) => {
+      const b = document.createElement('button');
+      b.textContent = t.title; b.dataset.id = t.id;
+      b.onclick = () => {
+        if (strokes.length && !confirm('Aktuelle Zeichnung verwerfen? (Vorher PNG speichern!)')) return;
+        loadTemplate(t);
+      };
+      box.appendChild(b);
+    });
+  }
+
+  // ---------- Zeichnen ----------
+  function rebuild() {
+    xU.clearRect(0, 0, W, H); xM.clearRect(0, 0, W, H);
+    replaying = true;
+    refreshTemplate();
+    for (const s of strokes) drawStroke(s);
+    replaying = false;
+    refreshTemplate();
+  }
+  function stroke2(ctx, a, c, b, w, op) {
+    ctx.globalCompositeOperation = op;
+    ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(c.x, c.y, b.x, b.y); ctx.stroke();
+  }
+  function drawSeg(s, i) { // Segment zum Punkt i (geglättet über Mittelpunkte)
+    const p = s.pts, p0 = p[i - 2] || p[i - 1], p1 = p[i - 1], p2 = p[i];
+    const a = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 }, b = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+    segOn(s, a, p1, b, p1.w);
+  }
+  function segOn(s, a, c, b, w) {
+    if (s.tool === 'eraser') {
+      xU.strokeStyle = xM.strokeStyle = '#000';
+      stroke2(xU, a, c, b, w, 'destination-out');
+      stroke2(xM, a, c, b, w + ERASE_MARGIN * 2, 'destination-out');
+      if (!replaying) refreshTemplate();
+    } else {
+      xM.strokeStyle = '#000'; stroke2(xM, a, c, b, w + ERASE_MARGIN * 2, 'source-over');
+      xU.strokeStyle = INK; stroke2(xU, a, c, b, w, 'source-over');
+      // Vorlage unter dem Strich verschwindet
+      xO.strokeStyle = xH.strokeStyle = '#000';
+      stroke2(xO, a, c, b, w + ERASE_MARGIN * 2, 'destination-out');
+      stroke2(xH, a, c, b, w + ERASE_MARGIN * 2, 'destination-out');
+    }
+  }
+  function dot(s, pt) {
+    const w = pt.w;
+    if (s.tool === 'eraser') {
+      xU.globalCompositeOperation = 'destination-out'; xU.beginPath(); xU.arc(pt.x, pt.y, w / 2, 0, 7); xU.fill();
+      xM.globalCompositeOperation = 'destination-out'; xM.beginPath(); xM.arc(pt.x, pt.y, w / 2 + ERASE_MARGIN, 0, 7); xM.fill();
+      if (!replaying) refreshTemplate();
+    } else {
+      xM.globalCompositeOperation = 'source-over'; xM.fillStyle = '#000'; xM.beginPath(); xM.arc(pt.x, pt.y, w / 2 + ERASE_MARGIN, 0, 7); xM.fill();
+      xU.globalCompositeOperation = 'source-over'; xU.fillStyle = INK; xU.beginPath(); xU.arc(pt.x, pt.y, w / 2, 0, 7); xU.fill();
+      for (const x of [xO, xH]) { x.globalCompositeOperation = 'destination-out'; x.fillStyle = '#000'; x.beginPath(); x.arc(pt.x, pt.y, w / 2 + ERASE_MARGIN, 0, 7); x.fill(); }
+    }
+  }
+  function drawEnd(s) {
+    const p = s.pts, n = p.length;
+    if (n === 1) return dot(s, p[0]);
+    const a = { x: (p[n - 2].x + p[n - 1].x) / 2, y: (p[n - 2].y + p[n - 1].y) / 2 };
+    segOn(s, a, p[n - 1], p[n - 1], p[n - 1].w);
+  }
+  function drawStroke(s) {
+    for (let i = 1; i < s.pts.length; i++) drawSeg(s, i);
+    drawEnd(s);
+  }
+
+  function mkPoint(e, t) {
+    const r = stage.getBoundingClientRect();
+    const size = +$('size').value;
+    const pen = e.pointerType === 'pen';
+    const pr = pen ? Math.max(e.pressure || 0, 0.05) : 0.5;
+    let w;
+    if (t === 'eraser') w = size * 2.5 + 10;
+    else w = pen ? size * (0.25 + pr * 1.3) : size;
+    return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height, w };
+  }
+  stage.addEventListener('contextmenu', (e) => e.preventDefault());
+  stage.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch') return;        // Handballen ignorieren
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    stage.setPointerCapture(e.pointerId);
+    const t = (e.buttons & 32) || e.button === 5 ? 'eraser' : tool;
+    cur = { tool: t, pts: [mkPoint(e, t)] };
+    e.preventDefault();
+  });
+  stage.addEventListener('pointermove', (e) => {
+    if (!cur) return;
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    for (const ev of (evs.length ? evs : [e])) {
+      const pt = mkPoint(ev, cur.tool), last = cur.pts[cur.pts.length - 1];
+      if (Math.hypot(pt.x - last.x, pt.y - last.y) < 1.2) continue;
+      cur.pts.push(pt);
+      drawSeg(cur, cur.pts.length - 1);
+    }
+  });
+  function end() {
+    if (!cur) return;
+    drawEnd(cur);
+    strokes.push(cur); redo = []; cur = null;
+  }
+  stage.addEventListener('pointerup', end);
+  stage.addEventListener('pointercancel', end);
+
+  // ---------- Bedienung ----------
+  function setTool(t) { tool = t; $('bPen').classList.toggle('on', t === 'pen'); $('bEr').classList.toggle('on', t === 'eraser'); }
+  $('bPen').onclick = () => setTool('pen');
+  $('bEr').onclick = () => setTool('eraser');
+  function undo() { if (!strokes.length) return; redo.push(strokes.pop()); rebuild(); }
+  function redoF() { if (!redo.length) return; strokes.push(redo.pop()); rebuild(); }
+  $('bUndo').onclick = undo; $('bRedo').onclick = redoF;
+  $('bClear').onclick = () => { if (!strokes.length || confirm('Zeichnung verwerfen und Vorlage neu laden? (Vorher PNG speichern!)')) loadTemplate(tpl); };
+  $('bO').onclick = () => { cO.hidden = !cO.hidden; $('bO').classList.toggle('on', !cO.hidden); };
+  $('bH').onclick = () => { cH.hidden = !cH.hidden; $('bH').classList.toggle('on', !cH.hidden); };
+  addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key.toLowerCase() === 'z') { undo(); e.preventDefault(); }
+    else if (e.ctrlKey && e.key.toLowerCase() === 'y') { redoF(); e.preventDefault(); }
+    else if (!e.ctrlKey && e.key.toLowerCase() === 'b') setTool('pen');
+    else if (!e.ctrlKey && e.key.toLowerCase() === 'e') setTool('eraser');
+  });
+  addEventListener('beforeunload', (e) => { if (strokes.length) { e.preventDefault(); e.returnValue = ''; } });
+
+  // ---------- PNG ----------
+  $('bSave').onclick = () => {
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    x.fillStyle = '#fff'; x.fillRect(0, 0, W, H);
+    if ($('withTpl').checked) { if (!cO.hidden) x.drawImage(cO, 0, 0); if (!cH.hidden) x.drawImage(cH, 0, 0); }
+    x.drawImage(cU, 0, 0);
+    const d = new Date(), p = (n) => String(n).padStart(2, '0');
+    const name = `zeichnung-${tpl.id}-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.png`;
+    c.toBlob(async (blob) => {
+      if (window.showSaveFilePicker) {
+        try {
+          const h = await showSaveFilePicker({ suggestedName: name, types: [{ description: 'PNG-Bild', accept: { 'image/png': ['.png'] } }] });
+          const w = await h.createWritable(); await w.write(blob); await w.close(); return;
+        } catch (e) { if (e && e.name === 'AbortError') return; }
+      }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    }, 'image/png');
+  };
+
+  // ---------- Start ----------
+  fit(); buildList();
+  let start = (window.VORLAGEN || [])[1] || (window.VORLAGEN || [])[0];
+  try {
+    const V = window.VORLAGEN || [];
+    const id = localStorage.getItem('zt_last'), n = +localStorage.getItem('zt_count') || 0;
+    const f = V.find((t) => t.id === id);
+    if (V.length > n && n > 0) start = V[V.length - 1];   // neue Vorlage vorhanden -> gleich öffnen
+    else if (f) start = f;
+    localStorage.setItem('zt_count', V.length);
+  } catch (e) {}
+  if (start) loadTemplate(start);
+  window.__zt = { get strokes() { return strokes; }, loadTemplate };
+})();
+</script>
+</body>
+</html>
