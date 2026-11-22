@@ -29,7 +29,7 @@ T = {
   "tiles_h": "Hier geht es weiter",
   "go": "Ansehen",
   "tiles": [
-   dict(href="/aurora2/", shot="shot-aurora2.jpg", url="chrismandel.de/aurora2", kicker="Die Fortsetzung", tag="Neu",
+   dict(href="/aurora2/", shot="shot-aurora2.jpg?v=2", url="chrismandel.de/aurora2", kicker="Die Fortsetzung", tag="Neu",
         title="AURORA II — der Trailer zum Buch",
         text="Zweieinhalb Minuten Video mit eigenem Song zur Fortsetzung — ohne Spoiler. Ton an, genau hinsehen."),
    dict(href="/aurora/", shot="shot-aurora.jpg", url="chrismandel.de/aurora", kicker="Buch &amp; Musik", tag="Debüt",
@@ -71,7 +71,7 @@ T = {
   "tiles_h": "Where to go next",
   "go": "Take a look",
   "tiles": [
-   dict(href="/en/aurora2/", shot="shot-en-aurora2.jpg", url="chrismandel.de/en/aurora2", kicker="The sequel", tag="New",
+   dict(href="/en/aurora2/", shot="shot-en-aurora2.jpg?v=2", url="chrismandel.de/en/aurora2", kicker="The sequel", tag="New",
         title="AURORA II — the trailer for the book",
         text="Two and a half minutes of video with its own song for the sequel — no spoilers. Sound on, look closely."),
    dict(href="/en/aurora/", shot="shot-en-aurora.jpg", url="chrismandel.de/en/aurora", kicker="Book &amp; Music", tag="Debut",

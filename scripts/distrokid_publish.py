@@ -188,7 +188,7 @@ def write_checklist(path, title, sprache, genre, link, warns, genre_original=Non
         "  [ ] Upsells ablehnen: Ultimate / Vermächtnis / Store Maximizer / Mixea",
         "",
         "  ANTI-SPAM",
-        "  [ ] Mind. 4 Tage Abstand zum letzten Release (Kalender prüfen)",
+        "  [ ] (Kein Mindestabstand nötig - DistroKid erlaubt mehrere Releases pro Tag, Chris 22.11.2026)",
         "",
         "  VOR DEM ABSENDEN PRÜFEN",
         "  [ ] Titel korrekt (kein \"Track 1\"/\"Songtitel\")",
