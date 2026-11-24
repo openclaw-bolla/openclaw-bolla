@@ -40,24 +40,24 @@ def mem_ok():
 # die 4 Ziel-Kurse (Kurs-IDs bleiben das ganze Schuljahr stabil, siehe Tabelle unten) und je einen
 # individuell formulierten Mitteilungstext (NIE denselben Text kopieren, NIE "vorher/schon jetzt
 # herunterladen" schreiben - Download passiert am Kurstag selbst, siehe [[project_itslearning_automation]]).
-DAY_PREFIX = "08"
+DAY_PREFIX = "05"
 
 # Kurs-IDs (Schuljahr 26/27, stabil): 7a I=190735 7a II=190738 7b I=190741 7b II=190743
 #                                     7c I=190861 7c II=190878 7d I=190860 7d II=190877
-# Kurstag 8 "PowerPoint Profi: Ansichten" - nur die "I"-Kurse.
-# Termine: 7d I + 7b I = Mi 18.11.2026  |  7a I + 7c I = Do 19.11.2026
-# Paket (discover_files 08-): 08-2 Powerpoint Profi Ansichten.pdf (1:1-Export von Chris' PPTX, neu 16.11.2026),
-#                             08-Praktikum.html (Handouts/Praktikum)
-# Versand: Di 17.11. 11:00 (nach Chris' Freigabe am Mo 16.11.). Mitteilungen erwaehnen das Grossprojekt NICHT (Chris 07.11.).
+# Kurstag 5 "Basics Office: WebApps, Designer, Copilot" - nur die "II"-Kurse (Gruppe II).
+# Termine: 7d II + 7b II = Mi 25.11.2026  |  7a II + 7c II = Do 26.11.2026
+# Paket (discover_files 05-): 05-Basics Office - WebApps-Designer-Copilot.pdf (Export 26.10., neuer als PPTX),
+#                             05-Praktikum.html (Handouts/Praktikum)
+# Versand: Di 24.11. 11:00 (Chris-Freigabe 24.11.). Mitteilungen erwaehnen das Grossprojekt NICHT (Chris 07.11.).
 COURSES = [
-    {"id": 190860, "kuerzel": "7d I", "text":
-        '🖥️ Liebe 7d, am Mittwoch, 18.11., schauen wir PowerPoint mal „von innen" an! 1️⃣ Ich zeige euch die Benutzeroberfläche mit Menüband und Multifunktionsleiste, wie ihr ein Design passend zu eurem Thema findet, was Folienlayouts und Ansichten können – und worauf ihr beim Speichern achten müsst. 2️⃣ Zu Beginn des Praktikums laden wir die Folien „Powerpoint Profi: Ansichten" und 📎 Praktikum 8 herunter. 3️⃣ Im Praktikum legt ihr dann selbst los. Bis Mittwoch! ✨'},
-    {"id": 190741, "kuerzel": "7b I", "text":
-        '🎨 Hallo liebe 7b! Am Mittwoch, 18.11., entdeckt ihr, wie PowerPoint aufgebaut ist und wo ihr was findet. 1️⃣ Wir schauen uns das Menüband an, suchen ein Design, das zum Thema passt, probieren Folienlayouts aus und sehen uns die verschiedenen Ansichten an. Zum Schluss klären wir, welche Dateiformate es beim Speichern gibt. 2️⃣ Sobald das Praktikum beginnt, holen wir uns die Folien „Powerpoint Profi: Ansichten" und 📎 Praktikum 8. 3️⃣ Danach seid ihr dran! Freu mich auf euch! 😊'},
-    {"id": 190735, "kuerzel": "7a I", "text":
-        '🚀 Liebe 7a, am Donnerstag, 19.11., geht unser PowerPoint-Abenteuer weiter! 1️⃣ Diesmal lernt ihr, euch in PowerPoint zurechtzufinden: Menüband, Designs und Layouts, die verschiedenen Ansichten und die wichtigsten Dateiformate. 2️⃣ Zu Beginn des Praktikums laden wir die Folien „Powerpoint Profi: Ansichten" und 📎 Praktikum 8 herunter. 3️⃣ Im Praktikum geht\'s dann selbst los. Bis Donnerstag! 🎉'},
-    {"id": 190861, "kuerzel": "7c I", "text":
-        '✨ Hallo 7c! Am Donnerstag, 19.11., sehen wir uns an, wie ihr in PowerPoint den Überblick behaltet. 1️⃣ Ich erkläre euch die Benutzeroberfläche und zeige, wie ihr ein passendes Design und das richtige Folienlayout findet. Auch das Speichern in verschiedenen Formaten kommt dran. 2️⃣ Wenn das Praktikum startet, laden wir die Folien „Powerpoint Profi: Ansichten" und 📎 Praktikum 8 herunter. 3️⃣ Dann seid ihr an der Reihe. Auf geht\'s! 🌟'},
+    {"id": 190877, "kuerzel": "7d II", "text":
+        '🌐 Liebe 7d, am Mittwoch, 25.11., geht es um Programme, die gar nicht auf dem Rechner wohnen! 1️⃣ Ich zeige euch, was WebApps sind, wie ihr im Browser Tabs und Lesezeichen clever nutzt, wie der Designer Bilder für euch zaubert und was Copilot kann – und woran man erkennt, ob eine KI geschrieben hat. 2️⃣ Zu Beginn des Praktikums laden wir die Folien „WebApps, Designer, Copilot" und 📎 Praktikum 5 herunter. 3️⃣ Im Praktikum werdet ihr dann selbst zum KI-Detektiv. Bis Mittwoch! 🕵️'},
+    {"id": 190743, "kuerzel": "7b II", "text":
+        '🤖 Hallo liebe 7b! Am Mittwoch, 25.11., lernt ihr, was in eurem Browser alles steckt. 1️⃣ Wir klären, was eine WebApp ist, ordnen Tabs und Lesezeichen, probieren den Designer für KI-Bilder aus und schauen, was Copilot und ChatGPT unterscheidet. 2️⃣ Sobald das Praktikum beginnt, holen wir uns die Folien „WebApps, Designer, Copilot" und 📎 Praktikum 5. 3️⃣ Danach seid ihr dran – und müsst echte von KI-Texten unterscheiden. Freu mich auf euch! 😊'},
+    {"id": 190738, "kuerzel": "7a II", "text":
+        '🚀 Liebe 7a, am Donnerstag, 26.11., trefft ihr die KI! 1️⃣ Erst geht es um WebApps und den Browser (Tabs, Lesezeichen), dann um den Designer, der Bilder aus euren Worten macht, und um Copilot und seine Prompts. 2️⃣ Zu Beginn des Praktikums laden wir die Folien „WebApps, Designer, Copilot" und 📎 Praktikum 5 herunter. 3️⃣ Im Praktikum wartet der KI-Detektiv auf euch – seid gespannt, welcher Text echt ist! Bis Donnerstag! 🎉'},
+    {"id": 190878, "kuerzel": "7c II", "text":
+        '✨ Hallo 7c! Am Donnerstag, 26.11., schauen wir uns an, wie ihr im Browser arbeitet, ohne etwas zu installieren. 1️⃣ Ich erkläre WebApps, Tabs und Lesezeichen, zeige den Designer für KI-Bilder und wie ihr Copilot gute Aufgaben (Prompts) gebt. 2️⃣ Wenn das Praktikum startet, laden wir die Folien „WebApps, Designer, Copilot" und 📎 Praktikum 5 herunter. 3️⃣ Dann seid ihr an der Reihe: Könnt ihr die KI-Antwort erkennen? Auf geht\'s! 🌟'},
 ]
 
 

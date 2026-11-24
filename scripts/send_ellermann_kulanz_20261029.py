@@ -18,7 +18,7 @@ body = """<div style="font-family:Aptos,Calibri,sans-serif;font-size:12pt">
 </div>
 """ + sig
 
-pdf = "/mnt/d/OneDrive/Eigene Dateien/Reni/Gesundheit - TK/Leistungsabrechnung_AK2026-71439981_2026-10-28.pdf"
+pdf = "/mnt/d/OneDrive/Eigene Dateien/Reni/Gesundheit - TK/Zahnersatz-Zahnzusatz/Leistungsabrechnung_AK2026-71439981_2026-10-28.pdf"
 atts = [{"@odata.type": "#microsoft.graph.fileAttachment", "name": "Leistungsabrechnung_AK2026-71439981_2026-10-28.pdf",
          "contentType": "application/pdf",
          "contentBytes": base64.b64encode(open(pdf, "rb").read()).decode()}]

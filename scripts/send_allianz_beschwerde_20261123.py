@@ -16,7 +16,7 @@ body = """<div style="font-family:Aptos,Calibri,sans-serif;font-size:12pt">
 </div>
 """ + sig
 
-D = "/mnt/d/OneDrive/Eigene Dateien/Reni/Gesundheit - TK/"
+D = "/mnt/d/OneDrive/Eigene Dateien/Reni/Gesundheit - TK/Zahnersatz-Zahnzusatz/"
 M = D + "Allianz Zahnzusatz Mailverkehr/"
 files = [
  ("/mnt/c/Users/ernst/AppData/Local/Temp/bz/Beschwerde_Allianz_Mandel_2026-11-23.pdf", "Beschwerde_Allianz_Mandel_2026-11-23.pdf", "application/pdf"),

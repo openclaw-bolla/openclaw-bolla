@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from outlook_oauth2 import refresh_access_token
 
-OUT = Path("/mnt/d/OneDrive/Eigene Dateien/Reni/Gesundheit - TK/Allianz Zahnzusatz Mailverkehr")
+OUT = Path("/mnt/d/OneDrive/Eigene Dateien/Reni/Gesundheit - TK/Zahnersatz-Zahnzusatz/Allianz Zahnzusatz Mailverkehr")
 STATE = Path("/home/bolla/workspace/data/ellermann_watch.json")
 SEIT = "2026-10-29T16:20:00Z"  # Klarstellungsmail gesendet
 FRIST = "2026-11-12"
