@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """Angebots-Triage (Chris 15.10.2026). Makler-Mails mit Exposé/Angebot -> Haiku extrahiert Eckdaten (JSON)
--> Score wie im Excel (K.O.: Etagenwohnung / Aufzug=N) -> Fach:
-  A = K.O.            -> Eintrag + Absage-ENTWURF in Outlook-Entwürfen (Versand nur nach Chris-Freigabe)
-  B = Score<60 / Infos fehlen -> Rückfrage-ENTWURF
-  C = Score>=60       -> Telegram-Ping + Besichtigungs-ENTWURF
-Es wird NIE automatisch gesendet. Aufruf: ohne Arg = Postfach seit letztem Lauf; --dry = nur anzeigen."""
+-> Score wie im Excel (K.O.: Etagenwohnung / Aufzug=N / Terrasse=N) -> Fach A (K.O.) / B (Score<60) / C (Score>=60), nur zur Einordnung.
+KEINE Antwort-Entwürfe (Chris 26.11.2026). MP-Meldung nur bei nachweislichem Treffer: Penthouse/Dachgeschoss UND große Terrasse UND Aufzug.
+Aufruf: ohne Arg = Postfach seit letztem Lauf; --dry = nur anzeigen."""
 import json, re, sys, os, shutil, html, subprocess, datetime, requests
 sys.path.insert(0, "/home/bolla/workspace/scripts")
 from outlook_oauth2 import refresh_access_token
-from job_status import report, _telegram
+from job_status import report
 
 DATA = "/home/bolla/workspace/data/makler_status.json"
 OUT = "/home/bolla/workspace/data/makler_angebote.json"
@@ -16,7 +14,6 @@ G = "https://graph.microsoft.com/v1.0"
 SCHWELLE = 60
 CLAUDE = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")  # Cron hat keinen PATH
 SINCE = "2026-10-14T00:00:00Z"
-NO_DRAFT = {"gabriela.weber@engelvoelkers.com"}  # Chris antwortet selbst (Weilheim, 15.10.2026)
 KEYS = re.compile(r"exposé|expose|angebot|objekt|kaufpreis|wohnfläche|penthouse|zimmer", re.I)
 today = lambda: datetime.date.today().strftime("%d.%m.%Y")
 W = {"suedterrasse": 3, "lage": 3, "gesundheit": 2, "neubau": 2, "fbh": 1, "tiefgarage": 1, "keller": 1, "ruhig": 1}
@@ -41,10 +38,8 @@ def score(a):
     return round(100 * parts / (sum(W.values()) + 5))
 def v2(x): return 1 if x == "J" else 0 if x == "N" else 0.5
 
-def draft(H, to, subj, body):
-    html_b = "<div style='font-family:Aptos,Calibri,sans-serif;font-size:12pt'>" + body.replace("\n", "<br>") + "</div>"
-    requests.post(f"{G}/me/messages", headers=H, json={"subject": subj, "body": {"contentType": "HTML", "content": html_b},
-                  "toRecipients": [{"emailAddress": {"address": to}}]})
+def treffer(a):
+    return a.get("typ") in ("Penthouse", "Dachgeschoss") and a.get("terrasse") == "J" and a.get("aufzug") == "J"
 
 def main():
     dry = "--dry" in sys.argv
@@ -75,18 +70,8 @@ def main():
         fach = "A" if ko else ("C" if s >= SCHWELLE else "B")
         a.update({"makler": mkl["firma"], "datum": today(), "score": s, "fach": fach, "mail_id": m["id"], "von": frm})
         st["angebote"].append(a); n += 1
-        if frm in NO_DRAFT:
-            continue
-        sal = "Sehr geehrte Damen und Herren,\n\n"
-        sig = "\n\nMit freundlichen Grüßen\nChris & Renate Mandel"
-        if fach == "A":
-            draft(H, frm, "Re: " + m["subject"], sal + "vielen Dank für Ihr Angebot. Leider entspricht das Objekt nicht unseren Anforderungen (wir suchen ausschließlich ein Penthouse bzw. eine Dachgeschosswohnung mit großer Terrasse und Aufzug), sodass wir davon absehen müssen. Wir bleiben aber gerne in Ihrer Interessentenliste." + sig)
-        elif fach == "B":
-            fehlt = ", ".join(a.get("fehlt") or ["Etage/Aufzug, Hausgeld, Verfügbarkeit"])
-            draft(H, frm, "Re: " + m["subject"], sal + f"vielen Dank für Ihr Angebot. Können Sie uns bitte noch folgende Angaben nennen: {fehlt}?" + sig)
-        else:
-            draft(H, frm, "Re: " + m["subject"], sal + "vielen Dank, das Objekt interessiert uns. Gerne würden wir es besichtigen — welche Termine kämen in Frage?" + sig)
-            report('makler-treffer', 'Makler: neuer Treffer', 'aktion', f"🏠 Treffer ({s}/100): {a.get('objekt','')[:80]} · {a.get('preis') or '?'} € · {a.get('qm') or '?'} m² · {mkl['firma']} — Entwurf liegt in Outlook")
+        if treffer(a):
+            report('makler-treffer', 'Makler: neuer Treffer', 'aktion', f"🏠 Treffer ({s}/100): {a.get('objekt','')[:80]} · {a.get('preis') or '?'} € · {a.get('qm') or '?'} m² · {mkl['firma']}")
     if not dry:
         st["done"] = st["done"][-1500:]; json.dump(st, open(OUT, "w"), ensure_ascii=False, indent=2)
         xl = ""

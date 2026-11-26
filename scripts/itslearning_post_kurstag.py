@@ -40,24 +40,22 @@ def mem_ok():
 # die 4 Ziel-Kurse (Kurs-IDs bleiben das ganze Schuljahr stabil, siehe Tabelle unten) und je einen
 # individuell formulierten Mitteilungstext (NIE denselben Text kopieren, NIE "vorher/schon jetzt
 # herunterladen" schreiben - Download passiert am Kurstag selbst, siehe [[project_itslearning_automation]]).
-DAY_PREFIX = "05"
+DAY_PREFIX = "06"
 
 # Kurs-IDs (Schuljahr 26/27, stabil): 7a I=190735 7a II=190738 7b I=190741 7b II=190743
 #                                     7c I=190861 7c II=190878 7d I=190860 7d II=190877
-# Kurstag 5 "Basics Office: WebApps, Designer, Copilot" - nur die "II"-Kurse (Gruppe II).
-# Termine: 7d II + 7b II = Mi 25.11.2026  |  7a II + 7c II = Do 26.11.2026
-# Paket (discover_files 05-): 05-Basics Office - WebApps-Designer-Copilot.pdf (Export 26.10., neuer als PPTX),
-#                             05-Praktikum.html (Handouts/Praktikum)
-# Versand: Di 24.11. 11:00 (Chris-Freigabe 24.11.). Mitteilungen erwaehnen das Grossprojekt NICHT (Chris 07.11.).
+# Kurstag 6 "Basics Office: Videos, Clipchamp" - nur die "II"-Kurse (Gruppe II).
+# Termine: 7d II + 7b II = Mi 02.12.2026  |  7a II + 7c II = Do 03.12.2026
+# Versand: Di 01.12. 11:00 - erst nach Chris-Freigabe.
 COURSES = [
     {"id": 190877, "kuerzel": "7d II", "text":
-        '🌐 Liebe 7d, am Mittwoch, 25.11., geht es um Programme, die gar nicht auf dem Rechner wohnen! 1️⃣ Ich zeige euch, was WebApps sind, wie ihr im Browser Tabs und Lesezeichen clever nutzt, wie der Designer Bilder für euch zaubert und was Copilot kann – und woran man erkennt, ob eine KI geschrieben hat. 2️⃣ Zu Beginn des Praktikums laden wir die Folien „WebApps, Designer, Copilot" und 📎 Praktikum 5 herunter. 3️⃣ Im Praktikum werdet ihr dann selbst zum KI-Detektiv. Bis Mittwoch! 🕵️'},
+        '🎬 Liebe 7d, am Mittwoch, 02.12., wird euer Handy zum Filmstudio! 1️⃣ Ich zeige euch, wie ihr euren Handybildschirm aufnehmt und das Video kürzt. 2️⃣ Zu Beginn des Praktikums laden wir die Folien „Basics Office: Videos, Clipchamp" und 📎 Praktikum 6 herunter. 3️⃣ Im Praktikum erfahrt ihr, wie ein Video vom Handy auf den PC kommt, und nehmt am PC mit dem Snipping-Tool einen kurzen Ausschnitt auf. Wer ein Handy dabeihat, bringt es gern mit, ohne Handy arbeitet ihr zu zweit. Bis Mittwoch! 📱'},
     {"id": 190743, "kuerzel": "7b II", "text":
-        '🤖 Hallo liebe 7b! Am Mittwoch, 25.11., lernt ihr, was in eurem Browser alles steckt. 1️⃣ Wir klären, was eine WebApp ist, ordnen Tabs und Lesezeichen, probieren den Designer für KI-Bilder aus und schauen, was Copilot und ChatGPT unterscheidet. 2️⃣ Sobald das Praktikum beginnt, holen wir uns die Folien „WebApps, Designer, Copilot" und 📎 Praktikum 5. 3️⃣ Danach seid ihr dran – und müsst echte von KI-Texten unterscheiden. Freu mich auf euch! 😊'},
+        '📱 Hallo liebe 7b! Am Mittwoch, 02.12., geht\'s ums Videomachen, am Handy und am PC. 1️⃣ Ihr lernt, wie man den Handybildschirm aufzeichnet und die Aufnahme kürzt. 2️⃣ Sobald das Praktikum beginnt, holen wir uns die Folien „Basics Office: Videos, Clipchamp" und 📎 Praktikum 6. 3️⃣ Dann probiert ihr am PC das Snipping-Tool aus und filmt einen kurzen Bildschirmausschnitt, dabei achten wir auf den Datenschutz. Handy gern mitbringen, Partnerarbeit ist aber auch völlig okay. Freu mich auf euch! 😊'},
     {"id": 190738, "kuerzel": "7a II", "text":
-        '🚀 Liebe 7a, am Donnerstag, 26.11., trefft ihr die KI! 1️⃣ Erst geht es um WebApps und den Browser (Tabs, Lesezeichen), dann um den Designer, der Bilder aus euren Worten macht, und um Copilot und seine Prompts. 2️⃣ Zu Beginn des Praktikums laden wir die Folien „WebApps, Designer, Copilot" und 📎 Praktikum 5 herunter. 3️⃣ Im Praktikum wartet der KI-Detektiv auf euch – seid gespannt, welcher Text echt ist! Bis Donnerstag! 🎉'},
+        '🎥 Liebe 7a, am Donnerstag, 03.12., machen wir kleine Videos, und zwar mit dem, was viele von euch in der Tasche haben. 1️⃣ Ich zeige euch die Bildschirmaufnahme bei Android und iPhone und wie ihr Anfang und Ende wegschneidet. 2️⃣ Zu Beginn des Praktikums laden wir die Folien „Basics Office: Videos, Clipchamp" und 📎 Praktikum 6 herunter. 3️⃣ Im Praktikum klären wir, wie das Video per Stick oder itslearning an den PC kommt, und ihr nehmt mit dem Snipping-Tool eine Szene von höchstens 15 Sekunden auf. Wer ein Handy dabeihat, darf es mitbringen. Bis Donnerstag! 🚀'},
     {"id": 190878, "kuerzel": "7c II", "text":
-        '✨ Hallo 7c! Am Donnerstag, 26.11., schauen wir uns an, wie ihr im Browser arbeitet, ohne etwas zu installieren. 1️⃣ Ich erkläre WebApps, Tabs und Lesezeichen, zeige den Designer für KI-Bilder und wie ihr Copilot gute Aufgaben (Prompts) gebt. 2️⃣ Wenn das Praktikum startet, laden wir die Folien „WebApps, Designer, Copilot" und 📎 Praktikum 5 herunter. 3️⃣ Dann seid ihr an der Reihe: Könnt ihr die KI-Antwort erkennen? Auf geht\'s! 🌟'},
+        '🎞️ Hallo 7c! Am Donnerstag, 03.12., dreht sich alles um Videos: aufnehmen, kürzen, auf den PC bringen. 1️⃣ Ich erkläre euch, wie ihr euren Handybildschirm filmt und das Video kürzt. 2️⃣ Wenn das Praktikum startet, laden wir die Folien „Basics Office: Videos, Clipchamp" und 📎 Praktikum 6 herunter. 3️⃣ Dort lernt ihr zwei Wege, ein Video vom Handy auf den PC zu bekommen, und nehmt am PC einen kurzen Videoausschnitt mit dem Snipping-Tool auf. Handy dabei? Super, sonst zu zweit. Auf geht\'s! 🍿'},
 ]
 
 

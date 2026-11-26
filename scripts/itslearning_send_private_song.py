@@ -81,7 +81,7 @@ def login(pw, versuche=3, pause=90):
     raise letzter
 
 
-def send_private_message(its, empfaenger, message, songs):
+def send_private_message(its, empfaenger, message, songs, suche=None):
     # Nachrichten-Panel oeffnen (Sprechblasen-Icon oben rechts)
     its.mouse.click(1417, 27)
     its.wait_for_timeout(1000)
@@ -91,8 +91,14 @@ def send_private_message(its, empfaenger, message, songs):
     # Empfaenger suchen + auswaehlen (Suche geht nach ANZEIGENAME, nicht Login-Name)
     box = its.get_by_placeholder("Personen, Kurse oder Projekte suchen")
     box.click()
-    box.fill(empfaenger)
-    its.wait_for_timeout(1500)
+    box.fill(suche or empfaenger)  # suche: abweichender Suchbegriff (Ceyda 26.11.26), Auswahl bleibt per Anzeigename
+    # Suche braucht manchmal laenger (25.11.26: Dropdown zeigte noch Vorschlaege) -> bis 20 s warten
+    for _ in range(20):
+        its.wait_for_timeout(1000)
+        c = its.get_by_text(empfaenger, exact=False)
+        if any(c.nth(i).is_visible() and (c.nth(i).text_content() or "").strip().startswith(empfaenger)
+               for i in range(c.count())):
+            break
     # ⚠️ Mehrere DOM-Fallen hier: (1) get_by_text(exact=False) trifft auch unsichtbare
     # Obermengen-Treffer (z.B. "Mandel, Christoph" fuer Suche "Mandel, Chris"). (2) Das sichtbare
     # Dropdown-Ergebnis hat einen unsichtbaren Zusatzpunkt im textContent ("Mandel, Chris." statt
