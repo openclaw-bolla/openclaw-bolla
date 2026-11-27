@@ -18069,7 +18069,7 @@ function schuelerFindMatch(input, liste) {
     candidates = liste.filter(s => {
       const vorNorm = schuelerNorm(s.vorname);
       const vorFirst = vorNorm.split(/\s+/)[0];
-      return (vorNorm === vorQuery || vorFirst === vorQuery) && schuelerNorm(s.nachname).startsWith(initial);
+      return (vorNorm === vorQuery || vorFirst === vorQuery || vorNorm.split(/[\s-]+/).includes(vorQuery)) && schuelerNorm(s.nachname).startsWith(initial);
     });
   } else {
     candidates = liste.filter(s => {
@@ -18079,6 +18079,12 @@ function schuelerFindMatch(input, liste) {
       return vorNorm === inputNorm || vorFirst === inputNorm || vorNorm.split(/[\s-]+/).includes(inputNorm) || nachNorm === inputNorm
         || `${vorNorm} ${nachNorm}` === inputNorm || `${nachNorm} ${vorNorm}` === inputNorm;
     });
+  }
+  // Erster Vorname hat Vorrang (Chris 27.11.2026): "Annika" -> Annika Wagner, nicht Lea Annika Harms
+  if (candidates.length > 1 && !input.includes(',')) {
+    const q = schuelerNorm(tokens.length > 1 && lastTok.length <= 2 ? tokens.slice(0, -1).join(' ') : input);
+    const erste = candidates.filter(s => schuelerNorm(s.vorname).split(/[\s-]+/)[0] === q);
+    if (erste.length) candidates = erste;
   }
   return candidates.length === 1 ? candidates[0] : null;
 }
@@ -18092,10 +18098,10 @@ async function sunoAutoFillFromSchuelerliste(name) {
   if (!match) {
     if (hintEl) {
       const tokens = name.split(/\s+/);
-      const vorNorm = schuelerNorm(tokens[0]);
-      const anzahl = liste.filter(s => schuelerNorm(s.vorname).split(/\s+/)[0] === vorNorm).length;
-      hintEl.textContent = anzahl > 1
-        ? `⚠️ ${anzahl}× "${tokens[0]}" in den Klassen — 1-2 Anfangsbuchstaben vom Nachnamen ergänzen (z. B. "${tokens[0]} M" oder bei Gleichstand "${tokens[0]} Mü")`
+      const q = schuelerNorm(tokens[0]);
+      const treffer = liste.filter(s => schuelerNorm(s.vorname).split(/[\s-]+/).includes(q));
+      hintEl.textContent = treffer.length > 1
+        ? `⚠️ ${treffer.length}× "${tokens[0]}": ${treffer.map(s => `${s.vorname} ${s.nachname} (${s.klasse})`).join(' · ')} — Anfangsbuchstaben vom Nachnamen ergänzen, dann Tab`
         : `⚠️ Kein eindeutiger Treffer in der Schülerliste`;
       hintEl.style.display = 'block';
     }
@@ -18111,7 +18117,7 @@ async function sunoAutoFillFromSchuelerliste(name) {
   // Gesungener Name: Tippt Chris einen Namensteil ("Greta" bei Greta-Marie), bleibt genau der stehen
   // (auch ein hinterer Teil). Sonst: Rufname aus der Liste (Feld "rufname"), sonst erster Teil.
   if (nameEl && match.vorname) {
-    const typed = name.trim();
+    const typed = name.trim().replace(/\s+\S{1,2}\.?$/, '');
     const teile = match.vorname.split(/[\s-]+/).map(schuelerNorm);
     const istTeil = !name.includes(',') && teile.includes(schuelerNorm(typed))
       && schuelerNorm(typed) !== schuelerNorm(match.vorname.split(/\s+/)[0]);
